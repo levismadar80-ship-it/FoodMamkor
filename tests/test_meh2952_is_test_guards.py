@@ -168,9 +168,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         2,
         "public list adds not_test_producer(); :361 is the owner's publish gate",
     ),
-    "backend/app/routers/admin.py": (3, "admin screens and state transitions"),
+    "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
+    "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
     "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
-    "backend/app/routers/producer_me.py": (2, "the owner's own dashboard"),
+    "backend/app/routers/producer_me.py": (1, "the owner's own dashboard"),
+    "backend/app/routers/producer_me_review.py": (1, "the owner's own dashboard"),
     "backend/app/routers/group_buys.py": (1, "the owner opening a group buy"),
     "backend/app/routers/producers.py": (
         1,

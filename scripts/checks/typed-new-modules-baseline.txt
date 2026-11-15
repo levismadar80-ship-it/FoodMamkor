@@ -6,6 +6,5 @@ frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx
 frontend/app/[locale]/producer/dashboard/edit/OrganizerCityCard.jsx
 frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx
 frontend/app/[locale]/producer/dashboard/edit/TagsCard.jsx
-frontend/app/[locale]/producer/dashboard/edit/cards.jsx
 frontend/app/[locale]/producer/dashboard/edit/page.js
 frontend/app/[locale]/register/producer/RegisterProducerClient.jsx

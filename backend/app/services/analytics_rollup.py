@@ -86,7 +86,7 @@ UNIQUE_CONSTRAINT = "uq_producer_analytics_daily_producer_day"
 #: the retention window has (after chunk C) no raw rows left to count, and a
 #: zero written for it would be an undercount frozen forever (property 1).
 #: Chunk C must use the same number; if it does not, the `days=N` arms in
-#: producer_me.py need the same seam as `total` (recorded on MEH-2283).
+#: producer_me_analytics.py need the same seam as `total` (recorded on MEH-2283).
 RAW_RETENTION_DAYS = 90
 
 

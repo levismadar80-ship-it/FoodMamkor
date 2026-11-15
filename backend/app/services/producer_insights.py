@@ -10,8 +10,8 @@ Touches:  reads producer_page_views, producer_whatsapp_clicks,
           No writes.
 Does NOT: build the rest of GET /producers/me/analytics (views_by_day,
           top_cities, conversion_rate, weekly_trend stay in
-          routers/producer_me.py), or send anything (weekly_owner_summary.py).
-Related:  backend/app/routers/producer_me.py `producer_analytics` (caller) ·
+          routers/producer_me_analytics.py), or send anything (weekly_owner_summary.py).
+Related:  backend/app/routers/producer_me_analytics.py `producer_analytics` (caller) ·
           backend/app/services/weekly_owner_summary.py (caller) ·
           backend/app/services/analytics.py (unique_views_count) ·
           backend/app/services/analytics_rollup.py (rollup_snapshot).

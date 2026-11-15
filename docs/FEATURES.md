@@ -111,7 +111,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Admin seed via `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars | `backend/seed_data.py` |
 | 🚧 | v1 | MEH-51: Kashrut badge review queue (`/admin/kashrut`) — approve/reject with notes | `frontend/app/admin/kashrut/page.js`, `backend/app/routers/admin_kashrut.py` |
 | 🚧 | v1 | MEH-51: 5-tier Trust Ladder — real-time computed, TrustBadge.jsx + KashrutBadgeStrip.jsx | `backend/app/services/trust_tier.py`, `frontend/components/TrustBadge.jsx` |
-| 🚧 | v1 | MEH-51: Phone verification via WhatsApp OTP (step 4 of producer registration) | `backend/app/routers/producer_me.py`, `frontend/app/register/producer/page.js` |
+| 🚧 | v1 | MEH-51: Phone verification via WhatsApp OTP (step 4 of producer registration) | `backend/app/routers/producer_me_review.py`, `frontend/app/register/producer/page.js` |
 
 Detail: [ADMIN.md](./ADMIN.md)
 
@@ -129,7 +129,7 @@ stored.
 | ✅ | v1 | `POST /producers/{id}/whatsapp-click` — anonymous, rate-limited 10/min per IP | `backend/app/routers/producers.py::record_whatsapp_click` |
 | ✅ | v1 | Fire-and-forget `navigator.sendBeacon` from the WhatsApp CTA (producer detail page + `WhatsAppButton.jsx`) | `frontend/app/producer/[id]/ProducerDetail.jsx`, `frontend/components/WhatsAppButton.jsx` |
 | ✅ | v1 | `?from=search` / `?from=home` referrer threading through `ProducerCard` (homepage grid, "newest" strip, /map) | `frontend/components/ProducerCard.jsx`, `frontend/app/page.js`, `frontend/app/map/MapClient.jsx` |
-| ✅ | v1 | `GET /producers/me/analytics` — 7d/30d/total windows for views/search/whatsapp, follower delta, avg rating, home products count, 30-day zero-filled views_by_day, top 5 cities | `backend/app/routers/producer_me.py::producer_analytics` |
+| ✅ | v1 | `GET /producers/me/analytics` — 7d/30d/total windows for views/search/whatsapp, follower delta, avg rating, home products count, 30-day zero-filled views_by_day, top 5 cities | `backend/app/routers/producer_me_analytics.py::producer_analytics` |
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — 6 stat cards + inline SVG line chart + inline SVG horizontal bar chart + 3 quick links + availability hero | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Admin dashboard extension — 4 secondary stat cards (weekly deltas + events + experiences) + DAU 30d line chart + top 10 cities + server health panel | `frontend/app/admin/page.js`, `backend/app/routers/admin_extra.py::get_dashboard` |
 | ✅ | v1 | `pending_moderation_count` badge on admin sidebar — sums pending producers + open reports + flagged home products + pending experiences + pending kashrut requests | `frontend/app/admin/layout.js` |

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.routers import (
     admin,
+    admin_decisions,
     admin_experiences,
     admin_checklist,
     admin_extra,
@@ -26,6 +27,9 @@ from app.routers import (
     organizers,
     producer_claim,
     producer_me,
+    producer_me_analytics,
+    producer_me_locations,
+    producer_me_review,
     producer_name_check,
     producer_name_requests,
     producer_owner_invite,
@@ -47,6 +51,22 @@ from app.routers import (
     users_me,
     whatsapp_webhook,
 )
+
+
+def _include_producer_me(app: FastAPI) -> None:
+    """One /producers/me prefix, four files by area so each can be read whole."""
+    app.include_router(producer_me.router)
+    app.include_router(producer_me_analytics.router)
+    app.include_router(producer_me_review.router)
+    app.include_router(producer_me_locations.router)
+
+
+def _include_admin(app: FastAPI) -> None:
+    """admin_decisions FIRST: its static GET /admin/producers/pending and
+    /admin/producers/rejection-presets must match before admin.router's
+    GET /admin/producers/{producer_id} (the order they had in one file)."""
+    app.include_router(admin_decisions.router)
+    app.include_router(admin.router)
 
 
 def _register_flagged_features(app: FastAPI) -> None:
@@ -84,7 +104,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth.router)
     app.include_router(cities.router)
     app.include_router(producer_name_check.router)  # MEH-3086
-    app.include_router(producer_me.router)
+    _include_producer_me(app)
     app.include_router(product_organize.router)  # MEH-3055
     app.include_router(billing.router)  # MEH-3181
     # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
@@ -99,7 +119,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(organizers.router)  # MEH-2461
     app.include_router(favorites.router)
     app.include_router(saved_items.router)  # MEH-2557
-    app.include_router(admin.router)
+    _include_admin(app)
     app.include_router(admin_extra.router)
     # MEH-1406: home_products.router disabled per brand LOCK (licensed
     # businesses only — the consumer home-cook / "from-the-neighbor's-kitchen"

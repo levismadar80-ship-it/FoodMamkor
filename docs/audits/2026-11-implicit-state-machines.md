@@ -61,7 +61,7 @@ with seven satellites, each of which some reader consults:
 | Column | file:line | Who reads it as state |
 |---|---|---|
 | `status` | `models.py:157` | everything |
-| `phone_verified` | `models.py:508` | approve gate (`admin.py:294`), submit gate |
+| `phone_verified` | `models.py:508` | approve gate (`producer_approval.py:242`), submit gate |
 | `submitted_for_review_at` | `models.py:189` | SLA badge + queue sort (`admin.py:453`, `:561`) |
 | `resubmission_count` / `resubmitted_at` | `models.py:534-535` | resubmit cap (`producer_me.py:1818`) |
 | `requested_changes` / `changes_requested_at` | `models.py:548-549` | "pending but ball-in-owner's-court" |
@@ -72,28 +72,28 @@ with seven satellites, each of which some reader consults:
 **Verdict: the best-governed machine in the repo, and still implicit.** There is no
 transition table; the legal moves are the union of five handlers. What makes it work is
 that each handler carries its own guard *and* its guards were extracted into shared
-owners — `_apply_approval_state` (`admin.py:185`), `_assert_approvable` (`admin.py:232`),
+owners — `_apply_approval_state` (`producer_approval.py:108`), `_assert_approvable` (`producer_approval.py:155`),
 `submission_missing_items` (`services/submission_gate.py`). That extraction is the thing
-that keeps the retry path in `_persist_approval` (`admin.py:340`) from approving a row
+that keeps the retry path in `_persist_approval` (`producer_approval.py:290`) from approving a row
 the main path would have refused.
 
 ### Transitions — every write point
 
 | From → To | Site | Guarded? |
 |---|---|---|
-| ∅ → `draft` | `auth.py:571`, `auth.py:781`, `producer_queries.py:662`, `admin.py:657` | n/a (creation) |
-| `draft` → `pending` | `producer_me.py:1942` (`POST /producers/me/submit-for-review`) | ✅ draft-only 409 + `submission_missing_items` 422 |
-| `rejected` → `pending` | `producer_me.py:1856` (`POST .../request-review`) | ✅ `FOR UPDATE`, cap, gate |
-| `pending`/`rejected` → `approved` | `admin.py:199` via `_apply_approval_state` | ✅ draft 409 + photo/licence/phone gates, re-asserted on retry |
-| `pending`/`approved` → `rejected` | `admin.py:1457` | ✅ draft 409, preset validated before mutation |
-| `approved` ⇄ `inactive` | `admin.py:1056` | ✅ `_TOGGLEABLE_STATUSES` (MEH-769) |
+| ∅ → `draft` | `auth.py:571`, `auth.py:781`, `producer_queries.py:662`, `admin.py:391` | n/a (creation) |
+| `draft` → `pending` | `producer_me_review.py:596` (`POST /producers/me/submit-for-review`) | ✅ draft-only 409 + `submission_missing_items` 422 |
+| `rejected` → `pending` | `producer_me_review.py:506` (`POST .../request-review`) | ✅ `FOR UPDATE`, cap, gate |
+| `pending`/`rejected` → `approved` | `admin_decisions.py:146` via `_apply_approval_state` (`producer_approval.py:122`) | ✅ draft 409 + photo/licence/phone gates, re-asserted on retry |
+| `pending`/`approved` → `rejected` | `admin_decisions.py:300` | ✅ draft 409, preset validated before mutation |
+| `approved` ⇄ `inactive` | `admin.py:810` | ✅ `_TOGGLEABLE_STATUSES` (MEH-769) |
 | `pending` → `pending` + feedback | `admin.py` `request_producer_changes` | ✅ |
-| any → any via admin PUT | **refused** — `admin.py:916-921` (MEH-2502) | ✅ 422 |
+| any → any via admin PUT | **refused** — `admin.py:655-660` (MEH-2502) | ✅ 422 |
 
 ### Findings
 
 **1.1 — The SLA clock is never reset on resubmission. `pre-launch`.**
-`producer_me.py:1856-1858` writes `status="pending"`, `resubmission_count`, and
+`producer_me_review.py:506-508` writes `status="pending"`, `resubmission_count`, and
 `resubmitted_at` — but **not** `submitted_for_review_at`. `_attach_aging`
 (`admin.py:453-456`) measures `business_days_waiting` from
 `submitted_for_review_at or created_at`, and the queue sort (`admin.py:561`) uses the
@@ -116,7 +116,7 @@ the window edge per `testing.md` § Clock-dependent tests.
 **1.2 — Two code comments record a residual risk that MEH-2502 closed. `post-launch`.**
 Both `admin.py:1222-1226` and `producer_claim.py:87-89` state that an admin `PUT` can
 push a listing back to `draft` because "admin_update_producer applies the payload as-is".
-It cannot: `admin.py:916-921` refuses any payload containing `status` with a 422. The
+It cannot: `admin.py:655-660` refuses any payload containing `status` with a 422. The
 claim-flow comment goes further and calls the resulting claimable-live-listing an
 accepted residual risk — so a future session reading it is told a hole is open *and*
 that someone decided to live with it. Both sentences are now false.

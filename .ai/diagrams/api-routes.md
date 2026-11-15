@@ -26,7 +26,7 @@
 graph LR
     App[FastAPI app] --> Auth[auth.router<br/>/auth/*]
     App --> Producers[producers.router<br/>/producers/*]
-    App --> ProducerMe[producer_me.router<br/>/producers/me/*]
+    App --> ProducerMe[producer_me.router + producer_me_analytics.router · producer_me_review.router · producer_me_locations.router<br/>/producers/me/* (one prefix, four files by area, MEH-3266)]
     App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
     App --> Billing[billing.router<br/>/producers/me/billing/summary · /admin/billing/overview<br/>MEH-3181 read-only monthly count of bookings — nothing is charged]
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim/new-link-request (MEH-3122: lapsed link, tells the admin only) · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
@@ -45,7 +45,7 @@ graph LR
     App --> Marketing[marketing.router<br/>/stats, /newsletter, /contact, /cities]
     App --> BizSuggest[business_suggestions.router<br/>POST /business-suggestions]
     App --> Chat[chat.router<br/>/chat/*]
-    App --> Admin[admin.router<br/>/admin/producers/*]
+    App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
     App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel]
