@@ -190,7 +190,7 @@ class TestPrefixDefaultPostFill:
 
 
 class TestSourceConstants:
-    """Lock the 8-source list. Drift in either tuple = silent miss in cleanup."""
+    """Lock the source list (12 since MEH-3247). Drift in either tuple = silent miss in cleanup."""
 
     def test_scalar_sources_is_the_shared_registry(self):
         # Compare on InstrumentedAttribute identity via .key attribute, which
@@ -332,7 +332,7 @@ class TestBuildReferencedUrlSet:
     def test_all_eight_sources_queried_with_empty_data(self):
         # If build_referenced_url_set ever skips a source, the stub raises
         # AssertionError on the missing key — but here every source is
-        # populated with [], so a clean run proves all 8 queries fired.
+        # populated with [], so a clean run proves every registered query fired.
         db = self._stub_session(self._empty_table())
         assert build_referenced_url_set(db) == set()
 

@@ -12,7 +12,7 @@ Usage:
 
 Chunk I lands in 5 sub-chunks:
     I.1 (this commit) — skeleton + argparse + Cloudinary config + missing-config exit
-    I.2 — referenced-set DB query (8 image-bearing columns)
+    I.2 — referenced-set DB query (the image_refs registry, 12 columns since MEH-3247)
     I.3 — paginated cloudinary.api.resources() + depth-1 filter + reject-list + min-age
     I.4 — orphan compute + dry-run summary
     I.5 — --apply: confirmation prompt + batch delete + per-ID logging
@@ -459,7 +459,9 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         db.close()
     logger.info(
-        "Referenced-set built: %d unique URLs across 8 sources", len(referenced)
+        "Referenced-set built: %d unique URLs across %d sources",
+        len(referenced),
+        len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES),
     )
 
     try:

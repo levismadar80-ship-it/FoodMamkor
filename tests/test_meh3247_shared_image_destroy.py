@@ -104,6 +104,24 @@ def test_removing_own_unshared_photo_still_destroys_it(client, db, destroyed):
     assert destroyed == [_A_EXTRA_PUBLIC_ID]
 
 
+def test_account_deletion_still_destroys_own_unshared_photos(client, db, destroyed):
+    """Reviewer (rule 5a): the deletion path runs the REAL reference check.
+
+    If the destroy ran before the deletion commit, the user's own rows would
+    still hold the URLs, the check would skip them, and nothing else goes red.
+    """
+    a, owner_a, b = _two_businesses(db)
+    a.images = [_A_EXTRA, _B_PHOTO]
+    b.images = [_B_PHOTO]
+    db.commit()
+
+    resp = client.delete("/auth/me", headers=auth_header(owner_a))
+    assert resp.status_code == 200, resp.text
+
+    assert _A_EXTRA_PUBLIC_ID in destroyed, "own unshared photo was not destroyed"
+    assert _B_PUBLIC_ID not in destroyed, "B's live photo was destroyed"
+
+
 def test_a_url_with_a_query_or_transform_still_counts_as_a_reference(db):
     """The match is by public_id, parsed the same way on both sides."""
     _a, _owner_a, b = _two_businesses(db)
