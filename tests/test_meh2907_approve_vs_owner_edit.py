@@ -350,7 +350,9 @@ def test_the_licence_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
         for link in db_.query(ProducerCategory).filter(
             ProducerCategory.producer_id == producer.id
         ):
-            db_.get(Category, link.category_id).name = LICENSE_REQUIRED_CATEGORIES[0]
+            cat = db_.get(Category, link.category_id)
+            cat.name = LICENSE_REQUIRED_CATEGORIES[0]
+            cat.requires_license = True  # MEH-3255: the gate reads the column
 
     run = _run_the_race(
         client,

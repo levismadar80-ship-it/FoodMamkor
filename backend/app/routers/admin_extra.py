@@ -17,7 +17,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
-from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
 from app.models import (
@@ -394,10 +393,10 @@ def update_category(
         # this one.
         if cat.is_system:
             raise HTTPException(status_code=422, detail=CATEGORY_SYSTEM_RENAME_ERROR_HE)
-        # Guard on the row's CURRENT name: that is the value the regulatory
-        # lookup matches on today. Checking the INCOMING name instead would
-        # invert the guard and let the bypass through.
-        if cat.name in LICENSE_REQUIRED_CATEGORIES:
+        # MEH-3255: the licence rule now reads the row's column, so a rename
+        # no longer moves a category out of it. The guard stays (a licensed
+        # category keeps its name, as before), keyed on the column.
+        if cat.requires_license:
             raise HTTPException(
                 status_code=422, detail=CATEGORY_LICENSE_RENAME_ERROR_HE
             )

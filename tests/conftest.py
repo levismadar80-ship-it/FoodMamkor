@@ -369,8 +369,20 @@ def make_producer(
     return producer
 
 
-def make_category(db, name: str = "ירקות אורגניים", emoji: str = "🥬") -> Category:
-    cat = Category(name=name, emoji=emoji)
+def make_category(
+    db,
+    name: str = "ירקות אורגניים",
+    emoji: str = "🥬",
+    requires_license: bool | None = None,
+) -> Category:
+    # MEH-3255 (D10 contract): the licence rule reads the column. A test that
+    # names a seeded licensed category gets the seed's answer unless it says
+    # otherwise, the same way seed_categories writes it.
+    if requires_license is None:
+        from app.constants import LICENSE_REQUIRED_CATEGORIES
+
+        requires_license = name in LICENSE_REQUIRED_CATEGORIES
+    cat = Category(name=name, emoji=emoji, requires_license=requires_license)
     db.add(cat)
     db.commit()
     db.refresh(cat)

@@ -45,19 +45,38 @@ def test_create_stores_the_answer_and_returns_it(client, db):
 
 
 def test_rename_cannot_change_the_answer(client, db):
-    """PUT keeps CategoryIn: an extra key is ignored, the flag stays."""
+    """PUT keeps CategoryIn: an extra key is ignored, the flag stays. (A
+    licensed row refuses a rename outright — the guard below — so the
+    unlicensed direction is the one a rename can reach.)"""
+    admin = _admin(db)
+    cat = Category(name="פטריות", slug="mushrooms", requires_license=False)
+    db.add(cat)
+    db.commit()
+    resp = client.put(
+        f"/admin/categories/{cat.id}",
+        json={"name": "פטריות יער", "requires_license": True},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200
+    db.refresh(cat)
+    assert cat.requires_license is False
+
+
+def test_a_licensed_category_an_admin_created_keeps_its_name(client, db):
+    """MEH-3255: the rename guard reads the column, so it also covers a
+    licensed category that is on no name list."""
     admin = _admin(db)
     cat = Category(name="פטריות", slug="mushrooms", requires_license=True)
     db.add(cat)
     db.commit()
     resp = client.put(
         f"/admin/categories/{cat.id}",
-        json={"name": "פטריות יער", "requires_license": False},
+        json={"name": "פטריות יער"},
         headers=auth_header(admin),
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 422
     db.refresh(cat)
-    assert cat.requires_license is True
+    assert cat.name == "פטריות"
 
 
 def test_seed_flags_equal_the_name_list(db):
@@ -92,3 +111,31 @@ def test_a_plain_category_row_defaults_to_no_licence(db):
     db.commit()
     db.refresh(cat)
     assert cat.requires_license is False
+
+
+# --- MEH-3255 contract: the readers use the column, not the name list ---
+
+
+def test_a_new_licensed_category_requires_a_licence(db):
+    """The grill bug: a category an admin creates was silently exempt because
+    the rule matched a fixed list of names. «פטריות» is on no list."""
+    from app.services.license_validation import categories_require_license
+
+    yes = Category(name="פטריות", slug="mushrooms", requires_license=True)
+    no = Category(name="עציצים", slug="pots", requires_license=False)
+    db.add_all([yes, no])
+    db.commit()
+    assert categories_require_license(db, [yes.id]) is True
+    assert categories_require_license(db, [no.id]) is False
+
+
+def test_a_listed_name_with_the_flag_off_requires_nothing(db):
+    """The other direction: the name alone no longer decides."""
+    from app.services.license_validation import categories_require_license
+
+    cat = Category(
+        name=LICENSE_REQUIRED_CATEGORIES[0], slug="bread-x", requires_license=False
+    )
+    db.add(cat)
+    db.commit()
+    assert categories_require_license(db, [cat.id]) is False

@@ -36,16 +36,24 @@ export const LICENSE_REQUIRED_CATEGORIES = [
 export const PRODUCER_LICENSE_REGEX = /^\d{7,10}$/;
 
 /**
- * @param {Array<{id: number, name: string}>} allCategories — full category list (from GET /categories)
+ * MEH-3255 (D10): every category the API serves carries its own answer,
+ * `requires_license`, set when the category was created — so one an admin
+ * adds is no longer silently "optional" here. The name list is only the
+ * fallback for a category object that does not carry the field.
+ *
+ * @param {Array<{id: number, name: string, requires_license?: boolean}>} allCategories — full category list (from GET /categories)
  * @param {Array<number>} selectedIds — currently selected category IDs
- * @returns {boolean} — true if any selected category name is in LICENSE_REQUIRED_CATEGORIES
+ * @returns {boolean} — true if any selected category requires a licence
  */
 export function requiresProducerLicense(allCategories, selectedIds) {
   if (!selectedIds || selectedIds.length === 0) return false;
-  const selectedNames = new Set(
-    allCategories.filter((c) => selectedIds.includes(c.id)).map((c) => c.name),
-  );
-  return LICENSE_REQUIRED_CATEGORIES.some((name) => selectedNames.has(name));
+  return allCategories
+    .filter((c) => selectedIds.includes(c.id))
+    .some((c) =>
+      typeof c.requires_license === "boolean"
+        ? c.requires_license
+        : LICENSE_REQUIRED_CATEGORIES.includes(c.name),
+    );
 }
 
 /**
