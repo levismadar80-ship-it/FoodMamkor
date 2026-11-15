@@ -55,7 +55,7 @@ from app.services.registration_emails import (
     send_visitor_confirmation,
 )
 from app.services.registrations import registered_counts
-from app.utils.clock import israel_today, utc_now
+from app.utils.clock import israel_now, israel_today, utc_now
 
 router = APIRouter(tags=["registrations"])
 
@@ -64,6 +64,16 @@ _FULL = {"code": "registration_full", "message": "אין יותר מקומות"}
 
 
 # ---------- item lookups ----------
+
+
+def _has_started(day: date, at: time | None) -> bool:
+    """MEH-3288: past day, or today at/after its start time (Israel clock).
+
+    No start time = the whole day stays open, as before."""
+    today = israel_today()
+    if day != today:
+        return day < today
+    return at is not None and israel_now().time() >= at
 
 
 def _event_for_signup(db: Session, event_id: UUID) -> Event:
@@ -75,7 +85,7 @@ def _event_for_signup(db: Session, event_id: UUID) -> Event:
     # MEH-2952: a seeded test row's event takes no real sign-ups either.
     if not is_live_owner_row(producer):
         raise HTTPException(status_code=404, detail="Event not found")
-    if not event.is_active or event.event_date < israel_today():
+    if not event.is_active or _has_started(event.event_date, event.event_time):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_CLOSED)
     if event.registration_method != "site_form":
         raise HTTPException(status_code=409, detail=_CLOSED)
@@ -100,7 +110,9 @@ def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
         raise HTTPException(status_code=404, detail="Experience not found")
     # MEH-3219 B12: a recurring experience's event_date is its first
     # occasion, not its last — it stays open after it (experiences.py feed).
-    if not ex.is_active or (ex.event_date < israel_today() and not ex.is_recurring):
+    # MEH-3288: a dated one also closes once it has started today.
+    started = _has_started(ex.event_date, ex.event_time)  # type: ignore[arg-type]
+    if not ex.is_active or (started and not ex.is_recurring):
         raise HTTPException(status_code=409, detail=_CLOSED)
     if ex.registration_method != "site_form":
         raise HTTPException(status_code=409, detail=_CLOSED)
