@@ -12,7 +12,7 @@ Usage:
 
 Chunk I lands in 5 sub-chunks:
     I.1 (this commit) — skeleton + argparse + Cloudinary config + missing-config exit
-    I.2 — referenced-set DB query (8 image-bearing columns)
+    I.2 — referenced-set DB query (the image_refs registry, 12 columns since MEH-3247)
     I.3 — paginated cloudinary.api.resources() + depth-1 filter + reject-list + min-age
     I.4 — orphan compute + dry-run summary
     I.5 — --apply: confirmation prompt + batch delete + per-ID logging
@@ -35,13 +35,13 @@ if str(ROOT) not in sys.path:
 from app.cloudinary_utils import RESERVED_PUBLIC_ID_PREFIXES  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.database import SessionLocal  # noqa: E402
-from app.models import (  # noqa: E402
-    Event,
-    Experience,
-    HomeProduct,
-    Producer,
-    Product,
-    User,
+
+# MEH-3247: the referenced-column registry lives in ONE place, shared with the
+# pre-destroy reference check. It used to be a second, shorter list here that
+# missed recipe, rescue-review, owner and kashrut photos.
+from app.services.image_refs import (  # noqa: E402
+    ARRAY_URL_SOURCES,
+    SCALAR_URL_SOURCES,
 )
 
 logger = logging.getLogger("scripts.cleanup_cloudinary_orphans")
@@ -52,25 +52,12 @@ DEFAULT_PREFIXES = ("mehamakor", "mehamakor/avatars")
 BATCH_SIZE_HARD_CAP = 100
 DEFAULT_MIN_AGE_HOURS = 24
 
-# Image-bearing columns we treat as the referenced set. 8 sources total
-# (6 scalar + 2 array); see docs/DATA.md for column types. The reserved
-# story-card namespace (mehamakor/producers/<id>/story-card.jpg) is
-# excluded at the Cloudinary-scan side via RESERVED_PUBLIC_ID_PREFIXES
-# and depth-1 filter (I.3); story_card_url is included here belt-and-
-# braces so a misconfigured Cloudinary scan can never delete a live
-# referenced asset.
-SCALAR_URL_SOURCES = (
-    User.avatar_url,  # users.avatar_url        (varchar)
-    Producer.story_card_url,  # producers.story_card_url (varchar(500))
-    Product.image_url,  # products.image_url      (text)
-    HomeProduct.photo,  # home_products.photo     (text)
-    Event.image_url,  # events.image_url        (text)
-    Experience.image_url,  # experiences.image_url   (text, nullable)
-)
-ARRAY_URL_SOURCES = (
-    Producer.images,  # producers.images        (text[])
-    HomeProduct.images,  # home_products.images    (text[])
-)
+# Image-bearing columns we treat as the referenced set: SCALAR_URL_SOURCES +
+# ARRAY_URL_SOURCES from app.services.image_refs (MEH-3247). The reserved
+# story-card namespace (mehamakor/producers/<id>/story-card.jpg) is excluded at
+# the Cloudinary-scan side via RESERVED_PUBLIC_ID_PREFIXES and the depth-1
+# filter (I.3); story_card_url is in the registry belt-and-braces so a
+# misconfigured scan can never delete a live referenced asset.
 
 
 def _bounded_batch_size(raw: str) -> int:
@@ -157,7 +144,7 @@ def _add_array_urls(target: set[str], rows: Iterable) -> None:
 def build_referenced_url_set(db) -> set[str]:
     """Collect every Cloudinary URL referenced from the DB into one set.
 
-    Iterates the 8 columns in SCALAR_URL_SOURCES + ARRAY_URL_SOURCES,
+    Iterates every column in SCALAR_URL_SOURCES + ARRAY_URL_SOURCES,
     drops None / empty strings, and returns a deduped set. PG `text[]`
     arrays are iterated in Python (no `func.unnest`) — matches the
     rest of the codebase, which has no existing unnest pattern.
@@ -472,7 +459,9 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         db.close()
     logger.info(
-        "Referenced-set built: %d unique URLs across 8 sources", len(referenced)
+        "Referenced-set built: %d unique URLs across %d sources",
+        len(referenced),
+        len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES),
     )
 
     try:
