@@ -145,7 +145,7 @@ def delete_user_and_data(
     from app.cloudinary_utils import destroy_image
 
     for url in captured_urls:
-        destroy_image(url, context=context)
+        destroy_image(url, context=context, db=db)  # MEH-3247
     # MEH-513: story_card needs bypass_reserved=True — the producer is gone,
     # the slot is now an orphan (the cleanup script reject list is for live
     # story-cards; this is explicitly not one).
@@ -153,6 +153,7 @@ def delete_user_and_data(
         old_story_card_url,
         bypass_reserved=True,
         context=f"{context} story_card",
+        db=db,  # MEH-3247
     )
 
 
