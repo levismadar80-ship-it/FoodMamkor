@@ -34,7 +34,11 @@ def mail(monkeypatch):
         "send_email",
         lambda to, subject, *a, **k: sent.append((to, subject, a, k)),
     )
-    monkeypatch.setattr(marketing, "sync_subscribe", lambda e: syncs.append(e))
+    monkeypatch.setattr(
+        marketing,
+        "sync_subscribe",
+        lambda e, resubscribe=False: syncs.append((e, resubscribe)),
+    )
     monkeypatch.setattr(marketing, "sync_unsubscribe", lambda e: None)
     return {"sent": sent, "syncs": syncs}
 
@@ -66,20 +70,32 @@ class TestSignupSendsConfirmationOnly:
         assert r.status_code == 201
         assert r.json()["detail"] == CONFIRM_SENT  # no enumeration
         assert mail["sent"] == []
-        assert mail["syncs"] == ["old@gmail.com"]  # MEH-2611 back-fill kept
+        assert mail["syncs"] == [("old@gmail.com", False)]  # back-fill, opt-out kept
 
-    def test_per_email_limit_three_an_hour(self, client, mail):
+    def test_per_email_limit_holds_across_ips(self, client, mail, monkeypatch):
+        # Real distinct callers (TRUSTED_PROXY on, X-Real-IP varies), so only
+        # the per-address bucket can refuse the 4th — the per-IP one never fills.
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
         codes = [
             client.post(
                 "/newsletter",
                 json={"email": "flood@gmail.com"},
-                headers={"X-Forwarded-For": f"10.0.0.{i}"},
+                headers={"X-Real-IP": f"10.0.0.{i}"},
             ).status_code
             for i in range(5)
         ]
-        assert codes[:3] == [201, 201, 201]
-        assert 429 in codes[3:]
+        assert codes == [201, 201, 201, 429, 429]
         assert len(mail["sent"]) == 3
+
+    def test_the_mailed_link_confirms(self, client, db, mail):
+        client.post("/newsletter", json={"email": "link@gmail.com"})
+        plain = mail["sent"][0][2][0]
+        prefix = f"{settings.frontend_url}/newsletter/confirm?token="
+        assert prefix in plain
+        token = plain.split(prefix, 1)[1].split()[0]
+        r = client.post("/newsletter/confirm", json={"token": token})
+        assert r.status_code == 200, r.text
+        assert _count(db, "link@gmail.com") == 1
 
 
 class TestConfirm:
@@ -89,7 +105,7 @@ class TestConfirm:
         assert r.status_code == 200, r.text
         assert r.json()["detail"] == CONFIRMED
         assert _count(db, "reader@gmail.com") == 1
-        assert mail["syncs"] == ["reader@gmail.com"]
+        assert mail["syncs"] == [("reader@gmail.com", True)]  # consent clears opt-out
         assert [s[0] for s in mail["sent"]] == ["reader@gmail.com"]  # welcome
 
     def test_second_confirm_is_idempotent_without_second_welcome(
@@ -108,9 +124,15 @@ class TestConfirm:
     def test_confirm_token_expires_after_48h(self, monkeypatch):
         token = create_confirm_token("late@gmail.com")
         assert decode_confirm_token(token) == "late@gmail.com"
-        later = datetime.now(timezone.utc) + timedelta(hours=48, minutes=1)
-        monkeypatch.setattr(marketing, "_utcnow", lambda: later)
-        assert decode_confirm_token(token) is None
+        start = datetime.now(timezone.utc)
+        monkeypatch.setattr(
+            marketing, "_utcnow", lambda: start + timedelta(hours=47, minutes=59)
+        )
+        assert decode_confirm_token(token) == "late@gmail.com"  # not too short
+        monkeypatch.setattr(
+            marketing, "_utcnow", lambda: start + timedelta(hours=48, minutes=1)
+        )
+        assert decode_confirm_token(token) is None  # not too long
 
     def test_expired_token_is_400_and_adds_nothing(self, client, db, mail, monkeypatch):
         token = create_confirm_token("late@gmail.com")
@@ -165,5 +187,28 @@ class TestConfirm:
 
     def test_get_does_not_confirm(self, client, db, mail):
         token = create_confirm_token("prefetch@gmail.com")
-        client.get(f"/newsletter/confirm?token={token}")
+        r = client.get(f"/newsletter/confirm?token={token}")
+        assert r.status_code == 405  # the API has no GET; the page posts on click
         assert _count(db, "prefetch@gmail.com") == 0
+
+    def test_lost_insert_race_is_200_without_a_second_welcome(
+        self, client, db, mail, monkeypatch
+    ):
+        from sqlalchemy.exc import IntegrityError
+        from sqlalchemy.orm import Session
+
+        real_commit = Session.commit
+        state = {"raised": False}
+
+        def racing_commit(self):
+            if not state["raised"]:
+                state["raised"] = True
+                raise IntegrityError("insert", {}, Exception("duplicate"))
+            return real_commit(self)
+
+        monkeypatch.setattr(Session, "commit", racing_commit)
+        token = create_confirm_token("race@gmail.com")
+        r = client.post("/newsletter/confirm", json={"token": token})
+        assert r.status_code == 200, r.text
+        assert state["raised"]
+        assert mail["sent"] == []  # the winner sent the welcome, not us

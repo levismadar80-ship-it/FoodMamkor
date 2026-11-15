@@ -205,8 +205,11 @@ graph TD
 
 ```mermaid
 graph LR
-    Footer[Footer newsletter form] --> Newsletter[POST /newsletter<br/>🌐 5/hour per IP<br/>idempotent — returns 201 whether<br/>already subscribed or not]
-    Newsletter -.->|background, fail-open| ResendContacts[Resend Contacts<br/>segment newsletter · MEH-2611<br/>sent from Resend Broadcasts]
+    Footer[Footer newsletter form] --> Newsletter[POST /newsletter<br/>🌐 5/hour per IP + 3/hour, 5/day per email<br/>MEH-3300 double opt-in: writes nothing,<br/>mails a confirm link · same 201 either way]
+    Newsletter -.->|existing row only: back-fill,<br/>opt-out kept| ResendContacts[Resend Contacts<br/>segment newsletter · MEH-2611<br/>sent from Resend Broadcasts]
+    ConfirmPage[/newsletter/confirm page<br/>button click] --> Confirm[POST /newsletter/confirm<br/>🌐 20/hour · signed token,<br/>scope newsletter_confirm, 48 h]
+    Confirm -->|insert, idempotent| NewsletterTable[(newsletter_subscribers)]
+    Confirm -.->|background: sync, clears opt-out| ResendContacts
     Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
     WeeklyUnsub[POST /weekly-summary/unsubscribe<br/>🌐 20/hour · signed token, MEH-3079] -->|weekly_summary_opt_out = true| ProducersTable[(producers)]
 

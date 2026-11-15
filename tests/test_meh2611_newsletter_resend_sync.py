@@ -25,7 +25,9 @@ from app.services import newsletter_sync
 @pytest.fixture
 def calls(monkeypatch):
     seen = []
-    monkeypatch.setattr(marketing, "sync_subscribe", lambda e: seen.append(("sub", e)))
+    monkeypatch.setattr(
+        marketing, "sync_subscribe", lambda e, **k: seen.append(("sub", e))
+    )
     monkeypatch.setattr(
         marketing, "sync_unsubscribe", lambda e: seen.append(("unsub", e))
     )
@@ -117,6 +119,10 @@ def _fake_resend(
             return {"email": email, "unsubscribed": existing == "opted_out"}
 
         @staticmethod
+        def update(params):
+            log.append(("contacts.update", params))
+
+        @staticmethod
         def remove(email):
             log.append(("contacts.remove", email))
             if fail:
@@ -176,6 +182,17 @@ class TestSyncService:
         newsletter_sync.sync_subscribe("back@gmail.com")
         assert not any(c[0] in ("contacts.update", "contacts.create") for c in log)
         assert ("contact.segment.add", "back@gmail.com", "s1") in log
+        assert reported == []
+
+    def test_confirm_resubscribe_clears_an_earlier_opt_out(self, fake):
+        # MEH-3300: only the confirm path passes resubscribe=True — a click on
+        # the link mailed to the address is the owner's own fresh consent.
+        log, reported = fake(existing="opted_out")
+        newsletter_sync.sync_subscribe("back@gmail.com", resubscribe=True)
+        assert (
+            "contacts.update",
+            {"email": "back@gmail.com", "unsubscribed": False},
+        ) in log
         assert reported == []
 
     def test_non_duplicate_create_error_is_reported_not_masked(self, fake):

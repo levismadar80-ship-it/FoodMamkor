@@ -168,6 +168,7 @@ def get_stats(request: Request, db: Session = Depends(get_db)) -> StatsOut:
 @router.post("/newsletter", status_code=201, response_model=None)
 @limiter.limit("5/hour")  # SECURITY FIX #2: prevent mailbombing
 @limiter.limit("3/hour", key_func=email_from_body)  # MEH-3300: per address
+@limiter.limit("5/day", key_func=email_from_body)  # ...and per day, any IP
 def subscribe_newsletter(
     request: Request,
     data: NewsletterIn,
@@ -192,7 +193,9 @@ def subscribe_newsletter(
         # sync_subscribe never clears an existing opt-out.
         background_tasks.add_task(sync_subscribe, email)
     else:
-        _send_newsletter_confirm(email)
+        # Background, like the existing-row branch, so the response time does
+        # not tell a new address from a subscribed one (reviewer, PR #4636).
+        background_tasks.add_task(_send_newsletter_confirm, email)
     return {"detail": "שלחנו מייל לאישור. ההרשמה תושלם אחרי לחיצה על הקישור שבו."}
 
 
@@ -224,9 +227,9 @@ def confirm_newsletter(
             created = True
         except IntegrityError:  # a parallel click won the insert
             db.rollback()
-    background_tasks.add_task(sync_subscribe, email)
+    background_tasks.add_task(sync_subscribe, email, resubscribe=True)
     if created:
-        _send_newsletter_welcome(email)
+        background_tasks.add_task(_send_newsletter_welcome, email)
     return {"detail": "ההרשמה אושרה. נכתוב כשיש משהו ששווה לספר."}
 
 
