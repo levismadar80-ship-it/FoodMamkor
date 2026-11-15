@@ -21,12 +21,16 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 let authUser = null;
+let authLoading = false;
+const logout = vi.fn(() => {
+  authUser = null;
+});
 let tokenSeenByRefresh;
 const refreshUser = vi.fn(async () => {
   tokenSeenByRefresh = window.localStorage.getItem("token");
 });
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ user: authUser, loading: false, refreshUser }),
+  useAuth: () => ({ user: authUser, loading: authLoading, refreshUser, logout }),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -58,6 +62,7 @@ function wrap(ui) {
 beforeEach(() => {
   vi.clearAllMocks();
   authUser = null;
+  authLoading = false;
   tokenSeenByRefresh = undefined;
   window.localStorage.clear();
   window.sessionStorage.clear();
@@ -145,6 +150,55 @@ describe("owner invite — signed in", () => {
   });
 });
 
+describe("owner invite — signed in, more cases", () => {
+  it("shows the loader, and neither form, while the session is loading", async () => {
+    authLoading = true;
+    wrap(<OwnerInviteClient />);
+    expect(await screen.findByTestId("owner-invite-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("owner-invite-form")).toBeNull();
+    expect(screen.queryByTestId("owner-invite-existing-form")).toBeNull();
+  });
+
+  it("sends the grower line when the page needs it", async () => {
+    authUser = CONSUMER;
+    api.get.mockResolvedValue({ data: { ...INVITE, requires_farmer_declaration: true } });
+    wrap(<OwnerInviteClient />);
+    fireEvent.click(await screen.findByTestId("owner-invite-farmer"));
+    await acceptAsSignedIn();
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith(
+        "/auth/owner-invite/accept-existing",
+        expect.objectContaining({ farmer_declaration_accepted: true, declaration_accepted: true }),
+      ),
+    );
+  });
+
+  it("shows a refusal at the code step", async () => {
+    authUser = CONSUMER;
+    api.post.mockRejectedValue({ response: { status: 403, data: { detail: "חשבון ניהול לא יכול להיות בעלים" } } });
+    wrap(<OwnerInviteClient />);
+    fireEvent.click(await screen.findByTestId("owner-invite-existing-send-code"));
+    expect(await screen.findByTestId("owner-invite-existing-error")).toHaveTextContent("חשבון ניהול");
+    expect(screen.queryByTestId("owner-invite-existing-code-sent")).toBeNull();
+  });
+
+  it("names the button «שליחת קוד חדש» after a send", async () => {
+    authUser = CONSUMER;
+    wrap(<OwnerInviteClient />);
+    const button = await screen.findByTestId("owner-invite-existing-send-code");
+    fireEvent.click(button);
+    await screen.findByTestId("owner-invite-existing-code-sent");
+    expect(button).toHaveTextContent(he.owner_invite.existing.resend);
+  });
+
+  it("offers to sign out of the wrong account", async () => {
+    authUser = CONSUMER;
+    wrap(<OwnerInviteClient />);
+    fireEvent.click(await screen.findByTestId("owner-invite-existing-sign-out"));
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("owner invite — signed out", () => {
   it("offers a sign-in link that comes back here, without the token", async () => {
     window.history.replaceState({}, "", "/owner-invite");
@@ -153,6 +207,13 @@ describe("owner invite — signed out", () => {
     expect(link.getAttribute("href")).toBe(`/login?redirect=${encodeURIComponent("/owner-invite")}`);
     expect(link.getAttribute("href")).not.toContain(TOKEN);
     expect(screen.getByTestId("owner-invite-form")).toBeInTheDocument();
+  });
+
+  it("keeps the /en prefix on the sign-in link", async () => {
+    window.history.replaceState({}, "", "/en/owner-invite");
+    wrap(<OwnerInviteClient />);
+    const link = await screen.findByTestId("owner-invite-login-link");
+    expect(link.getAttribute("href")).toBe(`/en/login?redirect=${encodeURIComponent("/en/owner-invite")}`);
   });
 
 });

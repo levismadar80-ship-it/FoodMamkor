@@ -6901,7 +6901,9 @@
       "signed_in_as": "You're signed in as {email}. The page will move to this account.",
       "code_sent": "We sent a code to {email}. Not there? Check your spam folder, or write to us.",
       "has_account": "Already have a Mehamakor account?",
-      "login_link": "Sign in"
+      "login_link": "Sign in",
+      "resend": "Send a new code",
+      "sign_out": "Not the right account? Sign out"
     },
     "invalid": {
       "body": "This link is no longer valid. Write to us and we will send a new one.",

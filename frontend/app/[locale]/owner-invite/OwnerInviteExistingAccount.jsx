@@ -46,7 +46,7 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   const tReg = useTranslations("auth.register.producer");
   const tErr = useTranslations("error");
   const router = useRouter();
-  const { refreshUser } = useAuth();
+  const { refreshUser, logout } = useAuth();
 
   const [codeSent, setCodeSent] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
@@ -119,7 +119,19 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   return (
     <form onSubmit={submit} noValidate data-testid="owner-invite-existing-form" className="space-y-4">
       <p className="text-fg-muted" data-testid="owner-invite-existing-account">
-        {t("existing.signed_in_as", { email: accountEmail })}
+        {t("existing.signed_in_as", { email: accountEmail })}{" "}
+        {/* Signed in as the wrong account (a shared browser, an admin, an
+            account that already has a business): signing out here drops back
+            to the new-account form on the same page — the token stays in this
+            tab's storage. */}
+        <button
+          type="button"
+          onClick={logout}
+          data-testid="owner-invite-existing-sign-out"
+          className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
+        >
+          {t("existing.sign_out")}
+        </button>
       </p>
 
       <div>
@@ -132,7 +144,7 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
           data-testid="owner-invite-existing-send-code"
           className="w-full"
         >
-          {sendingCode ? t("sending_code") : t("send_code")}
+          {sendingCode ? t("sending_code") : t(codeSent ? "existing.resend" : "send_code")}
         </Button>
         {codeSent && (
           <p className="text-sm text-fg-muted mt-2" role="status" data-testid="owner-invite-existing-code-sent">
