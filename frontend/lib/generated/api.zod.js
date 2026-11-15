@@ -2930,6 +2930,7 @@ export const getMeAuthMeGetResponseEmailVerifiedDefault = false;
 export const getMeAuthMeGetResponseIsOauthDefault = false;
 export const getMeAuthMeGetResponseIsProducerDefault = false;
 export const getMeAuthMeGetResponseIsSuperAdminDefault = false;
+export const getMeAuthMeGetResponsePhoneVerifiedDefault = false;
 export const getMeAuthMeGetResponseProducerResubmissionCountDefault = 0;
 
 export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
@@ -2944,6 +2945,7 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "name": /*#__PURE__*/ zod.string(),
   "oauth_provider": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponsePhoneVerifiedDefault),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "producer_kind": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6978,6 +6980,7 @@ export const updateProfileUsersMePatchResponseEmailVerifiedDefault = false;
 export const updateProfileUsersMePatchResponseIsOauthDefault = false;
 export const updateProfileUsersMePatchResponseIsProducerDefault = false;
 export const updateProfileUsersMePatchResponseIsSuperAdminDefault = false;
+export const updateProfileUsersMePatchResponsePhoneVerifiedDefault = false;
 export const updateProfileUsersMePatchResponseProducerResubmissionCountDefault = 0;
 
 export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
@@ -6992,6 +6995,7 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "name": /*#__PURE__*/ zod.string(),
   "oauth_provider": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponsePhoneVerifiedDefault),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "producer_kind": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7348,6 +7352,24 @@ export const UnsaveItemUsersMeSavedItemTypeItemIdDeleteResponse = /*#__PURE__*/ 
  * @summary Save Item
  */
 export const SaveItemUsersMeSavedItemTypeItemIdPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Send a 6-digit WhatsApp code to the user's own phone.
+ *
+ * Caps live in the service (3/user/day, 3/phone/day); this limit is the
+ * burst layer. A number that last told us «הסר» gets no code, and the
+ * answer is the same «could not send» a provider failure gives, so the
+ * route does not reveal what a number replied.
+ * @summary Send User Phone Otp
+ */
+export const SendUserPhoneOtpUsersMeVerifyPhonePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Confirm User Phone Otp
+ */
+export const ConfirmUserPhoneOtpUsersMeVerifyPhoneConfirmPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**

@@ -15905,6 +15905,11 @@
             ],
             "title": "Phone"
           },
+          "phone_verified": {
+            "default": false,
+            "title": "Phone Verified",
+            "type": "boolean"
+          },
           "producer_id": {
             "anyOf": [
               {
@@ -15978,6 +15983,20 @@
           "role"
         ],
         "title": "UserOut",
+        "type": "object"
+      },
+      "UserPhoneOtpConfirmIn": {
+        "properties": {
+          "code": {
+            "pattern": "^[0-9]{6}$",
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "UserPhoneOtpConfirmIn",
         "type": "object"
       },
       "UserRegister": {
@@ -27974,6 +27993,75 @@
         "summary": "Save Item",
         "tags": [
           "saved"
+        ]
+      }
+    },
+    "/users/me/verify-phone": {
+      "post": {
+        "description": "Send a 6-digit WhatsApp code to the user's own phone.\n\nCaps live in the service (3/user/day, 3/phone/day); this limit is the\nburst layer. A number that last told us «הסר» gets no code, and the\nanswer is the same «could not send» a provider failure gives, so the\nroute does not reveal what a number replied.",
+        "operationId": "send_user_phone_otp_users_me_verify_phone_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Send User Phone Otp",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/me/verify-phone/confirm": {
+      "post": {
+        "operationId": "confirm_user_phone_otp_users_me_verify_phone_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPhoneOtpConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm User Phone Otp",
+        "tags": [
+          "users"
         ]
       }
     },

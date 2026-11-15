@@ -309,6 +309,7 @@ files = [
     "app/services/submission_gate.py",
     "app/services/trust_tier.py",
     "app/services/user_deletion.py",
+    "app/services/user_phone_verify.py",
     "app/services/vacation_state.py",
     "app/services/verification_status.py",
     "app/services/verify_session.py",

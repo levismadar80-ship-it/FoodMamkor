@@ -877,6 +877,7 @@ from app.schemas.admin_review import (  # noqa: E402
     LicenseExpiryReminderOut as LicenseExpiryReminderOut,
     LicenseExpiryReminderRow as LicenseExpiryReminderRow,
     OtpConfirmIn as OtpConfirmIn,
+    UserPhoneOtpConfirmIn as UserPhoneOtpConfirmIn,
     ProducerRejectIn as ProducerRejectIn,
     ProducerReviewCheckOut as ProducerReviewCheckOut,
     ProducerReviewChecksIn as ProducerReviewChecksIn,

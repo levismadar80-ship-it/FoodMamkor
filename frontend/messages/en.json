@@ -5489,7 +5489,9 @@
       "saving": "Saving…",
       "save_success_toast": "Settings updated",
       "save_error_toast": "Save error, please try again",
-      "phone_placeholder": "050-1234567"
+      "phone_placeholder": "050-1234567",
+      "whatsapp_paused": "WhatsApp updates are paused until you verify your number.",
+      "whatsapp_verify_description": "We'll send a 6-digit code to this number on WhatsApp. Once verified, updates from the businesses you saved will be sent there. You can stop any time by replying «הסר»."
     },
     "layout": {
       "skip_to_main": "Skip to content"

@@ -33,6 +33,7 @@ from app.data.cities import city_key
 from app.database import get_db
 from app.models import AlertLog, Favorite, FavoriteAlert, Producer, User
 from app.services.producer_listing import is_business
+from app.services import user_phone_verify  # MEH-3302
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import FavoriteAlertHeV1
 
@@ -409,6 +410,9 @@ def fire_alerts(
             alert.whatsapp_opt_in
             and alert.user
             and alert.user.phone
+            # MEH-3302 (D14): only a verified phone with standing consent. The
+            # opt-in flag is kept, so verifying resumes alerts.
+            and user_phone_verify.can_get_whatsapp(alert.user)
             and not _recently_sent(db, alert.user_id, producer_id, _CHANNEL_WHATSAPP)  # type: ignore[arg-type]
         ):
             try:

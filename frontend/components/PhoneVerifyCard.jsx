@@ -31,12 +31,15 @@ const OTP_LENGTH = 6;
 // `timedelta(minutes=10)`). After that the stored code is dead anyway.
 const OTP_TTL_MS = 10 * 60 * 1000;
 const SENT_AT_KEY = "mehamakor.otp_sent_at";
+// MEH-3302: the user flow keeps its own clock — a code sent to a business
+// number must not open the code box on the user's own card.
+const USER_SENT_AT_KEY = "mehamakor.user_otp_sent_at";
 
 /** When the last code was sent in this tab, or 0. Storage may be absent or
  *  throw (private mode, cleared data) — then it is simply 0. */
-function readOtpSentAt() {
+function readOtpSentAt(key = SENT_AT_KEY) {
   try {
-    const raw = globalThis.sessionStorage?.getItem(SENT_AT_KEY);
+    const raw = globalThis.sessionStorage?.getItem(key);
     const ts = raw ? Number(raw) : 0;
     return Number.isFinite(ts) && Date.now() - ts < OTP_TTL_MS ? ts : 0;
   } catch {
@@ -44,30 +47,36 @@ function readOtpSentAt() {
   }
 }
 
-function rememberOtpSent() {
+function rememberOtpSent(key = SENT_AT_KEY) {
   try {
-    globalThis.sessionStorage?.setItem(SENT_AT_KEY, String(Date.now()));
+    globalThis.sessionStorage?.setItem(key, String(Date.now()));
   } catch {
     /* per-viewer convenience only — losing it costs one extra tap */
   }
 }
 
-function forgetOtpSent() {
+function forgetOtpSent(key = SENT_AT_KEY) {
   try {
-    globalThis.sessionStorage?.removeItem(SENT_AT_KEY);
+    globalThis.sessionStorage?.removeItem(key);
   } catch {
     /* same */
   }
 }
 
 /**
- * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" }} props
+ * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" | "user", title?: string, description?: string }} props
  * `reverify` (grill B8): a live business whose number changed. Its own title,
  * no "before review" description, and the server's own success sentence
  * (the submit-flow toast talks about sending for review).
+ * `user` (MEH-3302): a shopper's OWN phone, for WhatsApp alerts. Posts to
+ * /users/me/verify-phone*, takes its title and description from the caller,
+ * and shows no toast — the caller's paused notice disappears on success.
  */
-export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
+export default function PhoneVerifyCard({ onVerified, variant = "submit", title, description }) {
   const reverify = variant === "reverify";
+  const userFlow = variant === "user";
+  const base = userFlow ? "/users/me/verify-phone" : "/producers/me/verify-phone";
+  const sentKey = userFlow ? USER_SENT_AT_KEY : SENT_AT_KEY;
   const t = useTranslations("dashboard.producer.phone_verify");
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
@@ -85,12 +94,12 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
   // staging, 28/10). If a code went out from this tab less than 10 minutes
   // ago, open on the code box with whatever cooldown is left.
   useEffect(() => {
-    const sentAt = readOtpSentAt();
+    const sentAt = readOtpSentAt(sentKey);
     if (!sentAt) return;
     setCodeSent(true);
     const elapsed = Math.floor((Date.now() - sentAt) / 1000);
     setCooldown(Math.max(0, RESEND_COOLDOWN_SECONDS - elapsed));
-  }, []);
+  }, [sentKey]);
 
   useEffect(() => {
     if (cooldown <= 0) return undefined;
@@ -103,11 +112,11 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
     setSending(true);
     setError("");
     try {
-      await api.post("/producers/me/verify-phone");
+      await api.post(base);
       lastAutoRef.current = ""; // a new code: anything typed may auto-send again
       setCodeSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
-      rememberOtpSent();
+      rememberOtpSent(sentKey);
     } catch (err) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_no_phone"));
@@ -125,9 +134,11 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
     setConfirming(true);
     setError("");
     try {
-      const res = await api.post("/producers/me/verify-phone/confirm", { code: value });
-      forgetOtpSent();
-      showToast.success(reverify && res?.data?.detail ? res.data.detail : t("success"));
+      const res = await api.post(`${base}/confirm`, { code: value });
+      forgetOtpSent(sentKey);
+      if (!userFlow) {
+        showToast.success(reverify && res?.data?.detail ? res.data.detail : t("success"));
+      }
       onVerified?.();
     } catch (err) {
       const sc = err.response?.status;
@@ -162,12 +173,17 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
       : t("send_cta");
 
   return (
-    <div data-testid={reverify ? "phone-reverify-card" : undefined} className="mt-3 bg-surface border border-primary/20 rounded-md p-4">
+    <div
+      data-testid={reverify ? "phone-reverify-card" : userFlow ? "user-phone-verify-card" : undefined}
+      className="mt-3 bg-surface border border-primary/20 rounded-md p-4"
+    >
       <p className={`font-semibold text-text flex items-center gap-1.5 ${reverify ? "mb-3" : "mb-1"}`}>
         <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
-        {reverify ? t("reverify_title") : t("title")}
+        {userFlow ? title : reverify ? t("reverify_title") : t("title")}
       </p>
-      {!reverify && <p className="text-xs text-fg-muted mb-3">{t("description")}</p>}
+      {!reverify && (
+        <p className="text-xs text-fg-muted mb-3">{userFlow ? description : t("description")}</p>
+      )}
 
       {/* MEH-1103: send + confirm gain min-h-touch (WCAG 2.5.5). */}
       <button
