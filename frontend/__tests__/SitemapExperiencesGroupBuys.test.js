@@ -108,7 +108,8 @@ describe("sitemap — group-buy detail pages (MEH-2478)", () => {
     expect(urls.some((u) => u.includes("gb-expired"))).toBe(false);
   });
 
-  it("a non-open group buy (funded / cancelled) is NOT listed", async () => {
+  // MEH-3289: a funded group with room is still joinable, so it is listed.
+  it("a funded group buy is listed; a cancelled one is NOT", async () => {
     stubFetch({
       groupBuys: [
         { id: "gb-live", status: "open", deadline: FUTURE },
@@ -118,7 +119,8 @@ describe("sitemap — group-buy detail pages (MEH-2478)", () => {
     });
     const urls = urlsOf(await entries());
     expect(urls).toContain(`${BASE}/group-buys/gb-live`);
-    expect(urls.some((u) => u.includes("gb-funded") || u.includes("gb-cancelled"))).toBe(false);
+    expect(urls).toContain(`${BASE}/group-buys/gb-funded`);
+    expect(urls.some((u) => u.includes("gb-cancelled"))).toBe(false);
   });
 
   it("control: both endpoints down → no detail URLs, the sitemap still builds", async () => {
