@@ -1,4 +1,4 @@
 {
-  "backend/openapi.json": "f01fcf754f0640a79c1f8408b429cfe2845a0c3d5d9808e7e3bb6beb034362d7",
+  "backend/openapi.json": "608e0847e82ca5e42eff980c17bc32538ff14ad182f019309e01162352cdf276",
   "frontend/lib/generated/api.zod.js": "63aae3a752de462f601afd91db6e78f9e3c0d435aceb234a6ae8a1ea6c950521"
 }

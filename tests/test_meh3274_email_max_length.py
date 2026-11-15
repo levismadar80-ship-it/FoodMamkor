@@ -8,7 +8,9 @@ other request bodies) let a 201-254 char address reach Postgres.
 import pytest
 from pydantic import ValidationError
 
+from app.schemas.producer import ProducerAdminCreate, ProducerUpdate
 from app.schemas.registration import (
+    ProducerRegister,
     ForgotPasswordRequest,
     LoginRequest,
     OwnerInviteEmailCodeRequest,
@@ -45,18 +47,39 @@ def test_schema_rejects_201_and_accepts_200(model, extra):
         model(email=LONG, **extra)
     try:
         model(email=EDGE, **extra)
-    except ValidationError as exc:  # another field may be required; email must not be the cause
+    except (
+        ValidationError
+    ) as exc:  # another field may be required; email must not be the cause
         assert all(e["loc"][0] != "email" for e in exc.errors()), exc
 
 
-def test_contact_and_waitlist_cap_email():
-    for model in (ContactIn, DeliveryWaitlistIn):
-        try:
-            model(email=LONG)
-        except ValidationError as exc:
-            assert any(e["loc"][0] == "email" for e in exc.errors())
-        else:
-            pytest.fail(f"{model.__name__} accepted a {len(LONG)}-char email")
+def _email_errors(model, **fields):
+    try:
+        model(**fields)
+    except ValidationError as exc:
+        return [e for e in exc.errors() if e["loc"][0] in fields]
+    return []
+
+
+@pytest.mark.parametrize(
+    "model, field",
+    [
+        (ContactIn, "email"),
+        (DeliveryWaitlistIn, "email"),
+        (ProducerRegister, "contact_email"),
+        (ProducerAdminCreate, "contact_email"),
+        (ProducerUpdate, "contact_email"),
+    ],
+)
+def test_long_email_is_an_error_on_that_field(model, field):
+    # Discriminates: the error must be ON the email field, and must vanish
+    # at exactly 200 chars — so another required field can't fake a pass.
+    assert any(e["loc"][0] == field for e in _email_errors(model, **{field: LONG}))
+    assert not any(
+        e["loc"][0] == field and e["type"] == "too_long"
+        for e in _email_errors(model, **{field: EDGE})
+    )
+    assert any(e["type"] == "too_long" for e in _email_errors(model, **{field: LONG}))
 
 
 def test_owner_invite_email_code_returns_422_not_500(client):

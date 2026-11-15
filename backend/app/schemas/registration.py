@@ -136,7 +136,7 @@ class ProducerRegister(BaseModel):
     website: str | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
-    contact_email: EmailStr | None = None
+    contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-2460: 'organizer' registers a market / events organizer (ADR-036).
     # Declared BEFORE category_ids on purpose: the category validator reads it
     # from `info.data`, and Pydantic v2 only exposes fields declared earlier.

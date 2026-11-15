@@ -5610,6 +5610,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -7039,6 +7040,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -11610,6 +11612,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -12028,6 +12031,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
