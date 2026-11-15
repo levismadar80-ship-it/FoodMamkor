@@ -972,6 +972,16 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > nothing. All mail is a BackgroundTask (fail-open, `test_cause` for a test
 > business).
 >
+> **MEH-3312 — the evening-before reminder (2026-11-15).** Migration
+> `b8e4f2a6c9d1` adds `registrations.reminder_sent_at` (TIMESTAMP NULL, naive
+> UTC). A daily job at 17:00 Israel (`REGISTRATION_REMINDER_CRON`, Sentry
+> heartbeat `registration-reminder-daily`) mails every `registered` sign-up to
+> an active event, or an approved, active, non-recurring experience, dated
+> tomorrow on the Israel clock: «תזכורת: "{title}" מחר», with time, place and
+> the cancel link. Rows are stamped and committed before sending, so a rerun
+> sends nothing. Recurring workshops are skipped until a sign-up carries its
+> occurrence date (MEH-3264). Service: `app/services/registration_reminders.py`.
+>
 > **MEH-2502 — the admin edit cannot change status.** `PUT
 > /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
 > סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status

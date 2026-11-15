@@ -372,6 +372,11 @@ def notify_item_moved(
     return len(regs)
 
 
+def registrant_message(reg: Registration, item: Event | Experience) -> RegistrantEmail:
+    """MEH-3312: the same plain values every registrant email carries."""
+    return _message(reg, item, _host_name_for(item))
+
+
 def is_test_item(item: Event | Experience) -> bool:
     """MEH-2952: a test business's mail goes to the test sink."""
     if isinstance(item, Event):

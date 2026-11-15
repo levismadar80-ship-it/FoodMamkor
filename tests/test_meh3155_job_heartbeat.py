@@ -47,6 +47,7 @@ def _stub_services(monkeypatch):
         auto_reply_watchdog,
         onboarding_followup,
         pending_nudge,
+        registration_reminders,
         rescue_digest,
         retention_purge,
         weekly_owner_summary,
@@ -61,6 +62,9 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(analytics_rollup, "run_rollup", lambda db: {})
     monkeypatch.setattr(retention_purge, "run_purge", lambda db: {})
     monkeypatch.setattr(rescue_digest, "send_rescue_digests", lambda db: {})
+    monkeypatch.setattr(
+        registration_reminders, "send_registration_reminders", lambda db: 0
+    )
     monkeypatch.setattr(
         weekly_owner_summary, "send_weekly_summaries", lambda db, now=None: {}
     )
@@ -108,6 +112,12 @@ JOBS = [
         "weekly-owner-summary",
         "crontab",
         job_heartbeat.WEEKLY_OWNER_SUMMARY_CRON,
+    ),
+    (
+        "_run_registration_reminder_job",
+        "registration-reminder-daily",
+        "crontab",
+        job_heartbeat.REGISTRATION_REMINDER_CRON,
     ),
 ]
 

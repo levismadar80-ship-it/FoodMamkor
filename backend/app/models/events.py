@@ -254,6 +254,8 @@ class Registration(Base):
     )
     created_at = Column(DateTime, nullable=False, default=utc_now)
     cancelled_at = Column(DateTime, nullable=True)
+    # MEH-3312: the evening-before reminder went out. NULL = not yet.
+    reminder_sent_at = Column(DateTime, nullable=True)
 
     event = relationship("Event")
     experience = relationship("Experience")
