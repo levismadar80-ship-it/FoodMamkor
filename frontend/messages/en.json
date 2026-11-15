@@ -1892,7 +1892,16 @@
         "link_shown_once": "The link is shown once only. If it is lost, send the invite again.",
         "resend": "Send again",
         "cancel_invite": "Cancel invite",
-        "error": "We could not send the invite"
+        "error": "We could not send the invite",
+        "detach": {
+          "button": "Detach owner",
+          "explain": "{name}'s account stays as a regular account, and all of its sessions are signed out. The business stays live with all its content, and you can then invite the new owner. We'll email {email} about it.",
+          "confirm_label": "To confirm, type the business name: {business}",
+          "confirm": "Detach",
+          "confirming": "Detaching…",
+          "cancel": "Cancel",
+          "error": "We couldn't detach the owner"
+        }
       },
       "status_label": {
         "draft": "Draft",

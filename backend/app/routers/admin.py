@@ -151,8 +151,10 @@ def _attach_has_owner(db: Session, producers: list[Any]) -> None:
         else []
     )
     owners: dict[str, Any] = {}
-    for pid, _uid, name, email in rows:
-        owners.setdefault(pid, {"name": name, "email": email})
+    for pid, uid, name, email in rows:
+        # MEH-3256 (D9): the id rides along so «ניתוק בעלים» can say WHICH
+        # owner the admin saw (expected_owner_user_id).
+        owners.setdefault(pid, {"id": uid, "name": name, "email": email})
     for p in producers:
         p.has_owner = p.id in owners
         p.owner = owners.get(p.id)

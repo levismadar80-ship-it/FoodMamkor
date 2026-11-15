@@ -149,3 +149,11 @@ def test_the_email_tells_her_the_account_stays():
     assert "החשבון עצמו נשאר" in body
     assert "&lt;b&gt;" in kw["html"], "the business name is escaped in HTML"
     assert kw["test_cause"] is True
+
+
+def test_the_admin_payload_names_the_owner_id(client, db):
+    """The panel needs the id to send as expected_owner_user_id."""
+    producer, owner, admin = _setup(db)
+    r = client.get(f"/admin/producers/{producer.id}", headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    assert r.json()["owner"]["id"] == str(owner.id)
