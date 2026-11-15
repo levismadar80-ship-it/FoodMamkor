@@ -675,7 +675,7 @@ class TestNoShowBlock:
             headers=auth_header(buyer),
         )
         assert r.status_code == 422
-        assert r.json()["detail"] == "ההזמנות חסומות אחרי שתי אי-הגעות. כתבו לנו"
+        assert r.json()["detail"] == "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
 
     def test_two_no_shows_outside_the_window_do_not_block(
         self, client, db, shop, rescue_on

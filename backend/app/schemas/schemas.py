@@ -5492,6 +5492,10 @@ class UserAdminOut(BaseModel):
     is_super_admin: bool = False
     producer_id: UUID | None = None
     favorites_count: int = 0
+    # MEH-3226: no-shows still counting against her, and whether that blocks
+    # rescue-bag reservations — drives the badge and «שחרור חסימת סלים».
+    rescue_active_no_shows: int = 0
+    rescue_blocked: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

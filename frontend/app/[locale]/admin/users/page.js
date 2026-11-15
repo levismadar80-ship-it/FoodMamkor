@@ -14,6 +14,7 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { showToast } from "@/lib/toast";
 
 export default function AdminUsersPage() {
   const t = useTranslations("admin");
@@ -82,6 +83,15 @@ export default function AdminUsersPage() {
   const toggleBlock = (id) =>
     run(`block:${id}`, async () => {
       await api.post(`/admin/users/${id}/block`);
+      load();
+    });
+
+  // MEH-3226: releases a two-no-show rescue-bag block (rescue.py
+  // clear_no_show_block). History stays; only the count restarts.
+  const clearRescueBlock = (id) =>
+    run(`rescue:${id}`, async () => {
+      await api.post(`/admin/rescue/users/${id}/clear-block`);
+      showToast.success(t("users.rescue.cleared"));
       load();
     });
 
@@ -218,6 +228,15 @@ export default function AdminUsersPage() {
                           </span>
                         )}
 
+                        {u.rescue_blocked && (
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full bg-danger-100 text-danger-700"
+                            data-testid="admin-user-rescue-blocked"
+                          >
+                            {t("users.rescue.blocked_badge", { count: u.rescue_active_no_shows })}
+                          </span>
+                        )}
+
                         {/* Promote/demote moved to the actions-cell overflow menu (MEH-1023). */}
 
                         {/* Tooltip for protected super-admin row */}
@@ -256,6 +275,13 @@ export default function AdminUsersPage() {
                         <AdminRowMenu
                           ariaLabel={t("users.actions.menu_aria")}
                           items={[
+                            ...(u.rescue_blocked
+                              ? [{
+                                  key: "clear-rescue-block",
+                                  label: t("users.actions.clear_rescue_block"),
+                                  onSelect: () => clearRescueBlock(u.id),
+                                }]
+                              : []),
                             ...(u.role !== "admin"
                               ? [{
                                   key: "promote",

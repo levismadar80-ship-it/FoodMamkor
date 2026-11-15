@@ -270,6 +270,7 @@ files = [
     "app/services/report_notifications.py",
     "app/services/rescue_digest.py",
     "app/services/rescue_emails.py",
+    "app/services/rescue_no_show.py",
     "app/services/resend_client.py",
     "app/services/resend_verify_cap.py",
     "app/services/retention_purge.py",

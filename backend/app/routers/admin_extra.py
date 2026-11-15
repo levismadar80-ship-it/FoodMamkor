@@ -60,6 +60,10 @@ from app.services.account_guards import (  # MEH-3248: moved here, re-exported
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services.category_slug import resolve_unique_slug
+from app.services.rescue_no_show import (
+    NO_SHOW_BLOCK_AT,
+    active_no_show_counts,
+)  # MEH-3226
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services.vacation_state import read_vacation_state
 from app.services.whatsapp import undelivered_predicate
@@ -151,6 +155,8 @@ def list_users(
         .group_by(Favorite.user_id)
         .all()
     )
+    # MEH-3226: one grouped query, the same count the reserve gate reads.
+    no_shows = active_no_show_counts(db, [u.id for u in users])  # type: ignore[misc]
     out = []
     for u in users:
         out.append(
@@ -167,6 +173,8 @@ def list_users(
                 is_super_admin=is_super_admin(u),
                 producer_id=u.producer_id,
                 favorites_count=fav_counts.get(u.id, 0),
+                rescue_active_no_shows=no_shows.get(u.id, 0),
+                rescue_blocked=no_shows.get(u.id, 0) >= NO_SHOW_BLOCK_AT,
                 created_at=u.created_at or utc_now(),
             )
         )
