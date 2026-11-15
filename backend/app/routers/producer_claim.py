@@ -461,6 +461,7 @@ def admin_delete_draft_product(
         destroy_image(
             old_image_url,  # type: ignore[arg-type]
             context="producer_claim.admin_delete_draft_product image",
+            db=db,  # MEH-3247
         )
     logger.info(
         "producer_claim.draft_product_deleted",
