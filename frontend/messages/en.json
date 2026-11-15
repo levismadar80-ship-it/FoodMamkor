@@ -4063,6 +4063,10 @@
             "label": "Business details (for sellers):",
             "value": "Business name, description, address, categories, delivery areas, social links."
           },
+          "outreach": {
+            "label": "Contact details of businesses that have not joined yet:",
+            "value": "Details published in public sources, such as the business's website, social networks, Google and government registries: the business or owner's name, phone, website, Instagram account, city and type of business. We use them only to reach out to the business and invite it to join. You can ask us at any time to delete these details, by writing to the email in the Contact section or by replying \"remove\" to our message, and we will delete them and not contact you again."
+          },
           "technical": {
             "label": "Technical data:",
             "value": "IP address, browser type, operating system, device identifier."
