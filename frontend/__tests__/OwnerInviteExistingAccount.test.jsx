@@ -89,6 +89,10 @@ describe("owner invite — signed in", () => {
     authUser = CONSUMER;
     wrap(<OwnerInviteClient />);
     expect(await screen.findByTestId("owner-invite-existing-account")).toHaveTextContent("hers@example.com");
+    // Isolated inside the Hebrew sentence, so the words around it stay put.
+    expect(screen.getByTestId("owner-invite-existing-account").textContent).toContain(
+      "\u2068hers@example.com\u2069",
+    );
     expect(screen.queryByTestId("owner-invite-form")).toBeNull();
     expect(screen.queryByTestId("owner-invite-email")).toBeNull();
   });

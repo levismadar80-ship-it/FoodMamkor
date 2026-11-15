@@ -58,6 +58,10 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   const [submitting, setSubmitting] = useState(false);
 
   const farmerRequired = Boolean(invite?.requires_farmer_declaration);
+  // An address is a left-to-right run inside a Hebrew sentence; FSI…PDI (the
+  // plain-text twin of <bdi>) keeps it from trading places with the words
+  // around it.
+  const isolated = `\u2068${accountEmail}\u2069`;
   const submitLabel = t(invite?.will_publish ? "submit_publish" : "submit");
 
   /** @param {any} error @param {string} fallback */
@@ -119,7 +123,7 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   return (
     <form onSubmit={submit} noValidate data-testid="owner-invite-existing-form" className="space-y-4">
       <p className="text-fg-muted" data-testid="owner-invite-existing-account">
-        {t("existing.signed_in_as", { email: accountEmail })}{" "}
+        {t("existing.signed_in_as", { email: isolated })}{" "}
         {/* Signed in as the wrong account (a shared browser, an admin, an
             account that already has a business): signing out here drops back
             to the new-account form on the same page — the token stays in this
@@ -148,7 +152,7 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
         </Button>
         {codeSent && (
           <p className="text-sm text-fg-muted mt-2" role="status" data-testid="owner-invite-existing-code-sent">
-            {t("existing.code_sent", { email: accountEmail })}
+            {t("existing.code_sent", { email: isolated })}
           </p>
         )}
       </div>
