@@ -1,7 +1,7 @@
 """meh3255_category_requires_license
 
 Revision ID: f1a7c3e9b5d2
-Revises: d4f8b2c6e135
+Revises: d5a7c3e9f1b4
 Create Date: 2026-11-14 22:00:00.000000+00:00
 
 MEH-3255 (grill retro D10), EXPAND step of ADR-007: whether a category needs a
@@ -39,7 +39,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = "f1a7c3e9b5d2"
-down_revision: Union[str, None] = "d4f8b2c6e135"
+down_revision: Union[str, None] = "d5a7c3e9f1b4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
