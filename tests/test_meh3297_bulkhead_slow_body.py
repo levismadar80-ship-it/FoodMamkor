@@ -31,9 +31,21 @@ def _app() -> FastAPI:
 
 
 async def _call(  # noqa: PLR0913 — test driver, keyword knobs only
-    app, method, path, body_chunks=None, stall=False, headers=None, gap=0.0
+    app,
+    method,
+    path,
+    body_chunks=None,
+    stall=False,
+    headers=None,
+    gap=0.0,
+    drop_mid_body=False,
+    want_headers=False,
 ):
-    """Drive one request through the ASGI app; returns (status, json body)."""
+    """Drive one request through the ASGI app; returns (status, json body),
+    plus the response headers as a dict when ``want_headers``.
+
+    ``drop_mid_body``: every chunk claims more is coming, then the client
+    disconnects."""
     hdrs = list(headers or [])
     chunks = list(body_chunks or [])
     sent: list[dict] = []
@@ -46,7 +58,10 @@ async def _call(  # noqa: PLR0913 — test driver, keyword knobs only
             if gap:
                 await asyncio.sleep(gap)
             body = chunks.pop(0)
-            return {"type": "http.request", "body": body, "more_body": bool(chunks)}
+            more = drop_mid_body or bool(chunks)
+            return {"type": "http.request", "body": body, "more_body": more}
+        if drop_mid_body:
+            return {"type": "http.disconnect"}
         await done.wait()
         return {"type": "http.disconnect"}
 
@@ -71,11 +86,16 @@ async def _call(  # noqa: PLR0913 — test driver, keyword knobs only
         await app(scope, receive, send)
     finally:
         done.set()
+    if not sent:
+        return None, None
     start = next(m for m in sent if m["type"] == "http.response.start")
     body = b"".join(
         m.get("body", b"") for m in sent if m["type"] == "http.response.body"
     )
-    return start["status"], json.loads(body) if body else None
+    parsed = json.loads(body) if body else None
+    if want_headers:
+        return start["status"], parsed, dict(start["headers"])
+    return start["status"], parsed
 
 
 def test_stalled_body_does_not_block_other_requests():
@@ -189,6 +209,7 @@ def test_over_budget_is_503_and_budget_is_released(monkeypatch):
     import app.db_bulkhead as bulkhead
 
     monkeypatch.setattr(bulkhead, "BUFFER_BUDGET", 15)
+    monkeypatch.setattr(bulkhead, "FREE_BODY_BYTES", 0)
     gated = DbBulkheadMiddleware(_app(), limit=1)
 
     async def main():
@@ -236,5 +257,121 @@ def test_stalled_declared_body_costs_no_budget():
         status, _ = await task
         assert status == 408
         assert gated.buffered == 0
+
+    anyio.run(main)
+
+
+def test_small_post_gets_in_while_large_uploads_fill_the_budget(monkeypatch):
+    """Review finding (MEH-3297): a few large uploads held open near the total
+    deadline filled the whole budget, and then every login / register / JSON
+    POST got 503. Bodies within FREE_BODY_BYTES are never charged."""
+    import app.db_bulkhead as bulkhead
+
+    monkeypatch.setattr(bulkhead, "BUFFER_BUDGET", 100)
+    monkeypatch.setattr(bulkhead, "FREE_BODY_BYTES", 50)
+    gated = DbBulkheadMiddleware(_app(), limit=1)
+
+    async def main():
+        gated.buffered = 100  # budget full: large uploads in progress
+        status, body = await _call(
+            gated,
+            "POST",
+            "/echo",
+            body_chunks=[b"x" * 50],
+            headers=[(b"content-length", b"50")],
+        )
+        assert (status, body) == (200, {"len": 50})
+        status, _, hdrs = await _call(
+            gated,
+            "POST",
+            "/echo",
+            body_chunks=[b"x" * 51],
+            headers=[(b"content-length", b"51")],
+            want_headers=True,
+        )
+        assert status == 503  # the 51st byte is charged, and there is no room
+        assert hdrs.get(b"connection") == b"close"
+        assert gated.buffered == 100
+
+    anyio.run(main)
+
+
+def test_whole_body_deadline_is_408():
+    """Chunks arrive inside the idle limit, but the whole read is too long."""
+    gated = DbBulkheadMiddleware(
+        _app(), limit=1, body_idle_seconds=1, body_total_seconds=0.5
+    )
+
+    async def main():
+        status, _, hdrs = await _call(
+            gated,
+            "POST",
+            "/echo",
+            body_chunks=[b"x"] * 10,
+            headers=[(b"content-length", b"10")],
+            gap=0.2,
+            want_headers=True,
+        )
+        assert status == 408
+        assert hdrs.get(b"connection") == b"close"
+        assert gated.buffered == 0
+
+    anyio.run(main)
+
+
+def test_chunked_body_without_content_length_is_buffered():
+    gated = DbBulkheadMiddleware(_app(), limit=1)
+
+    async def main():
+        status, body = await _call(
+            gated,
+            "POST",
+            "/echo",
+            body_chunks=[b"a" * 7, b"b" * 5],
+            headers=[(b"transfer-encoding", b"chunked")],
+        )
+        assert (status, body) == (200, {"len": 12})
+
+    anyio.run(main)
+
+
+def test_disconnect_mid_body_releases_budget(monkeypatch):
+    import app.db_bulkhead as bulkhead
+
+    monkeypatch.setattr(bulkhead, "FREE_BODY_BYTES", 0)
+    gated = DbBulkheadMiddleware(_app(), limit=1)
+
+    async def main():
+        status, _ = await _call(
+            gated,
+            "POST",
+            "/echo",
+            body_chunks=[b"x" * 30],
+            headers=[(b"content-length", b"100")],
+            drop_mid_body=True,
+        )
+        assert status is None  # nothing sent to a client that is gone
+        assert gated.buffered == 0
+
+    anyio.run(main)
+
+
+def test_413_closes_the_connection(monkeypatch):
+    import app.db_bulkhead as bulkhead
+
+    monkeypatch.setattr(bulkhead, "MAX_BUFFERED_BODY", 10)
+    gated = DbBulkheadMiddleware(_app(), limit=1)
+
+    async def main():
+        status, _, hdrs = await _call(
+            gated,
+            "POST",
+            "/echo",
+            stall=True,
+            headers=[(b"content-length", b"11")],
+            want_headers=True,
+        )
+        assert status == 413
+        assert hdrs.get(b"connection") == b"close"
 
     anyio.run(main)

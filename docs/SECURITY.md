@@ -241,6 +241,14 @@ Additional notes:
 
 ### 6. העלאת קבצים — תמונות מסוכנות
 
+> **Site-wide body limits (MEH-3297).** Before any route runs,
+> `db_bulkhead.py` buffers the request body outside the request slot: 10 MB
+> cap (413), 15 s idle / 300 s total (408), 64 MB of buffered bodies across
+> all requests (503; the first 64 KB of each body is not counted, so a few
+> held-open uploads cannot block login or other small POSTs). Before, a
+> client that sent headers and withheld the body held a slot indefinitely.
+> The per-file 5 MB check below still applies inside the route.
+
 ```python
 # backend/app/utils/file_upload.py
 

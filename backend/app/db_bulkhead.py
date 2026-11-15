@@ -57,16 +57,24 @@ POOL_HEADROOM = 2
 # MEH-3297: a request body is read before the request may take a slot.
 # - BODY_IDLE_SECONDS: longest gap between two body chunks (a stalled client).
 # - BODY_TOTAL_SECONDS: longest whole read. Generous on purpose: a 5 MB upload
-#   (upload.py MAX_FILE_SIZE) in 120 s needs ~350 kbit/s, a weak mobile link.
+#   (upload.py MAX_FILE_SIZE) in 300 s needs ~140 kbit/s, a weak 3G uplink. A
+#   trickle holds no slot, so a long deadline costs only a coroutine.
 # - MAX_BUFFERED_BODY: per request; 2x the upload cap plus multipart overhead.
 # - BUFFER_BUDGET: all bodies buffered at once. Before MEH-3297 at most `limit`
 #   bodies were read (inside slots); outside the gate nothing else bounds the
 #   count, so without this many fast large posts could exhaust RAM. Over
 #   budget answers like a full gate: 503 + Retry-After.
+# - FREE_BODY_BYTES: the first part of every body is never charged to the
+#   budget, so a few large uploads held open near BODY_TOTAL_SECONDS can fill
+#   the budget for uploads only — login, register and every small JSON POST
+#   still get in. uvicorn already buffers this much per connection before it
+#   pauses reading (its flow-control high-water mark), so it adds no new kind
+#   of memory use.
 BODY_IDLE_SECONDS = 15.0
-BODY_TOTAL_SECONDS = 120.0
+BODY_TOTAL_SECONDS = 300.0
 MAX_BUFFERED_BODY = 10 * 1024 * 1024
 BUFFER_BUDGET = 64 * 1024 * 1024
+FREE_BODY_BYTES = 64 * 1024
 BODY_TIMEOUT_DETAIL = "הבקשה הגיעה לאט מדי. נסו שוב."
 BODY_TOO_LARGE_DETAIL = "הבקשה גדולה מדי."
 
@@ -144,7 +152,7 @@ class DbBulkheadMiddleware:
                     await _send_error(send, 413, BODY_TOO_LARGE_DETAIL)
                     return
                 except _OverBudget:
-                    await _send_busy(send)
+                    await _send_busy(send, close=True)
                     return
                 if messages is None:  # client disconnected mid-body
                     return
@@ -159,7 +167,9 @@ class DbBulkheadMiddleware:
 
         Bytes are reserved as they ARRIVE, never from the declared
         Content-Length: a client that declares 10 MB and sends nothing must
-        cost no budget, or a handful of them would 503 every POST. The caller
+        cost no budget, or a handful of them would 503 every POST. Only bytes
+        past FREE_BODY_BYTES are charged, so small bodies never see a 503 from
+        the budget. The caller
         releases what is returned; on an exception path it is released here."""
         reserved = 0
 
@@ -181,8 +191,9 @@ class DbBulkheadMiddleware:
                 size += chunk
                 if size > MAX_BUFFERED_BODY:
                     raise _BodyTooLarge
-                if size > reserved:
-                    reserve(size - reserved)
+                billable = size - FREE_BODY_BYTES
+                if billable > reserved:
+                    reserve(billable - reserved)
                 messages.append(message)
                 if not message.get("more_body", False):
                     return messages, reserved
@@ -250,12 +261,13 @@ def _default_thread_tokens() -> int:
         return 40
 
 
-async def _send_busy(send: Send) -> None:
+async def _send_busy(send: Send, close: bool = False) -> None:
     await _send_error(
         send,
         503,
         BUSY_DETAIL,
         [(b"retry-after", str(RETRY_AFTER_SECONDS).encode())],
+        close=close,
     )
 
 
@@ -264,6 +276,7 @@ async def _send_error(
     status: int,
     detail: str,
     extra_headers: list[tuple[bytes, bytes]] | None = None,
+    close: bool = True,
 ) -> None:
     body = json.dumps({"detail": detail}, ensure_ascii=False).encode()
     headers = [
@@ -272,8 +285,9 @@ async def _send_error(
         *(extra_headers or []),
         (b"cache-control", b"no-store"),
     ]
-    if status != 503:
-        # The connection may still be mid-body; don't leave it half-read.
+    if close:
+        # The connection may still be mid-body; don't leave it half-read. Off
+        # only for the full-gate 503, whose body (if any) was fully read.
         headers.append((b"connection", b"close"))
     await send({"type": "http.response.start", "status": status, "headers": headers})
     await send({"type": "http.response.body", "body": body})
