@@ -17,7 +17,7 @@
 // working unchanged.
 import { SITE_URL } from "./env";
 import {
-  BRAND_FOUNDER_NAME,
+  FOUNDERS,
   BRAND_NAME,
   BRAND_NAME_LATIN,
   BRAND_SAME_AS,
@@ -561,7 +561,8 @@ export function buildOrganizationNode() {
     sameAs: BRAND_SAME_AS,
     // MEH-2192: a named founder is the E-E-A-T signal the card asked for —
     // the value is the /about signature, never a second spelling.
-    founder: { "@type": "Person", name: BRAND_FOUNDER_NAME },
+    // MEH-3323: two founders — schema.org `founder` takes an array.
+    founder: FOUNDERS.map(({ name }) => ({ "@type": "Person", name })),
   };
 }
 
