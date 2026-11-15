@@ -46,7 +46,8 @@ import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
 import WhatsNewPage from "@/app/[locale]/producer/dashboard/whats-new/page";
 
 const wrap = (ui) => render(<NextIntlClientProvider locale="he" messages={he}>{ui}</NextIntlClientProvider>);
-const newest = WHATS_NEW_RELEASES[0];
+// The newest release WITH lines: a patch with items: 0 (1.5.2) is never shown.
+const newest = visibleReleases()[0];
 const lines = (key) => Object.values(he.dashboard.producer.whats_new.releases[key]);
 
 const R = (version, items) => ({ version, key: `v${version.replaceAll(".", "_")}`, date: "2026-11-15", items });
