@@ -139,10 +139,11 @@ def _status_tab_query(db: Session, status: str, city: str | None) -> OrmQuery[Gr
     counts, so a tab's count and its list can never disagree (MEH-3128)."""
     q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
     if status == "open":
-        # MEH-2540: nothing closes an open group buy past its deadline (see
-        # OWNER_TRANSITIONS), so the «פתוחות» tab listed it next to a join
-        # button the commit route then refuses. The list only — its page still
-        # resolves for a shared link and says the deadline passed.
+        # MEH-2540: an open group buy past its deadline stays open until the
+        # daily expiry job closes it (MEH-3287, services/group_buy_expiry.py),
+        # so between the deadline and that run the «פתוחות» tab would list it
+        # next to a join button the commit route refuses. The list only — its
+        # page still resolves for a shared link and says the deadline passed.
         q = q.filter(GroupBuy.deadline >= utc_now())
     if city:
         q = q.filter(GroupBuy.city == city)
@@ -497,8 +498,8 @@ def format_price(amount: Decimal | float | int) -> str:
 # is a 409 — cancelled and fulfilled are final. Since MEH-2866 they are final
 # for an admin too: PATCH /admin/group-buys/{id}/status uses this same table.
 # "open → cancelled" covers both "cancel" before the deadline and "close" after
-# it: the row looks the same either way. Nothing closes an open group buy past
-# its deadline automatically.
+# it: the row looks the same either way. An open group buy past its deadline
+# is closed by the daily job in services/group_buy_expiry.py (MEH-3287).
 OWNER_TRANSITIONS = frozenset(
     {
         ("open", "cancelled"),

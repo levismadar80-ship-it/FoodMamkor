@@ -7,7 +7,7 @@ Touches:  group_buys (status), group_buy_commits + users (read, recipients),
 Does NOT: touch funded groups (they reached the goal; the business closes them
           with fulfilled/cancelled, group_buys.update_group_buy_status), or
           email the business (new copy, not in this card).
-Related:  startup._run_group_buy_expiry_job (the hourly trigger) ·
+Related:  startup._run_group_buy_expiry_job (the daily trigger, 06:00 UTC) ·
           group_buys._public_group_buys (MEH-2540 already hides these) ·
           group_buy_delist.cancel_live_group_buys (same lock + recipients shape).
 History:  MEH-3287 (creation).

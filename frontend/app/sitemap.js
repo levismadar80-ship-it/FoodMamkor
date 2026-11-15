@@ -392,9 +392,10 @@ export default async function sitemap() {
     // API unavailable during build — skip experience pages.
   }
 
-  // MEH-2478: group-buy detail pages. GET /group-buys returns status=open, but
-  // nothing closes an open group buy when its deadline passes, so expired ones
-  // are dropped here by the same rule the page's Offer availability uses.
+  // MEH-2478: group-buy detail pages. GET /group-buys returns status=open, and
+  // an open group buy past its deadline stays open until the daily expiry job
+  // (MEH-3287) closes it, so expired ones are dropped here by the same rule
+  // the page's Offer availability uses.
   let groupBuyPages = [];
   try {
     const res = await serverFetch(`${API_URL}/group-buys`);

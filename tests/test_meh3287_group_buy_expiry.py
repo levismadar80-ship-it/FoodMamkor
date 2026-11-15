@@ -126,3 +126,21 @@ def test_group_with_no_participants_is_closed_silently(db, mails):
     db.refresh(gb)
     assert gb.status == "cancelled"
     assert mails == []
+
+
+def test_one_failed_email_does_not_stop_the_rest(db, monkeypatch):
+    sent = []
+
+    def flaky(to, subject, body, test_cause=False):
+        if to == "a@example.com":
+            raise RuntimeError("resend down")
+        sent.append(to)
+
+    monkeypatch.setattr(notifications, "_send_email", flaky)
+    gb = _group(db, make_producer(db))
+    _join(db, gb, "a@example.com")
+    _join(db, gb, "b@example.com")
+    assert expiry.expire_unfunded_group_buys(db, now=NOW) == 1
+    assert sent == ["b@example.com"]
+    db.refresh(gb)
+    assert gb.status == "cancelled"
