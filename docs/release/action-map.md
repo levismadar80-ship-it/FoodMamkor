@@ -514,7 +514,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | § | Transition / write | Site | Routes reached | Verdict | Note |
 |---|---|---|---|---|---|
 | 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:391 | `POST /auth/register/producer`, `POST /admin/producers` | `tests/test_admin_delete_producer.py:46` | — |
-| 1 | `draft` → `pending` | producer_me.py:1942 | `POST /producers/me/submit-for-review` | `tests/test_meh2100_draft_submit.py:196` | nearest function — audit line may have drifted |
+| 1 | `draft` → `pending` | producer_me.py:1942 | `POST /producers/me/request-review`, `POST /producers/me/submit-for-review` | `tests/test_api.py:2245` | nearest function — audit line may have drifted |
 | 1 | `rejected` → `pending` | producer_me.py:1856 | `POST /producers/me/request-review` | `tests/test_api.py:2245` | — |
 | 1 | `pending`/`rejected` → `approved` | admin_decisions.py:146, producer_approval.py:122 | `POST /admin/producers/{producer_id}/approve` | `tests/test_admin_approval_transitions.py:121` | — |
 | 1 | `pending`/`approved` → `rejected` | admin_decisions.py:300 | `POST /admin/producers/{producer_id}/reject` | `tests/test_admin_approval_transitions.py:398` | — |

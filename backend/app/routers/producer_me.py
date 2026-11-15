@@ -1000,6 +1000,7 @@ def update_my_producer(
             old_images,
             producer.images or [],  # type: ignore[arg-type]
             context="producer_me.update_my_producer images",
+            db=db,  # MEH-3247
         )
 
     # MEH-54: fire delivery area alerts for newly added cities.
@@ -2203,7 +2204,11 @@ def delete_my_product(
     if old_image_url:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_image_url, context="producer_me.delete_my_product image")  # type: ignore[arg-type]
+        destroy_image(
+            old_image_url,  # type: ignore[arg-type]
+            context="producer_me.delete_my_product image",
+            db=db,  # MEH-3247
+        )
 
 
 # ============================================================================
