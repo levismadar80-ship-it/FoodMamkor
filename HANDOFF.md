@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-15 — שתי מייסדות באתר (MEH-3323)
+
+**שורה אחת:** #4649 מוזג ל-staging. #4650 («מה חדש» 1.5.3, `items: 0`) והגרסה ל-main בדרך.
+
+**מה צריך לדעת לפני עבודה:**
+- **שמות המייסדות:** `FOUNDERS` ב-`frontend/lib/constants.js`. החתימה ב-/about וב-מדריכים חייבת להיות `"<ראשונה> ו<שנייה>"`, ו-`organization-jsonld.test.js` נכשל אם לא.
+- **הקול:** באתר רבות («אנחנו»). המיילים מה-backend נשארים בגוף ראשון יחיד, חתומים ספיר. זו החלטה שלה, לא פער.
+- **פתוח אצל ספיר:** לשנות את התג «בחירת העורכת» ל«בחירת העורכות» בכל האתר? לא נגעתי, כי זה שם של תג ומופיע ב-badges, tooltips ובטסטים.
+
+---
+
 ## 2026-11-14 — כרטיסי ההשקה של «לפני ההשקה»: הצהרת המגדל ועוד ארבעה
 
 **שורה אחת:** #4488, #4493, #4486, #4500 ו-#4496 מוזגו ל-staging. #4496 נכנס עם revision ‏`d4f8b2c6e135`.
