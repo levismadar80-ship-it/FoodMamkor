@@ -348,7 +348,8 @@ class ProducerListOut(BaseModel):
             model.verification_tier = "verified"
         elif source("declared_at") is not None and not any(
             # MEH-3255: the category's own answer, not its name.
-            getattr(c, "requires_license", False) for c in (model.categories or [])
+            c.requires_license
+            for c in (model.categories or [])
         ):
             model.verification_tier = "declared"
         else:
@@ -642,9 +643,7 @@ class ProducerAdminOut(ProducerDetailOut):
     @model_validator(mode="after")
     def _compute_license_pending(self) -> Self:
         # MEH-3255: the category's own answer, not its name.
-        needs_license = any(
-            getattr(c, "requires_license", False) for c in (self.categories or [])
-        )
+        needs_license = any(c.requires_license for c in (self.categories or []))
         license_missing = not (self.producer_license_number or "").strip()
         self.license_pending = needs_license and license_missing
         return self

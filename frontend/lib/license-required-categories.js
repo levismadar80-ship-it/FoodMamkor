@@ -1,12 +1,12 @@
 // @ts-check
 /**
- * MEH-530: client-side mirror of backend/app/constants.py
- * LICENSE_REQUIRED_CATEGORIES. The values are Hebrew category NAMES so the
- * mirror survives seed reorders (category IDs are seed-ordering-dependent).
+ * MEH-530: client-side copy of backend/app/constants.py
+ * LICENSE_REQUIRED_CATEGORIES (Hebrew category NAMES).
  *
- * Source of truth: backend/app/constants.py:LICENSE_REQUIRED_CATEGORIES.
- * Any change there MUST be mirrored here, otherwise the UI will say
- * "optional" while the backend 422s on submit.
+ * MEH-3255: the source of truth is each category's own `requires_license`
+ * (the categories payload carries it). `requiresProducerLicense` reads that
+ * boolean first; this name list is only the fallback for a payload without
+ * it, and on the server it only seeds the column.
  *
  * Frontend uses these to:
  *   1. Switch the license input between "required" and "optional toggle" UI.

@@ -127,7 +127,9 @@ def _mute_side_effects(monkeypatch) -> None:
     monkeypatch.setattr(admin_mod, "notify_producer_approved", lambda *a, **k: None)
     monkeypatch.setattr(admin_mod, "_send_whatsapp", lambda *a, **k: None)
     monkeypatch.setattr(admin_mod.indexnow, "schedule", lambda *a, **k: None)
-    monkeypatch.setattr(cloudinary_utils, "destroy_removed_images", lambda *a, **k: None)
+    monkeypatch.setattr(
+        cloudinary_utils, "destroy_removed_images", lambda *a, **k: None
+    )
 
 
 def _pending_ready(db):
@@ -202,18 +204,22 @@ def _run_the_race(client, db, monkeypatch, *, prepare=None, mutate=None) -> dict
     monkeypatch.setattr(admin_mod, "_assert_approvable", barriered_gate)
 
     def approve():
-        results["approve"] = TestClient(client.app).post(
-            f"/admin/producers/{producer_id}/approve", headers=auth_header(admin)
-        ).status_code
+        results["approve"] = (
+            TestClient(client.app)
+            .post(f"/admin/producers/{producer_id}/approve", headers=auth_header(admin))
+            .status_code
+        )
 
     t = threading.Thread(target=approve)
     t.start()
     assert admin_inside.wait(_BARRIER_TIMEOUT), "approve never reached its gates"
 
     if mutate is None:
-        results["put"] = TestClient(client.app).put(
-            "/producers/me", json={"images": []}, headers=auth_header(owner)
-        ).status_code
+        results["put"] = (
+            TestClient(client.app)
+            .put("/producers/me", json={"images": []}, headers=auth_header(owner))
+            .status_code
+        )
     else:
         mutate(producer_id)
         results["put"] = 200
@@ -345,6 +351,7 @@ def test_the_licence_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
 
     So this pins the licence gate (MEH-971) by the same mechanism.
     """
+
     def prepare(db_, producer):
         producer.producer_license_number = "12-34567"
         for link in db_.query(ProducerCategory).filter(
@@ -400,9 +407,7 @@ def test_the_phone_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
 
 
 @pytest.mark.serial
-def test_owner_put_committed_after_approval_does_not_revert_it(
-    client, db, monkeypatch
-):
+def test_owner_put_committed_after_approval_does_not_revert_it(client, db, monkeypatch):
     """The owner's in-flight PUT must not undo the admin's approval.
 
     The owner's handler loads the producer while it is still `pending`
@@ -456,19 +461,27 @@ def test_owner_put_committed_after_approval_does_not_revert_it(
     monkeypatch.setattr(pm, "_snapshot_sensitive", barriered_snapshot)
 
     def owner_put():
-        results["put"] = TestClient(client.app).put(
-            "/producers/me",
-            json={"description": _NEW_DESCRIPTION},
-            headers=auth_header(owner),
-        ).status_code
+        results["put"] = (
+            TestClient(client.app)
+            .put(
+                "/producers/me",
+                json={"description": _NEW_DESCRIPTION},
+                headers=auth_header(owner),
+            )
+            .status_code
+        )
 
     t = threading.Thread(target=owner_put)
     t.start()
-    assert owner_loaded.wait(_BARRIER_TIMEOUT), "the owner PUT never reached the barrier"
+    assert owner_loaded.wait(_BARRIER_TIMEOUT), (
+        "the owner PUT never reached the barrier"
+    )
 
-    results["approve"] = TestClient(client.app).post(
-        f"/admin/producers/{producer_id}/approve", headers=auth_header(admin)
-    ).status_code
+    results["approve"] = (
+        TestClient(client.app)
+        .post(f"/admin/producers/{producer_id}/approve", headers=auth_header(admin))
+        .status_code
+    )
     approve_done.set()
 
     t.join(timeout=30)

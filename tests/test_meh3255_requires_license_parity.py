@@ -139,3 +139,31 @@ def test_a_listed_name_with_the_flag_off_requires_nothing(db):
     db.add(cat)
     db.commit()
     assert categories_require_license(db, [cat.id]) is False
+
+
+def test_an_admin_licensed_category_off_the_list_is_not_declared(client, db):
+    """The public tier reads the column: a signed declaration does not make a
+    business in a licensed category «declared», even when the category's
+    name is on no list."""
+    from datetime import datetime, timezone
+
+    from tests.conftest import make_category, make_producer
+
+    cat = make_category(db, name="פטריות", requires_license=True)
+    producer = make_producer(db, name="משק פטריות", category=cat)
+    producer.declared_at = datetime.now(timezone.utc)
+    db.commit()
+    body = client.get(f"/producers/{producer.id}").json()
+    assert body["verification_tier"] is None
+
+
+def test_an_admin_licensed_category_off_the_list_is_license_pending(db):
+    from app.schemas.producer_out import ProducerAdminOut
+    from tests.conftest import make_category, make_producer
+
+    cat = make_category(db, name="פטריות", requires_license=True)
+    producer = make_producer(db, name="משק פטריות 2", category=cat)
+    producer.producer_license_number = None
+    db.commit()
+    db.refresh(producer)
+    assert ProducerAdminOut.model_validate(producer).license_pending is True
