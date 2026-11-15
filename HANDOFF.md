@@ -4,6 +4,19 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-15 — חמישה קבצים גדולים פוצלו לפי תחום
+
+**שורה אחת:** #4519, #4612, #4613, #4614 ו-#4615 מוזגו ל-staging (רכבות 17 ו-18). אין שינוי התנהגות ואין מיגרציות.
+
+**מה צריך לדעת לפני עבודה:**
+- **איפה הקוד עכשיו:** כרטיסי העריכה ב-`producer/dashboard/edit/cards/<Name>Card.jsx`. ‏`routers/producer_me.py` הוא ארבעה קבצים (`_analytics`, `_review`, `_locations`). ‏`routers/admin.py` לצד `admin_decisions.py`, ‏`services/producer_approval.py`, ‏`services/admin_producer_emails.py`. המודלים והסכמות בקבצים לפי תחום תחת `backend/app/models/` ו-`backend/app/schemas/`.
+- **ייבוא:** `from app.models import X` ו-`from app.schemas import X` עובדים כמו קודם. קוד חדש מייבא מהקובץ שבו הסמל חי.
+- **טסטים:** `monkeypatch` על שם שעבר מכוון לקובץ החדש (למשל `app.schemas.producer_out`), לא לקובץ הישן.
+- **קובץ חדש ב-`backend/app`:** שורה משלו ב-`files` של mypy ב-`backend/pyproject.toml`, ממוינת.
+- **נדחה ל-1.5.2:** פיצול `routers/auth.py` (כ-76 טסטים עושים patch על `app.routers.auth`) ופיצול `RegisterProducerClient.jsx`. המפרט: `/mnt/project-files/shared-components/deferred-v152.md`. הכרטיסים עוד לא נפתחו, כי Linear בתקרת הכרטיסים.
+
+---
+
 ## 2026-11-14 — כרטיסי ההשקה של «לפני ההשקה»: הצהרת המגדל ועוד ארבעה
 
 **שורה אחת:** #4488, #4493, #4486, #4500 ו-#4496 מוזגו ל-staging. #4496 נכנס עם revision ‏`d4f8b2c6e135`.

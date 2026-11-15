@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+- **15/11 — חמישה קבצים גדולים פוצלו לפי תחום, בלי שינוי התנהגות (PR #4519, #4612, #4613, #4614, #4615).**
+  - **למה:** ספיר 14/11, «הכל לפני 1.5.1»: קבצים של אלפי שורות שכל שינוי בהם נגע בכולם. חמשת הקבצים ברשימת `file-size-baseline.txt` שאפשר היה לפצל בבטחה לפני ההשקה.
+  - **מה:**
+    - `producer/dashboard/edit/cards.jsx` (2,622 שורות) הפך ל-13 קבצים ב-`edit/cards/`, כרטיס לקובץ (PR #4519).
+    - `routers/producer_me.py` (2,738) הפך לארבעה: `producer_me.py`, `producer_me_analytics.py`, `producer_me_review.py`, `producer_me_locations.py`. נרשמים יחד ב-`router_registry._include_producer_me` (PR #4612).
+    - `routers/admin.py` הפך ל-`admin.py`, `admin_decisions.py` (אישור ודחייה), `services/producer_approval.py` ו-`services/admin_producer_emails.py`. ‏`admin_decisions` נרשם ראשון, כי הנתיבים הקבועים שלו חייבים להיתפס לפני `/admin/producers/{producer_id}` (PR #4613).
+    - `models/models.py` (3,361) נשאר עם Producer, User ו-Category; השאר ב-`admin_ops`, `analytics`, `catalog`, `engagement`, `events`, `home_products`, `recipes`, `rescue`. כל השמות מיוצאים מחדש מ-`models.py` (PR #4614).
+    - `schemas/schemas.py` (6,054) נשאר עם הוולידטורים המשותפים; הסכמות ב-12 קבצים לפי תחום, מיוצאות מחדש מ-`schemas.py` (PR #4615).
+  - **נבדק:** בכל פיצול, כל סמל ברמה העליונה זהה ב-AST לקובץ המקורי ו-`app.openapi()` זהה. במודלים גם ה-DDL של 57 הטבלאות, סדר הטבלאות והקשרים. אין מיגרציות.
+  - **מניעה:** `scripts/ci/backup-restore-verify.sh` קורא עכשיו את כל קובצי `backend/app/models/` ולא קובץ אחד; הודגם נכשל על הקובץ הבודד (`derived=8`, ‏`EXPECTED_TABLES=50`). ברשימת `file-size-baseline.txt` נשארו רק שני הקבצים שנדחו.
+  - **מה לדעת:** קוד חדש מייבא מהקובץ שבו הסמל חי. טסט שעושה `monkeypatch` על שם שעבר חייב לכוון לקובץ החדש, אחרת הוא עובר מהסיבה הלא נכונה.
+  - **נדחה ל-1.5.2:** פיצול `routers/auth.py` ופיצול `RegisterProducerClient.jsx`.
 - **14/11 — הרשמה לסדנה, מילוי אוטומטי ותיקון טעויות בטפסים (PR #4465, #4473, #4479, #4480, #4485).**
   - **למה:** ספיר 14/11: הסרגל להרשמה לסדנה בנייד יצר פס לבן מעל הפוטר, וביקשה מילוי אוטומטי כמו באתרים הגדולים, «בכל איפה שצריך».
   - **מה:**
