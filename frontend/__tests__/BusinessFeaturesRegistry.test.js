@@ -173,9 +173,18 @@ describe("copy", () => {
 
 describe("visibility", () => {
   it("never returns an unverified entry", () => {
-    const unverified = BUSINESS_FEATURES.filter((f) => f.status === "unverified").map((f) => f.id);
-    const visible = visibleBusinessFeatures().map((f) => f.id);
-    for (const id of unverified) expect(visible).not.toContain(id);
+    // MEH-3295: the registry holds no unverified entry today, so the old loop
+    // ran zero times and this test passed while checking nothing (caught by
+    // vitest `expect.requireAssertions`). Plant one, then remove it.
+    const planted = { ...BUSINESS_FEATURES[0], id: "meh3295_planted_unverified", status: "unverified", flag: undefined };
+    BUSINESS_FEATURES.push(planted);
+    try {
+      const visible = visibleBusinessFeatures().map((f) => f.id);
+      expect(visible).not.toContain(planted.id);
+      expect(visible.length).toBeGreaterThan(0);
+    } finally {
+      BUSINESS_FEATURES.pop();
+    }
   });
 
   it("drops rescue_bags when its flag is off, keeps it when on", () => {

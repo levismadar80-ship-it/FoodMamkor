@@ -95,7 +95,7 @@ class TestExtractPublicId:
     @pytest.mark.xfail(
         strict=True,
         reason=(
-            "Signed Cloudinary URLs (s--<hash>--/...) are not currently "
+            "MEH-3319: Signed Cloudinary URLs (s--<hash>--/...) are not currently "
             "parsed by extract_public_id. We don't emit signed URLs today, "
             "but if Cloudinary signing is ever enabled, the cleanup script "
             "will silently miss orphans. Remove this xfail when signed-URL "

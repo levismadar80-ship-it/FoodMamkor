@@ -189,6 +189,38 @@ Eight instances in one week:
 
 ---
 
+## Tests that pass for the wrong reason (MEH-3295)
+
+A green test is evidence only if it would go red when the code broke. Four
+mechanical checks, then one rule for the threads:
+
+- **A vitest test with no `expect` fails** (`expect.requireAssertions` in
+  `frontend/vitest.config.js`). "Does not throw" is
+  `expect(() => fn()).not.toThrow()`. Never switch the option off for a test.
+- **`scripts/checks/test-honesty-guard.sh`** (Repo guards, blocking) fails a
+  NEW pytest test with no assert / `pytest.raises` / mock `assert_*` /
+  asserting helper, a skip or xfail whose reason names no `MEH-<N>`, a
+  non-strict xfail, a vitest `.only`, a vitest `.skip`/`.todo` without a card.
+  "Not raising is the behaviour" → `# no-assert: <reason>` in the test.
+  `test-honesty-baseline.txt` only shrinks.
+- **Mutation testing on the money-and-permissions set** — `[tool.mutmut]
+  only_mutate` in `backend/pyproject.toml`. A PR that changes one of those
+  files runs `bash scripts/mutation/run.sh` (≈1 h, one child, its own
+  `mehamakor_mutation` database) and pastes its table under `## Mutation`
+  (`mutation-guard.sh` warns without it). Every `NEW SURVIVOR` is killed by a
+  new test, or explained in `backend/mutation-survivors.txt` with a reason.
+  The weekly repo-health scan (MEH-3143) re-runs the whole set and opens a
+  card per new survivor. Google runs it the same way: changed code only, at
+  review time (Petrović et al., ICSE-SEIP 2018; TSE 2021).
+- **Property tests for pure money and date math** (Hypothesis,
+  `tests/test_meh3295_properties.py`). A new fee, rounding, cap or
+  business-day function gets a rule checked against an independent oracle,
+  not only examples.
+- A strict xfail or skip whose card is Done/Canceled has outlived its reason:
+  the weekly scan opens a card for it.
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files; fix every REFEREE verdict before

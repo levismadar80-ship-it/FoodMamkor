@@ -118,7 +118,7 @@ class TestRealSheetRoundTrip:
 
     @pytest.mark.xfail(
         strict=True,
-        reason="FINDING-1: sanitize_text HTML-escapes '&', so 'Crust & Crumb' "
+        reason="MEH-3317 FINDING-1: sanitize_text HTML-escapes '&', so 'Crust & Crumb' "
         "is STORED as 'Crust &amp; Crumb' and renders literally in the admin "
         "table and in the prefilled registration input.",
     )
@@ -209,7 +209,7 @@ class TestWebsiteScheme:
     )
     @pytest.mark.xfail(
         strict=True,
-        reason="FINDING-2: 4 of the 5 real website formats in the sheet carry "
+        reason="MEH-3318 FINDING-2: 4 of the 5 real website formats in the sheet carry "
         "no scheme (or are prose), and each 422s the whole lead. The admin "
         "cannot save a row as it appears in the spreadsheet.",
     )
