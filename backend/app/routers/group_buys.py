@@ -31,6 +31,7 @@ from app.schemas.schemas import (
     GroupBuyStatusUpdate,
 )
 from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
+from app.services.group_buy_goal_flap import notify_back_at_goal, notify_below_goal
 from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
@@ -235,6 +236,8 @@ def _maybe_notify_funded(
     never touch `db`, which is closed once the response is sent.
     """
     if gb.funded_notified_at is not None:
+        # MEH-3311: back at the goal after a drop → everyone hears it once.
+        notify_back_at_goal(db, gb, background_tasks)
         return
 
     # Requires the caller to have flushed the new commit, or the participant
@@ -345,9 +348,10 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
 @router.delete("/{group_buy_id}/commit", status_code=200, response_model=None)
 @limiter.limit("20/minute")  # MEH-3022
-def cancel_commit(
+def cancel_commit(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3311 added background_tasks
     request: Request,  # required by slowapi (MEH-3022)
     group_buy_id: UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -387,6 +391,8 @@ def cancel_commit(
         #        allowed to flap, the notification is not. Clearing it re-arms
         #        the send, so re-crossing the threshold would re-spam every
         #        participant. The latch is deliberately one-way.
+        # MEH-3311: those who stayed are told once (its own one-way stamp).
+        notify_below_goal(db, gb, background_tasks, current_user.id)
     db.commit()
     return {"detail": "ההצטרפות בוטלה"}
 

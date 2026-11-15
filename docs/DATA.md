@@ -1007,6 +1007,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
 
+> **MEH-3311 — a funded group buy that drops below its goal (2026-11-15).** Migration `a7d3e9c1b5f2` adds two nullable naive-UTC columns to `group_buys`: `below_goal_notified_at`, `refunded_notified_at`. When `DELETE /group-buys/{id}/commit` reverts `funded → open` on a group whose funded email went out (`funded_notified_at` set), everyone who stayed gets one email «מהמקור — הקבוצה "{title}" ירדה מתחת ליעד» and `below_goal_notified_at` is stamped. When a later join re-crosses the minimum, every participant gets the funded email again (not the business) and `refunded_notified_at` is stamped. Each stamp is set once, so a flapping group mails a participant at most three times in all; `funded_notified_at` stays one-way (MEH-1651). The account-deletion revert (`group_buy_delist.withdraw_user_commits`) sends nothing. Service: `app/services/group_buy_goal_flap.py`.
+
 ### Auth (`app/routers/auth.py`)
 
 ```

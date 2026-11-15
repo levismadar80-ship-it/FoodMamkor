@@ -931,12 +931,12 @@ class TestFundedNotificationDispatch:
     @staticmethod
     def _capture_sends(monkeypatch):
         sends = []
-        monkeypatch.setattr(
-            "app.services.group_buy_notifications.send_email",
-            lambda to, subject, body, html=None, test_cause=False: sends.append(
-                {"to": to, "subject": subject, "body": body}
-            ),
-        )
+        def capture(to, subject, body, html=None, test_cause=False):
+            sends.append({"to": to, "subject": subject, "body": body})
+
+        monkeypatch.setattr("app.services.group_buy_notifications.send_email", capture)
+        # MEH-3311: the below-goal email has its own module.
+        monkeypatch.setattr("app.services.group_buy_goal_flap.send_email", capture)
         return sends
 
     def test_funded_notifies_both_sides_with_matching_count(
@@ -1000,7 +1000,7 @@ class TestFundedNotificationDispatch:
             assert f"/producer/{producer.id}" in m["body"], m["body"]
         assert f"/producer/{producer.id}" not in owner_msg["body"]
 
-    def test_flap_around_threshold_sends_nothing_the_second_time(
+    def test_flap_around_threshold_is_told_once_and_never_again(
         self, client, db, monkeypatch
     ):
         sends = self._capture_sends(monkeypatch)
@@ -1038,8 +1038,28 @@ class TestFundedNotificationDispatch:
         assert rejoin.status_code == 201, rejoin.text
         assert rejoin.json()["status"] == "funded"
 
-        # The latch held: zero additional messages.
-        assert len(sends) == first_round
+        # MEH-3311: the flap is told once each way — b1 (who stayed) hears it
+        # dropped, then both participants hear it is back. Never the business,
+        # never the funded email's own latch (MEH-1651) re-armed.
+        extra = sends[first_round:]
+        assert sorted((m["to"], m["subject"].split(" ")[-1]) for m in extra) == [
+            ("flap_b1@test.com", "ליעד"),
+            ("flap_b1@test.com", "ליעד"),
+            ("flap_b2@test.com", "ליעד"),
+        ]
+        assert "gbowner_flap@test.com" not in [m["to"] for m in extra]
+        assert sum("ירדה מתחת ליעד" in m["subject"] for m in extra) == 1
+
+        # A second flap sends nothing at all: every stamp is one-way.
+        after_one_flap = len(sends)
+        client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(b2))
+        again = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(b2),
+        )
+        assert again.json()["status"] == "funded"
+        assert len(sends) == after_one_flap
 
         db.expire_all()
         refreshed = db.query(GroupBuy).filter(GroupBuy.id == gb.id).first()
