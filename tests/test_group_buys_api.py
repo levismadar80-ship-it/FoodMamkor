@@ -1042,13 +1042,15 @@ class TestFundedNotificationDispatch:
         # dropped, then both participants hear it is back. Never the business,
         # never the funded email's own latch (MEH-1651) re-armed.
         extra = sends[first_round:]
-        assert sorted((m["to"], m["subject"].split(" ")[-1]) for m in extra) == [
-            ("flap_b1@test.com", "ליעד"),
-            ("flap_b1@test.com", "ליעד"),
-            ("flap_b2@test.com", "ליעד"),
-        ]
-        assert "gbowner_flap@test.com" not in [m["to"] for m in extra]
-        assert sum("ירדה מתחת ליעד" in m["subject"] for m in extra) == 1
+        below = 'מהמקור — הקבוצה "רכש קמח מלא" ירדה מתחת ליעד'
+        back = next(m["subject"] for m in sends if m["to"] == "flap_b1@test.com")
+        assert sorted((m["to"], m["subject"]) for m in extra) == sorted(
+            [
+                ("flap_b1@test.com", below),
+                ("flap_b1@test.com", back),
+                ("flap_b2@test.com", back),
+            ]
+        )
 
         # A second flap sends nothing at all: every stamp is one-way.
         after_one_flap = len(sends)
