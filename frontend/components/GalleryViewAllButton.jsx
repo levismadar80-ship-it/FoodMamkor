@@ -34,6 +34,7 @@ export default function GalleryViewAllButton({ images = [], className = "" }) {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
         data-testid="gallery-view-all"
         className={`inline-flex items-center gap-1.5 min-h-touch rounded-full bg-accent px-3 text-sm font-label-md text-white shadow-lg focus-ring ${className}`}
       >

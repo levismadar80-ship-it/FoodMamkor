@@ -461,6 +461,7 @@ describe("MEH-2461 organizer page", () => {
       await renderPage();
       const pill = screen.getByTestId("gallery-view-all");
       expect(pill.textContent).toContain("view_all");
+      expect(pill.getAttribute("aria-haspopup")).toBe("dialog");
       expect(screen.getByTestId("organizer-cover").parentElement.contains(pill)).toBe(true);
       expect(screen.queryByRole("dialog")).toBeNull();
     });
