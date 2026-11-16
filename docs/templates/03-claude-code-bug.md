@@ -147,13 +147,11 @@ Likely lines: [range]
 Do not touch other files.
 </scope>
 
-<thinking_guidance>
-Walk through:
-1. What's the code at the failure point doing?
-2. What did the input look like vs what it expected?
-3. What's the smallest fix?
-Output your reasoning before patching.
-</thinking_guidance>
+<root_cause_first>
+Before patching, state the root cause in one or two sentences: quote the
+failing line, and say what input it got vs what it expected. Then make the
+smallest fix.
+</root_cause_first>
 
 <acceptance_criteria>
 - Repro no longer fails

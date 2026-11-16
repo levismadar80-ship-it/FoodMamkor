@@ -119,19 +119,14 @@ Before declaring done:
 זהה למבנה Opus, **אבל הוסיפי**:
 
 ```xml
-<thinking_guidance>
-This task involves multi-step reasoning. Think carefully through:
-1. What changes in DB / backend / frontend?
-2. What's the order of changes (DB first → backend → frontend → tests)?
-3. What's the minimum test that proves it works?
-4. What edge cases exist (missing field, network error, race condition)?
-Think before coding. Output your plan first, wait for "go".
-</thinking_guidance>
+<plan_gate>
+Output your plan first, wait for "go". The plan covers: what changes in
+DB / backend / frontend and in which order, the minimum test that proves it
+works, and the edge cases (missing field, network error, race condition).
+</plan_gate>
 ```
 
-**ולמה:** Sonnet 5.5 לא חושב אדפטיבית כברירת מחדל. הוראת `<thinking_guidance>` עוזרת לאיכות.
-
-ב-Opus 5.5 — **דלגי על זה.** xhigh = adaptive thinking פעיל אוטומטית.
+**ולמה:** Sonnet 5.5 חושב אדפטיבית כברירת מחדל, כך שהוראת "תחשוב" מיותרת — את העומק קובעים ב-effort. מה שנשאר הוא שער התכנון: תוכנית כתובה לפני קוד.
 
 -----
 
