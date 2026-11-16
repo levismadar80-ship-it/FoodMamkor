@@ -12812,7 +12812,7 @@
                   "format": "uuid",
                   "type": "string"
                 },
-                "maxItems": 250,
+                "maxItems": 100,
                 "type": "array"
               },
               {
@@ -13064,7 +13064,7 @@
             "items": {
               "$ref": "#/components/schemas/ProductImportRow"
             },
-            "maxItems": 250,
+            "maxItems": 100,
             "title": "Rows",
             "type": "array"
           }
@@ -13191,7 +13191,7 @@
               "format": "uuid",
               "type": "string"
             },
-            "maxItems": 250,
+            "maxItems": 100,
             "title": "Product Ids",
             "type": "array"
           }
