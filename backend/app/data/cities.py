@@ -129,7 +129,7 @@ ISRAEL_CITIES = [
     # עתלית is already above (also in REGIONS "haifa") — listed once here.
     "עין איילה",
     "הבונים",
-    "כרם מהר\"ל",
+    'כרם מהר"ל',
     "גבע כרמל",
     "כפר גלים",
     "מגדים",
