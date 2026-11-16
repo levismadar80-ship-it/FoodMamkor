@@ -44,7 +44,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-import OrganizerPage from "@/app/[locale]/organizers/[slug]/page";
+import OrganizerPage, { generateMetadata } from "@/app/[locale]/organizers/[slug]/page";
 
 // MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
@@ -237,6 +237,14 @@ describe("MEH-2461 organizer page", () => {
     // the backend gets the slug encoded once, not twice (%25D7…)
     expect(fetchMock.mock.calls[0][0]).toBe(`https://api.test/organizers/${encodeURIComponent(hebrew)}`);
     expect(screen.getByTestId("organizer-cover")).toBeTruthy();
+  });
+
+  it("MEH-3340: metadata for a percent-encoded Hebrew slug — no 404, canonical stays encoded like the business page", async () => {
+    const hebrew = "פרדס-בית-הראשונים-קטיף-עצמי";
+    respond(200, { ...ORG, slug: hebrew, name: "פרדס" });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: encodeURIComponent(hebrew), locale: "he" }) });
+    expect(notFoundMock).not.toHaveBeenCalled();
+    expect(meta.alternates.canonical).toContain(`/organizers/${encodeURIComponent(hebrew)}`);
   });
 
   it("a scanner-shaped slug never reaches the API", async () => {
