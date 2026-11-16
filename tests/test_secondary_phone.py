@@ -120,3 +120,72 @@ def test_consumer_cannot_write_it(client, db):
         headers=auth_header(consumer),
     )
     assert resp.status_code == 403
+
+
+# --- review follow-ups (MEH-3339) ---------------------------------------------
+
+
+def test_label_only_save_is_fine_while_a_number_is_stored(client, db):
+    user, producer = _owner(db)
+    _put_me(
+        client,
+        user,
+        {"secondary_phone": "0522723011", "secondary_phone_label": "להזמנות"},
+    )
+    resp = _put_me(client, user, {"secondary_phone_label": "לשאלות"})
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.secondary_phone == "0522723011"
+    assert producer.secondary_phone_label == "לשאלות"
+
+
+def test_clearing_the_number_clears_its_label(client, db):
+    user, producer = _owner(db)
+    _put_me(
+        client,
+        user,
+        {"secondary_phone": "0522723011", "secondary_phone_label": "להזמנות"},
+    )
+    resp = _put_me(client, user, {"secondary_phone": None})
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.secondary_phone is None
+    assert producer.secondary_phone_label is None  # no orphan to resurrect
+
+
+def test_admin_put_label_without_number_is_422(client, db):
+    producer = make_producer(db)
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"secondary_phone_label": "להזמנות"},
+        headers=auth_header(make_user(db, role="admin")),
+    )
+    assert resp.status_code == 422
+    assert "מספר" in resp.json()["detail"]
+
+
+def test_admin_create_keeps_the_second_number(client, db):
+    resp = client.post(
+        "/admin/producers",
+        json={
+            "name": "סנדרה פירות איכותיים",
+            "phone": "0522518862",
+            "secondary_phone": "0522723011",
+            "secondary_phone_label": "להזמנות",
+        },
+        headers=auth_header(make_user(db, role="admin")),
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["secondary_phone"] == "0522723011"
+    assert resp.json()["secondary_phone_label"] == "להזמנות"
+
+
+def test_changing_the_second_number_pings_the_admin(client, db):
+    from unittest.mock import patch
+
+    user, producer = _owner(db)
+    with patch("app.routers.producer_me.notify_admin_producer_sensitive_edit") as ping:
+        resp = _put_me(client, user, {"secondary_phone": "0522723011"})
+    assert resp.status_code == 200, resp.text
+    ping.assert_called_once()
+    assert ping.call_args.args[1] == ["secondary_phone"]

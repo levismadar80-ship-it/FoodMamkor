@@ -5839,6 +5839,29 @@
             ],
             "title": "Producer License Number"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "short_description": {
             "anyOf": [
               {

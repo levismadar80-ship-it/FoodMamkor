@@ -44,14 +44,24 @@ describe("Admin ProducerForm — second phone (MEH-3339)", () => {
     expect(putBody().phone).toBe("0522518862"); // the main number is untouched
   });
 
-  it("clearing the number clears the label in the same save", async () => {
+  it("clearing the number sends just the number (the server clears the label)", async () => {
     wrap(<ProducerForm producerId="p-9" initial={{ ...INITIAL, secondary_phone: "0522723011", secondary_phone_label: "להזמנות" }} />);
     await screen.findByText(FORM.sections.basic);
     fireEvent.change(screen.getByLabelText(FORM.fields.secondary_phone), { target: { value: "" } });
     save();
     await waitFor(() => expect(api.put).toHaveBeenCalled());
     expect(putBody().secondary_phone).toBeNull();
-    expect(putBody().secondary_phone_label).toBeNull();
+    expect(putBody()).not.toHaveProperty("secondary_phone_label");
+  });
+
+  it("a label-only change sends only the label (no stale number)", async () => {
+    wrap(<ProducerForm producerId="p-9" initial={{ ...INITIAL, secondary_phone: "0522723011", secondary_phone_label: "להזמנות" }} />);
+    await screen.findByText(FORM.sections.basic);
+    fireEvent.change(screen.getByLabelText(FORM.fields.secondary_phone_label), { target: { value: "לשאלות" } });
+    save();
+    await waitFor(() => expect(api.put).toHaveBeenCalled());
+    expect(putBody().secondary_phone_label).toBe("לשאלות");
+    expect(putBody()).not.toHaveProperty("secondary_phone");
   });
 
   it("an untouched save leaves both out", async () => {

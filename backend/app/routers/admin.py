@@ -29,6 +29,7 @@ from app.services.availability_validation import (  # MEH-2758
     validate_transition,
 )
 from app.services.producer_listing import is_business  # MEH-2459
+from app.routers.producer_me import reconcile_secondary_phone  # MEH-3339
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
@@ -348,6 +349,8 @@ def admin_create_producer(
         description=data.description,
         short_description=data.short_description,
         owner_bio=data.owner_bio,  # MEH-3338
+        secondary_phone=data.secondary_phone,  # MEH-3339
+        secondary_phone_label=data.secondary_phone_label,
         city=data.city,
         lat=data.lat,
         lng=data.lng,
@@ -712,6 +715,7 @@ def admin_update_producer(
     _guard_availability_change(producer, payload)  # MEH-2758
     old_phone: str | None = producer.phone  # type: ignore[assignment]  # grill B8
 
+    reconcile_secondary_phone(producer, payload)  # MEH-3339
     for field, value in payload.items():
         setattr(producer, field, value)
 

@@ -140,6 +140,9 @@ class ProducerAdminCreate(BaseModel):
     description: str | None = None
     short_description: str | None = None
     owner_bio: str | None = None  # MEH-3338
+    # MEH-3339 (review): the admin form shows these on create too.
+    secondary_phone: str | None = None
+    secondary_phone_label: str | None = Field(default=None, max_length=30)
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -233,6 +236,23 @@ class ProducerAdminCreate(BaseModel):
     @classmethod
     def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
+
+    # MEH-3339 (review): same rules as ProducerUpdate on the create path.
+    @field_validator("secondary_phone")
+    @classmethod
+    def _validate_secondary_phone(cls, v: str | None) -> str | None:
+        return _phone_validator(v)
+
+    @field_validator("secondary_phone_label")
+    @classmethod
+    def _sanitize_secondary_phone_label(cls, v: str | None) -> str | None:
+        return sanitize_text(v, max_length=30) or None
+
+    @model_validator(mode="after")
+    def _create_label_needs_a_number(self) -> Self:
+        if self.secondary_phone_label and not self.secondary_phone:
+            raise ValueError("לתווית של הטלפון הנוסף צריך גם מספר")
+        return self
 
     @field_validator("whatsapp_group")
     @classmethod
@@ -675,13 +695,8 @@ class ProducerUpdate(BaseModel):
     def _sanitize_secondary_phone_label(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=30) or None
 
-    @model_validator(mode="after")
-    def _label_needs_a_number(self) -> Self:
-        # MEH-3339: a label without a number is refused. Asked of the payload
-        # itself, so a label must travel with its number in the same save.
-        if self.secondary_phone_label and not self.secondary_phone:
-            raise ValueError("לתווית של הטלפון הנוסף צריך גם מספר")
-        return self
+    # MEH-3339: the number/label pair is judged on the MERGED state in the
+    # PUT handlers (routers/producer_me.py:reconcile_secondary_phone), not here.
 
     @field_validator("whatsapp_group")
     @classmethod

@@ -260,13 +260,13 @@ function changedOnly(payload, form, seed) {
   // page-open values back. Same rule as reservist_owned.
   if (same(form.owner_bio?.trim(), seed.owner_bio?.trim?.() ?? seed.owner_bio)) delete out.owner_bio;
   if (same(form.owner_photo_url, seed.owner_photo_url)) delete out.owner_photo_url;
-  // MEH-3339: the number and its label travel as a pair (the API refuses a
-  // label without a number), and only when the admin changed either.
-  if (
-    same(form.secondary_phone?.trim(), String(seed.secondary_phone ?? "").trim()) &&
-    same(form.secondary_phone_label?.trim(), String(seed.secondary_phone_label ?? "").trim())
-  ) {
+  // MEH-3339: each travels only when the admin changed it — the server judges
+  // the pair on the stored state, so an unchanged number need not be resent
+  // (resending it would revert a number the owner changed meanwhile).
+  if (same(form.secondary_phone?.trim(), String(seed.secondary_phone ?? "").trim())) {
     delete out.secondary_phone;
+  }
+  if (same(form.secondary_phone_label?.trim(), String(seed.secondary_phone_label ?? "").trim())) {
     delete out.secondary_phone_label;
   }
   return out;
@@ -552,7 +552,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // MEH-3339: a label only travels with a number (the API refuses a
       // label alone), so clearing the number clears the label too.
       secondary_phone: form.secondary_phone?.trim() || null,
-      secondary_phone_label: form.secondary_phone?.trim() ? form.secondary_phone_label?.trim() || null : null,
+      // MEH-3339 (review): sent as typed. The server clears the label with an
+      // emptied number and refuses a label with no number (a visible error,
+      // not a silently dropped label).
+      secondary_phone_label: form.secondary_phone_label?.trim() || null,
       owner_photo_url: form.owner_photo_url || null,
       top_product_name: form.top_product_name?.trim() || null,
       price_range: form.price_range,

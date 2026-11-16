@@ -132,7 +132,8 @@ export function ContactChannelsCard({
       const payload = {
         phone: form.phone.trim() || null,
         secondary_phone: form.secondary_phone.trim() || null,
-        secondary_phone_label: form.secondary_phone.trim() ? form.secondary_phone_label.trim() || null : null,
+        // MEH-3339 (review): as typed — a label with no number is a visible 422.
+        secondary_phone_label: form.secondary_phone_label.trim() || null,
         instagram: form.instagram.trim() || null,
         website: form.website.trim() || null,
         whatsapp_group: form.whatsapp_group.trim() || null,
