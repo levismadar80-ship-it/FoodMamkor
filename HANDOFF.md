@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-16 — תגי תזונה: הפער היחיד נסגר בטסטים (MEH-388)
+
+**שורה אחת:** ‏#4671 מוזג ל-staging (`6c1901c`): שני טסטי סינון, ל«ללא גלוטן» ול«ללא לקטוז». הכרטיס נשאר Backlog / `post-launch`.
+
+**מה צריך לדעת לפני עבודה:**
+- **תגי התזונה קיימים מקצה לקצה** לארבעת התגים (טבעוני · צמחוני · ללא גלוטן · ללא לקטוז). מי שפותח את MEH-388 שוב, לא בונה מחדש: אוצר המילים של ערכים, סוג עסק ואזור עדיין מחכה להחלטה עריכתית של ספיר.
+- **ב-staging כל ארבעת הצ'יפים מוסתרים** (סופרים לפי `has_*_products`: 0 / 0 / 1 / 0, הסף 5). הפילטרים עצמם מחזירים: טבעוני 4, צמחוני 4, ללא גלוטן 1, ללא לקטוז 0, מתוך 33.
+- **פער לא מתוקן:** השער של הצ'יפ הטבעוני לא סופר הצהרות `vegan_scope='all'`, והפילטר כן. פירוט ב-CHANGELOG 16/11.
+- **סנדבוקס:** אין בו Postgres, ולכן ה-stop hook של pytest נכשל ב-`Connection refused` אחרי `uv sync`. זו לא תקלה בטסטים. הפתרון בצד שלך: `STOP_HOOK_SKIP=pytest`, או לאשר הרמת Postgres מקומי.
+
+---
+
 ## 2026-11-15 — שתי מייסדות באתר (MEH-3323)
 
 **שורה אחת:** #4649 מוזג ל-staging. #4650 («מה חדש» 1.5.3, `items: 0`) והגרסה ל-main בדרך.
