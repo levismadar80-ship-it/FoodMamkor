@@ -21,6 +21,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
+import Avatar from "@/components/ui/Avatar";
 import InlineMessage from "@/components/ui/InlineMessage";
 
 // Mirrors schemas ProducerUpdate / ProducerAdminCreate owner_bio (300).
@@ -78,12 +79,10 @@ export default function AdminOwnerStoryFields({ producerId = null, bio, photoUrl
           <span className="text-sm font-medium block mb-1">{t("owner_photo")}</span>
           <div className="flex items-center gap-3">
             {photoUrl && (
-              <img
-                src={photoUrl}
-                alt={t("owner_photo")}
-                className="h-16 w-16 rounded-full object-cover"
-                data-testid="admin-owner-photo-preview"
-              />
+              <span data-testid="admin-owner-photo-preview" data-src={photoUrl}>
+                {/* Shared person-photo primitive (components/CLAUDE.md). */}
+                <Avatar src={photoUrl} name={t("owner_photo")} size={64} />
+              </span>
             )}
             <label className="inline-flex rounded-full focus-within:ring-2 focus-within:ring-primary">
               <input
