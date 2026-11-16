@@ -119,6 +119,16 @@ class Product(Base):
     contains_alcohol = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-2312: an imported product lands as a draft. A draft is invisible to
+    # every public read (producer page, search, sitemap, counts) until an
+    # admin approves it. Owner-created products never set it.
+    is_draft = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
+    # MEH-2312: the source store's image URL, kept for a future image import
+    # (pending MEH-1184, image licence). Never rendered, never uploaded.
+    # DO NOT expose this in a public schema — it points at a third-party host.
+    source_image_url = Column(Text, nullable=True)
 
     # MEH-2137: the other half of the same disambiguation — see the comment on
     # Producer.products. Without it this side raises the same error.
