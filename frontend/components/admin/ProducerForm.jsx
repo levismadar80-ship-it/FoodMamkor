@@ -260,6 +260,15 @@ function changedOnly(payload, form, seed) {
   // page-open values back. Same rule as reservist_owned.
   if (same(form.owner_bio?.trim(), seed.owner_bio?.trim?.() ?? seed.owner_bio)) delete out.owner_bio;
   if (same(form.owner_photo_url, seed.owner_photo_url)) delete out.owner_photo_url;
+  // MEH-3339: the number and its label travel as a pair (the API refuses a
+  // label without a number), and only when the admin changed either.
+  if (
+    same(form.secondary_phone?.trim(), String(seed.secondary_phone ?? "").trim()) &&
+    same(form.secondary_phone_label?.trim(), String(seed.secondary_phone_label ?? "").trim())
+  ) {
+    delete out.secondary_phone;
+    delete out.secondary_phone_label;
+  }
   return out;
 }
 
@@ -294,7 +303,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-3333: the page-open values of the fields another editor can change
   // while this form is open (the locations editor below writes the primary
   // row, which is where city / lat / lng come from).
-  const seedRef = useRef({ city: "", lat: "", lng: "", owner_bio: "", owner_photo_url: "" });
+  const seedRef = useRef({
+    city: "",
+    lat: "",
+    lng: "",
+    owner_bio: "",
+    owner_photo_url: "",
+    secondary_phone: "",
+    secondary_phone_label: "",
+  });
   const t = useTranslations("admin");
   // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
   // address search — no new i18n keys (see dashboard.producer.location).
@@ -343,6 +360,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-3338: the owner edits these in her dashboard too.
         owner_bio: initial.owner_bio ?? "",
         owner_photo_url: initial.owner_photo_url ?? "",
+        // MEH-3339: owner-editable in her contact card too.
+        secondary_phone: initial.secondary_phone ?? "",
+        secondary_phone_label: initial.secondary_phone_label ?? "",
       };
       setForm({
         ...EMPTY,

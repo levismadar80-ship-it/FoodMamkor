@@ -5009,7 +5009,9 @@
         "saved": "Saved",
         "save_error": "Save failed. Please try again.",
         "field_secondary_phone": "Second phone (optional)",
-        "field_secondary_phone_label": "What is this number for? (e.g. orders)"
+        "field_secondary_phone_label": "What is this number for? (e.g. orders)",
+        "secondary_phone_placeholder": "050-1234567",
+        "secondary_phone_where": "Shown on your business page"
       },
       "categories": {
         "heading": "Categories",

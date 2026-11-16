@@ -390,7 +390,9 @@ export default function ContactCard({ producer, isVacation }) {
           <p className="mt-3 text-sm text-fg-muted" data-testid="secondary-phone-line">
             {producer.secondary_phone_label?.trim() || t("producer.detail.contact_card.secondary_phone_default_label")}:{" "}
             <a
-              href={`tel:${producer.secondary_phone.trim()}`}
+              // One owner of tel: hrefs (ContactChannelsOneOwner guard) — fed
+              // the second number, so no CTA ever reads it.
+              href={contactHref("phone", { phone: producer.secondary_phone })}
               dir="ltr"
               className="numeric text-primary-dark hover:underline focus-visible:ring-2 focus-visible:ring-primary rounded"
             >

@@ -181,6 +181,7 @@ export function ContactChannelsCard({
         {/* MEH-3339: the second number never drives a button — call, WhatsApp
             and the sticky bar stay on the main number above. */}
         <Input type="tel" inputMode="tel" dir="ltr" label={t("field_secondary_phone")} value={form.secondary_phone}
+          placeholder={t("secondary_phone_placeholder")} helperText={t("secondary_phone_where")}
           onChange={(e) => upd("secondary_phone", e.target.value)} error={fieldError("secondary_phone")} />
         <Input type="text" label={t("field_secondary_phone_label")} value={form.secondary_phone_label} maxLength={30}
           onChange={(e) => upd("secondary_phone_label", e.target.value)} />

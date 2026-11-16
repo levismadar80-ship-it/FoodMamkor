@@ -158,6 +158,8 @@
     "rescued_recently",
     "reservist_owned",
     "reviews_count",
+    "secondary_phone",
+    "secondary_phone_label",
     "sells_on_site",
     "short_description",
     "slug",
