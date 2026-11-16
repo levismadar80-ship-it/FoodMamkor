@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+- **16/11 — שש סתירות בין קובצי ההנחיות הוכרעו, וה-skill ‏`resolve-conflicts` ננעל מחדש (PR #4678).**
+  - **למה:** ביקורת הפרומפטים (PR #4675) רשמה חמש סתירות בין קבצים. ספיר 16/11: לחקור, להכריע ולתקן. ה-reviewer מצא שישית.
+  - **איך הוכרע:** בכל זוג הנוסח הישן (אפריל–מאי, לפי `git blame` על clone מלא) יושר להחלטה המאוחרת. לא נוסף כלל חדש ולא ירד תנאי עצירה.
+  - **מה:**
+    - **מיזוג ל-staging:** CC, אחרי הבדיקות (ADR-032, כלל 38). staging → main נשאר של ספיר. תוקנו regression rule 7 ו-`deployment.md`.
+    - **בדיקת נייד:** אין בדיקה אנושית, CC הבודק היחיד (375 + 1440). תוקנו `deployment.md`, ‏`frontend.md`, ‏`batch.md` והתבניות 02, 03, 06.
+    - **תחילת session:** הבדיקה רצה ומדווחת בלי לחכות לתשובה; עוצרת רק על session מקביל או PR פתוח על אותו כרטיס. כרטיס מהתור הוא ה-spec המאושר; עבודה בלי כרטיס או עם spec לא ברור עדיין מחכה ל-go (כללים 1 ו-4, ‏`session-start.md`).
+    - **Accept-Both על הלוגים:** רק ב-PR של docs בלבד; ב-branch עם קוד הלוגים יורדים מה-branch. ב-skill ‏`resolve-conflicts` תוקן גם הנתיב המת `docs/HANDOFF.md`, וה-hash ננעל מחדש ב-`backfill-skill-hashes.sh`.
+    - **פתיחת branch:** ישר מ-`origin/staging`, בלי checkout ו-pull מקומיים (`CLAUDE.md`, עכשיו 76/80 שורות; `batch.md`).
+    - **go לכל chunk ב-HIGH-RISK:** חל על עבודה בלי כרטיס מהתור. כרטיס מהתור בתחומים האלה הוא RED לפי ADR-032: אוטונומי, בתנאי ההוכחה של §2 ובתוך העצירות של §3; revision של Alembic עדיין מחכה לאישור של ספיר.
+  - **לא השתנה:** `.github/pull_request_template.md:53` עדיין מבקש «Tested on mobile: iOS Safari + Android Chrome». `.github/**` שייך לספיר.
+  - **בדיקה:** `rules-inventory-guard`, ‏`audit-skills` ו-Skills supply chain audit ב-CI עוברים; `CI gate` ו-`Deploy gate` ירוקים על ה-head שמוזג.
 - **16/11 — ביקורת פרומפטים על קובצי ההנחיות: נתיבים מתים, עובדות מודל ישנות ופיגומי «תחשוב צעד-צעד» (MEH-3345).**
   - **למה:** ספיר 16/11: להריץ את ביקורת הפרומפטים המובנית על `CLAUDE.md`, ‏`.claude/**` ו-`docs/templates/**` וליישם רק ממצאים בביטחון גבוה. docs בלבד, בלי קוד.
   - **מה:**
