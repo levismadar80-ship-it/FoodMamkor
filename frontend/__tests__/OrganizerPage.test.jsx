@@ -229,6 +229,16 @@ describe("MEH-2461 organizer page", () => {
     expect(screen.queryByTestId("organizer-avatar")).toBeNull();
   });
 
+  it("MEH-3340: a percent-encoded Hebrew slug (as Next hands it over) loads the page, not a 404", async () => {
+    const hebrew = "פרדס-בית-הראשונים-קטיף-עצמי";
+    respond(200, { ...ORG, slug: hebrew, images: ["https://res.cloudinary.com/x/image/upload/v1/a.jpg"] });
+    await renderPage(encodeURIComponent(hebrew));
+    expect(notFoundMock).not.toHaveBeenCalled();
+    // the backend gets the slug encoded once, not twice (%25D7…)
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://api.test/organizers/${encodeURIComponent(hebrew)}`);
+    expect(screen.getByTestId("organizer-cover")).toBeTruthy();
+  });
+
   it("a scanner-shaped slug never reaches the API", async () => {
     await expect(renderPage("wp-admin.php")).rejects.toThrow("NEXT_NOT_FOUND");
     expect(fetchMock).not.toHaveBeenCalled();

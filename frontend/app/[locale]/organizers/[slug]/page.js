@@ -22,7 +22,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-import { isSlugShaped } from "@/lib/slug";
+import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { toEventEntry } from "@/lib/event-entry";
@@ -71,7 +71,8 @@ async function getOrganizer(slug) {
 }
 
 export async function generateMetadata(props) {
-  const { slug, locale } = await props.params;
+  const { slug: rawSlug, locale } = await props.params;
+  const slug = decodeSlugParam(rawSlug); // MEH-3340 — the MEH-2534 fix, organizer twin
   if (!isSlugShaped(slug)) notFound();
   const organizer = await getOrganizer(slug);
   const alternates = buildAlternates(`/organizers/${slug}`, locale);
@@ -163,7 +164,8 @@ function ContactLinks({ organizer, t, tCta }) {
 }
 
 export default async function OrganizerPage(props) {
-  const { slug, locale } = await props.params;
+  const { slug: rawSlug, locale } = await props.params;
+  const slug = decodeSlugParam(rawSlug); // MEH-3340 — the MEH-2534 fix, organizer twin
   setRequestLocale(locale);
   const organizer = await getOrganizer(slug);
   if (!organizer) notFound();
