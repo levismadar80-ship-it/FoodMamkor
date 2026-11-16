@@ -18,6 +18,8 @@ import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year"
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
+// MEH-3333: the owner's locations editor, reused with an admin base path.
+import LocationsEditor from "@/app/[locale]/producer/dashboard/edit/LocationsEditor";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import { deriveAvailability } from "@/lib/availability";
@@ -1085,13 +1087,24 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               ProducerLocation rows (the locations editor above), and admin.py
               already drops the field on write (MEH-2060) — so a checkbox here
               could only claim pickup that no consumer surface would show. */}
-          <p className="text-sm text-fg-muted self-center">
-            {t("producers.form.fields.pickup_managed_in_locations")}
-          </p>
+          {/* MEH-3333: on the edit page the admin manages the business's
+              locations (pickup points included) with the owner's own editor,
+              against /admin/producers/{id}/locations. A business being created
+              has no id yet, so the create form keeps the pointer text. */}
+          {!producerId && (
+            <p className="text-sm text-fg-muted self-center">
+              {t("producers.form.fields.pickup_managed_in_locations")}
+            </p>
+          )}
           {/* MEH-903 A: the legacy comma-separated delivery_area_cities input was
               removed — cities are now entered once via the CitiesAutocomplete in
               the location-mode block above (single store: delivery_areas). */}
         </div>
+        {producerId && (
+          <div className="mt-4" data-testid="admin-locations-editor">
+            <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} />
+          </div>
+        )}
       </Section>
 
       <Section title={t("producers.form.sections.description_price")}>
