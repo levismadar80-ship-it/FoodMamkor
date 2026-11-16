@@ -2326,6 +2326,8 @@ export const AdminDeleteProductDraftAdminProducersProducerIdProductDraftsProduct
 /**
  * @summary Admin Import Products
  */
+export const adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault = [];
+
 export const AdminImportProductsAdminProducersProducerIdProductImportPostResponse = /*#__PURE__*/ zod.object({
   "created": /*#__PURE__*/ zod.int(),
   "invalid": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -2333,7 +2335,8 @@ export const AdminImportProductsAdminProducersProducerIdProductImportPostRespons
   "name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "reason": /*#__PURE__*/ zod.string()
 })),
-  "skipped_duplicates": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+  "skipped_duplicates": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "unknown_units": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault)
 })
 
 

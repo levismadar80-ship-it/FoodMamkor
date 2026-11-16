@@ -1962,7 +1962,7 @@
         "title": "Import products from an existing store",
         "intro": "Products are saved as drafts and are not on the site until approved. A name the business already has is skipped; images are not imported.",
         "paste_label": "Product list (JSON)",
-        "paste_help": "An array of {name, description, price, unit}. For a mypips store: scripts/import/mypips-extract.mjs",
+        "paste_help": "An array of products with the fields name, description, price, unit. For a mypips store: scripts/import/mypips-extract.mjs",
         "import_cta": "Import as drafts",
         "result": "{created} drafts added · {skipped} duplicates skipped · {invalid} invalid rows",
         "invalid_row": "Row {n} ({name}): {reason}",
@@ -1973,7 +1973,14 @@
         "delete_cta": "Delete",
         "error": "That didn't work — please try again.",
         "error_json": "The text is not valid JSON.",
-        "error_shape": "Expected an array of products, or an object with rows."
+        "error_shape": "Expected an array of products, or an object with rows.",
+        "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
+        "load_failed": "Couldn't load the drafts. Try refreshing.",
+        "unit": {
+          "unit": "per unit",
+          "kg": "per kg",
+          "100g": "per 100 g"
+        }
       }
     },
     "users": {

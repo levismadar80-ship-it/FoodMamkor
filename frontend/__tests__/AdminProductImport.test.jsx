@@ -20,8 +20,8 @@ const wrap = () =>
     </NextIntlClientProvider>,
   );
 const DRAFTS = [
-  { id: "d1", name: "אגס עדן", price_min: "20", price_unit: "kg" },
-  { id: "d2", name: "אננס", price_min: "35", price_unit: "unit" },
+  { id: "11111111-1111-4111-8111-111111111111", name: "אגס עדן", price_min: "20", price_unit: "kg" },
+  { id: "22222222-2222-4222-8222-222222222222", name: "אננס", price_min: "35", price_unit: "unit" },
 ];
 
 beforeEach(() => {
@@ -36,6 +36,21 @@ describe("AdminProductImport (MEH-2312)", () => {
     expect(screen.queryByRole("button", { name: /אישור כל הטיוטות/ })).toBeNull();
   });
 
+  it("1 draft: listed with its unit", async () => {
+    api.get.mockResolvedValue({ data: [DRAFTS[0]] });
+    wrap();
+    const items = await screen.findAllByRole("listitem");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent(T.unit.kg);
+  });
+
+  it("a failed load says so (not «no drafts»)", async () => {
+    api.get.mockRejectedValue(new Error("500"));
+    wrap();
+    expect(await screen.findByText(T.load_failed)).toBeInTheDocument();
+    expect(screen.queryByText(T.drafts_empty)).toBeNull();
+  });
+
   it("bad JSON is refused before any request", async () => {
     api.get.mockResolvedValue({ data: [] });
     wrap();
@@ -47,7 +62,7 @@ describe("AdminProductImport (MEH-2312)", () => {
 
   it("imports pasted rows, then lists the drafts and approves them all", async () => {
     api.get.mockResolvedValueOnce({ data: [] }).mockResolvedValue({ data: DRAFTS });
-    api.post.mockResolvedValueOnce({ data: { created: 2, skipped_duplicates: [], invalid: [] } });
+    api.post.mockResolvedValueOnce({ data: { created: 2, skipped_duplicates: [], invalid: [], unknown_units: [] } });
     wrap();
     const rows = [{ name: "אגס עדן", price: 20, unit: 'לק"ג' }, { name: "אננס", price: 35 }];
     fireEvent.change(screen.getByLabelText(T.paste_label), { target: { value: JSON.stringify(rows) } });
@@ -60,7 +75,9 @@ describe("AdminProductImport (MEH-2312)", () => {
     api.get.mockResolvedValue({ data: [] });
     fireEvent.click(screen.getByRole("button", { name: /אישור כל הטיוטות/ }));
     await waitFor(() =>
-      expect(api.post).toHaveBeenLastCalledWith("/admin/producers/p-1/product-drafts/approve", {}),
+      expect(api.post).toHaveBeenLastCalledWith("/admin/producers/p-1/product-drafts/approve", {
+        product_ids: DRAFTS.map((d) => d.id),
+      }),
     );
     expect(await screen.findByText(T.drafts_empty)).toBeInTheDocument();
   });

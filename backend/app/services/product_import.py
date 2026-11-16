@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.limits import MAX_PRODUCTS
-from app.models import Product
+from app.models import Producer, Product
 from app.schemas.catalog import (
     ProductCreate,
     ProductImportInvalidRow,
@@ -55,7 +55,9 @@ _UNIT_MAP: dict[str, str] = {
     "ל-100 גרם": "100g",
 }
 
-_PRICE_NOISE = re.compile(r"[₪,\s]|ש\"ח|ש״ח")
+_PRICE_NOISE = re.compile(r"[₪\s]|ש\"ח|ש״ח")
+# "1,200" is a thousands comma; "12,5" is a decimal comma (Hebrew habit).
+_THOUSANDS = re.compile(r"^\d{1,3}(,\d{3})+(\.\d+)?$")
 
 
 def _name_key(name: str) -> str:
@@ -63,22 +65,26 @@ def _name_key(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip().casefold()
 
 
-def _parse_price(raw: str | float | None) -> Decimal | None:
-    if raw is None:
+def _parse_price(raw: str | bool | float | None) -> Decimal | None:
+    if raw is None or isinstance(raw, bool):  # JSON true is not a price
         return None
     text = _PRICE_NOISE.sub("", str(raw))
     if not text:
         return None
+    text = text.replace(",", "") if _THOUSANDS.match(text) else text.replace(",", ".")
     try:
         return Decimal(text)
     except InvalidOperation:
         return None
 
 
-def _unit(raw: str | None) -> str:
-    if not raw:
-        return "unit"
-    return _UNIT_MAP.get(raw.strip().lower(), "unit")
+def _unit(raw: str | None) -> tuple[str, bool]:
+    """(unit, recognised). An unknown word is priced per unit AND reported, so
+    a per-kilo price is never published as per-unit without anyone seeing it."""
+    if not raw or not raw.strip():
+        return "unit", True
+    key = raw.strip().lower()
+    return _UNIT_MAP.get(key, "unit"), key in _UNIT_MAP
 
 
 def _source_image(raw: str | None) -> str | None:
@@ -105,11 +111,15 @@ def import_drafts(
     business (draft or published) or appeared earlier in the same batch — the
     import is one-off, and running it twice must not double the catalog.
     """
+    # Two imports at once must not both pass the cap / duplicate check: lock
+    # the business row for the transaction (REUSES producer_claim's pattern).
+    db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
     existing = db.query(Product.name).filter(Product.producer_id == producer_id).all()
     seen = {_name_key(str(r.name)) for r in existing}
     to_create: list[Product] = []
     duplicates: list[str] = []
     invalid: list[ProductImportInvalidRow] = []
+    unknown_units: set[str] = set()
 
     for index, row in enumerate(rows):
         price = _parse_price(row.price)
@@ -133,6 +143,9 @@ def import_drafts(
             duplicates.append(checked.name)
             continue
         seen.add(key)
+        unit, recognised = _unit(row.unit)
+        if not recognised and row.unit:
+            unknown_units.add(row.unit.strip())
         to_create.append(
             Product(
                 producer_id=producer_id,
@@ -140,7 +153,7 @@ def import_drafts(
                 description=checked.description,
                 price_min=checked.price_min,
                 price_max=checked.price_min,
-                price_unit=_unit(row.unit),
+                price_unit=unit,
                 source_image_url=_source_image(row.source_image_url),
                 is_draft=True,
             )
@@ -159,5 +172,8 @@ def import_drafts(
     db.add_all(to_create)
     db.commit()
     return ProductImportResult(
-        created=len(to_create), skipped_duplicates=duplicates, invalid=invalid
+        created=len(to_create),
+        skipped_duplicates=duplicates,
+        invalid=invalid,
+        unknown_units=sorted(unknown_units),
     )

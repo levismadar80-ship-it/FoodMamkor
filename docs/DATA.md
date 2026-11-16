@@ -835,7 +835,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 [SECURITY.md](./SECURITY.md) §2.
 
 > **MEH-3022 — per-business caps.** Creates answer **409** with a Hebrew
-> `detail` once a business holds the maximum: products 100, recipes 50,
+> `detail` once a business holds the maximum: products 250 (MEH-2312; drafts count), recipes 50,
 > locations 20, upcoming events 30, upcoming/recurring experiences 30, open or
 > funded group buys 30. `PUT /producers/me` refuses more than 20 `images` or
 > 300 delivery cities/areas with a Hebrew 422. All numbers live in

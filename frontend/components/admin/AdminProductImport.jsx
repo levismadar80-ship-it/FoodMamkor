@@ -23,6 +23,13 @@ import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
 import InlineMessage from "@/components/ui/InlineMessage";
+// Rule 19: parse both responses before reading them (generated from openapi).
+import {
+  AdminImportProductsAdminProducersProducerIdProductImportPostResponse as ImportResultSchema,
+  AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponse as DraftListSchema,
+} from "@/lib/generated/api.zod";
+
+const UNIT_KEYS = new Set(["unit", "kg", "100g"]);
 
 /**
  * @param {string} text
@@ -48,12 +55,18 @@ export default function AdminProductImport({ producerId }) {
   const [error, setError] = useState(/** @type {string | null} */ (null));
   const [busy, setBusy] = useState(false);
 
+  const [loadFailed, setLoadFailed] = useState(false);
   const load = useCallback(async () => {
     try {
       const r = await api.get(`/admin/producers/${producerId}/product-drafts`);
-      setDrafts(Array.isArray(r.data) ? r.data : []);
+      const parsed = DraftListSchema.safeParse(r.data);
+      if (!parsed.success) throw new Error("schema");
+      setDrafts(parsed.data);
+      setLoadFailed(false);
     } catch {
-      setDrafts([]);
+      // A failed load is NOT "nothing to approve" — say so instead.
+      setDrafts(null);
+      setLoadFailed(true);
     }
   }, [producerId]);
 
@@ -81,7 +94,9 @@ export default function AdminProductImport({ producerId }) {
     }
     run(async () => {
       const r = await api.post(`/admin/producers/${producerId}/product-import`, { rows: parsed.rows });
-      setResult(r.data);
+      const checked = ImportResultSchema.safeParse(r.data);
+      if (!checked.success) throw new Error("schema");
+      setResult(checked.data);
       setText("");
       await load();
     });
@@ -89,7 +104,11 @@ export default function AdminProductImport({ producerId }) {
 
   const onApproveAll = () =>
     run(async () => {
-      const r = await api.post(`/admin/producers/${producerId}/product-drafts/approve`, {});
+      // Exactly the drafts on screen — a second import that landed after this
+      // list loaded is never published unseen.
+      const r = await api.post(`/admin/producers/${producerId}/product-drafts/approve`, {
+        product_ids: (drafts || []).map((d) => d.id),
+      });
       setResult({ approved: r.data.approved });
       await load();
     });
@@ -139,6 +158,11 @@ export default function AdminProductImport({ producerId }) {
           ))}
         </ul>
       )}
+      {result?.unknown_units?.length > 0 && (
+        <InlineMessage tone="error" data-testid="import-unknown-units">
+          {t("unknown_units", { units: result.unknown_units.join(", ") })}
+        </InlineMessage>
+      )}
       {result && "approved" in result && (
         <InlineMessage tone="success">{t("approved", { count: result.approved })}</InlineMessage>
       )}
@@ -151,14 +175,18 @@ export default function AdminProductImport({ producerId }) {
           </Button>
         )}
       </div>
+      {loadFailed && <InlineMessage tone="error">{t("load_failed")}</InlineMessage>}
       {drafts !== null && count === 0 && <p className="text-sm text-fg-muted">{t("drafts_empty")}</p>}
       {count > 0 && (
         <ul className="divide-y divide-border text-sm" data-testid="draft-list">
           {drafts?.map((d) => (
             <li key={d.id} className="flex items-center gap-3 py-2">
               <span className="flex-1 min-w-0 truncate">{d.name}</span>
-              <span className="numeric text-fg-muted shrink-0" dir="ltr">
-                ₪{Number(d.price_min ?? 0)}
+              <span className="text-fg-muted shrink-0">
+                <span className="numeric" dir="ltr">
+                  ₪{Number(d.price_min ?? 0)}
+                </span>{" "}
+                {t(`unit.${UNIT_KEYS.has(d.price_unit) ? d.price_unit : "unit"}`)}
               </span>
               <Button type="button" size="sm" variant="text" onClick={() => onDelete(d.id)} disabled={busy}>
                 {t("delete_cta")}

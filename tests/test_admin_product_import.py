@@ -103,7 +103,12 @@ def test_zero_rows_creates_nothing(client, db):
     producer = make_producer(db)
     resp = _import(client, db, producer, rows=[])
     assert resp.status_code == 200, resp.text
-    assert resp.json() == {"created": 0, "skipped_duplicates": [], "invalid": []}
+    assert resp.json() == {
+        "created": 0,
+        "skipped_duplicates": [],
+        "invalid": [],
+        "unknown_units": [],
+    }
 
 
 def test_one_row(client, db):
@@ -289,3 +294,23 @@ def test_too_many_rows_is_422(client, db):
     producer = make_producer(db)
     rows = [{"name": f"מוצר {i}", "price": 10} for i in range(251)]
     assert _import(client, db, producer, rows=rows).status_code == 422
+
+
+def test_prices_and_units_from_the_review(client, db):
+    producer = make_producer(db)
+    rows = [
+        {"name": "שזיפים", "price": "12,5"},  # decimal comma
+        {"name": "שמן זית", "price": "1,200"},  # thousands comma
+        {"name": "ענבים", "price": True},  # JSON true is not a price
+        {"name": "חלב עיזים", "price": 30, "unit": "לליטר"},  # unknown unit
+    ]
+    body = _import(client, db, producer, rows=rows).json()
+    assert body["created"] == 3
+    assert [r["index"] for r in body["invalid"]] == [2]
+    assert body["unknown_units"] == ["לליטר"]
+    prices = {
+        p.name: float(p.price_min)
+        for p in db.query(Product).filter(Product.producer_id == producer.id)
+    }
+    assert prices["שזיפים"] == 12.5
+    assert prices["שמן זית"] == 1200.0

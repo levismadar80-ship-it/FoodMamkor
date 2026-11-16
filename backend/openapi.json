@@ -13094,6 +13094,14 @@
             },
             "title": "Skipped Duplicates",
             "type": "array"
+          },
+          "unknown_units": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknown Units",
+            "type": "array"
           }
         },
         "required": [
@@ -13134,6 +13142,9 @@
             "anyOf": [
               {
                 "type": "string"
+              },
+              {
+                "type": "boolean"
               },
               {
                 "type": "number"

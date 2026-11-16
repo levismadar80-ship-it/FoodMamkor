@@ -13,6 +13,8 @@ from decimal import Decimal
 from typing import Any, Literal, Self
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.limits import MAX_PRODUCTS  # MEH-2312
 from app.allergens import normalize_allergens
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
@@ -598,7 +600,7 @@ class ProductGroupOut(BaseModel):
 class ProductImportRow(BaseModel):
     name: str | None = Field(None, max_length=500)
     description: str | None = Field(None, max_length=5000)
-    price: str | float | None = None
+    price: str | bool | float | None = None  # bool kept as bool, so JSON true is refused
     unit: str | None = Field(None, max_length=40)
     source_image_url: str | None = Field(None, max_length=2000)
 
@@ -606,7 +608,7 @@ class ProductImportRow(BaseModel):
 class ProductImportRequest(BaseModel):
     # MEH-3022: a bounded list. A business can never own more than
     # MAX_PRODUCTS rows anyway, so a longer batch could only be refused.
-    rows: list[ProductImportRow] = Field(..., max_length=250)
+    rows: list[ProductImportRow] = Field(..., max_length=MAX_PRODUCTS)
 
 
 class ProductImportInvalidRow(BaseModel):
@@ -619,6 +621,9 @@ class ProductImportResult(BaseModel):
     created: int
     skipped_duplicates: list[str]
     invalid: list[ProductImportInvalidRow]
+    # Source unit words the import did not recognise; those rows are priced
+    # per unit — the admin checks them before approving.
+    unknown_units: list[str] = []
 
 
 class ProductDraftOut(BaseModel):
@@ -636,7 +641,7 @@ class ProductDraftOut(BaseModel):
 
 class ProductDraftApproveRequest(BaseModel):
     # None = approve every draft of the business.
-    product_ids: list[UUID] | None = Field(None, max_length=250)
+    product_ids: list[UUID] | None = Field(None, max_length=MAX_PRODUCTS)
 
 
 class ProductDraftApproveResult(BaseModel):

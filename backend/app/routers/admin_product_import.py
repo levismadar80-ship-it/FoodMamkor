@@ -12,6 +12,7 @@ Related:  services/product_import.py:import_drafts; models.Producer.products
 History:  MEH-2312 (creation).
 """
 
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -31,6 +32,7 @@ from app.schemas.catalog import (
 from app.services.product_import import import_drafts
 
 router = APIRouter(prefix="/admin/producers", tags=["admin-product-import"])
+logger = logging.getLogger(__name__)
 
 
 def _require_producer_row(db: Session, producer_id: UUID) -> Producer:
@@ -94,6 +96,13 @@ def admin_approve_product_drafts(
         q = q.filter(Product.id.in_(body.product_ids))
     approved = q.update({Product.is_draft: False}, synchronize_session=False)
     db.commit()
+    # Publishing a catalog in the owner's place leaves a trail.
+    logger.info(
+        "product drafts approved: producer=%s count=%s admin=%s",
+        producer_id,
+        approved,
+        user.id,
+    )
     return ProductDraftApproveResult(approved=approved)
 
 
@@ -119,3 +128,9 @@ def admin_delete_product_draft(
         raise HTTPException(status_code=404, detail="טיוטה לא נמצאה")
     db.delete(draft)
     db.commit()
+    logger.info(
+        "product draft deleted: producer=%s product=%s admin=%s",
+        producer_id,
+        product_id,
+        user.id,
+    )
