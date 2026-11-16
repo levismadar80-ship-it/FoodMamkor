@@ -115,9 +115,11 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
    Read HANDOFF.md first, this file, DESIGN.md/DATA.md; list feature branches,
-   open PRs and `origin/staging..origin/main`; report and ask "continue an open
-   PR, or start fresh?" — never skip it. Evidence of a parallel session → stop
-   and report. PR given by number → check out its head branch first.
+   open PRs and `origin/staging..origin/main`; report what you found — never
+   skip it — then start on the queue or the task you were given (ADR-032: no
+   waiting for a reply). Evidence of a parallel session, or an open PR on the
+   same card → stop and report. PR given by number → check out its head
+   branch first.
 2. **Branch from `staging`** — never from `main`. See
    [deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes. Pattern
@@ -126,7 +128,8 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
    branch is not an exception: re-cut `git checkout -B feature/meh-XXXX-<slug>
    origin/staging` per ticket before the first commit — the repo wins.
 4. **Plan before coding + interview mode.** Propose in plain text, wait for
-   `go`. Ambiguous spec → 2–5 targeted questions first. Before a plan that
+   `go` — except a card worked from the queue, whose description is the
+   approved spec (ADR-032): no `go` is awaited for it. Ambiguous spec → 2–5 targeted questions first. Before a plan that
    references a Linear issue, fetch the live description and name every
    spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
    silently.
@@ -222,7 +225,8 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 6. **Guard tests (401/403/409) must send schema-valid payloads.** A 422 proves
    nothing; use the `valid_*_payload()` fixtures in `tests/conftest.py`.
 7. **Docs-only files still go through a feature branch + PR.** `staging` rejects
-   all direct pushes; merge stays Sapir-only.
+   all direct pushes. CC merges to staging after its checks (ADR-032, rules 21
+   and 38–41); staging → main is Sapir's.
 8. **Never add new env vars without listing them explicitly** and waiting for
    confirmation.
 9. **Test dummy URLs must be real backend routes (matching method).** See

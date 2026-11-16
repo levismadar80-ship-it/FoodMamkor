@@ -19,6 +19,6 @@ Execute these steps in order:
    git log --oneline origin/main..origin/staging
    ```
 5. **Single-session check** — scan the branch list for evidence of a parallel session: `claude/*` prefixed branches, branches with timestamps within the last hour that you didn't create, or conflicting work in flight. If any: **stop and report to the user before proceeding** (per the Single Session Rule). Parallel sessions caused PRs #71/#72/#77 to be re-applied.
-6. **Report findings to the user** in a concise summary: open PRs + their state, feature branches that look stale or continuable, any drift between staging and main, any parallel-session red flags. Then ask: *"continue an open PR, or start fresh?"*
+6. **Report findings to the user** in a concise summary: open PRs + their state, feature branches that look stale or continuable, any drift between staging and main, any parallel-session red flags.
 
-Do **not** start any task work until the user has responded to the summary. Never skip this audit even if the user jumps straight to a task description.
+Then start on the queue or the task you were given; the report does not wait for a reply (ADR-032). The one exception is step 5: on evidence of a parallel session, or an open PR on the same card, stop and wait. Never skip this audit even if the user jumps straight to a task description.
