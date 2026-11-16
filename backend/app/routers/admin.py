@@ -333,7 +333,7 @@ def admin_create_producer(
     # Collision → the town is appended (never a bare "-2", MEH-3336).
     # `or None`: an all-Arabic name with no handle transliterates to "", and ""
     # must never be stored — NULL keeps the /producer/{id} fallback (MEH-1817).
-    slug = _ensure_unique_slug(db, slug, city=data.city) or None
+    stored_slug: str | None = _ensure_unique_slug(db, slug, city=data.city) or None
 
     # MEH-530: same conditional-required guard as the public endpoints —
     # admin form can still persist non-regex license values verbatim
@@ -369,7 +369,7 @@ def admin_create_producer(
         # MEH-296 3d: admin-create parity for the new channels.
         facebook=data.facebook,
         external_order_form=data.external_order_form,
-        slug=slug,
+        slug=stored_slug,
         top_product_name=data.top_product_name,
         price_range=data.price_range,
         grass_fed=data.grass_fed,
