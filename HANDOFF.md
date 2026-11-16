@@ -4,6 +4,21 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-16 — סנדרה פירות: שש משימות פתוחות לבית עסק שאדמין בונה
+
+**שורה אחת:** שישה PRs פתוחים, אף אחד לא מוזג: #4659 · #4660 · #4661 · #4662 · #4666 · #4667.
+
+**מה צריך לדעת לפני עבודה:**
+- **סדר מיזוג:** #4660 → #4662 → #4666. שלושתם נוגעים ב-`frontend/components/admin/ProducerForm.jsx`, וכל אחד בנוי על הקודם (merge, לא rebase).
+- **Alembic:** ל-#4666 ול-#4667 יש שתי רוויזיות, ושתיהן יורדות מ-`f6c2a8d4e1b7`. מי שמתמזגת שנייה מעדכנת `down_revision` לראשונה, אחרת יהיו שני heads.
+- **mypips:** `scripts/import/mypips-extract.mjs` קורא רק דפים ציבוריים ומחזיר 30 מתוך 197 מוצרים. כדי לקבל את כולם צריך ייצוא מ-mypips או אישור לקרוא את תעבורת הרשת של הדף הציבורי.
+- **מחכה לספיר:** העלאת המכסה ל-250 מוצרים, הנוסח «תמונת בעלת העסק» ו-«slug_not_latin», ושלושת המודולים החדשים ברשימת mypy ב-`backend/pyproject.toml` (העריכה חסומה ל-CC).
+- **ממצאים שנפתחו:** MEH-3342 (חורים שנמצאו בדרך), והערה ב-MEH-3322 על ה-flake ב-`footer-nav-clearance.spec.ts:186`.
+
+**הצעד הבא:** אחרי המיזוג, לבנות את סנדרה ב-staging דרך מסכי האדמין (נקודות איסוף, ייבוא, טלפון נוסף, ביו) ולבדוק ב-390px.
+
+---
+
 ## 2026-11-15 — שתי מייסדות באתר (MEH-3323)
 
 **שורה אחת:** #4649 מוזג ל-staging. #4650 («מה חדש» 1.5.3, `items: 0`) והגרסה ל-main בדרך.
