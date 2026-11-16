@@ -22,7 +22,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-import { isSlugShaped } from "@/lib/slug";
+import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { toEventEntry } from "@/lib/event-entry";
@@ -71,10 +71,12 @@ async function getOrganizer(slug) {
 }
 
 export async function generateMetadata(props) {
-  const { slug, locale } = await props.params;
+  const { slug: rawSlug, locale } = await props.params;
+  const slug = decodeSlugParam(rawSlug); // MEH-3340 — the MEH-2534 fix, organizer twin
   if (!isSlugShaped(slug)) notFound();
   const organizer = await getOrganizer(slug);
-  const alternates = buildAlternates(`/organizers/${slug}`, locale);
+  // the URL as requested (still encoded) — same as app/[locale]/[slug]/page.js
+  const alternates = buildAlternates(`/organizers/${rawSlug}`, locale);
   if (!organizer) {
     return {
       title: { absolute: buildEntityTitle(null, locale) },
@@ -163,7 +165,8 @@ function ContactLinks({ organizer, t, tCta }) {
 }
 
 export default async function OrganizerPage(props) {
-  const { slug, locale } = await props.params;
+  const { slug: rawSlug, locale } = await props.params;
+  const slug = decodeSlugParam(rawSlug); // MEH-3340 — the MEH-2534 fix, organizer twin
   setRequestLocale(locale);
   const organizer = await getOrganizer(slug);
   if (!organizer) notFound();
@@ -175,7 +178,7 @@ export default async function OrganizerPage(props) {
   const initial = avatarInitial(organizer.name, "");
   // MEH-3018: the canonical URL, built on the server, so the share button
   // carries the same value in the HTML and after hydration.
-  const pageUrl = buildAlternates(`/organizers/${slug}`, locale).canonical;
+  const pageUrl = buildAlternates(`/organizers/${rawSlug}`, locale).canonical;
 
   return (
     <main className="max-w-3xl mx-auto pb-10 space-y-8" data-testid="organizer-page">
