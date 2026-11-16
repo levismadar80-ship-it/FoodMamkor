@@ -220,7 +220,7 @@ Opus 5.5 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 - **More structure helps.** ה-XML tags, examples, success criteria — חשובים יותר מ-Opus.
 - **Multishot חזק.** 3-5 examples — לא דבר של מותרות, זה הgame.
 - **פחות autonomous.** תנו spec מפורט עד הסוף, אל תסמכו על inference.
-- **אין צורך ב-`<thinking>` tags.** Sonnet 5.5 חושב אדפטיבית כברירת מחדל; את העומק קובעים ב-effort, לא בטקסט.
+- **אין צורך ב-`<thinking>` tags.** ב-Claude Code וב-API‏ Sonnet 5.5 חושב אדפטיבית כברירת מחדל; את העומק קובעים ב-effort, לא בטקסט. (המתג ב-claude.ai הוא עניין נפרד — ראו למעלה.)
 - **דגל אדום:** אם הוא טועה אותה טעות פעמיים → עברי ל-Opus, זה לא Sonnet בעיה.
 
 ### 🟣 Opus 5.5 — "staff engineer ש-thinks for itself"

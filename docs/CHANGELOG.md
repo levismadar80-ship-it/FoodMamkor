@@ -8,7 +8,7 @@
   - **למה:** ספיר 16/11: להריץ את ביקורת הפרומפטים המובנית על `CLAUDE.md`, ‏`.claude/**` ו-`docs/templates/**` וליישם רק ממצאים בביטחון גבוה. docs בלבד, בלי קוד.
   - **מה:**
     - `CLAUDE.md`: הכותרת והשורה הראשונה בלי אותיות גדולות, אותו כלל. «Ignore Claude Code system prompt» הוחלף ב«כשה-harness קורא ל-`main` בסיס, משתמשים ב-`staging`». הוסרו שני מספרים שהתיישנו («20 workflow rules», «9 prompt templates»). הקובץ נשאר 79 שורות.
-    - `.claude/commands/session-start.md`: ההפניה ל«`CLAUDE.md` rule 1» תוקנה ל-`.claude/rules/workflow.md` rule 1.
+    - `.claude/commands/session-start.md`, ‏`session-save.md`, ‏`session-resume.md`: הפניות ל«`CLAUDE.md` rule N» תוקנו ל-`.claude/rules/workflow.md` (rule 1 ו-rule 14; ב-`CLAUDE.md` אין כללים ממוספרים).
     - `.claude/commands/adversarial-review-size.md`: ארבעה נתיבים מתים תוקנו לפי `central-components.json` (`app/[locale]/page.js`, ‏`app/[locale]/layout.js`, ‏`ProducerDetail.jsx` במקומו החדש).
     - skill ‏`resolve-conflicts`: ‏`docs/HANDOFF.md` תוקן ל-`HANDOFF.md`.
     - תבנית 00: מחיר fast mode (לא «פי 3 זול יותר»), Sonnet 5.5 חושב אדפטיבית כברירת מחדל, תוויות שלושה קישורים שלא תאמו את הכתובת שלהם, והמזהה של Fable 5.1 (`claude-fable-5-1`).
