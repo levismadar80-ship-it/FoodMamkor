@@ -600,7 +600,8 @@ class ProductGroupOut(BaseModel):
 class ProductImportRow(BaseModel):
     name: str | None = Field(None, max_length=500)
     description: str | None = Field(None, max_length=5000)
-    price: str | bool | float | None = None  # bool kept as bool, so JSON true is refused
+    # bool kept as bool, so JSON true is refused
+    price: str | bool | float | None = None
     unit: str | None = Field(None, max_length=40)
     source_image_url: str | None = Field(None, max_length=2000)
 
