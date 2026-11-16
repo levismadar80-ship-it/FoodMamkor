@@ -56,7 +56,9 @@ def _get_producer(db: Session, producer_id: UUID) -> Producer:
     return producer
 
 
-def _get_location_of(db: Session, producer_id: UUID, location_id: UUID) -> ProducerLocation:
+def _get_location_of(
+    db: Session, producer_id: UUID, location_id: UUID
+) -> ProducerLocation:
     # MEH-3333 IDOR: the location must belong to the business in the PATH. A
     # location of another business answers 404 — the pair (producer, location)
     # does not exist — so a mistyped id can never edit the wrong business.
@@ -73,9 +75,7 @@ def _get_location_of(db: Session, producer_id: UUID, location_id: UUID) -> Produ
     return loc
 
 
-@router.get(
-    "/{producer_id}/locations", response_model=list[ProducerLocationOwnerOut]
-)
+@router.get("/{producer_id}/locations", response_model=list[ProducerLocationOwnerOut])
 def admin_list_locations(
     producer_id: UUID,
     user: User = Depends(require_admin),
