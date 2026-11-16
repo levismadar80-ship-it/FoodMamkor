@@ -1,12 +1,12 @@
 ---
-description: Run the mandatory Session Start Protocol audit from CLAUDE.md rule 1.
+description: Run the Session Start Protocol audit from .claude/rules/workflow.md rule 1.
 ---
 
-Run the **Session Start Protocol** from `CLAUDE.md` rule 1 before doing any other work. This audit is MANDATORY at the beginning of every session — it prevents duplicate PRs, stale branches, and lost work across sessions.
+Run the **Session Start Protocol** from `.claude/rules/workflow.md` rule 1 before doing any other work. It runs at the beginning of every session because it prevents duplicate PRs, stale branches, and lost work across sessions.
 
 Execute these steps in order:
 
-1. **Read the core docs** — `CLAUDE.md` (this file) plus [docs/DESIGN.md](../../docs/DESIGN.md) if the upcoming work is UI, or [docs/DATA.md](../../docs/DATA.md) if it's backend. Don't guess which — ask the user if the task domain is ambiguous.
+1. **Read the core docs** — `CLAUDE.md` plus [docs/DESIGN.md](../../docs/DESIGN.md) if the upcoming work is UI, or [docs/DATA.md](../../docs/DATA.md) if it's backend. Don't guess which — ask the user if the task domain is ambiguous.
 2. **Fetch + list remote feature branches:**
    ```bash
    git fetch --prune origin
