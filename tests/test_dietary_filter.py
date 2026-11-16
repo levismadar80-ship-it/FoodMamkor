@@ -323,7 +323,7 @@ def test_gluten_free_filter_matches_any_gluten_free_product_only(client, db):
 
     # A dedicated-facility declaration with no gluten-free product does NOT
     # satisfy ?gluten_free — the facility column is not read by the filter
-    # (producer_listing._SCOPE_OR_FILTERS holds only `vegan`; MEH-1508 §6.3).
+    # (producer_listing._SCOPE_COLUMN_FOR_AXIS holds only `vegan`; MEH-1508 §6.3).
     p_facility = make_producer(db, name="מתקן ללא גלוטן בלי מוצר מסומן")
     p_facility.gluten_free_facility = "dedicated"
     db.commit()
@@ -350,10 +350,17 @@ def test_lactose_free_filter_matches_any_lactose_free_product_only(client, db):
 
     make_producer(db, name="מחלבה ריקה")
 
+    # Same rule as gluten above: the facility column is not read by the filter.
+    p_facility = make_producer(db, name="מתקן ללא לקטוז בלי מוצר מסומן")
+    p_facility.lactose_free_facility = "dedicated"
+    db.commit()
+    _add_product(db, p_facility, name="מוצר לא מסומן", is_lactose_free=False)
+
     names = _names(client, lactose_free="true")
     assert "מחלבת שקדים" in names
     assert "מחלבת פרות" not in names
     assert "מחלבה ריקה" not in names
+    assert "מתקן ללא לקטוז בלי מוצר מסומן" not in names
 
     lf.is_lactose_free = False
     db.commit()
