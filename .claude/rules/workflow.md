@@ -129,9 +129,9 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
    origin/staging` per ticket before the first commit — the repo wins.
 4. **Plan before coding + interview mode.** Propose in plain text, wait for
    `go` — except a card worked from the queue, whose description is the
-   approved spec (ADR-032): no `go` is awaited for it. Ambiguous spec → 2–5 targeted questions first. Before a plan that
-   references a Linear issue, fetch the live description and name every
-   spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
+   approved spec (ADR-032): no `go` is awaited for it. Ambiguous spec → 2–5
+   targeted questions first. Before a plan that references a Linear issue,
+   fetch the live description and name every spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
    silently.
 5a. **Adversarial review before every merge to staging.** See
    [testing.md](./testing.md). In addition to `/adversarial-review`, the
