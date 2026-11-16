@@ -9,6 +9,7 @@ Split out of routers/admin.py (MEH-3267); the code is moved verbatim.
 """
 
 import logging
+import re
 from typing import NamedTuple
 from uuid import UUID
 
@@ -19,8 +20,13 @@ from sqlalchemy.orm import Session
 from app.models import Producer
 from app.services import retired_slugs  # MEH-2528
 from app.services.license_validation import categories_require_license
-from app.slug_utils import is_reserved, rejected_characters
-from app.slug_utils import slugify as _slugify
+from app.slug_utils import (
+    is_latin_slug,
+    is_reserved,
+    latin_city_suffix,
+    latin_slug,
+    rejected_characters,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +56,30 @@ def _guard_supplied_slug(raw: str) -> None:
             status_code=422,
             detail={"code": "slug_charset_not_allowed", "characters": bad},
         )
+    # MEH-3336: a typed slug must be Latin. Asked of the normalised form the
+    # write path stores (lower-case, spaces → hyphens), so "Sandra Perot" is
+    # accepted as "sandra-perot" and "סנדרה" is refused with its characters.
+    normalised = re.sub(r"\s+", "-", raw.strip().lower())
+    if not is_latin_slug(normalised):
+        non_latin = sorted({c for c in normalised if not re.match(r"[a-z0-9-]", c)})
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "slug_not_latin", "characters": non_latin},
+        )
 
 
 def _ensure_unique_slug(
-    db: Session, base_slug: str, exclude_id: UUID | None = None
+    db: Session,
+    base_slug: str,
+    exclude_id: UUID | None = None,
+    city: str | None = None,
 ) -> str:
-    """Append -2, -3, ... until slug is unique, not reserved and not retired.
+    """Return a slug that is unique, not reserved and not retired.
+
+    MEH-3336: on a collision the business's town is appended
+    ("sandra-perot-prds-chna-krkor") before any number. The `-2, -3` counter
+    is the last resort only — when no town is known, or the town variant is
+    taken too — because a loop that can run out of candidates must still end.
 
     MEH-2528: a retired slug (the URL of a deleted or renamed business, see
     services/retired_slugs.py) counts as taken, so an old link never resolves
@@ -64,19 +88,27 @@ def _ensure_unique_slug(
     """
     if not base_slug:
         return base_slug
-    candidate = base_slug
-    counter = 2
-    while True:
-        if not is_reserved(candidate) and not retired_slugs.is_retired(
+
+    def _free(candidate: str) -> bool:
+        if is_reserved(candidate) or retired_slugs.is_retired(
             db, candidate, owner_id=exclude_id
         ):
-            q = db.query(Producer).filter(Producer.slug == candidate)
-            if exclude_id:
-                q = q.filter(Producer.id != exclude_id)
-            if not q.first():
-                return candidate
-        candidate = f"{base_slug}-{counter}"
+            return False
+        q = db.query(Producer).filter(Producer.slug == candidate)
+        if exclude_id:
+            q = q.filter(Producer.id != exclude_id)
+        return q.first() is None
+
+    if _free(base_slug):
+        return base_slug
+    suffix = latin_city_suffix(city)
+    stem = f"{base_slug}-{suffix}" if suffix else base_slug
+    if suffix and _free(stem):
+        return stem
+    counter = 2
+    while not _free(f"{stem}-{counter}"):
         counter += 1
+    return f"{stem}-{counter}"
 
 
 def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
@@ -102,7 +134,13 @@ def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
     later approval could repair it.
     """
     if not producer.slug:
-        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None  # type: ignore[arg-type,assignment]
+        # MEH-3336: a Latin slug, from the Instagram handle or the name.
+        minted = _ensure_unique_slug(
+            db,
+            latin_slug(producer.name, instagram=producer.instagram),  # type: ignore[arg-type]
+            city=producer.city,  # type: ignore[arg-type]
+        )
+        producer.slug = minted or None  # type: ignore[assignment]
 
 
 def _apply_approval_state(producer: Producer) -> None:

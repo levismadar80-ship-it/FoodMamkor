@@ -99,3 +99,25 @@ def is_gone(db: "Session", slug: str) -> bool:
 
     row = db.get(RetiredSlug, slug)
     return row is not None and row.producer_id is None
+
+
+def moved_to(db: "Session", slug: str) -> str | None:
+    """MEH-3336 — the current slug of the business that used to live at `slug`.
+
+    Only a "renamed" tombstone with an owner counts, and only while that owner
+    is still a public business with a slug: a link to a renamed page follows
+    it, a link to a deleted or hidden one does not. Renames chain for free —
+    every old slug points at the business, never at an intermediate slug.
+    """
+    from app.models.models import Producer, RetiredSlug
+    from app.services.producer_listing import is_business
+
+    row = db.get(RetiredSlug, slug)
+    if row is None or row.producer_id is None or row.reason != "renamed":
+        return None
+    producer = (
+        db.query(Producer).filter(Producer.id == row.producer_id, is_business()).first()
+    )
+    if producer is None or not producer.slug or producer.slug == slug:
+        return None
+    return str(producer.slug)

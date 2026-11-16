@@ -1168,6 +1168,17 @@ GET    /producers/by-slug/{slug}                  public
                                                or renamed-away slug → 404. Middleware rewrites (no status — a 410 rewrite shows Vercel's
                                                own GONE page) to /[locale]/business-gone → ProducerGone, 200 + noindex.
                                                Not via [slug]: its Data Cache keeps the last 200 after a delete (MEH-2576).
+                                               MEH-3336: a slug RENAMED away from a business that is still public →
+                                               404 {detail: {code: "slug_moved", message, slug: <current>}}; the
+                                               middleware answers the browser 301 → /<current> (locale prefix kept,
+                                               query kept, only a-z0-9- slugs followed). Every old slug points at the
+                                               business, so renames chain. A renamed business that is no longer
+                                               public → plain 404. Slugs are minted Latin (a-z0-9-, ≤40): Instagram
+                                               handle, else the name transliterated; collision → town appended
+                                               (`-2` only as the last resort); a typed slug must be Latin (422
+                                               `slug_not_latin`), checked only when the slug CHANGES so a legacy
+                                               Hebrew slug stays editable. A name that transliterates to nothing
+                                               (all-Arabic, no handle) → NULL slug, /producer/{id}.
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).

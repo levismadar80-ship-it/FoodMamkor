@@ -23,6 +23,7 @@ import unicodedata
 
 import pytest
 
+from app.slug_utils import latin_slug  # MEH-3336
 from app.slug_utils import (
     RESERVED_SLUGS,
     is_reserved,
@@ -162,35 +163,26 @@ def test_admin_create_rejects_a_fullwidth_reserved_slug_as_reserved(client, db):
     assert res.status_code == 400, res.text
 
 
-def test_admin_create_accepts_an_arabic_slug(client, db):
-    """The ruling's affirmative half — Arabic is a local business language.
-
-    The name is Arabic too, and that is the whole point of the row. It used to
-    be Hebrew here on purpose: an all-Arabic name was rejected 422 by
-    `SanitizedBusinessNameField`, whose MEH-555 "at least 3 letter characters"
-    validator counted `[א-תa-zA-Z]` — a class with no Arabic in it. So
-    `{"name": "مزرعة الشمس"}` never reached the slug code at all; it died in
-    request validation, and this ruling admitted a slug that no business could
-    actually register under.
-
-    MEH-2236 closed that: the letter class now carries Arabic letters (not the
-    punctuation, and not the harakat). With both halves in place the endpoint
-    accepts an Arabic business end to end, which is what MEH-2020 meant all
-    along. The letter class itself is pinned by
-    `test_arabic_name_letter_class.py`, including the cases that must still be
-    refused.
-
-    The generator's own handling of Arabic is covered directly by
-    GENERATOR_CASES["arabic"], which calls `slugify` with no endpoint in the way.
-    """
+def test_admin_create_refuses_an_arabic_slug_and_stores_no_slug_without_one(client, db):
+    """MEH-3336 replaced the MEH-2020 ruling's affirmative half: a typed slug is
+    Latin only (a shared Arabic or Hebrew URL is percent-encoded). An Arabic
+    business is still registrable end to end (MEH-2236) — with no Instagram
+    handle its name transliterates to nothing, so it is stored with NO slug and
+    served at /producer/{id}, never with "" (MEH-1817)."""
     admin = _admin(db)
-    res = client.post(
+    refused = client.post(
         "/admin/producers",
         json={"name": "مزرعة الشمس", "slug": "مزرعة-الشمس"},
         headers=auth_header(admin),
     )
+    assert refused.status_code == 422, refused.text
+    assert refused.json()["detail"]["code"] == "slug_not_latin"
+
+    res = client.post(
+        "/admin/producers", json={"name": "مزرعة الشمس"}, headers=auth_header(admin)
+    )
     assert res.status_code == 201, res.text
-    assert res.json()["slug"] == "مزرعة-الشمس"
+    assert res.json()["slug"] is None
 
 
 def test_admin_create_still_mints_from_the_name_when_no_slug_is_supplied(client, db):
@@ -202,4 +194,4 @@ def test_admin_create_still_mints_from_the_name_when_no_slug_is_supplied(client,
         headers=auth_header(admin),
     )
     assert res.status_code == 201, res.text
-    assert res.json()["slug"] == "חוות-הדגן"
+    assert res.json()["slug"] == latin_slug("חוות הדגן")  # MEH-3336: Latin
