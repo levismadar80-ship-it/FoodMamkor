@@ -28,7 +28,12 @@ from fastapi import HTTPException
 
 # --- Per-business caps (rows a business may own) -----------------------------
 
-MAX_PRODUCTS = 100
+# MEH-2312: 100 → 250. A real business imported from its existing store
+# (mypips, 16.11) carries 197 products; 100 would refuse her catalog. Still a
+# hard cap (MEH-3022: nothing grows without bound) — Shopify/Etsy/Wolt have no
+# practical per-store cap, and 250 leaves headroom over the largest catalog
+# we know of. Raised in its own commit so it can be reverted alone.
+MAX_PRODUCTS = 250
 MAX_RECIPES = 50
 MAX_LOCATIONS = 20
 MAX_UPCOMING_EVENTS = 30
