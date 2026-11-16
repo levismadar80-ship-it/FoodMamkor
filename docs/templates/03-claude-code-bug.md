@@ -223,7 +223,7 @@ If hypothesis is (b) — show me the centroid computation. We may need a differe
 - Map still respects user location when granted
 - Zoom level reasonable (~9-10) for Israel overview
 - Regression test: incognito → check map.getCenter() within Israel bounds
-- preview URL on mobile
+- 375 + 1440 screenshots captured and read by CC (workflow rule 23)
 </acceptance_criteria>
 
 <verification_step>

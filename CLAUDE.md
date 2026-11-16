@@ -1,18 +1,15 @@
 ## Session start (run this first, every session)
 Default branch: **staging**, not `main`. `main` is production only: nothing is committed or pushed to it directly.
 
-Mandatory first commands every session:
+First commands every session:
 ```
 git fetch origin
-git branch --show-current
-# if on main → git checkout staging immediately
-git pull origin staging
+git branch --show-current   # on main or staging → cut a feature branch, below
 ```
 
-Before any new feature:
+Before any new feature (no local `staging` checkout or pull):
 ```
-git checkout staging
-git checkout -b feature/meh-XX-description
+git checkout -b feature/meh-XX-description origin/staging
 ```
 
 Claude Code auto-detects `main` as default — known bug (GitHub issue #24516). See [.claude/rules/workflow.md](./.claude/rules/workflow.md) § Branch-base verification.

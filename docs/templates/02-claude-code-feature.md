@@ -54,7 +54,7 @@ Stack: Next.js + FastAPI + Postgres. RTL Hebrew, feminine voice.
 - Conditional UI? declare 0/1/many + open/closed states.
 - pytest tests/test_[feature].py — all green
 - npm run build — green
-- preview URL sent for mobile testing
+- 375 + 1440 screenshots captured and read by CC (workflow rule 23)
 - HANDOFF.md updated
 </acceptance_criteria>
 
