@@ -16,6 +16,9 @@ Who calls it:
     goes back to a slug it retired itself.
   - `is_gone`                       — GET /producers/by-slug (MEH-2534), to
     answer 410 instead of 404 for the URL of a deleted business.
+  - `moved_to`                      — GET /producers/by-slug (MEH-3336): a
+    renamed business's old slug → 404 {code: slug_moved, slug}, which the
+    middleware turns into a 301.
 
 A new writer of `producers.slug` MUST take its value from
 `_ensure_unique_slug`: that call is the only place a tombstone is honoured,

@@ -240,3 +240,66 @@ def test_deleted_business_is_still_410(client, db):
     )
     assert resp.status_code in (200, 204), resp.text
     assert client.get("/producers/by-slug/gone-business").status_code == 410
+
+
+# --- review follow-ups (MEH-3336) ---------------------------------------------
+
+
+def test_a_collision_slug_stays_within_40_and_latin(db):
+    base = latin_slug("אבג " * 30)  # a full 40-char base
+    assert len(base) == LATIN_SLUG_MAX or len(base) >= 35
+    taker = make_producer(db, name="א")
+    taker.slug = base
+    db.commit()
+    slug = _ensure_unique_slug(db, base, city="קריית שמונה עלית")
+    assert slug != base
+    assert len(slug) <= LATIN_SLUG_MAX, slug
+    assert is_latin_slug(slug), slug
+    numbered_taker = make_producer(db, name="ב")
+    numbered_taker.slug = slug
+    db.commit()
+    third = _ensure_unique_slug(db, base, city="קריית שמונה עלית")
+    assert len(third) <= LATIN_SLUG_MAX and is_latin_slug(third), third
+
+
+def test_a_non_handle_instagram_value_falls_back_to_the_name():
+    for junk in (
+        "m.instagram.com/sandra",
+        "instagram.com/p/Cxyz123",
+        "linktr.ee/sandra",
+    ):
+        assert latin_slug("חוות הדגן", instagram=junk) == "choot-hdgn", junk
+    assert latin_slug("x", instagram="@sandra.perot") == "sandra-perot"
+
+
+def test_static_routes_are_reserved():
+    from app.slug_utils import is_reserved
+
+    for route in ("home", "rescue", "recommend", "registration", "delivery-waitlist"):
+        assert is_reserved(route), route
+
+
+def test_a_business_on_a_legacy_hebrew_slug_stays_editable(client, db):
+    """The admin form resends the stored slug on every save; the Latin rule
+    applies only when the slug CHANGES (reverting the `!=` reds this)."""
+    producer = make_producer(db)
+    producer.slug = "סנדרה-פירות-איכותיים-2"
+    db.commit()
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"slug": "סנדרה-פירות-איכותיים-2", "description": "תיאור חדש לגמרי"},
+        headers=auth_header(_admin(db)),
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.slug == "סנדרה-פירות-איכותיים-2"
+
+
+def test_a_hebrew_slug_refusal_carries_a_hebrew_message(client, db):
+    resp = client.post(
+        "/admin/producers",
+        json=_admin_create_payload(slug="סנדרה"),
+        headers=auth_header(_admin(db)),
+    )
+    assert resp.status_code == 422
+    assert "אנגלית" in resp.json()["detail"]["message"]

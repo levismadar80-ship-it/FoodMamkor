@@ -21,6 +21,8 @@ from app.models import Producer
 from app.services import retired_slugs  # MEH-2528
 from app.services.license_validation import categories_require_license
 from app.slug_utils import (
+    LATIN_SLUG_MAX,
+    cap_slug,
     is_latin_slug,
     is_reserved,
     latin_city_suffix,
@@ -64,7 +66,11 @@ def _guard_supplied_slug(raw: str) -> None:
         non_latin = sorted({c for c in normalised if not re.match(r"[a-z0-9-]", c)})
         raise HTTPException(
             status_code=422,
-            detail={"code": "slug_not_latin", "characters": non_latin},
+            detail={
+                "code": "slug_not_latin",
+                "message": "כתובת העמוד יכולה להכיל רק אותיות באנגלית, ספרות ומקפים, עד 40 תווים",
+                "characters": non_latin,
+            },
         )
 
 
@@ -101,14 +107,25 @@ def _ensure_unique_slug(
 
     if _free(base_slug):
         return base_slug
+    # MEH-3336 (review): the suffix is fitted INSIDE the 40-char cap — the
+    # base is cut on a word boundary to make room, so a collision slug is
+    # still a valid Latin slug the admin can type back.
     suffix = latin_city_suffix(city)
-    stem = f"{base_slug}-{suffix}" if suffix else base_slug
+    stem = (
+        f"{cap_slug(base_slug, LATIN_SLUG_MAX - 1 - len(suffix))}-{suffix}"
+        if suffix
+        else base_slug
+    )
     if suffix and _free(stem):
         return stem
     counter = 2
-    while not _free(f"{stem}-{counter}"):
+
+    def _numbered(n: int) -> str:
+        return f"{cap_slug(stem, LATIN_SLUG_MAX - 1 - len(str(n)))}-{n}"
+
+    while not _free(_numbered(counter)):
         counter += 1
-    return f"{stem}-{counter}"
+    return _numbered(counter)
 
 
 def _mint_slug_if_absent(db: Session, producer: Producer) -> None:

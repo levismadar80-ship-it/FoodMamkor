@@ -11,7 +11,6 @@ the harm — "a tombstone row exists" alone would pass with a tombstone nobody
 reads.
 """
 
-from app.slug_utils import latin_city_suffix  # MEH-3336
 from app.models import Producer, RetiredSlug, User
 from app.routers.admin import _ensure_unique_slug
 from tests.conftest import auth_header, make_producer, make_user
@@ -114,7 +113,7 @@ def test_admin_typed_retired_slug_is_suffixed_on_update(client, db):
     )
     assert resp.status_code == 200, resp.text
     # MEH-3336: a collision appends the business's town, not "-2".
-    assert resp.json()["slug"] == f"{SLUG}-{latin_city_suffix(taker.city)}"
+    assert resp.json()["slug"] == f"{SLUG}-tl-abib-ypv"  # taker.city → canonical «תל אביב-יפו»
 
 
 # ---------- rename ----------

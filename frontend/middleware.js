@@ -378,7 +378,12 @@ export default async function middleware(request) {
     const to = request.nextUrl.clone();
     // localePrefix is "as-needed": keep the request's own prefix (none for he).
     to.pathname = locale ? `/${locale}/${exists.moved}` : `/${exists.moved}`;
-    return NextResponse.redirect(to, 301);
+    const moved = NextResponse.redirect(to, 301);
+    // MEH-3336 (review): a business may take an old slug back (rename A→B→A);
+    // an indefinitely cached A→B 301 would then loop that browser. One hour
+    // bounds it; search engines still read the 301 as a permanent move.
+    moved.headers.set("Cache-Control", "public, max-age=3600");
+    return moved;
   }
   if (!exists) {
     // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.

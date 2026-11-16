@@ -23,7 +23,6 @@ import unicodedata
 
 import pytest
 
-from app.slug_utils import latin_slug  # MEH-3336
 from app.slug_utils import (
     RESERVED_SLUGS,
     is_reserved,
@@ -194,4 +193,4 @@ def test_admin_create_still_mints_from_the_name_when_no_slug_is_supplied(client,
         headers=auth_header(admin),
     )
     assert res.status_code == 201, res.text
-    assert res.json()["slug"] == latin_slug("חוות הדגן")  # MEH-3336: Latin
+    assert res.json()["slug"] == "choot-hdgn"  # MEH-3336: Latin

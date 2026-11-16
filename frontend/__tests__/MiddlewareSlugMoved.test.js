@@ -14,7 +14,7 @@ vi.mock("next-intl/middleware", () => ({
 }));
 
 const rewrite = vi.fn((url, init) => ({ __rewrite: true, url, status: init?.status }));
-const redirect = vi.fn((url, status) => ({ __redirect: true, url, status }));
+const redirect = vi.fn((url, status) => ({ __redirect: true, url, status, headers: new Map() }));
 vi.mock("next/server", () => ({
   NextResponse: {
     rewrite: (url, init) => rewrite(url, init),
@@ -61,6 +61,8 @@ describe("middleware — renamed business slug (MEH-3336)", () => {
     expect(res.status).toBe(301);
     expect(res.url.pathname).toBe("/sandra-perot");
     expect(res.url.search).toBe("?ref=wa");
+    // A bounded cache: a rename back (A→B→A) must not loop a browser forever.
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=3600");
     expect(rewrite).not.toHaveBeenCalled();
   });
 

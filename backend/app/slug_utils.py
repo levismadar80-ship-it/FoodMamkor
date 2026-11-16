@@ -68,6 +68,14 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "verify-email",
         # MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
         "unsubscribe",
+        # MEH-3336 (review): static routes the frontend already reserves
+        # (lib/slug.js RESERVED) but this list did not. Latin slugs from an
+        # Instagram handle made them reachable ("@home", "@rescue").
+        "delivery-waitlist",
+        "home",
+        "recommend",
+        "registration",
+        "rescue",
     }
 )
 
@@ -234,7 +242,7 @@ def _latin_slug_from_text(text: str) -> str:
     return re.sub(r"-+", "-", s).strip("-")
 
 
-def _cap(slug: str, limit: int = LATIN_SLUG_MAX) -> str:
+def cap_slug(slug: str, limit: int = LATIN_SLUG_MAX) -> str:
     """Cut at the last hyphen that fits, so a slug never ends mid-word."""
     if len(slug) <= limit:
         return slug
@@ -252,8 +260,13 @@ def handle_from_instagram(instagram: str | None) -> str:
     s = re.sub(r"^https?://", "", s, flags=re.I)
     s = re.sub(r"^(www\.)?instagram\.com/", "", s, flags=re.I)
     s = s.split("?")[0].strip("/").lstrip("@")
+    # MEH-3336 (review): only a real handle counts. A post URL ("p/Cx…"), a
+    # different host (m.instagram.com, linktr.ee) or anything else falls back
+    # to the business name instead of minting a nonsense public slug.
+    if not re.fullmatch(r"[A-Za-z0-9._]{1,30}", s):
+        return ""
     s = re.sub(r"[._]+", "-", s)
-    return _cap(_latin_slug_from_text(s))
+    return cap_slug(_latin_slug_from_text(s))
 
 
 def latin_slug(name: str | None, *, instagram: str | None = None) -> str:
@@ -264,12 +277,14 @@ def latin_slug(name: str | None, *, instagram: str | None = None) -> str:
     Returns "" when nothing Latin survives, and the caller stores NULL then
     (MEH-1817's `or None`), never "".
     """
-    return handle_from_instagram(instagram) or _cap(_latin_slug_from_text(name or ""))
+    return handle_from_instagram(instagram) or cap_slug(
+        _latin_slug_from_text(name or "")
+    )
 
 
 def latin_city_suffix(city: str | None) -> str:
     """The collision suffix: the business's town, transliterated."""
-    return _cap(_latin_slug_from_text(city or ""), 20)
+    return cap_slug(_latin_slug_from_text(city or ""), 20)
 
 
 def is_latin_slug(candidate: str | None) -> bool:
