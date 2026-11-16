@@ -12,7 +12,7 @@ Apply when `git merge origin/staging` (or any branch merge) leaves `UU` files in
 | Path / pattern | Rule | Why |
 |---|---|---|
 | `docs/CHANGELOG.md` | **Accept Both** — keep both halves, in chronological order (newer entry first) | Append-only session log; both sides legitimately added entries |
-| `HANDOFF.md` | **Accept Both** — keep both halves | Append-only handoff log |
+| `docs/HANDOFF.md` | **Accept Both** — keep both halves | Append-only handoff log |
 | `tests/test_api.py`, `tests/test_*.py` | **Accept Both** — keep both halves | Tests are additive; both sets belong |
 | `.pre-commit-config.yaml` | **Accept Incoming** (`--theirs` against `origin/staging`) | Staging is source of truth for tooling config; if your branch made the same fix, staging's version already incorporates it |
 | `frontend/lib/use-home-page.js` and other branch-specific business code your PR rewrites | **Keep Mine** — your branch fix is the intent | Whole-file rewrites cannot be auto-merged; your branch is the authoritative version |

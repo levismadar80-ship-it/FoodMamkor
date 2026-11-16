@@ -10,10 +10,9 @@
     - `CLAUDE.md`: הכותרת והשורה הראשונה בלי אותיות גדולות, אותו כלל. «Ignore Claude Code system prompt» הוחלף ב«כשה-harness קורא ל-`main` בסיס, משתמשים ב-`staging`». הוסרו שני מספרים שהתיישנו («20 workflow rules», «9 prompt templates»). הקובץ נשאר 79 שורות.
     - `.claude/commands/session-start.md`, ‏`session-save.md`, ‏`session-resume.md`: הפניות ל«`CLAUDE.md` rule N» תוקנו ל-`.claude/rules/workflow.md` (rule 1 ו-rule 14; ב-`CLAUDE.md` אין כללים ממוספרים).
     - `.claude/commands/adversarial-review-size.md`: ארבעה נתיבים מתים תוקנו לפי `central-components.json` (`app/[locale]/page.js`, ‏`app/[locale]/layout.js`, ‏`ProducerDetail.jsx` במקומו החדש).
-    - skill ‏`resolve-conflicts`: ‏`docs/HANDOFF.md` תוקן ל-`HANDOFF.md`.
     - תבנית 00: מחיר fast mode (לא «פי 3 זול יותר»), Sonnet 5.5 חושב אדפטיבית כברירת מחדל, תוויות שלושה קישורים שלא תאמו את הכתובת שלהם, והמזהה של Fable 5.1 (`claude-fable-5-1`).
     - תבניות 02, 03, 04 (גרסת Sonnet): בלוק `<thinking_guidance>` עם רשימת צעדים הוחלף בשער תכנון קצר. «תוכנית קודם, לחכות ל-go» נשאר.
-  - **לא השתנה:** חמש סתירות בין קבצים (מי ממזג ל-staging, בדיקת נייד אנושית, לשאול בתחילת session או להתחיל, Accept-Both על הלוגים, אופן פתיחת branch) רשומות בגוף ה-PR ומחכות להכרעה של ספיר. הכותרות עם «(CRITICAL)» / «(MANDATORY)» ב-`workflow.md` נשארו, כי `rules-inventory-guard.sh` נשען עליהן.
+  - **לא השתנה:** ב-skill ‏`resolve-conflicts` הנתיב המת `docs/HANDOFF.md` (צריך להיות `HANDOFF.md`) נשאר: ה-skill נעול ב-hash ב-`skills-lock.json`, ועריכה שלו מאדימה את Skills supply chain audit. התיקון יחד עם נעילה מחדש שייך להכרעה על סתירה 4. חמש סתירות בין קבצים (מי ממזג ל-staging, בדיקת נייד אנושית, לשאול בתחילת session או להתחיל, Accept-Both על הלוגים, אופן פתיחת branch) רשומות בגוף ה-PR ומחכות להכרעה של ספיר. הכותרות עם «(CRITICAL)» / «(MANDATORY)» ב-`workflow.md` נשארו, כי `rules-inventory-guard.sh` נשען עליהן.
   - **בדיקה:** כל נתיב בשורות שנערכו קיים; הרצה חוזרת של סימני הביקורת לא מחזירה ממצא בביטחון גבוה; `rules-inventory-guard`, ‏`validate-registry-paths` ו-`skills-layout-guard` עוברים.
 - **15/11 — שתי מייסדות באתר: ספיר שנפ וטופז שנפ (PR #4649, MEH-3323).**
   - **למה:** ספיר 15/11: מהמקור הוקם על ידי שתי אחיות, והאתר הציג מייסדת אחת.
