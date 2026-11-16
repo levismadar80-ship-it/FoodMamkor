@@ -295,3 +295,73 @@ def test_aggregated_has_fields_reflect_any_product(client, db):
     # Nothing was marked low-carb, so the sibling aggregate stays False —
     # the aggregation must not fold one axis into the other either.
     assert row["has_low_carb_products"] is False
+
+
+# --- MEH-388: one dedicated filter test per tag for the two axes that had none --
+# vegan / vegetarian each have their own behaviour tests above; gluten_free and
+# lactose_free were only covered together by test_dietary_filters_independent_per_flag,
+# which checks inclusion and no cross-leak but never a mixed catalog, an
+# all-False catalog, an empty catalog, or the last flag being removed. These two
+# mirror the vegan matrix (at-least-one / all-False / zero products / un-flag).
+
+
+def _names(client, **params):
+    r = client.get("/producers", params=params)
+    assert r.status_code == 200
+    return [row["name"] for row in r.json()]
+
+
+def test_gluten_free_filter_matches_any_gluten_free_product_only(client, db):
+    p_mixed = make_producer(db, name="מאפיית שיבולת")
+    gf = _add_product(db, p_mixed, name="עוגיות ללא גלוטן", is_gluten_free=True)
+    _add_product(db, p_mixed, name="לחם חיטה", is_gluten_free=False)
+
+    p_none = make_producer(db, name="מאפיית חיטה")
+    _add_product(db, p_none, name="חלה", is_gluten_free=False)
+
+    make_producer(db, name="מאפייה ריקה")
+
+    # A dedicated-facility declaration with no gluten-free product does NOT
+    # satisfy ?gluten_free — the facility column is not read by the filter
+    # (producer_listing._SCOPE_COLUMN_FOR_AXIS holds only `vegan`; MEH-1508 §6.3).
+    p_facility = make_producer(db, name="מתקן ללא גלוטן בלי מוצר מסומן")
+    p_facility.gluten_free_facility = "dedicated"
+    db.commit()
+    _add_product(db, p_facility, name="מוצר לא מסומן", is_gluten_free=False)
+
+    names = _names(client, gluten_free="true")
+    assert "מאפיית שיבולת" in names
+    assert "מאפיית חיטה" not in names
+    assert "מאפייה ריקה" not in names
+    assert "מתקן ללא גלוטן בלי מוצר מסומן" not in names
+
+    gf.is_gluten_free = False
+    db.commit()
+    assert "מאפיית שיבולת" not in _names(client, gluten_free="true")
+
+
+def test_lactose_free_filter_matches_any_lactose_free_product_only(client, db):
+    p_mixed = make_producer(db, name="מחלבת שקדים")
+    lf = _add_product(db, p_mixed, name="משקה שקדים", is_lactose_free=True)
+    _add_product(db, p_mixed, name="יוגורט פרה", is_lactose_free=False)
+
+    p_none = make_producer(db, name="מחלבת פרות")
+    _add_product(db, p_none, name="גבינה צהובה", is_lactose_free=False)
+
+    make_producer(db, name="מחלבה ריקה")
+
+    # Same rule as gluten above: the facility column is not read by the filter.
+    p_facility = make_producer(db, name="מתקן ללא לקטוז בלי מוצר מסומן")
+    p_facility.lactose_free_facility = "dedicated"
+    db.commit()
+    _add_product(db, p_facility, name="מוצר לא מסומן", is_lactose_free=False)
+
+    names = _names(client, lactose_free="true")
+    assert "מחלבת שקדים" in names
+    assert "מחלבת פרות" not in names
+    assert "מחלבה ריקה" not in names
+    assert "מתקן ללא לקטוז בלי מוצר מסומן" not in names
+
+    lf.is_lactose_free = False
+    db.commit()
+    assert "מחלבת שקדים" not in _names(client, lactose_free="true")
