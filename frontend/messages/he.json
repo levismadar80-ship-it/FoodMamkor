@@ -935,7 +935,8 @@
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
         "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
         "reveal_phone": "הצגת מספר הטלפון",
-        "report_info_link": "טעות בפרטים? עדכנו אותנו"
+        "report_info_link": "טעות בפרטים? עדכנו אותנו",
+        "secondary_phone_default_label": "טלפון נוסף"
       },
       "sticky_bar": {
         "vacation_msg": "שליחת הודעה"
@@ -1826,7 +1827,9 @@
           "as_draft_hint": "העסק נשמר כטיוטה בלי בעלים. אחרי השמירה אפשר ליצור קישור הזמנה ולשלוח לבעלת העסק.",
           "owner_bio": "מאחורי העסק — משפט של בעלת העסק",
           "owner_photo": "תמונת בעלת העסק",
-          "owner_photo_remove": "הסרת תמונה"
+          "owner_photo_remove": "הסרת תמונה",
+          "secondary_phone": "טלפון נוסף (לא חובה)",
+          "secondary_phone_label": "למה המספר הזה? (למשל: להזמנות)"
         }
       },
       "toast_approved": "העסק אושר",
@@ -5000,7 +5003,9 @@
         "save_cta": "שמירת ערוצי קשר",
         "saving": "בשמירה…",
         "saved": "נשמר",
-        "save_error": "השמירה נכשלה. נסו שוב."
+        "save_error": "השמירה נכשלה. נסו שוב.",
+        "field_secondary_phone": "טלפון נוסף (לא חובה)",
+        "field_secondary_phone_label": "למה המספר הזה? (למשל: להזמנות)"
       },
       "categories": {
         "heading": "קטגוריות",

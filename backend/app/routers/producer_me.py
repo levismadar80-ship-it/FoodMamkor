@@ -706,6 +706,9 @@ def update_my_producer(
         #                writer racing that write-through. The ping's new home
         #                is MEH-2073 chunk 2 (`_sync_producer_city_from_primary`).
         "phone",
+        # MEH-3339: the optional second number + label (no CTA reads them).
+        "secondary_phone",
+        "secondary_phone_label",
         "instagram",
         "website",
         "whatsapp_group",

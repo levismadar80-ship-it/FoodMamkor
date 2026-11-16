@@ -176,6 +176,9 @@ const EMPTY = {
   // MEH-3338: «מאחורי העסק» — the owner's line and photo.
   owner_bio: "",
   owner_photo_url: null,
+  // MEH-3339: optional second number + label (text line; CTAs stay on phone).
+  secondary_phone: "",
+  secondary_phone_label: "",
   top_product_name: "",
   price_range: "",
   // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
@@ -337,6 +340,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
         owner_bio: initial.owner_bio ?? "",
+        secondary_phone: initial.secondary_phone ?? "",
+        secondary_phone_label: initial.secondary_phone_label ?? "",
         owner_photo_url: initial.owner_photo_url ?? null,
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? "",
@@ -481,6 +486,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // MEH-3338: blank bio → null clears it. The photo is uploaded (and saved)
       // by its own admin route; null here is the «הסרת תמונה» path.
       owner_bio: form.owner_bio?.trim() || null,
+      // MEH-3339: a label only travels with a number (the API refuses a
+      // label alone), so clearing the number clears the label too.
+      secondary_phone: form.secondary_phone?.trim() || null,
+      secondary_phone_label: form.secondary_phone?.trim() ? form.secondary_phone_label?.trim() || null : null,
       owner_photo_url: form.owner_photo_url || null,
       top_product_name: form.top_product_name?.trim() || null,
       price_range: form.price_range,
@@ -599,6 +608,19 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.phone}
             onChange={(e) => update("phone", e.target.value)}
             placeholder={t("producers.form.fields.phone_placeholder")}
+          />
+          <Input
+            type="tel"
+            dir="ltr"
+            label={t("producers.form.fields.secondary_phone")}
+            value={form.secondary_phone}
+            onChange={(e) => update("secondary_phone", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.secondary_phone_label")}
+            value={form.secondary_phone_label}
+            maxLength={30}
+            onChange={(e) => update("secondary_phone_label", e.target.value)}
           />
           <Input
             label={t("producers.form.fields.instagram")}

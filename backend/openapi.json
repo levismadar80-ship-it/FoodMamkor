@@ -6777,6 +6777,28 @@
             ],
             "title": "Risk Score"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "sells_on_site": {
             "default": false,
             "title": "Sells On Site",
@@ -7572,6 +7594,29 @@
               }
             ],
             "title": "Reservist Owned"
+          },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
           },
           "short_description": {
             "anyOf": [
@@ -8580,6 +8625,28 @@
             "default": 0,
             "title": "Reviews Count",
             "type": "integer"
+          },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
           },
           "sells_on_site": {
             "default": false,
@@ -10986,6 +11053,28 @@
             "title": "Reviews Count",
             "type": "integer"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "sells_on_site": {
             "default": false,
             "title": "Sells On Site",
@@ -12548,6 +12637,29 @@
               }
             ],
             "title": "Reservist Owned"
+          },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
           },
           "short_description": {
             "anyOf": [

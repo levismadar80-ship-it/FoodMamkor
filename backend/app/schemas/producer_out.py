@@ -393,6 +393,9 @@ class ProducerDetailOut(ProducerListOut):
     # privacy-first precedent.
     contact_name: str | None = None
     phone: str | None = None
+    # MEH-3339: shown as one text line; no CTA reads these.
+    secondary_phone: str | None = None
+    secondary_phone_label: str | None = None
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None

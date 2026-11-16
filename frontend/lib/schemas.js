@@ -398,6 +398,9 @@ export const ProducerListSchema = z.object({
 // change what the parse sites receive, which this structural PR deliberately
 // does not do.
 export const ProducerDetailSchema = ProducerListSchema.extend({
+  // MEH-3339: the optional second number + label (one text line; no CTA).
+  secondary_phone: z.string().nullable().optional(),
+  secondary_phone_label: z.string().nullable().optional(),
   website: z.string().nullable().optional(),
   instagram: z.string().nullable().optional(),
   facebook: z.string().nullable().optional(),

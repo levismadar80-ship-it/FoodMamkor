@@ -351,6 +351,10 @@ class ProducerUpdate(BaseModel):
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None
+    # MEH-3339: an optional second number + its short label ("להזמנות").
+    # Every CTA stays on `phone`; this is shown as one quiet text line.
+    secondary_phone: str | None = None
+    secondary_phone_label: str | None = Field(default=None, max_length=30)
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
@@ -659,6 +663,25 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
+
+    # MEH-3339: same format rule as `phone`; the label is plain text.
+    @field_validator("secondary_phone")
+    @classmethod
+    def _validate_secondary_phone(cls, v: str | None) -> str | None:
+        return _phone_validator(v)
+
+    @field_validator("secondary_phone_label")
+    @classmethod
+    def _sanitize_secondary_phone_label(cls, v: str | None) -> str | None:
+        return sanitize_text(v, max_length=30) or None
+
+    @model_validator(mode="after")
+    def _label_needs_a_number(self) -> Self:
+        # MEH-3339: a label without a number is refused. Asked of the payload
+        # itself, so a label must travel with its number in the same save.
+        if self.secondary_phone_label and not self.secondary_phone:
+            raise ValueError("לתווית של הטלפון הנוסף צריך גם מספר")
+        return self
 
     @field_validator("whatsapp_group")
     @classmethod
