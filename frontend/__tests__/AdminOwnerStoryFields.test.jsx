@@ -50,7 +50,7 @@ describe("Admin ProducerForm — owner story (MEH-3338)", () => {
 
     await waitFor(() => expect(api.post).toHaveBeenCalled());
     expect(api.post.mock.calls[0][0]).toBe("/upload/owner-photo/p-7");
-    expect(await screen.findByTestId("admin-owner-photo-preview")).toHaveAttribute("src", PHOTO);
+    expect(await screen.findByTestId("admin-owner-photo-preview")).toHaveAttribute("data-src", PHOTO);
   });
 
   it("edit: bio + «הסרת תמונה» go out on the form's save", async () => {
