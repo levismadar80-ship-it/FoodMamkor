@@ -351,6 +351,11 @@ Auth · schema/Alembic · central components (`.claude/central-components.json`)
 security-sensitive code · prod-deploy-blocking (env, Dockerfile, Railway).
 Numbered plan → `go` → one chunk → `go <chunk>` per chunk.
 
+That is for work that arrives without a queue card. A queue card in these
+domains is RED under ADR-032: autonomous, but only with the proof obligations
+of ADR-032 §2 (the §2.5 reviewer runs before the merge) and inside the hard
+stops of §3; an Alembic revision still waits for Sapir's OK (rule 38).
+
 ### LOW-RISK — end-to-end with single review
 
 Single-file dep bumps · copy · i18n sweeps · doc/rule edits · test additions.
