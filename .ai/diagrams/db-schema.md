@@ -143,6 +143,8 @@ erDiagram
         string image_url
         decimal price_min "MEH-295: NUMERIC(10,2) NULL"
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
+        boolean is_draft "MEH-2312: admin-imported, waiting for approval; hidden from every public read"
+        text source_image_url "MEH-2312: source store image URL, stored only (MEH-1184)"
         boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
         boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"

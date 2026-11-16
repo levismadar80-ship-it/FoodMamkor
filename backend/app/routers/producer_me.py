@@ -622,7 +622,11 @@ def _resolve_top_product(
 
     product = (
         db.query(Product)
-        .filter(Product.id == new_id, Product.producer_id == producer.id)
+        .filter(
+            Product.id == new_id,
+            Product.producer_id == producer.id,
+            Product.is_draft.is_(False),  # MEH-2312: a draft is never featured
+        )
         .first()
     )
     if product is None:
@@ -1172,7 +1176,12 @@ def list_my_products(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> list[ProductOut] | list[Product]:
-    return db.query(Product).filter(Product.producer_id == user.producer_id).all()
+    # MEH-2312: drafts belong to the admin import until approved.
+    return (
+        db.query(Product)
+        .filter(Product.producer_id == user.producer_id, Product.is_draft.is_(False))
+        .all()
+    )
 
 
 @router.post("/products", response_model=ProductOut, status_code=201)
@@ -1231,6 +1240,9 @@ def update_my_product(
         .filter(
             Product.id == product_id,
             Product.producer_id == user.producer_id,
+            Product.is_draft.is_(
+                False
+            ),  # MEH-2312: drafts are the admin's until approved
         )
         .first()
     )
@@ -1256,6 +1268,9 @@ def delete_my_product(
         .filter(
             Product.id == product_id,
             Product.producer_id == user.producer_id,
+            Product.is_draft.is_(
+                False
+            ),  # MEH-2312: drafts are the admin's until approved
         )
         .first()
     )

@@ -1154,6 +1154,7 @@ def _token_search_filter(db: Session, token: str) -> ColumnElement[bool]:
         db.query(Product)
         .filter(
             Product.producer_id == Producer.id,
+            Product.is_draft.is_(False),  # MEH-2312: drafts are not searchable
             _any(Product.name, Product.description),
         )
         .exists()

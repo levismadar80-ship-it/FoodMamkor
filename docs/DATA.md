@@ -281,6 +281,8 @@ products       (id, producer_id FK, name, description,
                 is_low_carb Boolean NOT NULL DEFAULT FALSE,
                 ingredients Text NULL,                           -- MEH-2662: owner-declared free-text ingredient list; NULL = not filled
                 price_unit String(8) NOT NULL DEFAULT 'unit',    -- MEH-3218: unit | kg | 100g (CHECK products_price_unit_check). The price itself stays price_min/price_max; min == max is an exact price
+                is_draft Boolean NOT NULL DEFAULT false,         -- MEH-2312 (b1d19ee0e8c1): an admin-imported product waiting for approval. Invisible to every public read: the Producer.products relationship filters it (page, list, ?q=, diet/pickup .any(), favorites) and search.py / producer_listing.py has_product filter it too; the owner's own list / edit / reorder / featured / recipe-link skip it
+                source_image_url Text NULL,                      -- MEH-2312: the source store's image URL, stored only (MEH-1184 pending); never on a public schema, never uploaded
                 is_orderable Boolean NOT NULL DEFAULT FALSE,     -- MEH-3218: the owner opts each product into on-site ordering
                 in_stock Boolean NOT NULL DEFAULT TRUE,          -- MEH-3218
                 contains_alcohol Boolean NOT NULL DEFAULT FALSE, -- MEH-3218
@@ -1615,6 +1617,14 @@ GET    /producers/{slug}/recipes            public    — published+approved onl
 GET    /producers/{slug}/recipes/{id}       public    — 404 if not published+approved
 
 # Admin (require_admin)
+POST   /admin/producers/{producer_id}/product-import          admin — MEH-2312: rows [{name, description, price, unit, source_image_url}] (≤250) →
+                                                               DRAFT products. Each row validated through ProductCreate (name, price 1..10000);
+                                                               bad rows → `invalid[]`, an existing name (draft or published, case/space-folded)
+                                                               or a repeat in the batch → `skipped_duplicates[]`. The cap counts drafts (409).
+GET    /admin/producers/{producer_id}/product-drafts          admin — the business's drafts (incl. source_image_url, admin-only)
+POST   /admin/producers/{producer_id}/product-drafts/approve  admin — {product_ids?} → publish those drafts, or all; filtered on producer_id
+                                                               AND is_draft, so another business's ids match nothing. No "new product" alerts.
+DELETE /admin/producers/{producer_id}/product-drafts/{product_id}  admin — a draft only (a published product → 404)
 GET    /admin/recipes?moderation_status=…   admin     — filter or all
 GET    /admin/recipes/pending               admin     — queue (oldest first)
 POST   /admin/recipes/{id}/approve          admin     — sets published=true

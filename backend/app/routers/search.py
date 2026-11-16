@@ -134,6 +134,7 @@ def smart_search(
         .options(joinedload(Product.producer))
         .join(Producer, Producer.id == Product.producer_id)
         .filter(is_business())  # MEH-2459
+        .filter(Product.is_draft.is_(False))  # MEH-2312: drafts are not public
         .filter(*_token_conditions(tokens, [Product.name, Product.description]))
         .order_by((Product.name != q_clean), Product.name.asc())
         .limit(limit)

@@ -46,6 +46,7 @@ graph LR
     App --> BizSuggest[business_suggestions.router<br/>POST /business-suggestions]
     App --> Chat[chat.router<br/>/chat/*]
     App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
+    App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
     App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel]
