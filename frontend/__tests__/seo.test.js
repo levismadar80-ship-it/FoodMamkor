@@ -6,6 +6,7 @@ import {
   buildPageUrl,
   buildProducerMetadata,
   ogImage,
+  producerOgCardUrl,
   serializeJsonLd,
   SITE_URL,
 } from "@/lib/seo";
@@ -492,8 +493,10 @@ describe("buildProducerMetadata", () => {
   // the key expecting the layout's og:image to be inherited — it is not: a
   // page-level `openGraph` replaces the layout's whole object, so 17 imageless
   // business pages on staging shared with no image at all (measured 29/10).
-  it("falls back to the site og-image when producer has no images", () => {
-    const meta = buildProducerMetadata({ ...fullProducer, images: [] });
+  // MEH-3329: only a business with no slug (and no photo) still falls back —
+  // every slugged page gets its branded card, photo or not.
+  it("falls back to the site og-image when producer has no images and no slug", () => {
+    const meta = buildProducerMetadata({ ...fullProducer, slug: null, images: [] });
     expect(meta.openGraph.images).toEqual([
       { url: "/og-image.png", width: 1200, height: 630 },
     ]);
@@ -690,5 +693,31 @@ describe("MEH-2789 — hasOfferCatalog", () => {
     expect(out).toContain("\\u003cscript\\u003e");
     expect(out).toContain("\\u0026");
     expect(JSON.parse(out.replace(/\\u003c/g, "<").replace(/\\u003e/g, ">").replace(/\\u0026/g, "&"))).toBeTruthy();
+  });
+});
+
+// MEH-3329 — the branded link-preview card (typographic template, no photo).
+describe("MEH-3329 producer og:image is the branded card when there is no photo", () => {
+  const UPDATED = "2026-11-15T10:00:00.149264Z";
+  const V = Math.floor(Date.parse(UPDATED) / 1000);
+  it("no photo → the card URL, versioned by updated_at, not the site image", () => {
+    const meta = buildProducerMetadata({ ...fullProducer, images: [], updated_at: UPDATED });
+    expect(meta.openGraph.images[0]).toEqual({ url: `/og/producer/havat-hashikma.png?v=${V}`, width: 1200, height: 630 });
+    expect(meta.twitter.images).toEqual([`/og/producer/havat-hashikma.png?v=${V}`]);
+  });
+  it("with a photo → the photo, as before (the photo template is parked)", () => {
+    const meta = buildProducerMetadata({ ...fullProducer, updated_at: UPDATED });
+    expect(meta.openGraph.images[0].url).toContain("res.cloudinary.com");
+  });
+  it("a Hebrew slug is percent-encoded; no updated_at → no version", () => {
+    expect(producerOgCardUrl({ slug: "משק-הר", updated_at: null })).toBe(`/og/producer/${encodeURIComponent("משק-הר")}.png`);
+  });
+  it("no slug → null (the page keeps the site image)", () => {
+    expect(producerOgCardUrl({ slug: null })).toBeNull();
+  });
+  it("an edit changes the URL (cache busting)", () => {
+    const a = producerOgCardUrl({ slug: "x", updated_at: "2026-11-15T10:00:00Z" });
+    const b = producerOgCardUrl({ slug: "x", updated_at: "2026-11-16T10:00:00Z" });
+    expect(a).not.toBe(b);
   });
 });

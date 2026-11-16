@@ -158,6 +158,19 @@ export function ogImage(url) {
 }
 
 /**
+ * MEH-3329: the branded link-preview card of a business page, or null when it
+ * has no slug (the route is keyed by slug). `v` = updated_at in epoch seconds,
+ * so an edited page gets a new URL and Facebook/WhatsApp caches cannot keep
+ * the old card.
+ */
+export function producerOgCardUrl(producer) {
+  if (!producer?.slug) return null;
+  const ts = Date.parse(producer.updated_at || "");
+  const v = Number.isFinite(ts) ? `?v=${Math.floor(ts / 1000)}` : "";
+  return `/og/producer/${encodeURIComponent(producer.slug)}.png${v}`;
+}
+
+/**
  * Canonical page URL. Prefers slug (SEO-friendly) over numeric id.
  */
 export function buildPageUrl(producer) {
@@ -630,7 +643,10 @@ export function buildProducerMetadata(producer, locale = "he") {
 
   const description = buildDescription(producer, locale);
   const pageUrl = buildPageUrl(producer);
-  const img = ogImage(producer.images?.[0]);
+  // MEH-3329: its own photo first; a business with no photo gets its branded
+  // card (name, type · city, brand pill — app/og/producer/[file]/route.js)
+  // instead of the generic site image.
+  const img = ogImage(producer.images?.[0]) || producerOgCardUrl(producer);
 
   return {
     title: buildTitle(producer, locale),
