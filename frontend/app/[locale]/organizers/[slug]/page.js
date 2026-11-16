@@ -14,7 +14,8 @@
  * History:  MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
  *           setRequestLocale); MEH-2475 (owner story, preferred channel first,
  *           email / WhatsApp group / order form, founding year); MEH-2547
- *           (cover + avatar masthead, EventEntryRow rows).
+ *           (cover + avatar masthead, EventEntryRow rows); MEH-3341 (all photos
+ *           through the shared Lightbox, GalleryViewAllButton).
  */
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
@@ -33,6 +34,7 @@ import OrganizerPrimaryContact from "./OrganizerPrimaryContact";
 import OrganizerContactLink from "./OrganizerContactLink";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
+import GalleryViewAllButton from "@/components/GalleryViewAllButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { avatarInitial } from "@/components/ui/Avatar";
@@ -215,6 +217,16 @@ export default async function OrganizerPage(props) {
               city={organizer.city}
             />
           </div>
+          {/* MEH-3341: every photo the organizer uploaded, through the
+              business page's Lightbox — a pill in the cover's bottom inline-END
+              corner (the avatar holds the start corner). Renders nothing for
+              0 or 1 photos. */}
+          {image && (
+            <GalleryViewAllButton
+              images={organizer.images}
+              className="absolute bottom-3 end-3 md:end-7 z-10"
+            />
+          )}
           {initial && (
             <span
               aria-hidden="true"
