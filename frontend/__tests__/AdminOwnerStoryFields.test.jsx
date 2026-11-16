@@ -87,3 +87,22 @@ describe("Admin ProducerForm — owner story (MEH-3338)", () => {
     expect(create[1].owner_bio).toBe("אני סנדרה");
   });
 });
+
+describe("Admin ProducerForm — owner story is not clobbered (MEH-3338 review)", () => {
+  it("an untouched edit save omits owner_bio and owner_photo_url", async () => {
+    api.put.mockResolvedValue({ data: {} });
+    wrap(
+      <ProducerForm
+        producerId="p-7"
+        initial={{ name: "סנדרה", city: "פרדס חנה-כרכור", owner_bio: "אני סנדרה", owner_photo_url: PHOTO }}
+      />,
+    );
+    await screen.findByTestId("owner-story-section");
+    submit(FORM.submit_update);
+    await waitFor(() => expect(api.put).toHaveBeenCalled());
+    const body = api.put.mock.calls.find((c) => c[0] === "/admin/producers/p-7")[1];
+    expect(body).not.toHaveProperty("owner_bio");
+    expect(body).not.toHaveProperty("owner_photo_url");
+    expect(body.name).toBe("סנדרה"); // control
+  });
+});

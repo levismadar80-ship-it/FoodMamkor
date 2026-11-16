@@ -149,3 +149,41 @@ def test_admin_put_sets_the_bio_and_clears_the_photo(client, db):
     detail = client.get(f"/producers/{producer.id}").json()
     assert detail["owner_bio"] == "כשקונים ישירות מהחקלאי, מרגישים את ההבדל"
     assert detail["owner_photo_url"] is None
+
+
+def test_admin_upload_uses_the_business_slot_off_the_event_loop(client, db):
+    """MEH-3338 review: the Cloudinary branch of the admin route — the fixed
+    slot is the PATH business's (`owner_{id}`, overwrite), and the sync SDK
+    runs off the event loop like the owner route (MEH-2551)."""
+    import asyncio
+    from unittest.mock import patch
+
+    target = make_producer(db, name="סנדרה")
+    seen = {}
+
+    def fake_upload(*args, **kwargs):
+        try:
+            asyncio.get_running_loop()
+            seen["on_loop"] = True
+        except RuntimeError:
+            seen["on_loop"] = False
+        seen.update(kwargs)
+        return {"secure_url": "https://res.cloudinary.com/demo/image/upload/owner.jpg"}
+
+    with (
+        patch("app.routers.upload.settings") as s,
+        patch("cloudinary.uploader.upload", side_effect=fake_upload),
+        patch("cloudinary.config"),
+    ):
+        s.cloudinary_cloud_name = "demo"
+        s.cloudinary_api_key = "key"
+        s.cloudinary_api_secret = "secret"
+        resp = client.post(
+            _owner_photo_url(target.id), files=_jpg(), headers=auth_header(_admin(db))
+        )
+
+    assert resp.status_code == 200, resp.text
+    assert seen["on_loop"] is False
+    assert seen["public_id"] == f"owner_{target.id}"
+    assert seen["overwrite"] is True
+    assert seen["folder"] == "mehamakor/owner"

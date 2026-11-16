@@ -242,7 +242,7 @@ const EMPTY = {
  *
  * @param {Record<string, any>} payload
  * @param {Record<string, any>} form
- * @param {{ city: any, lat: any, lng: any }} seed
+ * @param {Record<string, any>} seed
  */
 function changedOnly(payload, form, seed) {
   const out = { ...payload };
@@ -252,6 +252,11 @@ function changedOnly(payload, form, seed) {
     delete out.lat;
     delete out.lng;
   }
+  // MEH-3338 (review): the owner can change her bio / photo in the dashboard
+  // while this form is open; an unrelated admin save must not put the
+  // page-open values back. Same rule as reservist_owned.
+  if (same(form.owner_bio?.trim(), seed.owner_bio?.trim?.() ?? seed.owner_bio)) delete out.owner_bio;
+  if (same(form.owner_photo_url, seed.owner_photo_url)) delete out.owner_photo_url;
   return out;
 }
 
@@ -286,7 +291,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-3333: the page-open values of the fields another editor can change
   // while this form is open (the locations editor below writes the primary
   // row, which is where city / lat / lng come from).
-  const seedRef = useRef({ city: "", lat: "", lng: "" });
+  const seedRef = useRef({ city: "", lat: "", lng: "", owner_bio: "", owner_photo_url: "" });
   const t = useTranslations("admin");
   // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
   // address search — no new i18n keys (see dashboard.producer.location).
@@ -332,6 +337,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         city: initial.city ?? "",
         lat: primaryLocation?.lat ?? "",
         lng: primaryLocation?.lng ?? "",
+        // MEH-3338: the owner edits these in her dashboard too.
+        owner_bio: initial.owner_bio ?? "",
+        owner_photo_url: initial.owner_photo_url ?? "",
       };
       setForm({
         ...EMPTY,

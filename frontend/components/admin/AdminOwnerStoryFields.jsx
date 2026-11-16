@@ -85,7 +85,7 @@ export default function AdminOwnerStoryFields({ producerId = null, bio, photoUrl
                 data-testid="admin-owner-photo-preview"
               />
             )}
-            <label className="inline-flex">
+            <label className="inline-flex rounded-full focus-within:ring-2 focus-within:ring-primary">
               <input
                 type="file"
                 accept="image/*"
