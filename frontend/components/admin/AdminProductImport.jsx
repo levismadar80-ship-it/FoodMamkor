@@ -70,9 +70,28 @@ export default function AdminProductImport({ producerId }) {
     }
   }, [producerId]);
 
+  // First load: the fetch lives in the effect and sets state only from its
+  // callbacks (react-hooks/set-state-in-effect); `load` is for reloads after
+  // an import / approve / delete.
   useEffect(() => {
-    load();
-  }, [load]);
+    let alive = true;
+    api
+      .get(`/admin/producers/${producerId}/product-drafts`)
+      .then((r) => {
+        const parsed = DraftListSchema.safeParse(r.data);
+        if (!alive) return;
+        setDrafts(parsed.success ? parsed.data : null);
+        setLoadFailed(!parsed.success);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setDrafts(null);
+        setLoadFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [producerId]);
 
   const run = async (/** @type {() => Promise<void>} */ fn) => {
     setBusy(true);
