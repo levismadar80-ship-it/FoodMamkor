@@ -38,6 +38,15 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.4 (16/11): hotfix — organizer page with a Hebrew address no longer
+  // 404s (MEH-3340). A bug fix, nothing new to learn, so no lines (items: 0).
+  { version: "1.5.4", key: "v1_5_4", date: "2026-11-16", items: 0 },
+  // 1.5.3 (15/11): two founders named on the site (MEH-3323). Copy only —
+  // nothing new for businesses to learn, so no lines (items: 0).
+  { version: "1.5.3", key: "v1_5_3", date: "2026-11-15", items: 0 },
+  // 1.5.2 (15/11): card badges off the photo + admin main-photo control.
+  // Nothing new for businesses to learn, so no lines (items: 0).
+  { version: "1.5.2", key: "v1_5_2", date: "2026-11-15", items: 0 },
   { version: "1.5.1", key: "v1_5_1", date: "2026-11-15", items: 3 },
 ];
 

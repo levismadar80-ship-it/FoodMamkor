@@ -543,8 +543,12 @@ front matter for the normative token bindings.
     **city** (`accent` gold, 12px semibold) with the distance beside it; the
     category sits in the muted line under the name. No city → no place line.
   - **No photo (MEH-2440):** a typographic name plate — the business name in
-    Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
-    above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
+    Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned.
+  - **Badges off the photo (MEH-3321, Sapir 15/11/2026):** the badge row (max 2
+    + «+N», TrustBadge, delivery-only pill) sits in the card body under the
+    name / category line, never over the photo. A card with nothing to show
+    renders no row (no empty gap). The «+N» panel and badge tooltips avoid the
+    whole card body, so they open over the photo. Replaces the MEH-643 leaf glyph + wordmark on
     `green-50`, which read as a template when most cards had no photo.
     **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in a
     top corner) in `seedColorFor(producer.id)` — the business keeps "its"
