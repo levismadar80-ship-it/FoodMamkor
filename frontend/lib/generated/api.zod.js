@@ -7036,6 +7036,17 @@ export const UploadOwnerPhotoUploadOwnerPhotoPostResponse = /*#__PURE__*/ zod.un
 
 
 /**
+ * MEH-3338: the admin uploads the owner photo for a business she builds
+ * on the owner's behalf. Same validation, same fixed Cloudinary slot
+ * (`owner_{producer_id}`, overwrite) as the owner route — the business comes
+ * from the PATH, and only an admin reaches it (403 for anyone else, the owner
+ * included: she has her own route).
+ * @summary Admin Upload Owner Photo
+ */
+export const AdminUploadOwnerPhotoUploadOwnerPhotoProducerIdPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Update the current user's name and/or email.
  *
  * - Name is trimmed and must be non-empty.

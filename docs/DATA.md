@@ -1818,6 +1818,11 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically
+POST /upload/owner-photo/{producer_id}  admin — MEH-3338: the same upload for the business in the PATH
+                                 (admin builds the page on the owner's behalf). Shared helper
+                                 `_store_owner_photo`: same size cap, magic-byte sniff, fixed slot.
+                                 Owner → 403 (she has the route above); unknown business → 404. 30/hr.
+                                 `ProducerAdminCreate` also accepts `owner_bio` (sanitized, ≤300).
 ```
 
 > **Destroying an old photo (MEH-3247).** Every post-commit cleanup

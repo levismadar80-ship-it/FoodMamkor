@@ -139,6 +139,7 @@ class ProducerAdminCreate(BaseModel):
     contact_name: SanitizedPersonNameField | None = None
     description: str | None = None
     short_description: str | None = None
+    owner_bio: str | None = None  # MEH-3338
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -203,6 +204,13 @@ class ProducerAdminCreate(BaseModel):
     @classmethod
     def _sanitize_short_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
+
+    # MEH-3338: the admin fills "מאחורי העסק" when she builds a page on the
+    # owner's behalf. Same sanitize + 300 cap as ProducerUpdate.owner_bio.
+    @field_validator("owner_bio")
+    @classmethod
+    def _sanitize_owner_bio(cls, v: str | None) -> str | None:
+        return sanitize_text(v, max_length=300)
 
     @field_validator("admin_notes")
     @classmethod
