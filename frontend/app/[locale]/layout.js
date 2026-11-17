@@ -1,3 +1,4 @@
+// @ts-check
 import "../globals.css";
 import { FONT_VARIABLES } from "../fonts";
 import { notFound } from "next/navigation";
@@ -25,9 +26,11 @@ import { BRAND_NAME, BRAND_NAME_LATIN, SITE_DESCRIPTION } from "@/lib/constants"
 import { routing } from "@/i18n/routing";
 import {
   buildAlternates,
+  urlForLocalePath,
   OG_LOCALE,
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-1831 / MEH-2029: the four brand typefaces are self-hosted from .woff2
 // files committed in this repo, and the build makes no network request for
@@ -82,7 +85,11 @@ const BASE_METADATA = {
   openGraph: {
     type: "website",
     locale: "he_IL",
-    url: SITE_URL,
+    // MEH-0000: NO `url` here. This object is what a page with no openGraph of
+    // its own inherits, so a static url made every such page claim the Hebrew
+    // HOME as its og:url — /en included. That is the same defect MEH-2853 fixed
+    // for `title` two fields down; `url` was the one it missed. The locale's own
+    // home url is set in generateMetadata below, which has the locale.
     siteName: BRAND_NAME,
     description: SITE_DESCRIPTION,
     images: [
@@ -158,6 +165,12 @@ export async function generateMetadata({ params }) {
     keywords: [...t.raw("keywords"), BRAND_NAME],
     openGraph: {
       ...BASE_METADATA.openGraph,
+      // MEH-0000: the LOCALE's home, not SITE_URL. On /en a static SITE_URL
+      // made og:url the Hebrew home, so a shared /en link previewed — and,
+      // for a crawler that trusts og:url, canonicalised — to the wrong page.
+      // This stays in sync with alternates.canonical below because both come
+      // from urlForLocalePath.
+      url: urlForLocalePath("/", locale),
       // MEH-2853: no og title here either. A page that sets no openGraph of
       // its own inherits this object, and a title in it made the page's
       // og:title the home title. Without it Next fills og:title from the
@@ -193,7 +206,7 @@ export async function generateMetadata({ params }) {
 }
 
 export const viewport = {
-  themeColor: "#2e6853",
+  themeColor: COLOR.primary,
 };
 
 export function generateStaticParams() {
@@ -229,10 +242,10 @@ export default async function LocaleLayout({ children, params }) {
             preconnect while unsplash and the three OSM shards did. */}
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        {/* MEH-604: preconnect OSM tile shards (a/b/c) for HomepageMiniMap above-the-fold */}
-        <link rel="preconnect" href="https://a.tile.openstreetmap.org" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
+        {/* MEH-604: preconnect the OSM tile host for HomepageMiniMap above-the-fold.
+            MEH-3077: one host, not the a/b/c shards — the OSM tile usage policy
+            deprecates the subdomains; HTTP/2 multiplexes on the single host. */}
+        <link rel="preconnect" href="https://tile.openstreetmap.org" crossOrigin="anonymous" />
       </head>
       {/* MEH-1775: `pb-20 md:pb-0` reserved room for the BottomNav band and for
           NOTHING else, so the cookie banner — which floats in its own band
@@ -245,7 +258,7 @@ export default async function LocaleLayout({ children, params }) {
           still evaluates to exactly 5rem when the banner is absent, which is
           what the old class said — so this is a superset, not a re-spacing. */}
       <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-skip-link focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
         {/* MEH-2233: not the whole catalog — admin/dashboard/server-only

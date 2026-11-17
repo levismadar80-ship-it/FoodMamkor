@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -12,7 +13,12 @@ import { Link } from "@/i18n/navigation";
 // +137 KB on /events after load, gone when only those prefetches are blocked.
 // Navigation still works; it fetches on tap. Guarded by ChromePrefetchGuard.test.js.
 import { useTranslations } from "next-intl";
-import { hasCookieConsent, setCookieConsent } from "@/lib/cookie-consent";
+import {
+  COOKIE_SETTINGS_EVENT,
+  hasCookieConsent,
+  hasFullCookieConsent,
+  setCookieConsent,
+} from "@/lib/cookie-consent";
 
 /**
  * Cookie consent — compact bottom bar.
@@ -37,6 +43,10 @@ export default function CookieBanner() {
 
   useEffect(() => {
     if (!hasCookieConsent()) setVisible(true);
+    // MEH-3196: the footer's «הגדרות עוגיות» re-opens the banner.
+    const reopen = () => setVisible(true);
+    window.addEventListener(COOKIE_SETTINGS_EVENT, reopen);
+    return () => window.removeEventListener(COOKIE_SETTINGS_EVENT, reopen);
   }, []);
 
   // MEH-850: publish the banner's live height to a CSS var so the chat FAB's
@@ -65,8 +75,13 @@ export default function CookieBanner() {
     // ClarityScript.jsx listens for it to activate analytics on consent, and
     // LocationBanner.jsx arms its reveal on it (MEH-2394). MEH-850 only moved
     // the chat-FAB *positioning* off this event onto the --cookie-banner-h var.
+    // MEH-3196: analytics, Clarity and session replay attach once and cannot
+    // be detached in place. Withdrawing "all" therefore reloads the page, so
+    // the next load starts with only the essential cookies.
+    const withdrawing = mode === "essential" && hasFullCookieConsent();
     setCookieConsent(mode);
     setVisible(false);
+    if (withdrawing) window.location.reload();
   };
 
   if (!visible) return null;
@@ -74,7 +89,7 @@ export default function CookieBanner() {
   return (
     <div
       ref={bannerRef}
-      className="cookie-banner vv-pin print:hidden fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-[1100] bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
+      className="cookie-banner vv-pin print:hidden fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-cookie-banner bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="region"
       data-testid="cookie-banner"
       aria-label={t("aria_label")}

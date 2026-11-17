@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 /**
  * MEH-2748 — React hook over lib/chip-copy.js. Returns a stable

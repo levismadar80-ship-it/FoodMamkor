@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -52,11 +53,12 @@ function useBusinessPhone() {
 }
 
 /**
- * @param {string} value                 "site_form" | "whatsapp" | "phone" | "external_url"
- * @param {(m:string)=>void} onChange
- * @param {string} url                   registration_url (external_url only)
- * @param {(u:string)=>void} onUrlChange
- * @param {string} [urlError]
+ * @param {object} props
+ * @param {string} props.value                 "site_form" | "whatsapp" | "phone" | "external_url"
+ * @param {(m:string)=>void} props.onChange
+ * @param {string} props.url                   registration_url (external_url only)
+ * @param {(u:string)=>void} props.onUrlChange
+ * @param {string} [props.urlError]
  */
 export default function RegistrationMethodField({ value, onChange, url, onUrlChange, urlError }) {
   const t = useTranslations("registration.form");

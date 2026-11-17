@@ -182,6 +182,7 @@ class TestLicenseWithThreeCategories:
             "category_ids": category_ids,
             "primary_contact_method": "whatsapp",
             "declaration_accepted": True,
+            "farmer_declaration_accepted": True,  # MEH-2923: the trio includes ירקות
         }
         if license_number is not None:
             payload["producer_license_number"] = license_number

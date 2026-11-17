@@ -31,7 +31,7 @@
 * עמוד `/privacy` — `frontend/app/[locale]/privacy/page.js`; הנוסח ב-`frontend/messages/he.json` תחת `privacy.sections.*` (סעיפים: מפעיל · מי אנחנו · אילו נתונים · למה · צדדים שלישיים · זכויות · עוגיות · שמירה ואבטחה · קטינים · שינויים · יצירת קשר).
 * יידוע בטופסי ההרשמה — `auth.register.*.collection_notice` (he.json:339 ואחיו), MEH-2200.
 * **חמש שורות היידוע בנקודת האיסוף** — `privacy.collection_notice.*`, מורכבות דרך `frontend/components/CollectionNotice.jsx` (המנגנון, #3255). פירוט ב-`privacy-notice-draft.md`.
-* מסלול מחיקה ביוזמת המשתמשת — `DELETE /auth/me` (`backend/app/routers/auth.py:1484`), CASCADE על טבלאות הצפיות/הלחיצות (`models.py:1733-1738`, `:1778-1783`).
+* מסלול מחיקה ביוזמת המשתמשת — `POST /auth/me/delete` (`backend/app/routers/auth.py`, MEH-3248: password or fresh Google/Apple sign-in required), CASCADE על טבלאות הצפיות/הלחיצות (`models.py:1733-1738`, `:1778-1783`).
 
 ## מה לא בחבילה הזאת
 

@@ -1,3 +1,4 @@
+// @ts-check
 // MEH-2604: free-text hours as the owner typed them («א׳–ה׳ 9:00–17:00»),
 // rendered inside the RTL page with every time RANGE isolated left-to-right.
 //

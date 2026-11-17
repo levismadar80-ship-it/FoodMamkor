@@ -410,12 +410,37 @@ Vercel ב-09/11, ולכן:
 
 ---
 
+## דף ציבורי יתום (MEH-3265)
+
+`frontend/__tests__/PublicPageReachabilityGuard.test.js` (vitest, רץ ב-CI gate).
+כל `page.*` תחת `app/[locale]/` (חוץ מ-admin, dev ו-producer/dashboard, שהוא
+של `DashboardPlacementGuard`) חייב שורה ב-`ROUTES` שבקובץ: indexed · hub ·
+family · noindex · redirect. דף חדש בלי שורה נכשל, כך שמי שמוסיפה דף מחליטה מה
+הוא.
+
+- **indexed** חייב להופיע ב-`lib/sitemap-static.js`, ו-**hub** ב-`HUBS`
+  (`lib/listing-supply.js`). **family** (נתיב דינמי) חייב needle ב-`app/sitemap.js`.
+- לכל אחד מהם צריך קישור נכנס מקובץ שמבקרת יכולה להגיע אליו: לא מהתיקייה של
+  הדף עצמו, לא מ-admin, dev או מלוח הבקרה, ולא מקבצים של דף noindex. ההתאמה
+  היא לנתיב מדויק, ו-`"/about"` לא נחשב קישור ל-`/about/badges`. כשהקישור נבנה
+  מרשימה (המדריכים) או מ-helper (דפי תזונה), השורה מציינת `linkedFrom`: קובץ
+  והמחרוזות שמהן הקישור בנוי.
+- **noindex** צריך `index: false` בדף, בקובץ שהוא מייבא ישירות או ב-layout מעליו,
+  ואסור שיופיע ב-sitemap. כל נתיב ב-sitemap חייב דף קיים שה-`robots.txt` לא חוסם.
+- תקנון, פרטיות והצהרת נגישות נעולים בפוטר.
+- `EXCEPTIONS`: דף שפטור מבדיקת הקישור, עם כרטיס. חריג שכבר לא נחוץ נכשל. היום
+  יש שניים: דפי התזונה והאזור, שמקושרים רק אחד מהשני (MEH-3111).
+
+זו בדיקה סטטית ולא סריקה. קישור מאחורי flag נחשב גם אם הוא לא מוצג היום. החלק
+שבודק את האתר החי (ה-sitemap מול מה שהסורק מגיע אליו דרך קישורים, כמו דוח orphan
+pages של Screaming Frog ו-Ahrefs) רשום ב-MEH-3111.
+
 ## בדיקות אחרי עלייה (MEH-2749)
 
 אחרי כל push ל-`staging` / `main`, כשה-build החדש עלה, רצים מול האתר החי:
 
 ```
-python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש
+python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש, ומאמת את ה-backend
 python scripts/checks/smoke_production.py                                  # main בלבד
 node   scripts/link-check.mjs <URL> --smoke                                # עד 10 כתובות (MEH-2864)
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
@@ -436,6 +461,32 @@ npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
 - הסקריפטים ב-`scripts/checks/` הם `.py`/`.cjs`, ו-`run-all.sh` מריץ רק `*.sh`,
   כך שהם לא הופכים לרגל של Repo guards.
 - ה-workflow עצמו: [docs/ci/meh-2749-post-deploy-checks.patch.md](./ci/meh-2749-post-deploy-checks.patch.md).
+
+### ‏`wait_for_deploy` לא שואל «האם Railway פרס», אלא «האם הקוד שרץ הוא הקוד של ה-commit»
+
+השער של ה-frontend הוא ה-build id בדף הבית. ל-backend יש grace של 3 דקות, ואחריה
+הסקריפט **לא** משווה sha ל-sha — הוא שואל את git אם קובץ תחת `backend/`,
+`Dockerfile` או `railway.json` שונה בין ה-sha שרץ לבין ה-sha שנדחף:
+
+| מצב | יציאה | למה |
+|---|---|---|
+| ה-backend ב-sha שנדחף | 0 | — |
+| ה-sha מאחור, אבל אין הבדל בקבצי ה-backend | 0 | הקוד שרץ **הוא** הקוד של ה-commit. דחיפה שנגעה רק ב-frontend לא אמורה להאדים. |
+| ה-sha מאחור ויש הבדל | **2** | בילד ישן. כל הבדיקות שאחריו מודדות backend אחר. |
+| אי אפשר להכריע (אין `git_sha`, או ה-sha מחוץ ל-`fetch-depth: 50`) | **2** | backend שמאחור ביותר מ-50 commits הוא כשלעצמו ממצא. |
+
+השוואת sha ל-sha היא בדיוק מה שנמדד כשגוי ב-06/11: שני sha שונים הם נורמליים
+ולא מזיקים כשאף אחד מהם לא נגע ב-backend. רק ה-diff מבדיל.
+
+**יציאה 2 עדיין חסרת שיניים** עד שספיר תקמט את
+[docs/ci/meh-0000-deploy-sha-gate.patch.md](./ci/meh-0000-deploy-sha-gate.patch.md):
+השורה ב-`post-deploy-checks.yml` עוטפת את הסקריפט ב-`|| echo "::warning …"`, וה-step
+של ה-Verdict מאגד רק smoke/links/headers/lighthouse. הסקריפט אומר את זה בעצמו
+בפלט שלו.
+
+`python scripts/checks/wait_for_deploy.py --self-test` מריץ מאגרי git מפוברקים
+עם תשובות ידועות, ורץ גם לפני השער עצמו: תשובה ישרה לדחיפת frontend ותשובה של
+השוואה שבורה הן שתיהן 0, ולכן ירוק מהסקריפט הוא ראיה רק אם ה-self-test עובר.
 
 ---
 

@@ -118,7 +118,7 @@ def send_reservation_email(
             <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">אומרים אותו בקופה ומשלמים <b style="color:#2e6853;">{e(price)}&nbsp;₪</b>.</div>
           </td></tr>
           <tr><td style="padding:16px 22px 4px;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#fffefb;border:1px solid #e5dfd3;border-radius:10px;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #e5dfd3;border-radius:10px;">
               <tr><td style="padding:12px 14px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">
                 🕗&nbsp; איסוף היום {e(m.pickup_from)}–{e(m.pickup_until)}{address_html}
               </td></tr>
@@ -126,7 +126,7 @@ def send_reservation_email(
           </td></tr>
 {cancel_html}        </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור 🌱</td></tr>
     </table>
   </td></tr>
 </table>
@@ -160,7 +160,7 @@ def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> 
           <tr><td style="padding:20px 22px 24px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">{e(line1)}<br>{e(line2)}</td></tr>
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור 🌱</td></tr>
     </table>
   </td></tr>
 </table>
@@ -169,18 +169,9 @@ def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> 
     send_email(to, subject, body, html=html_body, test_cause=test_cause)
 
 
-def send_business_cancel_email(
-    to: str, producer_name: str, test_cause: bool = False
-) -> None:
-    """MEH-2738 — the business cancelled today's bag, so the buyer's
-    reservation went with it. Copy approved word for word by Sapir on 6/11
-    (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
-    name = " ".join(producer_name.split())
+def _send_bag_cancelled(to: str, name: str, line1: str, test_cause: bool) -> None:
+    """The «הסל ב… בוטל» card: one reason line, then the link to today's bags."""
     subject = f"הסל ב{name} בוטל"
-    line1 = (
-        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
-        "אין צורך להגיע ואין מה לשלם."
-    )
     line2 = "מצטערים. אולי יש סל אחר באזור:"
     link_text = "לסלים של היום"
     list_url = f"{settings.frontend_url}/rescue"
@@ -203,10 +194,39 @@ def send_business_cancel_email(
           <tr><td style="padding:8px 22px 24px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">{e(line2)} <a href="{e(list_url)}" style="color:#2e6853;font-weight:bold;">{e(link_text)}</a></td></tr>
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור 🌱</td></tr>
     </table>
   </td></tr>
 </table>
 </body>
 </html>"""
     send_email(to, subject, body, html=html_body, test_cause=test_cause)
+
+
+def send_business_cancel_email(
+    to: str, producer_name: str, test_cause: bool = False
+) -> None:
+    """MEH-2738 — the business cancelled today's bag, so the buyer's
+    reservation went with it. Copy approved word for word by Sapir on 6/11
+    (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
+    name = " ".join(producer_name.split())
+    line1 = (
+        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
+        "אין צורך להגיע ואין מה לשלם."
+    )
+    _send_bag_cancelled(to, name, line1, test_cause=test_cause)
+
+
+def send_delisted_cancel_email(
+    to: str, producer_name: str, test_cause: bool = False
+) -> None:
+    """MEH-3227 (D1) — the SITE took the business off (suspended, rejected,
+    deleted), so its live bags went with it. «בית העסק ביטל» would be false
+    here, so the reason line says the business is no longer listed — and no
+    more (the group-buy precedent, MEH-2498). Copy approved by Sapir 14/11."""
+    name = " ".join(producer_name.split())
+    line1 = (
+        f"בית העסק {name} כבר לא מופיע במהמקור, ולכן השריון שלכם לסל בוטל. "
+        "אין צורך להגיע ואין מה לשלם."
+    )
+    _send_bag_cancelled(to, name, line1, test_cause=test_cause)

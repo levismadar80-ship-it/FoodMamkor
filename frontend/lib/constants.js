@@ -1,3 +1,4 @@
+// @ts-check
 export const BRAND_NAME = "מהמקור";
 
 // MEH-476 PR Wave 6: outbound surface variant (sitemap slugs, Latin-script
@@ -47,10 +48,13 @@ export const BRAND_SAME_AS = [
   "https://www.youtube.com/@Mehamakor",
 ];
 
-// MEH-2192: `founder` for the Organization node. The value is the name as it
-// already appears in the /about signature copy (messages/he.json
-// `about.signature.name`) — organization-jsonld.test.js pins the two together,
-// so a copy edit there reds here instead of leaving the entity disagreeing
-// with the page. Not read from he.json at runtime: seo.js is imported by
-// server metadata paths and must stay free of the messages bundle.
-export const BRAND_FOUNDER_NAME = "ספיר שנפ";
+// MEH-3323: the founders, one place. Two sisters founded Mehamakor (Sapir
+// 15/11) — every surface that names a founder reads from here or from copy
+// that organization-jsonld.test.js pins to it. Order is fixed (Sapir first,
+// as in the approved copy); names never rotate. Not read from he.json at
+// runtime: seo.js is imported by server metadata paths and must stay free of
+// the messages bundle. (MEH-2192 introduced the single-founder predecessor.)
+export const FOUNDERS = Object.freeze([
+  Object.freeze({ name: "ספיר שנפ" }),
+  Object.freeze({ name: "טופז שנפ" }),
+]);

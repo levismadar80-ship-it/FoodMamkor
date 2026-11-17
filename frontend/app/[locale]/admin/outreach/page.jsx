@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -113,7 +114,7 @@ export default function AdminOutreachPage() {
 
   // MEH-2633. Deliberately no success toast: `load()` refreshes and the row
   // then shows the thanked date, which is the feedback. A failure surfaces the
-  // backend's own Hebrew `detail` (the four 409 rules each have their own
+  // backend's own Hebrew `detail` (the 409 rules each have their own
   // sentence in admin_outreach.thank_suggester), so this adds no frontend copy
   // and cannot drift from what the server actually enforced.
   const handleThankSuggester = async (id) => {
@@ -219,11 +220,11 @@ export default function AdminOutreachPage() {
 
       {/* Filters + add */}
       <div className="flex flex-col md:flex-row gap-3">
-        <input
+        <Input inline size="md"
           placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
+          className="flex-1"
         />
         <Button
           type="button"

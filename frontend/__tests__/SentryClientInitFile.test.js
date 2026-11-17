@@ -20,7 +20,7 @@ describe("browser Sentry init file (MEH-2536)", () => {
     const src = read("instrumentation-client.js");
     expect(src).toMatch(/import \{ scrubClaimTokens \} from "\.\/lib\/claim-token"/);
     expect(src).toMatch(/beforeSend\(event\)[\s\S]*scrubClaimTokens\(event\)/);
-    expect(src).toMatch(/beforeSendTransaction: \(event\) => scrubClaimTokens\(event\)/);
+    expect(src).toMatch(/beforeSendTransaction: \(event\) =>[^;}]*scrubClaimTokens\(event\)/);
   });
 
   it("exports the App Router navigation hook", () => {

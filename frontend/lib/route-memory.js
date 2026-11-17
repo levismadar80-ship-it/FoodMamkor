@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -98,7 +99,10 @@ export function consumeHistoryReturn() {
   }
   if (!documentEntryConsumed && here === entryPath) {
     documentEntryConsumed = true;
-    const type = window.performance?.getEntriesByType?.("navigation")?.[0]?.type;
+    const nav = /** @type {PerformanceNavigationTiming | undefined} */ (
+      window.performance?.getEntriesByType?.("navigation")?.[0]
+    );
+    const type = nav?.type;
     return type === "reload" || type === "back_forward";
   }
   documentEntryConsumed = true;

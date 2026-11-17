@@ -49,6 +49,10 @@ async function lastLine(page: Page, selector: string): Promise<{ lines: number; 
 }
 
 test.describe("manual › Hebrew typography (MEH-2488)", () => {
+  // MEH-3153: the glyph check reads CSS.getPlatformFontsForNode over CDP, which
+  // exists only in Chromium. The same spec runs in the Chromium projects.
+  test.skip(({ browserName }) => browserName !== "chromium", "CDP is Chromium-only");
+
   test("/about/process: Hebrew inside .font-english renders in Frank Ruhl Libre, never a system serif", async ({ page }) => {
     await page.goto("/about/process");
     for (const selector of ['[data-testid="process-hero"] em', '[data-testid="process-steps-lead"]']) {

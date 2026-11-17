@@ -330,7 +330,7 @@ class TestRejectionEmailPointsAtTheLoop:
     def test_reject_sends_both_parts_with_the_dashboard_link(
         self, client, db, monkeypatch
     ):
-        from app.routers import admin as admin_module
+        from app.routers import admin_decisions as admin_module
 
         sent = {}
 
@@ -365,7 +365,7 @@ class TestRejectionEmailPointsAtTheLoop:
     def test_reason_free_reject_has_no_dangling_reason_line_in_either_part(
         self, client, db, monkeypatch
     ):
-        from app.routers import admin as admin_module
+        from app.routers import admin_decisions as admin_module
 
         sent = {}
         monkeypatch.setattr(
@@ -390,7 +390,7 @@ class TestRejectionEmailPointsAtTheLoop:
         assert "/producer/dashboard" in sent["html"]
 
     def test_html_escapes_a_crafted_business_name(self):
-        from app.routers import admin as admin_module
+        from app.routers import admin_decisions as admin_module
 
         html = admin_module._producer_rejected_html("<b>x</b> & co", "r", "https://x/d")
         assert "<b>x</b>" not in html

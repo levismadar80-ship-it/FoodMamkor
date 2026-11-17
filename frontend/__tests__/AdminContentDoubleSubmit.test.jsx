@@ -74,6 +74,8 @@ describe("AdminContentPage — double-submit protection (MEH-228 via MEH-1176 F4
       screen.getByPlaceholderText("admin.content.categories.name_placeholder"),
       { target: { value: "יין" } },
     );
+    // MEH-3255: the licence answer is required before a create.
+    fireEvent.click(screen.getByLabelText("admin.content.categories.license_yes"));
     const addBtn = screen.getByText("admin.content.categories.add");
     fireEvent.click(addBtn);
     fireEvent.click(addBtn);

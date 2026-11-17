@@ -102,7 +102,7 @@ describe("/contact — topic select", () => {
 
 describe("one whitelist, one set of words", () => {
   it("mirrors the backend CONTACT_TOPIC_LABELS keys", () => {
-    const py = fs.readFileSync(path.resolve(__dirname, "../../backend/app/schemas/schemas.py"), "utf8");
+    const py = fs.readFileSync(path.resolve(__dirname, "../../backend/app/schemas/site.py"), "utf8");
     const block = py.match(/CONTACT_TOPIC_LABELS = \{([\s\S]*?)\}/)[1];
     const keys = [...block.matchAll(/"(\w+)":/g)].map((m) => m[1]);
     expect(keys.length).toBeGreaterThan(0);

@@ -5,14 +5,14 @@ description: Resolve merge conflicts per Mehamakor categorization rules. Use whe
 
 # resolve-conflicts
 
-Apply when `git merge origin/staging` (or any branch merge) leaves `UU` files in `git status`. Each conflicted file maps to one of six categories. Follow the rule for the category; do not improvise.
+Apply when `git merge origin/staging` (or any branch merge) leaves `UU` files in `git status`. Each conflicted file maps to one of the categories below. Follow the rule for the category; do not improvise.
 
 ## Categorization rules
 
 | Path / pattern | Rule | Why |
 |---|---|---|
-| `docs/CHANGELOG.md` | **Accept Both** — keep both halves, in chronological order (newer entry first) | Append-only session log; both sides legitimately added entries |
-| `docs/HANDOFF.md` | **Accept Both** — keep both halves | Append-only handoff log |
+| `docs/CHANGELOG.md`, `HANDOFF.md` in a **docs-only** PR | **Accept Both** — keep both halves, in chronological order (newer entry first) | Append-only logs; both sides legitimately added entries |
+| `docs/CHANGELOG.md`, `HANDOFF.md` in a branch that also changes code | **Take them off the branch** — `git checkout origin/staging -- docs/CHANGELOG.md HANDOFF.md`, then backfill in a separate docs-only PR | The logs never ride in a code branch (workflow rule 31); `changelog-branch-guard.sh` fails the PR |
 | `tests/test_api.py`, `tests/test_*.py` | **Accept Both** — keep both halves | Tests are additive; both sets belong |
 | `.pre-commit-config.yaml` | **Accept Incoming** (`--theirs` against `origin/staging`) | Staging is source of truth for tooling config; if your branch made the same fix, staging's version already incorporates it |
 | `frontend/lib/use-home-page.js` and other branch-specific business code your PR rewrites | **Keep Mine** — your branch fix is the intent | Whole-file rewrites cannot be auto-merged; your branch is the authoritative version |

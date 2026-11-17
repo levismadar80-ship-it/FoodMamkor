@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -25,7 +26,8 @@ import { useEffect } from "react";
 // wrapper too — the boot-401 push("/login") was dropping an /en session onto
 // the default-locale page (same fix as edit/page.js:37).
 import { usePathname, Link, useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { useDashboardTitle } from "@/lib/use-dashboard-title";
 import {
   SquaresFour,
   PencilSimple,
@@ -38,7 +40,9 @@ import {
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
+import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { useNewTools } from "@/hooks/useWhatsNew";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -73,6 +77,13 @@ const ORGANIZER_TABS = [
   { key: "edit", href: "/producer/dashboard/edit", Icon: PencilSimple },
   { key: "organizer_events", href: "/producer/dashboard/events", Icon: CalendarBlank },
 ];
+
+/** Is this tab lit for this path? (`exact` = index route; `also` = screens opened from it.) */
+function tabIsActive(tab, pathname) {
+  return tab.exact
+    ? pathname === tab.href
+    : [tab.href, ...(tab.also ?? [])].some((p) => pathname.startsWith(p));
+}
 
 /** The tab set for this owner. `/auth/me` carries producer_kind (MEH-2460). */
 function tabsFor(user) {
@@ -130,9 +141,16 @@ export default function ProducerDashboardLayout({ children }) {
   const tDenied = useTranslations("errors.access_denied.producer");
   const tA11y = useTranslations("a11y");
   const tAccount = useTranslations("account.menu");
+  const tNewTool = useTranslations("dashboard.producer.new_tool");
+  // MEH-3200 part 2: a dot on «כלים» while a tool from a recent release is new.
+  const newTools = useNewTools();
   const router = useRouter();
   const pathname = usePathname();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, logout, authUnreachable } = useAuth();
+  // MEH-3191: each screen gets its own <title> — the active tab's label.
+  const locale = useLocale();
+  const titleTab = tabsFor(user).find((tab) => tabIsActive(tab, pathname));
+  useDashboardTitle(titleTab ? t(titleTab.key) : null, locale, pathname);
 
   // MEH-1599: 401 and 403 are DIFFERENT outcomes and must not share a branch.
   //   - unauthenticated (401) → /login, now carrying ?redirect= so she lands
@@ -145,7 +163,10 @@ export default function ProducerDashboardLayout({ children }) {
   // silently on the homepage with no explanation. `pathname` comes from
   // @/i18n/navigation, so it is locale-STRIPPED ("/producer/dashboard/edit")
   // and LoginClient re-adds the locale on the way back.
-  const isUnauthenticated = !authLoading && !user;
+  // MEH-3172: a stored token whose /auth/me never answered is not "signed
+  // out" — it renders a retry below instead of the /login push.
+  const isUnreachable = !authLoading && !user && authUnreachable;
+  const isUnauthenticated = !authLoading && !user && !authUnreachable;
   const isDenied = !authLoading && !!user && user.role !== "producer";
 
   // The single UX gate for the whole dashboard subtree. Real auth is enforced
@@ -162,6 +183,7 @@ export default function ProducerDashboardLayout({ children }) {
   //     rendering anything here would flash behind that redirect. Returning
   //     null is deliberate and UNCHANGED.
   if (authLoading) return <DashboardChromeSkeleton label={tA11y("loading")} />;
+  if (isUnreachable) return <AuthUnreachableState />;
   if (isUnauthenticated) return null;
 
   // 403 — in-app denied state with a route forward, not a browser redirect.
@@ -183,10 +205,7 @@ export default function ProducerDashboardLayout({ children }) {
     );
   }
 
-  const isActive = (tab) =>
-    tab.exact
-      ? pathname === tab.href
-      : [tab.href, ...(tab.also ?? [])].some((p) => pathname.startsWith(p));
+  const isActive = (tab) => tabIsActive(tab, pathname);
   const tabs = tabsFor(user);
   const isOrganizer = user.producer_kind === "organizer";
 
@@ -222,7 +241,14 @@ export default function ProducerDashboardLayout({ children }) {
                 }`}
               >
                 <tab.Icon size={18} weight={active ? "fill" : "regular"} aria-hidden="true" />
-                {t(tab.key)}
+                <span className="inline-flex items-center gap-1">
+                  {t(tab.key)}
+                  {tab.key === "tools" && newTools.size > 0 && (
+                    <span data-testid="new-tool-dot" className="w-2 h-2 rounded-full bg-primary inline-block shrink-0">
+                      <span className="sr-only">{" "}{tNewTool("dot")}</span>
+                    </span>
+                  )}
+                </span>
               </Link>
             );
           })}

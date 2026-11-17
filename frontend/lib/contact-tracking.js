@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Analytics beacons for any /producer surface.
  *
@@ -96,6 +97,7 @@ export function pingWhatsAppBeacon(producerId, city = null) {
   // because sendBeacon cannot set Content-Type: application/json.
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   if (token || coverageCity) {
+    /** @type {Record<string, string>} */
     const headers = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
     if (coverageCity) headers["Content-Type"] = "application/json";

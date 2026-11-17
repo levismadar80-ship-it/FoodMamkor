@@ -57,7 +57,10 @@ cd "$ROOT"
 # measurement run to the unstubbed baseline arm, COUNT points it at a file
 # to log matched requests to. Not application config — the app never reads
 # either.
-SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|QA_BASE_URL|PLAYWRIGHT_CHROMIUM_PATH|E2E_CLOUDINARY_STUB|E2E_CLOUDINARY_COUNT|PATH|HOME|USER|PYTHONPATH)$'
+# VERCEL_GIT_COMMIT_REF: a Vercel system variable (the deployed branch), set by
+# Vercel on every deployment, same class as VERCEL_ENV. Read by
+# frontend/lib/sentry-environment.js to label staging events "staging".
+SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_GIT_COMMIT_REF|VERCEL_BYPASS_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|GITHUB_SHA|GITHUB_REPOSITORY|SKIP_ENV_VALIDATION|TEST_URL|PW_WEBKIT|QA_BASE_URL|PLAYWRIGHT_CHROMIUM_PATH|E2E_CLOUDINARY_STUB|E2E_CLOUDINARY_COUNT|PATH|HOME|USER|PYTHONPATH)$'
 
 # ─── 1. Backend code vars ───────────────────────────────────────────────────
 # os.getenv("X") / os.environ["X"] / os.environ.get("X")

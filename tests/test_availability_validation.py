@@ -210,10 +210,13 @@ class _ServerClockOneDayBehind(date):
 
 
 def test_read_path_auto_clear_uses_israel_day(monkeypatch):
+    from app.schemas import producer_out as owner
     from app.schemas import schemas as sch
 
-    monkeypatch.setattr(sch, "israel_today", lambda: date(2026, 6, 5))
-    monkeypatch.setattr(sch, "date", _ServerClockOneDayBehind)
+    # Patch the module that READS the clock: ProducerListOut lives in
+    # schemas/producer_out.py (MEH-3270), so that is where the names resolve.
+    monkeypatch.setattr(owner, "israel_today", lambda: date(2026, 6, 5))
+    monkeypatch.setattr(owner, "date", _ServerClockOneDayBehind)
 
     out = sch.ProducerListOut.model_validate(
         {
@@ -235,10 +238,13 @@ def test_read_path_keeps_a_vacation_that_ends_today(monkeypatch):
     off-by-one here would reopen every business on the morning of its last
     vacation day, which is the mirror of the bug the sweep fixes.
     """
+    from app.schemas import producer_out as owner
     from app.schemas import schemas as sch
 
-    monkeypatch.setattr(sch, "israel_today", lambda: date(2026, 6, 5))
-    monkeypatch.setattr(sch, "date", _ServerClockOneDayBehind)
+    # Patch the module that READS the clock: ProducerListOut lives in
+    # schemas/producer_out.py (MEH-3270), so that is where the names resolve.
+    monkeypatch.setattr(owner, "israel_today", lambda: date(2026, 6, 5))
+    monkeypatch.setattr(owner, "date", _ServerClockOneDayBehind)
 
     out = sch.ProducerListOut.model_validate(
         {

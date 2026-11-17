@@ -1,9 +1,11 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowSquareOut, Cow, Medal, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, Medal } from "@phosphor-icons/react";
+import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
 import api from "@/lib/api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
@@ -12,7 +14,6 @@ import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
 import { israelToday } from "@/lib/israel-date";
-import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
@@ -227,6 +228,7 @@ const EMPTY = {
 // Focus-retention fix: Section + Field live at MODULE scope. Defining them
 // inside ProducerForm recreated their component identity on every render, so
 // React remounted the whole subtree and dropped input focus mid-typing.
+/** @param {{ title: import("react").ReactNode, children?: import("react").ReactNode, testId?: string }} props */
 function Section({ title, children, testId }) {
   return (
     <div className="bg-surface rounded-md border border-border p-6" data-testid={testId}>
@@ -1148,32 +1150,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           className="text-sm w-full max-w-full"
         />
         {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
-        {form.images?.length > 0 && (
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-            {form.images.map((url) => (
-              <div key={url} className="relative group">
-                {/* raw img: admin-entered image URLs may be ANY host (the
-                    MEH-1222 "https://bread.jpg" case). next/image throws on
-                    a src outside remotePatterns / non-absolute instead of
-                    firing onError. Measured under MEH-1833, see PR. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={optimizeCloudinary(url)}
-                  alt=""
-                  className="w-full h-24 object-cover rounded-sm border border-border"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
-                  aria-label={t("common.delete")}
-                >
-                  <X size={14} weight="bold" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* MEH-3320: main-photo marker + «make main» live in AdminPhotoGrid. */}
+        <AdminPhotoGrid
+          images={form.images ?? []}
+          onChange={(images) => setForm((f) => ({ ...f, images }))}
+          onRemove={removeImage}
+        />
       </Section>
 
       <Section title={t("producers.form.sections.hours")}>

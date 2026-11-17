@@ -263,10 +263,10 @@ const I18N_KEY_PATH = /group_buys\.friday_delivery/;
 // have a category to select. Names come from CATEGORY_CARDS, not from literals.
 type CategoryCard = { key: string; name: string; image?: string };
 const CARDS = CATEGORY_CARDS as CategoryCard[];
-const CAT_A = { id: 101, name: CARDS[0].name };
-const CAT_B = { id: 102, name: CARDS[1].name };
+const CAT_A = { id: 101, name: CARDS[0].name, requires_license: false };
+const CAT_B = { id: 102, name: CARDS[1].name, requires_license: false };
 /** A category id no fixture business carries — the MT:1085 zero-result branch. */
-const CAT_EMPTY = { id: 199, name: "קטגוריה ריקה" };
+const CAT_EMPTY = { id: 199, name: "קטגוריה ריקה", requires_license: false };
 const CATEGORIES = [CAT_A, CAT_B, CAT_EMPTY];
 
 // The delivery city + the region that contains it, both read from data/regions.js
@@ -2319,8 +2319,9 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     ).toEqual([]);
   });
 
-  // MT:604:3 — three tile preconnect links, all crossOrigin="anonymous".
-  test("the document head preconnects to all three OSM tile hosts", async ({ page }) => {
+  // MT:604:3 — tile preconnect, crossOrigin="anonymous". MEH-3077: one host
+  //   (tile.openstreetmap.org); the a/b/c shards are deprecated by OSM policy.
+  test("the document head preconnects to the single OSM tile host", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await gotoHome(page);
@@ -2331,12 +2332,8 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     );
     expect(
       tiles.map((t) => t.href).sort(),
-      "a, b and c — no more, no fewer",
-    ).toEqual([
-      "https://a.tile.openstreetmap.org/",
-      "https://b.tile.openstreetmap.org/",
-      "https://c.tile.openstreetmap.org/",
-    ]);
+      "exactly the one tile host — no a/b/c shard",
+    ).toEqual(["https://tile.openstreetmap.org/"]);
     for (const t of tiles) expect(t.cors).toBe("anonymous");
   });
 

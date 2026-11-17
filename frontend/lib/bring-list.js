@@ -1,3 +1,4 @@
+// @ts-check
 // The host writes «מה להביא» as free text. One item per line; a single line is
 // split on commas («סינר, נעליים סגורות») — but not on a comma inside
 // parentheses («גרביים (לבנות, לא צבעוניות)» stays one item). Empty pieces

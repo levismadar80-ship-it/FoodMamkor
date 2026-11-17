@@ -79,9 +79,10 @@ timestamp built from the UTC clock is green at most hours and red at one.
   not only at the hour the suite happens to run.
 - Review question: what does this assertion read at 21:30 UTC on the Monday
   after the clock change — late October, and late March?
-- `scripts/checks/test-clock-guard.sh` (warn-only, MEH-2382) prints `WARNING`
-  for any `date.today()` left in `tests/`; `guard-ok: <reason>` within ±1 line
-  is the escape hatch. It was born with zero findings — a WARNING is a new one.
+- `scripts/checks/test-clock-guard.sh` (blocking since MEH-3160; warn-only
+  before, MEH-2382) fails on any `date.today()` in `tests/`; `guard-ok:
+  <reason>` within ±1 line is the escape hatch. `israel-clock-guard.sh` does
+  the same for a private Israel formatter in `frontend/`.
 
 ---
 
@@ -192,7 +193,9 @@ Eight instances in one week:
 
 Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
 the PR. The independent pass is a **fresh reviewer subagent** given the diff and
-the card's acceptance_criteria; its findings are fixed or answered in the PR. The
+the card's acceptance_criteria; its findings are fixed or answered in the PR. Its
+brief always asks one more question: which docs describe what this diff changed
+(rule 11), and were they updated in it (MEH-3192 — no guard can see this). The
 `claude[bot]` CI review is off since 08/11 (Sapir, until MEH-569) — don't wait for
 its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
 the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a

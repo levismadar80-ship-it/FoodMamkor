@@ -69,6 +69,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — availability + favorites + quick links | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Toggle "available today" | `backend/app/routers/producer_me.py` |
 | ✅ | v1 | Add event from dashboard | `frontend/app/producer/dashboard/events/new/page.js` |
+| ✅ | v1.5.1 | «מה חדש» for business owners (MEH-3200): a top card on the dashboard home while the newest release is unseen, a fixed row above «צריכים עזרה?», and an archive page; plus a one-time welcome card for a business ≤ 30 days old. Part 2: a «חדש» pill on a new «כלים» tile + a dot on the tab for 14 days, and once-only first-moment cards (first review / WhatsApp click / 100 views / first follower). Seen state in localStorage | `frontend/lib/whats-new.js`, `frontend/components/producer/WhatsNew*.jsx`, `frontend/app/[locale]/producer/dashboard/whats-new/page.js` |
 | ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table dropped (MEH-2392) | — |
 
 ### Home cooks (`/neighbor`)
@@ -106,10 +107,11 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Content / static pages | `frontend/app/admin/content/` |
 | ✅ | v1 | Analytics | `frontend/app/admin/analytics/` |
 | ✅ | v1 | Settings | `frontend/app/admin/settings/` |
+| ✅ | v1.5 | MEH-3182: Billing, read-only (`/admin/billing`): businesses over the results threshold, what each would pay, billing off in launch | `frontend/app/[locale]/admin/billing/page.js`, `backend/app/services/billing_summary.py` |
 | ✅ | v1 | Admin seed via `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars | `backend/seed_data.py` |
 | 🚧 | v1 | MEH-51: Kashrut badge review queue (`/admin/kashrut`) — approve/reject with notes | `frontend/app/admin/kashrut/page.js`, `backend/app/routers/admin_kashrut.py` |
 | 🚧 | v1 | MEH-51: 5-tier Trust Ladder — real-time computed, TrustBadge.jsx + KashrutBadgeStrip.jsx | `backend/app/services/trust_tier.py`, `frontend/components/TrustBadge.jsx` |
-| 🚧 | v1 | MEH-51: Phone verification via WhatsApp OTP (step 4 of producer registration) | `backend/app/routers/producer_me.py`, `frontend/app/register/producer/page.js` |
+| 🚧 | v1 | MEH-51: Phone verification via WhatsApp OTP (step 4 of producer registration) | `backend/app/routers/producer_me_review.py`, `frontend/app/register/producer/page.js` |
 
 Detail: [ADMIN.md](./ADMIN.md)
 
@@ -127,7 +129,7 @@ stored.
 | ✅ | v1 | `POST /producers/{id}/whatsapp-click` — anonymous, rate-limited 10/min per IP | `backend/app/routers/producers.py::record_whatsapp_click` |
 | ✅ | v1 | Fire-and-forget `navigator.sendBeacon` from the WhatsApp CTA (producer detail page + `WhatsAppButton.jsx`) | `frontend/app/producer/[id]/ProducerDetail.jsx`, `frontend/components/WhatsAppButton.jsx` |
 | ✅ | v1 | `?from=search` / `?from=home` referrer threading through `ProducerCard` (homepage grid, "newest" strip, /map) | `frontend/components/ProducerCard.jsx`, `frontend/app/page.js`, `frontend/app/map/MapClient.jsx` |
-| ✅ | v1 | `GET /producers/me/analytics` — 7d/30d/total windows for views/search/whatsapp, follower delta, avg rating, home products count, 30-day zero-filled views_by_day, top 5 cities | `backend/app/routers/producer_me.py::producer_analytics` |
+| ✅ | v1 | `GET /producers/me/analytics` — 7d/30d/total windows for views/search/whatsapp, follower delta, avg rating, home products count, 30-day zero-filled views_by_day, top 5 cities | `backend/app/routers/producer_me_analytics.py::producer_analytics` |
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — 6 stat cards + inline SVG line chart + inline SVG horizontal bar chart + 3 quick links + availability hero | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Admin dashboard extension — 4 secondary stat cards (weekly deltas + events + experiences) + DAU 30d line chart + top 10 cities + server health panel | `frontend/app/admin/page.js`, `backend/app/routers/admin_extra.py::get_dashboard` |
 | ✅ | v1 | `pending_moderation_count` badge on admin sidebar — sums pending producers + open reports + flagged home products + pending experiences + pending kashrut requests | `frontend/app/admin/layout.js` |

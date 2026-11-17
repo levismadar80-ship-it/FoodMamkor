@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   chip-icons
  * Purpose:  MEH-1418 — leading Phosphor icons for the toggle/attribute filter

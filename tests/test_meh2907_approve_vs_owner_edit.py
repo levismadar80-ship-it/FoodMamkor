@@ -93,7 +93,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.cloudinary_utils as cloudinary_utils
-import app.routers.admin as admin_mod
+import app.routers.admin_decisions as admin_mod
 import app.routers.producer_me as pm
 from app.database import SessionLocal
 from app.constants import LICENSE_REQUIRED_CATEGORIES

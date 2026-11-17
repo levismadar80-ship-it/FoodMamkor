@@ -14,7 +14,7 @@ VALID_BADGE_CODES = frozenset(
 )
 
 
-def compute_trust_tier(producer) -> int:
+def compute_trust_tier(producer: object) -> int:
     """Return the highest tier (1-4) the producer qualifies for.
 
     Tier 1 — profile exists (always)

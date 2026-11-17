@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   guides-index
  * Purpose:  Index page for the 3 onboarding guides linked from the

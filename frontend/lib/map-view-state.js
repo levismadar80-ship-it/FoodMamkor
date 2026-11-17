@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   map-view-state
  * Purpose:  MEH-1414 — persist the /map camera (center + zoom) across
@@ -42,6 +43,12 @@ const isFiniteNumber = (n) => typeof n === "number" && Number.isFinite(n);
 const allFinite = (values) => values.every((n) => isFiniteNumber(n));
 
 /**
+ * Injectable storage + clock for the read/write helpers (tests pass both).
+ * @typedef {{ storage?: Storage | null, now?: number }} MapViewStateOptions
+ */
+
+/**
+ * @param {MapViewStateOptions} [options]
  * @returns {{lat:number,lng:number,zoom:number}|null} the saved camera when it
  * is well-formed and fresher than the TTL; null in every other case.
  */
@@ -90,7 +97,11 @@ function selectionOf(record) {
   return { selectedId: record.selectedId, selectedLocationId: record.selectedLocationId ?? null };
 }
 
-/** @returns {boolean} whether the write happened. Keeps a stored selection. */
+/**
+ * @param {{ lat: number, lng: number, zoom: number }} camera
+ * @param {MapViewStateOptions} [options]
+ * @returns {boolean} whether the write happened. Keeps a stored selection.
+ */
 export function writeMapViewState({ lat, lng, zoom }, { storage, now = Date.now() } = {}) {
   const store = resolveStorage(storage);
   if (!store) return false;
@@ -110,6 +121,9 @@ export function writeMapViewState({ lat, lng, zoom }, { storage, now = Date.now(
  * to: the saved one, else `camera` (the map on screen right now — a pick that
  * does not move the map writes no camera of its own). With neither, nothing
  * is written.
+ * @param {string | number | null} selectedId
+ * @param {string | number | null} [selectedLocationId]
+ * @param {MapViewStateOptions & { camera?: { lat: number, lng: number, zoom: number } | null }} [options]
  * @returns {boolean} whether the write happened.
  */
 export function writeMapSelection(selectedId, selectedLocationId = null, { storage, now = Date.now(), camera = null } = {}) {
@@ -133,6 +147,7 @@ export function writeMapSelection(selectedId, selectedLocationId = null, { stora
 }
 
 /**
+ * @param {MapViewStateOptions} [options]
  * @returns {{producerId:(string|number), locationId:(string|number|null)}|null}
  * the stored selection when the record is valid and fresh; null otherwise.
  */

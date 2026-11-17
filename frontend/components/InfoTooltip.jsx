@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
@@ -10,6 +11,7 @@ const POSITION_CLASSES = {
   end: "start-full top-1/2 -translate-y-1/2 ms-2",
 };
 
+/** @param {{ content: import("react").ReactNode, label?: string, position?: "top"|"bottom"|"start"|"end" }} props */
 export default function InfoTooltip({
   content,
   label,
@@ -98,7 +100,7 @@ export default function InfoTooltip({
         <span
           id={tooltipId}
           role="tooltip"
-          className={`pointer-events-none absolute z-[9999] whitespace-normal w-56 bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`}
+          className={`pointer-events-none absolute z-tooltip whitespace-normal w-56 bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`}
         >
           {content}
         </span>

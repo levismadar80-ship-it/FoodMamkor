@@ -23,8 +23,8 @@ Mirrors tests/test_producer_request_changes.py: pure HTTP/DB, with
 composed string that landed in the column (the two must not drift).
 """
 
-import app.routers.admin as admin_module
-from app.routers.admin import PRODUCER_REJECTION_PRESETS
+import app.routers.admin_decisions as admin_module
+from app.routers.admin_decisions import PRODUCER_REJECTION_PRESETS
 from conftest import auth_header, make_producer, make_user
 
 FREE_TEXT = "הרישיון שהועלה פג תוקף ביוני"

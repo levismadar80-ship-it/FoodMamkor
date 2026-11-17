@@ -1,4 +1,4 @@
-"""MEH-249 — DELETE /auth/me must cascade a Producer row too.
+"""MEH-249 — POST /auth/me/delete must cascade a Producer row too.
 
 Before MEH-249, deleting a producer-user cleaned up HomeProducts,
 Favorites, and Reports but left the Producer row in the public
@@ -6,7 +6,7 @@ directory (with stale reviews, followers, and page views). GDPR /
 חוק הגנת הפרטיות violation — the user consented to display only
 while active.
 
-MEH-513 — DELETE /auth/me must also destroy the producer's story_card
+MEH-513 — POST /auth/me/delete must also destroy the producer's story_card
 Cloudinary asset with bypass_reserved=True (the asset lives under
 mehamakor/producers/*, which is in RESERVED_PUBLIC_ID_PREFIXES; a plain
 destroy call would be silently rejected).
@@ -37,7 +37,7 @@ def test_delete_account_cascades_producer(client, db):
     user, producer = _make_producer_user(db)
     producer_id = producer.id
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert r.status_code == 200
 
     # Producer row is gone from the directory.
@@ -55,7 +55,7 @@ def test_delete_account_cascades_producer_children(client, db):
     db.add(Favorite(producer_id=producer.id, user_id=consumer.id))
     db.commit()
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert r.status_code == 200
 
     assert db.query(ProducerReview).filter(ProducerReview.producer_id == producer_id).count() == 0
@@ -65,7 +65,7 @@ def test_delete_account_cascades_producer_children(client, db):
 def test_delete_account_without_producer_still_works(client, db):
     """Regression: consumer account deletion unchanged by the cascade."""
     user = make_user(db, role="consumer")
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert r.status_code == 200
 
 
@@ -100,7 +100,7 @@ def test_delete_account_recomputes_third_party_ratings(client, db):
     db.commit()
     p1_id, p2_id = p1.id, p2.id
 
-    r = client.delete("/auth/me", headers=auth_header(reviewer))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(reviewer))
     assert r.status_code == 200
 
     db.expire_all()  # drop the identity-map cache; reread the committed values
@@ -117,7 +117,7 @@ def test_delete_account_no_reviews_no_error(client, db):
     """MEH-1150: a user who never reviewed anything still deletes cleanly
     (empty producer-id set → no recompute work, no error)."""
     user = make_user(db, role="consumer")
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert r.status_code == 200
 
 
@@ -127,7 +127,7 @@ def test_deleted_producer_not_in_public_listing(client, db):
     user, producer = _make_producer_user(db)
     name = producer.name
 
-    client.delete("/auth/me", headers=auth_header(user))
+    client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
 
     r = client.get("/producers")
     assert r.status_code == 200
@@ -148,13 +148,13 @@ def test_delete_account_cascades_story_card_destroy(client, db, monkeypatch):
 
     calls: list[dict] = []
 
-    def fake_destroy(url, bypass_reserved=False, context=""):
+    def fake_destroy(url, bypass_reserved=False, context="", db=None):
         calls.append({"url": url, "bypass_reserved": bypass_reserved})
         return True
 
     monkeypatch.setattr(cloudinary_utils, "destroy_image", fake_destroy)
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert r.status_code == 200
 
     story_card_calls = [c for c in calls if c["url"] == _STORY_CARD_URL]
@@ -177,13 +177,13 @@ def test_delete_account_with_no_story_card_still_calls_destroy(
 
     calls: list[dict] = []
 
-    def fake_destroy(url, bypass_reserved=False, context=""):
+    def fake_destroy(url, bypass_reserved=False, context="", db=None):
         calls.append({"url": url, "bypass_reserved": bypass_reserved})
         return True
 
     monkeypatch.setattr(cloudinary_utils, "destroy_image", fake_destroy)
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert r.status_code == 200
 
     none_with_bypass = [
@@ -233,7 +233,7 @@ def test_delete_account_with_otp_tokens(client, db):
         == 3
     )
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert r.status_code == 200
 
     assert db.query(Producer).filter(Producer.id == producer_id).first() is None

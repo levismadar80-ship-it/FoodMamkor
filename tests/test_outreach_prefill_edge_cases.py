@@ -116,34 +116,25 @@ class TestRealSheetRoundTrip:
             assert r.status_code == 201, f"{name!r} -> {r.status_code} {r.text[:200]}"
             assert r.json()["name"] == name, f"{name!r} did not round-trip"
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="FINDING-1: sanitize_text HTML-escapes '&', so 'Crust & Crumb' "
-        "is STORED as 'Crust &amp; Crumb' and renders literally in the admin "
-        "table and in the prefilled registration input.",
-    )
+    # FINDING-1 fixed by MEH-3317 (was xfail(strict=True)).
     def test_ampersand_in_name_round_trips(self, client, db):
         h = auth_header(_admin(db, "rt-amp@example.com"))
         r = _post(client, h, name="Crust & Crumb")
         assert r.status_code == 201
         assert r.json()["name"] == "Crust & Crumb"
 
-    def test_ampersand_current_behaviour_is_double_escaped(self, client, db):
-        """The other half of FINDING-1, asserted positively so the file records
-        what actually happens today rather than only that it is wrong.
-
-        Also proves the escape survives all the way to the PUBLIC prefill
-        response — i.e. the business owner sees `&amp;` in her own name.
-        """
+    def test_ampersand_round_trips_to_the_public_prefill(self, client, db):
+        """MEH-3317: the business owner sees her own name as typed, not
+        `&amp;`, in the prefilled registration form too."""
         h = auth_header(_admin(db, "rt-amp2@example.com"))
         lead = _post(client, h, name="Crust & Crumb").json()
-        assert lead["name"] == "Crust &amp; Crumb"
+        assert lead["name"] == "Crust & Crumb"
 
         token = client.post(
             f"/admin/outreach/{lead['id']}/prefill-token", headers=h
         ).json()["prefill_token"]
         assert client.get(f"/register/producer/prefill/{token}").json()["name"] == (
-            "Crust &amp; Crumb"
+            "Crust & Crumb"
         )
 
     def test_real_phones_round_trip_to_separator_stripped_form(self, client, db):
@@ -207,23 +198,29 @@ class TestWebsiteScheme:
             "קטלוג ב-Drive (קישור בביו)",
         ],
     )
-    @pytest.mark.xfail(
-        strict=True,
-        reason="FINDING-2: 4 of the 5 real website formats in the sheet carry "
-        "no scheme (or are prose), and each 422s the whole lead. The admin "
-        "cannot save a row as it appears in the spreadsheet.",
-    )
+    # FINDING-2 fixed by MEH-3318 (was xfail(strict=True)).
     def test_scheme_less_website_from_the_sheet_is_accepted(self, client, db, raw):
         h = auth_header(_admin(db, f"web-{abs(hash(raw)) % 10**6}@example.com"))
         assert _post(client, h, name=f"אתר {raw[:12]}", website=raw).status_code == 201
 
-    def test_scheme_less_website_currently_422s_and_never_500s(self, client, db):
-        """The positive half of FINDING-2: it is a clean 422, not a crash, and
-        the rejection names the website field."""
-        h = auth_header(_admin(db, "web-422@example.com"))
-        r = _post(client, h, name="חביביאן", website="havivian.co.il")
-        assert r.status_code == 422
-        assert r.json()["detail"][0]["loc"] == ["body", "website"]
+    @pytest.mark.parametrize(
+        "raw,stored",
+        [
+            ("havivian.co.il", "https://havivian.co.il"),
+            ("www.example.co.il", "https://www.example.co.il"),
+            ("machine.co.il/show.asp?table=users&id=17703",
+             "https://machine.co.il/show.asp?table=users&id=17703"),
+            ("קטלוג ב-Drive (קישור בביו)", None),
+            ("meshekfine.co.il · mypips.app/finerotem", None),
+        ],
+    )
+    def test_scheme_less_website_is_normalised_or_dropped(self, client, db, raw, stored):
+        """MEH-3318: a bare domain gains https://; prose is dropped and the
+        lead is still saved."""
+        h = auth_header(_admin(db, f"web-n-{abs(hash(raw)) % 10**6}@example.com"))
+        r = _post(client, h, name=f"אתר {raw[:12]}", website=raw)
+        assert r.status_code == 201, r.text
+        assert r.json()["website"] == stored
 
 
 class TestPhoneColumnWidth:

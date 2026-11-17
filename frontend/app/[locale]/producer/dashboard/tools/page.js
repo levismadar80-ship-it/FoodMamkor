@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -39,6 +40,7 @@ import RequestReviewCard from "@/components/producer/RequestReviewCard";
 import BusinessQrCard from "@/components/producer/BusinessQrCard";
 import ShareKitSection from "@/components/producer/ShareKitSection";
 import { producerCompleteness } from "@/lib/producer-completeness";
+import NewToolPill from "@/components/producer/NewToolPill";
 
 export default function ProducerDashboardToolsPage() {
   const router = useRouter();
@@ -157,7 +159,7 @@ export default function ProducerDashboardToolsPage() {
           className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <CalendarPlus size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_events.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_events.title")}<NewToolPill href="/producer/dashboard/events" /></p>
           <p className="text-sm text-fg-muted">{t("quick_links.manage_events.sub")}</p>
         </Link>
         {/* MEH-1405: manage own experiences (list + edit + delete). */}
@@ -166,7 +168,7 @@ export default function ProducerDashboardToolsPage() {
           className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <Sparkle size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_experiences.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_experiences.title")}<NewToolPill href="/producer/dashboard/experiences" /></p>
           <p className="text-sm text-fg-muted">{t("quick_links.manage_experiences.sub")}</p>
         </Link>
         {/* MEH-1357: the "הצגת העסק באתר" card was removed here — it duplicated
@@ -177,7 +179,7 @@ export default function ProducerDashboardToolsPage() {
           className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <UsersThree size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}<NewToolPill href="/producer/dashboard/group-buys" /></p>
           <p className="text-sm text-fg-muted">{t("quick_links.group_buys.sub")}</p>
           {lockedLine}
         </Link>
@@ -191,7 +193,7 @@ export default function ProducerDashboardToolsPage() {
             className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
           >
             <ShoppingBag size={24} className="text-primary mb-2" aria-hidden="true" />
-            <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.rescue.title")}</p>
+            <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.rescue.title")}<NewToolPill href="/producer/dashboard/rescue" /></p>
             <p className="text-sm text-fg-muted">{t("quick_links.rescue.sub")}</p>
             {lockedLine}
           </Link>
@@ -202,7 +204,7 @@ export default function ProducerDashboardToolsPage() {
           className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <CookingPot size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}<NewToolPill href="/producer/dashboard/recipes" /></p>
           <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
         </Link>
         {/* MEH-3107: the tile now opens the dashboard's own reviews page
@@ -222,7 +224,7 @@ export default function ProducerDashboardToolsPage() {
           className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <Star size={24} className="text-primary mb-2" aria-hidden="true" />
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}<NewToolPill href="/producer/dashboard/reviews" /></p>
           <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
         </Link>
         )}

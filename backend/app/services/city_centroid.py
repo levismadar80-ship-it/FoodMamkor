@@ -10,7 +10,7 @@ Touches:  reads `cities` (name_he, lat, lng), then the bundled
 Does NOT: geocode a street address, call Google or Nominatim, or decide
           precision semantics — callers stamp `location_precision=
           "approximate"` themselves (producer_queries.create_primary_branch_
-          location, producer_me.py locations endpoints). The submission gate
+          location, producer_me_locations.py endpoints). The submission gate
           (services/submission_gate.py) is untouched: it keeps demanding real
           coordinates, and this module is how a town-only business obtains them.
 Related:  backend/app/data/cities.py:144 (city_key — the one comparison form,
@@ -47,7 +47,7 @@ Centroid = tuple[float, float]
 logger = logging.getLogger(__name__)
 
 
-def _usable(value) -> bool:
+def _usable(value: object) -> bool:
     # bool is excluded on purpose: isinstance(True, int) is True in Python, so
     # a stray boolean would read as latitude 1. Mirrors submission_gate.
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -143,7 +143,7 @@ def city_centroid(db: Session, name: str | None) -> Centroid | None:
     # The table is ~1.3K rows; a full scan here is cheaper than a functional
     # index for a path that only runs when the exact match missed.
     for row in db.query(City).filter(City.lat.isnot(None)).all():
-        if city_key(row.name_he) == key:
+        if city_key(row.name_he) == key:  # type: ignore[arg-type]
             found = _as_centroid(row)
             if found:
                 return found

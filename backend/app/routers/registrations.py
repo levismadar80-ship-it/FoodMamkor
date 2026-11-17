@@ -23,6 +23,8 @@ Rules:
 
 from __future__ import annotations
 
+from datetime import date, time
+from typing import Any
 import secrets
 from uuid import UUID
 
@@ -33,7 +35,8 @@ from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.models import Event, Experience, Producer, Registration, User
-from app.rate_limit import limiter
+from app.rate_limit import email_from_body, limiter
+from app.services import billing_ledger  # MEH-3179
 from app.services.producer_listing import is_live_owner_row  # MEH-2952
 from app.routers.experiences import _publicly_visible_query
 from app.schemas.schemas import (
@@ -52,7 +55,7 @@ from app.services.registration_emails import (
     send_visitor_confirmation,
 )
 from app.services.registrations import registered_counts
-from app.utils.clock import israel_today, utc_now
+from app.utils.clock import israel_now, israel_today, utc_now
 
 router = APIRouter(tags=["registrations"])
 
@@ -61,6 +64,16 @@ _FULL = {"code": "registration_full", "message": "אין יותר מקומות"}
 
 
 # ---------- item lookups ----------
+
+
+def _has_started(day: date, at: time | None) -> bool:
+    """MEH-3288: past day, or today at/after its start time (Israel clock).
+
+    No start time = the whole day stays open, as before."""
+    today = israel_today()
+    if day != today:
+        return day < today
+    return at is not None and israel_now().time() >= at
 
 
 def _event_for_signup(db: Session, event_id: UUID) -> Event:
@@ -72,7 +85,7 @@ def _event_for_signup(db: Session, event_id: UUID) -> Event:
     # MEH-2952: a seeded test row's event takes no real sign-ups either.
     if not is_live_owner_row(producer):
         raise HTTPException(status_code=404, detail="Event not found")
-    if not event.is_active or event.event_date < israel_today():
+    if not event.is_active or _has_started(event.event_date, event.event_time):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_CLOSED)
     if event.registration_method != "site_form":
         raise HTTPException(status_code=409, detail=_CLOSED)
@@ -95,7 +108,11 @@ def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
     # the past between the visibility query and the lock.
     if ex is None:
         raise HTTPException(status_code=404, detail="Experience not found")
-    if not ex.is_active or ex.event_date < israel_today():
+    # MEH-3219 B12: a recurring experience's event_date is its first
+    # occasion, not its last — it stays open after it (experiences.py feed).
+    # MEH-3288: a dated one also closes once it has started today.
+    started = _has_started(ex.event_date, ex.event_time)  # type: ignore[arg-type]
+    if not ex.is_active or (started and not ex.is_recurring):
         raise HTTPException(status_code=409, detail=_CLOSED)
     if ex.registration_method != "site_form":
         raise HTTPException(status_code=409, detail=_CLOSED)
@@ -109,18 +126,27 @@ def _owner_email_for_event(db: Session, event: Event) -> str | None:
     return row[0] if row else None
 
 
-def _date_text(d) -> str:
+def _date_text(d: date) -> str:
     return d.strftime("%d.%m.%Y")
 
 
-def _time_text(t) -> str:
+def _time_text(t: time | None) -> str:
     return t.strftime("%H:%M") if t else ""
+
+
+def _experience_when(ex: Experience) -> str:
+    if ex.is_recurring:
+        schedule = (ex.recurring_schedule or "").strip()
+        return f"מתקיימת באופן קבוע: {schedule}" if schedule else "מתקיימת באופן קבוע"
+    return _date_text(ex.event_date)  # type: ignore[arg-type]
 
 
 # ---------- sign-up ----------
 
 
-def _existing(db: Session, column, item_id: UUID, email: str) -> Registration | None:
+def _existing(
+    db: Session, column: Any, item_id: UUID, email: str
+) -> Registration | None:
     return (
         db.query(Registration)
         .filter(
@@ -132,7 +158,21 @@ def _existing(db: Session, column, item_id: UUID, email: str) -> Registration | 
     )
 
 
-def _new_registration(data: RegistrationCreate, **item) -> Registration:
+# MEH-3373: a sign-up needs no account and mails the address that was typed,
+# so the RECIPIENT gets a ceiling too — the per-IP limit does not stop one
+# address being mailed from many IPs. One bucket for both routes: three
+# confirmations an hour and ten a day reach an address, whatever is signed up
+# for. A 429 that clears by itself; nothing is stored on the address.
+# DO NOT add sender-typed text (name, phone, a note) to VisitorEmail — that
+# mail goes to an address nobody verified
+# (tests/test_meh3373_registration_recipient_limit.py).
+# REUSES: backend/app/routers/auth.py — per-email key next to the per-IP limit.
+_recipient_limit = limiter.shared_limit(
+    "3/hour;10/day", scope="registration-recipient", key_func=email_from_body
+)
+
+
+def _new_registration(data: RegistrationCreate, **item: Any) -> Registration:
     return Registration(
         name=data.name,
         phone=data.phone,
@@ -149,40 +189,44 @@ def _new_registration(data: RegistrationCreate, **item) -> Registration:
     status_code=201,
 )
 @limiter.limit("10/hour")
+@_recipient_limit
 def register_for_event(
     request: Request,
     event_id: UUID,
     data: RegistrationCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> RegistrationCreatedOut:
     event = _event_for_signup(db, event_id)
     # Capacity before the duplicate check: the other order answers 201 for an
     # email already signed up and 409 for a new one on a full item, which
     # tells a stranger whether that address is on the list.
-    taken = registered_counts(db, event_ids=[event.id]).get(event.id, 0)
+    taken = registered_counts(db, event_ids=[event.id]).get(event.id, 0)  # type: ignore[call-overload,list-item]
     if event.max_participants is not None and taken >= event.max_participants:
         raise HTTPException(status_code=409, detail=_FULL)
-    if _existing(db, Registration.event_id, event.id, data.email):
+    if _existing(db, Registration.event_id, event.id, data.email):  # type: ignore[arg-type]
         db.rollback()  # releases the FOR UPDATE lock on the event row
         return RegistrationCreatedOut()
 
     reg = _new_registration(data, event_id=event.id)
     db.add(reg)
+    db.flush()
+    # MEH-3179: counted in the same transaction; never fails the sign-up.
+    billing_ledger.record_event_registration(db, reg, event)
     db.commit()
 
     producer = db.get(Producer, event.producer_id)
-    place = ", ".join(p for p in (event.location, event.city) if p)
+    place = ", ".join(p for p in (event.location, event.city) if p)  # type: ignore[misc]
     item_url = f"{settings.frontend_url}/events/{event.id}"
     background_tasks.add_task(
         send_visitor_confirmation,
-        reg.email,
+        reg.email,  # type: ignore[arg-type]
         VisitorEmail(
-            title=event.title,
-            date_text=_date_text(event.event_date),
-            time_text=_time_text(event.event_time),
+            title=event.title,  # type: ignore[arg-type]
+            date_text=_date_text(event.event_date),  # type: ignore[arg-type]
+            time_text=_time_text(event.event_time),  # type: ignore[arg-type]
             place=place,
-            host_name=producer.name if producer else "",
+            host_name=producer.name if producer else "",  # type: ignore[arg-type]
             item_url=item_url,
             cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
         ),
@@ -200,10 +244,10 @@ def register_for_event(
             send_owner_new_registration,
             owner_email,
             OwnerNewEmail(
-                title=event.title,
-                name=reg.name,
-                phone=reg.phone,
-                email=reg.email,
+                title=event.title,  # type: ignore[arg-type]
+                name=reg.name,  # type: ignore[arg-type]
+                phone=reg.phone,  # type: ignore[arg-type]
+                email=reg.email,  # type: ignore[arg-type]
                 spots_left=spots,
                 # MEH-2884 (placement audit item 10): straight to the tool that lists
                 # the registrations, not the dashboard home (one tap saved).
@@ -220,26 +264,33 @@ def register_for_event(
     status_code=201,
 )
 @limiter.limit("10/hour")
+@_recipient_limit
 def register_for_experience(
     request: Request,
     experience_id: UUID,
     data: RegistrationCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> RegistrationCreatedOut:
     ex = _experience_for_signup(db, experience_id)
     # Capacity first, for the same reason as register_for_event.
-    taken = registered_counts(db, experience_ids=[ex.id]).get(ex.id, 0)
+    taken = registered_counts(db, experience_ids=[ex.id]).get(ex.id, 0)  # type: ignore[call-overload,list-item]
     # The host's own tally (WhatsApp / phone sign-ups) shares the cap.
     occupied = (ex.participants_count or 0) + taken
     if ex.max_participants is not None and occupied >= ex.max_participants:
         raise HTTPException(status_code=409, detail=_FULL)
-    if _existing(db, Registration.experience_id, ex.id, data.email):
+    if _existing(db, Registration.experience_id, ex.id, data.email):  # type: ignore[arg-type]
         db.rollback()  # releases the FOR UPDATE lock on the experience row
         return RegistrationCreatedOut()
 
     reg = _new_registration(data, experience_id=ex.id)
     db.add(reg)
+    db.flush()
+    # MEH-3179: counted for the host's business, if the host has one.
+    ledger_host = db.get(User, ex.host_user_id)
+    billing_ledger.record_experience_registration(
+        db, reg, ex, ledger_host.producer_id if ledger_host else None
+    )
     db.commit()
 
     host = db.get(User, ex.host_user_id)
@@ -249,16 +300,19 @@ def register_for_experience(
     # A home address is private (MEH-1417) — the city only. A public venue's
     # address is already on the page.
     if ex.location_type == "public" and ex.address:
-        place = ", ".join(p for p in (ex.address, ex.city) if p)
+        place = ", ".join(p for p in (ex.address, ex.city) if p)  # type: ignore[misc]
     background_tasks.add_task(
         send_visitor_confirmation,
-        reg.email,
+        reg.email,  # type: ignore[arg-type]
         VisitorEmail(
-            title=ex.title,
-            date_text=_date_text(ex.event_date),
-            time_text=_time_text(ex.event_time),
-            place=place,
-            host_name=host_name,
+            title=ex.title,  # type: ignore[arg-type]
+            # MEH-3250: a recurring experience's event_date is its FIRST
+            # occasion, often long past — the email gives the host's schedule
+            # (approved page copy «מתקיימת באופן קבוע» when she left none).
+            date_text=_experience_when(ex),
+            time_text="" if ex.is_recurring else _time_text(ex.event_time),  # type: ignore[arg-type]
+            place=place,  # type: ignore[arg-type]
+            host_name=host_name,  # type: ignore[arg-type]
             item_url=f"{settings.frontend_url}/experiences/{ex.id}",
             cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
         ),
@@ -273,12 +327,12 @@ def register_for_experience(
         )
         background_tasks.add_task(
             send_owner_new_registration,
-            host.email,
+            host.email,  # type: ignore[arg-type]
             OwnerNewEmail(
-                title=ex.title,
-                name=reg.name,
-                phone=reg.phone,
-                email=reg.email,
+                title=ex.title,  # type: ignore[arg-type]
+                name=reg.name,  # type: ignore[arg-type]
+                phone=reg.phone,  # type: ignore[arg-type]
+                email=reg.email,  # type: ignore[arg-type]
                 spots_left=spots,
                 # MEH-2884: experiences tab, where the host sees this registration.
                 manage_url=f"{settings.frontend_url}/producer/dashboard/experiences",
@@ -304,7 +358,7 @@ def list_event_registrations(
     event_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> list[RegistrationOwnerOut] | list[Registration]:
     event = db.get(Event, event_id)
     # MEH-1001: 404, not 403, so a stranger can't confirm the event exists.
     if event is None or not (
@@ -330,7 +384,7 @@ def list_experience_registrations(
     experience_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> list[RegistrationOwnerOut] | list[Registration]:
     ex = db.get(Experience, experience_id)
     if ex is None or not (_is_admin(user) or ex.host_user_id == user.id):
         raise HTTPException(status_code=404, detail="Experience not found")
@@ -357,13 +411,15 @@ def _by_token(db: Session, token: str, *, lock: bool = False) -> Registration:
     return reg
 
 
-def _item(reg: Registration):
+def _item(reg: Registration) -> Any:
     return reg.event if reg.event_id else reg.experience
 
 
 @router.get("/registrations/{token}", response_model=RegistrationCancelInfoOut)
 @limiter.limit("30/minute")
-def get_registration(request: Request, token: str, db: Session = Depends(get_db)):
+def get_registration(
+    request: Request, token: str, db: Session = Depends(get_db)
+) -> RegistrationCancelInfoOut:
     reg = _by_token(db, token)
     item = _item(reg)
     return RegistrationCancelInfoOut(
@@ -382,24 +438,38 @@ def cancel_registration(
     token: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> RegistrationCancelInfoOut:
     reg = _by_token(db, token, lock=True)
     item = _item(reg)
     was_active = reg.status == "registered"
     if was_active:
-        reg.status = "cancelled"
-        reg.cancelled_at = utc_now()
+        reg.status = "cancelled"  # type: ignore[assignment]
+        reg.cancelled_at = utc_now()  # type: ignore[assignment]
+        # MEH-3179: a cancel before the item took place is not a booking the
+        # business got. A late cancel of a past item stays counted.
+        if item.event_date >= israel_today():
+            billing_ledger.void(
+                db,
+                kind=(
+                    "event_registration" if reg.event_id else "experience_registration"
+                ),
+                source_id=reg.id,
+            )
     db.commit()
 
     # A late cancel of a past item changes nothing for the owner — no email.
-    if was_active and item.event_date >= israel_today():
+    # MEH-3250: a recurring experience is never past by its first date.
+    is_upcoming = item.event_date >= israel_today() or bool(
+        getattr(item, "is_recurring", False)
+    )
+    if was_active and is_upcoming:
         if reg.event_id:
             owner_email = _owner_email_for_event(db, item)
             owner = db.get(Producer, item.producer_id)
             test_cause = bool(owner and owner.is_test)  # MEH-2952
         else:
             host = db.get(User, item.host_user_id)
-            owner_email = host.email if host else None
+            owner_email = host.email if host else None  # type: ignore[assignment]
             test_cause = host_test_cause(host)  # MEH-2952
         if owner_email:
             background_tasks.add_task(
@@ -407,7 +477,7 @@ def cancel_registration(
                 owner_email,
                 OwnerCancelEmail(
                     title=item.title,
-                    name=reg.name,
+                    name=reg.name,  # type: ignore[arg-type]
                     # MEH-2884: the tab that lists this item's registrations.
                     manage_url=(
                         f"{settings.frontend_url}/producer/dashboard/"

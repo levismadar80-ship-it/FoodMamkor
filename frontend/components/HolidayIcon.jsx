@@ -1,3 +1,4 @@
+// @ts-check
 import { Cheese, Flame, Jar, Leaf, Sparkle, Tree } from "@phosphor-icons/react";
 
 /**

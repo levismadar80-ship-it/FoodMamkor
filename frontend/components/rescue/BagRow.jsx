@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link } from "@/i18n/navigation";
@@ -41,6 +42,8 @@ function worthAgorot(offer) {
  * Related:  components/rescue/RescueList.jsx and RescueHomeModule.jsx (both
  *           render this), lib/rescue.js (every unit it formats)
  * History:  MEH-2648 (creation) · rescue-home redesign (events-row language)
+ *
+ * @param {{ offer: import("@/types/entities").RescueOffer, headingTag?: "h2" | "h3" }} props
  */
 export default function BagRow({ offer, headingTag = "h3" }) {
   const t = useTranslations("rescue");

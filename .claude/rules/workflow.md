@@ -115,9 +115,11 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
    Read HANDOFF.md first, this file, DESIGN.md/DATA.md; list feature branches,
-   open PRs and `origin/staging..origin/main`; report and ask "continue an open
-   PR, or start fresh?" — never skip it. Evidence of a parallel session → stop
-   and report. PR given by number → check out its head branch first.
+   open PRs and `origin/staging..origin/main`; report what you found — never
+   skip it — then start on the queue or the task you were given (ADR-032: no
+   waiting for a reply). Evidence of a parallel session, or an open PR on the
+   same card → stop and report. PR given by number → check out its head
+   branch first.
 2. **Branch from `staging`** — never from `main`. See
    [deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes. Pattern
@@ -126,9 +128,10 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
    branch is not an exception: re-cut `git checkout -B feature/meh-XXXX-<slug>
    origin/staging` per ticket before the first commit — the repo wins.
 4. **Plan before coding + interview mode.** Propose in plain text, wait for
-   `go`. Ambiguous spec → 2–5 targeted questions first. Before a plan that
-   references a Linear issue, fetch the live description and name every
-   spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
+   `go` — except a card worked from the queue, whose description is the
+   approved spec (ADR-032): no `go` is awaited for it. Ambiguous spec → 2–5
+   targeted questions first. Before a plan that references a Linear issue,
+   fetch the live description and name every spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
    silently.
 5a. **Adversarial review before every merge to staging.** See
    [testing.md](./testing.md). In addition to `/adversarial-review`, the
@@ -155,10 +158,13 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
    Merging to staging follows rule 38.
 10. **After every PR — a test, not a checklist line (MEH-2796).** New
     behaviour gets an automated test (pytest / vitest / Playwright). Only what
-    automation cannot see (real iPhone Safari, a third-party console, a flag
-    flipped by hand) gets one line in
-    [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md), cap 30.
-    `docs/MANUAL_TESTING.md` is archived — never add to it.
+    CI cannot see (WebKit-only, a third-party console, a flag flipped by hand)
+    gets one line in
+    [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md) § ד׳, cap 30,
+    and its performer is the thread (WebKit simulation, a connector, Claude in
+    Chrome) — **never Sapir** (her decision 14/11, MEH-3151). What no tool can
+    prove goes to that section's «סיכון שנותר» list. `docs/MANUAL_TESTING.md`
+    is archived — never add to it.
 11. **After every PR — auto-update every doc your code touched**, same PR
     (DATA / ADMIN / DESIGN / FEATURES / SECURITY / DEPLOYMENT,
     `.ai/diagrams/`; CHANGELOG via rule 31). Stop hooks run build + pytest.
@@ -219,7 +225,8 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 6. **Guard tests (401/403/409) must send schema-valid payloads.** A 422 proves
    nothing; use the `valid_*_payload()` fixtures in `tests/conftest.py`.
 7. **Docs-only files still go through a feature branch + PR.** `staging` rejects
-   all direct pushes; merge stays Sapir-only.
+   all direct pushes. CC merges to staging after its checks (ADR-032, rules 21
+   and 38–41); staging → main is Sapir's.
 8. **Never add new env vars without listing them explicitly** and waiting for
    confirmation.
 9. **Test dummy URLs must be real backend routes (matching method).** See
@@ -283,7 +290,8 @@ skips per [docs/EMERGENCY_OVERRIDE.md](../../docs/EMERGENCY_OVERRIDE.md).
      regenerate `parity.spec.ts-snapshots/` in the SAME PR.
 3. **Add a regression rule** here if the pattern is likely to recur.
 4. **Add a test** that would have caught it; else (real device only) a
-   line in `docs/RELEASE_CHECKLIST.md`.
+   «סיכון שנותר» line in `docs/RELEASE_CHECKLIST.md` § ד׳ — run by the
+   thread, never by Sapir (MEH-3151).
 5. **Update docs** if the fix reveals a non-obvious convention.
 6. **An anomaly seen during QA is explained or reported — never attributed to
    the harness and dropped.** Label an unverified diagnosis as unverified. A
@@ -342,6 +350,11 @@ Tiers: [ADR-016](../../docs/decisions/ADR-016-risk-tier-nomenclature.md).
 Auth · schema/Alembic · central components (`.claude/central-components.json`) ·
 security-sensitive code · prod-deploy-blocking (env, Dockerfile, Railway).
 Numbered plan → `go` → one chunk → `go <chunk>` per chunk.
+
+That is for work that arrives without a queue card. A queue card in these
+domains is RED under ADR-032: autonomous, but only with the proof obligations
+of ADR-032 §2 (the §2.5 reviewer runs before the merge) and inside the hard
+stops of §3; an Alembic revision still waits for Sapir's OK (rule 38).
 
 ### LOW-RISK — end-to-end with single review
 
@@ -499,6 +512,31 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     decisions on the same screen (e.g. MEH-912); (7) a recommendation. Sapir
     picks, then code. Post-launch, add a PostHog click event on the feature.
     Precedent: MEH-2724 built under the hero before the study was asked for.
+
+    ### 37b — big-sites check before code: every page, block, behaviour (Sapir 14/11, MEH-3110)
+
+    Sapir never has to ask «how do the big sites do it». **Scope:** every new
+    page, new block, new behaviour (form prefill, a sticky bar, a filter) and
+    every UI change that changes a pattern. **Exempt:** a bug fix that restores
+    intended behaviour, copy-only, internal work — say so in one line.
+    - **New page** (a new `page.*` under `frontend/app/[locale]/`, admin and
+      `dev/` excluded) → full review: (1) 375 + 1440 screenshots; (2) the
+      closest big sites (Airbnb · Wolt · Etsy · Yelp · Google Maps ·
+      Eventbrite, or whichever fits), with sources; (3) each gap with a real
+      rendered mock, the px it moves, what it costs; (4) a recommendation per
+      gap, "leave as is" included; (5) pre-launch vs post-launch, post-launch →
+      Linear. Record it in
+      [docs/audits/2026-11-big-sites-page-reviews.md](../../docs/audits/2026-11-big-sites-page-reviews.md).
+    - **Anything else in scope** → light check before code: 2–4 big sites
+      with sources, what each does, a recommendation. Written into the Linear
+      card and the PR body under `## Big sites`.
+    - **Decision:** one option is clearly the industry standard, needs no new
+      copy and no placement choice → CC builds it and reports. Otherwise
+      Sapir picks (rule 37 for placement, rule 22 for copy).
+    - **PR body:** `## Big sites` with the findings, or
+      `Big sites: n/a — <reason>`. `scripts/checks/big-sites-guard.sh`
+      (Repo guards, warn-only) prints a WARNING for a PR touching
+      `frontend/app` or `frontend/components` (tests excluded) without either.
 38. **A PR that changes what users see: CC self-merges it to staging after the
     full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
     «go merge» on staging merges).** The self-check, all five before the merge:

@@ -675,7 +675,7 @@ class TestNoShowBlock:
             headers=auth_header(buyer),
         )
         assert r.status_code == 422
-        assert r.json()["detail"] == "ההזמנות חסומות אחרי שתי אי-הגעות. כתבו לנו"
+        assert r.json()["detail"] == "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
 
     def test_two_no_shows_outside_the_window_do_not_block(
         self, client, db, shop, rescue_on
@@ -1193,3 +1193,16 @@ class TestBuyerCancelHardening:
         self._reserve(client, offer, buyer)
         assert "אפשר לבטל בחינם עד" in sent[0]["body"]
         assert "לבטל את השריון" in sent[0]["html"]
+
+
+# MEH-2867: «הסל כבר נמסר ב-HH:MM» prints the hand-over on the Israel clock.
+# handed_at is naive UTC (utc_now()); a bare %H:%M showed it 2h (3h in summer)
+# early. Pure function, fixed instants — no wall clock involved.
+def test_handed_time_is_printed_on_the_israel_clock_in_winter_and_summer():
+    from datetime import datetime as _dt
+
+    # REUSES: the one owner, services/rescue_emails.py israel_hhmm.
+    from app.services.rescue_emails import israel_hhmm as _israel_hhmm
+
+    assert _israel_hhmm(_dt(2026, 11, 17, 16, 42)) == "18:42"  # IST, UTC+2
+    assert _israel_hhmm(_dt(2026, 7, 14, 16, 42)) == "19:42"  # IDT, UTC+3

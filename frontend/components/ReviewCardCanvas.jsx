@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -43,13 +44,13 @@ import { showToast } from "@/lib/toast";
 import { ReviewsPageSchema } from "@/lib/api-schemas";
 import { SITE_URL } from "@/lib/env";
 import {
-  STORY_SAFE_BOTTOM,
   STORY_SAFE_TOP,
   drawLockup,
   loadFonts,
   wrapText,
 } from "@/components/StoryCardCanvas";
 import { copyOrThrow } from "@/lib/clipboard";
+import { COLOR } from "@/lib/color-tokens";
 
 const W = 1080;
 const H = 1920;
@@ -61,9 +62,9 @@ const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 // this file-pair's, and StoryCardCanvas already duplicates its own
 // unicode-range literals (:83-92) for the adjacent reason: a constant shared
 // between exactly two call sites buys less than the comment explaining it.
-const GREEN = "#2e6853";
+const GREEN = COLOR.primary;
 const GREEN_DEEP = "#1f4a3a";
-const CREAM = "#F5F0E8";
+const CREAM = COLOR.background;
 // The amber petal from the mark (StoryCardCanvas.jsx:78) — the brand's own
 // gold, so the stars and the rule are not a new colour on the card.
 const GOLD = "#E0B266";
@@ -259,7 +260,7 @@ export async function drawReviewCard(canvas, producer, review, strings) {
   }
 
   // Fitted, then cut: a long business name used to run off the inline end.
-  ctx.fillStyle = "#EAF3DE";
+  ctx.fillStyle = COLOR["green-50"];
   const nameFont = (size) => `600 ${size}px ${SANS}`;
   const rawName = producer?.name || "";
   fitOneLine(ctx, rawName, { maxWidth: column, max: NAME_MAX, min: NAME_MIN, font: nameFont });

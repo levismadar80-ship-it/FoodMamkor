@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Cookie-consent storage contract — the ONE place that knows the localStorage
  * key, the accepted values and the event name (MEH-2394 reviewer note: the
@@ -29,6 +30,14 @@ export function hasFullCookieConsent() {
   } catch {
     return false;
   }
+}
+
+/** Event that re-opens the cookie banner so a visitor can change her answer. */
+export const COOKIE_SETTINGS_EVENT = "cookie-settings-open";
+
+/** MEH-3196: the footer's «הגדרות עוגיות» — withdrawing is as easy as giving. */
+export function openCookieSettings() {
+  window.dispatchEvent(new CustomEvent(COOKIE_SETTINGS_EVENT));
 }
 
 /** Persist the answer ("all" | "essential") and notify listeners. */

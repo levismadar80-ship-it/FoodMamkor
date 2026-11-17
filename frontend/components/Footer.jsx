@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
@@ -15,10 +16,12 @@ import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
+import { PRICING_PATH } from "@/lib/pricing";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { useAuth } from "@/lib/auth-context";
+import { openCookieSettings } from "@/lib/cookie-consent";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import Seed from "@/components/brand/Seed";
 import { SEEDS_DARK } from "@/lib/brand-seeds";
@@ -148,6 +151,10 @@ export default function Footer() {
     { href: "/about", label: t("nav.footer.about") },
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
+    // MEH-3265: the badges explainer was linked only from /about and the badge
+    // popovers. The label repeats the page's approved H1 (about_badges.h1) —
+    // its own key, because about_badges is a server-only namespace.
+    { href: "/about/badges", label: t("nav.footer.badges") },
     // MEH-1160: reader-facing share page — the site-level viral loop.
     // MEH-2827 PR 5: /share became the «ספרו עלינו» section of /recommend
     // (/share 308s there too); the label is unchanged.
@@ -161,8 +168,15 @@ export default function Footer() {
     // MEH-721/995: the canonical recruitment door; the wizard stays one tap
     // away via /join's single CTA.
     { href: "/join", label: t("nav.footer.add_business") },
+    // MEH-3219: the price list is one tap from every page, in the business
+    // group only; the reader-facing groups carry no price.
+    { href: PRICING_PATH, label: t("pricing.link_footer") },
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
+    // MEH-3265: the guides index was reachable only from /about/for-businesses.
+    // The label repeats the page's approved title (guides.index.meta_title) —
+    // its own key, because guides is a server-only namespace.
+    { href: "/about/for-businesses/guides", label: t("nav.footer.guides") },
   ];
 
   return (
@@ -426,6 +440,19 @@ export default function Footer() {
                 </Link>
               </li>
             ))}
+            {/* MEH-3196: withdrawing cookie consent is as easy as giving it —
+                a button (it opens the banner, it goes nowhere), styled as the
+                links beside it. */}
+            <li>
+              <button
+                type="button"
+                onClick={openCookieSettings}
+                data-testid="footer-cookie-settings"
+                className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
+              >
+                {t("nav.footer.cookie_settings")}
+              </button>
+            </li>
           </ul>
         </div>
       </div>

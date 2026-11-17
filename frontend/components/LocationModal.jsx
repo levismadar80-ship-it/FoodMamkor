@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -60,10 +61,13 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
 
-      if (e.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the panel (a click on the scrim, a
+      // removed element) is pulled back in, not allowed to walk the page.
+      const outside = !panelRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }
@@ -162,7 +166,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 sm:px-4"
+      className="fixed inset-0 z-modal flex items-end sm:items-center justify-center bg-black/40 sm:px-4"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       {/* MEH-2039: aria-label -> aria-labelledby. The panel HAS a visible <h2>,
