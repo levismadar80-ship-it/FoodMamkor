@@ -127,6 +127,17 @@ export default function Tooltip({ content, children, position = "top", overlay =
     };
   }, [overlayActive, reposition]);
 
+  // MEH-3271 (WCAG 1.4.13): Escape dismisses the bubble without moving the
+  // pointer or focus.
+  useEffect(() => {
+    if (!visible) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setVisible(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [visible]);
+
   const bubble = visible && (
     <span
       ref={bubbleRef}
