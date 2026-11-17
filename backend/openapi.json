@@ -27514,32 +27514,6 @@
         ]
       }
     },
-    "/search/trending": {
-      "get": {
-        "description": "Return top 5 queries that returned results, cached 1 hour.",
-        "operationId": "trending_searches_search_trending_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "title": "Response Trending Searches Search Trending Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Trending Searches",
-        "tags": [
-          "search"
-        ]
-      }
-    },
     "/stats": {
       "get": {
         "operationId": "get_stats_stats_get",

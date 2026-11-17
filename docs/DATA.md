@@ -700,7 +700,7 @@ users.last_active_at timestamp NULL
 ### Search analytics (MEH-99)
 
 ```sql
--- One row per /search call. results_count=0 rows surface in trending suppression.
+-- One row per /search call. Written only; /search/trending was removed (MEH-3257).
 -- Table created by _migrate_columns() in main.py; no ORM model.
 search_queries (
   id uuid PK DEFAULT gen_random_uuid(),
@@ -1827,8 +1827,6 @@ GET  /admin/outreach/metrics/summary
 GET  /search            public — q (max 100 chars), limit (1–20, default 8)
                                  returns { producers, products, cities, categories }
                                  rate-limited 60/minute per IP
-GET  /search/trending   public — top 5 queries with results_count>0, cached 1hr
-                                 rate-limited 30/minute per IP
 ```
 
 **What a producer hit matches on (MEH-2478).** `GET /search` matches a business on
