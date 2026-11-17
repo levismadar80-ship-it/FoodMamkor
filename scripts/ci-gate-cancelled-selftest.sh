@@ -5,8 +5,10 @@
 # checks workflow sorts three scenarios correctly, and reports whether the
 # MEH-1907 fix (staged under docs/ci/, see this repo's ci docs index) is
 # applied yet. Mirrors scripts/ci-gate-selftest.sh (MEH-1582) and
-# scripts/e2e-gate-selftest.sh (MEH-1742) — same two-pass structure, same
-# reason for living outside scripts/checks/.
+# scripts/checks/e2e-gate-selftest.sh (MEH-1742) — same two-pass structure.
+# The MEH-1742 one has since MOVED into scripts/checks/ and become a blocking
+# regression guard, because its fix landed (#4743); this one keeps living out
+# here for the reason below, which still holds for it.
 #
 # WHY IT LIVES HERE AND NOT IN scripts/checks/
 #   scripts/checks/run-all.sh auto-discovers every *executable* *.sh directly
