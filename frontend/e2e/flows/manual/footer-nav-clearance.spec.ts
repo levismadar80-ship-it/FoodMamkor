@@ -30,31 +30,86 @@ async function settle(page: Page, path: string, { phone = false } = {}) {
   // On a phone, wait until BottomNav has published its height (ResizeObserver
   // + 150ms debounce) rather than sleeping a fixed time.
   if (phone) await expect.poll(() => rootVar(page, "--bottom-nav-clearance"), { timeout: 10_000 }).not.toBe("");
-  // Reaching the end changes the page's height: the mobile chat launcher
-  // steps aside once a [data-chat-hide] element (the footer's form) is in
-  // view, and its 64px reserve (--chat-fab-clearance, MEH-2835) leaves the
-  // footer's padding. So one scrollTo can measure a page that is still moving
-  // (seen as a 64px gap on /he/join and /he/about). Re-scroll until the
-  // height has held for two reads in a row AND the viewport sits at the end.
+  // Reaching the end changes the page's height: the mobile chat launcher owns a
+  // 64px reserve (--chat-fab-clearance, MEH-2835) that lands in the footer's
+  // padding. So one scrollTo can measure a page that is still moving (seen as
+  // a 64px gap on /he/join and /he/about). Re-scroll until the height has held
+  // for two reads in a row AND the viewport sits at the end.
+  //
+  // MEH-3051 — two equal heights are NOT enough, and the mover is named wrong
+  // above. Traced on this build (390x844, CPU x6, 120ms per response), frame by
+  // frame: `settle` returned at scrollHeight 4558 with --chat-fab-clearance
+  // unset and the footer's padding-bottom 80px. The page then grew to 5555 as
+  // the rest of it arrived, and at ~5.5s the reserve APPEARED — padding-bottom
+  // 80px -> 144px, scrollHeight 5555 -> 5619 — leaving the footer's bottom 64px
+  // BELOW the viewport for 45 of the next 60 frames. Every later read, the
+  // bottom-edge pixel included, then landed on page background: exactly the
+  // «245,240,232 vs 245,240,232» in the report. Not a step-aside, and not a
+  // product bug: ChatWidget is lazily mounted (ChatWidgetLazy), and it cannot
+  // publish its reserve before its chunk evaluates. A fast runner evaluates it
+  // before the poll, which is why this is a load-dependent flake.
+  //
+  // So wait for that mover by a signal the product publishes, the way the line
+  // above already waits for BottomNav: the launcher mounted, and on a phone its
+  // reserve live. Measured on /he, /he/join and /he/about: the launcher is
+  // attached at both widths, and --chat-fab-clearance ends at 64px on the phone
+  // and unset on desktop. Nothing here sleeps, and nothing is weakened — a
+  // launcher that never mounts, a reserve that never arrives, or a footer that
+  // never reaches the screen bottom each time out and red the test.
+  await page.locator('[data-testid="chat-launcher"]').waitFor({ state: "attached", timeout: 15_000 });
+  if (phone) await expect.poll(() => rootVar(page, "--chat-fab-clearance"), { timeout: 10_000 }).not.toBe("");
   let last = -1;
+  let lastFab = "";
   await expect
     .poll(
       async () => {
-        const { h, gap } = await page.evaluate(() => {
+        const { h, gap, fab, footerGap } = await page.evaluate(() => {
           window.scrollTo(0, document.documentElement.scrollHeight);
+          const footer = document.querySelector("footer[data-site-footer]");
           return {
             h: document.documentElement.scrollHeight,
             gap: Math.round(innerHeight + scrollY - document.documentElement.scrollHeight),
+            fab: getComputedStyle(document.documentElement).getPropertyValue("--chat-fab-clearance").trim(),
+            footerGap: footer ? Math.round(footer.getBoundingClientRect().bottom - innerHeight) : null,
           };
         });
-        const stable = h === last && gap >= -1;
+        // On a phone the next thing this spec reads is the bottom-edge pixel,
+        // so the footer must actually BE at the bottom edge. On desktop the
+        // page can be shorter than the viewport and that is not a defect, so
+        // only the height + reserve have to hold.
+        const atEdge = !phone || (footerGap !== null && Math.abs(footerGap) <= 1);
+        const stable = h === last && fab === lastFab && gap >= -1 && atEdge;
         last = h;
+        lastFab = fab;
         return stable;
       },
-      { intervals: [300] },
+      { intervals: [300], timeout: 20_000 },
     )
     .toBe(true);
 }
+
+/**
+ * MEH-3322 / MEH-3051 — the map shell the PAGE mounted, not React's streaming
+ * staging copy.
+ *
+ * `/map` streams: the route's `loading.js` fallback is flushed inside
+ * `<main id="main-content">`, and the real subtree arrives later in a
+ * `<div hidden id="S:0">` appended at the end of `<body>`, which an inline
+ * `$RC(...)` then moves into place. Measured on this build (390x844, 120ms per
+ * response, 2 of 4 loads): for part of that window BOTH exist —
+ * `#main-content` holds a visible shell and `S:0` still holds its hidden twin
+ * — so a bare `[data-map-shell=…]` resolves to 2 elements and Playwright fails
+ * the assertion on strict mode in under a second, which is exactly the shape
+ * reported on runs 43718130979, 43849562936 and 44031075483.
+ *
+ * A visitor never sees two maps: the staging copy is inside `[hidden]`. The
+ * cure is therefore to name the one the page mounted. Scoping to
+ * `#main-content` does that and nothing else — the staging container is never
+ * inside it — and keeps every assertion falsifiable: a shell that fails to
+ * mount, or mounts hidden, still reds `toBeVisible()`.
+ */
+const mapShell = (page: Page, kind: "mobile" | "desktop") =>
+  page.locator(`#main-content [data-map-shell=${kind}]`);
 
 /**
  * RGB of one viewport pixel, read from a real screenshot. Decoded in the page
@@ -133,7 +188,7 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
   test("/map: no site footer, no body reserve, the page does not scroll", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("cookieConsent", "essential"));
     await page.goto("/he/map");
-    await expect(page.locator("[data-map-shell=mobile]")).toBeVisible({ timeout: 15_000 });
+    await expect(mapShell(page, "mobile")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator("footer[data-site-footer]")).toHaveCount(0);
     // Control: the reserve is live on this page (BottomNav published its height),
     // so a zero below is the rule, not an unset variable.
@@ -155,7 +210,7 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
   // the map can still be scrolled clear of the banner and tapped.
   test("/map with the cookie banner up: reserve = banner, near-me pill reachable", async ({ page }) => {
     await page.goto("/he/map");
-    await expect(page.locator("[data-map-shell=mobile]")).toBeVisible({ timeout: 15_000 });
+    await expect(mapShell(page, "mobile")).toBeVisible({ timeout: 15_000 });
     await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
     const m = await page.evaluate(() => ({
       pad: parseFloat(getComputedStyle(document.body).paddingBottom),
@@ -185,7 +240,7 @@ test.describe("MEH-2824 · desktop unchanged", () => {
   // banner is left showing (no consent stored), so the reserve is live.
   test("/map with the cookie banner up: the reserve is the banner only", async ({ page }) => {
     await page.goto("/he/map");
-    await expect(page.locator("[data-map-shell=desktop]")).toBeVisible({ timeout: 15_000 });
+    await expect(mapShell(page, "desktop")).toBeVisible({ timeout: 15_000 });
     await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
     const m = await page.evaluate(() => ({
       pad: parseFloat(getComputedStyle(document.body).paddingBottom),
