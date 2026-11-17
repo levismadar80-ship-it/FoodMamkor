@@ -12,6 +12,9 @@ MEH-103 verified reviews system:
     The hide is sticky (MEH-2348): an author edit keeps it, the author cannot
     delete a hidden review, and only PUT /admin/reviews/{id}/unhide undoes it.
   - Hidden reviews are excluded from public GET endpoints and aggregates.
+  - So are conflict-of-interest reviews (MEH-3258): the author now owns the
+    business or a same-category one. Computed per read, never stored —
+    services/review_conflicts.py.
   - Pagination: GET /producers/{id}/reviews returns 10 per page.
 
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
@@ -59,6 +62,15 @@ from app.schemas.schemas import (
 from app.services.content_notifications import (
     notify_owner_new_review,
     notify_reviewer_reply,
+)
+
+# MEH-3258: the aggregate now also drops conflict-of-interest reviews, so it
+# lives with that rule. Re-exported under the old name — every call below
+# imports it from here.
+from app.services.review_conflicts import (
+    conflict_kind_columns,
+    conflict_free,
+    recompute_producer_rating as _recompute_producer_rating,
 )
 from app.utils.clock import utc_now
 
@@ -199,26 +211,6 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
 PAGE_SIZE = 10
 
 
-def _recompute_producer_rating(producer_id: UUID, db: Session) -> None:
-    """Recompute avg_rating + reviews_count from all visible (non-hidden) reviews."""
-    row = (
-        db.query(
-            func.avg(ProducerReview.stars).label("avg"),
-            func.count(ProducerReview.id).label("cnt"),
-        )
-        .filter(
-            ProducerReview.producer_id == producer_id,
-            ProducerReview.is_hidden.is_(False),
-        )
-        .one()
-    )
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
-    if producer:
-        producer.avg_rating = float(row.avg) if row.avg is not None else 0.0  # type: ignore[assignment]
-        producer.reviews_count = int(row.cnt or 0)  # type: ignore[assignment]
-        db.commit()
-
-
 def public_reviewer_name(full_name: str | None) -> str | None:
     """MEH-3221 (B10): «שם פרטי + אות של משפחה» — shortened on the SERVER.
 
@@ -282,6 +274,8 @@ def list_reviews_nested(
             ProducerReview.producer_id == producer_id,
             ProducerReview.is_hidden.is_(False),
             Producer.kind == "producer",
+            # MEH-3258: an author who now owns this business or a competitor.
+            conflict_free(),
         )
     )
     total = base.count()
@@ -328,6 +322,7 @@ def list_reviews(
             ProducerReview.producer_id == producer_id,
             ProducerReview.is_hidden.is_(False),
             Producer.kind == "producer",
+            conflict_free(),  # MEH-3258
         )
         .order_by(ProducerReview.created_at.desc())
         .all()
@@ -809,8 +804,9 @@ def admin_list_reviews(
     db: Session = Depends(get_db),
 ) -> list[AdminReviewOut]:
     """All reviews (including hidden) for moderation."""
+    owner_col, competitor_col = conflict_kind_columns()  # MEH-3258
     rows = (
-        db.query(ProducerReview)
+        db.query(ProducerReview, owner_col, competitor_col)
         .options(
             joinedload(ProducerReview.user),
             joinedload(ProducerReview.producer),
@@ -836,6 +832,9 @@ def admin_list_reviews(
             ai_moderation_status=r.ai_moderation_status,
             # MEH-2381: None = not edited since the last hide/unhide.
             edited_after_hidden_at=_iso_or_none(r.edited_after_hidden_at),  # type: ignore[arg-type]
+            # MEH-3258: "owner" | "competitor" | None — why a review that is
+            # not hidden still stays off the public page and the rating.
+            conflict="owner" if is_owner else ("competitor" if is_competitor else None),
         )
-        for r in rows
+        for r, is_owner, is_competitor in rows
     ]
