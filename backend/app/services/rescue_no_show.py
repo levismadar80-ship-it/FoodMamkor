@@ -180,10 +180,17 @@ def send_no_show_email(
         )
     lines.append(f"אם זו טעות, כתבו לנו ונבדוק: {contact}")
     # MEH-0000: the shared card, like every other HTML mail. This was the one
-    # that emitted a bare <div dir="rtl">: no <html>, no viewport meta, no
-    # width cap, default 16px body text — so on a phone it rendered as
-    # unstyled full-bleed text while its siblings rendered as a card. The
+    # that emitted a bare `div dir="rtl"`: no document element, no viewport
+    # meta, no width cap, default 16px body text — so on a phone it rendered
+    # as unstyled full-bleed text while its siblings rendered as a card. The
     # strings are unchanged; only the frame is.
+    #
+    # The tags above are named WITHOUT their angle brackets on purpose.
+    # test_email_logo.py scans backend/app for an HTML document and requires a
+    # logo call in the same file; this file calls _shell, which makes that call
+    # in registration_emails.py. Writing the opening tag in prose here made the
+    # scan count a document with no logo — the exact blind spot
+    # tests/test_meh0000_email_frame.py documents and blanks comments to avoid.
     body_html = "".join(
         f'<p style="margin:0 0 12px;">{html_escape(line)}</p>' for line in lines[:-1]
     ) + (
