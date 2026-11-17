@@ -105,6 +105,7 @@ limiter = Limiter(key_func=get_real_client_ip)
 # Per-endpoint:
 @router.post("/auth/login")
 @limiter.limit("5/minute")        # per real client IP
+@limiter.limit("10/15 minutes", key_func=email_from_body)  # per email, soft: a 429 that clears itself, no lockout (MEH-3372)
 def login(request: Request, ...):
 
 @router.post("/auth/register")

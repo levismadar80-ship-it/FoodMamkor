@@ -1278,6 +1278,11 @@ def register_producer_oauth(
 
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
+# MEH-3372: a soft per-email ceiling next to the per-IP one — a password
+# guessed for ONE account from many IPs never trips the IP bucket. No lockout
+# and no state on the account: a 429 that clears by itself, so the most a
+# third party can do to someone else's address is 15 minutes.
+@limiter.limit("10/15 minutes", key_func=email_from_body)
 def login(
     request: Request,
     response: Response,
