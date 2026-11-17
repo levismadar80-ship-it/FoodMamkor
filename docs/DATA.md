@@ -700,7 +700,7 @@ users.last_active_at timestamp NULL
 ### Search analytics (MEH-99)
 
 ```sql
--- One row per /search call. results_count=0 rows surface in trending suppression.
+-- One row per /search call. Written only; /search/trending was removed (MEH-3257).
 -- Table created by _migrate_columns() in main.py; no ORM model.
 search_queries (
   id uuid PK DEFAULT gen_random_uuid(),
@@ -1267,8 +1267,18 @@ POST   /producers/me/locations                    producer  — create a locatio
 PUT    /producers/me/locations/{id}               producer  — update (60/hr). Cross-owner id → 403 "אין הרשאה למיקום זה"
                                                               (missing id → 404). Demoting the sole primary → 422 "חובה מיקום ראשי אחד".
                                                               same-city check only when city/label in the patch.
-DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the primary promotes
-                                                              the oldest survivor so exactly one primary remains.
+                                                              MEH-3342: a PRIMARY row must stay `branch` — re-kinding it to
+                                                              pickup/market_stand is 422, not only promoting a non-branch
+                                                              (the resting state is checked, so both ways in are covered).
+                                                              An explicit `null` for `kind` or `location_precision` is 422,
+                                                              not the 500 the NOT NULL column used to raise; omitting a
+                                                              field still means "leave it alone".
+DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the PRIMARY while other
+                                                              rows remain → 422 "חובה מיקום ראשי אחד": the owner promotes
+                                                              another row first. It no longer promotes the oldest survivor
+                                                              automatically — that had no kind filter, so deleting the primary
+                                                              could make a pickup point the business's navigation target.
+                                                              Deleting the last row is allowed.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
@@ -1794,8 +1804,6 @@ GET  /admin/outreach/metrics/summary
 GET  /search            public — q (max 100 chars), limit (1–20, default 8)
                                  returns { producers, products, cities, categories }
                                  rate-limited 60/minute per IP
-GET  /search/trending   public — top 5 queries with results_count>0, cached 1hr
-                                 rate-limited 30/minute per IP
 ```
 
 **What a producer hit matches on (MEH-2478).** `GET /search` matches a business on
