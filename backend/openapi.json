@@ -5908,6 +5908,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -8012,6 +8024,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -8862,6 +8886,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -10331,6 +10367,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -24221,6 +24269,31 @@
           }
         ],
         "summary": "Producer Analytics",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/availability-confirm": {
+      "post": {
+        "description": "MEH-2697 «עדיין נכון»: the owner says her availability is still true.\n\nChanges nothing but the stamp — the state and the vacation date stay.\nREUSES: set_availability_state above — same owner gate and rate limit.",
+        "operationId": "confirm_availability_producers_me_availability_confirm_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm Availability",
         "tags": [
           "producer-management"
         ]

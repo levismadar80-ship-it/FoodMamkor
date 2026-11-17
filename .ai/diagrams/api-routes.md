@@ -115,6 +115,7 @@ graph TD
     Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>home_products, 30d chart, top cities]
     Dashboard --> Avail[POST /producers/me/availability-state<br/>👤 pause-only write: accepting_orders or on_vacation MEH-2758]
+    Dashboard --> AvailConfirm[POST /producers/me/availability-confirm<br/>👤 stamps availability_confirmed_at, changes nothing else MEH-2697]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
