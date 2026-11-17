@@ -253,3 +253,27 @@ def send_cancelled_notifications(  # noqa: PLR0913 — +test_cause, the MEH-2952
                 "(group_buy=%s)",
                 group_buy_id,
             )
+
+
+# --- Deadline passed below the minimum (MEH-3287) ---
+
+
+def notify_participant_expired(
+    participant_email: str, title: str, producer_name: str, test_cause: bool = False
+) -> None:
+    """MEH-3287: the deadline passed before the group reached its minimum.
+
+    Nobody cancelled it, so neither cancel wording above is true here. No link
+    (the group is off the site) and no contact details (PRIVACY CONTRACT).
+    Wording approved 14/11/2026 by the stronger-model review standing in for
+    Sapir; «לא נגבה ממך כלום» was cut — the site takes no payment, and a buyer
+    may have paid the business directly.
+    """
+    subject = f'מהמקור — הקבוצה "{title}" לא הגיעה ליעד'
+    body = (
+        f"שלום,\n\n"
+        f'הקבוצה שהצטרפת אליה, "{title}" של {producer_name}, לא הגיעה '
+        f"למספר המשתתפים הנדרש עד המועד האחרון, ולכן היא לא יוצאת לפועל.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(participant_email, subject, body, test_cause=test_cause)

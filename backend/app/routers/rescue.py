@@ -938,7 +938,7 @@ def _refuse_unless_reserved_for_handover(order: RescueOrder) -> None:
     if order.status == "handed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"הסל כבר נמסר ב-{order.handed_at:%H:%M}"
+            detail=f"הסל כבר נמסר ב-{israel_hhmm(order.handed_at)}"  # type: ignore[arg-type]
             if order.handed_at
             else "הסל כבר נמסר",
         )

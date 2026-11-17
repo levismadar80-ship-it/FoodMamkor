@@ -7,6 +7,11 @@
  *           the two heights (own / ridden) the card and the controls read.
  * Does NOT: test when the card is mounted (MapPickPan.test.jsx) or what a
  *           marker tap does to the sheet (useMapSync.test.jsx).
+ *           MEH-0000 adds the close button's accessible name and Escape. An
+ *           audit of that button found everything else already right — real
+ *           <button>, 44x44, Hebrew aria-label, focus ring, no physical
+ *           directional class — but none of the name or keyboard behaviour was
+ *           asserted anywhere, so a regression in it would have been silent.
  * Related:  app/[locale]/map/components/MobileSheetSelectedCard.jsx,
  *           components/MapBottomSheet.jsx
  */
@@ -135,5 +140,67 @@ describe("short screens (MEH-3119)", () => {
     expect(getByTestId("map-near-me-pill").className).toContain(
       "[@media(max-height:600px)]:group-data-[pick=on]/mapshell:hidden",
     );
+  });
+});
+
+describe("the close button's name and keyboard behaviour (MEH-0000)", () => {
+  it("is a real button with an accessible name, and the icon is hidden from it", () => {
+    const { getByTestId } = render(<MobileSheetSelectedCard selectedProducer={producer} onClose={() => {}} />);
+    const close = getByTestId("map-selected-card-close");
+    expect(close.tagName).toBe("BUTTON");
+    expect(close.getAttribute("type")).toBe("button");
+    // The name comes from i18n; this suite's mock returns the KEY, so assert
+    // the key is wired rather than the Hebrew — the Hebrew value itself is
+    // covered by the i18n parity suite.
+    expect(close.getAttribute("aria-label")).toBe("common.aria.close");
+    // An icon that is not hidden gets read out after the label.
+    expect(close.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(close.className).toMatch(/focus-ring/);
+  });
+
+  it("Escape closes the card", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("another key does not", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "a" });
+    fireEvent.keyDown(document, { key: "Enter" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("Escape inside a text field is the field's, not the card's", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    const input = document.createElement("input");
+    document.body.append(input);
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    input.remove();
+  });
+
+  it("Escape inside a dialog is the dialog's", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    const button = document.createElement("button");
+    dialog.append(button);
+    document.body.append(dialog);
+    fireEvent.keyDown(button, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    dialog.remove();
+  });
+
+  it("the listener is removed on unmount", () => {
+    const onClose = vi.fn();
+    const { unmount } = render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    unmount();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
