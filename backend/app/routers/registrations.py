@@ -35,7 +35,7 @@ from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.models import Event, Experience, Producer, Registration, User
-from app.rate_limit import limiter
+from app.rate_limit import email_from_body, limiter
 from app.services import billing_ledger  # MEH-3179
 from app.services.producer_listing import is_live_owner_row  # MEH-2952
 from app.routers.experiences import _publicly_visible_query
@@ -158,6 +158,20 @@ def _existing(
     )
 
 
+# MEH-3373: a sign-up needs no account and mails the address that was typed,
+# so the RECIPIENT gets a ceiling too — the per-IP limit does not stop one
+# address being mailed from many IPs. One bucket for both routes: three
+# confirmations an hour and ten a day reach an address, whatever is signed up
+# for. A 429 that clears by itself; nothing is stored on the address.
+# DO NOT add sender-typed text (name, phone, a note) to VisitorEmail — that
+# mail goes to an address nobody verified
+# (tests/test_meh3373_registration_recipient_limit.py).
+# REUSES: backend/app/routers/auth.py — per-email key next to the per-IP limit.
+_recipient_limit = limiter.shared_limit(
+    "3/hour;10/day", scope="registration-recipient", key_func=email_from_body
+)
+
+
 def _new_registration(data: RegistrationCreate, **item: Any) -> Registration:
     return Registration(
         name=data.name,
@@ -175,6 +189,7 @@ def _new_registration(data: RegistrationCreate, **item: Any) -> Registration:
     status_code=201,
 )
 @limiter.limit("10/hour")
+@_recipient_limit
 def register_for_event(
     request: Request,
     event_id: UUID,
@@ -249,6 +264,7 @@ def register_for_event(
     status_code=201,
 )
 @limiter.limit("10/hour")
+@_recipient_limit
 def register_for_experience(
     request: Request,
     experience_id: UUID,
