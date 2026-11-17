@@ -77,7 +77,12 @@ describe("OSM tile host (MEH-3077)", () => {
     // Control: the file is the one with the <head> links, so "no OSM link"
     // cannot be true only because the wrong file was read.
     expect(layout).toContain('<link rel="preconnect" href="https://res.cloudinary.com"');
-    expect(layout).not.toMatch(/<link[^>]+tile\.openstreetmap\.org/);
+    // Comments are stripped first: the note that explains the removal may
+    // name the host; no CODE in the layout may (a <link>, or a preconnect() call).
+    // Only JSX block comments are stripped. NOT `//` line comments: that
+    // pattern also eats everything after "https:" and blinds the check.
+    const layoutCode = layout.replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+    expect(layoutCode).not.toContain("openstreetmap.org");
   });
 
   it("CSP img-src admits the bare tile host", () => {
