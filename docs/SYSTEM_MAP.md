@@ -83,6 +83,8 @@ inventory.
    requests that hold a connection (an external call inside a route) exhaust
    it; the DB bulkhead middleware sheds load with a 503 before the process
    deadlocks. A new external call inside a route closes its DB session first.
+   A request body above 6 MB is refused with 413 before it reaches the
+   bulkhead (`backend/app/body_limit.py`), so it never holds a slot.
 3. **Per-IP rate limits behind one address.** Limits are per IP and held in
    memory. Many real users behind one NAT, or the whole CI run, share one
    bucket and get 429s on ordinary reads.
