@@ -180,13 +180,14 @@ After every PR — send the Vercel preview URL:
 > all. Nothing in `.claude/rules/` or `CLAUDE.md` claims feature branches get no
 > previews; `grep -n preview` over both, 2026-08-03, found no such statement.
 
-**Wait for approval before merging to staging.** Full mobile checklist:
+**Merging to staging is CC's, after its checks** (ADR-032; workflow rules 21
+and 38–41). Staging → main waits for Sapir's «go merge». Preview mechanics:
 [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) → "Testing workflow".
 
 | PR type | What to check | Testing needed? |
 |---|---|---|
 | docs-only (CHANGELOG, ROADMAP, CLAUDE.md) | Read the diff | None |
 | infra-only (.github, settings.json, .gitignore) | Read the diff | None |
-| UI change | Test Vercel preview on mobile | Yes |
+| UI change | 375 + 1440 screenshots, captured and read by CC (workflow rule 23) | Yes |
 | Backend change | Test the affected API endpoint | Yes |
 | Hotfix | Test only the broken thing | Minimal |

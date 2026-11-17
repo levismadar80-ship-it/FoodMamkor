@@ -11,7 +11,7 @@
  *           404 an organizer since MEH-2459). Never listed under /producers.
  * Related:  app/[locale]/[slug]/page.js (the business twin whose fetch / 404 /
  *           metadata contract this mirrors), backend/app/routers/organizers.py.
- * History:  MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
+ * History:  MEH-3348 (JSON-LD); MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
  *           setRequestLocale); MEH-2475 (owner story, preferred channel first,
  *           email / WhatsApp group / order form, founding year); MEH-2547
  *           (cover + avatar masthead, EventEntryRow rows).
@@ -22,7 +22,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-import { isSlugShaped } from "@/lib/slug";
+import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { toEventEntry } from "@/lib/event-entry";
@@ -36,6 +36,7 @@ import ShareButton from "@/components/ShareButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { avatarInitial } from "@/components/ui/Avatar";
+import { buildOrganizerJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-3348
 
 const ROUTE = "/[locale]/organizers/[slug]";
 
@@ -71,10 +72,12 @@ async function getOrganizer(slug) {
 }
 
 export async function generateMetadata(props) {
-  const { slug, locale } = await props.params;
+  const { slug: rawSlug, locale } = await props.params;
+  const slug = decodeSlugParam(rawSlug); // MEH-3340 — the MEH-2534 fix, organizer twin
   if (!isSlugShaped(slug)) notFound();
   const organizer = await getOrganizer(slug);
-  const alternates = buildAlternates(`/organizers/${slug}`, locale);
+  // the URL as requested (still encoded) — same as app/[locale]/[slug]/page.js
+  const alternates = buildAlternates(`/organizers/${rawSlug}`, locale);
   if (!organizer) {
     return {
       title: { absolute: buildEntityTitle(null, locale) },
@@ -163,7 +166,8 @@ function ContactLinks({ organizer, t, tCta }) {
 }
 
 export default async function OrganizerPage(props) {
-  const { slug, locale } = await props.params;
+  const { slug: rawSlug, locale } = await props.params;
+  const slug = decodeSlugParam(rawSlug); // MEH-3340 — the MEH-2534 fix, organizer twin
   setRequestLocale(locale);
   const organizer = await getOrganizer(slug);
   if (!organizer) notFound();
@@ -175,9 +179,19 @@ export default async function OrganizerPage(props) {
   const initial = avatarInitial(organizer.name, "");
   // MEH-3018: the canonical URL, built on the server, so the share button
   // carries the same value in the HTML and after hydration.
-  const pageUrl = buildAlternates(`/organizers/${slug}`, locale).canonical;
+  const pageUrl = buildAlternates(`/organizers/${rawSlug}`, locale).canonical;
+  const jsonLd = buildOrganizerJsonLd(organizer, locale);
 
   return (
+    <>
+      {/* MEH-3348: Organization + BreadcrumbList. Outside <main> so the
+          space-y-8 sibling rule does not push the masthead down. */}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+        />
+      )}
     <main className="max-w-3xl mx-auto pb-10 space-y-8" data-testid="organizer-page">
       {/* MEH-2547: a masthead — the organizer's first photo as a cover (a
           green band when there is none), and a round initial overlapping its
@@ -283,5 +297,6 @@ export default async function OrganizerPage(props) {
         <OwnerCard producer={organizer} heading={t("owner_heading")} />
       </div>
     </main>
+    </>
   );
 }

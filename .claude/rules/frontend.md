@@ -311,5 +311,6 @@ only; the desktop chip stayed until MEH-2769.
 - Cover the new behaviour with an automated test; only a real-device-only
   check goes to [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md)
   (workflow rule 10, MEH-2796).
-- Open the Vercel preview on **mobile** before approving any PR that
-  changes visible UI (Regression rule 4).
+- Before merging a PR that changes visible UI, capture and read the 375 +
+  1440 screenshots (workflow rule 23, Regression rule 4). There is no human
+  mobile pass.

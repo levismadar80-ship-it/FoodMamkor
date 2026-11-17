@@ -26,7 +26,7 @@ For each MEH-XXX in the batch list, execute in order. On a STOP condition, apply
 
 1. `get_issue(MEH-XXX)` — full description from Linear.
 2. **Authority gate (ADR-032 §1).** The card carries `cc-queue`, so it is in the envelope; classify the *work* to know which obligations attach. GREEN/YELLOW (frontend, copy, docs, tests, single-file) → straight through. RED (auth, security, business logic, additive Alembic) → also autonomous, but only with ADR-032 §2's proof obligations met: an exploit-proving test that **fails before and passes after**, an industry-standard solution cited as `Decision: … — Source: …`, additive-only Alembic with a tested downgrade, and one PR per RED fix. §2.5: a RED item **stops before merge** until the adversarial reviewer has run. §2.6: the proving test asserts **behaviour**, never that the prescribed change was applied. Hit a §3 hard stop → Section 5, condition (e).
-3. **Branch.** `git checkout staging && git pull origin staging && git checkout -b feature/meh-XX-<slug>`.
+3. **Branch.** `git fetch origin staging && git checkout -b feature/meh-XX-<slug> origin/staging`.
 4. **Implement** per task spec. Skeptic Mode (MEH-450) — surface scope mismatches before editing.
 5. **Pre-commit.** `cd frontend && npm run lint` then `pytest tests/test_api.py` — both must pass before commit. ESLint hook is `--max-warnings=0`.
 6. **Commit.** Conventional commit with `Closes MEH-XX` in the message body so Linear auto-closes on merge.
@@ -189,7 +189,7 @@ After merge, the verification ladder is split across three actors. `/batch` runs
 
 - **Tier 1 — Claude.ai** (project-side): content/structure verification via `web_fetch` + Vercel URL fetches. Today (pre-MCP) this is where layout regressions are caught.
 - **Tier 2 — Claude Code (this command)**: build/test/Playwright/grep automation, **post-merge autonomous verification via Vercel + Sentry MCPs** (Section 9).
-- **Tier 3 — Smadar**: real-device mobile perception only. Nothing else.
+- **Tier 3 — real-device-only items**: the few lines in `docs/RELEASE_CHECKLIST.md` § ד׳, performed by the thread (WebKit simulation, a connector, Claude in Chrome) and never by Sapir (workflow rule 10). Nothing else.
 
 Canonical checklist: `docs/RELEASE_CHECKLIST.md` (MEH-2796; `docs/MANUAL_TESTING.md` archived). Do not re-implement the checklist here.
 

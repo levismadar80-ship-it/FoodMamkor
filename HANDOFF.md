@@ -4,6 +4,30 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-16 — ביקורת פרומפטים על קובצי ההנחיות (MEH-3345)
+
+**שורה אחת:** שני PR-ים מוזגו ל-staging: #4675 (נתיבים מתים, עובדות מודל ישנות ופיגומי חשיבה) ו-#4678 (הכרעה בסתירות בין קובצי ההנחיות).
+
+**מה צריך לדעת לפני עבודה:**
+- **הסתירות בין קובצי ההנחיות הוכרעו (PR #4678):** CC ממזג ל-staging אחרי הבדיקות ו-main נשאר של ספיר · אין בדיקת נייד אנושית, CC הבודק היחיד · בדיקת תחילת session מדווחת ולא מחכה, חוץ מ-session מקביל או PR פתוח על אותו כרטיס · הלוגים יורדים מ-branch עם קוד · branch נפתח ישר מ-`origin/staging` · go לכל chunk ב-HIGH-RISK חל רק על עבודה בלי כרטיס מהתור.
+- **skill ‏`resolve-conflicts`:** יושר לכלל 31, הנתיב המת תוקן, וה-hash ננעל מחדש. עריכה של skill נעול = עריכה + `bash .claude/scripts/backfill-skill-hashes.sh` באותו commit, וה-PR נחשב קוד (בלי CHANGELOG/HANDOFF).
+- **פתוח אצל ספיר:** `.github/pull_request_template.md:53` עדיין מבקש בדיקת נייד ידנית.
+- **תבניות 02–04:** בגרסת Sonnet אין יותר `<thinking_guidance>`. יש `<plan_gate>` (ב-03: `<root_cause_first>`), ו«לחכות ל-go» נשאר.
+- **לא נבדק מכאן:** הטענות בתבנית 00 על מתג החשיבה ב-claude.ai ועל ברירת המחדל של effort ב-Claude Code. Fable 5.2 לא מוזכר שם.
+
+---
+
+## 2026-11-15 — שתי מייסדות באתר (MEH-3323)
+
+**שורה אחת:** #4649 מוזג ל-staging. #4650 («מה חדש» 1.5.3, `items: 0`) והגרסה ל-main בדרך.
+
+**מה צריך לדעת לפני עבודה:**
+- **שמות המייסדות:** `FOUNDERS` ב-`frontend/lib/constants.js`. החתימה ב-/about וב-מדריכים חייבת להיות `"<ראשונה> ו<שנייה>"`, ו-`organization-jsonld.test.js` נכשל אם לא.
+- **הקול:** באתר רבות («אנחנו»). המיילים מה-backend נשארים בגוף ראשון יחיד, חתומים ספיר. זו החלטה שלה, לא פער.
+- **פתוח אצל ספיר:** לשנות את התג «בחירת העורכת» ל«בחירת העורכות» בכל האתר? לא נגעתי, כי זה שם של תג ומופיע ב-badges, tooltips ובטסטים.
+
+---
+
 ## 2026-11-14 — כרטיסי ההשקה של «לפני ההשקה»: הצהרת המגדל ועוד ארבעה
 
 **שורה אחת:** #4488, #4493, #4486, #4500 ו-#4496 מוזגו ל-staging. #4496 נכנס עם revision ‏`d4f8b2c6e135`.
