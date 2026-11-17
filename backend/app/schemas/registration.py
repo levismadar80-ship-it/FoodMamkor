@@ -9,6 +9,7 @@ every name is still importable from app.schemas.schemas.
 
 from datetime import datetime
 from typing import Any, Literal, Self
+from urllib.parse import urlparse
 from uuid import UUID
 from pydantic import (
     BaseModel,
@@ -538,6 +539,11 @@ class ProducerClaimNewLinkOut(BaseModel):
 class DraftConsentPublishIn(BaseModel):
     consent_confirmed: bool
     consent_note: str = Field(min_length=1, max_length=500)
+    # Optional: a screenshot of the written consent, uploaded first through
+    # POST /upload/image. Only one of our own Cloudinary image URLs is stored
+    # — the admin page links to it, so an arbitrary URL here would be a link
+    # to anywhere under an «אישור» label.
+    consent_screenshot_url: str | None = Field(default=None, max_length=500)
 
     @field_validator("consent_confirmed")
     @classmethod
@@ -556,6 +562,23 @@ class DraftConsentPublishIn(BaseModel):
         if not stripped:
             raise ValueError("חובה לתעד איך התקבלה ההסכמה")
         return stripped
+
+
+    @field_validator("consent_screenshot_url")
+    @classmethod
+    def _screenshot_is_cloudinary_image(cls, v: str | None) -> str | None:
+        if v is None or not v.strip():
+            return None
+        parsed = urlparse(v.strip())
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "res.cloudinary.com"
+            or "/image/upload/" not in parsed.path
+            or parsed.username
+            or parsed.port
+        ):
+            raise ValueError("צילום המסך חייב להיות תמונה שהועלתה דרך האתר")
+        return v.strip()
 
 
 class DraftConsentPublishOut(BaseModel):

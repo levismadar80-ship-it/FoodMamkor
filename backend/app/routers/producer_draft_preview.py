@@ -218,12 +218,17 @@ def publish_draft_with_consent(  # noqa: PLR0913 — seven FastAPI-injected para
     # The audit record, in the column the owner invite also writes: one
     # business, one statement of what its owner agreed to and where.
     producer.owner_invite_consent_note = body.consent_note  # type: ignore[assignment]
+    producer.consent_screenshot_url = body.consent_screenshot_url  # type: ignore[assignment]
     admin_id = user.id
     producer = _persist_approval(db, producer_id, producer, overrides, admin_id)  # type: ignore[arg-type]
-    if producer.owner_invite_consent_note != body.consent_note:
+    if (
+        producer.owner_invite_consent_note != body.consent_note
+        or producer.consent_screenshot_url != body.consent_screenshot_url
+    ):
         # _persist_approval's slug-collision retry re-reads the row and
-        # re-applies only the approval columns; put the note back.
+        # re-applies only the approval columns; put the record back.
         producer.owner_invite_consent_note = body.consent_note  # type: ignore[assignment]
+        producer.consent_screenshot_url = body.consent_screenshot_url  # type: ignore[assignment]
         db.commit()
 
     logger.info(
@@ -231,6 +236,7 @@ def publish_draft_with_consent(  # noqa: PLR0913 — seven FastAPI-injected para
         producer_id=str(producer_id),
         admin_id=str(admin_id),
         without_license=allow_without_license,
+        has_screenshot=body.consent_screenshot_url is not None,
     )
     indexnow.schedule_public_producer(background_tasks, producer)
     return {

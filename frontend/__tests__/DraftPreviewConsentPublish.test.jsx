@@ -126,6 +126,85 @@ describe("PublishWithConsentPanel", () => {
     );
   });
 
+  const SHOT = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/abc.jpg";
+  const pick = () =>
+    fireEvent.change(screen.getByTestId("consent-publish-screenshot"), {
+      target: { files: [new File(["x"], "yes.png", { type: "image/png" })] },
+    });
+
+  it("a screenshot: uploaded on pick, then its URL rides the publish request", async () => {
+    api.post.mockImplementation((url) =>
+      Promise.resolve({ data: url === "/upload/image" ? { url: SHOT } : { status: "approved" } }),
+    );
+    const onPublished = vi.fn();
+    wrap(<PublishWithConsentPanel producerId="d-1" onPublished={onPublished} />);
+    pick();
+    const attached = await screen.findByTestId("consent-publish-screenshot-attached");
+    expect(attached.querySelector("a")).toHaveAttribute("href", SHOT);
+    expect(api.post.mock.calls[0][0]).toBe("/upload/image");
+    expect(api.post.mock.calls[0][1].get("file").name).toBe("yes.png");
+    fill();
+    tick("consent-publish-consent");
+    fireEvent.click(submit());
+    await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(1));
+    expect(api.post).toHaveBeenLastCalledWith(
+      "/admin/producers/d-1/publish-with-consent",
+      {
+        consent_confirmed: true,
+        consent_note: "אישרו בוואטסאפ, 17.11",
+        consent_screenshot_url: SHOT,
+      },
+      undefined,
+    );
+  });
+
+  it("a screenshot removed before publishing: the request carries none", async () => {
+    api.post.mockImplementation((url) =>
+      Promise.resolve({ data: url === "/upload/image" ? { url: SHOT } : { status: "approved" } }),
+    );
+    const onPublished = vi.fn();
+    wrap(<PublishWithConsentPanel producerId="d-1" onPublished={onPublished} />);
+    pick();
+    await screen.findByTestId("consent-publish-screenshot-attached");
+    tick("consent-publish-screenshot-remove");
+    expect(screen.getByTestId("consent-publish-screenshot")).toBeInTheDocument();
+    fill();
+    tick("consent-publish-consent");
+    fireEvent.click(submit());
+    await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(1));
+    expect(api.post.mock.lastCall[1]).toEqual({
+      consent_confirmed: true,
+      consent_note: "אישרו בוואטסאפ, 17.11",
+    });
+  });
+
+  it("a screenshot upload in flight: publishing waits for it", async () => {
+    let finish;
+    api.post.mockImplementation(() => new Promise((res) => { finish = res; }));
+    wrap(<PublishWithConsentPanel producerId="d-1" />);
+    fill();
+    tick("consent-publish-consent");
+    expect(submit()).not.toBeDisabled();
+    pick();
+    await waitFor(() => expect(submit()).toBeDisabled());
+    finish({ data: { url: SHOT } });
+    await screen.findByTestId("consent-publish-screenshot-attached");
+    expect(submit()).not.toBeDisabled();
+  });
+
+  it("a screenshot upload that fails: the server's reason, and publishing stays possible", async () => {
+    api.post.mockRejectedValue({ response: { data: { detail: "תמונה גדולה מדי (מקסימום 5MB)" } } });
+    wrap(<PublishWithConsentPanel producerId="d-1" />);
+    pick();
+    expect(await screen.findByTestId("consent-publish-screenshot-error")).toHaveTextContent(
+      "תמונה גדולה מדי (מקסימום 5MB)",
+    );
+    expect(screen.queryByTestId("consent-publish-screenshot-attached")).not.toBeInTheDocument();
+    fill();
+    tick("consent-publish-consent");
+    expect(submit()).not.toBeDisabled();
+  });
+
   it("the licence box ticked: the override is sent", async () => {
     api.post.mockResolvedValue({ data: { status: "approved" } });
     wrap(<PublishWithConsentPanel producerId="d-1" />);
@@ -199,6 +278,19 @@ describe("the edit page — who gets the two panels", () => {
   it("a draft whose has_owner was not hydrated (null): neither — fail closed", async () => {
     await open({ status: "draft", has_owner: null });
     expect(screen.queryByTestId("consent-publish-panel")).not.toBeInTheDocument();
+  });
+
+  it("a published business with a consent screenshot: the link to it", async () => {
+    await open({ status: "approved", has_owner: false, consent_screenshot_url: "https://res.cloudinary.com/demo/image/upload/a.jpg" });
+    expect(screen.getByTestId("consent-screenshot-link")).toHaveAttribute(
+      "href",
+      "https://res.cloudinary.com/demo/image/upload/a.jpg",
+    );
+  });
+
+  it("a business with no consent screenshot: no link", async () => {
+    await open({ status: "approved", has_owner: false });
+    expect(screen.queryByTestId("consent-screenshot-link")).not.toBeInTheDocument();
   });
 
   it("an approved business: neither", async () => {

@@ -1537,6 +1537,18 @@
             "minLength": 1,
             "title": "Consent Note",
             "type": "string"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
           }
         },
         "required": [
@@ -6044,6 +6056,17 @@
               }
             ],
             "title": "Claim Link Sent At"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
           },
           "contact_email": {
             "anyOf": [

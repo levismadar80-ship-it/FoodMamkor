@@ -1084,11 +1084,12 @@ POST   /admin/producers/{id}/preview-link          admin  — 30/hour. Ownerless
                                                      it stops working the moment the draft is claimed, published, rejected or deleted.
 GET    /producer-preview/{token}                   public — 60/min. → ProducerDetailOut of the draft, hydrated like GET /producers/{id}.
                                                      Bad signature, expired, wrong scope, no longer an ownerless draft → the same 404 «הקישור לא תקף או שפג תוקפו».
-POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank)}; query allow_without_license.
+POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank), consent_screenshot_url? (https res.cloudinary.com image URL, else 422)}; query allow_without_license.
                                                      Ownerless draft only (409). Row FOR UPDATE. Runs the same gates as an approval (`_assert_approvable`:
                                                      photo; licence unless allow_without_license, which also withholds the verified badge), with the
                                                      phone-verified gate overridden — there is no owner to verify it yet. Sets status "approved", stores the
-                                                     note in producers.owner_invite_consent_note, pings IndexNow. Sends NOTHING to the business.
+                                                     note in producers.owner_invite_consent_note and the optional screenshot URL in producers.consent_screenshot_url
+                                                     (migration `c3e7a1f9d5b2`, VARCHAR(500) NULL, Expand-only; on ProducerAdminOut only), pings IndexNow. Sends NOTHING to the business.
                                                      → {producer_id, status, slug}. The owner gets her account afterwards through the owner invite (below).
 ```
 

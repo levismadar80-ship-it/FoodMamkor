@@ -8,6 +8,7 @@ guard removed.
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from joserfc import jwt as jose_jwt
 
 from conftest import (
@@ -346,3 +347,70 @@ def test_an_organizer_draft_has_no_preview_and_is_not_published(client, db):
     assert client.get(_read(_token(p))).status_code == 404
     r = client.post(_publish(p.id), json=CONSENT, headers=auth_header(admin))
     assert r.status_code == 409
+
+
+# ---------- the optional consent screenshot ----------
+
+SHOT = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/abc123.jpg"
+
+
+def test_publish_stores_the_consent_screenshot_and_shows_it_to_the_admin_only(
+    client, db
+):
+    admin = make_user(db, role="admin")
+    p = _draft(db)
+    r = client.post(
+        _publish(p.id),
+        json={**CONSENT, "consent_screenshot_url": SHOT},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    row = db.query(Producer).filter(Producer.id == p.id).one()
+    assert row.consent_screenshot_url == SHOT
+    # The admin reads it back…
+    got = client.get(f"/admin/producers/{p.id}", headers=auth_header(admin))
+    assert got.status_code == 200, got.text
+    assert got.json()["consent_screenshot_url"] == SHOT
+    # …and the public page carries neither the key nor the URL.
+    public = client.get(f"/producers/{p.id}")
+    assert public.status_code == 200
+    assert "consent_screenshot_url" not in public.json()
+    assert SHOT not in public.text
+
+
+def test_publish_without_a_screenshot_stores_none(client, db):
+    admin = make_user(db, role="admin")
+    p = _draft(db)
+    r = client.post(_publish(p.id), json=CONSENT, headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    row = db.query(Producer).filter(Producer.id == p.id).one()
+    assert row.consent_screenshot_url is None
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://res.cloudinary.com/demo/image/upload/v1/a.jpg",
+        "https://evil.example/image/upload/a.jpg",
+        "https://res.cloudinary.com.evil.example/image/upload/a.jpg",
+        "https://user@res.cloudinary.com/demo/image/upload/a.jpg",
+        "https://res.cloudinary.com/demo/raw/upload/a.html",
+        "javascript:alert(1)",
+        "/placeholder-image.png?name=abc",
+    ],
+)
+def test_publish_refuses_a_screenshot_url_that_is_not_our_cloudinary_image(
+    client, db, url
+):
+    admin = make_user(db, role="admin")
+    p = _draft(db)
+    r = client.post(
+        _publish(p.id),
+        json={**CONSENT, "consent_screenshot_url": url},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 422, r.text
+    db.expire_all()
+    assert db.query(Producer).filter(Producer.id == p.id).one().status == "draft"

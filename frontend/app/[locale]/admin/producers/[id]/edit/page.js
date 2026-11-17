@@ -137,6 +137,22 @@ export default function EditProducerPage() {
           onChanged={() => setReloadKey((k) => k + 1)}
         />
       )}
+      {/* MEH-3377: the screenshot attached on «פרסום בהסכמה», read back so the
+          record can be checked later. Admin-only data (it shows a private
+          person's chat) — the public and owner shapes do not carry it. */}
+      {producer.consent_screenshot_url && (
+        <p className="text-sm mb-6">
+          <a
+            data-testid="consent-screenshot-link"
+            href={producer.consent_screenshot_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-primary"
+          >
+            {t("producers.consent_publish.screenshot_view")}
+          </a>
+        </p>
+      )}
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );

@@ -1885,7 +1885,13 @@
         "submit": "Publish the page",
         "publishing": "Publishing…",
         "published": "The page is live",
-        "error": "Could not publish the page"
+        "error": "Could not publish the page",
+        "screenshot_label": "Screenshot of the approval (optional)",
+        "screenshot_uploading": "Uploading the screenshot…",
+        "screenshot_attached": "Screenshot attached. View",
+        "screenshot_remove": "Remove",
+        "screenshot_error": "Could not upload the screenshot",
+        "screenshot_view": "Screenshot of the approval"
       },
       "draft_products": {
         "title": "Products in this draft",

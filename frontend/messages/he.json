@@ -1885,7 +1885,13 @@
         "submit": "פרסום העמוד",
         "publishing": "מפרסמת…",
         "published": "העמוד באוויר",
-        "error": "לא הצלחנו לפרסם את העמוד"
+        "error": "לא הצלחנו לפרסם את העמוד",
+        "screenshot_label": "צילום מסך של האישור (לא חובה)",
+        "screenshot_uploading": "מעלה את הצילום…",
+        "screenshot_attached": "הצילום צורף. לצפייה",
+        "screenshot_remove": "הסרה",
+        "screenshot_error": "לא הצלחנו להעלות את הצילום",
+        "screenshot_view": "צילום מסך של האישור"
       },
       "draft_products": {
         "title": "מוצרים בטיוטה",
