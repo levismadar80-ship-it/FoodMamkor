@@ -94,7 +94,7 @@
 - [ ] [בדיקה 2 מדידה]
 - [ ] build ירוק (npm run build + pytest)
 - [ ] preview URL נשלח
-- [ ] נבדק בנייד (iOS Safari + Chrome)
+- [ ] נבדק ב-375 וב-1440 — צילומי מסך ב-`qa-artifacts/`, נקראו על ידי CC (workflow rule 23)
 - [ ] CHANGELOG + HANDOFF.md עודכנו — **ב-PR הנכון לפי סוג ה-diff (rule 31):**
   - **PR שנוגע בקוד → ב-PR docs-only נפרד.** `scripts/checks/changelog-branch-guard.sh`
     (תחת ה-job הנדרש *Repo guards*) מאדים כל diff שנוגע גם בקוד וגם ב-`docs/CHANGELOG.md`
@@ -282,7 +282,7 @@ Read .claude/rules/. Read HANDOFF.md. Read docs/DATA.md.
 - pytest: happy path + invalid token + duplicate + expired token
 - Conditional UI? declare 0/1/many + open/closed states.
 - New AdminSetting key / feature flag? name its reader (file path) + removal condition.
-- npm run build + mobile preview
+- npm run build + 375/1440 screenshots read by CC (workflow rule 23)
 </acceptance_criteria>
 
 <file_locations>

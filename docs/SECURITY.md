@@ -117,6 +117,15 @@ def login(request: Request, ...):
 @limiter.limit("20/day")
 ```
 
+**Per-email keys (`email_from_body`, MEH-3373).** The key is the address as
+pydantic parses it (the value the handler sees), lower-cased, with a `+tag`
+dropped and Gmail dots removed — so a display name (`A <v@x.com>`), a
+fullwidth letter in the domain or `v+1@…` cannot open a fresh bucket for the
+same inbox. Used by `/auth/register`, `/auth/register/producer`,
+`/auth/forgot-password`, and the account-less sign-up routes
+(`routers/registrations.py`: 3/hour and 10/day per recipient, one bucket for
+events and experiences). Counters are in-process memory: a deploy resets them.
+
 **Deploy requirement:** `TRUSTED_PROXY=1` on Railway staging +
 production backends. Without it, the key function falls through to
 `get_remote_address` and the bug returns. See `docs/DEPLOYMENT.md` §D.
@@ -240,6 +249,14 @@ Additional notes:
   keep both in sync when schema changes land.
 
 ### 6. העלאת קבצים — תמונות מסוכנות
+
+**Body size cap (MEH-3374).** `backend/app/body_limit.py` answers **413** to
+any request body above **6 MB**, before the route runs: by `Content-Length`
+(nothing is read), and by counting the bytes that arrive when the header is
+missing or wrong. It sits outside the DB bulkhead, so a refused body holds no
+DB slot, and inside CORS / X-Request-ID / the security headers. The 5 MB image
+cap below is a second, narrower check inside the upload route. The WhatsApp
+webhook keeps its own smaller cap.
 
 ```python
 # backend/app/utils/file_upload.py
@@ -524,12 +541,16 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
 
 **SHIPPED — MEH-329 (April 2026).** Defense-in-depth per ASVS V13.
 React's automatic encoding remains the primary defense; this strips
-HTML tags at the input layer so stored content is safe even if a
-future component renders it via `dangerouslySetInnerHTML`.
+HTML tags at the input layer. Since MEH-3317 the stored value is **plain
+text** (a bare `<` or `&` is kept as typed), so it is NOT safe to render via
+`dangerouslySetInnerHTML` or to interpolate into HTML unescaped — every
+sink encodes on output.
 
 - **Helper:** `backend/app/services/sanitization.py` →
-  `sanitize_text(value, max_length)`. Strips all HTML tags via
-  `bleach.clean(value, tags=[], strip=True)` and caps length.
+  `sanitize_text(value, max_length)`. Strips all HTML tags with
+  `bleach.clean(value, tags=[], strip=True)`, decodes entities, and repeats
+  until stable (≤5 passes; otherwise, or if a tag opener like `<img` remains,
+  it keeps the encoded form), then caps length (MEH-3317).
 - **Applied to** 30 fields across 11 schemas covering producers,
   home-products, experiences, events, reviews, ratings, and the
   contact form. See `CHANGELOG.md` MEH-329 entry for the full list,
@@ -637,7 +658,10 @@ bytes. bcrypt 5 raises `ValueError` for >72 bytes instead. Truncating
 explicitly in both `hash_password` and `verify_password` keeps those rows
 verifying and keeps behaviour identical. Rejecting >72-byte passwords was
 considered and declined (it needs new user-facing copy). NUL bytes are
-still refused with `ValueError`, as passlib did.
+still refused: `hash_password` raises `ValueError`, as passlib did, and
+`PasswordField` rejects one with a 422 before it gets there. `verify_password`
+answers "no match" for a candidate that has one, so a NUL in a login password
+is an ordinary 401 (MEH-3271; it was a 500).
 
 ### 13. Timing equalization (anti-enumeration)
 

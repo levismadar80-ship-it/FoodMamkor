@@ -594,7 +594,23 @@ test.describe("/admin/users — the role kebab", () => {
     const row = userRow(page, "משתמשת 4");
     const btn = kebab(row);
     await btn.scrollIntoViewIfNeeded();
-    await btn.focus();
+    // MEH-3129 — the THIRD site of the MEH-2323 mechanism, and the one the
+    // earlier sweep missed: `openKebab` settles the scroll and the :633 test
+    // was given the same settle, but this one opened straight after a focus().
+    // AdminRowMenu closes on ANY scroll (capture, AdminRowMenu.jsx:164-168) —
+    // which is why the component focuses its own first item with
+    // `preventScroll: true` and calls that "load-bearing, not hygiene".
+    // Playwright's `locator.focus()` passes no such option. Measured on the
+    // Pixel 5 profile against a seeded stack: `focus()` moved scrollY from 0 to
+    // 901, and ONE `scroll` event dispatched while the menu was open closed it
+    // (visible before the event, gone after — the control). A/B of the two
+    // sequences, 5 runs each: the old one delivered a scroll event AFTER the
+    // Enter in 3 of 5 and the menu was shut each time; this one in 0 of 5. That
+    // is exactly the CI shape — `aria-expanded` observed true, then no
+    // `role=menu` for 20 s.
+    // So: focus without scrolling, and let anything already in flight land.
+    await btn.evaluate((el: HTMLElement) => el.focus({ preventScroll: true }));
+    await settleScroll(page);
     await expect(btn).toHaveAttribute("aria-expanded", "false");
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
@@ -636,7 +652,11 @@ test.describe("/admin/users — the role kebab", () => {
     const row = userRow(page, "משתמשת 4");
     const btn = kebab(row);
     await btn.scrollIntoViewIfNeeded();
-    await btn.focus();
+    // MEH-3129: `preventScroll` here for the same reason as the test above —
+    // `settleScroll` below waits out the scroll that is already in flight, but
+    // a plain `focus()` starts a NEW one (measured: scrollY 0 -> 901) whose
+    // event can then land after the open.
+    await btn.evaluate((el: HTMLElement) => el.focus({ preventScroll: true }));
     // MEH-2323 (:611 flake): AdminRowMenu closes on ANY scroll (capture). The
     // other tests open through `openKebab`, which lets the scroll settle for
     // two frames first; this one skipped it, so a scroll event still in flight

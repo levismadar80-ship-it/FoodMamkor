@@ -57,7 +57,8 @@ class UserRegister(BaseModel):
     # app.services.password_policy.validate_password — Pydantic validators
     # are sync and cannot await HIBP. Replaces MEH-248's 8-char floor.
     password: PasswordField
-    city: str | None = None
+    # MEH-3271: users.city is String(100); longer text was a 500 at commit.
+    city: str | None = Field(default=None, max_length=100)
     # MEH-1626 chunk 1: surfaced by the asymmetry scan rather than the issue's
     # list — same public signup body as `name` above, persisted at auth.py:313,
     # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
