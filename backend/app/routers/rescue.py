@@ -112,7 +112,7 @@ from app.services.rescue_no_show import (  # MEH-3226
     active_no_show_counts,
     queue_no_show_email,
 )
-from app.utils.clock import israel_hhmm, israel_today, utc_now
+from app.utils.clock import israel_today, utc_now
 
 logger = logging.getLogger(__name__)
 

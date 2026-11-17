@@ -143,14 +143,3 @@ def business_days_waiting(
     return business_days_between(
         since.astimezone(ISRAEL_TZ).date(), current.astimezone(ISRAEL_TZ).date()
     )
-
-
-def israel_hhmm(naive_utc: datetime) -> str:
-    """HH:MM on the Israel clock for a naive-UTC stamp (the utc_now() shape).
-
-    MEH-2867: rescue's «הסל כבר נמסר ב-HH:MM» formatted `handed_at` directly,
-    which showed the hand-over two hours early (three in summer).
-    """
-    return (
-        naive_utc.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ).strftime("%H:%M")
-    )

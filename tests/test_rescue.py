@@ -1201,7 +1201,8 @@ class TestBuyerCancelHardening:
 def test_handed_time_is_printed_on_the_israel_clock_in_winter_and_summer():
     from datetime import datetime as _dt
 
-    from app.utils.clock import israel_hhmm as _israel_hhmm
+    # REUSES: the one owner, services/rescue_emails.py israel_hhmm.
+    from app.services.rescue_emails import israel_hhmm as _israel_hhmm
 
     assert _israel_hhmm(_dt(2026, 11, 17, 16, 42)) == "18:42"  # IST, UTC+2
     assert _israel_hhmm(_dt(2026, 7, 14, 16, 42)) == "19:42"  # IDT, UTC+3
