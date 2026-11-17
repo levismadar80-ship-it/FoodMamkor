@@ -121,7 +121,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 46 | POST | `/admin/producers/{producer_id}/claim-link` | `producer_claim.create_claim_link` | admin | `tests/test_meh2496_claim_link_sent_at.py:65` | `tests/test_meh2496_claim_link_sent_at.py:117` | — | 8 |
 | 47 | POST | `/producer-claim/preview` | `producer_claim.preview_claim` | anonymous (token in request) | `tests/test_producer_claim.py:251` | n/a | — | 7 |
 | 48 | POST | `/producer-claim/new-link-request` | `producer_claim.request_new_claim_link` | anonymous (token in request) | `tests/test_meh3122_claim_new_link.py:73` | n/a | — | 9 |
-| 49 | POST | `/producer-claim` | `producer_claim.claim_producer` | registered user | `tests/test_producer_claim.py:304` | `tests/test_producer_claim.py:356` | — | 9 |
+| 49 | POST | `/producer-claim` | `producer_claim.claim_producer` | registered user | `tests/test_meh3258_review_conflicts.py:191` | `tests/test_producer_claim.py:356` | — | 9 |
 | 50 | POST | `/admin/producers/{producer_id}/products` | `producer_claim.admin_create_draft_product` | admin | `tests/test_admin_draft_products.py:57` | `tests/test_admin_draft_products.py:83` | — | 5 |
 | 51 | DELETE | `/admin/producers/{producer_id}/products/{product_id}` | `producer_claim.admin_delete_draft_product` | admin | `tests/test_admin_draft_products.py:150` | `tests/test_admin_draft_products.py:181` | — | 6 |
 | 52 | POST | `/admin/producers/{producer_id}/preview-link` | `producer_draft_preview.create_preview_link` | admin | `tests/test_producer_draft_preview.py:86` | `tests/test_producer_draft_preview.py:97` | — | 5 |
@@ -247,7 +247,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 172 | POST | `/admin/recipes/{recipe_id}/request-changes` | `admin_recipes.request_recipe_changes` | admin | `tests/test_indexnow.py:535` | GAP | — | 11 |
 | 173 | POST | `/admin/recipes/{recipe_id}/reject` | `admin_recipes.reject_recipe` | admin | `tests/test_indexnow.py:535` | `tests/test_expansion_admin_authz.py:40` (table row) | — | 9 |
 | 174 | GET | `/producers/{producer_id}/reviews` | `reviews.list_reviews_nested` | anonymous (optional auth) | `tests/test_api.py:2699` | n/a | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:90` | 1 |
-| 175 | GET | `/reviews` | `reviews.list_reviews` | anonymous (optional auth) | `tests/test_organizer_kind.py:437` | n/a | — | 1 |
+| 175 | GET | `/reviews` | `reviews.list_reviews` | anonymous (optional auth) | `tests/test_meh3258_review_conflicts.py:84` | n/a | — | 1 |
 | 176 | POST | `/producers/{producer_id}/reviews` | `reviews.create_review_nested` | registered user | `tests/test_api.py:2724` | `tests/test_api.py:2716` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:90` | 8 |
 | 177 | DELETE | `/reviews/{review_id}` | `reviews.delete_review` | registered user | `tests/test_meh2348_review_hide_sticky.py:84` | GAP | — | 9 |
 | 178 | PUT | `/reviews/{review_id}/reply` | `reviews.set_review_reply` | registered user | `tests/test_meh2381_review_edited_after_hidden.py:174` | GAP | — | 10 |
@@ -552,7 +552,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 6 | create / upsert-edit | reviews.py:538 | `POST /producers/{producer_id}/reviews` | `tests/test_api.py:2724` | — |
 | 6 | edit via race branch | reviews.py:577 | `POST /producers/{producer_id}/reviews` | `tests/test_api.py:2724` | — |
 | 6 | hide | reviews.py:708 | `PUT /reviews/{review_id}/reply` | `tests/test_meh2381_review_edited_after_hidden.py:174` | — |
-| 6 | unhide | reviews.py:731 | `PUT /reviews/{review_id}/reply` | `tests/test_meh2381_review_edited_after_hidden.py:174` | nearest function — audit line may have drifted |
+| 6 | unhide | reviews.py:731 | `PUT /admin/reviews/{review_id}/hide`, `GET /admin/reviews` | `tests/test_meh2381_review_edited_after_hidden.py:96` | nearest function — audit line may have drifted |
 | 6 | delete (owner/admin) | reviews.py:581 | `POST /producers/{producer_id}/reviews` | `tests/test_api.py:2724` | a delete transition reached no DELETE handler — audit line may be off |
 | 6 | user account deletion (DB cascade) | user_deletion.py:112 | — | weak `tests/test_meh3252_pii_after_account_delete.py:122` (names delete_user_and_data) | — |
 | 7 | §7 — whole section | whatsapp_webhook.py:588 | `POST /webhook/whatsapp` | `tests/test_meh_509_pr2c_webhook.py:247` | — |
