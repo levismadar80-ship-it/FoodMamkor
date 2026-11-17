@@ -84,8 +84,9 @@ const CHAT_LAUNCHER_NAME = new RegExp(
  *
  *           The data-dependent rows INTERCEPT four client endpoints —
  *           `GET /api/producers` (incl. its `/{id}` form for recently-viewed),
- *           `GET /api/categories`, `GET /api/stats`, `GET /api/search` +
- *           `/api/search/trending`.
+ *           `GET /api/categories`, `GET /api/stats`, `GET /api/search` (+ a
+ *           `/api/search/trending` stub kept only to prove it is never asked
+ *           for, MEH-3257).
  *
  *           ⚠️ `page.route` CANNOT REACH THE FIRST PAINT, and this paragraph
  *           used to claim the opposite ("the intercept is what keeps … all of
@@ -2319,22 +2320,23 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     ).toEqual([]);
   });
 
-  // MT:604:3 — tile preconnect, crossOrigin="anonymous". MEH-3077: one host
-  //   (tile.openstreetmap.org); the a/b/c shards are deprecated by OSM policy.
-  test("the document head preconnects to the single OSM tile host", async ({ page }) => {
+  // MT:604:3 — REVERSED by MEH-2861. The head used to preconnect to the OSM
+  //   tile host on every page for a mini-map that is now ~2,700px down and
+  //   loads on scroll (MEH-2747, MEH-2850), so the handshake expired unused.
+  //   The Cloudinary preconnect is the control: the query reads real links.
+  test("the document head does not preconnect to the OSM tile host", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await gotoHome(page);
-    const tiles = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('link[rel="preconnect"]'))
-        .map((l) => ({ href: (l as HTMLLinkElement).href, cors: (l as HTMLLinkElement).crossOrigin }))
-        .filter((l) => /tile\.openstreetmap\.org/.test(l.href)),
+    const hrefs = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('link[rel="preconnect"]')).map(
+        (l) => (l as HTMLLinkElement).href,
+      ),
     );
-    expect(
-      tiles.map((t) => t.href).sort(),
-      "exactly the one tile host — no a/b/c shard",
-    ).toEqual(["https://tile.openstreetmap.org/"]);
-    for (const t of tiles) expect(t.cors).toBe("anonymous");
+    expect(hrefs, "control: the head's preconnect links are being read").toContain(
+      "https://res.cloudinary.com/",
+    );
+    expect(hrefs.filter((h) => /openstreetmap\.org/.test(h))).toEqual([]);
   });
 
   // MT:607:2 — the trust band reserves its slot with a pulsing skeleton while
@@ -2690,20 +2692,21 @@ test.describe("manual › smart search dropdown (MEH-99)", () => {
     await expect(page).toHaveURL(new RegExp(`/producers\\?q=${encodeURIComponent(stored[0])}`));
   });
 
-  // MT:MEH-99:2 — with no recent searches the same dropdown shows trending,
-  //   fetched from /search/trending.
-  test("with no recent searches the dropdown shows trending items", async ({ page }) => {
-    const trending = ["מחמצת", "עיזים"];
+  // MT:MEH-99:2 — MEH-3257 (Sapir 14/11): «חיפושים פופולריים» is gone.
+  //   With no recent searches, focusing the empty field opens nothing and asks
+  //   the server for nothing. The stub still answers /search/trending with
+  //   rows, so a fetch that came back would render them and fail the count.
+  test("with no recent searches the empty field opens no dropdown", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { trending });
+    await mockApi(page, PRODUCERS, { trending: ["מחמצת", "עיזים"] });
     await gotoHome(page);
+    const trendingCall = page
+      .waitForRequest(/\/api\/search\/trending/, { timeout: 1500 })
+      .then(() => "requested", () => "none");
     await heroSearch(page).click();
-    const history = scope(page).getByTestId("hero-search-history");
-    await expect(history).toBeVisible(FIRST_PAINT);
-    await expect(history).toContainText(HERO_SEARCH.trending_heading);
-    await expect(history.getByRole("option")).toHaveCount(trending.length);
-    await expect(history).toContainText(trending[0]);
+    expect(await trendingCall, "no /search/trending request after focus").toBe("none");
+    await expect(scope(page).getByTestId("hero-search-history")).toHaveCount(0);
   });
 
   // MT:MEH-99:3 + MT:MEH-99:8 — one character fires NOTHING; two characters fire

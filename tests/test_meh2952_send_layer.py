@@ -1289,6 +1289,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_participant_expired",
         "_send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3287)"),
+    (
+        "services/rescue_business_emails.py",
+        "send_business_reservation_email",
+        "send_email",
+    ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",
