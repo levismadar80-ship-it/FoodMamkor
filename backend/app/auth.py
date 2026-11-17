@@ -7,7 +7,7 @@ from uuid import UUID
 
 import bcrypt
 import structlog
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.services import admin_audit
 from app.utils.clock import utc_now
 
 # MEH-648: rounds=12 pinned explicitly. Matches the passlib default at time
@@ -521,11 +522,19 @@ def get_current_user_lenient(
         return None
 
 
-def require_admin(user: User = Depends(get_current_user)) -> User:
+def require_admin(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(get_current_user),
+) -> User:
     if user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
         )
+    # MEH-3306: the audit row is scheduled HERE, in the one gate every admin
+    # route passes, so a route cannot be an admin route and skip the log.
+    # DO NOT move this into individual routes or a router-level dependency.
+    admin_audit.schedule(request, background_tasks, user)
     return user
 
 

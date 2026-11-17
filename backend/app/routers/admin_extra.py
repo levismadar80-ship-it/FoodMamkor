@@ -11,12 +11,14 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
+from app.models.admin_ops import AdminAuditLog
+from app.services import admin_audit
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
@@ -209,6 +211,7 @@ def update_user_role(
         )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
+    admin_audit.note(user, before={"role": target.role}, after={"role": data.role})
     target.role = data.role  # type: ignore[assignment]
     db.commit()
     return {"detail": "Role updated", "role": target.role}
@@ -226,8 +229,43 @@ def block_user(
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
     target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
+    admin_audit.note(user, after={"is_blocked": bool(target.is_blocked)})
     db.commit()
     return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
+
+
+@router.get("/audit-log", response_model=None)
+def list_audit_log(
+    limit: int = Query(50, ge=1, le=200),
+    before: datetime | None = None,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3306: the admin audit log, newest first. `before` pages back by
+    `created_at`. The stored IP is not returned: it is kept for an
+    investigation, not for a list."""
+    query = db.query(AdminAuditLog)
+    if before is not None:
+        query = query.filter(AdminAuditLog.created_at < before)
+    rows = (
+        query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": str(r.id),
+                "actor_id": str(r.actor_id),
+                "action": r.action,
+                "target_type": r.target_type,
+                "target_id": r.target_id,
+                "details": r.details,
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.delete("/users/{user_id}", response_model=None)
