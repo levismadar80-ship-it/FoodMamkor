@@ -51,7 +51,7 @@ def test_eleventh_attempt_on_one_email_is_429_from_rotating_ips(
     assert statuses[10] == 429
 
 
-def test_email_case_and_whitespace_share_one_bucket(client, db, rotating_ip):
+def test_email_case_variants_share_one_bucket(client, db, rotating_ip):
     make_user(db, email="victim@test.com", password=SAFE_PASSWORD)
     variants = ["victim@test.com", "VICTIM@test.com", "Victim@Test.com"]
     statuses = [_login(client, rotating_ip, variants[i % 3]) for i in range(11)]

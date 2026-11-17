@@ -282,7 +282,7 @@ Staging carries three QA users, and their passwords are in every session's env:
 
 Log in inside the same Playwright context (fill `/login`, or POST
 `/api/auth/login` as `frontend/e2e/global-setup.ts` does); a token fetched with
-curl fails the fingerprint check. `/auth/login` is 5/minute per IP — one login
+curl fails the fingerprint check. `/auth/login` is 5/minute per IP and 10/15 minutes per email (MEH-3372) — one login
 per role per run. Never write "I could not see the dashboard / admin": check it
 on the demo account, or say which step failed. If a login is refused, that is a
 finding to report (the E2E run logs in with the same three on every staging

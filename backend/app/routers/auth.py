@@ -1280,8 +1280,11 @@ def register_producer_oauth(
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
 # MEH-3372: a soft per-email ceiling next to the per-IP one — a password
 # guessed for ONE account from many IPs never trips the IP bucket. No lockout
-# and no state on the account: a 429 that clears by itself, so the most a
-# third party can do to someone else's address is 15 minutes.
+# and no state on the account: a 429 that clears by itself.
+# KNOWN COST (accepted in rulings 17/11 §א5, option ב): every attempt counts,
+# right password or wrong, so anyone who knows an address can keep its
+# password login answering 429 by sending 10 attempts each window. Open
+# sessions (refresh cookie) and Google / Apple sign-in are not affected.
 @limiter.limit("10/15 minutes", key_func=email_from_body)
 def login(
     request: Request,
