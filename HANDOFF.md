@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-17 — קבוצות רכישה והרשמה: שני תיקונים מוזגו, אחד מחכה לקופי
+
+**שורה אחת:** ‏#4625 (קבוצת רכישה שעבר המועד שלה בלי להגיע ליעד נסגרת כל בוקר ב-06:00 UTC, והמשתתפות מקבלות מייל) ו-#4624 (הרשמה לאירוע או לסדנה נסגרת כשהם כבר התחילו היום) מוזגו ל-staging. ‏#4632 הוא טיוטה. **שום דבר לא שוחרר ל-production.**
+
+**מה צריך לדעת לפני עבודה:**
+- אחרי #4625, דף של קבוצה שנסגרה כי עבר המועד עדיין מציג «קבוצת הרכישה בוטלה». ‏#4632 מחליף את זה ב«המועד האחרון חלף», ולכן הנוסח יתוקן רק כשהוא ימוזג.
+- ב-E2E של שני ה-PR-ים היה טסט פלאקי אחד בכל אחד, בספקים שה-PR-ים לא נוגעים בהם: ‏`14-language-toggle.spec.ts:93` נוסף לכרטיס MEH-3156, ו-`footer-nav-clearance.spec.ts:186` לכרטיס MEH-3322. לא נפתחו להם כרטיסים חדשים, כי ב-Linear נגמרה מכסת ה-issues של החבילה החינמית.
+
+**‏לא עכשיו / מחכה לספיר:** ‏#4632 (MEH-3289, קבוצה שהגיעה ליעד ממשיכה לקבל משתתפות עד המקסימום) — שלוש מחרוזות מסך שלא מופיעות בכרטיס: `group_buys.list.status_hint_funded` (שינוי), `group_buys.detail.full` ו-`group_buys.{card,detail}.progress_joined` (חדשות). הנוסח המוצע בעברית ובאנגלית נמצא בתגובה בכרטיס. אחרי אישור: לסנכרן עם staging, להוסיף `run-e2e`, להעביר ל-ready ולמזג.
+
+---
+
 ## 2026-11-17 — אצווה של 15 משימות: שומרי CI, ‏N+1, מסגרת מייל, ‏SEO ודוחות
 
 **שורה אחת:** 13 PR-ים מוזגו ל-staging (#4686, #4687, #4688, #4689, #4690, #4691, #4692, #4693, #4694, #4695, #4696, #4698, #4699). **שום דבר לא שוחרר ל-production.**
