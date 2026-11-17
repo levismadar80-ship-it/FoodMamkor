@@ -34,7 +34,7 @@
 | «בית אחד לכל עובדה» | **יש** כ-ADR | [ADR-035](../decisions/ADR-035-one-home-per-fact.md) |
 | תאריך ריענון | **יש, אזהרה בלבד**, על 3 מסמכים | `scripts/checks/doc-freshness-guard.sh:4-7` (CONTEXT, BRAND, PROJECT_INSTRUCTIONS; 120 יום) |
 | CODEOWNERS | **יש, בעלים אחד לכל דבר** | `.github/CODEOWNERS:3` (`* @levismadar80-ship-it`), ‏`:6-7` (`.github/`, ‏`.claude/`) |
-| קבצי הנחיות לסוכן | **יש, 5 CLAUDE.md** + 16 קובצי `.claude/rules/` | `./CLAUDE.md`, `frontend/components/CLAUDE.md`, `frontend/e2e/CLAUDE.md`, `tests/CLAUDE.md`, `backend/app/routers/CLAUDE.md` |
+| קבצי הנחיות לסוכן | **יש, 5 CLAUDE.md** + 17 קובצי `.claude/rules/` | `./CLAUDE.md`, `frontend/components/CLAUDE.md`, `frontend/e2e/CLAUDE.md`, `tests/CLAUDE.md`, `backend/app/routers/CLAUDE.md` |
 | מפת ריפו | **יש** | `docs/ARCHITECTURE.md` (79 שורות) |
 | דיאגרמות | **יש, 3** | `.ai/diagrams/{api-routes,auth-flow,db-schema}.md` |
 | מסמך מהקוד | **חלקי**: מניפסט OpenAPI נבדק ב-CI; ‏`docs/DATA.md` נכתב ביד | `scripts/checks/openapi-codegen-drift-guard.sh`, ‏`scripts/checks/api-docs-route-guard.sh` |

@@ -14,7 +14,7 @@
 |---|---|---|
 | זמינות (`accepting_orders` / `on_vacation`) | `backend/app/models/models.py:440-446` | בית העסק בלוח הבקרה; חופשה מסתיימת לבד (`vacation_until`, ‏`:447`) |
 | שעות פתיחה — טקסט חופשי | `models.py:448` | בית העסק |
-| חלון קבלת הזמנות + חריגים לפי תאריך | `models.py:466` (`order_window`), ‏`:492` (`special_hours`) | בית העסק |
+| חלון קבלת הזמנות + חריגים לפי תאריך | `models.py:467` (`order_window`), ‏`:492` (`special_hours`) | בית העסק |
 | מלאי למוצר | `backend/app/models/catalog.py:116` (`in_stock`) | בית העסק |
 | «עודכן לאחרונה» — **תאריך אחד לכל הדף** | `models.py:538` (`updated_at`, ‏NULL כן) · מוצג בשורת ההערות: `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx:869-872` | כל עריכה |
 | דירוג גוגל | `backend/app/routers/google_rating.py:1-25` | נשלף חי בכל בקשה, **לא נשמר** (תנאי גוגל) |

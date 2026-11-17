@@ -11,7 +11,7 @@
 
 | שכבה | מה | חוסם מיזוג? | ראיה |
 |---|---|---|---|
-| CI | ‏~20 jobs: build, pytest (shards), vitest, mypy, tsc, knip, lint, env-drift, ‏Repo guards (68 סקריפטים) | כן, דרך `CI gate` + `Deploy gate` | `.github/workflows/pr-checks.yml:53-1081`; ‏`.claude/rules/testing.md` (MEH-716) |
+| CI | ‏~20 jobs: build, pytest (shards), vitest, mypy, tsc, knip, lint, env-drift, ‏Repo guards (41 סקריפטי shell ב-`scripts/checks/`) | כן, דרך `CI gate` + `Deploy gate` | `.github/workflows/pr-checks.yml:53-1081`; ‏`.claude/rules/testing.md` (MEH-716) |
 | תלויות | pip-audit ב-PR (רק כשמניפסט השתנה) | כן | `pr-checks.yml:1058-1078, 1210-1218` |
 | תלויות | npm audit + pip-audit שבועי | לא | `.github/workflows/dependency-audit.yml:5-6` |
 | ריוויו AI ב-CI | Claude (Sonnet) עם `continue-on-error`, **כבוי מ-8/11** | לא | `.github/workflows/claude-review.yml:46-56, 154`; ‏`workflow.md` |
