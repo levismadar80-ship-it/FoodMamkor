@@ -164,15 +164,23 @@ jobs:
     # (measured 4–6/11/2026) and were mostly cancelled unseen. A labeled
     # event for any other label does not start it. Push to staging and
     # workflow_dispatch are unchanged.
+    #
+    # MEH-2956: the PATH decides, not the label. A PR touching the frontend or
+    # backend filter paths above runs the suite whether or not anyone
+    # remembered the label; `run-e2e` stays as a manual override for a PR the
+    # paths miss (e.g. a workflow-only change). MEH-2779's label gate is
+    # replaced here, not weakened: every PR the paths catch now runs MORE
+    # often, not less. The `labeled` guard is kept so adding some OTHER label
+    # to a PR does not start a fresh suite. schedule/workflow_dispatch are
+    # unchanged.
     if: |
       (needs.filter.outputs.frontend == 'true' ||
        (github.event_name == 'pull_request' && needs.filter.outputs.backend == 'true') ||
+       contains(github.event.pull_request.labels.*.name, 'run-e2e') ||
        github.event_name == 'workflow_dispatch' ||
        github.event_name == 'schedule') &&
       github.actor != 'dependabot[bot]' &&
-      (github.event_name != 'pull_request' ||
-       (contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
-        (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')))
+      (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')
 
     # MEH-2973: PR runs test against a throwaway backend on localhost:8080,
     # seeded from the same scripts as staging; every other event keeps Railway
@@ -1001,11 +1009,36 @@ jobs:
         env:
           R_FILTER: ${{ needs.filter.result }}
           R_E2E: ${{ needs.e2e.result }}
+          FRONTEND_TOUCHED: ${{ needs.filter.outputs.frontend }}
+          # MEH-2956: the backend output only starts the suite on a PR (push
+          # runs test Railway staging and ignore it, MEH-2973), so it only
+          # makes `skipped` a failure on a PR.
+          BACKEND_TOUCHED: ${{ github.event_name == 'pull_request' && needs.filter.outputs.backend || 'false' }}
+          # A labeled event for another label skips the suite by design (the
+          # job's `labeled` guard); that run must not turn the gate red.
+          OTHER_LABEL: ${{ github.event.action == 'labeled' && github.event.label.name != 'run-e2e' }}
+          # Dependabot is excluded from the suite by the job's own `if:`.
+          IS_DEPENDABOT: ${{ github.actor == 'dependabot[bot]' }}
         run: |
           set -euo pipefail
           fail=0
           ok() { case "$1" in success|skipped) return 0 ;; *) return 1 ;; esac; }
+          strict_ok() { case "$1" in success) return 0 ;; *) return 1 ;; esac; }
           check() { if ok "$2"; then echo "  OK  $1: $2"; else echo "  FAIL $1: $2"; fail=1; fi; }
+          check_ran() {
+            if strict_ok "$2"; then
+              echo "  OK  $1: $2"
+            elif [ "$2" = "cancelled" ]; then
+              # MEH-2956: a cancelled job reached NO VERDICT. It is not a test
+              # failure and must not be reported as one — but it is not a pass
+              # either, so the gate still blocks.
+              echo "  NO VERDICT  $1: cancelled (suite did not finish — not a test failure)"
+              fail=1
+            else
+              echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"
+              fail=1
+            fi
+          }
 
           # Guard the paths-filter result first — mirrors ci-gate's R_CHANGES
           # guard. If the filter itself broke we can't trust the e2e skip
@@ -1015,10 +1048,17 @@ jobs:
             exit 1
           fi
 
-          # success = mobile Pixel 5 + VRT specs green.
-          # skipped  = docs-only PR (paths-filter) or dependabot — pass.
-          # failure/cancelled = block.
-          check "Playwright E2E (Vercel preview)" "$R_E2E"
+          # MEH-1742: a skip with no known cause is not the same as a skip
+          # paths-filter intended. Only "nothing this suite covers was touched"
+          # is a legitimate reason to accept `skipped`; every other case, `e2e`
+          # was supposed to run and must show `success`.
+          # MEH-2956 adds backend/app (and the rest of the backend filter) on PRs.
+          echo "Touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED other_label=$OTHER_LABEL dependabot=$IS_DEPENDABOT"
+          if [ "$OTHER_LABEL" != "true" ] && [ "$IS_DEPENDABOT" != "true" ] && { [ "$FRONTEND_TOUCHED" = "true" ] || [ "$BACKEND_TOUCHED" = "true" ]; }; then
+            check_ran "Playwright E2E (Vercel preview)" "$R_E2E"
+          else
+            check "Playwright E2E (Vercel preview)" "$R_E2E"
+          fi
 
           if [ "$fail" -ne 0 ]; then
             echo "::error::E2E gate failed — Playwright E2E (mobile Pixel 5 + VRT) did not pass."
