@@ -50,13 +50,30 @@ def test_only_html_returns_none():
     assert sanitize_text("<script></script>") is None
 
 
-def test_html_entities_decoded():
-    # bleach 6.3.0 with tags=[] does NOT decode HTML entities — they
-    # remain encoded in the output. This is XSS-safe (encoded entities
-    # render as literal text in HTML; React encodes them again on output).
-    # Behavior lock per MEH-329 plan: if a bleach upgrade changes this,
-    # confirm the new output is still XSS-safe before updating.
-    assert sanitize_text("&lt;b&gt;bold&lt;/b&gt;") == "&lt;b&gt;bold&lt;/b&gt;"
+def test_entity_smuggled_tags_are_stripped_not_revived():
+    # MEH-3317: output is plain text now, so entities are decoded — and a tag
+    # written as entities must not come back to life after decoding. The loop
+    # strips it on the next pass.
+    assert sanitize_text("&lt;b&gt;bold&lt;/b&gt;") == "bold"
+    assert sanitize_text("&lt;img src=x onerror=alert(1)&gt;") is None
+    assert "<" not in (sanitize_text("&amp;lt;script&amp;gt;x") or "")
+
+
+def test_ampersand_and_angle_brackets_are_stored_as_typed():
+    # MEH-3317: «&» was stored as «&amp;» and shown that way on the site.
+    assert sanitize_text("קפה & מאפה") == "קפה & מאפה"
+    assert sanitize_text("Crust & Crumb") == "Crust & Crumb"
+    assert sanitize_text("5 < 6 > 4") == "5 < 6 > 4"
+
+
+def test_tags_still_stripped_with_text_around_them():
+    assert sanitize_text("<b>x</b> & co") == "x & co"
+
+
+def test_max_length_counts_plain_characters():
+    # 500 bare "<" used to become 2000 chars of "&lt;"; now each is one char.
+    out = sanitize_text("<" * 500 + " a", max_length=500)
+    assert out is not None and len(out) <= 500
 
 
 def test_strips_script_close_tag():
