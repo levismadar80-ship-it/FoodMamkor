@@ -92,22 +92,47 @@ class TestExtractPublicId:
         url = "https://res.cloudinary.com/mehamakor/image/upload/v1/mehamakor/abc.jpg?_a=ATAB"
         assert extract_public_id(url) == "mehamakor/abc"
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "Signed Cloudinary URLs (s--<hash>--/...) are not currently "
-            "parsed by extract_public_id. We don't emit signed URLs today, "
-            "but if Cloudinary signing is ever enabled, the cleanup script "
-            "will silently miss orphans. Remove this xfail when signed-URL "
-            "parsing is implemented."
-        ),
-    )
     def test_signed_url_parsing(self):
+        """MEH-3319: the signature segment Cloudinary puts straight after
+        `upload/` is dropped like a transformation or a version segment.
+        Held as xfail(strict=True) with no card until MEH-3319."""
         url = (
             "https://res.cloudinary.com/mehamakor/image/upload/"
             "s--abc123def--/v1/mehamakor/avatars/user_abc.jpg"
         )
         assert extract_public_id(url) == "mehamakor/avatars/user_abc"
+
+    def test_signed_url_with_transformations_and_no_version(self):
+        """MEH-3319: signature first, then chained transforms, no version —
+        the other shape Cloudinary emits. The `w_400,h_400` and `c_fill`
+        groups were already dropped; only the signature was not."""
+        url = (
+            "https://res.cloudinary.com/mehamakor/image/upload/"
+            "s--Ab9_x-Z1--/w_400,h_400/c_fill/mehamakor/avatars/user_abc.webp"
+        )
+        assert extract_public_id(url) == "mehamakor/avatars/user_abc"
+
+    def test_signed_url_in_the_reserved_namespace_is_still_rejected(self):
+        """MEH-3319 must not open a hole in the MEH-375 reject list: once the
+        signature is parsed away, the reserved prefix has to still match."""
+        url = (
+            "https://res.cloudinary.com/mehamakor/image/upload/"
+            "s--abc123def--/v1/mehamakor/producers/42/story-card.jpg"
+        )
+        assert extract_public_id(url) is None
+        assert (
+            extract_public_id(url, bypass_reserved=True)
+            == "mehamakor/producers/42/story-card"
+        )
+
+    def test_a_public_id_that_merely_starts_with_s_is_not_a_signature(self):
+        """MEH-3319: the signature pattern is anchored on both ends and needs
+        BOTH `s--` and the trailing `--`, so a real folder is never eaten."""
+        url = (
+            "https://res.cloudinary.com/mehamakor/image/upload/"
+            "v1/s--not-a-signature/leaf.jpg"
+        )
+        assert extract_public_id(url) == "s--not-a-signature/leaf"
 
 
 # ---------- destroy_image ----------
