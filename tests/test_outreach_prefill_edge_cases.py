@@ -116,34 +116,25 @@ class TestRealSheetRoundTrip:
             assert r.status_code == 201, f"{name!r} -> {r.status_code} {r.text[:200]}"
             assert r.json()["name"] == name, f"{name!r} did not round-trip"
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="FINDING-1: sanitize_text HTML-escapes '&', so 'Crust & Crumb' "
-        "is STORED as 'Crust &amp; Crumb' and renders literally in the admin "
-        "table and in the prefilled registration input.",
-    )
+    # FINDING-1 fixed by MEH-3317 (was xfail(strict=True)).
     def test_ampersand_in_name_round_trips(self, client, db):
         h = auth_header(_admin(db, "rt-amp@example.com"))
         r = _post(client, h, name="Crust & Crumb")
         assert r.status_code == 201
         assert r.json()["name"] == "Crust & Crumb"
 
-    def test_ampersand_current_behaviour_is_double_escaped(self, client, db):
-        """The other half of FINDING-1, asserted positively so the file records
-        what actually happens today rather than only that it is wrong.
-
-        Also proves the escape survives all the way to the PUBLIC prefill
-        response — i.e. the business owner sees `&amp;` in her own name.
-        """
+    def test_ampersand_round_trips_to_the_public_prefill(self, client, db):
+        """MEH-3317: the business owner sees her own name as typed, not
+        `&amp;`, in the prefilled registration form too."""
         h = auth_header(_admin(db, "rt-amp2@example.com"))
         lead = _post(client, h, name="Crust & Crumb").json()
-        assert lead["name"] == "Crust &amp; Crumb"
+        assert lead["name"] == "Crust & Crumb"
 
         token = client.post(
             f"/admin/outreach/{lead['id']}/prefill-token", headers=h
         ).json()["prefill_token"]
         assert client.get(f"/register/producer/prefill/{token}").json()["name"] == (
-            "Crust &amp; Crumb"
+            "Crust & Crumb"
         )
 
     def test_real_phones_round_trip_to_separator_stripped_form(self, client, db):
