@@ -207,23 +207,29 @@ class TestWebsiteScheme:
             "קטלוג ב-Drive (קישור בביו)",
         ],
     )
-    @pytest.mark.xfail(
-        strict=True,
-        reason="FINDING-2: 4 of the 5 real website formats in the sheet carry "
-        "no scheme (or are prose), and each 422s the whole lead. The admin "
-        "cannot save a row as it appears in the spreadsheet.",
-    )
+    # FINDING-2 fixed by MEH-3318 (was xfail(strict=True)).
     def test_scheme_less_website_from_the_sheet_is_accepted(self, client, db, raw):
         h = auth_header(_admin(db, f"web-{abs(hash(raw)) % 10**6}@example.com"))
         assert _post(client, h, name=f"אתר {raw[:12]}", website=raw).status_code == 201
 
-    def test_scheme_less_website_currently_422s_and_never_500s(self, client, db):
-        """The positive half of FINDING-2: it is a clean 422, not a crash, and
-        the rejection names the website field."""
-        h = auth_header(_admin(db, "web-422@example.com"))
-        r = _post(client, h, name="חביביאן", website="havivian.co.il")
-        assert r.status_code == 422
-        assert r.json()["detail"][0]["loc"] == ["body", "website"]
+    @pytest.mark.parametrize(
+        "raw,stored",
+        [
+            ("havivian.co.il", "https://havivian.co.il"),
+            ("www.example.co.il", "https://www.example.co.il"),
+            ("machine.co.il/show.asp?table=users&id=17703",
+             "https://machine.co.il/show.asp?table=users&id=17703"),
+            ("קטלוג ב-Drive (קישור בביו)", None),
+            ("meshekfine.co.il · mypips.app/finerotem", None),
+        ],
+    )
+    def test_scheme_less_website_is_normalised_or_dropped(self, client, db, raw, stored):
+        """MEH-3318: a bare domain gains https://; prose is dropped and the
+        lead is still saved."""
+        h = auth_header(_admin(db, f"web-n-{abs(hash(raw)) % 10**6}@example.com"))
+        r = _post(client, h, name=f"אתר {raw[:12]}", website=raw)
+        assert r.status_code == 201, r.text
+        assert r.json()["website"] == stored
 
 
 class TestPhoneColumnWidth:

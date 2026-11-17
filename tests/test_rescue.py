@@ -1193,3 +1193,15 @@ class TestBuyerCancelHardening:
         self._reserve(client, offer, buyer)
         assert "אפשר לבטל בחינם עד" in sent[0]["body"]
         assert "לבטל את השריון" in sent[0]["html"]
+
+
+# MEH-2867: «הסל כבר נמסר ב-HH:MM» prints the hand-over on the Israel clock.
+# handed_at is naive UTC (utc_now()); a bare %H:%M showed it 2h (3h in summer)
+# early. Pure function, fixed instants — no wall clock involved.
+def test_handed_time_is_printed_on_the_israel_clock_in_winter_and_summer():
+    from datetime import datetime as _dt
+
+    from app.routers.rescue import _israel_hhmm
+
+    assert _israel_hhmm(_dt(2026, 11, 17, 16, 42)) == "18:42"  # IST, UTC+2
+    assert _israel_hhmm(_dt(2026, 7, 14, 16, 42)) == "19:42"  # IDT, UTC+3

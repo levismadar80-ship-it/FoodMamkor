@@ -41,7 +41,7 @@ from typing import Any
 import logging
 import math
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import (
@@ -112,7 +112,7 @@ from app.services.rescue_no_show import (  # MEH-3226
     active_no_show_counts,
     queue_no_show_email,
 )
-from app.utils.clock import israel_today, utc_now
+from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -931,12 +931,19 @@ def create_order(
     }
 
 
+def _israel_hhmm(stamp: datetime) -> str:
+    """MEH-2867: `handed_at` is naive UTC (utc_now()), so a bare `%H:%M` showed
+    the hand-over two hours early (three in summer). Read it as UTC and print
+    it on the Israel clock."""
+    return stamp.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ).strftime("%H:%M")
+
+
 def _refuse_unless_reserved_for_handover(order: RescueOrder) -> None:
     """409 unless the order is still `reserved`; a repeat tap names the time."""
     if order.status == "handed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"הסל כבר נמסר ב-{order.handed_at:%H:%M}"
+            detail=f"הסל כבר נמסר ב-{_israel_hhmm(order.handed_at)}"
             if order.handed_at
             else "הסל כבר נמסר",
         )
