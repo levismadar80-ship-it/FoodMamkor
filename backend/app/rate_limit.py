@@ -192,14 +192,33 @@ def _canonical_email(raw: str) -> str:
     # DO NOT key on the raw body string — see above.
     stripped = raw.strip()
     try:
-        return validate_email(stripped)[1].lower()
+        parsed = validate_email(stripped)[1].lower()
     except Exception:  # noqa: BLE001 — any parser failure: fall back, never raise in a key_func
         return stripped.lower()
+    return _one_mailbox(parsed)
+
+
+_GMAIL_DOMAINS = frozenset({"gmail.com", "googlemail.com"})
+
+
+def _one_mailbox(address: str) -> str:
+    """Spellings that are different addresses to the parser and one inbox to
+    the person: a `+tag`, and dots in a Gmail local part. Merged in the KEY
+    only — the stored and mailed address is untouched — so `v+1@`, `v+2@` …
+    cannot each open a bucket and all land in one inbox. Merging can only make
+    a bucket fuller, never emptier."""
+    local, _, domain = address.rpartition("@")
+    local = local.split("+", 1)[0]
+    if domain in _GMAIL_DOMAINS:
+        local = local.replace(".", "")
+        domain = "gmail.com"
+    return f"{local}@{domain}" if local else address
 
 
 def email_from_body(request: Request) -> str:
     """MEH-306: per-email rate-limit key for /auth/forgot-password,
-    /auth/register, /auth/register/producer.
+    /auth/register, /auth/register/producer, and (MEH-3373) the account-less
+    sign-up routes in routers/registrations.py.
 
     FastAPI parses the JSON body to validate against the Pydantic model
     BEFORE slowapi's @limiter.limit wrapper invokes key_func, so by the

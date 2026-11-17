@@ -10,8 +10,12 @@ per-IP bucket cannot be what answers 429.
 The second half pins what the confirmation carries: nothing the sender typed.
 """
 
+import json
+from types import SimpleNamespace
+
 import pytest
 
+from app.rate_limit import email_from_body
 from app.services import registration_emails
 from test_meh2763_registrations import _event, _experience, _owner, _signup, sent  # noqa: F401
 
@@ -24,6 +28,13 @@ def rotating_ip(monkeypatch):
     monkeypatch.delenv("EDGE_PROXY_SECRET", raising=False)
     counter = iter(range(1, 250))
     return lambda: {"X-Real-IP": f"203.0.113.{next(counter)}"}
+
+
+def _key(email):
+    """The bucket key for a body carrying this address, via the public key
+    function (it exists before and after the fix)."""
+    body = json.dumps({"email": email}).encode()
+    return email_from_body(SimpleNamespace(_body=body, url=SimpleNamespace(path="/t")))
 
 
 def _post(client, headers, path, email=VICTIM, **kw):
@@ -110,18 +121,7 @@ def test_another_spelling_of_the_same_address_is_the_same_bucket(spelling):
     """Every spelling pydantic resolves to one address must be one key.
     Asserted on the public key function (it exists before and after the fix)
     with the REAL parser deciding what counts as the same address."""
-    import json
-    from types import SimpleNamespace
-
     from pydantic import validate_email
-
-    from app.rate_limit import email_from_body
-
-    def key(email):
-        body = json.dumps({"email": email}).encode()
-        return email_from_body(
-            SimpleNamespace(_body=body, url=SimpleNamespace(path="/t"))
-        )
 
     try:
         resolved = validate_email(spelling)[1]
@@ -130,7 +130,28 @@ def test_another_spelling_of_the_same_address_is_the_same_bucket(spelling):
     assert resolved.lower() == "victim@example.com", (
         "control: the spelling is the same address"
     )
-    assert key(spelling) == key("victim@example.com")
+    assert _key(spelling) == _key("victim@example.com")
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    [
+        "victim+1@gmail.com",
+        "victim+promo@gmail.com",
+        "v.i.c.tim@gmail.com",
+        "victim@googlemail.com",
+    ],
+)
+def test_plus_tags_and_gmail_dots_are_one_mailbox(spelling):
+    assert _key(spelling) == _key("victim@gmail.com")
+
+
+def test_one_mailbox_merging_stops_at_what_is_one_inbox():
+    """Controls: dots matter outside Gmail, and another person is another key."""
+    assert _key("a.b@example.com") != _key("ab@example.com")
+    assert _key("a+x@example.com") == _key("a@example.com")
+    assert _key("victim@gmail.com") != _key("victim2@gmail.com")
+    assert _key("+tag@example.com") == "+tag@example.com"  # never an empty local part
 
 
 def test_tenth_a_day_passes_and_the_eleventh_is_429(client, db, sent, rotating_ip):
@@ -174,20 +195,13 @@ def test_another_recipient_is_not_affected(client, db, sent, rotating_ip):
 # ---------- what the confirmation carries ----------
 
 
-def test_confirmation_carries_nothing_the_sender_typed(monkeypatch):
-    """The confirmation goes to an address nobody verified. Its dataclass has
-    no field for the sender's name, phone or any note, and the rendered mail
-    is built from the event alone."""
-    out = {}
-    monkeypatch.setattr(
-        registration_emails,
-        "send_email",
-        lambda to, subject, body, html=None, test_cause=False: out.update(
-            to=to, subject=subject, body=body, html=html
-        ),
-    )
+def test_visitor_mail_has_no_field_for_sender_text():
+    """The confirmation goes to an address nobody verified. This pins the
+    dataclass: a new field has to answer whether the SENDER typed it. (Title,
+    place and host name are the item owner's text.) The rendered mail is
+    checked by the test below."""
     fields = set(registration_emails.VisitorEmail.__dataclass_fields__)
-    assert fields == {
+    expected = {
         "title",
         "date_text",
         "time_text",
@@ -195,7 +209,10 @@ def test_confirmation_carries_nothing_the_sender_typed(monkeypatch):
         "host_name",
         "item_url",
         "cancel_url",
-    }, "a new field on the visitor email: is it text the SENDER typed? (MEH-3373)"
+    }
+    assert fields == expected, (
+        "a new field on the visitor email: did the SENDER type it? (MEH-3373)"
+    )
 
 
 def test_signup_name_and_phone_do_not_reach_the_visitor_mail(
