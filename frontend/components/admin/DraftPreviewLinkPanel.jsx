@@ -127,15 +127,16 @@ export default function DraftPreviewLinkPanel({ producerId }) {
         </InlineMessage>
       )}
 
-      <button
+      <Button
         type="button"
+        variant="outlined"
+        size="sm"
         data-testid="draft-preview-link-create"
         onClick={create}
         disabled={busy}
-        className="min-h-touch bg-surface border border-primary text-primary rounded-full px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
       >
         {busy ? t("creating") : t("create")}
-      </button>
+      </Button>
     </section>
   );
 }

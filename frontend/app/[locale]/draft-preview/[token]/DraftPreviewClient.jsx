@@ -31,6 +31,7 @@ import BrandLoader from "@/components/BrandLoader";
  */
 export default function DraftPreviewClient({ token }) {
   const t = useTranslations("draft_preview");
+  const tA11y = useTranslations("a11y");
   // undefined = loading, null = dead link, object = the draft.
   const [producer, setProducer] = useState(undefined);
 
@@ -52,7 +53,7 @@ export default function DraftPreviewClient({ token }) {
   if (producer === undefined) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center" data-testid="draft-preview-loading">
-        <BrandLoader />
+        <BrandLoader label={tA11y("loading")} />
       </div>
     );
   }
