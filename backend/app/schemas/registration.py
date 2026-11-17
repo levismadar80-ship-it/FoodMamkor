@@ -487,6 +487,15 @@ class ProducerClaimLinkOut(BaseModel):
     expires_at: datetime
 
 
+class DraftPreviewLinkOut(BaseModel):
+    """MEH-3377. Its own shape, not ProducerClaimLinkOut: the two links grant
+    different things, and the claim-link inventory test pins that schema to the
+    one route that mints a claim link."""
+
+    url: str
+    expires_at: datetime
+
+
 class ProducerClaimPreviewOut(BaseModel):
     name: str
     city: str | None = None
@@ -519,6 +528,39 @@ class ProducerClaimOut(BaseModel):
 class ProducerClaimNewLinkOut(BaseModel):
     # MEH-3122: always the same body — see request_new_claim_link.
     ok: bool
+
+
+# MEH-3377: «פרסום בהסכמה» for an ownerless draft
+# (routers/producer_draft_preview.py). Same two consent fields, same bounds
+# and same reason as OwnerInviteCreate below: no page goes live on someone's
+# behalf without a recorded written consent.
+class DraftConsentPublishIn(BaseModel):
+    consent_confirmed: bool
+    consent_note: str = Field(min_length=1, max_length=500)
+
+    @field_validator("consent_confirmed")
+    @classmethod
+    def _consent_required(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError(
+                "חובה לאשר שהתקבל אישור מפורש בכתב מבעלי העסק לפני פרסום העמוד"
+            )
+        return v
+
+    @field_validator("consent_note")
+    @classmethod
+    def _note_not_blank(cls, v: str) -> str:
+        # "   " passes min_length and is as useless as "" for an audit trail.
+        stripped = (v or "").strip()
+        if not stripped:
+            raise ValueError("חובה לתעד איך התקבלה ההסכמה")
+        return stripped
+
+
+class DraftConsentPublishOut(BaseModel):
+    producer_id: UUID
+    status: str
+    slug: str | None = None
 
 
 # ---------------------------------------------------------------------------

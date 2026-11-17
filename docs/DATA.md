@@ -1060,6 +1060,29 @@ DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 
                                                      Once she owns the page the products are hers, edited from /producers/me/products only.
 ```
 
+### Draft preview link + publish with recorded consent (`app/routers/producer_draft_preview.py`) — MEH-3377
+
+For a business that has not registered: an admin builds its page as an ownerless DRAFT, shows it to the business before anything is public, and publishes it once the business has agreed in writing. The preview token is read-only and is a different scope from the claim token, so a forwarded preview link cannot take the page over, and a claim link cannot be used to read it here.
+
+The public page is `frontend/app/[locale]/draft-preview/[token]/` (noindex, `referrer: no-referrer`, `force-dynamic`). It renders the regular business page under `PreviewModeProvider` with a banner that says the page is not on the site yet. `middleware.js` lists `/draft-preview/:path*` because the token has dots.
+
+```
+POST   /admin/producers/{id}/preview-link          admin  — 30/hour. Ownerless draft only (409 «אפשר רק לטיוטה שעוד אין לה בעלים»), 404 if missing.
+                                                     → {url: {frontend_url}/draft-preview/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_draft_preview"},
+                                                     14-day TTL, exp essential (services/draft_preview.py). Stateless — no table, no revocation before exp;
+                                                     it stops working the moment the draft is claimed, published, rejected or deleted.
+GET    /producer-preview/{token}                   public — 60/min. → ProducerDetailOut of the draft, hydrated like GET /producers/{id}.
+                                                     Bad signature, expired, wrong scope, no longer an ownerless draft → the same 404 «הקישור לא תקף או שפג תוקפו».
+POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank)}; query allow_without_license.
+                                                     Ownerless draft only (409). Row FOR UPDATE. Runs the same gates as an approval (`_assert_approvable`:
+                                                     photo; licence unless allow_without_license, which also withholds the verified badge), with the
+                                                     phone-verified gate overridden — there is no owner to verify it yet. Sets status "approved", stores the
+                                                     note in producers.owner_invite_consent_note, pings IndexNow. Sends NOTHING to the business.
+                                                     → {producer_id, status, slug}. The owner gets her account afterwards through the owner invite (below).
+```
+
+`POST /admin/producers/{id}/approve` still answers 409 on a draft (MEH-2121). This route is the one exit from `draft` that skips `pending`, and it exists only for an ownerless draft with a recorded consent.
+
 ### Owner invite (`app/routers/producer_owner_invite.py`) — MEH-2974
 
 The mirror image of the owner-claim link above, and **not** a duplicate of it. There, an admin prepares a DRAFT and its owner takes it over with an account she already has. Here, the admin builds and APPROVES the whole page — after written consent from the owner — and then hands over a live page to someone who has no account at all. The link is what creates one.

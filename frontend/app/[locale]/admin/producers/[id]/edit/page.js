@@ -9,7 +9,10 @@ import api from "@/lib/api";
 import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
+import DraftPreviewLinkPanel from "@/components/admin/DraftPreviewLinkPanel";
+import PublishWithConsentPanel from "@/components/admin/PublishWithConsentPanel";
 import OwnerInvitePanel, {
   OWNER_INVITABLE_STATUSES,
 } from "@/components/admin/OwnerInvitePanel";
@@ -96,6 +99,25 @@ export default function EditProducerPage() {
           carries no owner id, so a draft she has already claimed still shows
           the panel — the server answers that one with 409, shown verbatim. */}
       {producer.status === "draft" && <ClaimLinkPanel producerId={id} />}
+      {/* MEH-3377: the two steps for a business that says yes on WhatsApp
+          without opening an account — show it the page (read-only link), then
+          publish with its written consent. Only an OWNERLESS draft: once she
+          has claimed it the page is hers to submit, and the server would
+          answer both with 409. `has_owner === false` and not `!has_owner`:
+          the field is null when a route did not hydrate it, and null must
+          hide the panels (fail closed, MEH-2495). */}
+      {producer.status === "draft" && producer.has_owner === false && (
+        <>
+          <DraftPreviewLinkPanel producerId={id} />
+          <PublishWithConsentPanel
+            producerId={id}
+            onPublished={() => {
+              showToast.success(t("producers.consent_publish.published"));
+              setReloadKey((k) => k + 1);
+            }}
+          />
+        </>
+      )}
       {/* MEH-2974: the mirror image of the panel above — a business the admin
           built and finished herself, handed to its owner with a one-time link.
           The two preconditions stay disjoint by construction (`draft` here
