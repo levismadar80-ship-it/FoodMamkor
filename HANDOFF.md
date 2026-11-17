@@ -6,7 +6,7 @@
 
 ## 2026-11-17 — אצווה של 15 משימות: שומרי CI, ‏N+1, מסגרת מייל, ‏SEO ודוחות
 
-**שורה אחת:** 12 PR-ים מוזגו ל-staging (#4686, #4687, #4688, #4689, #4690, #4691, #4692, #4693, #4694, #4695, #4696, #4698); #4699 (‏`og:url` לכל locale) פתוח ומחכה לשערים. **שום דבר לא שוחרר ל-production.**
+**שורה אחת:** 13 PR-ים מוזגו ל-staging (#4686, #4687, #4688, #4689, #4690, #4691, #4692, #4693, #4694, #4695, #4696, #4698, #4699). **שום דבר לא שוחרר ל-production.**
 
 **מה צריך לדעת לפני עבודה:**
 - **שני שומרים חדשים תחת `Repo guards`:** `scripts/checks/brand-lexicon-guard.sh` אוכף את `docs/BRAND.md` §7 על `frontend/messages`, ‏`frontend/{app,components,lib,hooks}` ו-`backend/app` (baseline 5 שורות: ארבע מהן מחכות לקופי של ספיר, והחמישית היא חריג מכוון — ‏`producer_risk.py` הוא prompt מערכת ל-Anthropic ולא טקסט שמישהי קוראת, והמילה שם נושאת משמעות), ו-`scripts/checks/rtl-logical-props-guard.sh` הוא **כישלון קשיח עם baseline ריק** — הוא קורא את `.claude/hooks/rtl-allowlist.txt` הקיים ולא מחזיק registry שני. ‏`left-`/`mr-`/`pl-` חדש ב-`frontend/` מאדים את ה-PR.
