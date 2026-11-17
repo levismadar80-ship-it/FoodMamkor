@@ -524,12 +524,16 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
 
 **SHIPPED — MEH-329 (April 2026).** Defense-in-depth per ASVS V13.
 React's automatic encoding remains the primary defense; this strips
-HTML tags at the input layer so stored content is safe even if a
-future component renders it via `dangerouslySetInnerHTML`.
+HTML tags at the input layer. Since MEH-3317 the stored value is **plain
+text** (a bare `<` or `&` is kept as typed), so it is NOT safe to render via
+`dangerouslySetInnerHTML` or to interpolate into HTML unescaped — every
+sink encodes on output.
 
 - **Helper:** `backend/app/services/sanitization.py` →
-  `sanitize_text(value, max_length)`. Strips all HTML tags via
-  `bleach.clean(value, tags=[], strip=True)` and caps length.
+  `sanitize_text(value, max_length)`. Strips all HTML tags with
+  `bleach.clean(value, tags=[], strip=True)`, decodes entities, and repeats
+  until stable (≤5 passes; otherwise, or if a tag opener like `<img` remains,
+  it keeps the encoded form), then caps length (MEH-3317).
 - **Applied to** 30 fields across 11 schemas covering producers,
   home-products, experiences, events, reviews, ratings, and the
   contact form. See `CHANGELOG.md` MEH-329 entry for the full list,

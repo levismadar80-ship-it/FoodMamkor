@@ -1,9 +1,8 @@
 """Unit tests for app.services.sanitization.sanitize_text (MEH-329).
 
-Behavior lock — these tests pin bleach 6.3.0's exact output for the
-inputs we care about. If a future bleach upgrade changes any output,
-verify the new output is still XSS-safe (no execution path) before
-updating the assertion.
+Behavior lock. Since MEH-3317 the output is plain text (entities decoded,
+tags stripped until stable). If a bleach upgrade changes any output, verify
+no stored value can open a tag before updating an assertion.
 """
 from app.services.sanitization import sanitize_text
 
@@ -68,6 +67,13 @@ def test_ampersand_and_angle_brackets_are_stored_as_typed():
 
 def test_tags_still_stripped_with_text_around_them():
     assert sanitize_text("<b>x</b> & co") == "x & co"
+
+
+def test_an_unclosed_tag_is_never_stored_as_a_raw_tag_opener():
+    # Reviewer finding on #4711: bleach leaves "<img …" with no ">" as text,
+    # so after decoding it would be a raw tag opener. It stays encoded.
+    out = sanitize_text("<img src=x onerror=alert(1)")
+    assert out is None or "<img" not in out
 
 
 def test_max_length_counts_plain_characters():
