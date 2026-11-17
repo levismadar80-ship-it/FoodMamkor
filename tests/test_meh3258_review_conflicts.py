@@ -320,3 +320,30 @@ class TestAdminSeesWhy:
         assert by_id[str(r_comp.id)] == "competitor"
         assert by_id[str(r_none.id)] is None
         assert by_id[str(r_far.id)] is None
+
+
+class TestInviteAcceptTrigger:
+    """Reviewer finding on the port: accepting an owner invite on an EXISTING
+    account (MEH-3256, landed after the original branch) is the same «consumer
+    becomes owner» event as a claim, so it must recompute too."""
+
+    def test_existing_account_invite_recomputes_the_competitor_she_reviewed(
+        self, client, db, bakery_cat
+    ):
+        from test_meh3256_owner_invite_existing import _accept, _arm, _consumer
+        from test_producer_owner_invite import approved, invite
+
+        shop = approved(db)
+        db.add(ProducerCategory(producer_id=shop.id, category_id=bakery_cat.id))
+        db.commit()
+        target = make_producer(db, name="יעד", category=bakery_cat)
+        user = _consumer(db, email="invited-reviewer@example.com")
+        _review(db, target, user, 1)
+        recompute_producer_rating(target.id, db)
+        assert _rating(db, target) == (1.0, 1)
+
+        r, token = invite(client, db, shop)
+        assert r.status_code == 200, r.text
+        code = _arm(client, token, user)[2]
+        assert _accept(client, token, user, code).status_code == 200
+        assert _rating(db, target) == (0.0, 0)

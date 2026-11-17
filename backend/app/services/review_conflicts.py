@@ -131,8 +131,9 @@ def recompute_after_owner_unlinked(db: Session, producer_ids: set[Any]) -> None:
 
 
 def recompute_after_owner_linked(db: Session, user_id: Any) -> None:
-    """A user just became a business owner (claim, or a consumer upgrading at
-    registration). Every business she reviewed may now be in conflict."""
+    """A user just became a business owner (claim, a consumer upgrading at
+    registration, or a consumer accepting an owner invite on her existing
+    account). Every business she reviewed may now be in conflict."""
     rows = db.query(ProducerReview.producer_id).filter(
         ProducerReview.user_id == user_id
     )
