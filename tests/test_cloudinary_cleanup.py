@@ -95,7 +95,10 @@ class TestExtractPublicId:
     def test_signed_url_parsing(self):
         """MEH-3319: the signature segment Cloudinary puts straight after
         `upload/` is dropped like a transformation or a version segment.
-        Held as xfail(strict=True) with no card until MEH-3319."""
+
+        This case was held as `xfail(strict=True)` with no card number until
+        MEH-3319 — the marker is gone, not re-worded, because with the fix in
+        place a strict xfail reads as XPASS and fails."""
         url = (
             "https://res.cloudinary.com/mehamakor/image/upload/"
             "s--abc123def--/v1/mehamakor/avatars/user_abc.jpg"
@@ -114,7 +117,14 @@ class TestExtractPublicId:
 
     def test_signed_url_in_the_reserved_namespace_is_still_rejected(self):
         """MEH-3319 must not open a hole in the MEH-375 reject list: once the
-        signature is parsed away, the reserved prefix has to still match."""
+        signature is parsed away, the reserved prefix has to still match.
+
+        The `bypass_reserved=True` half is the half that discriminates, and the
+        independent reviewer (rule 5a) was right to say so: the first assertion
+        also passes against the OLD code, but for the wrong reason — the junk
+        id it used to return (`s--abc123def--/v1/mehamakor/producers/...`) did
+        not match the reserved prefix either, so it fell through to None by
+        accident. The second assertion is what pins the parse."""
         url = (
             "https://res.cloudinary.com/mehamakor/image/upload/"
             "s--abc123def--/v1/mehamakor/producers/42/story-card.jpg"

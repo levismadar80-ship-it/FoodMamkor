@@ -497,12 +497,21 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
     # that is not a branch. Measured: 200 with `"kind":"pickup","is_primary":true`
     # in the body, for both `pickup` and `market_stand`.
     #
-    # That is the state the MEH-1938 note above exists to forbid, and it is
-    # reachable from the dashboard — LocationsEditor offers a kind picker on
-    # every row. Checking the row's RESTING state covers both ways in (promote a
-    # non-branch, or re-kind a primary) and is a strict superset of the
-    # promotion check, which keeps its own earlier raise so its message and its
-    # call site stay unchanged.
+    # That is the state the MEH-1938 note above exists to forbid. Checking the
+    # row's RESTING state covers both ways in (promote a non-branch, or re-kind
+    # a primary) and is a strict superset of the promotion check, which keeps
+    # its own earlier raise so its message and its call site stay unchanged.
+    #
+    # The hole it closes is API-only, and an earlier draft of this comment said
+    # otherwise. The independent reviewer (rule 5a) traced the dashboard: the
+    # kind picker is not disabled, but `LocationsEditor.jsx` `buildPayload`
+    # always sends `is_primary: !!form.is_primary`, and `toEditForm` sets that
+    # true for a primary row — so the UI sends `{kind: "pickup",
+    # is_primary: true}`, which the promotion check above ALREADY answered 422.
+    # Only a bare `{"kind": "pickup"}`, which nothing in the product sends,
+    # reached this far. Worth saying plainly: the owner meets a 422 from that
+    # picker either way, so disabling or explaining it client-side is a real
+    # UX gap — out of scope here, and not closed by this guard.
     #
     # Raised after `setattr` and before `commit`, exactly as the promotion check
     # is: the session is discarded with the request, so nothing half-applies —

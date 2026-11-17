@@ -56,6 +56,15 @@ _VERSION_RE = re.compile(r"^v\d+$")
 # Both ends are anchored and BOTH markers are required, so a real folder that
 # merely starts with `s--` is never eaten — `tests/test_cloudinary_cleanup.py`
 # pins that case next to the two signed ones.
+#
+# SCOPE, stated because the rest of this comment could be read as wider than it
+# is (independent reviewer, rule 5a): this handles a signed URL of the `upload`
+# DELIVERY TYPE only. `_UPLOAD_MARKER` is `/image/upload/` and
+# `_looks_like_cloudinary_upload` rejects everything else, so a signed
+# `/image/authenticated/...` or `/image/private/...` URL still returns None —
+# the same silent miss, one delivery type over. Nothing here emits either type
+# today; widening the marker is its own change, with its own reject-list
+# question, and not this one.
 _SIGNATURE_RE = re.compile(r"^s--[A-Za-z0-9_-]+--$")
 # Cloudinary transformation segments are either comma-joined (`w_400,h_400`)
 # or a single `<param>_<value>` pair (`f_auto`). Public-id folder segments
