@@ -32,12 +32,53 @@ from app.models.models import (
     OutreachLead,
     ProducerReview,
     Report,
+    RescueOffer,
+    RescueOrder,
 )
+from app.utils.clock import utc_now
 from app.utils.phone import canonical_il_msisdn
 from app.services import retired_slugs  # MEH-2528
 from app.services.booking_cancellations import delist_business  # MEH-3227
 from app.services.group_buy_delist import withdraw_user_commits  # MEH-2503
 from app.services.rescue_no_show import record_tombstones  # MEH-3225
+
+
+def _release_reserved_bags(db: Session, user: User) -> None:
+    """Return the bags of ``user``'s still-reserved orders to their offers.
+
+    rescue_orders.user_id is ON DELETE CASCADE, so without this the order
+    vanishes while ``qty_left`` keeps counting it: a bag nobody can reserve and
+    the business has no order for. Same lock order and same arithmetic as the
+    buyer's own cancel (routers/rescue.py cancel_order) — offer first, then
+    the order re-read under the lock.
+    """
+    order_ids = [
+        (order_id, offer_id)
+        for order_id, offer_id in db.query(RescueOrder.id, RescueOrder.offer_id).filter(
+            RescueOrder.user_id == user.id, RescueOrder.status == "reserved"
+        )
+    ]
+    for order_id, offer_id in order_ids:
+        offer = (
+            db.query(RescueOffer)
+            .filter(RescueOffer.id == offer_id)
+            .populate_existing()
+            .with_for_update()
+            .one()
+        )
+        order = (
+            db.query(RescueOrder)
+            .filter(RescueOrder.id == order_id)
+            .populate_existing()
+            .with_for_update()
+            .one()
+        )
+        if order.status != "reserved":
+            continue
+        order.status = "cancelled"  # type: ignore[assignment]
+        order.cancelled_at = utc_now()  # type: ignore[assignment]
+        offer.qty_left = min(offer.qty_left + order.qty, offer.qty_total)  # type: ignore[assignment]
+    db.flush()
 
 
 def delete_user_and_data(
@@ -116,6 +157,9 @@ def delete_user_and_data(
     # MEH-2503: a participant leaving the site leaves her live group buys the
     # way /group-buys/{id}/commit DELETE does (funded → open below minimum).
     withdraw_user_commits(db, user)
+    # MEH-2871: her reserved surprise bags go back to stock before the rows
+    # cascade away with her.
+    _release_reserved_bags(db, user)
 
     _delete_own_producer(db, user, producer_id, background_tasks)  # type: ignore[arg-type]
 
