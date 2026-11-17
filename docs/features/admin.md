@@ -1,0 +1,24 @@
+# ניהול
+
+**מה הוא עושה.** תורי האישור והמודרציה: בתי עסק ממתינים, מתכונים, ביקורות, חוויות, קבוצות רכישה, דיווחים, בקשות קטגוריה ושינוי שם, כשרות, פנייה יזומה, והגדרות.
+
+> **«נבדק בנייד» חל על כל מסך `/admin`.** טבלאות ניהול נושאות `.table-stack` (כרטיס לשורה מתחת ל-md), ו-`frontend/__tests__/AdminTablesStackGuard.test.js` אוכף את זה.
+
+**Routes**
+* `frontend/app/[locale]/admin/` ועוד שלוש-עשרה תת-לשוניות, בהן `frontend/app/[locale]/admin/producers/`, `frontend/app/[locale]/admin/recipes/`, `frontend/app/[locale]/admin/reviews/`, `frontend/app/[locale]/admin/reports/`, `frontend/app/[locale]/admin/kashrut/`, `frontend/app/[locale]/admin/outreach/`, `frontend/app/[locale]/admin/settings/`, `frontend/app/[locale]/admin/analytics/`, `frontend/app/[locale]/admin/billing/`.
+* `frontend/app/[locale]/admin/producers/new/` · `frontend/app/[locale]/admin/producers/[id]/edit/`
+
+**קבצים מרכזיים**
+* `backend/app/routers/admin.py`
+* `frontend/components/admin/AdminRowMenu.jsx`
+* `backend/app/services/producer_risk.py` — דירוג סיכון לפני אישור.
+
+**Flags.** אין. ‏`SUPER_ADMIN_EMAIL` הוא הגדרת סביבה, לא flag.
+
+**טסטים**
+* `tests/test_admin_approval_transitions.py` · `tests/test_admin_queue_sla_aging.py` · `tests/test_admin_producer_delete_cascade.py` · `tests/test_admin_error_no_leak.py`
+* `tests/test_expansion_admin_authz.py` · `tests/test_meh2900_admin_role_endpoint.py` · `tests/test_meh2890_super_admin_env.py`
+* `frontend/e2e/flows/30-admin-panel-tabs.spec.ts` · `frontend/e2e/flows/33-admin-producers-tab.spec.ts`
+* `frontend/e2e/flows/manual/admin-producers-queue.spec.ts` · `admin-producers-decisions.spec.ts` · `admin-users-reviews-categories.spec.ts` · `admin-settings-licence-actions.spec.ts` (תחת `frontend/e2e/flows/manual/`)
+
+**מזהי רישום שזה מכסה.** `kashrut_verified`, `verified_badge`, `editor_pick` (צד ההחלטה).

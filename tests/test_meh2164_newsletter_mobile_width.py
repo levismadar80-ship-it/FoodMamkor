@@ -7,11 +7,18 @@ wins, so the card renders 560px wide inside a 375px viewport. Measured here
 before the fix: `scrollWidth=560` against `innerWidth=375`; after: `375`
 against `375`, with the 1440 rendering unchanged (card 560, centred).
 
-The assertions below are anchored on `cellpadding="40"`, which is what
-distinguishes the card from the outer wrapper (`cellpadding="0"`). They are
-deliberately NOT anchored on any width value: a locator keyed on the string the
-fix changes breaks itself, which is a mistake this file's predecessor made and
-had corrected in review.
+The assertions below are anchored on `max-width:560px`, which is what
+distinguishes the card from the outer wrapper. They are deliberately NOT
+anchored on any width ATTRIBUTE value: a locator keyed on the string the fix
+changes breaks itself, which is a mistake this file's predecessor made and had
+corrected in review.
+
+MEH-0000 moved that anchor. It was `cellpadding="40"` — true of the card,
+false of the wrapper, and a perfectly good discriminator until the 40 itself
+became the defect: on a `width="100%"` card it is 80px of side padding, about
+280px of text on a 360px phone. The requirement did not change, only which
+attribute carries it, and `test_card_table_extractor_discriminates` still
+proves the anchor is false of the wrapper before using it.
 """
 
 import re
@@ -50,9 +57,9 @@ def _render() -> str:
 
 
 def _card_table_tag(html: str) -> str:
-    """The card table — the one with cellpadding=40; the outer wrapper is 0."""
+    """The card table — the one with the max-width cap; the wrapper has none."""
     tags = [
-        t for t in re.findall(r"<table[^>]*>", html, re.S) if 'cellpadding="40"' in t
+        t for t in re.findall(r"<table[^>]*>", html, re.S) if "max-width:560px" in t
     ]
     assert len(tags) == 1, f"expected exactly 1 card table, found {len(tags)}"
     return tags[0]
@@ -65,7 +72,7 @@ def test_card_table_extractor_discriminates():
     the card actually says."""
     fake = (
         '<table width="100%" cellpadding="0"><tr><td>'
-        '<table width="560" cellpadding="40" id="card"></table>'
+        '<table width="560" style="max-width:560px" id="card"></table>'
         "</td></tr></table>"
     )
     picked = _card_table_tag(fake)
@@ -75,8 +82,14 @@ def test_card_table_extractor_discriminates():
     # And against the real document, not only the synthetic one (MEH-1909):
     # a probe validated on invented shapes proves nothing about the shape the
     # repo actually uses.
+    # The anchor must be FALSE of the wrapper, or picking the wrapper would
+    # satisfy every assertion below (it already carries width="100%").
+    wrapper = '<table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">'
+    assert "max-width:560px" not in wrapper, (
+        "the anchor is true of the outer wrapper too — it discriminates nothing"
+    )
     real = _card_table_tag(_render())
-    assert 'cellpadding="40"' in real, f"extractor missed the real card: {real}"
+    assert "max-width:560px" in real, f"extractor missed the real card: {real}"
 
 
 def test_newsletter_card_is_fluid_and_capped():

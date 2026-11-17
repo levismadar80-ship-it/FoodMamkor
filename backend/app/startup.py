@@ -15,6 +15,7 @@ from app.services.job_heartbeat import (
     ADMIN_PENDING_REMINDER_CRON,
     ANALYTICS_ROLLUP_CRON,
     FOLLOWUP_CRON,
+    GROUP_BUY_EXPIRY_CRON,
     RESCUE_DIGEST_INTERVAL_MINUTES,
     RETENTION_PURGE_CRON,
     WATCHDOG_INTERVAL_MINUTES,
@@ -434,6 +435,30 @@ def _run_retention_purge_job() -> None:
 
 
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("group-buy-expiry-daily", cron_monitor_config(GROUP_BUY_EXPIRY_CRON))
+def _run_group_buy_expiry_job() -> None:
+    """MEH-3287: close open group buys whose deadline passed below their
+    minimum, and mail the participants. Same shape as the purge job above:
+    fresh session, own Sentry tag, exception swallowed so the scheduler thread
+    never dies. A crashed run costs nothing: the next one selects the same
+    rows again (the status change is the only stamp).
+    """
+    from app.database import SessionLocal
+    from app.services.group_buy_expiry import expire_unfunded_group_buys
+
+    db = SessionLocal()
+    try:
+        count = expire_unfunded_group_buys(db)
+        log.info("[GROUP-BUY-EXPIRY] daily run complete expired=%s", count)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="group_buy_expiry")
+        log.error("[GROUP-BUY-EXPIRY] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat(
     "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
 )
@@ -641,6 +666,17 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         _run_retention_purge_job,
         CronTrigger.from_crontab(RETENTION_PURGE_CRON, timezone="UTC"),
         id="meh_2303_retention_purge_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+    # MEH-3287: daily close of open group buys past their deadline. coalesce +
+    # a 6h grace: a pause over the fire time runs it late rather than skipping.
+    followup_scheduler.add_job(
+        _run_group_buy_expiry_job,
+        CronTrigger.from_crontab(GROUP_BUY_EXPIRY_CRON, timezone="UTC"),
+        id="meh_3287_group_buy_expiry_daily",
         replace_existing=True,
         max_instances=1,
         coalesce=True,

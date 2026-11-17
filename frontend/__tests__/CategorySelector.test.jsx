@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import CategorySelector from "@/components/CategorySelector";
 
 // MEH-830: characterization tests for the S7 CategorySelector (MEH-203 rebuild).
