@@ -91,11 +91,9 @@ def _ownerless_draft(db: Session, producer: Producer) -> bool:
     # `kind` mirrors the live page's own gate (producers.get_producer): an
     # organizer row has no business page, so it has no preview of one and is
     # not published as one.
-    return (
-        producer.status == "draft"
-        and producer.kind == "producer"
-        and not _has_owner(db, producer.id)
-    )  # type: ignore[return-value]
+    if producer.status != "draft" or producer.kind != "producer":
+        return False
+    return not _has_owner(db, producer.id)  # type: ignore[arg-type]
 
 
 @router.post(
