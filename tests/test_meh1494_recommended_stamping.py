@@ -387,7 +387,10 @@ def test_escaping_cannot_push_the_stored_note_over_the_cap(db, client):
 
     resp = client.put(
         f"/admin/producers/{p.id}",
-        json={"is_recommended": True, "recommended_note": "<" * 500},
+        # MEH-3317: letters first — 500 bare '<' now stay '<' (no letters), so
+        # the ≥3-letters floor rightly 422s them; before, '&lt;' smuggled in
+        # the letters 'l' and 't' and the note passed.
+        json={"is_recommended": True, "recommended_note": "אבג" + "<" * 497},
         headers=auth_header(admin),
     )
 
