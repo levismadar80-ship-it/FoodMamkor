@@ -23,7 +23,7 @@ one re-runs it after a week of merges and adds the built bundle.
 |---|---|---|---|
 | `tests/test_producer_owner_invite.py:1967` | JWT | payload is `{"example": …}`, 11-character signature: hand-made, signed by no key | none |
 | `frontend/scripts/qa-meh2324-claim-page.mjs:23` | JWT | payload `{"sub": …}` only, 12-character signature (a real HS256 signature is 43) | none |
-| `scripts/checks/secrets-scan-guard.sh` | AWS key, GitHub token | the guard's own self-test fixtures (`AKIAIOSFODNN7EXAMPLE` is AWS's documentation example) | none |
+| `scripts/checks/secrets-scan-guard.sh` | AWS key, GitHub token | the guard's own self-test fixtures (the AWS key there is AWS's published documentation example) | none |
 | `tests/test_whatsapp_optout.py`, `tests/test_meh_509_pr2c_webhook.py`, `tests/test_verify_email.py`, `tests/test_forgot_password.py`, `tests/test_meh3104_email_change_hardening.py`, `frontend/__tests__/claimToken.test.js`, `frontend/__tests__/AnalyticsTokenScrub.test.js`, `frontend/e2e/flows/30-login-journey-c.spec.ts` | `token/secret/password = "…"` | test placeholders (several carry an explicit placeholder marker since #4486) | none |
 | 33 lines, e.g. `backend/.env.example`, `docker-compose.yml`, `tests/conftest.py`, `.github/workflows/e2e.yml` | DB URL with password | every one is `postgres:…@localhost`, `@db` or `USER:…@HOST`: local development defaults | none |
 | `docs/audits/raw/perf/lh-*.json` (9 matches) | Meta token (`EAA…`) | base64 image data inside Lighthouse reports, not tokens | none |
