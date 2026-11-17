@@ -130,7 +130,23 @@ def list_group_buys(
     q = _status_tab_query(db, status, city)
     if producer_id:
         q = q.filter(GroupBuy.producer_id == producer_id)
-    items = q.order_by(GroupBuy.deadline.asc()).all()
+    # MEH-0000: _enrich reads len(gb.commits) and gb.producer.{name,images} for
+    # EVERY row (:50, :54, :58), and both are lazy="select". Without these two
+    # options the list cost 1 + N queries. The .join(Producer) in
+    # _public_group_buys does NOT populate gb.producer — it filters; only
+    # contains_eager or selectinload populates.
+    #
+    # The owner route (:185) has carried exactly these two options since it was
+    # written. The public list never did. That asymmetry is the whole bug.
+    #
+    # Deliberately here and NOT inside _status_tab_query: the /counts route
+    # shares that query and only counts rows, so loading commits there would be
+    # waste in the other direction.
+    items = (
+        q.options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        .order_by(GroupBuy.deadline.asc())
+        .all()
+    )
     return [_enrich(gb) for gb in items]
 
 
@@ -622,7 +638,12 @@ def admin_list_group_buys(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> list[GroupBuyDetail] | list[dict[str, Any]]:
-    q = db.query(GroupBuy)
+    # MEH-0000: same per-row lazy loads as the public list above, and this one
+    # is unbounded — the admin sees every group buy, not one business's open
+    # ones.
+    q = db.query(GroupBuy).options(
+        selectinload(GroupBuy.commits), selectinload(GroupBuy.producer)
+    )
     if status:
         q = q.filter(GroupBuy.status == status)
     items = q.order_by(GroupBuy.created_at.desc()).all()
