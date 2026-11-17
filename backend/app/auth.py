@@ -50,6 +50,12 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    # MEH-3271: hash_password refuses a NUL byte, so no stored hash can match a
+    # candidate that has one. Answer "no match" instead of letting the
+    # ValueError reach the caller as a 500 (login, password change, deletion).
+    # No account-specific timing: the answer is the same for every account.
+    if "\x00" in plain:
+        return False
     return bcrypt.checkpw(_bcrypt_secret(plain), hashed.encode("ascii"))
 
 
