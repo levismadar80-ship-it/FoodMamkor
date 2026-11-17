@@ -10,13 +10,17 @@
  *           Latin letters or digits keeps its own order («1948», «Bio»); that
  *           covers business names and cities. Mixed-direction sentences are
  *           not this file's job.
- * Related:  app/og/producer/[file]/route.js (the only caller).
+ * Related:  app/og/business/[file]/route.js (the only caller).
  * History:  MEH-3329 (creation; spike 16/11 — plain Hebrew renders reversed).
  */
 
 const RTL_CHAR = /[֐-׿]/;
 const LTR_RUN = /([A-Za-z0-9][A-Za-z0-9.,'"&-]*)/;
 const LTR_ONLY = /^[A-Za-z0-9][A-Za-z0-9.,'"&-]*$/;
+// Paired punctuation is mirrored in an RTL run (Unicode Bidi_Mirrored): once
+// the run is reversed, «(בדיקה)» would otherwise draw as «)בדיקה(».
+const MIRROR = { "(": ")", ")": "(", "[": "]", "]": "[", "{": "}", "}": "{", "<": ">", ">": "<", "«": "»", "»": "«" };
+const mirror = (ch) => MIRROR[ch] || ch;
 
 /**
  * One word in the order Satori must draw it (LTR).
@@ -27,7 +31,7 @@ export function visualWord(word) {
   if (!RTL_CHAR.test(word)) return word;
   return word
     .split(LTR_RUN)
-    .map((part) => (LTR_ONLY.test(part) ? part : [...part].reverse().join("")))
+    .map((part) => (LTR_ONLY.test(part) ? part : [...part].reverse().map(mirror).join("")))
     .reverse()
     .join("");
 }

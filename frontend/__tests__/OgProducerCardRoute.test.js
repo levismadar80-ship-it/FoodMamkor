@@ -1,5 +1,5 @@
 /**
- * MEH-3329 — GET /og/producer/<slug>.png renders the typographic card for a
+ * MEH-3329 — GET /og/business/<slug>.png renders the typographic card for a
  * real business, under WhatsApp's 300KB, and falls back to the site image
  * (never a 5xx) for an unknown slug or a backend failure.
  */
@@ -23,15 +23,17 @@ vi.mock("next/og", () => ({
 const fetchMock = vi.fn();
 vi.mock("@/lib/server-fetch", () => ({ serverFetch: (...a) => fetchMock(...a) }));
 vi.mock("@/lib/env", () => ({ API_URL: "https://api.test" }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-import { GET } from "@/app/og/producer/[file]/route";
+import { GET } from "@/app/og/business/[file]/route";
+import { COLOR } from "@/lib/color-tokens";
 
-const req = (file) => [new Request(`https://site.test/og/producer/${file}`), { params: Promise.resolve({ file }) }];
+const req = (file) => [new Request(`https://site.test/og/business/${file}`), { params: Promise.resolve({ file }) }];
 const PRODUCER = { name: "משק הר הפרחים", city: "עופר", categories: [{ name: "חלב וגבינות" }], images: [] };
 
 beforeEach(() => fetchMock.mockReset());
 
-describe("MEH-3329 /og/producer/[file]", () => {
+describe("MEH-3329 /og/business/[file]", () => {
   it("a business → a 1200×630 PNG under 300KB, cached, fetched by its slug", async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => PRODUCER });
     const res = await GET(...req(`${encodeURIComponent("משק-הר-הפרחים")}.png`));
@@ -43,7 +45,7 @@ describe("MEH-3329 /og/producer/[file]", () => {
     expect(opts.fonts.map((f) => f.name)).toEqual(["Frank", "Heebo"]);
     expect(opts.fonts.every((f) => f.data.length > 10000)).toBe(true);
     // The typographic template: cream background, no photo <img> of 1200px.
-    expect(element.props.style.background).toBe("#F5F0E8");
+    expect(element.props.style.background).toBe(COLOR.background);
     expect(JSON.stringify(element)).not.toContain('"width":1200');
     // The name and the meta line are there, in drawing order (og-rtl).
     expect(JSON.stringify(element)).toContain("םיחרפה");
@@ -56,6 +58,7 @@ describe("MEH-3329 /og/producer/[file]", () => {
     const res = await GET(...req("nope.png"));
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("https://site.test/og-image.png");
+    expect(res.headers.get("cache-control")).toContain("max-age=300");
   });
 
   it("backend down (503) → the same redirect", async () => {

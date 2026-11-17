@@ -702,15 +702,15 @@ describe("MEH-3329 producer og:image is the branded card when there is no photo"
   const V = Math.floor(Date.parse(UPDATED) / 1000);
   it("no photo → the card URL, versioned by updated_at, not the site image", () => {
     const meta = buildProducerMetadata({ ...fullProducer, images: [], updated_at: UPDATED });
-    expect(meta.openGraph.images[0]).toEqual({ url: `/og/producer/havat-hashikma.png?v=${V}`, width: 1200, height: 630 });
-    expect(meta.twitter.images).toEqual([`/og/producer/havat-hashikma.png?v=${V}`]);
+    expect(meta.openGraph.images[0]).toEqual({ url: `/og/business/havat-hashikma.png?v=${V}`, width: 1200, height: 630 });
+    expect(meta.twitter.images).toEqual([`/og/business/havat-hashikma.png?v=${V}`]);
   });
   it("with a photo → the photo, as before (the photo template is parked)", () => {
     const meta = buildProducerMetadata({ ...fullProducer, updated_at: UPDATED });
     expect(meta.openGraph.images[0].url).toContain("res.cloudinary.com");
   });
   it("a Hebrew slug is percent-encoded; no updated_at → no version", () => {
-    expect(producerOgCardUrl({ slug: "משק-הר", updated_at: null })).toBe(`/og/producer/${encodeURIComponent("משק-הר")}.png`);
+    expect(producerOgCardUrl({ slug: "משק-הר", updated_at: null })).toBe(`/og/business/${encodeURIComponent("משק-הר")}.png`);
   });
   it("no slug → null (the page keeps the site image)", () => {
     expect(producerOgCardUrl({ slug: null })).toBeNull();

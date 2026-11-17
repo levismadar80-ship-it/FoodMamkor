@@ -16,6 +16,10 @@ describe("MEH-3329 og-rtl", () => {
     expect(visualWord("Bio")).toBe("Bio");
     expect(visualWord("ב-1948")).toBe("1948-ב");
   });
+  it("brackets in a Hebrew word are mirrored, so «(בדיקה)» does not draw as «)בדיקה(»", () => {
+    expect(visualWord("(בדיקה)")).toBe("(הקידב)");
+    expect(visualWord("«שוק»")).toBe("«קוש»");
+  });
   it("words stay in reading order — the flex line, not the string, reverses them", () => {
     expect(visualWords("רוח  השדה ")).toEqual(["חור", "הדשה"]);
   });

@@ -1,7 +1,7 @@
 // @ts-check
 /**
- * Module:   og/producer/[file]/route
- * Purpose:  GET /og/producer/<slug>.png — the branded link-preview image of a
+ * Module:   og/business/[file]/route
+ * Purpose:  GET /og/business/<slug>.png — the branded link-preview image of a
  *           business page with no photo (MEH-3329): a typographic card, ~50KB
  *           PNG, under WhatsApp's 300KB. lib/seo.js points og:image here
  *           with `?v=<updated_at>`, so an edited page gets a new URL and
@@ -15,6 +15,7 @@
  * History:  MEH-3329 (creation).
  */
 import { ImageResponse } from "next/og";
+import * as Sentry from "@sentry/nextjs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { API_URL } from "@/lib/env";
@@ -23,9 +24,16 @@ import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { OG_SIZE, producerCard, markSrc } from "@/lib/og-producer-card";
 
 const FALLBACK = "/og-image.png";
+const FALLBACK_CACHE = "public, max-age=300, s-maxage=300";
+
+/** 302 to the site image, briefly cached so a crawler retry does not hammer the backend. */
+function fallback(request) {
+  const location = new URL(FALLBACK, request.url).toString();
+  return new Response(null, { status: 302, headers: { Location: location, "Cache-Control": FALLBACK_CACHE } });
+}
 const CACHE = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800";
 
-const FONT_DIR = join(process.cwd(), "app", "og", "producer", "[file]", "fonts");
+const FONT_DIR = join(process.cwd(), "app", "og", "business", "[file]", "fonts");
 
 // Static assets, read once per server instance, lazily — a failed read lands
 // in the request's catch (→ site image), never as an unhandled rejection.
@@ -58,7 +66,7 @@ export async function GET(request, ctx) {
   const slug = decodeSlugParam(String(file || "").replace(/\.png$/i, ""));
   try {
     const producer = await getProducer(slug);
-    if (!producer?.name) return Response.redirect(new URL(FALLBACK, request.url), 302);
+    if (!producer?.name) return fallback(request);
     const [frank, heebo, mark] = await loadAssets();
     const element = producerCard({
       name: producer.name,
@@ -80,7 +88,10 @@ export async function GET(request, ctx) {
       }).arrayBuffer(),
     );
     return new Response(new Uint8Array(png), { headers: { "Content-Type": "image/png", "Cache-Control": CACHE } });
-  } catch {
-    return Response.redirect(new URL(FALLBACK, request.url), 302);
+  } catch (error) {
+    // A missing font or a render failure would otherwise turn every card into
+    // the generic image with no trace (review on the MEH-3329 PR).
+    Sentry.captureException(error, { extra: { route: "/og/business/[file]", slug } });
+    return fallback(request);
   }
 }

@@ -7,7 +7,7 @@
  *           with no photo, a typographic card on cream. Name, «type · city»
  *           and the brand pill; nothing else (MEH-3329: tags were unreadable
  *           on a phone in the mockup).
- * Does NOT: fetch data or encode the image — app/og/producer/[file]/route.js
+ * Does NOT: fetch data or encode the image — app/og/business/[file]/route.js
  *           does both. Holds no copy of its own: every string is the
  *           business's data or BRAND_NAME.
  * Related:  lib/og-rtl.js (Hebrew in Satori), lib/seo.js buildProducerMetadata.
@@ -15,12 +15,14 @@
  */
 import { rtlLine } from "./og-rtl";
 import { BRAND_NAME } from "./constants";
+import { COLOR } from "./color-tokens";
 
 export const OG_SIZE = { width: 1200, height: 630 };
-const GREEN = "#2e6853";
+const GREEN = COLOR.primary;
 const DEEP_GREEN = "31,74,59";
-const CREAM = "#F5F0E8";
-const INK = "#2b2b28";
+const CREAM = COLOR.background;
+const INK = COLOR.text;
+const WHITE = COLOR.surface;
 const LONG_NAME = 34;
 
 /**
@@ -52,7 +54,7 @@ function brandPill(tone, mark) {
         gap: 10,
         padding: "8px 22px 8px 18px",
         borderRadius: 999,
-        background: tone === "dark" ? CREAM : "#ffffff",
+        background: tone === "dark" ? CREAM : WHITE,
         color: GREEN,
         fontFamily: "Frank",
         fontSize: 30,
@@ -102,7 +104,7 @@ export function producerCard({ name, type, city, photo, mark }) {
             props: {
               style: { position: "absolute", left: 64, right: 64, bottom: 52, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }, // rtl-ok
               children: [
-                rtlLine(name, { fontFamily: "Frank", fontSize: nameSize(name), color: "#ffffff", lineHeight: 1.1, justifyContent: "flex-start" }),
+                rtlLine(name, { fontFamily: "Frank", fontSize: nameSize(name), color: WHITE, lineHeight: 1.1, justifyContent: "flex-start" }),
                 meta ? rtlLine(meta, { fontFamily: "Heebo", fontSize: 34, color: CREAM }) : null,
               ].filter(Boolean),
             },

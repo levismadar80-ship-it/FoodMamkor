@@ -167,7 +167,7 @@ export function producerOgCardUrl(producer) {
   if (!producer?.slug) return null;
   const ts = Date.parse(producer.updated_at || "");
   const v = Number.isFinite(ts) ? `?v=${Math.floor(ts / 1000)}` : "";
-  return `/og/producer/${encodeURIComponent(producer.slug)}.png${v}`;
+  return `/og/business/${encodeURIComponent(producer.slug)}.png${v}`;
 }
 
 /**
@@ -644,7 +644,7 @@ export function buildProducerMetadata(producer, locale = "he") {
   const description = buildDescription(producer, locale);
   const pageUrl = buildPageUrl(producer);
   // MEH-3329: its own photo first; a business with no photo gets its branded
-  // card (name, type · city, brand pill — app/og/producer/[file]/route.js)
+  // card (name, type · city, brand pill — app/og/business/[file]/route.js)
   // instead of the generic site image.
   const img = ogImage(producer.images?.[0]) || producerOgCardUrl(producer);
 
