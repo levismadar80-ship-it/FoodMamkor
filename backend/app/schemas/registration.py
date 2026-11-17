@@ -7,6 +7,7 @@ Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """
 
+import re
 from datetime import datetime
 from typing import Any, Literal, Self
 from urllib.parse import urlparse
@@ -536,13 +537,16 @@ class ProducerClaimNewLinkOut(BaseModel):
 # (routers/producer_draft_preview.py). Same two consent fields, same bounds
 # and same reason as OwnerInviteCreate below: no page goes live on someone's
 # behalf without a recorded written consent.
+_CLOUDINARY_IMAGE_PATH = re.compile(r"^/[A-Za-z0-9_-]+/image/upload/[^?#]+$")
+
+
 class DraftConsentPublishIn(BaseModel):
     consent_confirmed: bool
     consent_note: str = Field(min_length=1, max_length=500)
     # Optional: a screenshot of the written consent, uploaded first through
-    # POST /upload/image. Only one of our own Cloudinary image URLs is stored
-    # — the admin page links to it, so an arbitrary URL here would be a link
-    # to anywhere under an «אישור» label.
+    # POST /upload/image. Only a Cloudinary image URL is stored — the admin
+    # page links to it, so an arbitrary URL here would be a link to anywhere
+    # under an «אישור» label. The handler also pins it to OUR cloud name.
     consent_screenshot_url: str | None = Field(default=None, max_length=500)
 
     @field_validator("consent_confirmed")
@@ -573,7 +577,9 @@ class DraftConsentPublishIn(BaseModel):
         if (
             parsed.scheme != "https"
             or parsed.hostname != "res.cloudinary.com"
-            or "/image/upload/" not in parsed.path
+            # Anchored: `<cloud>/image/upload/…` and nothing else. A substring
+            # test would pass `/x/raw/upload/image/upload/a.html`.
+            or not _CLOUDINARY_IMAGE_PATH.match(parsed.path)
             or parsed.username
             or parsed.port
         ):

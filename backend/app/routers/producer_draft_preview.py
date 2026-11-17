@@ -79,6 +79,7 @@ _NOT_FOUND = "בית העסק לא נמצא"
 # nothing about why it stopped working (expired, published, deleted, claimed).
 _LINK_INVALID = "הקישור לא תקף או שפג תוקפו"
 _NOT_OWNERLESS_DRAFT = "אפשר רק לטיוטה שעוד אין לה בעלים"
+_FOREIGN_SCREENSHOT = "צילום המסך חייב להיות תמונה שהועלתה דרך האתר"
 
 
 def _has_owner(db: Session, producer_id: UUID) -> bool:
@@ -197,6 +198,13 @@ def publish_draft_with_consent(  # noqa: PLR0913 — seven FastAPI-injected para
     # FOR UPDATE: serialises with a claim committing on the same draft
     # (claim_producer locks this row), so "ownerless" is still true when we
     # write. Producers-only lock, like create_claim_link — no cycle.
+    # The schema proved it is a Cloudinary image URL; this pins it to OUR
+    # account, which only the running config knows. Unset in dev and tests.
+    cloud = settings.cloudinary_cloud_name
+    shot = body.consent_screenshot_url
+    if shot and cloud and not shot.startswith(f"https://res.cloudinary.com/{cloud}/"):
+        raise HTTPException(status_code=422, detail=_FOREIGN_SCREENSHOT)
+
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
     )

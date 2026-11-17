@@ -397,6 +397,7 @@ def test_publish_without_a_screenshot_stores_none(client, db):
         "https://res.cloudinary.com.evil.example/image/upload/a.jpg",
         "https://user@res.cloudinary.com/demo/image/upload/a.jpg",
         "https://res.cloudinary.com/demo/raw/upload/a.html",
+        "https://res.cloudinary.com/demo/raw/upload/image/upload/a.html",
         "javascript:alert(1)",
         "/placeholder-image.png?name=abc",
     ],
@@ -414,3 +415,35 @@ def test_publish_refuses_a_screenshot_url_that_is_not_our_cloudinary_image(
     assert r.status_code == 422, r.text
     db.expire_all()
     assert db.query(Producer).filter(Producer.id == p.id).one().status == "draft"
+
+
+def test_publish_refuses_a_screenshot_from_another_cloudinary_account(
+    client, db, monkeypatch
+):
+    monkeypatch.setattr(settings, "cloudinary_cloud_name", "ours")
+    admin = make_user(db, role="admin")
+    p = _draft(db)
+    r = client.post(
+        _publish(p.id),
+        json={**CONSENT, "consent_screenshot_url": SHOT},  # cloud "demo"
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 422, r.text
+    db.expire_all()
+    assert db.query(Producer).filter(Producer.id == p.id).one().status == "draft"
+    ours = SHOT.replace("/demo/", "/ours/")
+    r = client.post(
+        _publish(p.id),
+        json={**CONSENT, "consent_screenshot_url": ours},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_the_consent_screenshot_is_on_the_admin_shape_and_no_other():
+    from app.schemas.producer_out import ProducerAdminOut, ProducerOwnerOut
+    from app.schemas.schemas import ProducerDetailOut, ProducerListOut
+
+    assert "consent_screenshot_url" in ProducerAdminOut.model_fields
+    for shape in (ProducerDetailOut, ProducerListOut, ProducerOwnerOut):
+        assert "consent_screenshot_url" not in shape.model_fields, shape.__name__
