@@ -1376,7 +1376,7 @@ CTA and «או שאלה למארחת». Experiences already carry it as `host.pr
 ### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
 
 ```
-POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back).
+POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). The confirmation mail carries nothing the sender typed.
 POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item). Same email twice → same 201, nothing stored or sent.
 GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled.
 GET    /experiences/{id}/registrations    auth — host or admin; others 404.
