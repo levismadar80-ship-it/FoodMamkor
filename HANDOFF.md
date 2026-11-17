@@ -4,6 +4,20 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-17 — עשר משימות לפני ההשקה (אבטחה, מצבים, מפת מערכת, JSON-LD, נגישות, ניקוי)
+
+**שורה אחת:** עשרה PR-ים מוזגו ל-staging: #4681, #4682, #4683, #4684, #4685, #4702, #4707, #4708, #4709 ו-PR המסמכים הזה. הפירוט ב-CHANGELOG.
+
+**מה צריך לדעת לפני עבודה:**
+- **שני מסמכים חדשים שנשמרים אמיתיים:** ‏`docs/STATE_MACHINES.md` ו-`docs/SYSTEM_MAP.md`. ‏`.claude/rules/system-map.md` אומר איזה PR מעדכן איזה סעיף. עמודת סטטוס חדשה בלי שורה במסמך מפילה את `tests/test_state_machines_doc_sync.py`.
+- **מודל ו-effort:** ‏`.claude/rules/model-routing.md`. ‏Opus ב-`medium` כברירת מחדל, ‏Haiku לסוכן שמחפש או קורא לוגים, ‏Fable רק אחרי ש-Opus נכשל. ‏PR #4623 (Fable לסוקר של RED) סותר את זה; מי שממוזג שני צריך להכריע בשורה.
+- **אבטחה:** כל נתיב `/admin` חייב `require_admin` (טסט שעובר על כל האפליקציה). ‏`PasswordField` דוחה תו NUL.
+- **סל שמור ומחיקת חשבון:** ‏`user_deletion._release_reserved_bags` מחזיר למלאי לפני ה-cascade. ביטול הרשמות על ידי בית העסק מבטל גם ביומן החיוב.
+- **Playwright מה-sandbox:** הדפדפן המותקן הוא `/opt/pw-browsers/chromium` (`executablePath`), כי הגרסה בפרויקט לא תואמת. ‏Cloudinary, אריחי OSM ו-Google חסומים מה-sandbox, ולכן תמונות שבורות שם אינן באג.
+- **פתוח אצל ספיר:** ראו «מחכה לספיר» ב-CHANGELOG של 17/11. הדחוף שבהם: Dependabot ‏#4657 (RCE ב-`next/og`).
+
+---
+
 ## 2026-11-17 — קבוצות רכישה והרשמה: שני תיקונים מוזגו, אחד מחכה לקופי
 
 **שורה אחת:** ‏#4625 (קבוצת רכישה שעבר המועד שלה בלי להגיע ליעד נסגרת כל בוקר ב-06:00 UTC, והמשתתפות מקבלות מייל) ו-#4624 (הרשמה לאירוע או לסדנה נסגרת כשהם כבר התחילו היום) מוזגו ל-staging. ‏#4632 הוא טיוטה. **שום דבר לא שוחרר ל-production.**
