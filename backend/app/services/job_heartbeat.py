@@ -49,6 +49,8 @@ log = structlog.get_logger("mehamakor.job_heartbeat")
 FOLLOWUP_CRON = "0 10 * * *"  # 13:00 Israel (MEH-539)
 ANALYTICS_ROLLUP_CRON = "30 1 * * *"  # MEH-2283
 RETENTION_PURGE_CRON = "30 2 * * *"  # MEH-2303
+# 08:00/09:00 Israel: an expired group is told in the morning, not at night.
+GROUP_BUY_EXPIRY_CRON = "0 6 * * *"  # MEH-3287
 ADMIN_PENDING_REMINDER_CRON = "0 5 * * *"  # 07:00/08:00 Israel (MEH-3147)
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756

@@ -891,6 +891,15 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > cancelled is final in `OWNER_TRANSITIONS`, so a repeat is a 409 and sends
 > nothing. No latch column. An admin cancel (admin route) sends nothing.
 >
+> **MEH-3287 — deadline passed below the minimum.** A daily job
+> (`startup._run_group_buy_expiry_job`, 06:00 UTC = 08:00/09:00 Israel,
+> `GROUP_BUY_EXPIRY_CRON`) moves every `open` group whose `deadline` has
+> passed to `cancelled` (row lock, SKIP LOCKED) and mails each participant
+> «מהמקור — הקבוצה "{title}" לא הגיעה ליעד»
+> (`services/group_buy_expiry.py`, `notify_participant_expired`). `funded`
+> groups are not touched. The status change is the only stamp: a second run
+> selects nothing. No email to the business.
+>
 > **MEH-2621 (MEH-2615 split, chunk 1) — pickup and delivery as two answers.**
 > Two new nullable `Text` columns on `group_buys`: `pickup_note`,
 > `delivery_note` (Expand-only, no backfill; `fulfillment_note` unchanged).
