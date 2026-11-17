@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   time-range
  * Purpose:  One owner for how an event's time reads: «09:30», or «09:30–15:00»

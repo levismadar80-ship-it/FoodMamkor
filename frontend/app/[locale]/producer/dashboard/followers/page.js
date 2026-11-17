@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   producer/dashboard/followers (redirect stub)
  * Purpose:  MEH-2884 (dashboard placement audit item 6): the «שמרו במועדפים»

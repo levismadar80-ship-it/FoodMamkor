@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   about-badges
  * Purpose:  /about/badges — «מה אומרים התגים»: every badge on the site, grouped

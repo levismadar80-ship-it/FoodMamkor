@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -53,6 +54,7 @@ import { useAccountPrefill } from "@/lib/use-account-prefill";
 // business fields: those describe someone else.
 // MEH-2642: name only — the address is never typed or sent; the server
 // reads the verified account email.
+/** @type {Record<string, import("@/lib/use-account-prefill").AccountField>} */
 const SUGGESTER_PREFILL = { suggester_name: "name" };
 
 const EMPTY = {

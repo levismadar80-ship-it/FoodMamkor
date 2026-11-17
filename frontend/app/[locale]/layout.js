@@ -1,3 +1,4 @@
+// @ts-check
 import "../globals.css";
 import { FONT_VARIABLES } from "../fonts";
 import { notFound } from "next/navigation";
@@ -25,6 +26,7 @@ import { BRAND_NAME, BRAND_NAME_LATIN, SITE_DESCRIPTION } from "@/lib/constants"
 import { routing } from "@/i18n/routing";
 import {
   buildAlternates,
+  urlForLocalePath,
   OG_LOCALE,
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
@@ -83,7 +85,11 @@ const BASE_METADATA = {
   openGraph: {
     type: "website",
     locale: "he_IL",
-    url: SITE_URL,
+    // MEH-0000: NO `url` here. This object is what a page with no openGraph of
+    // its own inherits, so a static url made every such page claim the Hebrew
+    // HOME as its og:url — /en included. That is the same defect MEH-2853 fixed
+    // for `title` two fields down; `url` was the one it missed. The locale's own
+    // home url is set in generateMetadata below, which has the locale.
     siteName: BRAND_NAME,
     description: SITE_DESCRIPTION,
     images: [
@@ -159,6 +165,12 @@ export async function generateMetadata({ params }) {
     keywords: [...t.raw("keywords"), BRAND_NAME],
     openGraph: {
       ...BASE_METADATA.openGraph,
+      // MEH-0000: the LOCALE's home, not SITE_URL. On /en a static SITE_URL
+      // made og:url the Hebrew home, so a shared /en link previewed — and,
+      // for a crawler that trusts og:url, canonicalised — to the wrong page.
+      // This stays in sync with alternates.canonical below because both come
+      // from urlForLocalePath.
+      url: urlForLocalePath("/", locale),
       // MEH-2853: no og title here either. A page that sets no openGraph of
       // its own inherits this object, and a title in it made the page's
       // og:title the home title. Without it Next fills og:title from the

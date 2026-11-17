@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   slug
  * Purpose:  Cheap slug-shape guard for the root catch-all route — reject bot
@@ -65,6 +66,10 @@ const RESERVED = new Set([
   "rescue",
   // MEH-2768: the sign-up cancel link (/registration/{token}).
   "registration",
+  // MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
+  "unsubscribe",
+  // MEH-3248: the confirmation after an account deletion.
+  "account-deleted",
 ]);
 
 // Real slugs are produced by backend _slugify

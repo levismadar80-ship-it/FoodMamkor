@@ -88,8 +88,23 @@ def catalog_default_availability_condition() -> ColumnElement[bool]:
     owns that literal for every write path, and its own docstring already says
     it does not decide listing exclusion — which is this function's job. One
     owner for the value, one owner for the decision.
+
+    MEH-3219 B5: a vacation whose ``vacation_until`` has passed (Israel
+    calendar day, the same ``<`` the response schema uses — schemas.py
+    ``_compute_trust_tier``, MEH-155 / MEH-1883) no longer hides the business.
+    Nothing clears the column on the return date, so without the date half the
+    business stayed off every browse surface forever while its own page
+    already said «מקבל הזמנות». A NULL ``vacation_until`` keeps hiding: the
+    write path requires a date for ``on_vacation``, so NULL is legacy data and
+    hiding is the conservative reading.
     """
-    return Producer.availability_state != ON_VACATION
+    return or_(
+        Producer.availability_state != ON_VACATION,
+        and_(
+            Producer.vacation_until.isnot(None),
+            Producer.vacation_until < israel_today(),
+        ),
+    )
 
 
 def not_test_producer() -> ColumnElement[bool]:

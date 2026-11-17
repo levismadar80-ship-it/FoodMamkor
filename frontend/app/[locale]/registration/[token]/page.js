@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations } from "next-intl/server";
 import CancelRegistrationClient from "./CancelRegistrationClient";
 

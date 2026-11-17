@@ -147,13 +147,11 @@ Likely lines: [range]
 Do not touch other files.
 </scope>
 
-<thinking_guidance>
-Walk through:
-1. What's the code at the failure point doing?
-2. What did the input look like vs what it expected?
-3. What's the smallest fix?
-Output your reasoning before patching.
-</thinking_guidance>
+<root_cause_first>
+Before patching, state the root cause in one or two sentences: quote the
+failing line, and say what input it got vs what it expected. Then make the
+smallest fix.
+</root_cause_first>
 
 <acceptance_criteria>
 - Repro no longer fails
@@ -225,7 +223,7 @@ If hypothesis is (b) — show me the centroid computation. We may need a differe
 - Map still respects user location when granted
 - Zoom level reasonable (~9-10) for Israel overview
 - Regression test: incognito → check map.getCenter() within Israel bounds
-- preview URL on mobile
+- 375 + 1440 screenshots captured and read by CC (workflow rule 23)
 </acceptance_criteria>
 
 <verification_step>

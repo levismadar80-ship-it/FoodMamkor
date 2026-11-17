@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   social-links
  * Purpose:  ONE definition of "turn a stored instagram field into a link".

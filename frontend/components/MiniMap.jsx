@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/leaflet-plugins.d.ts" />
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -308,6 +310,7 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // competes with that button in the parent's stacking context and wins: the
 // button stayed visible only over the grey not-yet-loaded area, and vanished as
 // soon as a pan or zoom put tiles under it — the overlay lost its only exit.
+/** @param {{ interactive?: boolean, onExpand?: () => void, mapKey?: string, center: { lat: number | string, lng: number | string }, points?: object[], lat?: number | string, lng?: number | string, name?: string, fallbackLabel?: string, producer?: import("@/types/entities").ProducerSummary, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props */
 function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
@@ -333,9 +336,12 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           The string below is byte-identical to HomepageMiniMap.jsx:236 —
           legal text, never translated.
           REUSES: frontend/components/HomepageMiniMap.jsx:233,236 */}
+      {/* MEH-3077: per-tile referrerPolicy — OSM 403s a tile with no Referer;
+          set on the <img>, it wins over any page-level policy. */}
       <TileLayer
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        referrerPolicy="strict-origin-when-cross-origin"
       />
       {/* MEH-1611: one pin per point of THIS business — branch → filled
           category pin, pickup / market_stand → hollow outline. When the
@@ -394,6 +400,8 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
  * MEH-1659: the inline map gains +/− and stops being frozen, and any tap on it
  * opens a fullscreen overlay where every gesture works. All three consumers
  * (producer / events / experiences) get this through the unchanged props API.
+ *
+ * @param {{ lat?: number|string, lng?: number|string, name?: string, locations?: object[], producer?: import("@/types/entities").ProducerSummary, zoom?: number, showNavigation?: boolean, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props
  */
 export default function MiniMap({
   lat,
@@ -456,10 +464,12 @@ export default function MiniMap({
       if (!focusables?.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the overlay is pulled back in.
+      const outside = !overlayRef.current?.contains(document.activeElement);
+      if (event.shiftKey && (document.activeElement === first || outside)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (document.activeElement === last || outside)) {
         event.preventDefault();
         first.focus();
       }

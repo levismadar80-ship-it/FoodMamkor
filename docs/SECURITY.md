@@ -117,6 +117,15 @@ def login(request: Request, ...):
 @limiter.limit("20/day")
 ```
 
+**Per-email keys (`email_from_body`, MEH-3373).** The key is the address as
+pydantic parses it (the value the handler sees), lower-cased, with a `+tag`
+dropped and Gmail dots removed — so a display name (`A <v@x.com>`), a
+fullwidth letter in the domain or `v+1@…` cannot open a fresh bucket for the
+same inbox. Used by `/auth/register`, `/auth/register/producer`,
+`/auth/forgot-password`, and the account-less sign-up routes
+(`routers/registrations.py`: 3/hour and 10/day per recipient, one bucket for
+events and experiences). Counters are in-process memory: a deploy resets them.
+
 **Deploy requirement:** `TRUSTED_PROXY=1` on Railway staging +
 production backends. Without it, the key function falls through to
 `get_remote_address` and the bug returns. See `docs/DEPLOYMENT.md` §D.
@@ -241,6 +250,14 @@ Additional notes:
 
 ### 6. העלאת קבצים — תמונות מסוכנות
 
+**Body size cap (MEH-3374).** `backend/app/body_limit.py` answers **413** to
+any request body above **6 MB**, before the route runs: by `Content-Length`
+(nothing is read), and by counting the bytes that arrive when the header is
+missing or wrong. It sits outside the DB bulkhead, so a refused body holds no
+DB slot, and inside CORS / X-Request-ID / the security headers. The 5 MB image
+cap below is a second, narrower check inside the upload route. The WhatsApp
+webhook keeps its own smaller cap.
+
 ```python
 # backend/app/utils/file_upload.py
 
@@ -274,6 +291,11 @@ async def validate_and_upload_image(file: UploadFile) -> str:
     )
     return result["secure_url"]
 ```
+
+**מחיקת תמונה ישנה (MEH-3247):** ניקוי תמונה מ-Cloudinary בודק קודם שאף שורה
+אחרת לא משתמשת באותו public_id (`services/image_refs.py`), ואם הבדיקה נכשלת —
+לא מוחקים. בלי זה, בעלת עסק יכלה להכניס לגלריה שלה כתובת של תמונה של עסק אחר,
+להסיר אותה, ולמחוק לו את התמונה. פירוט: DATA.md, סעיף Upload.
 
 ### 7. CORS — אל תאפשרי לכולם
 
@@ -366,7 +388,10 @@ sessions know not to drift.
   salt, limiting rainbow-table attacks across the old dataset. The
   hashing helper lives at `backend/app/services/analytics.py::hash_ip`
   and is the ONLY write path for the column — the Pydantic schema has
-  no `viewer_ip` field that could accidentally bypass it.
+  no `viewer_ip` field that could accidentally bypass it. Hashes do not
+  live forever either: raw page views are deleted after 90 days, and
+  `producer_contact_clicks.ip_hash` (with `user_id`) is set to NULL after
+  90 days (`services/retention_purge.py`, MEH-3244).
 
 - **Per-process in-memory sliding window for server_health (v1
   limitation).** `GET /admin/dashboard` exposes `response_time_avg_ms`
@@ -516,12 +541,16 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
 
 **SHIPPED — MEH-329 (April 2026).** Defense-in-depth per ASVS V13.
 React's automatic encoding remains the primary defense; this strips
-HTML tags at the input layer so stored content is safe even if a
-future component renders it via `dangerouslySetInnerHTML`.
+HTML tags at the input layer. Since MEH-3317 the stored value is **plain
+text** (a bare `<` or `&` is kept as typed), so it is NOT safe to render via
+`dangerouslySetInnerHTML` or to interpolate into HTML unescaped — every
+sink encodes on output.
 
 - **Helper:** `backend/app/services/sanitization.py` →
-  `sanitize_text(value, max_length)`. Strips all HTML tags via
-  `bleach.clean(value, tags=[], strip=True)` and caps length.
+  `sanitize_text(value, max_length)`. Strips all HTML tags with
+  `bleach.clean(value, tags=[], strip=True)`, decodes entities, and repeats
+  until stable (≤5 passes; otherwise, or if a tag opener like `<img` remains,
+  it keeps the encoded form), then caps length (MEH-3317).
 - **Applied to** 30 fields across 11 schemas covering producers,
   home-products, experiences, events, reviews, ratings, and the
   contact form. See `CHANGELOG.md` MEH-329 entry for the full list,
@@ -629,7 +658,10 @@ bytes. bcrypt 5 raises `ValueError` for >72 bytes instead. Truncating
 explicitly in both `hash_password` and `verify_password` keeps those rows
 verifying and keeps behaviour identical. Rejecting >72-byte passwords was
 considered and declined (it needs new user-facing copy). NUL bytes are
-still refused with `ValueError`, as passlib did.
+still refused: `hash_password` raises `ValueError`, as passlib did, and
+`PasswordField` rejects one with a 422 before it gets there. `verify_password`
+answers "no match" for a candidate that has one, so a NUL in a login password
+is an ordinary 401 (MEH-3271; it was a 500).
 
 ### 13. Timing equalization (anti-enumeration)
 
@@ -1150,6 +1182,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 - **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
 - **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
 - **`/auth/email-exists` deleted entirely.** No 30/min oracle. Frontend caller in `register/producer/page.js` removed.
+- **Account deletion needs proof, not just a session (MEH-3248).** `POST /auth/me/delete` (5/hour) requires the current password; an account without one sends a fresh Google/Apple `id_token` whose `sub` is this account's linked id and whose `iat` is ≤5 min old (`services/account_guards.verify_deletion_credentials`). A provider token never stands in for a password. Admins and the super-admin are refused (403) before any credential check, on the self door and on `DELETE /admin/users/{id}` (`assert_deletable`). The bodyless `DELETE /auth/me` is gone (405).
 - **No auto-login on register.** `lib/auth-context.js::register()` returns the ack to the caller; no `localStorage.setItem("token")`, no `/auth/me` chain. Users verify via the email link. Since MEH-3087 a valid link also signs in **the browser that registered**: every register reply (all branches, same shape) sets an HttpOnly `signup_marker` cookie = HMAC(secret, verify token); `GET /auth/verify-email` returns an access token and sets the refresh + fingerprint cookies only when that cookie matches the link, the user is not blocked and the browser carries no session. Any other holder of the link is verified and logs in with a password — so registering another person's email with your own password never leaves you inside the account they are signed in to. The register response still carries no token and no session cookie. Password login at `/auth/login` works before verification too. Frontend success screens show a unified "בדקי את תיבת המייל שלך 📬" inbox-check UI on both `/register` and `/register/producer` non-upgrade.
 - **Upgrade path preserved** (authenticated user adding producer to existing account): still returns `ProducerRegistrationResponse {access_token, whatsapp_sent}`, still stores token, still renders the existing dashboard CTA on step 3. No enumeration vector — caller already proved control of the email via JWT.
 

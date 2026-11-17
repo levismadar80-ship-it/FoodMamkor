@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   official-registries
  * Purpose:  Canonical URLs for the official government registries admins

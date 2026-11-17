@@ -2,10 +2,16 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
   BellRinging,
+  CalendarCheck,
+  ChatCircleDots,
   Check,
+  CreditCard,
+  Gift,
   HandCoins,
   ListChecks,
   Prohibit,
+  Timer,
+  WarningCircle,
 } from "@phosphor-icons/react/ssr";
 import SeedMark from "@/components/brand/SeedMark";
 import { Link } from "@/i18n/navigation";
@@ -15,7 +21,8 @@ import BackLink from "@/components/ui/BackLink";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
+import { PRICING_PATH, pricingCopyKey, pricingCopyValues } from "@/lib/pricing";
+import { rescueBagsEnabled } from "@/lib/rescue";
 
 /**
  * Module:   join/pricing/page
@@ -60,10 +67,21 @@ export async function generateMetadata({ params }) {
 const CARD = "rounded-lg border border-border bg-surface-card p-5 sm:p-6";
 const FREE_ITEMS = ["free_item_page", "free_item_found", "free_item_verified"];
 const FEE_ITEMS = ["fee_item_booking", "fee_item_group", "fee_item_bag", "fee_item_free"];
+// MEH-3219 (B16): while rescue bags are off (production's default) the price
+// list does not price a tool the business cannot see.
+const BAG_ONLY_ITEMS = ["fee_item_bag"];
 const NOTES = [
   { key: "counted", Icon: ListChecks },
   { key: "notice", Icon: BellRinging },
   { key: "money", Icon: HandCoins },
+  // MEH-3197: what a business asks next — early joiners, a wrong count, a price change.
+  { key: "early", Icon: Gift },
+  { key: "dispute", Icon: ChatCircleDots },
+  { key: "change", Icon: CalendarCheck },
+  // After charging starts: a new business's trial, cancelling, an unpaid charge.
+  { key: "trial", Icon: Timer },
+  { key: "cancel", Icon: CreditCard },
+  { key: "unpaid", Icon: WarningCircle },
 ];
 
 /** @param {{ children: import("react").ReactNode, onDark?: boolean }} props */
@@ -110,6 +128,8 @@ export default async function PricingPage({ params }) {
   const t = await getTranslations({ locale, namespace: "pricing.page" });
   const tJoin = await getTranslations({ locale, namespace: "join" });
   const v = pricingCopyValues();
+  const bags = rescueBagsEnabled();
+  const feeItems = FEE_ITEMS.filter((key) => bags || !BAG_ONLY_ITEMS.includes(key));
 
   return (
     <div className="min-h-screen bg-background text-text" data-testid="pricing-page">
@@ -179,7 +199,7 @@ export default async function PricingPage({ params }) {
           <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-4">
             <OptionCard label={t("sub_title")} price={t("sub_price", v)} testId="pricing-subscription">
               <p className="leading-relaxed text-text/85">{t("sub_note", v)}</p>
-              <p className="leading-relaxed text-text">{t("sub_fee", v)}</p>
+              <p className="leading-relaxed text-text">{t(pricingCopyKey("sub_fee", bags), v)}</p>
               <div className="mt-auto border-t border-border pt-3">
                 <p className="font-medium text-text">{t("sub_fit", v)}</p>
                 <p className="mt-1 text-sm leading-relaxed text-fg-muted" data-testid="pricing-subscription-example">
@@ -191,11 +211,11 @@ export default async function PricingPage({ params }) {
               {t("or")}
             </p>
             <OptionCard label={t("fee_title")} price={t("fee_price")} testId="pricing-commission">
-              <CheckList items={FEE_ITEMS.map((key) => t(key, v))} />
+              <CheckList items={feeItems.map((key) => t(key, v))} />
               <p className="rounded bg-background-alt px-3 py-2 text-sm leading-relaxed text-text">{t("fee_example", v)}</p>
               <div className="mt-auto border-t border-border pt-3">
                 <p className="font-medium text-text">{t("fee_fit")}</p>
-                <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t("fee_note")}</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t("fee_note", v)}</p>
               </div>
             </OptionCard>
           </div>
@@ -208,15 +228,18 @@ export default async function PricingPage({ params }) {
             </p>
             <p className="leading-relaxed text-text/85">{t("stay_body")}</p>
           </div>
+          <p className="mt-4 leading-relaxed text-text/85" data-testid="pricing-compare">
+            {t("compare_body", v)}
+          </p>
         </section>
 
-        {/* ── Three short answers ── */}
+        {/* ── Short answers ── */}
         <section className="mb-12 grid grid-cols-1 gap-4 sm:mb-16 sm:grid-cols-3" data-testid="pricing-notes">
           {NOTES.map(({ key, Icon }) => (
             <div key={key} className={CARD}>
               <Icon size={24} className="mb-3 text-primary" aria-hidden="true" />
               <h3 className="mb-2 font-headline-md text-lg font-bold text-primary-dark">{t(`${key}_title`)}</h3>
-              <p className="leading-relaxed text-text/85">{t(`${key}_body`, v)}</p>
+              <p className="leading-relaxed text-text/85">{t(pricingCopyKey(`${key}_body`, bags), v)}</p>
             </div>
           ))}
         </section>
@@ -235,6 +258,9 @@ export default async function PricingPage({ params }) {
 
         <p className="mb-6 text-center text-sm text-fg-muted" data-testid="pricing-as-of">
           {t("as_of", v)}
+          <span className="block" data-testid="pricing-vat">
+            {t("vat")}
+          </span>
         </p>
 
         <p className="pb-14 text-center sm:pb-20">

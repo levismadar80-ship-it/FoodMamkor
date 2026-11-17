@@ -1,3 +1,4 @@
+// @ts-check
 import { buildEntityTitle } from "@/lib/i18n-seo";
 import ProducerGone from "../[slug]/ProducerGone";
 

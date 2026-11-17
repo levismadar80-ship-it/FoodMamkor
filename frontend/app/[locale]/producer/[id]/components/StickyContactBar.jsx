@@ -1,3 +1,4 @@
+// @ts-check
 import { useTranslations } from "next-intl";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";

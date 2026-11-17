@@ -40,7 +40,14 @@ from app.services.auth_emails import (
 from app.services.auth_notifications import (
     notify_producer_registered,
 )
+from app.services.account_guards import (  # MEH-3248
+    AccountDeleteRequest,
+    assert_deletable,
+    is_super_admin,
+    verify_deletion_credentials,
+)
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
+from app.services import resend_verify_cap  # MEH-2906
 from app.services.verify_session import (  # MEH-3087
     set_signup_marker,
     verify_email_session,
@@ -64,6 +71,7 @@ from app.services.producer_queries import (
 from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, Producer, ProducerCategory, User
+from app.services.farmer_declaration import farmer_declaration_stamp
 from app.rate_limit import email_from_body, limiter
 from app.schemas.schemas import (
     AppleAuthRequest,
@@ -510,6 +518,13 @@ async def register_producer(
             db, data.category_ids, data.producer_license_number
         )
 
+    # MEH-2923: the grower declaration is checked HERE (after the license check, so
+    # that 422 keeps its priority), not only by the client
+    # gate, and recorded on its own columns (services/farmer_declaration.py).
+    farmer_stamp = farmer_declaration_stamp(
+        db, data.category_ids, data.farmer_declaration_accepted
+    )
+
     if upgrade_path:
         # ---- UPGRADE PATH (UNCHANGED in MEH-328) -----------------------
         # Authenticated user upgrading to producer. No enumeration vector —
@@ -572,6 +587,7 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
+            **farmer_stamp,  # MEH-2923: grower declaration, its own record
             # MEH-2100: registration creates a DRAFT, not a queue entry. The
             # business is invisible to the admin review queue until the owner
             # presses "שליחה לבדיקה" (POST /producers/me/submit-for-review),
@@ -807,6 +823,7 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
+            **farmer_stamp,  # MEH-2923: grower declaration, its own record
             # MEH-2100: see the upgrade branch above — same value, same reason.
             # These two branches are the only Producer writers on this route
             # and both had to move; a fix to one alone would have left the
@@ -1152,7 +1169,10 @@ def register_producer_oauth(
         if user:
             # Email registered via password or the *other* OAuth provider.
             # Refuse silent link — same rule as /auth/google and /auth/apple.
-            if not getattr(user, sub_field):
+            # MEH-3272: compare the provider id itself (MEH-3104 fixed the
+            # two siblings). `if not getattr(...)` let an account linked to a
+            # DIFFERENT Google/Apple identity through with a full session.
+            if getattr(user, sub_field) != oauth_sub:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
@@ -1310,6 +1330,8 @@ def get_me(
 ) -> UserOut:
     """Return current user, enriched with producer status/rejection_reason."""
     out = UserOut.model_validate(user)
+    # MEH-3248: /settings explains instead of offering a delete button.
+    out.is_super_admin = is_super_admin(user)
     if user.producer_id:
         producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
         if producer:
@@ -1584,9 +1606,11 @@ def resend_verify(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Re-send verification email. Rate-limited to 3/hour per IP."""
+    """Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
+    per account (MEH-2906, services/resend_verify_cap.py)."""
     if user.email_verified:
         return {"detail": "האימייל כבר מאומת"}
+    resend_verify_cap.enforce_per_account_cap(str(user.id))  # MEH-2906
     token = secrets.token_urlsafe(32)
     expires = utc_now() + timedelta(hours=24)
     user.email_verify_token = token  # type: ignore[assignment]
@@ -1601,15 +1625,24 @@ def resend_verify(
     return {"detail": "אימייל אימות נשלח"}
 
 
-@router.delete("/me", response_model=None)
-@limiter.limit("3/hour")
+# MEH-3248: POST with a body replaces the bodyless DELETE /auth/me, which let
+# any live session delete the account (admins included) with no re-check.
+# DO NOT add the DELETE back as an alias — it would reopen that door.
+@router.post("/me/delete", response_model=None)
+@limiter.limit("5/hour")
 def delete_account(
     request: Request,
+    body: AccountDeleteRequest,
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Delete user account and all associated data.
+
+    MEH-3248: refused for admin accounts (account_guards.assert_deletable,
+    checked first), then the caller proves she owns the account: password, or
+    a fresh Google/Apple id_token for an account without one
+    (account_guards.verify_deletion_credentials).
 
     Required by Apple App Store Guidelines; also closes the GDPR /
     חוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who
@@ -1630,6 +1663,8 @@ def delete_account(
     reviews_count (maintained only in reviews.py) are recomputed after the
     deletion commits so they don't keep counting reviews that no longer exist.
     """
+    assert_deletable(user, door="self")
+    verify_deletion_credentials(user, body)
     user_email = user.email
     user_name = user.name
     # MEH-2952: captured BEFORE the row is deleted — a test account's

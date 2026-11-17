@@ -22,7 +22,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Producer, User
-from app.routers import admin as admin_module
+from app.services import producer_approval as admin_module
 
 # MEH-2020 — imported from the owner. This used to read `from app.routers.admin`,
 # which worked only because admin.py happened to re-export it; the set has always

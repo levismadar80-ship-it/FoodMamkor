@@ -10,7 +10,7 @@ Touches:  reads `cities` (name_he, lat, lng), then the bundled
 Does NOT: geocode a street address, call Google or Nominatim, or decide
           precision semantics — callers stamp `location_precision=
           "approximate"` themselves (producer_queries.create_primary_branch_
-          location, producer_me.py locations endpoints). The submission gate
+          location, producer_me_locations.py endpoints). The submission gate
           (services/submission_gate.py) is untouched: it keeps demanding real
           coordinates, and this module is how a town-only business obtains them.
 Related:  backend/app/data/cities.py:144 (city_key — the one comparison form,

@@ -66,7 +66,7 @@ def test_admin_delete_keeps_the_slug_from_the_next_business(client, db):
 def test_owner_account_delete_keeps_the_slug_from_the_next_business(client, db):
     producer = _business(db)
     owner = _owner_of(db, producer)
-    assert client.delete("/auth/me", headers=auth_header(owner)).status_code == 200
+    assert client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(owner)).status_code == 200
 
     assert _ensure_unique_slug(db, SLUG) == f"{SLUG}-2"
 

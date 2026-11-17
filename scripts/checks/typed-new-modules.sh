@@ -35,7 +35,8 @@ js_files() {
 }
 
 # [tool.mypy] files = [...] — paths relative to backend/
-typed="$(awk '/^\[tool\.mypy\]/{m=1;next} /^\[/{m=0} m && /^files *=/{print}' "$PYPROJECT" | grep -oE '"[^"]+"' | tr -d '"' | sed 's#^#backend/#')"
+# One entry per line (sorted) so parallel PRs don't conflict on one line; read to the closing `]`.
+typed="$(awk '/^\[tool\.mypy\]/{m=1;next} /^\[/{m=0} m && /^files *=/{f=1} f{print} f && /\]/{f=0}' "$PYPROJECT" | grep -oE '"[^"]+"' | tr -d '"' | sed 's#^#backend/#')"
 
 fail=0; npy=0; njs=0
 while IFS= read -r f; do

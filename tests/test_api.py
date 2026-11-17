@@ -1993,7 +1993,7 @@ class TestAdminFlows:
         # Create
         resp = client.post(
             "/admin/categories",
-            json={"name": "חדש", "emoji": "✨"},
+            json={"name": "חדש", "emoji": "✨", "requires_license": False},
             headers=auth_header(admin),
         )
         assert resp.status_code in (200, 201)
@@ -3079,8 +3079,7 @@ class TestCloudinaryHebrewErrors:
     """Upload error responses must be Hebrew (MEH-153)."""
 
     def test_freemium_limit_returns_hebrew(self, client, db):
-        """A producer on free plan with 3+ images gets a Hebrew 403."""
-        import io
+        """A free-plan producer growing the gallery past 3 gets a Hebrew 403."""
 
         user = make_user(db, role="producer", email="upload_limit@test.com")
         producer = make_producer(db)
@@ -3094,10 +3093,10 @@ class TestCloudinaryHebrewErrors:
         ]
         db.commit()
 
-        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
-        resp = client.post(
-            "/upload/image",
-            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+        # MEH-3220: the cap is enforced on the gallery write, not the upload.
+        resp = client.put(
+            "/producers/me",
+            json={"images": [f"https://res.cloudinary.com/test/img/{i}.jpg" for i in range(4)]},
             headers=auth_header(user),
         )
         assert resp.status_code == 403
@@ -3247,14 +3246,10 @@ class TestOwnerStoryFields:
             email="owner_upload_cap@test.com",
         )
         fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
-        # Control: the gallery endpoint IS capped for this exact user…
-        blocked = client.post(
-            "/upload/image",
-            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
-            headers=auth_header(user),
-        )
-        assert blocked.status_code == 403
-        # …but the owner-photo endpoint is not (no freemium gate).
+        # MEH-3220: the gallery cap moved off /upload/image to the gallery
+        # write (PUT /producers/me), so there is no upload 403 to contrast
+        # with any more; the owner-photo endpoint must still accept a full
+        # gallery's owner.
         resp = client.post(
             "/upload/owner-photo",
             files={"file": ("me.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
@@ -5230,12 +5225,8 @@ class TestMeh1167KashrutCard:
             ],
         )
         fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
-        blocked = client.post(
-            "/upload/image",
-            files={"file": ("g.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
-            headers=auth_header(user),
-        )
-        assert blocked.status_code == 403
+        # MEH-3220: /upload/image no longer carries the gallery cap (it moved
+        # to PUT /producers/me), so the old 403 control is gone.
         ok = client.post(
             "/upload/kashrut-cert",
             files={"file": ("cert.jpg", io.BytesIO(fake_jpg), "image/jpeg")},

@@ -1,3 +1,4 @@
+// @ts-check
 // Dashboard status colours — one owner for the four "tools" spokes (MEH-1640).
 //
 // producer/dashboard/{events,experiences,group-buys,recipes}/page.js each

@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable max-lines, max-lines-per-function */
 "use client";
 
@@ -111,6 +112,7 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 // asserts the equality for all four reused labels in both locales, and fails
 // if a sixth chapter is added without a mirror entry. (Chapter 01 is exempt:
 // the story section had no eyebrow, so "הסיפור" is genuinely new copy.)
+/** @param {{ label: import("react").ReactNode, as?: import("react").ElementType }} props */
 function Chapter({ label, as: Tag = "p" }) {
   return (
     <div className="flex items-center gap-3 mb-3 md:mb-4">
@@ -300,7 +302,7 @@ export default function AboutPage() {
                 removed with the portrait: it is editorial copy, not a photo
                 credit, so it survives the card it happened to live inside.
                 story.caption1 does NOT survive — its opening clause IS
-                signature.role ("מייסדת מהמקור"), and the two would have read
+                signature.role (founder role — two founders since MEH-3323), and the two would have read
                 twice, three lines apart. Both keys remain in he.json and
                 en.json untouched, so restoring either is a one-line change
                 if Sapir wants it back. */}

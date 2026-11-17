@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
@@ -90,10 +91,12 @@ export default function AccountSheet({ open, onClose, user, logout }) {
       if (!list.length) return;
       const first = list[0];
       const last = list[list.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the panel is pulled back in.
+      const outside = !panelRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }

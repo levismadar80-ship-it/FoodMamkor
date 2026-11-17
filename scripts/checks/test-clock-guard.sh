@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# test-clock-guard.sh — warn-only guard against a backend test that reads the
+# test-clock-guard.sh — BLOCKING guard (MEH-3160; warn-only until 14/11/2026)
+# against a backend test that reads the
 # RUNNER's calendar date where the code reads Israel's (MEH-2382).
 #
 # WHY THIS EXISTS
@@ -33,13 +34,11 @@
 #   .claude/rules/testing.md § "Clock-dependent tests seed from the Israel
 #   clock".
 #
-# WARN-ONLY, ON PURPOSE — AND HOW THAT IS ENCODED
-#   This exits 0 always. It prints the token WARNING, which run-all.sh surfaces
-#   inline and summarises as WARN without changing the run's exit code (see its
-#   "WARN SURFACING (MEH-1715)" block). Born warn-only for the reason
-#   israel-clock-guard.sh records (MEH-1868): a gate that arrives already
-#   blocking gets routed around. It is born with ZERO standing findings, so a
-#   WARNING here is always a new one. Promotion to blocking is a separate step.
+# BLOCKING SINCE MEH-3160 (14/11/2026)
+#   Exit 1 on any finding. Born warn-only (MEH-2382) with ZERO standing
+#   findings, promotion left as "a separate step". A warning that never blocks
+#   is read by nobody (see israel-clock-guard.sh), so this is that step. The
+#   per-line token stays `WARNING` because the self-test below parses it.
 #
 # ESCAPE HATCH
 #   `guard-ok: <reason>` in a comment on the offending line or either adjacent
@@ -47,7 +46,7 @@
 #   required; the bare marker does not suppress.
 #
 # USAGE
-#   bash scripts/checks/test-clock-guard.sh            # always exit 0 (warn-only)
+#   bash scripts/checks/test-clock-guard.sh            # exit 1 on any finding
 #   bash scripts/checks/test-clock-guard.sh <dir>      # scan another tree
 #   bash scripts/checks/test-clock-guard.sh --self-test
 #       Writes a fixture file with one line per classifier branch (bare call,
@@ -55,7 +54,7 @@
 #       cover, `#` comment, datetime.date.today()), runs THIS script on it and
 #       asserts exactly the expected lines are reported. Exit 1 on a miss —
 #       the only mode in which this script can fail. run-all.sh never passes
-#       arguments, so CI always runs the warn-only scan.
+#       arguments, so CI always runs the blocking scan.
 #
 set -uo pipefail
 
@@ -145,9 +144,9 @@ done < <(grep -rnP '(?<![\w.])date\.today\(\)|\bdatetime\.date\.today\(\)' "$SCA
 
 echo
 if [ "$findings" -gt 0 ]; then
-  echo "test-clock-guard WARNED — $findings finding(s). Not blocking (warn-only, MEH-2382)."
+  echo "test-clock-guard FAILED — $findings finding(s). Blocking since MEH-3160 (was warn-only, MEH-2382)."
   echo "Fix by seeding from israel_today() / israel_days_ago(), or annotate with 'guard-ok: <reason>' within +/-1 line."
-  exit 0
+  exit 1
 fi
 echo "test-clock-guard OK — no runner-date seeds in $SCAN_DIR."
 exit 0

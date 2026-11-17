@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   producerPoints
  * Purpose:  Derive a producer's map-able points from its own data — the single

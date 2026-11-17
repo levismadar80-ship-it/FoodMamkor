@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-2540: progress toward the group price, for the list card and the page.
  *

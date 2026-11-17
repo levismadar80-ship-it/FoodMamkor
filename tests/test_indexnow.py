@@ -219,7 +219,7 @@ class TestUrlShapesMatchSitemap:
 
 class TestProducerWritePoints:
     def test_approve_pings_the_new_page(self, client, db, monkeypatch, posts):
-        import app.routers.admin as admin_module
+        import app.routers.admin_decisions as admin_module
 
         monkeypatch.setattr(
             admin_module, "notify_producer_approved", lambda *a, **k: None

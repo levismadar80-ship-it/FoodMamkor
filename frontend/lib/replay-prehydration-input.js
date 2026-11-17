@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-2602: typing that lands before hydration must not be silently dropped.
  *
@@ -64,7 +65,10 @@ function onEarlyInput(event) {
 export function startPrehydrationCapture() {
   if (typeof document === "undefined" || capturing) return;
   capturing = true;
-  for (const el of document.querySelectorAll("input, textarea")) {
+  const fields = /** @type {NodeListOf<HTMLInputElement | HTMLTextAreaElement>} */ (
+    document.querySelectorAll("input, textarea")
+  );
+  for (const el of fields) {
     if (el.value !== el.defaultValue) remember(el);
   }
   document.addEventListener("input", onEarlyInput, true);
@@ -99,11 +103,16 @@ function keepCaret(el, write) {
  * React heard her type into after hydration (state already matches) is never
  * re-fired, uncontrolled fields keep their own DOM value untouched, and a field
  * not yet hydrated is left for the next pass.
+ *
+ * @param {ParentNode | null} [root]
  */
 export function replayPrehydrationInput(root = typeof document !== "undefined" ? document : null) {
   if (!root) return 0;
   let replayed = 0;
-  for (const el of root.querySelectorAll("input, textarea")) {
+  const fields = /** @type {NodeListOf<HTMLInputElement | HTMLTextAreaElement>} */ (
+    root.querySelectorAll("input, textarea")
+  );
+  for (const el of fields) {
     if (!isTextField(el) || el.disabled || el.readOnly) continue;
     const props = reactProps(el);
     if (props?.value == null || typeof props.onChange !== "function") continue;

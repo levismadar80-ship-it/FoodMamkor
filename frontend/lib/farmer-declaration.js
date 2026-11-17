@@ -1,3 +1,4 @@
+// @ts-check
 // MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
 // conditional grower declaration ("תוצרת שגידלתי בחלקתי בלבד"). Hebrew NAMES
 // (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.

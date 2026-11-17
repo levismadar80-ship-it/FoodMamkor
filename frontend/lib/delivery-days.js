@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   delivery-days
  * Purpose:  The canonical delivery-day vocabulary — bare Hebrew day names, the

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   edit-accordion-chips
  * Purpose:  Answer one question per edit-hub accordion card — does this card

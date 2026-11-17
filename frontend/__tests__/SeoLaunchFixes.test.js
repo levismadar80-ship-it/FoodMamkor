@@ -75,7 +75,8 @@ describe("/rescue has its own canonical", () => {
 });
 
 describe("sitemap offers the indexable pages it used to miss", () => {
-  const src = read("app/sitemap.js");
+  // MEH-3265: the fixed list moved to lib/sitemap-static.js.
+  const src = read("lib/sitemap-static.js");
   for (const p of ["/privacy", "/accessibility", "/about/for-businesses/guides", "/about/for-businesses/guides/business-story"]) {
     it(p, () => expect(src).toContain(`path: "${p}"`));
   }

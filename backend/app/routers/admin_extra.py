@@ -17,7 +17,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
-from app.config import settings
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
@@ -45,6 +44,7 @@ from app.models.models import (
     ProducerRecipe,
 )
 from app.schemas.schemas import (
+    CategoryCreate,
     CategoryIn,
     CategoryOut,
     RiskScoreResponse,
@@ -54,8 +54,16 @@ from app.schemas.schemas import (
     UserRoleUpdate,
     VacationModeState,
 )
+from app.services.account_guards import (  # MEH-3248: moved here, re-exported
+    assert_deletable,
+    is_super_admin,
+)
 from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services.category_slug import resolve_unique_slug
+from app.services.rescue_no_show import (
+    NO_SHOW_BLOCK_AT,
+    active_no_show_counts,
+)  # MEH-3226
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services.vacation_state import read_vacation_state
 from app.services.whatsapp import undelivered_predicate
@@ -64,17 +72,6 @@ from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 logger = logging.getLogger(__name__)
-
-
-def is_super_admin(target: User) -> bool:
-    """MEH-2890: the protected owner account, from SUPER_ADMIN_EMAIL (config).
-    EXACT match on the stored address, as the old constant was: emails are
-    unique case-sensitively, so a case-insensitive match would hand the
-    protection to anyone who registers a case variant. Never true when the
-    setting is empty — and production cannot run with it empty
-    (config._load_settings refuses to boot)."""
-    protected = settings.super_admin_email
-    return bool(protected) and (target.email or "").strip() == protected
 
 
 # MEH-1571: shared Hebrew copy for the two update_category guards. Named
@@ -158,6 +155,8 @@ def list_users(
         .group_by(Favorite.user_id)
         .all()
     )
+    # MEH-3226: one grouped query, the same count the reserve gate reads.
+    no_shows = active_no_show_counts(db, [u.id for u in users])  # type: ignore[misc]
     out = []
     for u in users:
         out.append(
@@ -174,6 +173,8 @@ def list_users(
                 is_super_admin=is_super_admin(u),
                 producer_id=u.producer_id,
                 favorites_count=fav_counts.get(u.id, 0),
+                rescue_active_no_shows=no_shows.get(u.id, 0),
+                rescue_blocked=no_shows.get(u.id, 0) >= NO_SHOW_BLOCK_AT,
                 created_at=u.created_at or utc_now(),
             )
         )
@@ -237,7 +238,7 @@ def admin_delete_user(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """MEH-2585: hard-delete a user and her data — same cascade as the
-    self-service DELETE /auth/me (services/user_deletion.py), minus the
+    self-service POST /auth/me/delete (services/user_deletion.py), minus the
     confirmation email (an admin removal, often of a test account).
 
     Admins are refused: demote first, so removing an admin is always two
@@ -248,13 +249,8 @@ def admin_delete_user(
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="אי אפשר למחוק את עצמך מכאן")
-    if is_super_admin(target):
-        raise HTTPException(status_code=403, detail="לא ניתן למחוק את האדמין הראשי")
-    if target.role == "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="לא ניתן למחוק אדמין. קודם מורידים את הרשאת האדמין.",
-        )
+    # MEH-3248: one rule for both doors (services/account_guards.py).
+    assert_deletable(target, door="admin")
     # Irreversible, so leave a trail in the Railway logs: ids only, no email.
     logger.info(
         "[admin.delete_user] admin_id=%s deleted user_id=%s role=%s producer_id=%s",
@@ -311,7 +307,7 @@ def list_categories_admin(
 
 @router.post("/categories", response_model=CategoryOut, status_code=201)
 def create_category(
-    data: CategoryIn,
+    data: CategoryCreate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> CategoryOut | Category:
@@ -327,6 +323,7 @@ def create_category(
         name=data.name,
         emoji=data.emoji,
         slug=resolve_unique_slug(db, data.name),
+        requires_license=data.requires_license,  # MEH-3255
     )
     db.add(cat)
     # MEH-2139: `resolve_unique_slug` above is a SELECT and this is the INSERT,

@@ -362,6 +362,15 @@ body:has([data-meets-footer]) footer[data-site-footer] {
   footer[data-site-footer] {
     padding-bottom: var(--bottom-inset);
   }
+  /* MEH-3198: /map sizes its shell to the viewport (calc(100dvh - header)),
+     and its bottom sheet clears the nav pill itself, so the nav part of the
+     body reserve only added a scroll: measured 80px on a phone. The cookie
+     banner's part stays: the banner floats over the bottom of the map (the
+     near-me pill sits there), and without it the pill can't be scrolled
+     clear of the banner until consent. 0 once the banner is gone. */
+  body:has([data-map-shell]) {
+    padding-bottom: var(--cookie-banner-h, 0px);
+  }
 }
 
 /* Leaflet map fixes */

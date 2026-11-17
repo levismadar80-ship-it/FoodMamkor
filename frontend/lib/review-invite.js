@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   review-invite
  * Purpose:  Keep the owner's "request a review" token (`?rt=` on the shared
