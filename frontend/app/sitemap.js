@@ -174,8 +174,13 @@ export default async function sitemap() {
 
       const PER_PAGE = 24;
       const totalPages = Math.max(1, Math.ceil(producers.length / PER_PAGE));
-      for (let p = 1; p <= totalPages; p++) {
-        const path = p === 1 ? "/producers" : `/producers?page=${p}`;
+      // MEH-0000: from page 2. Page 1 is "/producers", and it now lives in
+      // SITEMAP_STATIC_PAGES so that a backend which is slow or down at build
+      // time cannot drop the business index from the sitemap — this whole
+      // block sits inside the fetch's success arm. Starting at 1 here would
+      // emit the same URL twice.
+      for (let p = 2; p <= totalPages; p++) {
+        const path = `/producers?page=${p}`;
         producerIndexPages.push(
           ...localizeEntry(path, {
             lastModified: now,
