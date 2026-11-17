@@ -637,7 +637,10 @@ bytes. bcrypt 5 raises `ValueError` for >72 bytes instead. Truncating
 explicitly in both `hash_password` and `verify_password` keeps those rows
 verifying and keeps behaviour identical. Rejecting >72-byte passwords was
 considered and declined (it needs new user-facing copy). NUL bytes are
-still refused with `ValueError`, as passlib did.
+still refused: `hash_password` raises `ValueError`, as passlib did, and
+`PasswordField` rejects one with a 422 before it gets there. `verify_password`
+answers "no match" for a candidate that has one, so a NUL in a login password
+is an ordinary 401 (MEH-3271; it was a 500).
 
 ### 13. Timing equalization (anti-enumeration)
 

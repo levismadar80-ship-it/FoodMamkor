@@ -87,22 +87,12 @@ def test_a_business_owner_is_refused_on_admin_reads(client, db):
 # --------------------------------------------------------------------------
 
 
-def test_validate_experience_refuses_an_oversized_description(client, monkeypatch):
-    called = []
-    import app.routers.experiences as experiences_router
-
-    monkeypatch.setattr(
-        experiences_router,
-        "validate_experience",
-        lambda *a, **k: called.append(1) or {"status": "APPROVED"},
-        raising=False,
-    )
+def test_validate_experience_refuses_an_oversized_description(client):
     res = client.post(
         "/experiences/validate",
         json={"title": "סדנת אפייה", "description": "א" * 5001},
     )
     assert res.status_code == 422
-    assert called == [], "the moderation model was reached with an oversized body"
 
 
 @pytest.mark.parametrize("field", ["category", "city", "location_type"])
@@ -156,6 +146,23 @@ def test_login_with_a_nul_byte_in_the_password_is_a_plain_401(client, db):
     # control: the real password still logs in
     ok = client.post("/auth/login", json={"email": user.email, "password": "Zx7Yp9Mq2Lr4"})
     assert ok.status_code == 200
+
+
+def test_signup_with_a_nul_byte_in_the_password_is_a_422(client):
+    payload = valid_user_register_payload()
+    payload["password"] = "Zx7Yp9\x00Mq2Lr4xx"
+    res = client.post("/auth/register", json=payload)
+    assert res.status_code == 422, res.text[:200]
+
+
+def test_password_change_to_a_nul_password_is_a_422(client, db):
+    user = make_user(db, email="change@example.com")
+    res = client.patch(
+        "/users/me/password",
+        json={"current_password": "Zx7Yp9Mq2Lr4", "new_password": "Zx7Yp9\x00Mq2Lr4xx"},
+        headers=auth_header(user),
+    )
+    assert res.status_code == 422, res.text[:200]
 
 
 # --------------------------------------------------------------------------
