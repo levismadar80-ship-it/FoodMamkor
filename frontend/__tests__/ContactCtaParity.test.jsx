@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, within } from "@testing-library/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import StickyContactBar from "@/app/[locale]/producer/[id]/components/StickyContactBar";

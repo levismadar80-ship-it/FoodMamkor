@@ -135,7 +135,6 @@ function toEditForm(loc) {
 
 export default function LocationsEditor() {
   const t = useTranslations("settings.locations");
-  const tForm = useTranslations("settings.locations.form");
   const tKind = useTranslations("settings.locations.kind");
   const [locations, setLocations] = useState(null);
   const [loadError, setLoadError] = useState(false);

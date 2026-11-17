@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import fs from "node:fs";
-import path from "node:path";
 import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
 import api from "@/lib/api";
 
