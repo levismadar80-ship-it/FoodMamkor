@@ -440,7 +440,7 @@ pages של Screaming Frog ו-Ahrefs) רשום ב-MEH-3111.
 אחרי כל push ל-`staging` / `main`, כשה-build החדש עלה, רצים מול האתר החי:
 
 ```
-python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש
+python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש, ומאמת את ה-backend
 python scripts/checks/smoke_production.py                                  # main בלבד
 node   scripts/link-check.mjs <URL> --smoke                                # עד 10 כתובות (MEH-2864)
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
@@ -461,6 +461,32 @@ npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
 - הסקריפטים ב-`scripts/checks/` הם `.py`/`.cjs`, ו-`run-all.sh` מריץ רק `*.sh`,
   כך שהם לא הופכים לרגל של Repo guards.
 - ה-workflow עצמו: [docs/ci/meh-2749-post-deploy-checks.patch.md](./ci/meh-2749-post-deploy-checks.patch.md).
+
+### ‏`wait_for_deploy` לא שואל «האם Railway פרס», אלא «האם הקוד שרץ הוא הקוד של ה-commit»
+
+השער של ה-frontend הוא ה-build id בדף הבית. ל-backend יש grace של 3 דקות, ואחריה
+הסקריפט **לא** משווה sha ל-sha — הוא שואל את git אם קובץ תחת `backend/`,
+`Dockerfile` או `railway.json` שונה בין ה-sha שרץ לבין ה-sha שנדחף:
+
+| מצב | יציאה | למה |
+|---|---|---|
+| ה-backend ב-sha שנדחף | 0 | — |
+| ה-sha מאחור, אבל אין הבדל בקבצי ה-backend | 0 | הקוד שרץ **הוא** הקוד של ה-commit. דחיפה שנגעה רק ב-frontend לא אמורה להאדים. |
+| ה-sha מאחור ויש הבדל | **2** | בילד ישן. כל הבדיקות שאחריו מודדות backend אחר. |
+| אי אפשר להכריע (אין `git_sha`, או ה-sha מחוץ ל-`fetch-depth: 50`) | **2** | backend שמאחור ביותר מ-50 commits הוא כשלעצמו ממצא. |
+
+השוואת sha ל-sha היא בדיוק מה שנמדד כשגוי ב-06/11: שני sha שונים הם נורמליים
+ולא מזיקים כשאף אחד מהם לא נגע ב-backend. רק ה-diff מבדיל.
+
+**יציאה 2 עדיין חסרת שיניים** עד שספיר תקמט את
+[docs/ci/meh-0000-deploy-sha-gate.patch.md](./ci/meh-0000-deploy-sha-gate.patch.md):
+השורה ב-`post-deploy-checks.yml` עוטפת את הסקריפט ב-`|| echo "::warning …"`, וה-step
+של ה-Verdict מאגד רק smoke/links/headers/lighthouse. הסקריפט אומר את זה בעצמו
+בפלט שלו.
+
+`python scripts/checks/wait_for_deploy.py --self-test` מריץ מאגרי git מפוברקים
+עם תשובות ידועות, ורץ גם לפני השער עצמו: תשובה ישרה לדחיפת frontend ותשובה של
+השוואה שבורה הן שתיהן 0, ולכן ירוק מהסקריפט הוא ראיה רק אם ה-self-test עובר.
 
 ---
 
