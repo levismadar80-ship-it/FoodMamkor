@@ -72,7 +72,12 @@ from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, Producer, ProducerCategory, User
 from app.services.farmer_declaration import farmer_declaration_stamp
-from app.rate_limit import email_from_body, limiter
+from app.rate_limit import (
+    email_from_body,
+    limiter,
+    login_failures_exceeded,
+    record_login_failure,
+)
 from app.schemas.schemas import (
     AppleAuthRequest,
     AppleAuthResponse,
@@ -1276,22 +1281,34 @@ def register_producer_oauth(
     )
 
 
+# Approved word for word (Sapir 17/11) — the same text as `rate_limited` in
+# frontend/messages/he.json. Do not edit here.
+_LOGIN_RATE_LIMITED = "יותר מדי נסיונות. נסו שוב בעוד כמה דקות."
+
+
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
-# MEH-3372: a soft per-email ceiling next to the per-IP one — a password
-# guessed for ONE account from many IPs never trips the IP bucket. No lockout
-# and no state on the account: a 429 that clears by itself.
-# KNOWN COST (accepted in rulings 17/11 §א5, option ב): every attempt counts,
-# right password or wrong, so anyone who knows an address can keep its
-# password login answering 429 by sending 10 attempts each window. Open
-# sessions (refresh cookie) and Google / Apple sign-in are not affected.
-@limiter.limit("10/15 minutes", key_func=email_from_body)
+# MEH-3372: next to the per-IP limit, a soft ceiling on FAILED attempts per
+# address (10 in 15 minutes) — a password guessed for ONE account from many
+# IPs never trips the IP bucket. Counted in the handler, not by a decorator,
+# because a decorator counts every request: successful logins would use the
+# budget (the shared staging demo accounts, anyone who signs in often). No
+# lockout and no state on the account: a 429 that clears by itself.
+# REMAINING COST, accepted (Sapir 17/11, option ב): ten wrong attempts in a
+# window also stop the right password until the window ends, and can be
+# repeated. Open sessions and Google / Apple sign-in are not affected.
 def login(
     request: Request,
     response: Response,
     data: LoginRequest,
     db: Session = Depends(get_db),
 ) -> Token:
+    # Checked before any lookup or bcrypt, and for every address alike —
+    # existing or not — so the 429 says nothing about whether an account exists.
+    if login_failures_exceeded(data.email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=_LOGIN_RATE_LIMITED
+        )
     user = db.query(User).filter(User.email == data.email).first()
     # MEH-626: three failure branches must take indistinguishable time
     # before the 401. Each runs exactly one bcrypt-cost operation so an
@@ -1301,6 +1318,7 @@ def login(
         # Timing parity: run bcrypt against sentinel so this branch
         # matches wrong-password timing (MEH-626).
         verify_password(data.password, SENTINEL_HASH)
+        record_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
         )
@@ -1308,10 +1326,12 @@ def login(
         # Timing parity: OAuth-only user — same sentinel bcrypt to
         # match wrong-password timing (MEH-626).
         verify_password(data.password, SENTINEL_HASH)
+        record_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
         )
     if not verify_password(data.password, user.password_hash):  # type: ignore[arg-type]
+        record_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
         )

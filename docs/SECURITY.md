@@ -105,9 +105,10 @@ limiter = Limiter(key_func=get_real_client_ip)
 # Per-endpoint:
 @router.post("/auth/login")
 @limiter.limit("5/minute")        # per real client IP
-@limiter.limit("10/15 minutes", key_func=email_from_body)  # per email, soft: a 429 that clears itself, no lockout (MEH-3372).
-# Every attempt counts, so a third party can hold one address at 429 by repeating 10 attempts a window;
-# open sessions and Google/Apple sign-in keep working. Accepted cost (rulings 17/11 §א5).
+# + in the handler: at most 10 FAILED attempts per address in 15 minutes (MEH-3372) —
+#   checked before any lookup, counted only on a 401, never on a successful login. Soft: a 429
+#   that clears itself, no lockout. Ten wrong attempts also stop the right password until the
+#   window ends, and can be repeated; open sessions and Google/Apple sign-in keep working.
 def login(request: Request, ...):
 
 @router.post("/auth/register")

@@ -1,7 +1,8 @@
-"""MEH-3372 — POST /auth/login carries a soft per-email ceiling next to the
-per-IP one (rulings 17/11 §א5, option ב): 10 attempts per 15 minutes on one
-address, from any number of IPs. No lockout and no state on the account — a
-429 that clears by itself.
+"""MEH-3372 — POST /auth/login carries a soft ceiling on FAILED attempts per
+address next to the per-IP limit (Sapir 17/11, option ב): 10 failed attempts
+in 15 minutes on one address, from any number of IPs. A successful login is
+never counted. No lockout and no state on the account — a 429 that clears by
+itself.
 
 The per-IP limit is 5/minute, so every request here comes from its own IP
 (X-Real-IP behind TRUSTED_PROXY); otherwise the sixth request would be
@@ -12,7 +13,7 @@ import pytest
 
 from tests.conftest import make_user
 
-SAFE_PASSWORD = "Correct-Horse-Battery-9"
+SAFE_PASSWORD = "example-Passw0rd-changeme"
 
 
 @pytest.fixture
@@ -27,7 +28,7 @@ def rotating_ip(monkeypatch):
     return headers
 
 
-def _login(client, headers, email, password="wrong-password-123"):
+def _login(client, headers, email, password="example-wrong-changeme"):
     return client.post(
         "/auth/login",
         json={"email": email, "password": password},
@@ -92,3 +93,68 @@ def test_no_lockout_state_on_the_account(client, db, rotating_ip):
     assert _login(client, rotating_ip, "victim@test.com", SAFE_PASSWORD) == 429
     limiter._storage.reset()
     assert _login(client, rotating_ip, "victim@test.com", SAFE_PASSWORD) == 200
+
+
+# ---------- only FAILED attempts are counted ----------
+
+
+def test_successful_logins_never_use_the_budget(client, db, rotating_ip):
+    """Thirty correct logins in a row on one address, thirty IPs: all 200. With
+    a limit that counts every request the eleventh was a 429 — which is what
+    would have hit the shared staging demo accounts."""
+    make_user(db, email="busy@test.com", password=SAFE_PASSWORD)
+    statuses = [
+        _login(client, rotating_ip, "busy@test.com", SAFE_PASSWORD) for _ in range(30)
+    ]
+    assert statuses == [200] * 30
+
+
+def test_nine_failures_then_the_right_password_gets_in(client, db, rotating_ip):
+    make_user(db, email="victim@test.com", password=SAFE_PASSWORD)
+    assert [_login(client, rotating_ip, "victim@test.com") for _ in range(9)] == [
+        401
+    ] * 9
+    assert _login(client, rotating_ip, "victim@test.com", SAFE_PASSWORD) == 200
+
+
+def test_failures_on_an_address_with_no_account_are_limited_the_same_way(
+    client, db, rotating_ip
+):
+    """The 429 must not say whether an account exists: an unknown address
+    gets ten 401s and then 429, exactly like a real one."""
+    statuses = [_login(client, rotating_ip, "nobody-here@test.com") for _ in range(11)]
+    assert statuses == [401] * 10 + [429]
+
+
+def test_the_429_carries_the_approved_wording_and_matches_the_frontend_copy(
+    client, db, rotating_ip
+):
+    import json
+    from pathlib import Path
+
+    for _ in range(10):
+        _login(client, rotating_ip, "victim@test.com")
+    resp = client.post(
+        "/auth/login",
+        json={"email": "victim@test.com", "password": "example-wrong-changeme"},
+        headers=rotating_ip(),
+    )
+    assert resp.status_code == 429
+    approved = "יותר מדי נסיונות. נסו שוב בעוד כמה דקות."
+    assert resp.json()["detail"] == approved
+    he = json.loads(
+        (
+            Path(__file__).resolve().parents[1] / "frontend" / "messages" / "he.json"
+        ).read_text(encoding="utf-8")
+    )
+    found = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "rate_limited" and value == approved:
+                    found.append(value)
+                walk(value)
+
+    walk(he)
+    assert found, "he.json has no rate_limited key with the approved wording"
