@@ -4,6 +4,23 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-17 — טסטים פלאקיים + שמונת ה-PR-ים הפתוחים
+
+**שורה אחת:** עשרה PR-ים מוזגו ל-staging — #4721, #4723, #4536, #4630, #4641, #4637, #4635, #4578, #4728, #4730 — ו-PR המסמכים הזה. הפירוט ב-CHANGELOG.
+
+**מה צריך לדעת לפני עבודה:**
+
+- **יש סטאק מקומי מלא בסנדבוקס, והוא עובד.** ‏Postgres 16 ב-`/tmp/pgdata2`, ‏`bash scripts/e2e/start-local-backend.sh` (עם `DATABASE_URL` מקומי ושלוש סיסמאות ה-DEMO), ו-`npm run start` אחרי build. ‏Playwright רץ עם `--config=playwright.local.config.ts`, שמצביע על `/opt/pw-browsers/chromium`. זה מה שאיפשר לשחזר סיבות במקום לנחש, וזו הדרך לכל חקירת flaky הבאה.
+  - **מלכודת שעלתה בדרך:** ‏`initdb` בלי `--encoding=UTF8` יוצר `template1` ב-SQL_ASCII, ואז כל מסד פר-worker ש-`conftest.py` יוצר יורש אותו ונשבר על עברית — 155 טסטים אדומים שנראים כמו רגרסיה ואינם. ‏`initdb -U postgres --auth=trust --encoding=UTF8 --locale=C.UTF-8`.
+- **אין WebKit בסנדבוקס, וההורדה חסומה.** ‏`/opt/pw-browsers/` מכיל Chromium בלבד. כל כרטיס שתנאי הקבלה שלו נקוב ב-`webkit-iphone13` אי אפשר לאמת כאן — כולל באג הספארי של הטקסט שנמחק בזמן טעינה.
+- **שתי תקרות גוף בקשה, ובעלים אחד.** ‏`body_limit.py` (6MB, 413) חיצוני ל-`db_bulkhead.py`, ש-אחראי על «כמה איטי» ולא על «כמה גדול». ה-bulkhead מייבא את `MAX_BODY_BYTES` ואין לו מספר משלו. אם מישהו הופך את סדר ה-middleware — ההערה שם אומרת מה קורה.
+- **`E2E gate: success` אינו עדות.** ‏Playwright שדולג מצטבר לאותו ירוק. לקרוא לפי job. בסשן הזה כל שמונת ה-PR-ים הפתוחים היו «ירוקים» בדיוק ככה, ואף אחד מהם לא הריץ Playwright עד שהתווית `run-e2e` נוספה.
+- **שני flaky חדשים עם כרטיס**: אחד ב-`47-products-show-all.spec.ts:75` (תוקן ב-#4730) ואחד ב-`25-role-reachability.spec.ts:198`, שהוא **סיבה שנייה** לאותו טסט — הבקשה לא יוצאת כלל, להבדיל מה-429 שתוקן. התיקון של #4723 לא גרם לזה; הוא הפך אותו לקריא.
+
+**מה פתוח ומחכה:** שני PR-ים בטיוטה עם הסבר מלא בתוכם (אחד חסום על `backend/pyproject.toml` שהוא CC-deny, אחד גם עם revision של Alembic) · שערי ה-skip-with-reason, שתי הדבקות ב-`.github/workflows/**` · באג הספארי · וארבעה כרטיסי flaky שנשארו פתוחים כי הסיבה לא שוחזרה, כל אחד עם המדידות ועם מה שנשלל.
+
+---
+
 ## 2026-11-17 — עשר משימות לפני ההשקה (אבטחה, מצבים, מפת מערכת, JSON-LD, נגישות, ניקוי)
 
 **שורה אחת:** עשרה PR-ים מוזגו ל-staging: #4681, #4682, #4683, #4684, #4685, #4702, #4707, #4708, #4709 ו-PR המסמכים הזה. הפירוט ב-CHANGELOG.
