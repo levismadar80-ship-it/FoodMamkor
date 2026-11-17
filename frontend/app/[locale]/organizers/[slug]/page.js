@@ -11,7 +11,7 @@
  *           404 an organizer since MEH-2459). Never listed under /producers.
  * Related:  app/[locale]/[slug]/page.js (the business twin whose fetch / 404 /
  *           metadata contract this mirrors), backend/app/routers/organizers.py.
- * History:  MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
+ * History:  MEH-3348 (JSON-LD); MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
  *           setRequestLocale); MEH-2475 (owner story, preferred channel first,
  *           email / WhatsApp group / order form, founding year); MEH-2547
  *           (cover + avatar masthead, EventEntryRow rows).
@@ -36,6 +36,7 @@ import ShareButton from "@/components/ShareButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { avatarInitial } from "@/components/ui/Avatar";
+import { buildOrganizerJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-3348
 
 const ROUTE = "/[locale]/organizers/[slug]";
 
@@ -179,8 +180,18 @@ export default async function OrganizerPage(props) {
   // MEH-3018: the canonical URL, built on the server, so the share button
   // carries the same value in the HTML and after hydration.
   const pageUrl = buildAlternates(`/organizers/${rawSlug}`, locale).canonical;
+  const jsonLd = buildOrganizerJsonLd(organizer, locale);
 
   return (
+    <>
+      {/* MEH-3348: Organization + BreadcrumbList. Outside <main> so the
+          space-y-8 sibling rule does not push the masthead down. */}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+        />
+      )}
     <main className="max-w-3xl mx-auto pb-10 space-y-8" data-testid="organizer-page">
       {/* MEH-2547: a masthead — the organizer's first photo as a cover (a
           green band when there is none), and a round initial overlapping its
@@ -286,5 +297,6 @@ export default async function OrganizerPage(props) {
         <OwnerCard producer={organizer} heading={t("owner_heading")} />
       </div>
     </main>
+    </>
   );
 }

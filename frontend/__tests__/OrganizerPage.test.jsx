@@ -28,7 +28,10 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 // MEH-2475: OwnerCard (shared with the business page) reads next-intl's hook.
 // MEH-2547: the event rows are EventEntryRow, which reads useLocale.
-vi.mock("next-intl", () => ({
+vi.mock("next-intl", async (importOriginal) => ({
+  // MEH-3348: the page now builds JSON-LD through lib/seo, which needs the
+  // real createTranslator.
+  ...(await importOriginal()),
   useTranslations: (namespace) => (k) => `${namespace}.${k}`,
   useLocale: () => "he",
 }));
@@ -88,6 +91,21 @@ async function renderPage(slug = "gelem") {
 beforeEach(() => vi.clearAllMocks());
 
 describe("MEH-2461 organizer page", () => {
+  it("MEH-3348: one JSON-LD script (Organization + BreadcrumbList), outside <main>", async () => {
+    respond(200, ORG);
+    const ui = await OrganizerPage({ params: Promise.resolve({ slug: "gelem", locale: "he" }) });
+    const { container } = render(ui);
+    const scripts = container.querySelectorAll('script[type="application/ld+json"]');
+    expect(scripts).toHaveLength(1);
+    const types = JSON.parse(scripts[0].textContent)["@graph"].map((n) => n["@type"]);
+    expect(types).toEqual(["Organization", "BreadcrumbList"]);
+    // The script must not sit inside <main>: its space-y-8 rule would push
+    // the masthead down by one gap.
+    const main = screen.getByTestId("organizer-page");
+    expect(main.querySelector("script")).toBeNull();
+    expect(main.firstElementChild.tagName).toBe("HEADER");
+  });
+
   it("0 events: profile + the approved empty copy, no event list", async () => {
     respond(200, ORG);
     await renderPage();
