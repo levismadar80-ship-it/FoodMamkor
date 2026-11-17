@@ -776,6 +776,11 @@ route template), on what (`target_type`, `target_id`), a reduced before/after
   transaction. A failed write is logged as an error (`admin_audit.write_failed`)
   and never fails the admin's action. `created_at` is the insert time.
 - Read: `GET /admin/audit-log` (admin only; the IP is stored, not returned).
+- Known limits: an admin's **own** actions as a user (a favourite, her own
+  password change) are logged too, with no column that separates them from
+  admin actions — filter by `action`. `GET /admin/pages/{slug}` creates a row
+  on a GET and is therefore not logged. `POST /delivery-waitlist` uses the
+  telemetry variant and is not logged.
 - Open: no retention rule for the stored IPs yet; logins are not logged (this is
   a log of changes).
 

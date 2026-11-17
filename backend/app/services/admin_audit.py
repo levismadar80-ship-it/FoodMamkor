@@ -111,13 +111,19 @@ def _route_template(request: Request) -> str:
 
 
 def _target(request: Request) -> tuple[str | None, str | None]:
-    """The first path parameter: `user_id` → ("user", "<uuid>")."""
-    for name, value in request.path_params.items():
-        text = str(value)
-        if not _TARGET_VALUE.match(text):
-            continue
-        kind = name[:-3] if name.endswith("_id") else name
-        return kind[:40], text
+    """The first `*_id` path parameter (`user_id` → ("user", "<uuid>")); with
+    none, the first parameter of any name."""
+    params = [
+        (name, str(value))
+        for name, value in request.path_params.items()
+        if _TARGET_VALUE.match(str(value))
+    ]
+    for name, text in params:
+        if name.endswith("_id"):
+            return name[:-3][:40], text
+    if params:
+        name, text = params[0]
+        return name[:40], text
     return None, None
 
 

@@ -20,11 +20,7 @@ from pathlib import Path
 import importlib.util
 import sys
 
-from app.auth import (
-    get_current_user,
-    get_current_user_lenient,
-    get_current_user_optional,
-)
+from app.auth import get_current_user
 from datetime import timedelta
 
 from app.models.admin_ops import AdminAuditLog
@@ -174,15 +170,11 @@ def test_a_failed_audit_write_never_fails_the_admin_action(client, db, monkeypat
 
 def test_every_mutating_admin_route_goes_through_the_one_dependency_that_logs():
     """Two halves. (1) The single place really schedules the write — pinned by
-    reading its source, and the telemetry variant must NOT (an admin browsing
-    the site is not an admin action). (2) Every mutating route under /admin
+    reading its source; the optional and telemetry variants are pinned by
+    behaviour in the tests below. (2) Every mutating route under /admin
     resolves its user through it. A new admin write route that authenticates
     some other way fails (2); removing the call fails (1)."""
     assert "admin_audit.schedule(" in inspect.getsource(get_current_user)
-    assert "background_tasks=background_tasks" in inspect.getsource(
-        get_current_user_optional
-    )
-    assert "background_tasks" not in inspect.getsource(get_current_user_lenient)
 
     admin_paths = [r for r in _write_routes() if r.path.startswith("/admin")]
     assert len(admin_paths) > 20, "control: the walk found the admin routers"
@@ -217,6 +209,47 @@ def test_an_admin_acting_through_an_owner_route_is_logged_too(client, db):
     assert row.actor_id == admin.id
     assert row.action == "DELETE /events/{event_id}"
     assert (row.target_type, row.target_id) == ("event", str(event_id))
+
+
+def test_a_route_with_optional_auth_logs_an_admin_too(client, db):
+    """POST /category-requests resolves its user with
+    get_current_user_optional. Fails if that variant stops passing the hook
+    through."""
+    admin = make_user(db, role="admin")
+    resp = client.post(
+        "/category-requests",
+        json={"requested_name": "פטריות יער"},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 201, resp.text
+    assert [r.action for r in _rows(db)] == ["POST /category-requests"]
+
+
+def test_telemetry_from_an_admins_browser_is_not_an_admin_action(client, db):
+    """POST /producers/{id}/view uses get_current_user_lenient (a page-view
+    beacon). An admin browsing the site must not fill the log. The control is
+    the test above: the same admin, a non-telemetry POST, one row."""
+    admin = make_user(db, role="admin")
+    producer = make_producer(db, status="approved")
+    resp = client.post(
+        f"/producers/{producer.id}/view", json={}, headers=auth_header(admin)
+    )
+    assert resp.status_code < 400, resp.text
+    assert _rows(db) == []
+
+
+def test_the_target_is_the_first_id_parameter():
+    """`/users/me/saved/{item_type}/{item_id}` must record the id, not the
+    word "recipe"."""
+    from types import SimpleNamespace
+
+    from app.services.admin_audit import _target
+
+    req = SimpleNamespace(path_params={"item_type": "recipe", "item_id": "1f0c2d3e"})
+    assert _target(req) == ("item", "1f0c2d3e")
+    req = SimpleNamespace(path_params={"slug": "about"})
+    assert _target(req) == ("slug", "about")
+    assert _target(SimpleNamespace(path_params={})) == (None, None)
 
 
 def test_the_same_kind_of_change_by_an_owner_is_not_an_admin_action(client, db):
