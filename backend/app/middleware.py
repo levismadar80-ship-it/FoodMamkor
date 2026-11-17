@@ -13,6 +13,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import settings
+from app.body_limit import BodySizeLimitMiddleware
 from app.db_bulkhead import DbBulkheadMiddleware
 from app.rate_limit import limiter, resolve_client_ip
 from app.services.analytics import record_request
@@ -262,6 +263,8 @@ def install_middlewares(app: FastAPI) -> None:
     inner on request-in)::
 
         GZipMiddleware               # innermost — MEH-1833, see note below
+        DbBulkheadMiddleware         # MEH-2955
+        BodySizeLimitMiddleware      # MEH-3374 — outside the bulkhead
         SlowAPIMiddleware
         SentryRequestScopeMiddleware # NEW — must run AFTER CorrelationId
         CorrelationIdMiddleware      # sets `request_id` contextvar
@@ -276,7 +279,8 @@ def install_middlewares(app: FastAPI) -> None:
     Request-in flow::
 
         record_metrics → security_headers → CORS → CorrelationId
-                       → SentryRequestScope → SlowAPI → GZip → handler
+                       → SentryRequestScope → SlowAPI → BodySizeLimit
+                       → DbBulkhead → GZip → handler
 
     Why this order:
     - CorrelationId must wrap SlowAPI so 429 responses carry
@@ -331,6 +335,13 @@ def install_middlewares(app: FastAPI) -> None:
     # and the security headers, so a 503 still carries all of them.
     # Pinned by tests/test_meh2955_db_bulkhead.py.
     app.add_middleware(DbBulkheadMiddleware)
+
+    # MEH-3374: 413 above 6 MB, by Content-Length and by counting what arrives.
+    # Directly OUTSIDE the bulkhead, so a refused body never holds a DB slot
+    # (and a body the bulkhead reads itself is counted too), and INSIDE CORS,
+    # CorrelationId and the security headers, so the 413 carries all of them.
+    # Pinned by tests/test_meh3374_body_size_limit.py.
+    app.add_middleware(BodySizeLimitMiddleware)
 
     app.add_middleware(SlowAPIMiddleware)
     # SentryRequestScope must be added AFTER SlowAPI but BEFORE

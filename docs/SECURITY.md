@@ -250,6 +250,14 @@ Additional notes:
 
 ### 6. העלאת קבצים — תמונות מסוכנות
 
+**Body size cap (MEH-3374).** `backend/app/body_limit.py` answers **413** to
+any request body above **6 MB**, before the route runs: by `Content-Length`
+(nothing is read), and by counting the bytes that arrive when the header is
+missing or wrong. It sits outside the DB bulkhead, so a refused body holds no
+DB slot, and inside CORS / X-Request-ID / the security headers. The 5 MB image
+cap below is a second, narrower check inside the upload route. The WhatsApp
+webhook keeps its own smaller cap.
+
 ```python
 # backend/app/utils/file_upload.py
 
