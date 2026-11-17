@@ -28,7 +28,10 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 // MEH-2475: OwnerCard (shared with the business page) reads next-intl's hook.
 // MEH-2547: the event rows are EventEntryRow, which reads useLocale.
-vi.mock("next-intl", () => ({
+vi.mock("next-intl", async (importOriginal) => ({
+  // MEH-3348: the page now builds JSON-LD through lib/seo, which needs the
+  // real createTranslator.
+  ...(await importOriginal()),
   useTranslations: (namespace) => (k) => `${namespace}.${k}`,
   useLocale: () => "he",
 }));
@@ -44,7 +47,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-import OrganizerPage from "@/app/[locale]/organizers/[slug]/page";
+import OrganizerPage, { generateMetadata } from "@/app/[locale]/organizers/[slug]/page";
 
 // MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
@@ -88,6 +91,21 @@ async function renderPage(slug = "gelem") {
 beforeEach(() => vi.clearAllMocks());
 
 describe("MEH-2461 organizer page", () => {
+  it("MEH-3348: one JSON-LD script (Organization + BreadcrumbList), outside <main>", async () => {
+    respond(200, ORG);
+    const ui = await OrganizerPage({ params: Promise.resolve({ slug: "gelem", locale: "he" }) });
+    const { container } = render(ui);
+    const scripts = container.querySelectorAll('script[type="application/ld+json"]');
+    expect(scripts).toHaveLength(1);
+    const types = JSON.parse(scripts[0].textContent)["@graph"].map((n) => n["@type"]);
+    expect(types).toEqual(["Organization", "BreadcrumbList"]);
+    // The script must not sit inside <main>: its space-y-8 rule would push
+    // the masthead down by one gap.
+    const main = screen.getByTestId("organizer-page");
+    expect(main.querySelector("script")).toBeNull();
+    expect(main.firstElementChild.tagName).toBe("HEADER");
+  });
+
   it("0 events: profile + the approved empty copy, no event list", async () => {
     respond(200, ORG);
     await renderPage();
@@ -227,6 +245,24 @@ describe("MEH-2461 organizer page", () => {
     respond(200, { ...ORG, name: "  " });
     await renderPage();
     expect(screen.queryByTestId("organizer-avatar")).toBeNull();
+  });
+
+  it("MEH-3340: a percent-encoded Hebrew slug (as Next hands it over) loads the page, not a 404", async () => {
+    const hebrew = "פרדס-בית-הראשונים-קטיף-עצמי";
+    respond(200, { ...ORG, slug: hebrew, images: ["https://res.cloudinary.com/x/image/upload/v1/a.jpg"] });
+    await renderPage(encodeURIComponent(hebrew));
+    expect(notFoundMock).not.toHaveBeenCalled();
+    // the backend gets the slug encoded once, not twice (%25D7…)
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://api.test/organizers/${encodeURIComponent(hebrew)}`);
+    expect(screen.getByTestId("organizer-cover")).toBeTruthy();
+  });
+
+  it("MEH-3340: metadata for a percent-encoded Hebrew slug — no 404, canonical stays encoded like the business page", async () => {
+    const hebrew = "פרדס-בית-הראשונים-קטיף-עצמי";
+    respond(200, { ...ORG, slug: hebrew, name: "פרדס" });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: encodeURIComponent(hebrew), locale: "he" }) });
+    expect(notFoundMock).not.toHaveBeenCalled();
+    expect(meta.alternates.canonical).toContain(`/organizers/${encodeURIComponent(hebrew)}`);
   });
 
   it("a scanner-shaped slug never reaches the API", async () => {

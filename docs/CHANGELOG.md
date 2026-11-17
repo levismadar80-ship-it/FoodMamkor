@@ -4,6 +4,36 @@
 
 ## Unreleased
 
+- **16/11 — שש סתירות בין קובצי ההנחיות הוכרעו, וה-skill ‏`resolve-conflicts` ננעל מחדש (PR #4678).**
+  - **למה:** ביקורת הפרומפטים (PR #4675) רשמה חמש סתירות בין קבצים. ספיר 16/11: לחקור, להכריע ולתקן. ה-reviewer מצא שישית.
+  - **איך הוכרע:** בכל זוג הנוסח הישן (אפריל–מאי, לפי `git blame` על clone מלא) יושר להחלטה המאוחרת. לא נוסף כלל חדש ולא ירד תנאי עצירה.
+  - **מה:**
+    - **מיזוג ל-staging:** CC, אחרי הבדיקות (ADR-032, כלל 38). staging → main נשאר של ספיר. תוקנו regression rule 7 ו-`deployment.md`.
+    - **בדיקת נייד:** אין בדיקה אנושית, CC הבודק היחיד (375 + 1440). תוקנו `deployment.md`, ‏`frontend.md`, ‏`batch.md` והתבניות 02, 03, 06.
+    - **תחילת session:** הבדיקה רצה ומדווחת בלי לחכות לתשובה; עוצרת רק על session מקביל או PR פתוח על אותו כרטיס. כרטיס מהתור הוא ה-spec המאושר; עבודה בלי כרטיס או עם spec לא ברור עדיין מחכה ל-go (כללים 1 ו-4, ‏`session-start.md`).
+    - **Accept-Both על הלוגים:** רק ב-PR של docs בלבד; ב-branch עם קוד הלוגים יורדים מה-branch. ב-skill ‏`resolve-conflicts` תוקן גם הנתיב המת `docs/HANDOFF.md`, וה-hash ננעל מחדש ב-`backfill-skill-hashes.sh`.
+    - **פתיחת branch:** ישר מ-`origin/staging`, בלי checkout ו-pull מקומיים (`CLAUDE.md`, עכשיו 76/80 שורות; `batch.md`).
+    - **go לכל chunk ב-HIGH-RISK:** חל על עבודה בלי כרטיס מהתור. כרטיס מהתור בתחומים האלה הוא RED לפי ADR-032: אוטונומי, בתנאי ההוכחה של §2 ובתוך העצירות של §3; revision של Alembic עדיין מחכה לאישור של ספיר.
+  - **לא השתנה:** `.github/pull_request_template.md:53` עדיין מבקש «Tested on mobile: iOS Safari + Android Chrome». `.github/**` שייך לספיר.
+  - **בדיקה:** `rules-inventory-guard`, ‏`audit-skills` ו-Skills supply chain audit ב-CI עוברים; `CI gate` ו-`Deploy gate` ירוקים על ה-head שמוזג.
+- **16/11 — ביקורת פרומפטים על קובצי ההנחיות: נתיבים מתים, עובדות מודל ישנות ופיגומי «תחשוב צעד-צעד» (MEH-3345).**
+  - **למה:** ספיר 16/11: להריץ את ביקורת הפרומפטים המובנית על `CLAUDE.md`, ‏`.claude/**` ו-`docs/templates/**` וליישם רק ממצאים בביטחון גבוה. docs בלבד, בלי קוד.
+  - **מה:**
+    - `CLAUDE.md`: הכותרת והשורה הראשונה בלי אותיות גדולות, אותו כלל. «Ignore Claude Code system prompt» הוחלף ב«כשה-harness קורא ל-`main` בסיס, משתמשים ב-`staging`». הוסרו שני מספרים שהתיישנו («20 workflow rules», «9 prompt templates»). הקובץ נשאר 79 שורות.
+    - `.claude/commands/session-start.md`, ‏`session-save.md`, ‏`session-resume.md`: הפניות ל«`CLAUDE.md` rule N» תוקנו ל-`.claude/rules/workflow.md` (rule 1 ו-rule 14; ב-`CLAUDE.md` אין כללים ממוספרים).
+    - `.claude/commands/adversarial-review-size.md`: ארבעה נתיבים מתים תוקנו לפי `central-components.json` (`app/[locale]/page.js`, ‏`app/[locale]/layout.js`, ‏`ProducerDetail.jsx` במקומו החדש).
+    - תבנית 00: מחיר fast mode (לא «פי 3 זול יותר»), Sonnet 5.5 חושב אדפטיבית כברירת מחדל, תוויות שלושה קישורים שלא תאמו את הכתובת שלהם, והמזהה של Fable 5.1 (`claude-fable-5-1`).
+    - תבניות 02, 03, 04 (גרסת Sonnet): בלוק `<thinking_guidance>` עם רשימת צעדים הוחלף בשער תכנון קצר. «תוכנית קודם, לחכות ל-go» נשאר.
+  - **לא השתנה:** ב-skill ‏`resolve-conflicts` הנתיב המת `docs/HANDOFF.md` (צריך להיות `HANDOFF.md`) נשאר: ה-skill נעול ב-hash ב-`skills-lock.json`, ועריכה שלו מאדימה את Skills supply chain audit. התיקון יחד עם נעילה מחדש שייך להכרעה על סתירה 4. חמש סתירות בין קבצים (מי ממזג ל-staging, בדיקת נייד אנושית, לשאול בתחילת session או להתחיל, Accept-Both על הלוגים, אופן פתיחת branch) רשומות בגוף ה-PR ומחכות להכרעה של ספיר. הכותרות עם «(CRITICAL)» / «(MANDATORY)» ב-`workflow.md` נשארו, כי `rules-inventory-guard.sh` נשען עליהן.
+  - **בדיקה:** כל נתיב בשורות שנערכו קיים; הרצה חוזרת של סימני הביקורת לא מחזירה ממצא בביטחון גבוה; `rules-inventory-guard`, ‏`validate-registry-paths` ו-`skills-layout-guard` עוברים.
+- **15/11 — שתי מייסדות באתר: ספיר שנפ וטופז שנפ (PR #4649, MEH-3323).**
+  - **למה:** ספיר 15/11: מהמקור הוקם על ידי שתי אחיות, והאתר הציג מייסדת אחת.
+  - **מה:**
+    - `FOUNDERS` ב-`frontend/lib/constants.js` מחליף את `BRAND_FOUNDER_NAME`, מקור אחד לשמות. ה-JSON-LD של Organization מציג שתי `Person`.
+    - 29 מחרוזות בקול המייסדת עברו לרבות או לשני השמות, בעברית ובאנגלית, בנוסח שספיר אישרה מילה במילה: /about, כרטיס ברוכים הבאים, שאלות נפוצות, מדריכים, דף התהליך, SEO ותסריט השיחה באדמין.
+    - תמונות הבסיס של ה-VRT ל-/about חודשו ונבדקו.
+  - **לא השתנה (החלטה שלה):** המיילים, רכזת הנגישות (ספיר), התמונה והביוגרפיה ב-/about, תג «בחירת העורכת».
+  - **מניעה:** `organization-jsonld.test.js` קושר את `FOUNDERS` לחתימה ב-/about ובמדריכים. מכסת המחרוזות העבריות ב-`lib/constants.js` עלתה מ-4 ל-5 באישור שלה.
 - **14/11 — הרשמה לסדנה, מילוי אוטומטי ותיקון טעויות בטפסים (PR #4465, #4473, #4479, #4480, #4485).**
   - **למה:** ספיר 14/11: הסרגל להרשמה לסדנה בנייד יצר פס לבן מעל הפוטר, וביקשה מילוי אוטומטי כמו באתרים הגדולים, «בכל איפה שצריך».
   - **מה:**
