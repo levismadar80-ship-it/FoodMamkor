@@ -22,6 +22,17 @@ describe("MEH-3343 layout-shift reservations", () => {
     expect(main[1].split(/\s+/)).toContain("min-h-screen");
   });
 
+  it("/map drops that minimum: its shell sizes itself, and the minimum only added a scroll", () => {
+    // E2E footer-nav-clearance.spec.ts:133 measured 82px of scroll on /map
+    // with the minimum in force. The exception is a CSS rule, so the test
+    // reads the rule: selector, property and value, inside @supports(:has).
+    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+    const supports = css.slice(css.indexOf("@supports selector(:has(*))"));
+    const rule = supports.match(/#main-content:has\(\[data-map-shell\]\)\s*\{([^}]*)\}/);
+    expect(rule, "the /map exception for <main>").not.toBeNull();
+    expect(rule[1].replace(/\s+/g, "")).toContain("min-height:0;");
+  });
+
   it("the Google button slot reserves the 40px button before GSI paints it", async () => {
     const { default: GoogleAuthButton } = await import("@/components/GoogleAuthButton");
     render(<GoogleAuthButton />);
