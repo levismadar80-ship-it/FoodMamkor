@@ -36,40 +36,52 @@ async function settle(page: Page, path: string, { phone = false } = {}) {
   // a 64px gap on /he/join and /he/about). Re-scroll until the height has held
   // for two reads in a row AND the viewport sits at the end.
   //
-  // MEH-3051 — two equal heights are NOT enough, and the mover is named wrong
-  // above. Traced on this build (390x844, CPU x6, 120ms per response), frame by
-  // frame: `settle` returned at scrollHeight 4558 with --chat-fab-clearance
-  // unset and the footer's padding-bottom 80px. The page then grew to 5555 as
-  // the rest of it arrived, and at ~5.5s the reserve APPEARED — padding-bottom
-  // 80px -> 144px, scrollHeight 5555 -> 5619 — leaving the footer's bottom 64px
-  // BELOW the viewport for 45 of the next 60 frames. Every later read, the
-  // bottom-edge pixel included, then landed on page background: exactly the
-  // «245,240,232 vs 245,240,232» in the report. Not a step-aside, and not a
-  // product bug: ChatWidget is lazily mounted (ChatWidgetLazy), and it cannot
-  // publish its reserve before its chunk evaluates. A fast runner evaluates it
-  // before the poll, which is why this is a load-dependent flake.
+  // MEH-3051 — two equal heights are NOT enough, and the step-aside the
+  // paragraph above names is not what moves this page. Traced on this build
+  // (390x844, CPU x6, 120ms per response), frame by frame: `settle` returned at
+  // scrollHeight 4558 with --chat-fab-clearance unset and the footer's
+  // padding-bottom 80px. The page then grew to 5555 as the rest of it arrived,
+  // and at ~5.5s the reserve ARRIVED — padding-bottom 80 -> 144, scrollHeight
+  // 5555 -> 5619 — leaving the footer's bottom 64px below the viewport in 54-55
+  // of the next 60 frames (3 runs). So the two equal heights were taken while
+  // two movers were still outstanding. The mover is ChatWidget's LAZY mount
+  // (ChatWidgetLazy): it cannot publish its reserve before its chunk evaluates,
+  // and a fast runner evaluates it before the poll — which is why this is
+  // load-dependent and not a permanent red.
   //
-  // So wait for that mover by a signal the product publishes, the way the line
-  // above already waits for BottomNav: the launcher mounted, and on a phone its
-  // reserve live. Measured on /he, /he/join and /he/about: the launcher is
-  // attached at both widths, and --chat-fab-clearance ends at 64px on the phone
-  // and unset on desktop. Nothing here sleeps, and nothing is weakened — a
-  // launcher that never mounts, a reserve that never arrives, or a footer that
-  // never reaches the screen bottom each time out and red the test.
+  // Stated exactly, because the distinction matters: what is reproduced here is
+  // `settle` declaring a page stable that is still moving. The reported SYMPTOM
+  // — a cream bottom-edge pixel — is NOT reproduced. It cannot be caused by the
+  // state above: a footer whose bottom sits BELOW the viewport covers the bottom
+  // edge, and the pixel read footer green in 42 of 42 reads across those same 3
+  // runs. Cream there needs the footer's bottom ABOVE the viewport bottom, i.e.
+  // the reserve LEAVING (or --bottom-nav-clearance shrinking) after the scroll,
+  // which is the mirror of the transition measured. Both variables are
+  // therefore compared below; whether that is the live cause is unverified.
+  //
+  // The gates are signals the product publishes, the way the line above already
+  // waits for BottomNav. Measured on /he, /he/join and /he/about: the launcher
+  // is attached at both widths, and --chat-fab-clearance ends at 64px on the
+  // phone and unset on desktop, so neither gate can hang on these pages today.
+  // Nothing here sleeps, and nothing is weakened — a launcher that never
+  // mounts, a reserve that never arrives, or a footer that never reaches the
+  // screen bottom each time out and red the test.
   await page.locator('[data-testid="chat-launcher"]').waitFor({ state: "attached", timeout: 15_000 });
   if (phone) await expect.poll(() => rootVar(page, "--chat-fab-clearance"), { timeout: 10_000 }).not.toBe("");
   let last = -1;
   let lastFab = "";
+  let lastNav = "";
   await expect
     .poll(
       async () => {
-        const { h, gap, fab, footerGap } = await page.evaluate(() => {
+        const { h, gap, fab, nav, footerGap } = await page.evaluate(() => {
           window.scrollTo(0, document.documentElement.scrollHeight);
           const footer = document.querySelector("footer[data-site-footer]");
           return {
             h: document.documentElement.scrollHeight,
             gap: Math.round(innerHeight + scrollY - document.documentElement.scrollHeight),
             fab: getComputedStyle(document.documentElement).getPropertyValue("--chat-fab-clearance").trim(),
+            nav: getComputedStyle(document.documentElement).getPropertyValue("--bottom-nav-clearance").trim(),
             footerGap: footer ? Math.round(footer.getBoundingClientRect().bottom - innerHeight) : null,
           };
         });
@@ -78,9 +90,10 @@ async function settle(page: Page, path: string, { phone = false } = {}) {
         // page can be shorter than the viewport and that is not a defect, so
         // only the height + reserve have to hold.
         const atEdge = !phone || (footerGap !== null && Math.abs(footerGap) <= 1);
-        const stable = h === last && fab === lastFab && gap >= -1 && atEdge;
+        const stable = h === last && fab === lastFab && nav === lastNav && gap >= -1 && atEdge;
         last = h;
         lastFab = fab;
+        lastNav = nav;
         return stable;
       },
       { intervals: [300], timeout: 20_000 },
@@ -110,6 +123,18 @@ async function settle(page: Page, path: string, { phone = false } = {}) {
  */
 const mapShell = (page: Page, kind: "mobile" | "desktop") =>
   page.locator(`#main-content [data-map-shell=${kind}]`);
+
+/**
+ * Anything else inside that same streamed subtree has the same exposure, and
+ * the independent reviewer (rule 5a) found the third site this spec touches:
+ * the near-me pill renders once per map tree (NearMePill.jsx), so while the
+ * hidden twin is present `getByTestId("map-near-me-pill")` resolves to 2 and
+ * `click({ trial: true })` dies on strict mode exactly as the shell locator
+ * did. Scoped the same way. `footer[data-site-footer]` is NOT affected — the
+ * footer is a sibling of <main>, outside the subtree React stages.
+ */
+const inMain = (page: Page, testId: string) =>
+  page.locator(`#main-content [data-testid="${testId}"]`);
 
 /**
  * RGB of one viewport pixel, read from a real screenshot. Decoded in the page
@@ -218,7 +243,7 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
     }));
     expect.soft(Math.abs(m.pad - m.banner), `body reserve ${m.pad} vs banner ${m.banner}`).toBeLessThanOrEqual(1);
     // trial: actionability only (no click side effects) — fails if the banner covers the pill.
-    await page.getByTestId("map-near-me-pill").click({ trial: true, timeout: 5_000 });
+    await inMain(page, "map-near-me-pill").click({ trial: true, timeout: 5_000 });
   });
 });
 
