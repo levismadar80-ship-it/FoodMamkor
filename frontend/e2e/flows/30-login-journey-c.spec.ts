@@ -381,6 +381,22 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
 
     await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill("wrong-password");
+    // MEH-3154 — the click is deliberately NOT wrapped in `settledField`, and
+    // that asymmetry (fields guarded, button bare) was measured NOT to be the
+    // flake's cause. Recorded here because it is the obvious "fix" and it is
+    // wrong: the server HTML for /he/login contains ZERO of the form's
+    // data-testids (login-email / login-password / login-submit — 0 occurrences
+    // in 285 KB), so there is no un-hydrated copy to click early; Playwright's
+    // own actionability wait already covers the node's creation. Measured
+    // against a seeded local stack with /api/auth/login stubbed (no credentials,
+    // no limiter): the POST was issued 12/12 — 6 runs at CPU x6 + 120 ms per
+    // response, 6 at CPU x20 + 400 ms — with the button React-owned at click
+    // time in every run. Control, because this probe's null reading is also its
+    // reassuring one: clicking with a 150 ms cap at `commit`, before React can
+    // render, missed 3/3 — so the probe can report a miss and the 0/12 is a real
+    // negative. Refuted hypotheses so far: the per-IP limiter (the route stub
+    // above means the backend is never reached) and this one. Do not add a
+    // button guard here without a shown-failing run (MEH-1619).
     await page.getByTestId("login-submit").click();
 
     await expect(page.getByTestId("login-error")).toContainText("אימייל או סיסמה שגויים");
@@ -422,6 +438,10 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     await page.goto("/he/login");
     await (await settledField(page, "login-email")).fill(VALID_EMAIL);
     await page.getByTestId("login-password").fill(VALID_PASSWORD);
+    // MEH-3156 — same bare click, same refutation as the C2 wrong-credentials
+    // test above: see the comment there for the 12/12 issued + 3/3 control
+    // measurement. The un-hydrated-button theory does not explain this flake
+    // either, and the per-IP limiter cannot reach it (stubbed login).
     await page.getByTestId("login-submit").click();
     await expectPath(page, "/");
 

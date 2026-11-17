@@ -246,6 +246,20 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
     // retries 429 ONLY, a non-429 returns on the first attempt, and the status
     // is asserted to be 200 below — so a 401 on a wrong password or a 5xx on a
     // broken backend still reds, immediately and by name.
+    // MEH-3159, SECOND cause — reopened 17/11: this `waitForResponse` timed out
+    // at 20 s on #4641, meaning the POST never went out at all (the 429 path
+    // above does go out and is refused, so it is a different failure). The
+    // obvious candidate — the bare click below firing before the button is
+    // hydrated — was MEASURED AND REFUTED: /he/login's server HTML carries none
+    // of the form's data-testids, so there is no un-hydrated copy to click, and
+    // with login stubbed the POST was issued 12/12 under load (CPU x6/+120 ms
+    // and CPU x20/+400 ms, 6 runs each), against a control that missed 3/3 when
+    // clicking before React could render. So do NOT "fix" this by wrapping the
+    // click in `settledField` — that change is measured to do nothing. Still
+    // unexplained; next untested candidate is the button being `disabled` at
+    // click time (auth.spec.ts:316 asserts `toBeEnabled()` elsewhere, which
+    // implies such a state exists), in which case Playwright waits for enabled
+    // and can expire before the form opens.
     const submit = async () => {
       const [res] = await Promise.all([
         page.waitForResponse((r) => /\/api\/auth\/login$/.test(new URL(r.url()).pathname), {
