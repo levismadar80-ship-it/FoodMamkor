@@ -60,7 +60,6 @@ export default function HomeClient({
 }) {
   const t = useTranslations();
   const {
-    user,
     producers, regionFallback, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
     recentlyViewed, locationModalOpen, setLocationModalOpen,
