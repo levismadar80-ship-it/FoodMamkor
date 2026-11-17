@@ -41,7 +41,7 @@ There is no soft-delete: deletion removes the row.
 |---|---|---|---|
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
 | consumer → producer (with a draft business) | the user | `routers/auth.py` `register_producer`; claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
-| role → consumer / admin | admin | `routers/admin_extra.py` `set_role` | `producer` is refused; super-admin protected; no self-demotion |
+| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion |
 | blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
 | email changed → unverified | the user | `routers/users_me.py` | — |
@@ -77,10 +77,10 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 |---|---|---|---|
 | → draft | owner registers | `routers/auth.py` | — |
 | → approved | admin creates | `routers/admin.py` | pre-approved unless `as_draft` |
-| draft → pending | owner | `routers/producer_me_review.py` `submit` | draft only; `submission_missing_items` |
-| rejected → pending | owner | `routers/producer_me_review.py` `resubmit` | row lock; resubmission cap |
+| draft → pending | owner | `routers/producer_me_review.py` `submit_for_review` | draft only; `submission_missing_items` |
+| rejected → pending | owner | `routers/producer_me_review.py` `request_producer_review` | row lock; resubmission cap |
 | non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
-| non-draft → rejected | admin | `routers/admin_decisions.py` `reject` | if it was approved: `delist_business` |
+| non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `delist_business` |
 | any → (status via plain edit) | — | refused in `routers/admin.py` | — |
 | deleted | admin / owner's account deletion | `routers/admin.py`, `services/user_deletion.py` | `delist_business` first |
@@ -145,8 +145,10 @@ it does not.
 | open → funded → open | automatic, on join / leave / account deletion | `routers/group_buys.py`, `services/group_buy_delist.py` | minimum reached / lost |
 | → fulfilled, → cancelled | owner / admin | `routers/group_buys.py` | transition table; cancel mails the participants |
 
-**Known gap:** nothing closes a group buy when its deadline passes. Only the
-open tab filters by deadline. Open PR #4625 adds the closing job.
+An **open** group buy that passes its deadline below its minimum is not closed
+by anything today; only the open tab filters by deadline. Open PR #4625 adds
+the job that closes those. A **funded** group buy past its deadline stays
+funded on purpose: the owner fulfils or cancels it.
 
 ## 6. Smaller machines
 
@@ -160,6 +162,39 @@ open tab filters by deadline. Open PR #4625 adds the closing job.
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |
 | Billing ledger (`billable_events`) | counted · voided | `services/billing_ledger.py`, on sign-up, handover, group-buy fulfilment; voided when the booking is cancelled |
 
+## Every status column
+
+`tests/test_state_machines_doc_sync.py` reads the models and fails when a
+status column is missing from this table, or a row names a column that no
+longer exists. A new status column therefore lands with its row here, and a
+section above when it has transitions worth drawing.
+
+| Column | Section |
+|---|---|
+| `producers.status` | 2 |
+| `producers.availability_status` | legacy column, replaced by the availability enum and waiting for its drop migration |
+| `experiences.status` | 3 |
+| `experiences.moderation_status` | 3 |
+| `registrations.status` | 3 |
+| `rescue_offers.status` | 4 |
+| `rescue_orders.status` | 4 |
+| `group_buys.status` | 5 |
+| `producer_recipes.moderation_status` | 6 |
+| `producer_reviews.ai_moderation_status` | 6 |
+| `outbound_messages.status` | 6 |
+| `billable_events.status` | 6 |
+| `business_billing.state` | "What does not exist" (no writer) |
+| `product_orders.status` | "What does not exist" (no route yet) |
+| `product_orders.payment_status` | "What does not exist" (no route yet) |
+| `product_order_events.from_status` | log of `product_orders.status` |
+| `product_order_events.to_status` | log of `product_orders.status` |
+| `home_products.moderation_status` | router not mounted (audit §8) |
+| `category_requests.status` | pending → approved / rejected, admin only (`routers/category_requests.py`) |
+| `kashrut_badge_requests.status` | pending → approved / rejected, approved → revoked, admin only (`routers/admin_kashrut.py`) |
+| `producer_name_change_requests.status` | pending → approved / rejected, admin only (`routers/producer_name_requests.py`) |
+| `reports.status` | open → resolved / dismissed, admin only (`routers/reports.py`) |
+| `outreach_leads.status` | admin's own pipeline label (`routers/admin_outreach.py`) |
+
 ## Combinations that are still open
 
 Each needs a decision or new copy, so none was fixed in code.
@@ -171,5 +206,4 @@ Each needs a decision or new copy, so none was fixed in code.
 | Capacity of an event or workshop is cut below the seats already taken | Accepted. | A 422 with a message. |
 | A recurring workshop whose first date has passed is cancelled, deleted, or its business leaves the live state | Sign-up to it is still open (the first date is not the last), but the cancellation only looks at items dated today or later. Its registrants stay "registered", get no email, and a delete removes their rows silently. | The email prints the item's date, which here is in the past, so it needs wording. Belongs with the per-occurrence design for recurring workshops. |
 | Sign-up on the day, after the start time | Accepted (the gate is by date). | Open PR #4624. |
-| A funded group buy past its deadline | Stays funded. | Open PR #4625. |
 | Rating recompute runs in a second, unlocked commit | Two reviews at once can leave the aggregate one behind until the next write. | Post-launch (audit §6.1). |
