@@ -62,6 +62,9 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [041](./ADR-041-home-meta-description-canonical-sentence.md) | The Hebrew meta description carries the canonical sentence, not the tagline (amends ADR-011's surface list) | Accepted | 2026-11-12 | MEH-2968 |
 | [042](./ADR-042-revenue-model-v3.md) | Revenue model v3 — base page free, prices published from day one, billing per business after a results threshold, booking commissions allowed; money never buys ranking (supersedes parts of ADR-010/027/030) | Accepted | 2026-11-14 | MEH-3163 |
 
+## Rulings logs
+- [`rulings-2026-11-17.md`](./rulings-2026-11-17.md) — every decision that was waiting on Sapir on 17/11 (reports + 58 Linear cards), ruled by CC on her instruction; execution still goes through the RED / Alembic / `.github` gates.
+
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated
   into ADRs incrementally. Still authoritative until each entry is
