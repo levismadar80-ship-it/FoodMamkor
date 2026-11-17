@@ -188,7 +188,7 @@ _DEMOTE_LINKED_OWNER = (
 
 
 # NEW copy, waiting for Sapir's word-for-word OK (rule 22) — see the PR body.
-_PROMOTE_LINKED_OWNER = "אי אפשר לתת הרשאת מנהלת למי שמקושרת לבית עסק."
+_PROMOTE_LINKED_OWNER = "אי אפשר לתת הרשאת אדמין למי שמקושרת לבית עסק."
 
 
 @router.put("/users/{user_id}/role", response_model=None)
@@ -198,7 +198,17 @@ def update_user_role(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    target = db.query(User).filter(User.id == user_id).first()
+    # Row lock + fresh read (MEH-3376 review): a claim, a register-upgrade or
+    # an invite acceptance may link a business to this account between the
+    # read and the commit. Those flows lock and re-read the user, so with the
+    # lock here too the two cannot interleave into "admin with a business".
+    target = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .with_for_update()
+        .populate_existing()
+        .first()
+    )
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     # MEH-955: never assign role="producer" here. require_producer

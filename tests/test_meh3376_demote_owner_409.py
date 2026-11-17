@@ -10,7 +10,7 @@ from app.models import User
 
 from tests.conftest import auth_header, make_producer, make_user
 
-PROMOTE_DETAIL = "אי אפשר לתת הרשאת מנהלת למי שמקושרת לבית עסק."
+PROMOTE_DETAIL = "אי אפשר לתת הרשאת אדמין למי שמקושרת לבית עסק."
 DETAIL = (
     "אי אפשר להוריד את ההרשאה כל עוד המשתמשת מקושרת לבית עסק. קודם מנתקים את הבעלות."
 )
