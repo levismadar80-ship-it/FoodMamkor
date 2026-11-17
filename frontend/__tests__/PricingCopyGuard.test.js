@@ -136,7 +136,7 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     expect(pick(/\| חודשי \| (\d+) ₪ לחודש/, "monthly")).toBe(list.subscription.monthly);
     expect(pick(/\| שנתי \| (\d+) ₪ לשנה/, "yearly")).toBe(list.subscription.yearly);
     expect(pick(/הרשמה לאירוע בתשלום \| (\d+)% /, "event percent")).toBe(list.commission.paidBookingPercent);
-    expect(pick(/קנייה קבוצתית שנסגרה \| (\d+)% /, "group-buy percent")).toBe(list.commission.paidBookingPercent);
+    expect(pick(/קבוצת רכישה שנסגרה \| (\d+)% /, "group-buy percent")).toBe(list.commission.paidBookingPercent);
     expect(pick(/שקית הצלה שנאספה \| (\d+) ₪ לשקית/, "bag fee")).toBe(list.commission.rescueBagFee);
     expect(pick(/מנוי משלם עמלה מופחתת: (\d+)% /, "subscriber percent")).toBe(list.subscriberCommission.paidBookingPercent);
     expect(pick(/ו-(\d+) ₪ לשקית במקום/, "subscriber bag fee")).toBe(list.subscriberCommission.rescueBagFee);

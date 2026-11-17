@@ -52,7 +52,7 @@ def _shell(heading: str, rows_html: str, button_html: str = "") -> str:
           {button_html}
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור</td></tr>
     </table>
   </td></tr>
 </table>

@@ -51,6 +51,14 @@ describe("OSM tile host (MEH-3077)", () => {
     expect(read(f)).not.toMatch(SHARD);
   });
 
+  // OSM answers 403 «Access blocked» to a tile request with no Referer. The
+  // site header already says strict-origin-when-cross-origin, but anything
+  // that rewrites the page policy (a proxy, a metadata `referrer`) silently
+  // strips it. Set per tile image, the policy wins over the page's.
+  it.each(TILE_LAYER_FILES)("%s sets the tile referrerPolicy so OSM gets a Referer", (f) => {
+    expect(code(f)).toMatch(/referrerPolicy[=:]\s*["']strict-origin-when-cross-origin["']/);
+  });
+
   it("scan: every file with an OSM tile URL template is a known tile layer", () => {
     const withTiles = SOURCE_FILES.filter((f) => /openstreetmap\.org\/\{z\}/.test(code(f)));
     expect(withTiles.sort()).toEqual([...TILE_LAYER_FILES].sort());

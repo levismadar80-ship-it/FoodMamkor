@@ -234,7 +234,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         else ""
     )
     community = (
-        f'<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        f'<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         f'margin:0 0 24px;direction:rtl;">'
         f"{_html_escape(_APPROVED_COMMUNITY_BLOCK)}<br>"
         f'<a href="{_html_escape(invite_url)}" '
@@ -255,13 +255,13 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         '<body style="margin:0;padding:0;background:#F5F0E8;'
         'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
         '<table width="100%" cellpadding="0" cellspacing="0" '
-        'style="background:#F5F0E8;padding:32px 0;"><tr><td align="center">\n'
-        '<table width="100%" cellpadding="40" cellspacing="0" '
+        'style="background:#F5F0E8;padding:24px 12px;"><tr><td align="center">\n'
+        '<table width="100%" cellpadding="0" cellspacing="0" '
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
-        '<td style="text-align:right;direction:rtl;">\n'
+        '<td style="text-align:right;direction:rtl;padding:32px 24px;">\n'
         f"{logo}\n"
-        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         'margin:0 0 16px;direction:rtl;">היי,</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
         'margin:0 0 24px;direction:rtl;">'
@@ -273,8 +273,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         'font-size:15px;text-decoration:underline;direction:rtl;">'
         f"{_html_escape(_APPROVED_HTML_DASHBOARD_LABEL)}</a></p>\n"
         f"{community}\n"
-        '<hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">\n'
-        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        '<hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">\n'
+        '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         'margin:0;direction:rtl;">'
         f"ספיר שנפ<br>מייסדת | מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
         "</td></tr></table>\n"
@@ -367,7 +367,7 @@ def _producer_rejected_html(
     link = _rejected_dashboard_link(dashboard_link)
     reason_block = (
         (
-            '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+            '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
             'margin:0 0 24px;direction:rtl;">'
             f"הסיבה: {_html_escape(reason)}</p>\n"
         )
@@ -385,13 +385,13 @@ def _producer_rejected_html(
         '<body style="margin:0;padding:0;background:#F5F0E8;'
         'font-family:Arial,Helvetica,sans-serif;direction:rtl;">\n'
         '<table width="100%" cellpadding="0" cellspacing="0" '
-        'style="background:#F5F0E8;padding:32px 0;"><tr><td align="center">\n'
-        '<table width="100%" cellpadding="40" cellspacing="0" '
+        'style="background:#F5F0E8;padding:24px 12px;"><tr><td align="center">\n'
+        '<table width="100%" cellpadding="0" cellspacing="0" '
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
-        '<td style="text-align:right;direction:rtl;">\n'
+        '<td style="text-align:right;direction:rtl;padding:32px 24px;">\n'
         f"{logo}\n"
-        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         f'margin:0 0 16px;direction:rtl;">שלום {safe_name},</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
         'margin:0 0 24px;direction:rtl;">'
@@ -402,8 +402,8 @@ def _producer_rejected_html(
         f'<a href="{_html_escape(link)}" style="color:#2e6853;'
         'font-size:15px;text-decoration:underline;direction:rtl;">'
         f"{_html_escape(link)}</a></p>\n"
-        '<hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">\n'
-        '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
+        '<hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">\n'
+        '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         'margin:0;direction:rtl;">'
         f"בברכה,<br>צוות מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
         "</td></tr></table>\n"

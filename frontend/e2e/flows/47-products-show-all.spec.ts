@@ -109,7 +109,35 @@ test.describe("MEH-3021 — long product list collapses", () => {
   test("a deep link to a collapsed product opens the list and its sheet", async ({ page }) => {
     watchPageErrors(page);
     await serveLongList(page, producer);
+
+    // MEH-3148: the one 20 s budget here covered a serial chain — the stubbed
+    // `/api/producers/<id>` response, hydration, the deep-link effect
+    // (ProducerSections.jsx:332-345) and then the sheet — and named the LAST
+    // link whenever an earlier one was slow, which is why the log said
+    // «product-sheet not found» and the retry passed in 2.1 s. Timed at 1440
+    // against a seeded local stack: unthrottled the sheet is up ~1.1 s after
+    // `goto`; at CPU x10 with 60 ms per chunk it is ~5.6 s. The fetch is the
+    // part that stretches on a 2-core runner carrying two workers, a backend
+    // and Postgres.
+    //
+    // The listener is armed BEFORE the goto, so the payload is awaited where it
+    // actually is in the chain rather than polled for afterwards. The sheet then
+    // keeps its own full 20 s, measured from data-in-hand — the budget is
+    // re-pointed, NOT widened, and that distinction is the whole change: an
+    // earlier draft gated on a product row instead, which only attaches because
+    // the deep-link effect expanded the list, so it sat DOWNSTREAM of the thing
+    // it was meant to gate and handed the chain 40 s. The independent reviewer
+    // (rule 5a) caught that; this is the corrected form.
+    const payload = page.waitForResponse(
+      (r) => new RegExp(`/api/producers/${producer.id}$`).test(new URL(r.url()).pathname),
+      { timeout: 20_000 },
+    );
     await page.goto(`/producer/${producer.id}?product=e2e-meh3021-${SYNTHETIC}`);
+    const res = await payload;
+    // Control: a non-200 here would leave the page with the real short list and
+    // nothing for the deep link to open, so the sheet assertion below would be
+    // asking the wrong question.
+    expect(res.status(), "the stubbed long list was served").toBe(200);
 
     await expect(page.getByTestId("product-sheet")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("product-sheet")).toContainText(`מוצר בדיקה ${SYNTHETIC}`);

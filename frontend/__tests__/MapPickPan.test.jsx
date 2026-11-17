@@ -9,9 +9,8 @@
  * on mapRef and the bottom sheet rendered as a measurable element.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act, within } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import he from "../messages/he.json";
-import { STORAGE_KEY } from "@/lib/user-location";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => {
