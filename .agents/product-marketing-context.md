@@ -15,7 +15,7 @@
 **What it does:** Helps readers discover and trust licensed local food businesses near them, and gives each business its own editorial page. Every business is reviewed and approved by hand. Contact is direct — WhatsApp, phone, or Instagram — with no checkout, no cart, and no middleman.
 **Product category:** Local food directory (magazine-style discovery), positioned against the marketplace category that dominates Israeli food discovery.
 **Product type:** Editorial directory — a magazine, not a marketplace. Every product decision passes the "magazine or marketplace?" test.
-**Business model:** Free for businesses. No transaction fees, no commissions, ever. Two-tier licensing: מאומת (license verified — gold badge, free forever) and מוצהר (binding declaration for legally-exempt categories, never labeled negatively).
+**Business model:** The base page is free for every business. A price list is published from day one; a business pays only after its paid bookings through the site cross a results threshold, and only on bookings recorded in the site's tools (paid events, workshops, group buys, rescue bags), as a commission or a tools subscription with a reduced commission. Customer money never passes through Mehamakor. Numbers live only in `docs/PRICING.md`; the model is ADR-042. Never promise "no fees" or "ever". Two-tier licensing: מאומת (license verified — gold badge, free forever) and מוצהר (binding declaration for legally-exempt categories, never labeled negatively).
 
 ## Target Audience
 Mehamakor is two-sided. Two primary audiences:
@@ -49,13 +49,13 @@ Mehamakor is two-sided. Two primary audiences:
 ## Competitive Landscape
 **Direct / secondary:** Marketplace food discovery (Wolt, 10bis, Cherry, Yad2 food) — same discovery need, opposite model: optimize for transaction, treat the producer as supply and the consumer as a wallet, auto-onboard for scale.
 **Indirect:** Fragmented self-serve discovery — WhatsApp groups, Instagram, Google searching — solves the same problem with high effort and no curation or trust layer.
-**How each falls short:** None offers curation-plus-trust with a story-led editorial page, manual approval of every business, and zero fees. The marketplace model is structurally opposed to Mehamakor's DNA.
+**How each falls short:** None offers curation-plus-trust with a story-led editorial page, manual approval of every business, and a free base page. The marketplace model is structurally opposed to Mehamakor's DNA.
 
 ## Differentiation
 **Key differentiators:**
 - Magazine, not marketplace — optimize for discovery and trust, not the transaction.
 - Manual approval for every business, at any scale — no auto-approve.
-- No transaction fees or commissions, ever.
+- The base page is free; a business pays only on results it can see (ADR-042), and money never buys ranking or exposure.
 - Two-tier licensing transparency (מאומת / מוצהר) with honest, non-negative framing of both tiers.
 - Story-led editorial business pages — the business is the subject, not a listing.
 **How we do it differently:** Each business gets an editorial page (photos, story, direct contact) after a personal introduction — identity, story, and a conversation.
@@ -66,13 +66,13 @@ Mehamakor is two-sided. Two primary audiences:
 | Objection | Response |
 |-----------|----------|
 | (Business) "What if you shut down — who owns my customers?" | The customer relationship is yours: contact is direct (WhatsApp/phone/Instagram), Mehamakor does not sit between the business and its customers. |
-| (Business) "How much does it cost?" | Free to join and appear. No transaction fees, ever. |
+| (Business) "How much does it cost?" | The page is free. Paid bookings through the site carry a small commission, or a subscription with a reduced one, and only after a results threshold. Quote the numbers from `docs/PRICING.md`, never from memory. |
 | (Reader / business) "Is this a platform for unlicensed food?" | No. Cohort 1 is licensed businesses only; unlicensed food production where a license is legally required stays out. |
 
-**Anti-persona:** Unlicensed food production where a license is legally required (out of scope — not permitted in Israel). Businesses seeking a transactional marketplace with checkout and commissions are also not a fit — that is the opposite of the DNA.
+**Anti-persona:** Unlicensed food production where a license is legally required (out of scope — not permitted in Israel). Businesses seeking a transactional marketplace with a cart and checkout are also not a fit — that is the opposite of the DNA.
 
 ## Switching Dynamics
-**Push:** Buried on marketplaces; paying commissions; story flattened into a listing; discovery scattered across groups and search.
+**Push:** Buried on marketplaces; paying high marketplace commissions; story flattened into a listing; discovery scattered across groups and search.
 **Pull:** Own editorial page with photos and story; a direct line to local customers; free; every business chosen by hand.
 **Habit:** Continuing to rely on Instagram, WhatsApp groups, and the supermarket out of convenience.
 **Anxiety:** "Will the customers who arrive through this be mine?" — answered directly: yes, the relationship is yours.
@@ -107,7 +107,7 @@ Mehamakor is two-sided. Two primary audiences:
 |-------|-------|
 | Discovery without effort | One place; "בלי לחפש שעות" |
 | Trust through curation | Personal introduction + manual approval of every business |
-| No fees | Free to join; no transaction fees or commissions, ever |
+| Free base page | Free to join and appear; pay only on paid bookings made through the site, after a threshold (`docs/PRICING.md`) |
 | Story-led | Each business gets an editorial page — photos, story, direct contact |
 
 ## Goals
