@@ -2,6 +2,7 @@ import { test, expect, type Page } from "./_cloudinary-stub";
 import fs from "node:fs";
 import path from "node:path";
 import { settledField } from "./_settled-field";
+import { MAX_ATTEMPTS, retryDelayMs } from "../login-retry";
 
 /**
  * Spec:     25-role-reachability
@@ -195,6 +196,11 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
   });
 
   test("logging in from that /login returns her to the dashboard", async ({ page }) => {
+    // MEH-3159: the 429 path below waits out up to three limiter windows
+    // (3 x 20s, login-retry.ts). The waits are the SERVER's window, not a
+    // product delay, and they only happen on a 429 — the happy path still
+    // finishes in seconds. The 45s file default cannot hold them.
+    test.setTimeout(150_000);
     const password = process.env.DEMO_OWNER_PASSWORD;
     test.skip(
       !password,
@@ -210,7 +216,53 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
     // submit goes out empty (the :196 flake).
     await (await settledField(page, "login-email")).fill("demo-owner@example.com");
     await (await settledField(page, "login-password")).fill(password as string);
-    await page.getByTestId("login-submit").click();
+
+    // MEH-3159 — this is the one login in the suite that goes through the
+    // BROWSER, and the only one the MEH-2895 retry never covered.
+    //
+    // Reproduced locally with a control, against a seeded stack: `/auth/login`
+    // is 5/minute per client IP (auth.py:1280, keyed on IP with no email
+    // component). The status sequence for eight straight posts was
+    // 200,200,200,200,200,429,429,429 — so the first proves the credentials,
+    // and the limit is real. With the window spent, this exact flow then
+    // answered 429, the page stayed on `/login?redirect=%2Fproducer%2Fdashboard`
+    // showing the generic «משהו השתבש, נסו שוב», and `toHaveURL` timed out at
+    // 20067 ms. That is the card's symptom and its timing (21.9 s, retry 2.3 s
+    // once the window had rolled), and it is neither a product bug nor a race.
+    //
+    // In CI the window is spent by the suite itself: global-setup logs in three
+    // accounts per run, and `login-retry.ts` already exists because two shards
+    // in one minute from one IP overran the limit and a run executed 0 tests
+    // (staging 541de4995). That helper waits a 429 out for the API logins; this
+    // in-browser one was left outside it.
+    //
+    // So: wait the limiter's own window out and submit again, with the SAME
+    // policy object the API side uses — `retryDelayMs` and `MAX_ATTEMPTS` are
+    // imported, not re-stated, so there is one owner of the rule. Nothing about
+    // the limiter is weakened and nothing is skipped: only 429 is retried, a
+    // final 429 still reds the assertion below, and any other status (a 401 on
+    // a wrong password, a 5xx on a broken backend) is never waited on at all.
+    const submit = async () => {
+      const [res] = await Promise.all([
+        page.waitForResponse((r) => /\/api\/auth\/login$/.test(new URL(r.url()).pathname), { timeout: 20_000 }),
+        page.getByTestId("login-submit").click(),
+      ]);
+      return res.status();
+    };
+    let status = await submit();
+    for (let attempt = 1; status === 429 && attempt < MAX_ATTEMPTS; attempt += 1) {
+      const waitMs = retryDelayMs(null, Date.now());
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[25-role-reachability] /auth/login answered 429 (attempt ${attempt}) — ` +
+          `waiting ${Math.round(waitMs / 1000)}s for the per-IP window (MEH-3159).`,
+      );
+      await page.waitForTimeout(waitMs);
+      status = await submit();
+    }
+    // Named, so a final 429 reads as the shared-IP limit and not as a broken
+    // redirect — rule 39(c) wants the cause quoted, and this quotes itself.
+    expect(status, "the per-IP /auth/login limit (5/minute) refused every attempt — see MEH-2947").not.toBe(429);
 
     // Back on the target, not on "/" — the redirect survived the login.
     await expect(page).toHaveURL(DASHBOARD_URL, { timeout: 20_000 });

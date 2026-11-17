@@ -111,6 +111,26 @@ test.describe("MEH-3021 — long product list collapses", () => {
     await serveLongList(page, producer);
     await page.goto(`/producer/${producer.id}?product=e2e-meh3021-${SYNTHETIC}`);
 
+    // MEH-3148: this test spent ONE 20 s budget on a serial chain — SSR,
+    // hydration, the stubbed `/api/producers/<id>` refetch, the deep-link
+    // effect, then the sheet — and reported the LAST link whenever an earlier
+    // one was slow, which is why the log said «product-sheet not found» and the
+    // retry passed in 2.1 s. Measured at 1440 against a seeded local stack:
+    // unthrottled the synthetic row attaches at ~1.1 s and the sheet opens ~5 ms
+    // later; at CPU x10 with 60 ms per chunk the row is at ~4.8 s and the sheet
+    // ~0.85 s after it. The chain, not the sheet, is what overruns 20 s on a
+    // 2-core runner carrying two workers, a backend and Postgres.
+    //
+    // So gate on the list the deep link needs first — the effect keys on the
+    // product id set (ProducerSections.jsx:330-345) — and then on the sheet.
+    // Both are signals the page must produce, neither is a sleep, no tolerance
+    // moves, and a sheet that never opens still reds the second wait. What
+    // changes is that each link gets its own bound and the failure names which
+    // one gave way.
+    await expect(
+      page.getByTestId("product-row").filter({ hasText: `מוצר בדיקה ${SYNTHETIC}` }),
+      "the stubbed long list arrived — the deep-link effect keys on the product id set",
+    ).toBeAttached({ timeout: 20_000 });
     await expect(page.getByTestId("product-sheet")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("product-sheet")).toContainText(`מוצר בדיקה ${SYNTHETIC}`);
     await expect(page.getByTestId("products-toggle")).toHaveAttribute("aria-expanded", "true");
