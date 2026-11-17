@@ -202,7 +202,7 @@ Each needs a decision or new copy, so none was fixed in code.
 | Combination | What happens today | What is needed |
 |---|---|---|
 | An admin blocks a user who owns a live business or holds bookings | Only the flag flips. Her business stays live and she can no longer mark a bag as handed, so her buyers' orders stay "reserved". | A policy: delist on block, or not. |
-| An admin demotes a business owner to consumer | `role` changes, `producer_id` stays, the business stays live with no working owner. | Refuse while a business is linked (needs an error message), or unlink. |
+| An admin demotes a business owner to consumer | **Closed (MEH-3376, rulings 17/11 §א6):** refused with 409 while `producer_id` is set, whatever the business status (`routers/admin_extra.py` `update_user_role`). The way out is «ניתוק בעלים», then the demotion passes. | — |
 | Capacity of an event or workshop is cut below the seats already taken | Accepted. | A 422 with a message. |
 | A recurring workshop whose first date has passed is cancelled, deleted, or its business leaves the live state | Sign-up to it is still open (the first date is not the last), but the cancellation only looks at items dated today or later. Its registrants stay "registered", get no email, and a delete removes their rows silently. | The email prints the item's date, which here is in the past, so it needs wording. Belongs with the per-occurrence design for recurring workshops. |
 | Sign-up on the day, after the start time | Accepted (the gate is by date). | Open PR #4624. |

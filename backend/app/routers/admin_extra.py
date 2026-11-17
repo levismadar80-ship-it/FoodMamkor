@@ -181,6 +181,12 @@ def list_users(
     return out
 
 
+# Wording approved word for word (rulings 17/11 §א3) — do not edit here.
+_DEMOTE_LINKED_OWNER = (
+    "אי אפשר להוריד את ההרשאה כל עוד המשתמשת מקושרת לבית עסק. קודם מנתקים את הבעלות."
+)
+
+
 @router.put("/users/{user_id}/role", response_model=None)
 def update_user_role(
     user_id: UUID,
@@ -209,6 +215,12 @@ def update_user_role(
         )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
+    # MEH-3376: a business must never be left linked to an account that cannot
+    # run it. Demoting to consumer keeps `producer_id`, so the business would
+    # stay live with no working owner. Refused, whatever the business status;
+    # the way out is «ניתוק בעלים» (detach), then this request passes.
+    if data.role == "consumer" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_DEMOTE_LINKED_OWNER)
     target.role = data.role  # type: ignore[assignment]
     db.commit()
     return {"detail": "Role updated", "role": target.role}
