@@ -128,14 +128,17 @@ export default function Tooltip({ content, children, position = "top", overlay =
   }, [overlayActive, reposition]);
 
   // MEH-3271 (WCAG 1.4.13): Escape dismisses the bubble without moving the
-  // pointer or focus.
+  // pointer or focus. Capture phase + stopPropagation: inside a dialog, the
+  // first Escape closes only the bubble (the innermost layer), not the dialog.
   useEffect(() => {
     if (!visible) return undefined;
     const onKey = (e) => {
-      if (e.key === "Escape") setVisible(false);
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setVisible(false);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [visible]);
 
   const bubble = visible && (

@@ -464,10 +464,12 @@ export default function MiniMap({
       if (!focusables?.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the overlay is pulled back in.
+      const outside = !overlayRef.current?.contains(document.activeElement);
+      if (event.shiftKey && (document.activeElement === first || outside)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (document.activeElement === last || outside)) {
         event.preventDefault();
         first.focus();
       }
