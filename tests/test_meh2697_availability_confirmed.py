@@ -10,6 +10,7 @@ NULL means "never confirmed" — nothing is shown, never "confirmed long ago".
 from datetime import datetime, timedelta, timezone
 
 from app.models import Producer
+from app.utils.clock import israel_today
 
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -59,12 +60,18 @@ def test_confirm_stamps_now_and_the_public_page_carries_it(client, db):
 
 
 def test_confirm_does_not_touch_the_state_itself(client, db):
+    """Seeded away from the defaults (on vacation, with a return date), so a
+    confirm that reset the state to its default would fail here."""
     owner, producer = _owner(db)
-    before = (producer.availability_state, producer.vacation_until)
-    client.post(CONFIRM, headers=auth_header(owner))
+    until = israel_today() + timedelta(days=9)
+    producer.availability_state = "on_vacation"
+    producer.vacation_until = until
+    db.commit()
+    assert client.post(CONFIRM, headers=auth_header(owner)).status_code == 200
     db.expire_all()
     row = db.query(Producer).filter(Producer.id == producer.id).one()
-    assert (row.availability_state, row.vacation_until) == before
+    assert (row.availability_state, row.vacation_until) == ("on_vacation", until)
+    assert row.availability_confirmed_at is not None
 
 
 def test_confirming_again_moves_the_stamp_forward(client, db):

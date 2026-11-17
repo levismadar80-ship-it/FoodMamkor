@@ -19,6 +19,6 @@
 **טסטים**
 * `frontend/__tests__/DashboardPlacementGuard.test.js` — **השומר**: כל עמוד בלוח חייב מקום ברישום, קישור נכנס, ולכל היותר שתי הקשות מהבית.
 * `frontend/e2e/flows/manual/dashboard-shell.spec.ts` · `dashboard-edit.spec.ts` · `dashboard-edit-cards.spec.ts` · `dashboard-locations.spec.ts` · `dashboard-products.spec.ts` · `dashboard-trust-cards.spec.ts` · `dashboard-availability.spec.ts` · `dashboard-delivery.spec.ts` · `dashboard-vanity-share.spec.ts` (כולם תחת `frontend/e2e/flows/manual/`)
-* `tests/test_producer_me_delivery_fields.py` · `tests/test_producers_me_schema.py`
+* `tests/test_producer_me_delivery_fields.py` · `tests/test_producers_me_schema.py` · `tests/test_meh2697_availability_confirmed.py`
 
 **מזהי רישום שזה מכסה.** כל קבוצת `insights`, ‏`vanity_link`, ‏`qr_code`, ‏`completeness`, ‏`multi_locations`.

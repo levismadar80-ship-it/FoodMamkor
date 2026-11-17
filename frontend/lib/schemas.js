@@ -294,6 +294,10 @@ export const ProducerListSchema = z.object({
   // is_available_today / availability_status pair from the API (chunks 1–2)
   // and from here (chunk 3); LegacyAvailabilityFieldsGone.test.js pins it.
   availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:64
+  // MEH-2697: when the OWNER last confirmed her availability (ISO, tz-aware
+  // UTC); null = never. Declared now so z.object does not strip it before the
+  // «אושר ע״י בית העסק» tag that reads it ships.
+  availability_confirmed_at: z.string().nullable().optional(),
   has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   // NOT read by ProducerCard today, so the card-derived guard below cannot

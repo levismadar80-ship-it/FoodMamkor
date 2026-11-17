@@ -1100,6 +1100,7 @@ def confirm_availability(
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     now = datetime.now(timezone.utc)
     producer.availability_confirmed_at = now  # type: ignore[assignment]
+    producer.last_active_at = utc_now()  # type: ignore[assignment]
     db.commit()
     return {"availability_confirmed_at": now.isoformat()}
 
