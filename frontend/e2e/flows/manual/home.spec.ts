@@ -84,8 +84,9 @@ const CHAT_LAUNCHER_NAME = new RegExp(
  *
  *           The data-dependent rows INTERCEPT four client endpoints —
  *           `GET /api/producers` (incl. its `/{id}` form for recently-viewed),
- *           `GET /api/categories`, `GET /api/stats`, `GET /api/search` +
- *           `/api/search/trending`.
+ *           `GET /api/categories`, `GET /api/stats`, `GET /api/search` (+ a
+ *           `/api/search/trending` stub kept only to prove it is never asked
+ *           for, MEH-3257).
  *
  *           ⚠️ `page.route` CANNOT REACH THE FIRST PAINT, and this paragraph
  *           used to claim the opposite ("the intercept is what keeps … all of
@@ -2690,20 +2691,21 @@ test.describe("manual › smart search dropdown (MEH-99)", () => {
     await expect(page).toHaveURL(new RegExp(`/producers\\?q=${encodeURIComponent(stored[0])}`));
   });
 
-  // MT:MEH-99:2 — with no recent searches the same dropdown shows trending,
-  //   fetched from /search/trending.
-  test("with no recent searches the dropdown shows trending items", async ({ page }) => {
-    const trending = ["מחמצת", "עיזים"];
+  // MT:MEH-99:2 — MEH-3257 (Sapir 14/11): «חיפושים פופולריים» is gone.
+  //   With no recent searches, focusing the empty field opens nothing and asks
+  //   the server for nothing. The stub still answers /search/trending with
+  //   rows, so a fetch that came back would render them and fail the count.
+  test("with no recent searches the empty field opens no dropdown", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { trending });
+    await mockApi(page, PRODUCERS, { trending: ["מחמצת", "עיזים"] });
     await gotoHome(page);
+    const trendingCall = page
+      .waitForRequest(/\/api\/search\/trending/, { timeout: 1500 })
+      .then(() => "requested", () => "none");
     await heroSearch(page).click();
-    const history = scope(page).getByTestId("hero-search-history");
-    await expect(history).toBeVisible(FIRST_PAINT);
-    await expect(history).toContainText(HERO_SEARCH.trending_heading);
-    await expect(history.getByRole("option")).toHaveCount(trending.length);
-    await expect(history).toContainText(trending[0]);
+    expect(await trendingCall, "no /search/trending request after focus").toBe("none");
+    await expect(scope(page).getByTestId("hero-search-history")).toHaveCount(0);
   });
 
   // MT:MEH-99:3 + MT:MEH-99:8 — one character fires NOTHING; two characters fire

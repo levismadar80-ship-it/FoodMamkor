@@ -141,7 +141,7 @@ def _check_email_delivery_config(env: str, resend_api_key: str) -> str | None:
 # Everything in-process depends on it: the APScheduler jobs (MEH-539 onboarding
 # follow-ups + the auto-reply watchdog → a 2nd worker sends DUPLICATE emails),
 # the slowapi in-memory rate-limit store (per-worker → effective limit ×N),
-# the analytics metrics deque, the trending cache, and the JWKS cache. No
+# the analytics metrics deque and the JWKS cache. No
 # distributed lock coordinates workers. Railway's worker count is Sapir-domain,
 # so this is a loud boot ERROR, never a crash.
 _WORKER_COUNT_ENV_VARS = ("WEB_CONCURRENCY", "UVICORN_WORKERS")
@@ -171,7 +171,7 @@ def _check_single_replica(worker_values: dict[str, str | None]) -> str | None:
                 "duplicate APScheduler jobs (double onboarding emails + "
                 "watchdog runs), per-worker slowapi rate limits (effective "
                 f"limit ×{count}), and fragmented in-memory metrics/caches "
-                "(analytics deque, trending, JWKS). Keep the count at 1, or "
+                "(analytics deque, JWKS). Keep the count at 1, or "
                 "move these mechanisms to a shared store first."
             )
     return None
