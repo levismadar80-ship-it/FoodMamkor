@@ -58,6 +58,20 @@ def test_email_case_variants_share_one_bucket(client, db, rotating_ip):
     assert statuses[10] == 429
 
 
+def test_display_name_spellings_do_not_open_new_buckets(client, db, rotating_ip):
+    """LoginRequest.email is EmailStr, which accepts "A <v@x.com>" and resolves
+    it to v@x.com. Keyed on the raw string, each display name was a fresh
+    bucket: 23 logins on one account in a row went through (reviewer probe).
+    The key follows the parsed address since MEH-3373."""
+    make_user(db, email="victim@test.com", password=SAFE_PASSWORD)
+    statuses = [
+        _login(client, rotating_ip, f"N{i} <victim@test.com>") for i in range(11)
+    ]
+    assert 422 not in statuses, "control: the schema accepts the display-name form"
+    assert statuses[:10] == [401] * 10
+    assert statuses[10] == 429
+
+
 def test_another_email_is_not_affected(client, db, rotating_ip):
     make_user(db, email="victim@test.com", password=SAFE_PASSWORD)
     make_user(db, email="other@test.com", password=SAFE_PASSWORD)
