@@ -21,7 +21,8 @@ from contextlib import contextmanager
 from sqlalchemy import event
 
 from app.database import engine
-from conftest import make_producer
+from app.models.models import GroupBuy, GroupBuyCommit
+from conftest import make_producer, make_user
 
 LIST = "/group-buys"
 
@@ -41,30 +42,38 @@ def _count_selects():
         event.remove(engine, "before_cursor_execute", _capture)
 
 
-def _open_group_buy(db, producer, title):
+def _open_group_buy(db, producer, title, buyer):
     """One OPEN group buy with a commit, so both lazy relationships are live.
 
-    A group buy with no commits would still pass a broken implementation:
-    SQLAlchemy emits the SELECT for an empty collection too, but a reviewer
-    reading the test could not tell the difference. The commit makes the row
-    carry real data.
+    A group buy with no commits would still exercise the lazy load, but a
+    reviewer could not tell the difference between "the collection was loaded"
+    and "the collection was empty"; the commit makes the row carry real data.
+
+    The field set mirrors tests/test_group_buys_api.py's fixture, and the
+    producer must be `approved` + kind='producer' or `_public_group_buys`
+    (routers/group_buys.py:88) filters the row out and the list comes back
+    empty — which would make every assertion here vacuous.
     """
     from datetime import timedelta
 
-    from app.models import GroupBuy, GroupBuyCommit
-    from app.utils.clock import israel_today
+    from app.utils.clock import utc_now
 
     gb = GroupBuy(
         producer_id=producer.id,
         title=title,
         description="תיאור",
+        product_name="קמח מלא",
+        unit="שק",
+        price_per_unit_regular=120,
+        price_per_unit_group=90,
+        min_participants=5,
+        deadline=utc_now() + timedelta(days=7),
         status="open",
-        deadline=israel_today() + timedelta(days=7),
     )
     db.add(gb)
     db.commit()
     db.refresh(gb)
-    db.add(GroupBuyCommit(group_buy_id=gb.id, quantity=1))
+    db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=1))
     db.commit()
     return gb
 
@@ -79,7 +88,8 @@ def test_the_probe_sees_queries_at_all(client, db):
     reassuring output.
     """
     producer = make_producer(db, name="עסק מדידה")
-    _open_group_buy(db, producer, "רכישה אחת")
+    buyer = make_user(db, email="gb-qc-probe@example.com")
+    _open_group_buy(db, producer, "רכישה אחת", buyer)
     with _count_selects() as seen:
         response = client.get(LIST, params={"producer_id": str(producer.id)})
     assert response.status_code == 200, response.text
@@ -89,15 +99,16 @@ def test_the_probe_sees_queries_at_all(client, db):
 
 def test_group_buys_list_does_not_query_per_row(client, db):
     producer = make_producer(db, name="עסק קבוצות")
+    buyer = make_user(db, email="gb-qc-count@example.com")
 
-    _open_group_buy(db, producer, "רכישה 1")
+    _open_group_buy(db, producer, "רכישה 1", buyer)
     with _count_selects() as one:
         first = client.get(LIST, params={"producer_id": str(producer.id)})
     assert first.status_code == 200, first.text
     assert len(first.json()) == 1
 
     for n in range(2, 5):
-        _open_group_buy(db, producer, f"רכישה {n}")
+        _open_group_buy(db, producer, f"רכישה {n}", buyer)
     with _count_selects() as four:
         second = client.get(LIST, params={"producer_id": str(producer.id)})
     assert second.status_code == 200, second.text
@@ -118,7 +129,8 @@ def test_the_rows_still_carry_what_enrich_reads(client, db):
     satisfy the count assertion above and quietly empty the cards.
     """
     producer = make_producer(db, name="עסק תוכן")
-    _open_group_buy(db, producer, "רכישה עם תוכן")
+    buyer = make_user(db, email="gb-qc-content@example.com")
+    _open_group_buy(db, producer, "רכישה עם תוכן", buyer)
     response = client.get(LIST, params={"producer_id": str(producer.id)})
     assert response.status_code == 200, response.text
     row = response.json()[0]
