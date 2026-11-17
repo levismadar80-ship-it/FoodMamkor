@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from app.models import Event, Experience, Producer, ProducerReview, Registration
 from app.models.models import GroupBuy
 from app.utils.clock import utc_now
+from app.services.review_conflicts import conflict_free  # MEH-3258
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,8 @@ class OwnerAttention(TypedDict):
 def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
     # Same visibility as the public list (reviews.py `list_reviews`): a hidden
     # review, or any review of an organizer (ADR-036), is not on the page, so
-    # it is not waiting for an answer.
+    # it is not waiting for an answer. MEH-3258: nor is a review whose author
+    # is in conflict (owns this business or a competitor) — off the page too.
     n: Any = (
         db.query(func.count(ProducerReview.id))
         .join(Producer, Producer.id == ProducerReview.producer_id)
@@ -56,6 +58,7 @@ def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
             ProducerReview.is_hidden.is_(False),
             ProducerReview.reply.is_(None),
             Producer.kind == "producer",
+            conflict_free(),
         )
         .scalar()
     )

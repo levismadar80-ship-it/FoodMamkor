@@ -69,6 +69,7 @@ from app.services.producer_queries import (
     persist_registration_delivery_areas,
 )
 from app.services.password_policy import validate_password
+from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
 from app.database import get_db
 from app.models import Category, Producer, ProducerCategory, User
 from app.services.farmer_declaration import farmer_declaration_stamp
@@ -684,6 +685,10 @@ async def register_producer(
             user.terms_accepted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
             user.terms_version = TERMS_VERSION  # type: ignore[assignment]
         db.commit()
+        db.refresh(user)
+        # MEH-3258: she now owns a business — her reviews on it and on
+        # businesses sharing its categories leave the public rating.
+        recompute_after_owner_linked(db, user.id)
         db.refresh(user)
 
         # Capture producer primitives NOW — expire_on_commit=True means ORM
