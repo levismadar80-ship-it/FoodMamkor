@@ -23,7 +23,8 @@
  * autocomplete works before the backend responds (or on an unseeded env).
  *
  * SYNC DUTY (MEH-1349): backend/app/data/cities.py holds a byte-for-byte
- * copy of ISRAEL_CITIES. Any change here must land there in the same PR.
+ * copy of ISRAEL_CITIES, same order. Enforced by
+ * __tests__/IsraelCitiesParity.test.js (MEH-3337), which fails when they differ.
  */
 /**
  * MEH-2797 — everyday short names for a locality whose official name is longer.

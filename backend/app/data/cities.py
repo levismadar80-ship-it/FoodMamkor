@@ -15,8 +15,9 @@ History:  MEH-1349 (creation — GET /cities empty on fresh DB);
           form for city names, and the spelling /cities prefers).
 
 SYNC DUTY: this list is a byte-for-byte copy of ISRAEL_CITIES in
-frontend/data/cities.js. Any city added/removed there must land here in
-the same PR, and vice versa.
+frontend/data/cities.js, same order. Enforced by
+frontend/__tests__/IsraelCitiesParity.test.js (MEH-3337), which fails when
+the two differ.
 """
 
 import re
