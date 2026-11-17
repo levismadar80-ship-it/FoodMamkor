@@ -17,6 +17,7 @@ import ast
 import pathlib
 
 import pytest
+import structlog
 
 from app.services import job_heartbeat
 
@@ -93,9 +94,18 @@ def test_the_two_lists_do_not_overlap() -> None:
 
 
 def test_a_failed_checkin_is_logged_and_does_not_break_the_job(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The regression. Before MEH-3350 this passed with ZERO log output."""
+    """The regression. Before MEH-3350 this produced ZERO log output.
+
+    `structlog.testing.capture_logs` and NOT pytest's `caplog`: this app
+    configures structlog with its own processors and renderer, so the line is
+    written without passing through stdlib `logging` and caplog sees nothing.
+    Measured the hard way — CI showed the rendered `heartbeat_checkin_failed`
+    line in the captured output while the caplog assertion failed on the same
+    run. tests/test_seed_env_gate.py:145 and test_rating_dispatch.py:190
+    already use this helper for the same reason.
+    """
     monkeypatch.setenv("ENV", "production")
 
     def explode(**_: object) -> None:
@@ -111,26 +121,28 @@ def test_a_failed_checkin_is_logged_and_does_not_break_the_job(
     def job() -> None:
         ran.append("yes")
 
-    with caplog.at_level("WARNING"):
+    with structlog.testing.capture_logs() as entries:
         job()
 
     # The job still ran. That half was always true and must stay true.
     assert ran == ["yes"]
     # The half that was missing: there is now something to read.
-    text = caplog.text
-    assert "heartbeat_checkin_failed" in text, (
+    failures = [e for e in entries if e.get("event") == "heartbeat_checkin_failed"]
+    assert failures, (
         "a check-in that could not be sent left no trace in the logs — this is "
-        "exactly the MEH-3350 defect"
+        f"exactly the MEH-3350 defect. Captured: {entries}"
     )
-    assert "auto-reply-watchdog" in text
-    assert "429 rate limited by Sentry" in text, (
+    entry = failures[0]
+    assert entry["log_level"] == "warning"
+    assert entry["slug"] == "auto-reply-watchdog"
+    assert "429 rate limited by Sentry" in entry["error"], (
         "the log line must carry the underlying error, or it says only that "
         "something failed"
     )
 
 
 def test_a_successful_checkin_logs_nothing(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Discrimination: the warning must not fire on the happy path, or it is
     noise and will be filtered out by whoever reads the logs.
@@ -144,6 +156,6 @@ def test_a_successful_checkin_logs_nothing(
     def job() -> None:
         return None
 
-    with caplog.at_level("WARNING"):
+    with structlog.testing.capture_logs() as entries:
         job()
-    assert "heartbeat_checkin_failed" not in caplog.text
+    assert not [e for e in entries if e.get("event") == "heartbeat_checkin_failed"]
