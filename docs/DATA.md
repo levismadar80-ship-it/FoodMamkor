@@ -138,6 +138,8 @@
 > **MEH-3137 (2026-11-14) — grower declaration after registration:** `farmer_declaration_accepted: bool = false` is also accepted by `PUT /producers/me`, `POST /producers/{id}/claim`, `POST /auth/owner-invite/{token}/accept` and `POST /producers`. A business with `farmer_declared_at` NULL that ends up in ירקות/פירות (`FARMER_DECLARATION_CATEGORIES`) without the flag gets 422 «יש לאשר את הצהרת המגדל כדי להמשיך» (after the license 422; on the invite, before the email code is spent). The owner paths stamp `farmer_declared_at` / `farmer_declaration_version` once; an already-declared business is never asked again, and a `PUT` that sends no `category_ids` is not gated. `POST /producers` gates but does **not** stamp — that row is an ownerless draft, so the claim or invite asks the real owner. Admin writes drop the key (the line is the owner's to sign), so an admin can still place a business in a grower category with the column NULL; the owner's next categories save asks her. `ProducerOwnerOut.farmer_declared_at` lets the dashboard categories card show the box only when needed; the invite lookup's `requires_farmer_declaration` is false once the line is recorded.
 > **MEH-2461 (2026-10-28) — public organizer page:** `GET /organizers/{slug}` (`routers/organizers.py`) → `OrganizerPublicOut` {id, name, slug, description, short_description, city, images, phone, instagram, website, facebook, owner_bio, owner_photo_url, contact_name, established_year, primary_contact_method, contact_email, whatsapp_group, external_order_form (MEH-2475), upcoming_events: `EventOut[]`} for an **approved organizer only** — 404 «מארגן לא נמצא» for a business slug, a pending organizer or an unknown slug; upcoming = active, dated today-or-later (Israel), soonest first. No address / license / business fields. `GET /organizers` → `[{slug, name}]` (approved organizers with a slug) — the sitemap's source for `/organizers/{slug}`. `organizers` is a reserved slug (backend `slug_utils.RESERVED_SLUGS`, frontend `lib/slug.js` RESERVED). Both routes: 120/min (parity with `/producers/by-slug` and `/events/{id}`), `Cache-Control: public, s-maxage=30, stale-while-revalidate=30` on 200 only. Event JSON-LD (`lib/seo.js buildEventJsonLd`) points an organizer's event at `/organizers/{slug}` (no URL when the organizer has no slug).
 >
+> **MEH-3348 (2026-11-17) — JSON-LD from fields the pages already fetch (no API change):** `/organizers/{slug}` emits `Organization` + `BreadcrumbList` (`buildOrganizerJsonLd`). An `Event` (events and workshops) states `maximumAttendeeCapacity` from `max_participants`, and `remainingAttendeeCapacity` + `offers.availability` (`InStock` / `SoldOut`) from `spots_left`; nothing when there is no cap or the item is cancelled. A workshop also states `endDate` (start + `duration_minutes`, same day only), `organizer.url` (the host's business page) and keeps its `BreadcrumbList` when it has no date or city. A business with a location that also delivers states `areaServed` (`"Israel"` when `delivery_nationwide`, else the `delivery_areas` cities). All in `frontend/lib/seo.js`.
+>
 > **MEH-2469 (2026-10-28) — event end time:** `events.end_time TIME NULL` (revision `b7e3c1d9a2f4`, Expand-only). `EventCreate` / `EventUpdate` / `EventOut` carry `end_time`; an end time needs a start time and must be after it (same day) → 422 «שעת הסיום צריכה להיות אחרי שעת ההתחלה» — on create via the schema, on `PUT /events/{id}` against the values the row will hold. Shown as «09:30–15:00»; JSON-LD `endDate`.
 >
 > **MEH-1471 (2026-07-22):** self-reported attribution ("מאיפה שמעת עלינו?"). `producers.referral_source` (`VARCHAR(40)`, **nullable**) + `producers.referral_source_other` (`VARCHAR(120)`, **nullable**), migration `d7b2f4a9c6e1`. `referral_source` stores an **English key** from `constants.REFERRAL_SOURCE_KEYS` (`business_referral`\|`friends_family`\|`instagram`\|`facebook`\|`google`\|`whatsapp_group`\|`direct_outreach`\|`other`\|`prefer_not_to_say`) chosen at the final registration step; Hebrew labels are rendered from i18n. `referral_source_other` holds the optional free-text answer, revealed only when the key is `other`. Validated at the API boundary (`ProducerRegister._validate_referral_source` → **422** on an unknown key; `referral_source_other` bleach-sanitised) — **no DB CHECK/enum** (app-layer, like `availability_state`/`verification_doc_type`). Field is optional at the Pydantic layer (nullable column, MEH-143 upgrade path); required-ness is a **front-end** registration gate only. **No `server_default`, NO backfill** (ADR-007 Expand-only) — existing rows stay NULL (admin renders "—"). **Admin-only** — `ProducerAdminOut` surfaces both; public `ProducerListOut`/`ProducerDetailOut` do NOT (internal supply-side data, MEH-530 privacy precedent). Displayed read-only under the producer name in the `/admin/producers` table (`AdminProducersTable.jsx`, `"אחר: <text>"` for the `other` case).
@@ -698,7 +700,7 @@ users.last_active_at timestamp NULL
 ### Search analytics (MEH-99)
 
 ```sql
--- One row per /search call. results_count=0 rows surface in trending suppression.
+-- One row per /search call. Written only; /search/trending was removed (MEH-3257).
 -- Table created by _migrate_columns() in main.py; no ORM model.
 search_queries (
   id uuid PK DEFAULT gen_random_uuid(),
@@ -805,6 +807,8 @@ product_order_events   (id uuid PK, order_id uuid FK→product_orders CASCADE,
 
 > **MEH-2715 — rescue bags: confirmation email (06/11/2026):** `POST /rescue/orders` now queues one email to the buyer after the commit (`app/services/rescue_emails.py`, a FastAPI BackgroundTask fed plain values, never the Session). It carries the pickup code, the total paid at the counter (`price_agorot × qty`), the pickup window and the free-cancel cutoff in Israel time, the pickup address, and a «לבטל את השריון» link to `/producer/{id}`. A refused reservation sends nothing. `send_email` stays fail-open, so a failed send never undoes a reservation. No schema or response change.
 
+> **MEH-3313 — rescue bags: the business is told (15/11/2026):** the same `POST /rescue/orders` also queues one plain-text email to every owner login of the business (`app/services/rescue_business_emails.py`, recipients from `booking_cancellations.owner_emails`): quantity, pickup code, total paid at the counter, the window, and a link to `/producer/dashboard/rescue`. Subject «נשמר סל הפתעה ב{name}». No buyer name or contact in it. A refused reservation sends nothing; fail-open. No schema change.
+
 > **MEH-2680 — rescue bags: the buyer's own orders (05/11/2026):** `GET /rescue/orders/mine` 🔑 — the caller's `reserved`/`handed` orders on **today's** offers (Israel date), same fields as the `POST /rescue/orders` response plus `reviewed` (a review exists) and `producer_id`. The business page reads it on mount and on window focus, so a reload no longer loses the pickup code and the review appears once the counter marks the bag handed. It matches on `producer_id`, not `offer_id`, because `GET /rescue/offers` drops a sold-out offer. Guests are never asked (their 401 would end in the session-expired toast). Behind the same flag.
 
 > **MEH-2716 — «מצילים מזון» badge (06/11/2026):** `ProducerListOut.rescued_recently` (bool, computed, no column) — True when the business, in the last 30 days, handed a surprise bag over (`rescue_orders.status='handed'`, `handed_at` in window) or reported bags given away free (`rescue_offers.qty_donated>0`, `pickup_end` in window). Set by `attach_rescue_saving()` (`services/producer_queries.py`) on `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and the favorites list — two queries per page, none and always False while `RESCUE_BAGS_ENABLED` is off. Drives the `rescue_saving` badge (evidence `system`); never ranking.
@@ -831,6 +835,15 @@ All endpoints served from `backend/app/main.py`. Auth via JWT in the
 `Authorization: Bearer …` header unless marked "public". Rate limiting
 via `slowapi` — see `backend/app/rate_limit.py` and
 [SECURITY.md](./SECURITY.md) §2.
+
+> **MEH-2955 · MEH-3297 — answers any endpoint can give before the route
+> runs** (`backend/app/db_bulkhead.py`). **503** «האתר עמוס כרגע…» +
+> `Retry-After: 2` when the server is full for 10 s, or when buffered request
+> bodies exceed 64 MB (only bytes past the first 64 KB of a body count, so
+> small JSON POSTs are never refused this way). The request body is read
+> before the request may run: **408** «הבקשה הגיעה לאט מדי…» after 15 s with
+> no new bytes or 300 s in total; **413** «הבקשה גדולה מדי.» above 10 MB
+> (declared or received). 408 / 413 close the connection.
 
 > **MEH-3022 — per-business caps.** Creates answer **409** with a Hebrew
 > `detail` once a business holds the maximum: products 100, recipes 50,
@@ -888,6 +901,15 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > background task and a failed send never fails the 200. Once by construction:
 > cancelled is final in `OWNER_TRANSITIONS`, so a repeat is a 409 and sends
 > nothing. No latch column. An admin cancel (admin route) sends nothing.
+>
+> **MEH-3287 — deadline passed below the minimum.** A daily job
+> (`startup._run_group_buy_expiry_job`, 06:00 UTC = 08:00/09:00 Israel,
+> `GROUP_BUY_EXPIRY_CRON`) moves every `open` group whose `deadline` has
+> passed to `cancelled` (row lock, SKIP LOCKED) and mails each participant
+> «מהמקור — הקבוצה "{title}" לא הגיעה ליעד»
+> (`services/group_buy_expiry.py`, `notify_participant_expired`). `funded`
+> groups are not touched. The status change is the only stamp: a second run
+> selects nothing. No email to the business.
 >
 > **MEH-2621 (MEH-2615 split, chunk 1) — pickup and delivery as two answers.**
 > Two new nullable `Text` columns on `group_buys`: `pickup_note`,
@@ -1245,8 +1267,18 @@ POST   /producers/me/locations                    producer  — create a locatio
 PUT    /producers/me/locations/{id}               producer  — update (60/hr). Cross-owner id → 403 "אין הרשאה למיקום זה"
                                                               (missing id → 404). Demoting the sole primary → 422 "חובה מיקום ראשי אחד".
                                                               same-city check only when city/label in the patch.
-DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the primary promotes
-                                                              the oldest survivor so exactly one primary remains.
+                                                              MEH-3342: a PRIMARY row must stay `branch` — re-kinding it to
+                                                              pickup/market_stand is 422, not only promoting a non-branch
+                                                              (the resting state is checked, so both ways in are covered).
+                                                              An explicit `null` for `kind` or `location_precision` is 422,
+                                                              not the 500 the NOT NULL column used to raise; omitting a
+                                                              field still means "leave it alone".
+DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the PRIMARY while other
+                                                              rows remain → 422 "חובה מיקום ראשי אחד": the owner promotes
+                                                              another row first. It no longer promotes the oldest survivor
+                                                              automatically — that had no kind filter, so deleting the primary
+                                                              could make a pickup point the business's navigation target.
+                                                              Deleting the last row is allowed.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
@@ -1365,8 +1397,8 @@ CTA and «או שאלה למארחת». Experiences already carry it as `host.pr
 ### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
 
 ```
-POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back).
-POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item). Same email twice → same 201, nothing stored or sent.
+POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
+POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item). Same email twice → same 201, nothing stored or sent.
 GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled.
 GET    /experiences/{id}/registrations    auth — host or admin; others 404.
 GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page.
@@ -1772,8 +1804,6 @@ GET  /admin/outreach/metrics/summary
 GET  /search            public — q (max 100 chars), limit (1–20, default 8)
                                  returns { producers, products, cities, categories }
                                  rate-limited 60/minute per IP
-GET  /search/trending   public — top 5 queries with results_count>0, cached 1hr
-                                 rate-limited 30/minute per IP
 ```
 
 **What a producer hit matches on (MEH-2478).** `GET /search` matches a business on

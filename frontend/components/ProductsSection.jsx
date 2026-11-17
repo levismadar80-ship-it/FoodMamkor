@@ -158,7 +158,6 @@ export default function ProductsSection({
   const t = useTranslations("settings.products");
   const tForm = useTranslations("settings.products.form");
   const tErr = useTranslations("settings.products.errors");
-  const tCommon = useTranslations("settings.common");
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);

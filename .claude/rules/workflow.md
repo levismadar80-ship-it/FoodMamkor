@@ -115,9 +115,11 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
    Read HANDOFF.md first, this file, DESIGN.md/DATA.md; list feature branches,
-   open PRs and `origin/staging..origin/main`; report and ask "continue an open
-   PR, or start fresh?" — never skip it. Evidence of a parallel session → stop
-   and report. PR given by number → check out its head branch first.
+   open PRs and `origin/staging..origin/main`; report what you found — never
+   skip it — then start on the queue or the task you were given (ADR-032: no
+   waiting for a reply). Evidence of a parallel session, or an open PR on the
+   same card → stop and report. PR given by number → check out its head
+   branch first.
 2. **Branch from `staging`** — never from `main`. See
    [deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes. Pattern
@@ -126,9 +128,10 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
    branch is not an exception: re-cut `git checkout -B feature/meh-XXXX-<slug>
    origin/staging` per ticket before the first commit — the repo wins.
 4. **Plan before coding + interview mode.** Propose in plain text, wait for
-   `go`. Ambiguous spec → 2–5 targeted questions first. Before a plan that
-   references a Linear issue, fetch the live description and name every
-   spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
+   `go` — except a card worked from the queue, whose description is the
+   approved spec (ADR-032): no `go` is awaited for it. Ambiguous spec → 2–5
+   targeted questions first. Before a plan that references a Linear issue,
+   fetch the live description and name every spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
    silently.
 5a. **Adversarial review before every merge to staging.** See
    [testing.md](./testing.md). In addition to `/adversarial-review`, the
@@ -222,7 +225,8 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 6. **Guard tests (401/403/409) must send schema-valid payloads.** A 422 proves
    nothing; use the `valid_*_payload()` fixtures in `tests/conftest.py`.
 7. **Docs-only files still go through a feature branch + PR.** `staging` rejects
-   all direct pushes; merge stays Sapir-only.
+   all direct pushes. CC merges to staging after its checks (ADR-032, rules 21
+   and 38–41); staging → main is Sapir's.
 8. **Never add new env vars without listing them explicitly** and waiting for
    confirmation.
 9. **Test dummy URLs must be real backend routes (matching method).** See
@@ -346,6 +350,11 @@ Tiers: [ADR-016](../../docs/decisions/ADR-016-risk-tier-nomenclature.md).
 Auth · schema/Alembic · central components (`.claude/central-components.json`) ·
 security-sensitive code · prod-deploy-blocking (env, Dockerfile, Railway).
 Numbered plan → `go` → one chunk → `go <chunk>` per chunk.
+
+That is for work that arrives without a queue card. A queue card in these
+domains is RED under ADR-032: autonomous, but only with the proof obligations
+of ADR-032 §2 (the §2.5 reviewer runs before the merge) and inside the hard
+stops of §3; an Alembic revision still waits for Sapir's OK (rule 38).
 
 ### LOW-RISK — end-to-end with single review
 
@@ -586,6 +595,30 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     the tree.
     Reason: a probe under a glob that can't be deleted (rule 32b) leaves a
     permanent local `1 failed` and a blocking Stop hook (12/11).
+43. **Match the task to skills before the first plan or edit (Sapir 14/11,
+    MEH-3176).** Skills load only when a task happens to resemble their
+    description, so a routine-looking task skips them. Before starting, read
+    the table, invoke every row that fits (Skill tool), and write one line in
+    the first reply and in the PR body: `Skills: <names>` or
+    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns on
+    a PR body without it.
+
+    | Task | Skills |
+    |---|---|
+    | New / changed page, block, component | `critique`, `design-review:design-principles`; before PR `polish` |
+    | Hebrew copy, labels, errors, emails | `hebrew-content-writer`, `clarify` (copy still needs Sapir's word-for-word OK, rule 22) |
+    | Accessibility, forms, modals | `israeli-accessibility-compliance` |
+    | Signup / registration / onboarding | `signup-flow-cro`, `onboarding-cro`, `form-cro` |
+    | Metadata, landing pages, sitemap, JSON-LD | `seo-audit`, `schema-markup`, `ai-seo` |
+    | Email flows | `email-sequence` |
+    | Pricing, plans, upgrade prompts | `pricing-strategy`, `paywall-upgrade-cro` |
+    | Personal data, consent, terms, legal | `israeli-privacy-shield`, `israeli-ecommerce-compliance`, `hebrew-legal-research` |
+    | RTL / i18n | `hebrew-rtl-best-practices`, `hebrew-i18n` |
+    | Errors, edge cases, empty states | `harden` |
+    | Speed | `optimize` |
+    | Big or ambiguous feature | `grilling` (rule 4 interview) |
+    | Linear grooming | `backlog-groom` |
+    | Any code PR | `mehamakor-dod`, `adversarial-review` (+ variant, rule 5a), `security-review` for auth / upload / routers |
 
 ---
 

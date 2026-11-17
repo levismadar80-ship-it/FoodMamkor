@@ -581,6 +581,11 @@ front matter for the normative token bindings.
   pinned **top-start** (`start-3`) as a single shared overlay across both layouts.
   First image is eager (`priority`); the rest are lazy. Imageless state = the
   Tinted Masthead (MEH-815, unchanged). RTL logical props only.
+- **Organizer cover — all photos (`GalleryViewAllButton`, MEH-3341):** the
+  organizer page keeps `images[0]` as its cover; with **2+** photos the same gold
+  «כל התמונות (N)» pill sits in the cover's bottom inline-END corner (the avatar
+  holds the start corner) and opens the shared `Lightbox`. **0** = green band,
+  **1** = cover only — no pill in either.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single

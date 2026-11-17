@@ -1222,7 +1222,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "wrapper param ← producer.is_test (the business that replied)",
     ),
     # --- delivery waitlist ---
-    ("services/delivery_waitlist.py", "notify_cities", "send_email"): (
+    ("services/delivery_waitlist.py", "_notify_cities", "send_email"): (
         1,
         CON,
         "producer.is_test",
@@ -1284,6 +1284,16 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_participant_cancelled_delisted",
         "_send_email",
     ): (1, CON, "wrapper param ← producer.is_test"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_participant_expired",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3287)"),
+    (
+        "services/rescue_business_emails.py",
+        "send_business_reservation_email",
+        "send_email",
+    ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",

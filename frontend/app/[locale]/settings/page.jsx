@@ -4,7 +4,6 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import Image from "next/image";
 import {
   UserCircle,
   Lock,

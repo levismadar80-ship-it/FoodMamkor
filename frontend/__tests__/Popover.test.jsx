@@ -386,3 +386,73 @@ describe("ui/Popover", () => {
     });
   });
 });
+
+// MEH-3271: the mobile sheet takes focus when it opens, so every way of
+// closing it has to give focus back, and its Tab loop has to hold.
+describe("ui/Popover sheet — focus (MEH-3271)", () => {
+  const asMobile = () => {
+    const prev = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    return () => {
+      window.matchMedia = prev;
+    };
+  };
+
+  it("closing by the backdrop returns focus to the trigger", () => {
+    const restore = asMobile();
+    try {
+      renderPopover({ sheetOnMobile: true });
+      const trigger = screen.getByText("פתחי");
+      fireEvent.click(trigger);
+      // control: the sheet really took focus away from the trigger
+      expect(document.activeElement).toBe(screen.getByTestId("pop-content"));
+
+      fireEvent.click(screen.getByTestId("pop-content-backdrop"));
+      expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(trigger);
+    } finally {
+      restore();
+    }
+  });
+
+  it("Tab from outside the sheet lands on its first control, skipping a disabled one", () => {
+    const restore = asMobile();
+    try {
+      render(
+        <>
+          <button type="button">בחוץ</button>
+          <Popover
+            trigger={<button type="button">פתחי</button>}
+            contentTestId="pop-content"
+            sheetOnMobile
+          >
+            <button type="button" disabled>
+              כבוי
+            </button>
+            <button type="button">ראשון</button>
+            <button type="button">אחרון</button>
+          </Popover>
+        </>,
+      );
+      fireEvent.click(screen.getByText("פתחי"));
+      screen.getByText("בחוץ").focus();
+
+      fireEvent.keyDown(window, { key: "Tab" });
+      expect(document.activeElement).toBe(screen.getByText("ראשון"));
+
+      screen.getByText("בחוץ").focus();
+      fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+      expect(document.activeElement).toBe(screen.getByText("אחרון"));
+    } finally {
+      restore();
+    }
+  });
+});
