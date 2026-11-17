@@ -379,8 +379,13 @@ class Producer(Base):
     # Admin-owned (MEH-530 precedent): ProducerAdminOut only, never the public
     # ProducerDetailOut/ListOut, and withheld from _PRODUCER_WRITABLE_FIELDS so
     # PUT /producers/me cannot write it — same shape as google_place_id
-    # (MEH-1490). Tests assert both. No enforcement anywhere: v1 is capture +
-    # remind only. Paired migration: c3e9a1f7b204.
+    # (MEH-1490). Tests assert both. Enforcement lives in
+    # services/verification_status.py (MEH-2520): `licence_lapsed` /
+    # `verification_is_current` drop the verified tier once this date has
+    # passed, and both the public tier and the `?verified` filter read through
+    # them. NULL means "not captured", never "lapsed", so an expired licence
+    # with no captured date stays indistinguishable (MEH-2637). Paired
+    # migration: c3e9a1f7b204.
     license_expires_at = Column(Date, nullable=True)
     # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") captured at the
     # final registration step. `referral_source` holds an English key from
