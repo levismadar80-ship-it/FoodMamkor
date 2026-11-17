@@ -491,7 +491,7 @@ were ever started:
 |---|---|
 | APScheduler jobs — onboarding follow-ups (MEH-539) + auto-reply watchdog | Each worker runs its own scheduler → **duplicate emails** and double watchdog runs |
 | slowapi rate limiter (in-memory store) | Per-worker counters → effective limit multiplied by the worker count (login/abuse limits weaken ×N) |
-| Analytics request-metrics deque + trending cache | Fragmented per worker → the admin dashboard sees only one worker's slice |
+| Analytics request-metrics deque | Fragmented per worker → the admin dashboard sees only one worker's slice |
 | JWKS cache | Redundant fetches; no correctness break, but wasted work |
 
 Because Railway's worker/replica count is a platform setting (Sapir
