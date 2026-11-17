@@ -1267,8 +1267,18 @@ POST   /producers/me/locations                    producer  — create a locatio
 PUT    /producers/me/locations/{id}               producer  — update (60/hr). Cross-owner id → 403 "אין הרשאה למיקום זה"
                                                               (missing id → 404). Demoting the sole primary → 422 "חובה מיקום ראשי אחד".
                                                               same-city check only when city/label in the patch.
-DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the primary promotes
-                                                              the oldest survivor so exactly one primary remains.
+                                                              MEH-3342: a PRIMARY row must stay `branch` — re-kinding it to
+                                                              pickup/market_stand is 422, not only promoting a non-branch
+                                                              (the resting state is checked, so both ways in are covered).
+                                                              An explicit `null` for `kind` or `location_precision` is 422,
+                                                              not the 500 the NOT NULL column used to raise; omitting a
+                                                              field still means "leave it alone".
+DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the PRIMARY while other
+                                                              rows remain → 422 "חובה מיקום ראשי אחד": the owner promotes
+                                                              another row first. It no longer promotes the oldest survivor
+                                                              automatically — that had no kind filter, so deleting the primary
+                                                              could make a pickup point the business's navigation target.
+                                                              Deleting the last row is allowed.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
