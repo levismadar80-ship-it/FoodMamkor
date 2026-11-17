@@ -75,7 +75,28 @@ test.describe("MEH-3021 — long product list collapses", () => {
   test("closed shows the first rows, open shows all, close returns", async ({ page }, info) => {
     watchPageErrors(page);
     await serveLongList(page, producer);
+
+    // MEH-3379 — the same single-budget chain MEH-3148 fixed at :109, in the
+    // sibling test I missed inside this very file. One 20 s budget covered
+    // SSR, hydration, the stubbed `/api/producers/<id>` refetch that
+    // `serveLongList` installs, and then the render — so a slow earlier link
+    // was reported as «products-toggle not found». Measured for :109 at 1440:
+    // unthrottled the stubbed data lands at ~1.1 s, at CPU x10 with 60 ms per
+    // chunk at ~4.8 s; on a 2-core runner carrying two workers, a backend and
+    // Postgres, the chain is what overruns 20 s, not the toggle. Seen on
+    // PR #4635's run (shard 1/2): 21.5 s, then green on retry in 1.8 s.
+    //
+    // Arm the listener BEFORE the goto so the payload is awaited where it
+    // actually sits in the chain, then give the toggle its own full 20 s from
+    // data-in-hand. The budget is re-pointed, not widened — a toggle that
+    // never renders still reds — and the 200 control keeps a bad stub from
+    // letting the next assertion ask the wrong question.
+    const payload = page.waitForResponse(
+      (r) => new RegExp(`/api/producers/${producer.id}$`).test(new URL(r.url()).pathname),
+      { timeout: 20_000 },
+    );
     await page.goto(`/producer/${producer.id}`);
+    expect((await payload).status(), "the stubbed long list was served").toBe(200);
 
     const toggle = page.getByTestId("products-toggle");
     await expect(toggle).toBeVisible({ timeout: 20_000 });
