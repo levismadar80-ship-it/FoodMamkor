@@ -4,6 +4,35 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-17 — קבוצות רכישה והרשמה: שני תיקונים מוזגו, אחד מחכה לקופי
+
+**שורה אחת:** ‏#4625 (קבוצת רכישה שעבר המועד שלה בלי להגיע ליעד נסגרת כל בוקר ב-06:00 UTC, והמשתתפות מקבלות מייל) ו-#4624 (הרשמה לאירוע או לסדנה נסגרת כשהם כבר התחילו היום) מוזגו ל-staging. ‏#4632 הוא טיוטה. **שום דבר לא שוחרר ל-production.**
+
+**מה צריך לדעת לפני עבודה:**
+- אחרי #4625, דף של קבוצה שנסגרה כי עבר המועד עדיין מציג «קבוצת הרכישה בוטלה». ‏#4632 מחליף את זה ב«המועד האחרון חלף», ולכן הנוסח יתוקן רק כשהוא ימוזג.
+- ב-E2E של שני ה-PR-ים היה טסט פלאקי אחד בכל אחד, בספקים שה-PR-ים לא נוגעים בהם: ‏`14-language-toggle.spec.ts:93` נוסף לכרטיס MEH-3156, ו-`footer-nav-clearance.spec.ts:186` לכרטיס MEH-3322. לא נפתחו להם כרטיסים חדשים, כי ב-Linear נגמרה מכסת ה-issues של החבילה החינמית.
+
+**‏לא עכשיו / מחכה לספיר:** ‏#4632 (MEH-3289, קבוצה שהגיעה ליעד ממשיכה לקבל משתתפות עד המקסימום) — שלוש מחרוזות מסך שלא מופיעות בכרטיס: `group_buys.list.status_hint_funded` (שינוי), `group_buys.detail.full` ו-`group_buys.{card,detail}.progress_joined` (חדשות). הנוסח המוצע בעברית ובאנגלית נמצא בתגובה בכרטיס. אחרי אישור: לסנכרן עם staging, להוסיף `run-e2e`, להעביר ל-ready ולמזג.
+
+---
+
+## 2026-11-17 — אצווה של 15 משימות: שומרי CI, ‏N+1, מסגרת מייל, ‏SEO ודוחות
+
+**שורה אחת:** 13 PR-ים מוזגו ל-staging (#4686, #4687, #4688, #4689, #4690, #4691, #4692, #4693, #4694, #4695, #4696, #4698, #4699). **שום דבר לא שוחרר ל-production.**
+
+**מה צריך לדעת לפני עבודה:**
+- **שני שומרים חדשים תחת `Repo guards`:** `scripts/checks/brand-lexicon-guard.sh` אוכף את `docs/BRAND.md` §7 על `frontend/messages`, ‏`frontend/{app,components,lib,hooks}` ו-`backend/app` (baseline 5 שורות: ארבע מהן מחכות לקופי של ספיר, והחמישית היא חריג מכוון — ‏`producer_risk.py` הוא prompt מערכת ל-Anthropic ולא טקסט שמישהי קוראת, והמילה שם נושאת משמעות), ו-`scripts/checks/rtl-logical-props-guard.sh` הוא **כישלון קשיח עם baseline ריק** — הוא קורא את `.claude/hooks/rtl-allowlist.txt` הקיים ולא מחזיק registry שני. ‏`left-`/`mr-`/`pl-` חדש ב-`frontend/` מאדים את ה-PR.
+- **המונח הנעול הוא «קבוצת רכישה».** ‏«קנייה קבוצתית» ירדה מ-`he.json`. השומר תופס את שתי הצורות ואת «קבוצת רכש».
+- **שער הפריסה מודד עכשיו קוד, לא sha.** ‏`scripts/checks/wait_for_deploy.py` משווה את `backend/`, ‏`Dockerfile` ו-`railway.json` בין ה-sha שרץ ל-commit; שונה או בלתי-ניתן-להכרעה = יציאה 2. **אין לזה שיניים עדיין:** `post-deploy-checks.yml:95` עוטף את הסקריפט ב-`|| echo "::warning"`. התיקון מוכן ומאומת ב-`docs/ci/meh-0000-deploy-sha-gate.patch.md` ומחכה לספיר (`.github/**` חסום ל-CC).
+- **כל מייל HTML עובר דרך מסגרת אחת.** שבעה מודולים קיבלו `<meta viewport>`, ‏55 צבעים מחוץ לפלטה הוחלפו בטוקנים, ו-`rescue_no_show.py` עבר ל-`registration_emails._shell`. ‏`tests/test_meh0000_email_frame.py` שומר על כל זה.
+- **`GET /group-buys` ו-`/admin/group-buys` טוענים מראש `commits` ו-`producer`.** `tests/test_meh0000_group_buys_query_count.py` מאדים אם מישהו מחזיר טעינה עצלה לכל שורה. **אל תוסיפו את ה-`options` לתוך `_status_tab_query`** — מסלול ה-`/counts` חולק אותה ורק סופר.
+- **`.claude/rules/decisions.md` חדש:** כל החלטה שמובאת לספיר מציגה את הטיעון החזק ביותר **לכל** אופציה, לא רק לזו המומלצת.
+- **פתוח אצל ספיר:** מכסת ה-cron monitors ב-Sentry (שישה jobs בלי ניטור) · הבלוק של `backend/app/config.py` שנועל את כתובת האתר (הקובץ חסום לעריכה; הנוסח ב-`docs/audits/2026-11-email-frame.md`) · ה-scope של `NEXT_PUBLIC_SITE_URL` ב-Vercel · `scripts/check_env_drift.sh` שלא סורק את `scripts/` בשורש (חמישה `R2_*` לא מתועדים) · מחיקת `android-chrome-*.png` (486 KB, לא מקושרים) · קופי ל-`pricing.page.sub_example` ולתיאור meta של מארגן.
+- **לא תוקן בכוונה:** `/producer/<id>` מחזיר 200 על עסק שאינו קיים — MEH-1632 הוציא אותו מבדיקת הקיום ב-middleware כדי לא להחזיר 404 לבעלים של עסק ממתין שצופה בדף שלו.
+- **Linear:** המרחב הגיע לתקרת הכרטיסים של החשבון החינמי, ולכן 13 מתוך 15 המשימות עבדו על ענפי `feature/meh-0000-*` בלי כרטיס.
+
+---
+
 ## 2026-11-16 — ביקורת פרומפטים על קובצי ההנחיות (MEH-3345)
 
 **שורה אחת:** שני PR-ים מוזגו ל-staging: #4675 (נתיבים מתים, עובדות מודל ישנות ופיגומי חשיבה) ו-#4678 (הכרעה בסתירות בין קובצי ההנחיות).

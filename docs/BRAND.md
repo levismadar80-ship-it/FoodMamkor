@@ -161,7 +161,7 @@ Phrasings that survived to production once and must be caught in review:
 
 **תקדים חיצוני:** Google סגרה את הצ'אט ב-Google Business Profile ביולי 2024 במקום להחזיק ערוץ שאינה יכולה לעמוד מאחוריו. Yelp מציגה "סגור"/"פתוח" ליד השעות ולא יותר. Etsy שולחת auto-reply — אבל מהחשבון של המוכרת ובניסוח שלה.
 
-**הערה לקוד:** האכיפה מתוכננת כ-lexicon check ב-CI (MEH-1652, חצי ב').
+**הערה לקוד:** האכיפה קיימת כ-lexicon check ב-CI מאז MEH-3351 — `scripts/checks/brand-lexicon-guard.sh`, רץ תחת `Repo guards` דרך `run-all.sh`, על `frontend/messages/*.json`, `frontend/{app,components,lib,hooks}` ו-`backend/app`. **הקובץ הזה הוא ה-SoT:** כלל בבדיקה שאין לו שורה כאן הוא באג בבדיקה, לא כאן. מה שמכוסה ומה שלא: [docs/CORRECTIONS_CHECKS.md](./CORRECTIONS_CHECKS.md). (עד MEH-3351 השורה הזאת אמרה «מתוכננת», במשך כל התקופה שבה היא לא נבנתה.)
 
 **ADR מגבה:** [ADR-031](./decisions/ADR-031-outbound-contact-unobservable.md) — הערוץ היוצא בלתי-נצפה, ומכאן מגבלת הקופי ושער ה-lexicon.
 
