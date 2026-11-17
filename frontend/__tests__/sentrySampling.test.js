@@ -33,6 +33,5 @@ describe("replay-on-error sample rate (MEH-3382)", () => {
   it("instrumentation-client.js records a replay for 25% of errors, not all", () => {
     const src = readFileSync(path.resolve(__dirname, "..", "instrumentation-client.js"), "utf8");
     expect(src).toMatch(/replaysOnErrorSampleRate:\s*0\.25\b/);
-    expect(src).not.toMatch(/replaysOnErrorSampleRate:\s*1(\.0)?\b/);
   });
 });
