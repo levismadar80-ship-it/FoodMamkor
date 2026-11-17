@@ -39,13 +39,12 @@ Exit codes
 
 Who enforces exit 2
 -------------------
-`post-deploy-checks.yml:95` calls this as `… || echo "::warning …"`, so NO exit
-code from here can fail the job today, and the Verdict step aggregates only
-smoke / links / headers / lighthouse. The one-line workflow change that gives
-exit 2 teeth is prepared and verified in
-docs/ci/meh-0000-deploy-sha-gate.patch.md; `.github/workflows/**` is CC-deny,
-so a human commits it. Until then this script is precise and toothless, and
-says so in its own output.
+The "Wait for the new build to be live" step in post-deploy-checks.yml
+(id: deploy, continue-on-error) fails on exit 2, and the Verdict step
+aggregates its outcome, so a stale backend reds the job (MEH-3358, applied from
+docs/ci/meh-0000-deploy-sha-gate.patch.md). Exit 1 stays a ::warning. Before
+that change the step ended in `|| echo "::warning"`, which swallowed every
+exit code.
 
 Why not a fixed sleep
 ---------------------
@@ -318,7 +317,9 @@ def main() -> int:
             "::error title=wait_for_deploy self-test failed::this run proves nothing about the "
             "deploy. Run `python scripts/checks/wait_for_deploy.py --self-test` to see which case broke."
         )
-        return 1
+        # MEH-3358: 2, not 1. The workflow turns 1 (timeout) into a warning;
+        # a broken comparison cannot establish anything, which is exit 2.
+        return STALE_BACKEND
 
     # A transient fetch failure on the FIRST read would leave nothing to
     # compare against and force a 20-minute timeout, so retry it briefly.
@@ -398,11 +399,7 @@ def _verdict_on_stale_backend(be: str | None, target: str) -> int:
             f"git_sha, or {short} is outside the fetched history — a backend more than "
             "fetch-depth commits behind the tip is itself the finding."
         )
-    print(
-        "  Exit 2. NOTE: post-deploy-checks.yml currently swallows this with "
-        "`|| echo ::warning`, so the job stays green — see "
-        "docs/ci/meh-0000-deploy-sha-gate.patch.md."
-    )
+    print("  Exit 2 — post-deploy-checks.yml fails the job on this (MEH-3358).")
     return STALE_BACKEND
 
 
