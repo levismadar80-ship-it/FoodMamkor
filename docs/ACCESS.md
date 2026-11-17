@@ -171,5 +171,6 @@ When an item is renewed, change its date here in a docs-only PR.
 | Domain `mehamakor.online` | unknown | Sapir (registrar account) | Turn on auto-renew at the registrar |
 | Classic token `git-bash` (§3) | 2027-05-02 | Sapir | GitHub → Settings → Developer settings → Tokens → Regenerate |
 | `CLAUDE_CODE_OAUTH_TOKEN` (§4, rotated 2026-10-26) | unknown | Sapir | `claude setup-token`, then replace the Actions secret |
+| `frontend/public/.well-known/security.txt` `Expires` (MEH-3303) | 2027-10-31 | Claude | Set a new `Expires` less than a year ahead (RFC 9116); the test in `SecurityTxt.test.js` fails once it lapses |
 | עוסק פטור yearly ceiling (support page / payments) | 2027-01-01 | Claude | Each January, read the new ceiling from the Tax Authority site and update the copy that cites it |
 <!-- expiry-register:end -->

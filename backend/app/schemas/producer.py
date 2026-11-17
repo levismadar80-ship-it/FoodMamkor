@@ -31,6 +31,7 @@ from app.limits import (
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
+    EMAIL_MAX_LENGTH,
     MAX_DELIVERY_MONEY,
     SanitizedBusinessNameField,
     SanitizedDescriptionField,
@@ -148,7 +149,7 @@ class ProducerAdminCreate(BaseModel):
     whatsapp_group: str | None = None
     # MEH-17
     primary_contact_method: str = "whatsapp"
-    contact_email: EmailStr | None = None
+    contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-296 3d: admin parity with ProducerUpdate's contact channels.
     facebook: str | None = None
     external_order_form: str | None = None
@@ -348,7 +349,7 @@ class ProducerUpdate(BaseModel):
     whatsapp_group: str | None = None
     # MEH-17
     primary_contact_method: str | None = None
-    contact_email: EmailStr | None = None
+    contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-296: extra contact channels (http(s) URL-guarded below).
     facebook: str | None = None
     external_order_form: str | None = None

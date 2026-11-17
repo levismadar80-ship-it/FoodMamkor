@@ -332,8 +332,10 @@ def install_middlewares(app: FastAPI) -> None:
     # MEH-2955: cap requests in flight at min(DB pool, threadpool tokens) so a
     # burst cannot deadlock the process (db_bulkhead.py docstring). Directly
     # outside GZip (which must stay innermost) and INSIDE CORS, CorrelationId
-    # and the security headers, so a 503 still carries all of them.
-    # Pinned by tests/test_meh2955_db_bulkhead.py.
+    # and the security headers, so a 503 still carries all of them — as do the
+    # 408 / 413 it sends since MEH-3297, when it reads the request body before
+    # the slot. Pinned by tests/test_meh2955_db_bulkhead.py and
+    # tests/test_meh3297_bulkhead_slow_body.py.
     app.add_middleware(DbBulkheadMiddleware)
 
     # MEH-3374: 413 above 6 MB, by Content-Length and by counting what arrives.
