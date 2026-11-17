@@ -91,10 +91,10 @@ def interval_monitor_config(minutes: int) -> dict[str, Any]:
 # (MEH-3350): the account holds exactly ONE cron monitor, `auto-reply-watchdog`,
 # because the Developer ($0) plan allows one and it is at 100% (MEH-3332).
 #
-# The other six send check-ins for a monitor that was never created. That is not
+# The other seven send check-ins for a monitor that was never created. That is not
 # a code bug to fix here — it is a plan limit, and Sapir's to decide. It IS a
 # fact the code used to hide: @heartbeat on a job reads as "this job is
-# monitored", and for six of seven that is false, so their silence raises
+# monitored", and for seven of eight that is false, so their silence raises
 # nothing at all. tests/test_meh3350_heartbeat_logging.py asserts this list
 # against the real @heartbeat call sites, so a NEW slug cannot be added without
 # someone looking at this comment and deciding which bucket it is in.
@@ -108,6 +108,10 @@ UNMONITORED_SLUGS = frozenset(
         "retention-purge-daily",
         "rescue-codes-digest",
         "weekly-owner-summary",
+        # PR #4625 (group-buy expiry) and #4688 (this list's test) merged
+        # separately, so the slug landed unclassified and pytest went red.
+        # No Sentry monitor exists for it (plan limit, MEH-3332).
+        "group-buy-expiry-daily",
     }
 )
 
