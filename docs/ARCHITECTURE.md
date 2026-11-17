@@ -50,6 +50,7 @@ mehamakor/
 | Read endpoint map | `.ai/diagrams/api-routes.md` |
 | Check past decisions | `docs/decisions/README.md` (ADR index) |
 | See every status and who can move it | `docs/STATE_MACHINES.md` |
+| See what talks to what, where data lives, what breaks first under load | `docs/SYSTEM_MAP.md` |
 | Look up a workflow rule | `.claude/rules/workflow.md` |
 | Add an Alembic migration | `backend/alembic/versions/` (`docs/MIGRATIONS.md`) |
 
