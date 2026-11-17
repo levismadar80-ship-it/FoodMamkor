@@ -5,6 +5,8 @@
 > **דוח מחקר בלבד.** לא שונה קוד. ההחלטות של ספיר. נכתב 17/11/2026 מול `origin/staging` (`e43e137`).
 > הדמיות (סכמטיות) לסיכום ביקורות: [`qa-artifacts/research-2026-11-17/t3-review-summary/`](../../qa-artifacts/research-2026-11-17/t3-review-summary/)
 
+> **בדיקת כפילויות (17/11):** Linear: «צ'אטבוט», «prompt caching» → MEH-3011 (הצ'אט קורא את דפי האתר, Backlog); אין כרטיס על caching או threads. GitHub: `grep cache_control` → 0, אין PR פתוח על הצ'אט.
+
 ---
 
 ## 1. מה הצ'אטבוט מריץ היום (נבדק)
