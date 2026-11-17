@@ -478,11 +478,11 @@ npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
 השוואת sha ל-sha היא בדיוק מה שנמדד כשגוי ב-06/11: שני sha שונים הם נורמליים
 ולא מזיקים כשאף אחד מהם לא נגע ב-backend. רק ה-diff מבדיל.
 
-**יציאה 2 עדיין חסרת שיניים** עד שספיר תקמט את
-[docs/ci/meh-0000-deploy-sha-gate.patch.md](./ci/meh-0000-deploy-sha-gate.patch.md):
-השורה ב-`post-deploy-checks.yml` עוטפת את הסקריפט ב-`|| echo "::warning …"`, וה-step
-של ה-Verdict מאגד רק smoke/links/headers/lighthouse. הסקריפט אומר את זה בעצמו
-בפלט שלו.
+**יציאה 2 מכשילה את ה-job** (MEH-3358, הוחל מ-
+[docs/ci/meh-0000-deploy-sha-gate.patch.md](./ci/meh-0000-deploy-sha-gate.patch.md)):
+ל-step ב-`post-deploy-checks.yml` יש `id: deploy` ו-`continue-on-error`, וה-Verdict
+מאגד את התוצאה שלו. יציאה 1 (timeout) נשארת אזהרה. self-test שנכשל בתוך ריצה
+יוצא ב-2, כי השוואה שבורה לא יכולה להכריע כלום.
 
 `python scripts/checks/wait_for_deploy.py --self-test` מריץ מאגרי git מפוברקים
 עם תשובות ידועות, ורץ גם לפני השער עצמו: תשובה ישרה לדחיפת frontend ותשובה של
