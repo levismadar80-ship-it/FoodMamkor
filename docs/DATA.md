@@ -1577,7 +1577,7 @@ DELETE /admin/home-products/{id}               admin
 
 # Users
 GET    /admin/users                            admin — search · rows carry rescue_active_no_shows + rescue_blocked (MEH-3226)
-PUT    /admin/users/{id}/role                  admin. role=consumer on an account with a linked business (producer_id set) → 409 (MEH-3376); detach the owner first.
+PUT    /admin/users/{id}/role                  admin. role=consumer **or role=admin** on an account with a linked business (producer_id set) → 409 (MEH-3376): an owner is never an admin, and is not demoted while the business is linked; detach the owner first.
 POST   /admin/users/{id}/block                 admin
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin

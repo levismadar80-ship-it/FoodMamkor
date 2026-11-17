@@ -41,7 +41,7 @@ There is no soft-delete: deletion removes the row.
 |---|---|---|---|
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
 | consumer → producer (with a draft business) | the user | `routers/auth.py` `register_producer`; claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
-| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer is refused (409) while `producer_id` is set (MEH-3376) |
+| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
 | blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
 | email changed → unverified | the user | `routers/users_me.py` | — |
@@ -202,7 +202,7 @@ Each needs a decision or new copy, so none was fixed in code.
 | Combination | What happens today | What is needed |
 |---|---|---|
 | An admin blocks a user who owns a live business or holds bookings | Only the flag flips. Her business stays live and she can no longer mark a bag as handed, so her buyers' orders stay "reserved". | A policy: delist on block, or not. |
-| An admin demotes a business owner to consumer | **Closed (MEH-3376, rulings 17/11 §א6):** refused with 409 while `producer_id` is set, whatever the business status (`routers/admin_extra.py` `update_user_role`). The way out is «ניתוק בעלים», then the demotion passes. | — |
+| An admin demotes a business owner to consumer | **Closed (MEH-3376, rulings 17/11 §א6):** refused with 409 while `producer_id` is set, whatever the business status (`routers/admin_extra.py` `update_user_role`). The way out is «ניתוק בעלים», then the demotion passes. The same route also refuses to make such an account an admin, so the state "admin with a business" can no longer be created; `backend/scripts/check_admin_owners.py` counts rows created before. | — |
 | Capacity of an event or workshop is cut below the seats already taken | Accepted. | A 422 with a message. |
 | A recurring workshop whose first date has passed is cancelled, deleted, or its business leaves the live state | Sign-up to it is still open (the first date is not the last), but the cancellation only looks at items dated today or later. Its registrants stay "registered", get no email, and a delete removes their rows silently. | The email prints the item's date, which here is in the past, so it needs wording. Belongs with the per-occurrence design for recurring workshops. |
 | Sign-up on the day, after the start time | Accepted (the gate is by date). | Open PR #4624. |

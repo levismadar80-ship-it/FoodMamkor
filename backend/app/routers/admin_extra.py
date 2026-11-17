@@ -187,6 +187,10 @@ _DEMOTE_LINKED_OWNER = (
 )
 
 
+# NEW copy, waiting for Sapir's word-for-word OK (rule 22) — see the PR body.
+_PROMOTE_LINKED_OWNER = "אי אפשר לתת הרשאת מנהלת למי שמקושרת לבית עסק."
+
+
 @router.put("/users/{user_id}/role", response_model=None)
 def update_user_role(
     user_id: UUID,
@@ -219,6 +223,13 @@ def update_user_role(
     # run it. Demoting to consumer keeps `producer_id`, so the business would
     # stay live with no working owner. Refused, whatever the business status;
     # the way out is «ניתוק בעלים» (detach), then this request passes.
+    # MEH-3376 (Sapir 17/11: «בעלת עסק לא יכולה להיות אדמינית»): this route was
+    # the one way an account with a business could become an admin —
+    # registration (auth.py) and claim (producer_claim.py) already refuse the
+    # other direction. An admin with a business loses her dashboard
+    # (require_producer gates on role) and cannot be detached later.
+    if data.role == "admin" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_PROMOTE_LINKED_OWNER)
     if data.role == "consumer" and target.producer_id is not None:
         raise HTTPException(status_code=409, detail=_DEMOTE_LINKED_OWNER)
     target.role = data.role  # type: ignore[assignment]

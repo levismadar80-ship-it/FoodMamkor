@@ -10,6 +10,7 @@ from app.models import User
 
 from tests.conftest import auth_header, make_producer, make_user
 
+PROMOTE_DETAIL = "אי אפשר לתת הרשאת מנהלת למי שמקושרת לבית עסק."
 DETAIL = (
     "אי אפשר להוריד את ההרשאה כל עוד המשתמשת מקושרת לבית עסק. קודם מנתקים את הבעלות."
 )
@@ -88,9 +89,59 @@ def test_after_the_business_is_unlinked_the_demotion_passes(client, db):
     assert _row(db, owner.id).role == "consumer"
 
 
-def test_promoting_an_owner_to_admin_is_not_touched_by_this_rule(client, db):
-    """Out of scope here (MEH-2902 is its own decision): the 409 is for the
-    move to consumer only."""
+# ---------- the other direction: an owner never becomes an admin ----------
+# Sapir, 17/11: «בעלת עסק לא יכולה להיות אדמינית». Registration and claim
+# already refuse an admin account; this route was the one way in.
+
+
+def test_an_owner_with_a_linked_business_cannot_be_made_admin(client, db):
     admin = make_user(db, role="admin")
-    owner, _ = _owner(db)
-    assert _demote(client, admin, owner, role="admin").status_code == 200
+    owner, producer = _owner(db)
+    resp = _demote(client, admin, owner, role="admin")
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == PROMOTE_DETAIL
+    row = _row(db, owner.id)
+    assert (row.role, row.producer_id) == ("producer", producer.id)
+
+
+def test_the_promote_refusal_does_not_depend_on_the_business_status(client, db):
+    admin = make_user(db, role="admin")
+    for status in ("draft", "pending", "rejected", "inactive"):
+        owner, _ = _owner(db, status=status)
+        assert _demote(client, admin, owner, role="admin").status_code == 409, status
+
+
+def test_control_a_consumer_can_still_be_made_admin(client, db):
+    admin = make_user(db, role="admin")
+    consumer = make_user(db, role="consumer")
+    assert _demote(client, admin, consumer, role="admin").status_code == 200
+    assert _row(db, consumer.id).role == "admin"
+
+
+def test_the_two_refusals_have_different_wording():
+    assert PROMOTE_DETAIL != DETAIL
+
+
+# ---------- the read-only check for rows created before this rule ----------
+
+
+def test_the_check_script_finds_an_admin_with_a_business_and_nothing_else(db):
+    import importlib.util
+    from pathlib import Path
+
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "backend"
+        / "scripts"
+        / "check_admin_owners.py"
+    )
+    spec = importlib.util.spec_from_file_location("check_admin_owners", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    make_user(db, role="admin")  # an admin with no business
+    _owner(db)  # an owner who is not an admin
+    assert module.admin_owners(db) == []
+
+    legacy, _ = _owner(db, role="admin")  # the state no route can create any more
+    assert [u.id for u in module.admin_owners(db)] == [legacy.id]
