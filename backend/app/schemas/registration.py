@@ -567,7 +567,6 @@ class DraftConsentPublishIn(BaseModel):
             raise ValueError("חובה לתעד איך התקבלה ההסכמה")
         return stripped
 
-
     @field_validator("consent_screenshot_url")
     @classmethod
     def _screenshot_is_cloudinary_image(cls, v: str | None) -> str | None:
