@@ -28,6 +28,7 @@ from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.schemas.catalog import DeliveryAreaCreate
 from app.schemas.schemas import (
+    EMAIL_MAX_LENGTH,
     PhoneNumberField,
     SanitizedBusinessNameField,
     SanitizedPersonNameField,
@@ -45,7 +46,7 @@ from app.schemas.schemas import (
 
 
 class UserRegister(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
     # names (גל, טל, בר, רן) are legitimate, so the ≥3-letter floor used for
     # BUSINESS names would be a product regression on a person's name.
@@ -75,7 +76,7 @@ class UserRegister(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
 
 
 class ResetPasswordRequest(BaseModel):
@@ -95,7 +96,7 @@ class ProducerRegister(BaseModel):
     # User account — optional when upgrading an already-authenticated user
     # (MEH-143). Required for new (unauthenticated) registrations; the
     # router validates and raises 422 when they are absent in that case.
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-1626 chunk 1: the ACCOUNT-holder's person name (producer_name below
     # is the business). Surfaced by the asymmetry scan, not the issue's list:
     # UserRegister.name is sanitized, so leaving its twin on the producer
@@ -136,7 +137,7 @@ class ProducerRegister(BaseModel):
     website: str | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
-    contact_email: EmailStr | None = None
+    contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-2460: 'organizer' registers a market / events organizer (ADR-036).
     # Declared BEFORE category_ids on purpose: the category validator reads it
     # from `info.data`, and Pydantic v2 only exposes fields declared earlier.
@@ -461,7 +462,7 @@ class ProducerOAuthSignupRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     password: str
 
 
@@ -587,7 +588,7 @@ class OwnerInviteCreate(BaseModel):
     # owner types her own on the acceptance page — where it is proven with a
     # one-time code before any account exists. When the admin DOES have an
     # address, the invite mail goes out as before.
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # Same reasoning as `UserRegister.name`: this is a PERSON's name, so bleach
     # only and no >=3-letter floor (two-letter Hebrew given names are real).
     name: SanitizedPersonNameField
@@ -688,7 +689,7 @@ class OwnerInviteAccept(BaseModel):
     # there is no path to an account without a verified address, including the
     # case where the admin pre-filled one (she still confirms it with a code,
     # because a pre-filled address is also just a string someone typed).
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     code: str = Field(min_length=1, max_length=12)
     # Same 12-char schema floor as every other password entry point; the full
     # policy (deny-list, HIBP) runs in the handler, which can await.
@@ -740,7 +741,7 @@ class OwnerInviteEmailCodeRequest(BaseModel):
     """
 
     token: str = Field(min_length=1, max_length=512)
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
 
     @field_validator("email", mode="before")
     @classmethod
