@@ -834,6 +834,15 @@ All endpoints served from `backend/app/main.py`. Auth via JWT in the
 via `slowapi` — see `backend/app/rate_limit.py` and
 [SECURITY.md](./SECURITY.md) §2.
 
+> **MEH-2955 · MEH-3297 — answers any endpoint can give before the route
+> runs** (`backend/app/db_bulkhead.py`). **503** «האתר עמוס כרגע…» +
+> `Retry-After: 2` when the server is full for 10 s, or when buffered request
+> bodies exceed 64 MB (only bytes past the first 64 KB of a body count, so
+> small JSON POSTs are never refused this way). The request body is read
+> before the request may run: **408** «הבקשה הגיעה לאט מדי…» after 15 s with
+> no new bytes or 300 s in total; **413** «הבקשה גדולה מדי.» above 10 MB
+> (declared or received). 408 / 413 close the connection.
+
 > **MEH-3022 — per-business caps.** Creates answer **409** with a Hebrew
 > `detail` once a business holds the maximum: products 100, recipes 50,
 > locations 20, upcoming events 30, upcoming/recurring experiences 30, open or
