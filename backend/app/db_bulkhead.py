@@ -44,6 +44,8 @@ import json
 import anyio.to_thread
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.body_limit import MAX_BODY_BYTES
+
 # MEH-2955: how long a request may wait for a slot before it is shed. Long
 # enough to ride out a burst (a slot frees every few ms at normal latency),
 # short enough that the visitor gets an answer instead of a hang.
@@ -59,7 +61,15 @@ POOL_HEADROOM = 2
 # - BODY_TOTAL_SECONDS: longest whole read. Generous on purpose: a 5 MB upload
 #   (upload.py MAX_FILE_SIZE) in 300 s needs ~140 kbit/s, a weak 3G uplink. A
 #   trickle holds no slot, so a long deadline costs only a coroutine.
-# - MAX_BUFFERED_BODY: per request; 2x the upload cap plus multipart overhead.
+# - MAX_BUFFERED_BODY: per request. NOT a number of its own — it is
+#   `body_limit.MAX_BODY_BYTES`, the one owner of "how big may a body be"
+#   (MEH-3374, which landed on staging while this branch was open). Install
+#   order makes that the only possible answer: `install_middlewares` adds
+#   BodySizeLimitMiddleware AFTER DbBulkheadMiddleware and Starlette wraps in
+#   reverse, so the 6 MB cap sits OUTSIDE this gate and always replies first.
+#   A second constant here would be unreachable by construction and would
+#   drift from it — the MEH-271 two-parallel-mechanisms smell. The 413 below
+#   is therefore defence in depth, for the day that order changes.
 # - BUFFER_BUDGET: all bodies buffered at once. Before MEH-3297 at most `limit`
 #   bodies were read (inside slots); outside the gate nothing else bounds the
 #   count, so without this many fast large posts could exhaust RAM. Over
@@ -72,7 +82,7 @@ POOL_HEADROOM = 2
 #   of memory use.
 BODY_IDLE_SECONDS = 15.0
 BODY_TOTAL_SECONDS = 300.0
-MAX_BUFFERED_BODY = 10 * 1024 * 1024
+MAX_BUFFERED_BODY = MAX_BODY_BYTES
 BUFFER_BUDGET = 64 * 1024 * 1024
 FREE_BODY_BYTES = 64 * 1024
 BODY_TIMEOUT_DETAIL = "הבקשה הגיעה לאט מדי. נסו שוב."

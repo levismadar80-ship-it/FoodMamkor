@@ -1,5 +1,7 @@
 # Implicit state machines — read-only audit (2026-11-09)
 
+> **17/11:** the current picture of every machine, and which of these findings are fixed, is in [docs/STATE_MACHINES.md](../STATE_MACHINES.md). This audit is the record of how each was found.
+
 **Scope:** `backend/app/{models,routers,services}` + the frontend that renders those
 states. **Method:** code reading only — every claim carries `file:line`. **No code
 changed, no Linear card opened.** Time-boxed to 45 minutes, so §9 lists what was *not*

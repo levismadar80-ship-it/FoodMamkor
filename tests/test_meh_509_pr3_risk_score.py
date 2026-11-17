@@ -516,8 +516,14 @@ def test_score_producer_unknown_id_no_op(db, monkeypatch):
     from app.services.producer_risk import score_producer
     import uuid
 
-    _install_anthropic_mock(monkeypatch)
+    create = _install_anthropic_mock(monkeypatch)
     score_producer(uuid.uuid4())  # NEVER seen by the DB; must not raise
+
+    # MEH-0000: "no-op" was asserted by nothing at all. The mock was installed
+    # and then discarded, so this passed whether the unknown id was skipped or
+    # sent to Anthropic and billed for. The point of the case is that the model
+    # is never called.
+    assert create.call_count == 0
 
 
 # ---- Admin GET endpoint ----------------------------------------------------
