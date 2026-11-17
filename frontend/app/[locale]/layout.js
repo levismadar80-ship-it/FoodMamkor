@@ -242,10 +242,12 @@ export default async function LocaleLayout({ children, params }) {
             preconnect while unsplash and the three OSM shards did. */}
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        {/* MEH-604: preconnect the OSM tile host for HomepageMiniMap above-the-fold.
-            MEH-3077: one host, not the a/b/c shards — the OSM tile usage policy
-            deprecates the subdomains; HTTP/2 multiplexes on the single host. */}
-        <link rel="preconnect" href="https://tile.openstreetmap.org" crossOrigin="anonymous" />
+        {/* MEH-2861: no preconnect to the OSM tile host here. It was added for a
+            home mini-map above the fold (MEH-604); that map now sits ~2,700px
+            down and loads on scroll (MEH-2747, MEH-2850), so on most visits the
+            handshake expired unused — on every page of the site.
+            DO NOT add it back in the layout; a page that draws a map at once
+            (/map) can declare its own. */}
       </head>
       {/* MEH-1775: `pb-20 md:pb-0` reserved room for the BottomNav band and for
           NOTHING else, so the cookie banner — which floats in its own band

@@ -253,6 +253,33 @@ Additional notes:
 
 ### 6. העלאת קבצים — תמונות מסוכנות
 
+**Body size cap (MEH-3374).** `backend/app/body_limit.py` answers **413** to
+any request body above **6 MB**, before the route runs: by `Content-Length`
+(nothing is read), and by counting the bytes that arrive when the header is
+missing or wrong. It sits outside the DB bulkhead, so a refused body holds no
+DB slot, and inside CORS / X-Request-ID / the security headers. The 5 MB image
+cap below is a second, narrower check inside the upload route. The WhatsApp
+webhook keeps its own smaller cap.
+
+> **Slow bodies and buffered bytes (MEH-3297).** The cap above answers "how
+> big"; it deliberately does not answer "how slow" or "how many at once" —
+> `body_limit.py`'s own header says so and names `db_bulkhead.py` as the owner
+> of that question. So the bulkhead buffers the body **before** the request may
+> take a slot: **15 s idle / 300 s total** (408), and **64 MB of buffered bodies
+> across all requests** (503, the busy answer; the first 64 KB of each body is
+> not charged, so a few held-open uploads cannot block login or any other small
+> POST). Before this, a client that sent headers and then withheld the body held
+> a request slot for as long as it liked.
+>
+> **Size is NOT a second owner here.** The bulkhead bounds its buffer by
+> importing `MAX_BODY_BYTES` from `body_limit.py` rather than carrying a number
+> of its own. Install order decides this: `install_middlewares` adds
+> `BodySizeLimitMiddleware` after `DbBulkheadMiddleware`, and Starlette wraps in
+> reverse, so the 6 MB cap is **outside** the bulkhead and always answers first.
+> A second constant here would be unreachable by construction and would drift —
+> the MEH-271 "two parallel mechanisms" smell. The bulkhead's own 413 is kept
+> only as defence in depth, for the day that order changes.
+
 ```python
 # backend/app/utils/file_upload.py
 
