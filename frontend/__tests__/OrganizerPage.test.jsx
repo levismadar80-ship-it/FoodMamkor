@@ -456,4 +456,51 @@ describe("MEH-2461 organizer page", () => {
       expect(en.share.modal_title_organizer).toBe("Share this organizer page");
     });
   });
+
+  // MEH-3341 — 5-state matrix: (0 / 1 / many photos) × (lightbox closed / open).
+  describe("MEH-3341 all photos through the shared Lightbox", () => {
+    const IMG = (n) => `https://res.cloudinary.com/x/image/upload/p${n}.jpg`;
+    it("0 photos: green band, no «all photos» pill, no lightbox", async () => {
+      respond(200, ORG);
+      await renderPage();
+      expect(screen.getByTestId("organizer-cover-band")).toBeTruthy();
+      expect(screen.queryByTestId("gallery-view-all")).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    it("1 photo: cover only — no pill, nothing can open a lightbox", async () => {
+      respond(200, { ...ORG, images: [IMG(1)] });
+      await renderPage();
+      expect(screen.getByTestId("organizer-cover")).toBeTruthy();
+      expect(screen.queryByTestId("gallery-view-all")).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    it("3 photos: the pill names the count, sits in the cover block, closed until tapped", async () => {
+      respond(200, { ...ORG, images: [IMG(1), IMG(2), IMG(3)] });
+      await renderPage();
+      const pill = screen.getByTestId("gallery-view-all");
+      expect(pill.textContent).toContain("view_all");
+      expect(pill.getAttribute("aria-haspopup")).toBe("dialog");
+      expect(screen.getByTestId("organizer-cover").parentElement.contains(pill)).toBe(true);
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    it("2 photos (the boundary): the pill appears, and the Lightbox reaches photo 2", async () => {
+      respond(200, { ...ORG, images: [IMG(1), IMG(2)] });
+      await renderPage();
+      fireEvent.click(screen.getByTestId("gallery-view-all"));
+      expect(screen.getByTestId("lightbox-counter").textContent).toContain("2");
+      fireEvent.click(screen.getByTestId("lightbox-next"));
+      expect(screen.getByRole("dialog").querySelector("img").getAttribute("src")).toContain("p2.jpg");
+    });
+    it("3 photos: tapping opens the Lightbox on photo 1, close returns focus to the pill", async () => {
+      respond(200, { ...ORG, images: [IMG(1), IMG(2), IMG(3)] });
+      await renderPage();
+      const pill = screen.getByTestId("gallery-view-all");
+      fireEvent.click(pill);
+      const dialog = screen.getByRole("dialog");
+      expect(dialog.querySelector("img").getAttribute("src")).toContain("p1.jpg");
+      fireEvent.keyDown(document, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(document.activeElement).toBe(pill);
+    });
+  });
 });
