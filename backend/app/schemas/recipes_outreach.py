@@ -11,7 +11,14 @@ from datetime import datetime
 import re
 from typing import Annotated, Any, Self
 from uuid import UUID
-from pydantic import AfterValidator, BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     PhoneNumberField,
