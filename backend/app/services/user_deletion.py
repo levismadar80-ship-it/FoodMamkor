@@ -54,9 +54,8 @@ def _release_reserved_bags(db: Session, user: User) -> None:
     """
     order_ids = [
         (order_id, offer_id)
-        for order_id, offer_id in db.query(RescueOrder.id, RescueOrder.offer_id).filter(
-            RescueOrder.user_id == user.id, RescueOrder.status == "reserved"
-        )
+        for order_id, offer_id in db.query(RescueOrder.id, RescueOrder.offer_id)
+        .filter(RescueOrder.user_id == user.id, RescueOrder.status == "reserved")
         # One fixed order, so two deletions that share offers lock them the
         # same way round.
         .order_by(RescueOrder.offer_id, RescueOrder.id)
@@ -80,7 +79,7 @@ def _release_reserved_bags(db: Session, user: User) -> None:
             continue
         order.status = "cancelled"  # type: ignore[assignment]
         order.cancelled_at = utc_now()  # type: ignore[assignment]
-        offer.qty_left = min(offer.qty_left + order.qty, offer.qty_total)  # type: ignore[assignment]
+        offer.qty_left = min(offer.qty_left + order.qty, offer.qty_total)  # type: ignore[arg-type]
     db.flush()
 
 
