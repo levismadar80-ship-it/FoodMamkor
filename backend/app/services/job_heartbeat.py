@@ -8,7 +8,11 @@ Touches:  Sentry (check-in envelopes via sentry_sdk.crons.capture_checkin).
           Production only (ENV or RAILWAY_ENVIRONMENT = production): staging redeploys many times a
           day and would page on every restart. No-op without
           BACKEND_SENTRY_DSN too.
-Does NOT: detect a run that FAILED inside the job — each job swallows
+Does NOT: guarantee the check-in ARRIVED. It is sent on a best-effort path and
+          Sentry may drop it (rate limit, quota, network); the send failure is
+          now LOGGED (MEH-3350) instead of swallowed in silence, because the one
+          failure mode that actually happened was the one this file had made
+          invisible. Does NOT detect a run that FAILED inside the job — each job swallows
           its own exceptions, so the check-in still says ok. Missed or hung
           runs are what this catches; failures keep reporting through
           capture_background_exception. Does NOT catch or report the job's
@@ -19,7 +23,12 @@ Does NOT: detect a run that FAILED inside the job — each job swallows
           come from one value.
 Related:  app/startup.py (the five _run_*_job functions + add_job calls).
 History:  MEH-3155 (creation, 14/11/2026: found by the repo health scan,
-          MEH-3143).
+          MEH-3143). MEH-3350 (17/11/2026: the watchdog monitor read `error`
+          with 114 of 118 check-ins missed over ten hours, while Railway's own
+          logs showed the job running on time, every five minutes, in 10-60 ms.
+          The job was healthy; the check-in was not arriving — and _safe_checkin
+          caught every exception and returned None with no log line, so there
+          was nothing to look at. See docs/audits/2026-11-sentry-crons.md).
 """
 
 from __future__ import annotations
@@ -29,6 +38,10 @@ import os
 import time
 from collections.abc import Callable
 from typing import Any
+
+import structlog
+
+log = structlog.get_logger("mehamakor.job_heartbeat")
 
 # MEH-3155: one value per schedule. startup.py builds its CronTrigger /
 # IntervalTrigger from these, and the monitor config below is built from the
@@ -71,11 +84,42 @@ def interval_monitor_config(minutes: int) -> dict[str, Any]:
     }
 
 
+# Every slug that reaches Sentry from this repo, and whether a monitor for it
+# actually EXISTS there. Measured against the live Sentry org on 17/11/2026
+# (MEH-3350): the account holds exactly ONE cron monitor, `auto-reply-watchdog`,
+# because the Developer ($0) plan allows one and it is at 100% (MEH-3332).
+#
+# The other six send check-ins for a monitor that was never created. That is not
+# a code bug to fix here — it is a plan limit, and Sapir's to decide. It IS a
+# fact the code used to hide: @heartbeat on a job reads as "this job is
+# monitored", and for six of seven that is false, so their silence raises
+# nothing at all. tests/test_meh3350_heartbeat_logging.py asserts this list
+# against the real @heartbeat call sites, so a NEW slug cannot be added without
+# someone looking at this comment and deciding which bucket it is in.
+MONITORED_SLUGS = frozenset({"auto-reply-watchdog"})
+
+UNMONITORED_SLUGS = frozenset(
+    {
+        "onboarding-followups-daily",
+        "admin-pending-reminder-daily",
+        "analytics-rollup-daily",
+        "retention-purge-daily",
+        "rescue-codes-digest",
+        "weekly-owner-summary",
+    }
+)
+
+
 def _capture_checkin(**kwargs: Any) -> str | None:
     """Indirection so tests can spy on check-ins without a Sentry client."""
     try:
         from sentry_sdk.crons import capture_checkin
     except ImportError:  # sentry optional at import time, like app/sentry.py
+        log.warning(
+            "heartbeat_sdk_missing",
+            slug=kwargs.get("monitor_slug"),
+            detail="sentry_sdk.crons is not importable, so no check-in was sent",
+        )
         return None
     result: str | None = capture_checkin(**kwargs)
     return result
@@ -140,7 +184,30 @@ def heartbeat(
 
 
 def _safe_checkin(**kwargs: Any) -> str | None:
+    """Send a check-in. Never raise, but never fail SILENTLY either.
+
+    MEH-3350: this used to be `except Exception: return None` with nothing else.
+    When the watchdog's check-ins stopped arriving, the production logs held not
+    one line about it, and the only visible symptom was a Sentry monitor
+    claiming the JOB had stopped — which Railway's logs disproved. A heartbeat
+    that cannot fail the job must still be able to tell you it failed.
+
+    `log.warning` and not `capture_background_exception`: the thing that is
+    broken is the path to Sentry, so reporting it to Sentry is the one channel
+    that cannot be trusted here.
+    """
     try:
         return _capture_checkin(**kwargs)
-    except Exception:  # noqa: BLE001 — a heartbeat must never fail the job
+    except Exception as exc:  # noqa: BLE001 — a heartbeat must never fail the job
+        log.warning(
+            "heartbeat_checkin_failed",
+            slug=kwargs.get("monitor_slug"),
+            status=kwargs.get("status"),
+            error=f"{type(exc).__name__}: {exc}",
+            detail=(
+                "the job itself ran; only its check-in did not reach Sentry. "
+                "A Sentry 'missed check-in' issue for this slug is then about "
+                "the telemetry, not about the job."
+            ),
+        )
         return None
