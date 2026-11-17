@@ -60,6 +60,7 @@
 - חלון השיתוף של iOS/Android עצמו. הקריאה ל-`navigator.share` מכוסה ב-`share.spec.ts`
 - התחברות Apple: קוד ה-2FA נשלח למכשיר Apple. רלוונטי רק אם `NEXT_PUBLIC_APPLE_CLIENT_ID` מוגדר (ה-thread בודק ב-Vercel connector)
 - תצוגת המייל באפליקציית Gmail עצמה. ה-HTML מצולם ב-WebKit במקום
+- **«Post-deploy checks» ירוק לא מוכיח שה-backend שנבדק הוא זה של ה-commit.** `scripts/checks/wait_for_deploy.py` מזהה backend ישן ויוצא ב-2 (MEH-3358), אבל `post-deploy-checks.yml:95` עוטף אותו ב-`|| echo "::warning"` — ו-`||` קולט כל קוד יציאה, ולכן שום דבר **בתוך** הסקריפט לא יכול להכשיל את הצעד. כל עוד זה כך, הסימון בסעיף א׳ («Post-deploy checks ירוק») מכסה smoke, כותרות, Lighthouse וקישורים שאולי נמדדו על בילד קודם. **זו השורה היחידה כאן שיש לה תיקון מוכן ומאומת:** `docs/ci/meh-0000-deploy-sha-gate.patch.md` (`git apply --check` נקי, נבדק 17/11). ‏`.github/**` חסום ל-CC, ולכן ההחלה היא של ספיר — ואחרי שתוחל, השורה הזאת נמחקת מכאן
 
 ## ה׳ — לא בכל גרסה (runbooks)
 
