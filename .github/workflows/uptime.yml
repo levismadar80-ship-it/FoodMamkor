@@ -19,12 +19,17 @@ concurrency:
 
 jobs:
   probe:
-    name: Probe / and /api/health/readiness
+    name: Probe /, /api/health/readiness and the OSM map tiles
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       HOME_URL: https://mehamakor.co.il/
       READY_URL: https://mehamakor.co.il/api/health/readiness
+      # MEH-3356: one OSM tile, sent the way a visitor's browser sends it
+      # (Referer = our origin). OSM can answer a block with 200 + `x-blocked`,
+      # so the header is checked, not just the status code.
+      TILE_URL: https://tile.openstreetmap.org/8/153/104.png
+      TILE_REFERER: https://mehamakor.co.il/
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
@@ -39,6 +44,16 @@ jobs:
             echo "$url -> HTTP $code"
             if [ "$code" != "200" ]; then fail=1; fi
           done
+          hdr=$(curl -sS -o /dev/null -D - --max-time 20 --retry 2 --retry-delay 5 \
+                  -e "$TILE_REFERER" -A "mehamakor-uptime-probe/1.0 (+https://mehamakor.co.il)" \
+                  "$TILE_URL" 2>/dev/null | tr -d '\r' || true)
+          tcode=$(printf '%s\n' "$hdr" | awk 'toupper($1) ~ /^HTTP\// {c=$2} END {print c+0}')
+          echo "$TILE_URL -> HTTP $tcode"
+          if [ "$tcode" != "200" ] || printf '%s\n' "$hdr" | grep -qi '^x-blocked:'; then
+            printf '%s\n' "$hdr" | grep -i '^x-blocked:' || true
+            echo "::warning::OSM tile blocked or unreachable — map tiles on the site may show «Access blocked»"
+            fail=1
+          fi
           echo "fail=$fail" >> "$GITHUB_OUTPUT"
 
       # One issue carries the outage state. Title is fixed so `gh issue list`
