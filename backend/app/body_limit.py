@@ -103,12 +103,18 @@ def _declared_length(scope: Scope) -> int | None:
     for name, value in scope.get("headers", []):
         if name.lower() == b"content-length":
             text = value.decode("latin-1").strip()
-            return int(text) if text.isascii() and text.isdigit() else None
+            if not (text.isascii() and text.isdigit()):
+                return None
+            try:
+                return int(text)
+            except ValueError:  # thousands of digits: over int's str limit
+                return None
     return None
 
 
 def _detail_for(path: str) -> str:
-    return _UPLOAD_DETAIL if path.startswith(_UPLOAD_PREFIX) else TOO_LARGE_DETAIL
+    is_upload = path == _UPLOAD_PREFIX or path.startswith(_UPLOAD_PREFIX + "/")
+    return _UPLOAD_DETAIL if is_upload else TOO_LARGE_DETAIL
 
 
 async def _send_too_large(send: Send, detail: str) -> None:
@@ -121,9 +127,11 @@ async def _send_too_large(send: Send, detail: str) -> None:
                 (b"content-type", b"application/json; charset=utf-8"),
                 (b"content-length", str(len(body)).encode()),
                 (b"cache-control", b"no-store"),
-                # The unread body is still on the wire; tell the server and the
-                # client not to reuse this connection for another request.
-                (b"connection", b"close"),
+                # DO NOT add `connection: close` — measured on uvicorn
+                # (MEH-3374 review): it resets the socket while the client is
+                # still sending, and a proxy in front (Vercel rewrite, Railway
+                # edge) may turn that into a 502. Without it the server drains
+                # and discards the rest of the body, unbuffered.
             ],
         }
     )

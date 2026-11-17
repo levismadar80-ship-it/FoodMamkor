@@ -15,7 +15,7 @@ import json
 
 import pytest
 
-from app.body_limit import MAX_BODY_BYTES, BodySizeLimitMiddleware
+from app.body_limit import MAX_BODY_BYTES, BodySizeLimitMiddleware, BodyTooLarge
 from app.main import app
 
 MB = 1024 * 1024
@@ -125,6 +125,47 @@ def test_a_small_declared_length_does_not_switch_the_counting_off():
     assert read == 7
 
 
+_PART_HEAD = (
+    b"--xyz\r\n"
+    b'Content-Disposition: form-data; name="file"; filename="a.jpg"\r\n'
+    b"Content-Type: image/jpeg\r\n\r\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("path", "content_type", "first"),
+    [
+        # the form parser — a well-formed part that never ends
+        ("/upload/image", b"multipart/form-data; boundary=xyz", _PART_HEAD),
+        # request.body() inside the route
+        ("/webhook/whatsapp", b"application/json", b""),
+    ],
+)
+def test_counted_path_holds_for_the_other_ways_a_route_reads_a_body(
+    path, content_type, first
+):
+    headers = [(b"content-type", content_type), (b"transfer-encoding", b"chunked")]
+    chunks = [first + b"x" * (MB - len(first))] + [b"x" * MB] * 19
+    status, _, _, read = _run(app, _scope(path=path, headers=headers), chunks)
+    assert status == 413
+    assert read == 7
+
+
+def test_a_content_length_too_long_to_be_a_number_falls_back_to_counting():
+    headers = [(b"content-length", b"9" * 5000)]
+    status, _, _, _ = _run(app, _scope(headers=headers), [b"x" * 16])
+    assert status == 422  # counted, small, so the handler's own answer
+
+
+def test_only_the_upload_routes_get_the_upload_wording():
+    from app.body_limit import TOO_LARGE_DETAIL, _detail_for
+
+    assert _detail_for("/upload") != TOO_LARGE_DETAIL
+    assert _detail_for("/upload/image") != TOO_LARGE_DETAIL
+    assert _detail_for("/uploads-of-something-else") == TOO_LARGE_DETAIL
+    assert _detail_for("/auth/login") == TOO_LARGE_DETAIL
+
+
 # ---------- the 413 is a full citizen ----------
 
 
@@ -207,7 +248,7 @@ def test_after_the_response_started_the_error_is_not_swallowed():
             pass
 
     wrapped = BodySizeLimitMiddleware(starts_then_reads, max_bytes=3)
-    with pytest.raises(Exception):  # noqa: B017, PT011 — any error; the point is that it is not hidden
+    with pytest.raises(BodyTooLarge):
         _run(wrapped, _scope(), [b"1234", b"5"])
 
 
