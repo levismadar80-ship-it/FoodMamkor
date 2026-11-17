@@ -16,7 +16,7 @@
  * which needs no session, or a live page's address.
  *
  * Usage (from frontend/):
- *   node scripts/capture-page-video.mjs <url> <name> [--out <dir>] [--seconds 18]
+ *   node scripts/capture-page-video.mjs <url> <name> [--out <dir>] [--seconds 18] [--chrome <path>]
  *
  * Example:
  *   node scripts/capture-page-video.mjs \
@@ -34,10 +34,11 @@ const VIEWPORT = { width: 390, height: 844 };
 
 function parseArgs(argv) {
   const pos = [];
-  const opt = { out: "./captures", seconds: 18 };
+  const opt = { out: "./captures", seconds: 18, chrome: "" };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === "--out") opt.out = argv[(i += 1)];
     else if (argv[i] === "--seconds") opt.seconds = Number(argv[(i += 1)]);
+    else if (argv[i] === "--chrome") opt.chrome = argv[(i += 1)] || "";
     else pos.push(argv[i]);
   }
   return { url: pos[0], name: pos[1], ...opt };
@@ -48,20 +49,20 @@ function fail(msg) {
   process.exit(1);
 }
 
-const { url, name, out, seconds } = parseArgs(process.argv.slice(2));
-if (!url || !name) fail("usage: capture-page-video.mjs <url> <name> [--out <dir>] [--seconds 18]");
+const { url, name, out, seconds, chrome } = parseArgs(process.argv.slice(2));
+if (!url || !name) fail("usage: capture-page-video.mjs <url> <name> [--out <dir>] [--seconds 18] [--chrome <path>]");
 if (!/^https?:\/\//.test(url)) fail("the address must start with http:// or https://");
 if (!/^[a-z0-9-]{1,60}$/.test(name)) fail("<name> takes lowercase latin letters, digits and hyphens only");
+if (!out) fail("--out needs a directory");
 if (!Number.isFinite(seconds) || seconds < 5 || seconds > 60) fail("--seconds must be between 5 and 60");
 
 mkdirSync(out, { recursive: true });
 const tmpDir = path.join(out, `.${name}-recording`);
 
-// CHROME_PATH: for a machine whose installed browser is not the one this
-// Playwright version expects (the Claude Code cloud sandbox is one).
-const browser = await chromium.launch(
-  process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
-);
+// --chrome <path>: for a machine whose installed browser is not the one this
+// Playwright version expects (the Claude Code cloud sandbox is one). A flag and
+// not an env var, so it is not one more variable for .env.example to carry.
+const browser = await chromium.launch(chrome ? { executablePath: chrome } : {});
 const context = await browser.newContext({
   viewport: VIEWPORT,
   deviceScaleFactor: 2,
