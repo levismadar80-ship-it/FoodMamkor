@@ -17,7 +17,7 @@
 
 **טסטים**
 * `tests/test_events.py` · `tests/test_event_end_time.py` · `tests/test_events_cross_owner.py` · `tests/test_events_mine.py`
-* `tests/test_meh2763_registrations.py` · `tests/test_meh1161_event_producer_gate.py`
+* `tests/test_meh2763_registrations.py` · `tests/test_meh3373_registration_recipient_limit.py` · `tests/test_meh1161_event_producer_gate.py`
 * `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts` · `frontend/e2e/flows/08-calendar-view.spec.ts`
 
 **מזהי רישום שזה מכסה.** `events`.
