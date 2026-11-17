@@ -199,3 +199,67 @@ describe("ui/Tooltip", () => {
     });
   });
 });
+
+// MEH-3271 (WCAG 1.4.13): the bubble can be dismissed without moving the
+// pointer or focus.
+describe("ui/Tooltip — Escape", () => {
+  it("Escape hides an open bubble; a later hover shows it again", () => {
+    render(
+      <Tooltip content="הסבר">
+        <button type="button">טריגר</button>
+      </Tooltip>,
+    );
+    const trigger = screen.getByText("טריגר");
+    fireEvent.mouseEnter(trigger.parentElement);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    fireEvent.mouseEnter(trigger.parentElement);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("another key leaves it open", () => {
+    render(
+      <Tooltip content="הסבר">
+        <button type="button">טריגר</button>
+      </Tooltip>,
+    );
+    fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+    fireEvent.keyDown(window, { key: "a" });
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+});
+
+// MEH-3271 reviewer finding: inside a dialog, the first Escape closes only the
+// bubble (innermost layer first); the dialog's own Escape still works after.
+describe("ui/Tooltip — Escape inside a dialog", () => {
+  it("first Escape hides the bubble and leaves the dialog open; the second closes the dialog", () => {
+    const onDialogEscape = vi.fn();
+    const onKey = (e) => {
+      if (e.key === "Escape") onDialogEscape();
+    };
+    window.addEventListener("keydown", onKey);
+    try {
+      render(
+        <div role="dialog">
+          <Tooltip content="הסבר">
+            <button type="button">טריגר</button>
+          </Tooltip>
+        </div>,
+      );
+      fireEvent.mouseEnter(screen.getByText("טריגר").parentElement);
+      expect(screen.getByRole("tooltip")).toBeInTheDocument();
+
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      expect(onDialogEscape).not.toHaveBeenCalled();
+
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(onDialogEscape).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener("keydown", onKey);
+    }
+  });
+});
