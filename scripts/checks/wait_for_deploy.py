@@ -131,6 +131,10 @@ def frontend_build_id(base: str) -> str | None:
 # sha behind for a good reason, and that must stay green.
 BACKEND_PATHS = ("backend/", "Dockerfile", "railway.json")
 
+# An abbreviated or full git object name, and nothing that git would read as a
+# revision expression. See the note in backend_code_differs().
+HEX_SHA = re.compile(r"[0-9a-f]{7,40}")
+
 STALE_BACKEND = 2
 
 
@@ -162,6 +166,16 @@ def backend_code_differs(deployed: str | None, target: str) -> bool | None:
     after a backend change is the bug. Only the diff tells them apart.
     """
     if not deployed:
+        return None
+    # `deployed` is whatever the running backend put in its /api/health body,
+    # so it is network input. It never reaches a shell (`_git` passes an argv
+    # tuple), and `^{commit}` is appended below, which is why a leading `-`
+    # cannot become a git option. The reason to pin the shape anyway is a
+    # different one: a revision EXPRESSION such as `HEAD` or `main` would
+    # resolve, make the diff empty, and return False — "the backend is current"
+    # — from a value the backend chose. Requiring a hex object name makes that
+    # answer unreachable without changing any behaviour for a real sha.
+    if not HEX_SHA.fullmatch(deployed):
         return None
     if _git("rev-parse", "--git-dir")[0] != 0:
         return None
@@ -241,6 +255,13 @@ def _self_test() -> int:
             r_be = backend_code_differs(base, be_changed)
             r_unknown = backend_code_differs("0" * 40, be_changed)
             r_none = backend_code_differs(None, be_changed)
+            # A revision EXPRESSION, not an object name. `HEAD` resolves, so
+            # before the shape check this returned False — "the backend is
+            # current" — from a string the backend chose. `base` is a real sha
+            # in the same run, so this case discriminates: it is not "any
+            # input is rejected now".
+            r_expr = backend_code_differs("HEAD", be_changed)
+            r_dash = backend_code_differs("--output=/tmp/x", be_changed)
         finally:
             os.chdir(cwd)
 
@@ -249,6 +270,8 @@ def _self_test() -> int:
         ("backend push: backend code differs -> True (red)", r_be is True),
         ("deployed sha outside the fetched history -> None (red, not green)", r_unknown is None),
         ("/api/health reported no sha -> None (red, not green)", r_none is None),
+        ("a revision expression ('HEAD') is not an object name -> None", r_expr is None),
+        ("an option-shaped value is not an object name -> None", r_dash is None),
         ("verdict maps False -> exit 0", _verdict_on_stale_backend_rc(False) == 0),
         ("verdict maps True -> exit 2", _verdict_on_stale_backend_rc(True) == STALE_BACKEND),
         ("verdict maps None -> exit 2", _verdict_on_stale_backend_rc(None) == STALE_BACKEND),
