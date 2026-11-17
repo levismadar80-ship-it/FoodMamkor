@@ -1222,7 +1222,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "wrapper param ← producer.is_test (the business that replied)",
     ),
     # --- delivery waitlist ---
-    ("services/delivery_waitlist.py", "notify_cities", "send_email"): (
+    ("services/delivery_waitlist.py", "_notify_cities", "send_email"): (
         1,
         CON,
         "producer.is_test",
