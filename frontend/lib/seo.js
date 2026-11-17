@@ -349,6 +349,42 @@ function buildOfferCatalog(producer, locale = "he") {
   };
 }
 
+/** MEH-3348: where a delivering business delivers — "Israel" when nationwide,
+ *  else the distinct cities of its delivery_areas rows, else null. */
+function deliveryAreaServed(producer) {
+  if (producer.delivery_nationwide) return "Israel";
+  const cities = [
+    ...new Set((producer.delivery_areas || []).map((da) => da.city).filter(Boolean)),
+  ];
+  return cities.length > 0 ? cities : null;
+}
+
+/**
+ * MEH-3348: capacity facts for an Event from the two numbers the API already
+ * returns. `spots_left` null = no cap, so nothing is claimed. A cancelled
+ * event claims no availability either.
+ * @param {{ max_participants?: number | null, spots_left?: number | null, is_active?: boolean }} item
+ */
+function eventCapacity(item) {
+  const out = { availability: undefined, max: undefined, remaining: undefined };
+  const max = Number(item.max_participants);
+  if (Number.isInteger(max) && max > 0) out.max = max;
+  const left = item.spots_left;
+  if (typeof left === "number" && left >= 0 && item.is_active !== false) {
+    out.remaining = left;
+    out.availability = left === 0 ? "https://schema.org/SoldOut" : "https://schema.org/InStock";
+  }
+  return out;
+}
+
+/** Writes eventCapacity() onto an Event node and its Offer. */
+function applyEventCapacity(ev, item) {
+  const cap = eventCapacity(item);
+  if (cap.max !== undefined) ev.maximumAttendeeCapacity = cap.max;
+  if (cap.remaining !== undefined) ev.remainingAttendeeCapacity = cap.remaining;
+  if (cap.availability && ev.offers) ev.offers.availability = cap.availability;
+}
+
 export function buildJsonLd(producer, locale = "he") {
   if (!producer) return null;
 
@@ -389,6 +425,13 @@ export function buildJsonLd(producer, locale = "he") {
       (producer.delivery_areas || []).map((da) => da.city).filter(Boolean),
     )];
     if (deliveryCities.length > 0) business.areaServed = deliveryCities;
+  }
+  // MEH-3348: a business WITH a location that also delivers serves more than
+  // its own city. Same two sources as the delivery-only arm above; the address
+  // stays. Nothing is emitted when it does not deliver.
+  if (!isDeliveryOnly && producer.offers_delivery) {
+    const served = deliveryAreaServed(producer);
+    if (served) business.areaServed = served;
   }
 
   // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
@@ -787,6 +830,7 @@ export function buildEventJsonLd(event, locale = "he") {
       url: event.registration_url || eventUrl,
     };
   }
+  applyEventCapacity(ev, event);
 
   // Breadcrumb: ישראל → בית העסק (when named) → האירוע.
   const crumbs = [
@@ -814,6 +858,22 @@ function toPrice(value) {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
 
+const MINUTES_PER_DAY = 1440;
+const MINUTES_PER_HOUR = 60;
+
+/** MEH-3348: "YYYY-MM-DDTHH:MM+offset" for a start + duration that ends the
+ *  same day; null otherwise (a workshop past midnight states no end). */
+function experienceEnd(date, time, durationMinutes) {
+  const duration = Number(durationMinutes);
+  if (!Number.isInteger(duration) || duration <= 0) return null;
+  const [h, m] = time.split(":").map(Number);
+  const total = h * MINUTES_PER_HOUR + m + duration;
+  if (total >= MINUTES_PER_DAY) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  const end = `${pad(Math.floor(total / MINUTES_PER_HOUR))}:${pad(total % MINUTES_PER_HOUR)}`;
+  return `${date}T${end}${israelOffset(date, end)}`;
+}
+
 /**
  * MEH-2478: schema.org/Event JSON-LD for /experiences/[id]. Google's event
  * docs ask for one Event per page with name + startDate + location, so this
@@ -830,9 +890,18 @@ export function buildExperienceJsonLd(experience, locale = "he") {
       ? experience.event_date.slice(0, 10)
       : null;
   const city = typeof experience.city === "string" ? experience.city.trim() : "";
-  if (!date || !city) return null;
-
   const url = `${SITE_URL}/experiences/${experience.id}`;
+  const breadcrumb = buildBreadcrumbList(
+    [
+      { name: countryLabel(locale), item: SITE_URL },
+      { name: experience.title, item: url },
+    ],
+    `${url}#breadcrumb`,
+  );
+  // MEH-3348: no date or no city → still no Event (Google's rule above), but
+  // the page keeps its BreadcrumbList instead of carrying no markup at all.
+  if (!date || !city) return { "@context": "https://schema.org", "@graph": [breadcrumb] };
+
   const time = /^\d{2}:\d{2}/.test(String(experience.event_time ?? ""))
     ? String(experience.event_time).slice(0, 5)
     : null;
@@ -862,22 +931,67 @@ export function buildExperienceJsonLd(experience, locale = "he") {
   };
   if (experience.description) ev.description = experience.description;
   if (experience.image_url) ev.image = experience.image_url;
-  if (experience.host?.name) ev.organizer = { "@type": "Person", name: experience.host.name };
+  if (experience.host?.name) {
+    ev.organizer = { "@type": "Person", name: experience.host.name };
+    // MEH-3348: the host's public business page, when she has one.
+    const host = experience.host;
+    if (host.producer_slug) ev.organizer.url = `${SITE_URL}/${encodeURIComponent(host.producer_slug)}`;
+    else if (host.producer_id) ev.organizer.url = `${SITE_URL}/producer/${host.producer_id}`;
+  }
+  // MEH-3348: endDate = start + duration, only with a start time.
+  const end = time ? experienceEnd(date, time, experience.duration_minutes) : null;
+  if (end) ev.endDate = end;
   // price_per_person NULL means free (ExperienceCreate), so it is a real 0.
   ev.offers = {
     "@type": "Offer",
     price: toPrice(experience.price_per_person) ?? "0",
     priceCurrency: "ILS",
-    url,
+    url: experience.registration_url || url,
   };
+  applyEventCapacity(ev, experience);
 
+  return { "@context": "https://schema.org", "@graph": [ev, breadcrumb] };
+}
+
+/**
+ * MEH-3348: schema.org Organization + BreadcrumbList for /organizers/[slug],
+ * which carried no structured data. Only what the page shows: name, text,
+ * photos, city, founding year and public links. Its events are described on
+ * their own pages (a cross-page @id is not resolved by Google, so none here).
+ */
+export function buildOrganizerJsonLd(organizer, locale = "he") {
+  if (!organizer?.slug || !organizer.name) return null;
+  const url = `${SITE_URL}/organizers/${encodeURIComponent(organizer.slug)}`;
+  const org = { "@type": "Organization", "@id": `${url}#organizer`, name: organizer.name, url };
+  const description = organizer.short_description || organizer.description;
+  if (description) org.description = description;
+  const images = (organizer.images || []).map(absoluteUrl).filter(Boolean);
+  if (images.length) org.image = images;
+  if (organizer.city) {
+    org.address = {
+      "@type": "PostalAddress",
+      addressLocality: organizer.city,
+      addressCountry: "IL",
+    };
+  }
+  if (/^\d{4}$/.test(String(organizer.established_year ?? ""))) {
+    org.foundingDate = String(organizer.established_year);
+  }
+  const website = (organizer.website || "").trim();
+  const facebook = (organizer.facebook || "").trim();
+  const sameAs = [
+    website ? (/^https?:\/\//i.test(website) ? website : `https://${website}`) : null,
+    instagramUrl(organizer.instagram),
+    /^https?:\/\//i.test(facebook) ? facebook : null,
+  ].filter(Boolean);
+  if (sameAs.length) org.sameAs = [...new Set(sameAs)];
   const crumbs = [
     { name: countryLabel(locale), item: SITE_URL },
-    { name: experience.title, item: url },
+    { name: organizer.name, item: url },
   ];
   return {
     "@context": "https://schema.org",
-    "@graph": [ev, buildBreadcrumbList(crumbs, `${url}#breadcrumb`)],
+    "@graph": [org, buildBreadcrumbList(crumbs, `${url}#breadcrumb`)],
   };
 }
 
