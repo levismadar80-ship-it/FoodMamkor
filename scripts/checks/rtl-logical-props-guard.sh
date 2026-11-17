@@ -170,6 +170,17 @@ scan() {
   while IFS= read -r hit; do
     [ -n "$hit" ] || continue
     f="${hit%%:*}"; n="${hit#*:}"; n="${n%%:*}"
+    # `n` is spliced into $(( … )) below. It comes from splitting grep's
+    # `path:line:content` on the FIRST colon, so a tracked file whose NAME
+    # contains a colon puts file-derived text there instead of a number — and
+    # bash evaluates an array subscript inside an arithmetic context, which is
+    # the usual way `$(( ))` turns into command execution. Not reachable today
+    # (the guards run from `pull_request` with a read-only token, where the
+    # author already controls these scripts), so this is a constraint added
+    # ahead of the need, not a fix: a future job on `pull_request_target` would
+    # make it live, and that change would not come with a reason to re-read
+    # this line.
+    case "$n" in (*[!0-9]* | "") continue ;; esac
     ok=0
     while IFS= read -r p; do
       [ -n "$p" ] || continue

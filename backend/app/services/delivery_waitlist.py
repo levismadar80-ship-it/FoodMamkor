@@ -32,6 +32,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.data.cities import city_key
+from app.database import end_transaction
 from app.models import DeliveryWaitlistEntry, Producer, User
 from app.services.email import send_email
 from app.services.producer_listing import is_business
@@ -211,6 +212,20 @@ def _email_copy(
 
 
 def notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
+    """Background-task entry point; releases the connection when done.
+
+    MEH-2889: the session is the request's, and the early returns below (no
+    live producer, no entries) left its read transaction open while later
+    tasks ran. Ending the transaction returns the connection to the pool
+    without detaching the caller's instances (see alerts.fire_alerts).
+    """
+    try:
+        _notify_cities(db, producer_id, cities)
+    finally:
+        end_transaction(db)
+
+
+def _notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
     """Mail every not-yet-notified entry whose city_key is among `cities`.
 
     Runs as a FastAPI BackgroundTask after PUT /producers/me committed the new
