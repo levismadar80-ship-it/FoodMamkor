@@ -1,5 +1,7 @@
 # 🎯 Template 00 — Model Selection Guide
 
+> **Claude Code:** לבחירת מודל ו-effort בתוך session של Claude Code יש כלל נפרד, והוא הקובע שם: [.claude/rules/model-routing.md](../../.claude/rules/model-routing.md). המסמך הזה עוסק בשיחות ב-claude.ai.
+
 מאיזה מודל לבקש מה. מבוסס על Anthropic 2026 official docs. גרסה 2.2 · 21/10/2026 — עודכן לדור 5.5 (Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1). מספרי benchmark של הדור הקודם הוסרו; המקור העדכני: https://platform.claude.com/docs/en/models/overview
 
 ---
@@ -20,7 +22,7 @@ Anthropic ממליצה היום להתחיל מ-Opus 5.5 לרוב העומסים
 |---|---|---|---|
 | **מחיר (MTok input/output)** | $2 / $10 | $4 / $20 | $10 / $50 |
 | **Max output tokens** | 128K | 128K | 128K |
-| **Default effort** | high | high | — |
+| **Default effort** | medium | medium | — |
 | **Fast mode** | — | /fast (עד 2.5x מהירות output, במחיר premium — $8/$40) | — |
 | **Context window** | 1M | 1M | 1M |
 | **Speed** | מהיר | בינוני (משקיע ב-thinking) | — |
@@ -115,16 +117,15 @@ Anthropic ממליצה היום להתחיל מ-Opus 5.5 לרוב העומסים
 
 ```
 low      → trivial, latency-sensitive (Haiku territory)
-medium   → routine Sonnet work, cost-conscious
-high     → Sonnet default + Opus 5.5 default
+medium   → default של Sonnet 5.5 / Opus 5.5 / Haiku 5.5 / Fable 5.2 (אומת מול התיעוד 17/11/2026)
+high     → באג קשה: קוד לא מוכר, טסט פלאקי, שינוי schema
 xhigh    → hard / async tasks
 max      → hardest problems only (session-only). אזהרה: prone to overthinking.
 fast routine (copy, i18n, token cleanup) → /fast
 ```
 
 **אצל Sapir (Claude Code Max):**
-- Sonnet 5.5 → השאירי על default (high)
-- Opus 5.5 → השאירי על high (default). `xhigh` ל-hard/async, `max` (session-only) רק ל-MEH-99 / MEH-122 / MEH-329 רמה.
+- ברירת המחדל היא `medium`. `high` לבאג קשה, `xhigh` רק אחרי ש-`high` נכשל, בלי `max` (הכרעה 16/11/2026, `.claude/rules/model-routing.md`).
 
 ---
 
