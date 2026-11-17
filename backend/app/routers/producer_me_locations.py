@@ -491,6 +491,26 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
         # owner promotes another location instead (which clears this one).
         raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
+    # MEH-3342 finding 1: the branch-only rule above fires on PROMOTION only, so
+    # editing the kind of a row that is ALREADY primary walked straight past it —
+    # `PUT {"kind": "pickup"}` on the primary answered 200 and left a primary
+    # that is not a branch. Measured: 200 with `"kind":"pickup","is_primary":true`
+    # in the body, for both `pickup` and `market_stand`.
+    #
+    # That is the state the MEH-1938 note above exists to forbid, and it is
+    # reachable from the dashboard — LocationsEditor offers a kind picker on
+    # every row. Checking the row's RESTING state covers both ways in (promote a
+    # non-branch, or re-kind a primary) and is a strict superset of the
+    # promotion check, which keeps its own earlier raise so its message and its
+    # call site stay unchanged.
+    #
+    # Raised after `setattr` and before `commit`, exactly as the promotion check
+    # is: the session is discarded with the request, so nothing half-applies —
+    # `test_primary_cannot_be_turned_into_a_pickup_point` asserts the row still
+    # reads `branch` afterwards.
+    if loc.is_primary and loc.kind != "branch":
+        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
+
     # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
     # just PROMOTED to primary (the primary's identity changed), or this row is
     # ALREADY primary and the patch carried a city (the primary's city changed).
