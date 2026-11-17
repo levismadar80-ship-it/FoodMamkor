@@ -249,7 +249,14 @@ def test_stalled_declared_body_costs_no_budget():
                 "POST",
                 "/echo",
                 stall=True,
-                headers=[(b"content-length", b"9000000")],
+                # Under MAX_BUFFERED_BODY, so the declared-size 413 does NOT
+                # pre-empt the timeout this test is about. It read 9000000
+                # while the gate carried its own 10 MB constant; MEH-3374
+                # landed a 6 MB app-wide cap on staging and this gate now
+                # imports it, so 9 MB would answer 413 and the assertion below
+                # would be checking the wrong branch. The subject is the
+                # budget, never the number.
+                headers=[(b"content-length", b"5000000")],
             )
         )
         await asyncio.sleep(0.1)
