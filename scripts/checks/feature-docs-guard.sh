@@ -129,12 +129,17 @@ if [ "${1:-}" = "--self-test" ]; then
   self_test; exit $?
 fi
 
-if ! self_test > /tmp/feature-docs-selftest.$$ 2>&1; then
-  cat /tmp/feature-docs-selftest.$$; rm -f /tmp/feature-docs-selftest.$$
+# mktemp, not /tmp/<name>.$$ — a PID is predictable, and `>` follows a symlink
+# that was planted at that path first. The runner is ephemeral and the author
+# already controls what runs on it, so this is housekeeping rather than a fix;
+# it costs one line and removes the question.
+selftest_log="$(mktemp)"
+if ! self_test > "$selftest_log" 2>&1; then
+  cat "$selftest_log"; rm -f "$selftest_log"
   echo "feature-docs-guard: SELF-TEST FAILED — this run proves nothing. Fix the checker first." >&2
   exit 1
 fi
-rm -f /tmp/feature-docs-selftest.$$
+rm -f "$selftest_log"
 
 if [ ! -d "$ROOT/$DIR" ]; then
   echo "feature-docs-guard: $DIR does not exist — nothing to check."
