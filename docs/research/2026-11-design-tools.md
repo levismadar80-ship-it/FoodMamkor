@@ -1,9 +1,11 @@
-**התשובה:** **Impeccable אמיתי, מתוחזק — וכבר מותקן אצלנו** (21 skills, נעולים ב-hash). **Hallmark** אמיתי (כנראה `nutlope/hallmark`), קטן ומעט מתוחזק. **«UI SDK»** לא מזוהה ככלי עיצוב אחד — יש כמה ספריות בשם הזה, אף אחת לא כלי ביקורת עיצוב. ההמלצה: לא להתקין שום דבר חדש; לבדוק את פקודת `audit` של Impeccable שכבר יש מול הרכיבים המשותפים לפני שמחפשים כלי נוסף.
+**התשובה:** **Impeccable אמיתי, מתוחזק — וכבר מותקן אצלנו** (21 skills, נעולים ב-hash). **Hallmark** אמיתי (`nutlope/hallmark`, של Together AI) ופעיל. **«UI SDK»** לא מזוהה ככלי עיצוב אחד — יש כמה ספריות בשם הזה, אף אחת לא כלי ביקורת עיצוב. ההמלצה: לא להתקין שום דבר חדש; לבדוק את פקודת `audit` של Impeccable שכבר יש מול הרכיבים המשותפים לפני שמחפשים כלי נוסף.
 
 # כלי עיצוב: Impeccable, ‏Hallmark, ‏UI SDK
 
 > **דוח מחקר בלבד.** לא הותקן כלום ולא שונה עיצוב. ההחלטות של ספיר. נכתב 17/11/2026 מול `origin/staging` (`e43e137`).
 > דפי GitHub ו-npm עצמם היו חסומים מה-sandbox; העובדות כאן ממראות ומ-registries — מסומן איפה.
+
+> **בדיקת כפילויות (17/11):** Linear: «Impeccable» → 0; «design audit» לא נמצא כרטיס. GitHub: Impeccable כבר ב-`skills-lock.json`; ADR-026 מזכיר אותו. אין מחקר קודם על Hallmark או UI SDK.
 
 ---
 
@@ -22,10 +24,10 @@
 | | Impeccable | Hallmark | «UI SDK» |
 |---|---|---|---|
 | אמיתי? | כן — [github.com/pbakaus/impeccable](https://github.com/pbakaus/impeccable), ‏[npm](https://www.npmjs.com/package/impeccable) | כן, המועמד הסביר [github.com/nutlope/hallmark](https://github.com/nutlope/hallmark) | עמום |
-| מתחזק | Paul Bakaus | חשבון Nutlope (מתואר כ-Together AI — **לא אומת**) | — |
-| רישיון | Apache-2.0 (גרסאות 2.0.0–2.0.6 היו BSL-1.1) | MIT לפי רישום משני — **לא אומת** | — |
-| פעילות | npm 4.9.2 פורסם 16/11/2026 ([Snyk](https://security.snyk.io/package/npm/impeccable)) | ~62 כוכבים; תאריך אחרון לא ידוע | — |
-| מה זה | skills בקבצי markdown + CLI (`npx impeccable detect`) + «Live Mode» שעורך קבצים | skill אחד: `audit` (רשימת ממצאים מדורגת בלי לערוך), ‏`redesign`, ‏`study <url>` | ראו למטה |
+| מתחזק | Paul Bakaus | Hassan El Mghari (Nutlope); ה-README: «Made by Together AI» | — |
+| רישיון | Apache-2.0 (גרסאות 2.0.0–2.0.6 היו BSL-1.1) | MIT (לפי שלושה רישומים; קובץ הרישיון עצמו לא נקרא) | — |
+| פעילות | npm 4.9.2 פורסם 16/11/2026 ([Snyk](https://security.snyk.io/package/npm/impeccable)) | 99 commits ב-repo; מספרי הכוכבים ברישומים סותרים (1.5K עד 47K) — לא אמין; עדכון אחרון שנרשם: 26/6/2026 | — |
+| מה זה | skills בקבצי markdown + CLI (`npx impeccable detect`) + «Live Mode» שעורך קבצים | skill אחד (SKILL.md של ~67KB + references): ‏`audit` (ניקוד מול רשימת anti-patterns, בלי לערוך), ‏`redesign`, ‏`study <url>`; קורא/כותב `.hallmark/log.json` בפרויקט | ראו למטה |
 | סיכון | Snyk: אין חולשות ידועות; ה-CLI מ-4.0 מוריד בינארי לפי פלטפורמה (סוכם checksum לפי release notes); ‏`detect <URL>` מריץ Puppeteer. ב-skills.sh: ‏Snyk **Fail** — הסיבה לא נקראה | markdown בלבד לפי הרישום; מראות רבות → סכנת התחזות | — |
 
 **«UI SDK» — המועמדים:**
@@ -49,7 +51,7 @@
 
 **ב — להוסיף את Hallmark כ-skill (נעול ב-hash, markdown בלבד)**
 - בעד: נקודת מבט שנייה ממקור אחר; רק markdown — סיכון נמוך אם נקרא לפני.
-- נגד: פרויקט קטן ולא ברור כמה מתוחזק; חופף ל-`audit` שכבר יש; עוד skill בהקשר של כל session.
+- נגד: SKILL.md של ~67KB נטען בהקשר; כותב קובץ `.hallmark/` בפרויקט; חופף ל-`audit` שכבר יש; כללים «אנטי-AI» כלליים שלא מכירים את BRAND.md.
 
 **ג — לאמץ את ה-CLI של Impeccable (`detect`) כבדיקה ב-CI**
 - בעד: בדיקה אוטומטית ולא חד-פעמית.

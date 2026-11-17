@@ -6,6 +6,8 @@
 > נכתב 17/11/2026 מול `origin/staging` ‏(`e43e137`). אין כאן ייעוץ משפטי: מה שלא נקרא במקור רשמי מסומן «לא אומת».
 > הדמיות מיקום (סכמטיות): [`qa-artifacts/research-2026-11-17/t1-freshness/`](../../qa-artifacts/research-2026-11-17/t1-freshness/)
 
+> **בדיקת כפילויות (17/11):** Linear: «זמינות», «עודכן לאחרונה», «סריקה» → אין מחקר קודם. קרובים: MEH-2697 (תזכורת שנתית «עדיין נכון?» לתגים מוצהרים — אותו דפוס, לתגים), MEH-3299 (פרטי קשר ממקורות ציבוריים), MEH-3211 (סיכום שבועי). GitHub: אין PR או דוח על הנושא.
+
 ---
 
 ## 1. מה יש היום בקוד
@@ -31,9 +33,10 @@
 | אתר | מה עושה | מקור |
 |---|---|---|
 | **Wolt** | בעל העסק מכבה מוצר שאזל באפליקציה (Listing manager → Disable item). תפריט שמחובר לקופה נערך **רק בקופה**. | [Wolt Merchant — Manage menu](https://merchant.wolt.com/en/isl/learning-center/manage-menu) |
-| **Google Business Profile** | גולשים מציעים עריכות; לבעלים יש כמה ימים לאשר/לדחות, ואחרי זה גוגל עלולה לפרסם אם המידע נתמך במקורות ציבוריים. שעות מיוחדות לחגים. | [Google — שעות](https://support.google.com/business/answer/10417060) · ימי ההמתנה: מקור משני, **לא אומת** בדף של גוגל |
-| **Too Good To Go** | בית העסק קובע כל יום כמה שקיות יש באפליקציית החנות. | **לא אומת** (הדף הרשמי לא נפתח) |
-| **Yelp / TripAdvisor** | בעלים מאומתים עורכים; תווית «בעלים מאומת». | **לא אומת** |
+| **Google Business Profile** | כשמקורות מדווחים שהמידע של הבעלים שגוי, הפרופיל מקבל «עדכונים מגוגל» שהבעלים רואה ליד המידע המקורי, ויכולה לשלוח מחדש או לדחות. עריכה של הבעלים נבדקת בדרך כלל תוך 10 דקות, לפעמים עד 30 יום. חלון של 4 ימים לאישור הצעת גולשת: דיווח משני מספטמבר 2026. | [Manage Google updates](https://support.google.com/business/answer/3480441?hl=en) · [Edit status](https://support.google.com/business/answer/3038311?hl=en) · [4 ימים (משני)](https://www.digitalapplied.com/blog/google-business-profile-suggested-edits-4-day-deadline) |
+| **Too Good To Go** | בית העסק משנה כל יום כמה שקיות יש; לוח זמנים קבוע מראש ב-MyStore, «ימים מיוחדים», וביטול מראש כשאין עודף. | [TGTG Business FAQ](https://www.toogoodtogo.com/en-ie/business/faq) · [MyStore schedule](https://www.toogoodtogo.com/en-ie/blog/your-too-good-to-go-schedule) |
+| **TripAdvisor** | הבעלים מעדכנת שעות ופרטים ב-Management Center. | [Tripadvisor for Restaurants](https://www.tripadvisor.com/ForRestaurants/r4271) |
+| **Yelp** | שעות מיוחדות; «סגור זמנית» מציג באנר אדום עם תאריך חזרה; עסק סגור יורד בהדרגה מהתוצאות. | [Yext — Yelp closed behavior](https://hitchhikers.yext.com/docs/listings/yelp-closed-behavior/) (תיעוד אינטגרציה, לא Yelp עצמה) |
 | **Untappd** | שתי שכבות: «מקומות מאומתים» (בתפריט שלהם) מול «כל המקומות» (משתמשים סימנו ב-15 יום האחרונים). | [Untappd Find It](https://help.untappd.com/hc/en-us/articles/360040808131--How-to-use-the-Find-It-feature) |
 
 הדפוס המשותף: **מה שבית העסק אמר** מוצג אחרת ממה שאחרים אמרו או שנאסף אוטומטית, וחלק
@@ -71,8 +74,15 @@
   נגיש לציבור עדיין מוגן, ו«רשות בחוזה» לסרוק לא הופכת את זה לחוקי.
   [ההצהרה](https://pcpd.org.hk/tc_chi/news_events/media_statements/files/ConcludingStatement_English_FINAL.pdf).
   (בהצהרה של 2023 ישראל לא הייתה בין החותמות.)
-- **חוק המחשבים (1995), זכויות יוצרים על מאגרי מידע, פסיקה ישראלית על סריקה:** לא נמצא מקור רשמי
-  או פסק דין רלוונטי. **לא אומת.**
+- **טיוטת הנחיית הרשות להגנת הפרטיות (28/4/2025)** על חוק הגנת הפרטיות ומערכות AI: כריית מידע אישי
+  מהרשת בלי הסכמה מדעת היא פגיעה אסורה בפרטיות, גם כשהאדם פרסם את המידע בעצמו; ובעלי אתרים נדרשים
+  למנוע כרייה אסורה מהאתר שלהם. ההקשר שם הוא אימון מודלים — לא בדיוק השימוש שלנו, אבל העיקרון חל.
+  [gov.il — טיוטה](https://www.gov.il/BlobFolder/rfp/ai_reg/he/ai%20regu_draft.pdf) · ובנוסף טיוטת
+  גילוי הדעת על **הסכמה** (2/2025): [gov.il](https://www.gov.il/BlobFolder/rfp/consent2025/he/consent2025.pdf).
+- **פסיקה:** לפי סקירה של עורך דין (6/2025, משני) אין בישראל חוק או פסק דין מנחה שאוסר סריקה באופן
+  גורף; חוק המחשבים (1995) אוסר שיבוש, וסריקה לא בהכרח משבשת. בית משפט השלום (2004) קבע שאין
+  בחוק הגדרה מספקת ל«חדירה» ([law.co.il](https://www.law.co.il/computer-law/2004/02/29/default-slug-60/)).
+  זכויות יוצרים על מאגרי נתונים עובדתיים: **לא אומת.**
 - כבר יש במאגר כרטיס פתוח על פרטי קשר ממקורות ציבוריים במדיניות הפרטיות (MEH-3299, In Progress).
 
 המסקנה המעשית: **נתון שבית העסק מסר בעצמו** בטוח יותר משפטית וגם נכון יותר. סריקה מתאימה

@@ -6,6 +6,8 @@
 > ([.claude/rules/decisions.md](../../.claude/rules/decisions.md)).
 > נכתב 17/11/2026 מול `origin/staging` ‏(`e43e137`).
 
+> **בדיקת כפילויות (17/11):** Linear: «CODEOWNERS», «ADR» → MEH-1915 (deny על `.github/` עוקף דרך API), MEH-3175 (FEATURES.md + בדיקה שכל עמוד רשום, Backlog). אין מחקר קודם על ההשוואה. GitHub: ADR-035 ו-`doc-freshness-guard.sh` (MEH-2346).
+
 ---
 
 ## 1. מה עושות חברות גדולות (עם מקורות)

@@ -5,6 +5,8 @@
 > **דוח מחקר בלבד.** לא שונו workflow, כללים או הגדרות. ההחלטות של ספיר. נכתב 17/11/2026 מול `origin/staging` (`e43e137`).
 > שינוי ב-`.github/**` חסום ל-CC ממילא (`.claude/rules/security.md`); כל המלצה כאן שנוגעת שם היא patch שספיר מחילה.
 
+> **בדיקת כפילויות (17/11):** Linear: «CodeQL», «security-review» → **MEH-3308** (נעיצת actions ל-SHA + CodeQL default setup, «בידי ספיר») ו-MEH-3083 (CodeQL אחרי ההשקה) — המלצה 1 כאן כבר בכרטיס; MEH-569 (מדידת יעילות adversarial-review אחרי ההשקה); MEH-567 (Codex כחוות דעת שנייה). אין מחקר קודם על הצבעת רוב. GitHub: `docs/CLAUDE-REVIEW.md` (כיול הריוויואר ב-CI).
+
 ---
 
 ## 1. מה יש היום (נבדק)

@@ -5,6 +5,8 @@
 > **דוח מחקר בלבד.** לא שונה קוד. ההחלטות של ספיר. נכתב 17/11/2026 מול `origin/staging` (`e43e137`).
 > משלים את [docs/audits/2026-11-ai-crawler-access.md](../audits/2026-11-ai-crawler-access.md) (מי מורשה לזחול) — לא חוזר עליו.
 
+> **בדיקת כפילויות (17/11):** Linear: «MCP», «llms.txt» → MEH-2109 (MCP ציבורי, Backlog) ו-MEH-3348 (JSON-LD, Done) — לא מחקר. GitHub: `docs/audits/2026-11-ai-crawler-access.md` (#4693) עונה על «מי מורשה לזחול», לא על השאלה כאן.
+
 ---
 
 ## 1. מה יש היום (נבדק בקוד)
@@ -23,9 +25,9 @@
 
 - **llms.txt.** הצעה פתוחה ([llmstxt.org](https://llmstxt.org/)). אין ראיה שזוחלי AI גדולים קוראים אותו; נציג גוגל אמר שמערכות ה-AI שלהם לא משתמשות בו (דיווח משני: [Search Engine Roundtable](https://www.seroundtable.com/google-ai-llms-txt-39607.html)). עלות תחזוקה כמעט אפס — שווה להשאיר, לא שווה להשקיע.
 - **נתונים מובנים** הם עדיין מה שמנועי חיפוש ו-AI Overviews קוראים ([Google — LocalBusiness](https://developers.google.com/search/docs/appearance/structured-data/local-business)). אצלנו זה כבר בשל.
-- **MCP.** גרסת מפרט 2025-11-25 ו-RC של 2026-07-28 ([changelog](https://modelcontextprotocol.io/specification/2025-11-25/changelog)). הרשאה ב-HTTP היא OAuth 2.1, אופציונלית; שרת לקריאה ציבורית לא צריך אותה ([authorization](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization)). דוגמה מהשוק: Shopify Storefront/Catalog MCP ([shopify.dev](https://shopify.dev/docs/agents/catalog/storefront-mcp)).
+- **MCP.** הגרסה הנוכחית היא **2026-07-28** (יצאה 28/7/2026): בלי session ובלי handshake — כל בקשה עומדת בפני עצמה, ולכן שרת קריאה רץ מאחורי load balancer רגיל בלי אחסון משותף ([MCP blog](https://blog.modelcontextprotocol.io/posts/2026-07-28/) · [spec](https://modelcontextprotocol.io/specification/2026-07-28)). נוסף אימות `iss` בתגובות OAuth (SEP-2468). הרשאה ב-HTTP היא OAuth 2.1, אופציונלית; שרת לקריאה ציבורית לא צריך אותה ([authorization](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization)). דוגמה מהשוק: Shopify Storefront/Catalog MCP ([shopify.dev](https://shopify.dev/docs/agents/catalog/storefront-mcp)).
 - **A2A** (סוכן↔סוכן, Google → Linux Foundation): פרוטוקול לסוכן שמדבר עם סוכן אחר ([Google OSS blog, 4/2026](https://opensource.googleblog.com/2026/04/a-year-of-open-collaboration-celebrating-the-anniversary-of-a2a.html)). לאתר שהוא מקור מידע ולא סוכן בעצמו — MCP מספיק.
-- **Agentic commerce.** OpenAI Instant Checkout + ACP (עם Stripe): הושק בארה״ב, קונים ומוכרים אמריקאים, פריט אחד ([TechCrunch](https://techcrunch.com/2025/09/29/openai-takes-on-google-amazon-with-new-agentic-shopping-system)); ב-2/2026 עדיין מתואר כ-US-first ([Digital Commerce 360](https://www.digitalcommerce360.com/2026/02/16/openai-expands-agentic-commerce-push/)). Google AP2 עם «מנדטים» (כוונה/עגלה, תקרה), Visa/Mastercard — **זמינות בישראל לא אומתה** לאף אחד מהם. גם ChatGPT לעסקים / Apps SDK בישראל: **לא אומת**.
+- **Agentic commerce.** OpenAI Instant Checkout + ACP (עם Stripe): הושק בארה״ב, קונים ומוכרים אמריקאים, פריט אחד ([TechCrunch](https://techcrunch.com/2025/09/29/openai-takes-on-google-amazon-with-new-agentic-shopping-system)); ב-2/2026 עדיין מתואר כ-US-first ([Digital Commerce 360](https://www.digitalcommerce360.com/2026/02/16/openai-expands-agentic-commerce-push/)). Google AP2 עם «מנדטים» (כוונה/עגלה, תקרה), Visa/Mastercard — **זמינות בישראל לא נמצאה** לאף אחד מהם (שני חיפושים). **מה כן זמין בישראל:** ChatGPT עצמו (ישראל ברשימת המדינות הנתמכות — [OpenAI Help](https://help.openai.com/en/articles/7947663-chatgpt-supported-countries)), ו-**Ads Manager** של ChatGPT פתוח למפרסמים ישראלים, בלי תאריך להצגת מודעות בישראל ([Calcalist Tech](https://www.calcalistech.com/ctechnews/article/s1700wbtkmx)). ‏ChatGPT Business / Apps SDK בישראל: לא נמצא דף שמגביל או מאשר.
 - **דפוסי בטיחות לקנייה ע״י סוכן** (ידע כללי, לא אומת היום): אישור אנושי לכל קנייה, תקרת סכום, טוקן מוגבל-תחום, הסוכן לא רואה מספר כרטיס (Stripe Shared Payment Token / מנדט AP2).
 
 ## 3. מה זה אומר אצלנו
@@ -57,7 +59,7 @@
 | מתי | מה | עלות | אבטחה |
 |---|---|---|---|
 | **עכשיו** | כלום חדש. לוודא ש-JSON-LD מכסה `dateModified` לבית עסק (קשור לדוח 1) | שעה | — |
-| **חצי שנה** (≥50 בתי עסק) | **ב**: MCP לקריאה, Streamable HTTP, בלי auth, שלושה כלים: `search_businesses`, ‏`get_business`, ‏`list_events`. אותו rate-limit כמו ה-API | 2–3 ימים | קריאה בלבד; לא לחשוף טלפון/מייל מעבר למה שבדף; הגבלת קצב לפי IP |
+| **חצי שנה** (≥50 בתי עסק) | **ב**: MCP לקריאה (מפרט 2026-07-28, stateless — מתאים ל-Railway), בלי auth, שלושה כלים: `search_businesses`, ‏`get_business`, ‏`list_events`. אותו rate-limit כמו ה-API | 2–3 ימים | קריאה בלבד; לא לחשוף טלפון/מייל מעבר למה שבדף; הגבלת קצב לפי IP |
 | **אחר כך** | **ג**, רק אם ההזמנות באתר עובדות ויש בקשות אמיתיות | שבוע+ · RED | OAuth 2.1 + PKCE לפי המפרט; הקונה מאשרת כל בקשה בקוד; אין גישה לנתוני בית עסק אחר |
 | **לא** | **ד** | — | — |
 
