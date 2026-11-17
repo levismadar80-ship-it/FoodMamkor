@@ -117,6 +117,15 @@ def login(request: Request, ...):
 @limiter.limit("20/day")
 ```
 
+**Per-email keys (`email_from_body`, MEH-3373).** The key is the address as
+pydantic parses it (the value the handler sees), lower-cased, with a `+tag`
+dropped and Gmail dots removed — so a display name (`A <v@x.com>`), a
+fullwidth letter in the domain or `v+1@…` cannot open a fresh bucket for the
+same inbox. Used by `/auth/register`, `/auth/register/producer`,
+`/auth/forgot-password`, and the account-less sign-up routes
+(`routers/registrations.py`: 3/hour and 10/day per recipient, one bucket for
+events and experiences). Counters are in-process memory: a deploy resets them.
+
 **Deploy requirement:** `TRUSTED_PROXY=1` on Railway staging +
 production backends. Without it, the key function falls through to
 `get_remote_address` and the bug returns. See `docs/DEPLOYMENT.md` §D.
@@ -240,6 +249,14 @@ Additional notes:
   keep both in sync when schema changes land.
 
 ### 6. העלאת קבצים — תמונות מסוכנות
+
+**Body size cap (MEH-3374).** `backend/app/body_limit.py` answers **413** to
+any request body above **6 MB**, before the route runs: by `Content-Length`
+(nothing is read), and by counting the bytes that arrive when the header is
+missing or wrong. It sits outside the DB bulkhead, so a refused body holds no
+DB slot, and inside CORS / X-Request-ID / the security headers. The 5 MB image
+cap below is a second, narrower check inside the upload route. The WhatsApp
+webhook keeps its own smaller cap.
 
 ```python
 # backend/app/utils/file_upload.py
