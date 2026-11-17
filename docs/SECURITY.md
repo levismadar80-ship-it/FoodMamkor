@@ -759,17 +759,25 @@ async def clear_attempts(email: str):
 
 ### 17. Audit Log — מי עשה מה
 
-```sql
-CREATE TABLE audit_log (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid,
-  action text,        -- 'approve_producer', 'delete_listing', 'login'
-  target_type text,   -- 'producer', 'user', 'listing'
-  target_id uuid,
-  ip_address text,
-  created_at timestamptz DEFAULT now()
-);
-```
+**Built (MEH-3306):** table `admin_audit_log`, written by
+`backend/app/services/admin_audit.py`. One append-only row per **successful
+change made by an admin account** — who (`actor_id`), what (`action`: method +
+route template), on what (`target_type`, `target_id`), a reduced before/after
+(`details`: code-like values only, never contact details or free text), `ip`,
+`created_at`.
+
+- The write is scheduled in `get_current_user` (`backend/app/auth.py`), the one
+  place every signed-in request passes, so it covers a route gated by
+  `require_admin` and equally an owner route an admin enters by an inline role
+  check. No route carries logging code.
+- Not logged: reads, a refused request, a change that did not go through
+  (404 / 409 / 422), and telemetry sent with `get_current_user_lenient`.
+- Fail-open by design: the row is written after the response, in its own
+  transaction. A failed write is logged as an error (`admin_audit.write_failed`)
+  and never fails the admin's action. `created_at` is the insert time.
+- Read: `GET /admin/audit-log` (admin only; the IP is stored, not returned).
+- Open: no retention rule for the stored IPs yet; logins are not logged (this is
+  a log of changes).
 
 ---
 

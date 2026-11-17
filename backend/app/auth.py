@@ -404,6 +404,10 @@ def get_current_user(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    # MEH-3306: injected by FastAPI on a route; None when this function is
+    # called directly (the lenient variant below, and unit tests), and then
+    # nothing is scheduled.
+    background_tasks: BackgroundTasks = None,  # type: ignore[assignment]
 ) -> User:
     if token is None:
         raise HTTPException(
@@ -446,6 +450,14 @@ def get_current_user(
 
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
+    # MEH-3306: the admin audit row is scheduled HERE — the one place every
+    # signed-in request passes — so it covers a route gated by require_admin
+    # and equally an owner route an admin enters through an inline role check
+    # (delete an event, a review...). No route carries logging code.
+    # DO NOT move this into require_admin or into routes: the inline-check
+    # routes would fall out of the log again.
+    if background_tasks is not None and user.role == "admin":
+        admin_audit.schedule(request, background_tasks, user)
     return user
 
 
@@ -453,6 +465,7 @@ def get_current_user_optional(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None,  # type: ignore[assignment]  # MEH-3306
 ) -> User | None:
     """Optional auth with RFC 6750 semantics — three states, not two.
 
@@ -486,7 +499,9 @@ def get_current_user_optional(
         return None
     # No try/except: a token that was sent but does not verify is an
     # error, and the caller must hear about it.
-    return get_current_user(request=request, token=token, db=db)
+    return get_current_user(
+        request=request, token=token, db=db, background_tasks=background_tasks
+    )
 
 
 def get_current_user_lenient(
@@ -522,19 +537,11 @@ def get_current_user_lenient(
         return None
 
 
-def require_admin(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    user: User = Depends(get_current_user),
-) -> User:
+def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
         )
-    # MEH-3306: the audit row is scheduled HERE, in the one gate every admin
-    # route passes, so a route cannot be an admin route and skip the log.
-    # DO NOT move this into individual routes or a router-level dependency.
-    admin_audit.schedule(request, background_tasks, user)
     return user
 
 

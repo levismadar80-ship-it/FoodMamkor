@@ -1,9 +1,11 @@
 """MEH-3306 — the admin audit log (server half).
 
-Every successful change an admin makes through a route gated by
-`require_admin` leaves one append-only row: who, what (method + route
-template), on what, when, from where. The write is scheduled inside
-`require_admin` itself, so a route cannot be an admin route and skip it.
+Every successful change made by an ADMIN ACCOUNT leaves one append-only row:
+who, what (method + route template), on what, when, from where. The write is
+scheduled inside `get_current_user` — the one place every signed-in request
+passes — so it covers a route gated by `require_admin` and equally an owner
+route an admin enters through an inline role check. No route carries logging
+code, and none can skip it.
 
 What is NOT logged, on purpose, and pinned here: reads (GET), a request that
 did not go through (404 / 409 / 422 — nothing changed), and a non-admin who
@@ -18,8 +20,16 @@ from pathlib import Path
 import importlib.util
 import sys
 
-from app.auth import require_admin
+from app.auth import (
+    get_current_user,
+    get_current_user_lenient,
+    get_current_user_optional,
+)
+from datetime import timedelta
+
 from app.models.admin_ops import AdminAuditLog
+from app.models.models import Event
+from app.utils.clock import israel_today
 
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -163,55 +173,152 @@ def test_a_failed_audit_write_never_fails_the_admin_action(client, db, monkeypat
 
 
 def test_every_mutating_admin_route_goes_through_the_one_dependency_that_logs():
-    """The log is written by `require_admin`, so the walk has two halves:
-    (1) the dependency really schedules the write — pinned by reading its
-    source, since that is the single place; (2) every mutating route under
-    /admin depends on it. A new admin write route without the gate fails (2);
-    removing the call from the gate fails (1)."""
-    source = inspect.getsource(require_admin)
-    assert "admin_audit.schedule(" in source
+    """Two halves. (1) The single place really schedules the write — pinned by
+    reading its source, and the telemetry variant must NOT (an admin browsing
+    the site is not an admin action). (2) Every mutating route under /admin
+    resolves its user through it. A new admin write route that authenticates
+    some other way fails (2); removing the call fails (1)."""
+    assert "admin_audit.schedule(" in inspect.getsource(get_current_user)
+    assert "background_tasks=background_tasks" in inspect.getsource(
+        get_current_user_optional
+    )
+    assert "background_tasks" not in inspect.getsource(get_current_user_lenient)
 
     admin_paths = [r for r in _write_routes() if r.path.startswith("/admin")]
     assert len(admin_paths) > 20, "control: the walk found the admin routers"
     missing = [
         f"{sorted(r.methods)} {r.path}"
         for r in admin_paths
-        if "require_admin" not in r.deps
+        if not {"require_admin", "get_current_user"} <= set(r.deps)
     ]
     assert missing == []
 
 
-def test_the_gate_is_what_logs_not_the_url_prefix():
-    """Derived, not stated: how many mutating routes are admin-gated, and that
-    the set under /admin and the set behind the gate are the same set today.
-    If an admin-gated write appears under another prefix it is logged all the
-    same (the gate logs), and this count moves with it."""
-    gated = _admin_write_routes()
-    under_admin = [r for r in _write_routes() if r.path.startswith("/admin")]
-    assert len(gated) >= len(under_admin) > 20
+def test_an_admin_acting_through_an_owner_route_is_logged_too(client, db):
+    """DELETE /events/{id} is an owner route with an inline admin override
+    (routers/events.py). The reviewer's case: «who removed my event» must
+    have an answer when it was an admin."""
+    admin = make_user(db, role="admin")
+    producer = make_producer(db, status="approved")
+    event = Event(
+        producer_id=producer.id,
+        title="יום פתוח",
+        event_date=israel_today() + timedelta(days=5),
+        category="שוק",
+        city="חדרה",
+        is_active=True,
+    )
+    db.add(event)
+    db.commit()
+    event_id = event.id  # read now: the row is gone after the call
+    resp = client.delete(f"/events/{event_id}", headers=auth_header(admin))
+    assert resp.status_code in (200, 204), resp.text
+    (row,) = _rows(db)
+    assert row.actor_id == admin.id
+    assert row.action == "DELETE /events/{event_id}"
+    assert (row.target_type, row.target_id) == ("event", str(event_id))
+
+
+def test_the_same_kind_of_change_by_an_owner_is_not_an_admin_action(client, db):
+    owner = make_user(db, role="producer")
+    producer = make_producer(db, status="approved")
+    owner.producer_id = producer.id
+    db.commit()
+    resp = client.post(
+        "/producers/me/availability-state",
+        json={"state": "accepting_orders"},
+        headers=auth_header(owner),
+    )
+    assert resp.status_code == 200, resp.text
+    assert _rows(db) == []
 
 
 # ---------- append-only ----------
 
 
-def test_no_code_updates_or_deletes_audit_rows():
-    """Scan, with a control: the only thing the app does to the table is add
-    a row and read it."""
-    offenders, mentions = [], 0
-    for path in BACKEND_APP.rglob("*.py"):
-        text = path.read_text(encoding="utf-8")
-        if "AdminAuditLog" not in text:
-            continue
-        mentions += 1
-        for bad in (
-            r"query\(AdminAuditLog\)[^\n]*\.(delete|update)\(",
-            r"(delete|update)\(AdminAuditLog",
-            r"db\.delete\([^)]*audit",
-        ):
+_FORBIDDEN_ON_AUDIT = (
+    # ORM bulk forms, across line breaks (a formatter wraps long chains)
+    r"query\(\s*AdminAuditLog\b[\s\S]{0,400}?\.(delete|update)\(",
+    r"\b(delete|update)\(\s*AdminAuditLog\b",
+)
+# The only files allowed to name the model or the table at all. Raw SQL, a
+# script, a second writer: each would have to be added here by hand, and that
+# is the review this test asks for. (Raw-SQL sample strings are not written
+# out in this file: the repo's Bash safety hook rejects them, rightly.)
+_MAY_MENTION = {
+    "backend/app/models/admin_ops.py",  # the model
+    "backend/app/models/models.py",  # re-export
+    "backend/app/services/admin_audit.py",  # the one writer (INSERT)
+    "backend/app/routers/admin_extra.py",  # the one reader
+}
+
+
+def _audit_offenders(files: dict[str, str]) -> list[str]:
+    found = []
+    for name, text in files.items():
+        for bad in _FORBIDDEN_ON_AUDIT:
             if re.search(bad, text):
-                offenders.append(f"{path.name}: {bad}")
-    assert mentions >= 2, "control: the scan saw the model and its writer"
-    assert offenders == []
+                found.append(f"{name}: {bad}")
+    return found
+
+
+def test_the_append_only_scan_catches_the_shapes_it_claims():
+    """Self-test first (MEH-1619): each forbidden shape, written the way a
+    formatter would leave it, is caught; an insert and a read are not."""
+    caught = {
+        "wrapped.py": "db.query(AdminAuditLog).filter(\n    AdminAuditLog.id == x\n).delete()",
+        "bulk.py": "db.execute(update(AdminAuditLog).values(ip=None))",
+        "core.py": "db.execute(delete(AdminAuditLog))",
+    }
+    assert len(_audit_offenders(caught)) == len(caught)
+    clean = {
+        "ok.py": "db.add(AdminAuditLog(**row))\n"
+        "rows = db.query(AdminAuditLog).order_by(AdminAuditLog.created_at.desc()).all()"
+    }
+    assert _audit_offenders(clean) == []
+
+
+def test_no_code_updates_or_deletes_audit_rows():
+    """The real corpus: backend/app, backend/scripts and scripts/. Alembic is
+    left out on purpose — the revision's downgrade drops the table, and that
+    is the rollback of a failed deploy."""
+    roots = [BACKEND_APP, ROOT / "backend" / "scripts", ROOT / "scripts"]
+    files = {}
+    for root in roots:
+        for path in root.rglob("*.py"):
+            text = path.read_text(encoding="utf-8")
+            if "AdminAuditLog" in text or "admin_audit_log" in text:
+                files[str(path.relative_to(ROOT))] = text
+    assert "backend/app/services/admin_audit.py" in files, (
+        "control: the scan saw the writer"
+    )
+    assert set(files) <= _MAY_MENTION, sorted(set(files) - _MAY_MENTION)
+    assert _audit_offenders(files) == []
+
+
+def test_a_note_cannot_carry_contact_details():
+    """`note()` keeps a bool, an int, None or a code-like string. An email, a
+    phone or a sentence is dropped, whatever the caller passes."""
+    from app.services.admin_audit import _reduced
+
+    kept = _reduced(
+        {
+            "role": "admin",
+            "status": "approved",
+            "is_blocked": True,
+            "count": 3,
+            "email": "dana@example.com",
+            "phone": "052-7654321",
+            "name": "דנה כהן",
+            "reason": "לא עומד בתנאים",
+        }
+    )
+    assert kept == {
+        "role": "admin",
+        "status": "approved",
+        "is_blocked": True,
+        "count": 3,
+    }
 
 
 # ---------- reading it ----------

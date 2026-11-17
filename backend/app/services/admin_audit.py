@@ -4,17 +4,19 @@ Module:   admin_audit
 Purpose:  One append-only row for every successful change an admin makes:
           who, what (method + route template), on what, when, from where.
 Touches:  admin_audit_log (INSERT only), through its own short session.
-Does NOT: decide who is an admin (auth.require_admin, which calls schedule()
-          here), and does not log reads, refused requests or changes that did
-          not go through. It never updates or deletes a row.
-Related:  auth.py require_admin (the single caller of schedule),
+Does NOT: decide who is an admin, and does not log reads, refused requests or
+          changes that did not go through. It never updates or deletes a row.
+          Telemetry sent with get_current_user_lenient is not an admin action
+          and is not logged.
+Related:  auth.py get_current_user (the single caller of schedule — every
+          signed-in request passes there, whatever gate the route uses),
           models/admin_ops.py AdminAuditLog, routers/admin_extra.py
           (GET /admin/audit-log), database.py:161 get_db (why a task, and why
           a session of its own).
 History:  MEH-3306 (creation — rulings 17/11: «מי דחתה את העסק שלי» had no answer).
 
-How the row gets written. `require_admin` runs before the route. For a
-mutating method it queues `write` as a BackgroundTask. FastAPI runs a
+How the row gets written. `get_current_user` runs before the route. For an
+admin account and a mutating method it queues `write` as a BackgroundTask. FastAPI runs a
 request's tasks only when the route returned normally, so a 404 / 409 / 422
 — where nothing changed — queues nothing that runs. The task opens its own
 session, inserts, commits and closes: the request's session was already given
@@ -45,7 +47,10 @@ MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 _NOTE_ATTR = "_admin_audit_note"
 
 _TARGET_VALUE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
-_MAX_DETAIL_TEXT = 64
+# A before/after string must look like a code (a role, a status): lower-case
+# ASCII, digits, `_` and `-`. That shape cannot be an email, a phone number,
+# a Hebrew name or a sentence — the docstring of note() is not the guard.
+_CODE_VALUE = re.compile(r"^[a-z][a-z0-9_-]{0,39}$")
 
 
 def schedule(request: Request, background_tasks: BackgroundTasks, actor: Any) -> None:
@@ -73,9 +78,9 @@ def note(
 ) -> None:
     """A route's reduced before/after for the row being written.
 
-    Values are kept only when they are a bool, an int, None or a short string
-    (a role, a status). DO NOT pass names, phones, emails, addresses or free
-    text: the log outlives the data it describes.
+    Values are kept only when they are a bool, an int, None or a code-like
+    string (a role, a status — see _CODE_VALUE). Anything else is dropped:
+    the log outlives the data it describes.
     """
     holder = getattr(actor, _NOTE_ATTR, None)
     if holder is None:  # a read, or not an admin request: nothing to attach to
@@ -121,6 +126,6 @@ def _reduced(values: dict[str, Any]) -> dict[str, Any]:
     for key, value in values.items():
         if value is None or isinstance(value, (bool, int)):
             kept[str(key)[:40]] = value
-        elif isinstance(value, str) and len(value) <= _MAX_DETAIL_TEXT:
+        elif isinstance(value, str) and _CODE_VALUE.match(value):
             kept[str(key)[:40]] = value
     return kept
