@@ -79,54 +79,37 @@ RULES=(
   # «יצרן/יצרנית» → «בית עסק» / «בעלי עסקים» (ADR-024). CARVE-OUT, MEH-1264
   # option A: legal precision keeps the Ministry of Health licence NAME, so
   # «רישיון יצרן» / «מספר רישיון יצרן» are allowed wherever they appear.
-  $'yatzran\tיצרן|יצרנית|יצרנים|יצרניות\tרישיון[[:space:]]+יצרן'
+  $'yatzran\tיצרן|יצרנית|יצרנים|יצרניות\tרישיון[[:space:]]+יצרן\t'
   # «שכנות מבשלות» / «מהמטבח של השכן» / «אוכל ביתי» — illegal-in-Israel framing.
-  $'home-cooking\tשכנות[[:space:]]+מבשלות|מהמטבח[[:space:]]+של[[:space:]]+השכן|אוכל[[:space:]]+ביתי\t-'
+  $'home-cooking\tשכנות[[:space:]]+מבשלות|מהמטבח[[:space:]]+של[[:space:]]+השכן|אוכל[[:space:]]+ביתי\t-\t'
   # «marketplace» / «פלטפורמת מסחר» — DNA violation (magazine, not marketplace).
-  $'marketplace\tmarketplace|פלטפורמת[[:space:]]+מסחר\t-'
+  # Case-insensitive: a capitalised «Marketplace» in a heading is exactly what
+  # ships, and the first draft of this rule missed it (rule-5a reviewer, #4686).
+  $'marketplace\tmarketplace|פלטפורמת[[:space:]]+מסחר\t-\ti'
   # The feature is «קבוצת רכישה / קבוצות רכישה» (Sapir 08/11/2026, MEH-2827).
-  $'group-buy-term\tקבוצת[[:space:]]+רכש|קבוצות[[:space:]]+רכש|רכישה[[:space:]]+קבוצתית|קנייה[[:space:]]+קבוצתית|קניות[[:space:]]+קבוצתיות\t-'
+  # §7 says the definite and prefixed forms follow the ban, so the ה is optional
+  # on every word, and «קניה» (one yud) sits beside «קנייה». The first draft had
+  # neither and missed «הקנייה הקבוצתית» (rule-5a reviewer, #4686).
+  #
+  # `(ה)?` and NOT `ה?`. A Hebrew letter is two UTF-8 bytes, and with no UTF-8
+  # locale — which is this sandbox and may be the runner — `?` binds to the
+  # SECOND byte only, so `ה?קנייה` matches nothing useful. Measured on a 5-line
+  # fixture: `ה?` caught 1 of 5, `(ה)?` caught 5. `(ה|)` also works in grep but
+  # mawk 1.3.4 rejects an empty alternative branch, and mawk is the awk here, so
+  # the parenthesised-group-plus-`?` form is the one both accept. Every
+  # quantifier in this file is on an ASCII char or on a group, for that reason.
+  $'group-buy-term\tקבוצ(ת|ות)[[:space:]]+(ה)?רכש|(ה)?רכישה[[:space:]]+(ה)?קבוצתית|(ה)?קני(י)?ה[[:space:]]+(ה)?קבוצתית|(ה)?קניות[[:space:]]+(ה)?קבוצתיות\t-\t'
   # «מורשה»/«מורשים» in consumer copy — ADR-022 tier language is מאומת/מוצהר
   # only. Legal surfaces may use it, and «מורשה נגישות» is an unrelated
   # professional title (an external accessibility certifier), hence the
   # exception column.
-  $'licensed-term\tמורשה|מורשים\tמורשה[[:space:]]+נגישות'
+  $'licensed-term\tמורשה|מורשים|מורשית|מורשות\tמורשה[[:space:]]+נגישות\t'
   # «ISSUE 01» / «SPRING 2026» — Mehamakor is not a periodical.
-  $'periodical\tISSUE[[:space:]]+[0-9]{2}|(SPRING|SUMMER|AUTUMN|WINTER)[[:space:]]+20[0-9]{2}\t-'
+  $'periodical\tISSUE[[:space:]]+[0-9]{2}|(SPRING|SUMMER|AUTUMN|WINTER)[[:space:]]+20[0-9]{2}\t-\ti'
   # English boilerplate that shipped once (BRAND.md §7, first bullet).
-  $'home-cooks\thome cooks\t-'
+  # `[[:space:]]+` not a literal space: "home  cooks" escaped the first draft.
+  $'home-cooks\thome[[:space:]]+cooks\t-\ti'
 )
-
-# `path:line:content` for every line of every candidate file, with comments
-# blanked out. A blanked line keeps its number, so every citation stays accurate.
-# .json is emitted verbatim — JSON has no comments, and a `//` inside a Hebrew
-# string is content.
-strip_comments() {
-  local repo="$1"
-  ( cd "$repo" || exit 1
-    list_files "$repo" | tr '\n' '\0' | xargs -0 awk '
-      FNR == 1 { inblock = 0 }
-      {
-        line = $0
-        if (FILENAME ~ /\.json$/) { print FILENAME ":" FNR ":" line; next }
-        out = ""
-        while (length(line)) {
-          if (inblock) {
-            # Inside /* … */ or {/* … */}: discard up to the closer.
-            i = index(line, "*/")
-            if (i == 0) { line = ""; break }
-            line = substr(line, i + 2); inblock = 0
-            continue
-          }
-          # Earliest of: a line comment, a block opener.
-          lc = index(line, "//"); bc = index(line, "/*")
-          if (lc && (!bc || lc < bc)) { out = out substr(line, 1, lc - 1); line = ""; break }
-          if (bc) { out = out substr(line, 1, bc - 1); line = substr(line, bc + 2); inblock = 1; continue }
-          out = out line; line = ""
-        }
-        print FILENAME ":" FNR ":" out
-      }' )
-}
 
 # Every candidate file, one path per line, relative to the repo root.
 list_files() {
@@ -134,16 +117,81 @@ list_files() {
   (
     cd "$repo" || exit 1
     [ -d frontend/messages ] && find frontend/messages -maxdepth 1 -type f -name '*.json'
-    for d in app components; do
+    for d in app components lib hooks; do
       [ -d "frontend/$d" ] || continue
       find "frontend/$d" -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' \) \
         -not -path '*/node_modules/*' -not -path '*/__tests__/*' \
         -not -name '*.test.*' -not -name '*.spec.*'
     done
+    # The backend is in scope because user-facing Hebrew lives there: email
+    # bodies and WhatsApp text, and the `detail=` strings that
+    # backend/app/routers/CLAUDE.md REQUIRES be Hebrew. The rule-5a reviewer on
+    # PR #4686 found «וקניות קבוצתיות פתוחות בוטלו» in a real cancellation
+    # email at backend/app/services/booking_cancellations.py:258, which the
+    # frontend-only scope could never have seen.
+    [ -d backend/app ] && find backend/app -type f -name '*.py' -not -path '*/__pycache__/*'
   )
 }
 
 count_files() { list_files "$1" | grep -c . || true; }
+
+# `path:line:content` for every line of every candidate file, with comments
+# blanked out. A blanked line keeps its number, so every citation stays exact.
+strip_comments() {
+  local repo="$1"
+  ( cd "$repo" || exit 1
+    list_files "$repo" | tr '\n' '\0' | xargs -0 awk '
+      # The position of a REAL `//` comment, or 0. A `//` preceded by `:` is a
+      # URL scheme, not a comment. Treating it as one blanked the rest of the
+      # line, so `<a href="https://x">קנייה קבוצתית</a>` slipped through —
+      # found by the rule-5a reviewer on PR #4686 and reproduced with a fixture.
+      function line_comment(s,   from, p, abs) {
+        from = 1
+        while (1) {
+          p = index(substr(s, from), "//")
+          if (p == 0) return 0
+          abs = from + p - 1
+          if (abs == 1 || substr(s, abs - 1, 1) != ":") return abs
+          from = abs + 2
+        }
+      }
+      FNR == 1 { inblock = 0; indoc = "" }
+      {
+        line = $0
+        # JSON has no comments, and a `//` inside a Hebrew string is content.
+        if (FILENAME ~ /\.json$/) { print FILENAME ":" FNR ":" line; next }
+        out = ""
+        if (FILENAME ~ /\.py$/) {
+          # Python: `#` to end of line, plus triple-quoted blocks. Docstrings
+          # matter more here than anywhere else — the §14 file-header contract
+          # puts "מגזין, לא marketplace"-style prose in a module docstring, and
+          # scanning those would make every compliant header a violation.
+          while (length(line)) {
+            if (indoc != "") { i = index(line, indoc); if (i == 0) { line = ""; break }
+                               line = substr(line, i + 3); indoc = ""; continue }
+            d3 = index(line, "\"\"\""); q3 = index(line, "\x27\x27\x27")
+            hc = index(line, "#")
+            first = 0; kind = ""
+            if (d3 && (!q3 || d3 < q3)) { first = d3; kind = "\"\"\"" }
+            else if (q3)                { first = q3; kind = "\x27\x27\x27" }
+            if (hc && (!first || hc < first)) { out = out substr(line, 1, hc - 1); line = ""; break }
+            if (first) { out = out substr(line, 1, first - 1); line = substr(line, first + 3); indoc = kind; continue }
+            out = out line; line = ""
+          }
+          print FILENAME ":" FNR ":" out
+          next
+        }
+        while (length(line)) {
+          if (inblock) { i = index(line, "*/"); if (i == 0) { line = ""; break }
+                         line = substr(line, i + 2); inblock = 0; continue }
+          lc = line_comment(line); bc = index(line, "/*")
+          if (lc && (!bc || lc < bc)) { out = out substr(line, 1, lc - 1); line = ""; break }
+          if (bc) { out = out substr(line, 1, bc - 1); line = substr(line, bc + 2); inblock = 1; continue }
+          out = out line; line = ""
+        }
+        print FILENAME ":" FNR ":" out
+      }' )
+}
 
 # Every violation, one record per OCCURRENCE: `path<TAB>line<TAB>id<TAB>match`.
 #
@@ -156,21 +204,27 @@ scan() {
   stripped="$(mktemp)"
   strip_comments "$repo" > "$stripped"
   for rule in "${RULES[@]}"; do
-    IFS=$'\t' read -r id pat allow <<<"$rule"
-    grep -E "$pat" "$stripped" 2>/dev/null \
-      | awk -F: -v id="$id" -v pat="$pat" -v allow="$allow" '
+    IFS=$'\t' read -r id pat allow flags <<<"$rule"
+    ci=0; case "$flags" in *i*) ci=1 ;; esac
+    grep ${ci:+$([ "$ci" = 1 ] && echo -i)} -E "$pat" "$stripped" 2>/dev/null \
+      | awk -F: -v id="$id" -v pat="$pat" -v allow="$allow" -v ci="$ci" '
           {
             p=$1; l=$2; line=$0
             sub(/^[^:]*:[0-9]+:/, "", line)
             r = line
+            # awk has no /i, so fold a copy and match positions against it. The
+            # REPORTED text still comes from the original, so a capitalised
+            # «Marketplace» is cited as written.
+            if (ci) { pat = tolower(pat); orig = r; r = tolower(r) }
             while (match(r, pat)) {
-              t = substr(r, RSTART, RLENGTH)
+              t = substr(ci ? orig : r, RSTART, RLENGTH)
               adv = RSTART + RLENGTH - 1; if (adv < 1) adv = 1
               # The exception is judged on the occurrence IN CONTEXT: a few
               # characters either side, so «רישיון יצרן» exempts the «יצרן»
               # inside it while a bare «יצרן» elsewhere on the line still counts.
               ctx = substr(r, (RSTART-24 > 0 ? RSTART-24 : 1), RLENGTH + 48)
               if (allow == "-" || ctx !~ allow) print p "\t" l "\t" id "\t" t
+              if (ci) orig = substr(orig, adv + 1)
               r = substr(r, adv + 1)
             }
           }'
@@ -198,8 +252,8 @@ run() {
   records="$(scan "$repo")"
   current="$(printf '%s\n' "$records" | grep . | keys_of)"
   frozen="$(baseline_keys "$baseline")"
-  new="$(comm -23 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
-  stale="$(comm -13 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
+  new="$(LC_ALL=C comm -23 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
+  stale="$(LC_ALL=C comm -13 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
 
   echo "${label}: ${files} files scanned · $(printf '%s\n' "$current" | grep -c . || true) forbidden-phrasing occurrences · baseline $(printf '%s\n' "$frozen" | grep -c . || true) lines"
 
@@ -254,20 +308,29 @@ write_baseline() {
 #     violation — but the replacement is new user-facing copy and needs Sapir's
 #     word-for-word approval (workflow rule 22). Hers, not CC's.
 #
-#   marketplace · marketplace · פלטפורמת מסחר
-#     Both strings read «מהמקור is NOT built like a marketplace» — the term is
-#     used to deny it. BRAND.md §7 bans the word outright and carves out no
+#   marketplace · marketplace · פלטפורמת מסחר   (messages/*.json)
+#     All three strings read «מהמקור is NOT built like a marketplace» — the term
+#     is used to deny it. BRAND.md §7 bans the word outright and carves out no
 #     exception for the negated use. Rewording is new copy; Sapir's call.
+#
+#   marketplace · marketplace   (backend/app/services/producer_risk.py)
+#     Not copy at all: it is the English SYSTEM PROMPT sent to Anthropic — "You
+#     are a marketplace fraud detector for an Israeli local food directory".
+#     §7 governs what a person reads on the site and in marketing; a model
+#     instruction is neither, and the word is load-bearing there (it tells the
+#     model what KIND of fraud to look for). Rewording it would change a
+#     moderation prompt to satisfy a copy rule, which is the wrong trade.
 HEAD
     scan "$1" | keys_of
   } > "$2"
 }
 
 self_test() {
-  local tmp pass=0 total=8 got
+  local tmp pass=0 total=12 got
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
-  mkdir -p "$tmp/frontend/messages" "$tmp/frontend/components" "$tmp/frontend/components/__tests__"
+  mkdir -p "$tmp/frontend/messages" "$tmp/frontend/components" \
+           "$tmp/frontend/components/__tests__" "$tmp/backend/app/services"
 
   printf '{ "a": "העסק הוא יצרן מקומי", "b": "מורשה נגישות חיצוני" }\n' > "$tmp/frontend/messages/he.json"
   # Case 8 is anchored to a real repo file (MEH-1909): ProducerCard.jsx:841-842
@@ -282,6 +345,22 @@ export default function Card() {
 }
 FIX
   printf 'it("x", () => { expect("יצרן").toBe("יצרן"); });\n' > "$tmp/frontend/components/__tests__/Card.test.jsx"
+
+  # Cases 9-12 each pin a finding from the rule-5a review of PR #4686. Every one
+  # of them PASSED the first draft of this guard, which is why they are here:
+  # a self-test that only covers what already worked is not evidence.
+  cat > "$tmp/frontend/components/Url.jsx" <<'URL'
+export const L = () => <a href="https://mehamakor.co.il/x">הקנייה הקבוצתית</a>;
+export const M = () => <h2>Marketplace</h2>;
+URL
+  cat > "$tmp/backend/app/services/mail.py" <<'PYF'
+"""
+Module:   mail
+Purpose:  send mail.
+Does NOT: own a route ("מגזין, לא marketplace").
+"""
+BODY = "הרשמות וקניות קבוצתיות פתוחות בוטלו"  # יצרן in a trailing comment
+PYF
 
   got="$(scan "$tmp" | keys_of)"
 
@@ -311,6 +390,19 @@ FIX
   [ "$(printf '%s\n' "$got" | grep -cF $'Card.jsx\tmarketplace')" -eq 0 ] \
     && { pass=$((pass+1)); echo "  ok  8  a block-comment CONTINUATION line is prose too"; } \
     || echo "  FAIL 8  a block-comment continuation line was flagged"
+  _has $'frontend/components/Url.jsx\tgroup-buy-term\tהקנייה הקבוצתית' \
+    && { pass=$((pass+1)); echo "  ok  9  a \`//\` inside a URL does not hide the rest of the line"; } \
+    || echo "  FAIL 9  the URL scheme blanked the line and hid the match"
+  _has $'frontend/components/Url.jsx\tmarketplace\tMarketplace' \
+    && { pass=$((pass+1)); echo "  ok 10  «Marketplace» is caught, and cited with its real case"; } \
+    || echo "  FAIL 10  a capitalised «Marketplace» escaped"
+  _has $'backend/app/services/mail.py\tgroup-buy-term\tקניות קבוצתיות' \
+    && { pass=$((pass+1)); echo "  ok 11  a Hebrew email body in backend/app is in scope"; } \
+    || echo "  FAIL 11  user-facing Hebrew in the backend was not scanned"
+  [ "$(printf '%s\n' "$got" | grep -cF $'mail.py\tmarketplace')" -eq 0 ] \
+    && [ "$(printf '%s\n' "$got" | grep -cF $'mail.py\tyatzran')" -eq 0 ] \
+    && { pass=$((pass+1)); echo "  ok 12  a Python docstring and a trailing # comment are prose"; } \
+    || echo "  FAIL 12  prose in a Python docstring or # comment was flagged"
   # The parsed-0 control must itself FAIL, not pass quietly.
   if run "$tmp/frontend" /dev/null "control" >/dev/null 2>&1; then
     echo "  FAIL 7  parsed-0 control PASSED — a wrong cwd would read as green"

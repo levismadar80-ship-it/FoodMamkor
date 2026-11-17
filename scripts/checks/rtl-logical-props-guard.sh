@@ -134,13 +134,28 @@ scan() {
   # baseline writer recorded 21 lines of prose as if that were the whole corpus.
   # A guard that fails silently is worse than no guard.
   ( cd "$repo" && list_files "$repo" | tr '\n' '\0' | xargs -0 awk '
+      # The position of a REAL `//` comment, or 0. A `//` preceded by `:` is a
+      # URL scheme ("https://…"), not a comment — and treating it as one blanked
+      # the rest of the line, so `<a href="https://x" className="ml-4">` slipped
+      # straight through. Found by the rule-5a reviewer on PR #4686 and
+      # reproduced with a fixture; case 8 of --self-test pins it.
+      function line_comment(s,   from, p, abs) {
+        from = 1
+        while (1) {
+          p = index(substr(s, from), "//")
+          if (p == 0) return 0
+          abs = from + p - 1
+          if (abs == 1 || substr(s, abs - 1, 1) != ":") return abs
+          from = abs + 2
+        }
+      }
       FNR == 1 { inblock = 0 }
       {
         line = $0; out = ""
         while (length(line)) {
           if (inblock) { i = index(line, "*/"); if (i == 0) { line = ""; break }
                          line = substr(line, i + 2); inblock = 0; continue }
-          lc = index(line, "//"); bc = index(line, "/*")
+          lc = line_comment(line); bc = index(line, "/*")
           if (lc && (!bc || lc < bc)) { out = out substr(line, 1, lc - 1); line = ""; break }
           if (bc) { out = out substr(line, 1, bc - 1); line = substr(line, bc + 2); inblock = 1; continue }
           out = out line; line = ""
@@ -194,8 +209,8 @@ run() {
   records="$(scan "$repo" "$allowlist")" || return 1
   current="$(printf '%s\n' "$records" | grep . | keys_of)"
   frozen="$(baseline_keys "$baseline")"
-  new="$(comm -23 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
-  stale="$(comm -13 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
+  new="$(LC_ALL=C comm -23 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
+  stale="$(LC_ALL=C comm -13 <(printf '%s\n' "$current" | grep .) <(printf '%s\n' "$frozen" | grep .))"
 
   echo "${label}: ${files} files scanned · $(printf '%s\n' "$current" | grep -c . || true) physical-property occurrences · baseline $(printf '%s\n' "$frozen" | grep -c . || true) lines"
 
