@@ -21,7 +21,7 @@ dependencies = [
     "PyJWT[crypto]==2.15.1",
     "requests==2.34.2",
     "httpx==0.28.1",
-    "anthropic==0.107.1",
+    "anthropic==2.8.0",
     "slowapi==0.1.10",
     "pywebpush==2.5.0",
     "resend==2.50.1",
