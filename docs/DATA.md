@@ -436,7 +436,9 @@ registrations (
   status: registered|cancelled|waitlisted,     -- waitlisted: MEH-3314
   created_at, cancelled_at,
   reminder_sent_at,                              -- MEH-3312
-  waitlist_offered_at                            -- MEH-3314: the one offer email went out
+  waitlist_offered_at,                           -- MEH-3314: the one offer email went out
+  party_size smallint DEFAULT 1 CHECK 1..10,     -- MEH-3315: places this sign-up takes
+  attendance NULL|attended|no_show               -- MEH-3315: the owner's note, blocks nothing
 )
 ```
 
@@ -1021,6 +1023,15 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > is not held. Re-submitting the form with the same email promotes her row.
 > Service: `app/services/registration_waitlist.py`.
 >
+> **MEH-3315 — party size and attendance (2026-11-18).** Migration
+> `d4a6b8c0e2f1` adds `registrations.party_size` (1–10, default 1) and
+> `registrations.attendance` (NULL / `attended` / `no_show`). Places are the
+> SUM of `party_size` over registered rows (`services/registrations.py`
+> `registered_counts`), so `spots_left`, the cap check and «נשארו N מקומות»
+> count people. A party that no longer fits gets 409 `registration_not_enough`
+> «נשארו רק N מקומות» (or the waitlist, with `waitlist: true`). The owner or an
+> admin marks attendance; nothing reads it to block a visitor.
+>
 > **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
 > `max_participants` below the item's active on-site sign-ups → **422**
 > «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
@@ -1486,11 +1497,12 @@ CTA and «או שאלה למארחת». Experiences already carry it as `host.pr
 ### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
 
 ```
-POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back); on a full event `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
+POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required, `party_size` 1–10 (default 1, MEH-3315). 201 {status:"registered"} (no token, no PII back); on a full event `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
 POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item), unless the body carries `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Same email twice → same 201, nothing stored or sent.
 GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled and waitlisted, oldest first.
 GET    /experiences/{id}/registrations    auth — host or admin; others 404.
 GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page (status may be waitlisted; the same link leaves the waitlist).
+PATCH  /registrations/{registration_id}/attendance  auth — the item's owner (event: her business; workshop: the host) or an admin, else 403; 404 unknown id; 409 unless the row is registered. Body {attendance: "attended"|"no_show"|null}. 60/minute. MEH-3315.
 POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner and, when the form would still take a sign-up (active, site_form, not started, below the cap), offers the place to the first waitlisted visitor not yet offered (MEH-3314). A waitlisted row leaves the list the same way.
 ```
 

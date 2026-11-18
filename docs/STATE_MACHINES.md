@@ -113,7 +113,10 @@ first date).
 A waitlist row is an offer queue, not a held spot: a cancel emails the first
 waitlisted visitor not yet offered (`waitlist_offered_at` stamped), and whoever
 submits the form first takes the place. At most 50 waiting per item
-(`services/registration_waitlist.py` `WAITLIST_MAX`, 409 `waitlist_full`). A host cannot set fewer places than the active sign-ups (422,
+(`services/registration_waitlist.py` `WAITLIST_MAX`, 409 `waitlist_full`).
+Places are people: capacity sums `party_size` (MEH-3315). `attendance`
+(NULL · attended · no_show) is the owner's note on a registered row, set by
+`PATCH /registrations/{id}/attendance`; it moves no status and blocks nothing. A host cannot set fewer places than the active sign-ups (422,
 `services/registrations.py` `refuse_too_few_places`, MEH-2871).
 
 | Transition | Who | Where | Guard |

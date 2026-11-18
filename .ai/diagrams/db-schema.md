@@ -380,6 +380,8 @@ erDiagram
         timestamp cancelled_at
         timestamp reminder_sent_at "MEH-3312 day-before reminder, one-way"
         timestamp waitlist_offered_at "MEH-3314 the one offer email"
+        int party_size "MEH-3315 1-10, places taken"
+        string attendance "MEH-3315 NULL|attended|no_show"
     }
 
     business_billing {
