@@ -154,14 +154,18 @@ class TestNotifyAdminNewRecipeService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        monkeypatch.setattr(
-            svc, "send_text", MagicMock(side_effect=RuntimeError("boom"))
-        )
+        wa_mock = MagicMock(side_effect=RuntimeError("boom"))
+        monkeypatch.setattr(svc, "send_text", wa_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@test.com")
 
         # Must not raise.
         svc.notify_admin_new_recipe("חוות הזית", "לחם שאור")
+
+        # MEH-0000: and the exploding channel must actually have been REACHED.
+        # Without this the test passed on a notifier that returned early and
+        # never sent anything — "fail-open" and "never ran" are the same green.
+        wa_mock.assert_called_once()
 
 
 # ---------- router wiring ----------

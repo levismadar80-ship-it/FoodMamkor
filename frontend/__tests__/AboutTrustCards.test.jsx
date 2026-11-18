@@ -56,7 +56,8 @@ const OLD_HE = {
   verification:
     "כל בית עסק במהמקור עובר אישור ידני: אנחנו מדברות עם בעלי העסק, הם חותמים על הצהרה שהפרטים נכונים, ורק אז העסק עולה לאתר. בלי הרשמה אוטומטית, בלי קיצורי דרך. ואם יש לעסק מסמך רישוי או אישור פטור, אנחנו בודקות את המסמך בעצמנו במועד ההצטרפות: כשמופיע ✓ מאומת, זה אומר שמישהי מאיתנו באמת ראתה אותו — והתאריך שלצידו הוא מועד הבדיקה, לא הבטחה להמשך.",
   editors_pick:
-    "מדי פעם אני מסמנת עסק שאהבתי במיוחד — בגלל איכות המוצרים, הטריות, או סיפור שראוי שתכירו. זו בחירה אישית שלי, אחרי היכרות עם העסק. שני דברים חשוב שתדעו: אי אפשר לשלם על התגית הזו — לא בפרימיום ולא בשום דרך אחרת. והיא לא ציון — עסק בלי התגית הוא לא פחות טוב; פשוט עוד לא הספקתי, או שעוד לא יצא.",
+    // MEH-3323 (Sapir 15/11): words changed on purpose — founder voice is plural now.
+    "מדי פעם אנחנו מסמנות עסק שאהבנו במיוחד — בגלל איכות המוצרים, הטריות, או סיפור שראוי שתכירו. זו בחירה אישית שלנו, אחרי היכרות עם העסק. שני דברים חשוב שתדעו: אי אפשר לשלם על התגית הזו — לא בפרימיום ולא בשום דרך אחרת. והיא לא ציון — עסק בלי התגית הוא לא פחות טוב; פשוט עוד לא הספקנו, או שעוד לא יצא.",
   community_leader:
     "את התג הזה אנחנו לא מעניקות, הלקוחות מעניקים אותו. הוא מופיע מעצמו אצל בית עסק שקיבל לפחות 10 ביקורות, בדירוג ממוצע של 4.5 ומעלה. אי אפשר לבקש אותו ואי אפשר לשלם עליו, והוא יורד מעצמו אם הממוצע יורד. ועסק בלי התג הוא לא פחות טוב: לפעמים הוא פשוט חדש כאן, ועוד לא הספיקו לכתוב עליו.",
 };
@@ -64,7 +65,8 @@ const OLD_EN = {
   verification:
     "Every business on Mehamakor is approved by hand: we talk with the owner, she signs a declaration that the details are true, and only then does the business go live. No automatic sign-ups, no shortcuts. And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after.",
   editors_pick:
-    "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business. Two things worth knowing: you can't pay for this tag — not with premium, not in any other way. And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come.",
+    // MEH-3323: plural founder voice.
+    "Every so often we mark a business we especially loved — for the quality of its products, its freshness, or a story worth knowing. It's our personal choice, after getting to know the business. Two things worth knowing: you can't pay for this tag — not with premium, not in any other way. And it isn't a score — a business without it is no less good; we simply haven't gotten to it yet, or the moment hasn't come.",
   community_leader:
     "We don't award this badge, customers do. It appears on its own for a business with at least 10 reviews and an average rating of 4.5 or higher. You can't ask for it and you can't pay for it, and it goes away on its own if the average drops. And a business without it is no less good: sometimes it's simply new here, and you haven't had the chance to write about it yet.",
 };

@@ -31,6 +31,7 @@ from app.limits import (
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
+    EMAIL_MAX_LENGTH,
     MAX_DELIVERY_MONEY,
     SanitizedBusinessNameField,
     SanitizedDescriptionField,
@@ -139,6 +140,7 @@ class ProducerAdminCreate(BaseModel):
     contact_name: SanitizedPersonNameField | None = None
     description: str | None = None
     short_description: str | None = None
+    owner_bio: str | None = None  # MEH-3338
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -148,7 +150,7 @@ class ProducerAdminCreate(BaseModel):
     whatsapp_group: str | None = None
     # MEH-17
     primary_contact_method: str = "whatsapp"
-    contact_email: EmailStr | None = None
+    contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-296 3d: admin parity with ProducerUpdate's contact channels.
     facebook: str | None = None
     external_order_form: str | None = None
@@ -203,6 +205,13 @@ class ProducerAdminCreate(BaseModel):
     @classmethod
     def _sanitize_short_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
+
+    # MEH-3338: the admin fills "מאחורי העסק" when she builds a page on the
+    # owner's behalf. Same sanitize + 300 cap as ProducerUpdate.owner_bio.
+    @field_validator("owner_bio")
+    @classmethod
+    def _sanitize_owner_bio(cls, v: str | None) -> str | None:
+        return sanitize_text(v, max_length=300)
 
     @field_validator("admin_notes")
     @classmethod
@@ -348,7 +357,7 @@ class ProducerUpdate(BaseModel):
     whatsapp_group: str | None = None
     # MEH-17
     primary_contact_method: str | None = None
-    contact_email: EmailStr | None = None
+    contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-296: extra contact channels (http(s) URL-guarded below).
     facebook: str | None = None
     external_order_form: str | None = None

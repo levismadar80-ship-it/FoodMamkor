@@ -60,6 +60,7 @@ Derived, not typed: `grep -rhoE "secrets\.[A-Z_0-9]+" .github/workflows | sort -
 | `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD` | `staging-smoke.yml` | — |
 | `SMOKESHOW_AUTH_KEY` | Backend coverage upload (`pr-checks.yml`) | — |
 | `LINEAR_API_KEY` | Weekly PR ↔ Linear sweep (`pr-reconcile.yml`) | — |
+| `STAGING_DATABASE_URL_READONLY` | `backup-restore-verify.yml` — restore drill against staging, read-only (5 uses in that one workflow) | — |
 
 Backend runtime variables (Railway) are listed in `backend/app/config.py` and
 `backend/.env.example`. This file does not repeat them.
@@ -77,7 +78,37 @@ Backend runtime variables (Railway) are listed in `backend/app/config.py` and
 | Cloudinary | `Root` key disabled; app key rotated 24/10 | Images | — |
 | Google Cloud | project "My First Project" | Places API key (rating line) | Needs 2-step verification on the Google account before the console opens |
 | Meta (WhatsApp) | developers.facebook.com app | Webhook | Verify token is checked only on re-verification. Copy it from Railway if the webhook is ever edited |
-| Linear, Sentry, PostHog, UptimeRobot | Sapir | Tasks, errors, analytics, uptime | — |
+| Linear, Sentry, PostHog | Sapir | Tasks, errors, analytics | Sentry: the Developer ($0) plan allows **one** cron monitor and **one** uptime monitor, and both are full — see `docs/audits/2026-11-sentry-crons.md` |
+| ~~UptimeRobot~~ | — | **Nothing.** No code or workflow uses it | `.github/workflows/uptime.yml:5` says so in as many words: *«No account»*. It is a GitHub Actions probe that opens an issue on failure (MEH-2202). If an UptimeRobot account exists, nothing here depends on it |
+
+### 5a. Wired in the code, and missing from this register until 17/11
+
+Found by reconciling every service the code actually reaches against §5. None
+is a secret; these are names and where they are read.
+
+| Service | Read at | Variable / file (names only) |
+|---|---|---|
+| Google Sign-In | `frontend/lib/use-google-sign-in.js`, `backend/app/services/oauth_verifiers.py` | `GOOGLE_CLIENT_ID` · `NEXT_PUBLIC_GOOGLE_CLIENT_ID` |
+| Apple Sign-In | `frontend/lib/env.client.js`, same verifier module | `APPLE_CLIENT_ID` · `NEXT_PUBLIC_APPLE_CLIENT_ID` · `NEXT_PUBLIC_APPLE_REDIRECT_URI` |
+| Microsoft Clarity | `frontend/app/[locale]/layout.js` | `NEXT_PUBLIC_CLARITY_PROJECT_ID` |
+| Web Push (VAPID) | `backend/app/config.py:147-153`, `backend/app/services/push.py` | `VAPID_PRIVATE_KEY` · `VAPID_PUBLIC_KEY` · `VAPID_SUBJECT` |
+| IndexNow (Bing) | `backend/app/services/indexnow.py` | key file `frontend/public/640fd9eef761fabe8424763a99f11067.txt` |
+| Google Search Console | verification file | `frontend/public/google1657d3e5988f50c0.html` |
+| OpenStreetMap tiles | `frontend/components/MapComponent.jsx`, `MiniMap.jsx` | no key. ODbL attribution applies, and the tile server may block the domain without notice (MEH-3077) |
+| Edge → backend proxy | `backend/app/rate_limit.py`, `frontend/middleware.js` | `EDGE_PROXY_SECRET` |
+
+**‏`R2_*` is documented nowhere, and the drift check cannot see it.**
+`scripts/backup_production_db.py:65-73` and `scripts/restore_from_backup.py:84`
+read `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+`R2_BUCKET_NAME` and `R2_ENDPOINT`. **None of them appears in any
+`.env.example`**, and `scripts/check_env_drift.sh` scans only `backend/` and
+`frontend/` — never repo-root `scripts/` — so it reports "no missing vars"
+while five variables that production backups depend on are undocumented. The
+same blind spot hides `API_DOCS_*`, `GATE_ROOT`, `KNOWLEDGE_TODAY`,
+`PENDING_PRODUCER_UUID` and `PLACEHOLDER_CHECK_BASE`.
+
+Widening that script is a change to a required gate and would surface those at
+once, so it is **not** done here — it is in «מחכה לספיר» on the PR.
 
 ## 6. Quarterly review (≈15 minutes, Claude in Chrome)
 
@@ -140,5 +171,6 @@ When an item is renewed, change its date here in a docs-only PR.
 | Domain `mehamakor.online` | unknown | Sapir (registrar account) | Turn on auto-renew at the registrar |
 | Classic token `git-bash` (§3) | 2027-05-02 | Sapir | GitHub → Settings → Developer settings → Tokens → Regenerate |
 | `CLAUDE_CODE_OAUTH_TOKEN` (§4, rotated 2026-10-26) | unknown | Sapir | `claude setup-token`, then replace the Actions secret |
+| `frontend/public/.well-known/security.txt` `Expires` (MEH-3303) | 2027-10-31 | Claude | Set a new `Expires` less than a year ahead (RFC 9116); the test in `SecurityTxt.test.js` fails once it lapses |
 | עוסק פטור yearly ceiling (support page / payments) | 2027-01-01 | Claude | Each January, read the new ceiling from the Tax Authority site and update the copy that cites it |
 <!-- expiry-register:end -->

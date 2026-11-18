@@ -34,6 +34,19 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
+import { ISRAEL_CITIES } from "@/data/cities";
+
+// The option count is DERIVED, never stated. It used to be a hardcoded 3;
+// MEH-3334 added five more «כפר …» moshavim to data/cities.js and the number
+// was wrong with no product change. `MAX_MATCHES` mirrors CitySearch.jsx:58 —
+// the component caps the list, so past the cap the count stops tracking the
+// data file.
+const QUERY = "כפר";
+const MAX_MATCHES = 8;
+const EXPECTED_OPTIONS = Math.min(
+  ISRAEL_CITIES.filter((c) => c.startsWith(QUERY)).length,
+  MAX_MATCHES,
+);
 
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
@@ -53,7 +66,7 @@ function Harness({ initial = "" }) {
   );
 }
 
-function open(initial = "כפר") {
+function open(initial = QUERY) {
   const utils = render(
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
       <Harness initial={initial} />
@@ -70,9 +83,10 @@ describe("MEH-2195 — aria-activedescendant tracks the highlighted option", () 
   it("points at the first option when the list opens, and every option has the id it points to", () => {
     const { input } = open();
     const opts = options();
-    // 'כפר' matches exactly 3 cities in data/cities.js — deterministic and
-    // under the 8-item cap, so the indices below are stable.
-    expect(opts).toHaveLength(3);
+    // CONTROL: the arrow-key cases below are only meaningful with three or
+    // more options, and a derived 0 would make every assertion here vacuous.
+    expect(EXPECTED_OPTIONS).toBeGreaterThanOrEqual(3);
+    expect(opts).toHaveLength(EXPECTED_OPTIONS);
 
     opts.forEach((li, idx) => {
       expect(li.getAttribute("id")).toBe(`cs-option-${idx}`);
@@ -106,9 +120,12 @@ describe("MEH-2195 — aria-activedescendant tracks the highlighted option", () 
 
   it("never points past the end — ArrowDown at the last option is a no-op, not a dangling id", () => {
     const { input } = open();
-    for (let i = 0; i < 6; i += 1) fireEvent.keyDown(input, { key: "ArrowDown" });
+    // Three past the last option, whatever the list length is today.
+    for (let i = 0; i < EXPECTED_OPTIONS + 3; i += 1) {
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+    }
     const active = input.getAttribute("aria-activedescendant");
-    expect(active).toBe("cs-option-2");
+    expect(active).toBe(`cs-option-${EXPECTED_OPTIONS - 1}`);
     expect(document.getElementById(active)).not.toBeNull();
   });
 });
