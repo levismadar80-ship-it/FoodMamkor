@@ -25,79 +25,8 @@
 #     instruction is neither, and the word is load-bearing there (it tells the
 #     model what KIND of fraud to look for). Rewording it would change a
 #     moderation prompt to satisfy a copy rule, which is the wrong trade.
-#
-#   slash-gender · /ה /ת /תה   (frontend/messages/he.json, 18/11/2026)
-#     The registration form («מסכים/ה», «מארגן/ת») and four business guides
-#     were written before ADR-037 banned slash forms. The rule now stops new
-#     ones; rewording these is new user-facing copy, so the rewrites wait for
-#     Sapir's word-for-word approval (rule 22). Remove each line with its fix.
 backend/app/services/producer_risk.py	marketplace	marketplace
 frontend/messages/en.json	marketplace	marketplace
 frontend/messages/he.json	licensed-term	מורשים
 frontend/messages/he.json	marketplace	marketplace
 frontend/messages/he.json	marketplace	פלטפורמת מסחר
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה 
-frontend/messages/he.json	slash-gender	/ה"
-frontend/messages/he.json	slash-gender	/ה,
-frontend/messages/he.json	slash-gender	/ה.
-frontend/messages/he.json	slash-gender	/ה.
-frontend/messages/he.json	slash-gender	/ה.
-frontend/messages/he.json	slash-gender	/ה.
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת 
-frontend/messages/he.json	slash-gender	/ת*
-frontend/messages/he.json	slash-gender	/ת.
-frontend/messages/he.json	slash-gender	/ת.
-frontend/messages/he.json	slash-gender	/ת:
-frontend/messages/he.json	slash-gender	/תה 
-frontend/messages/he.json	slash-gender	/תה 
-frontend/messages/he.json	slash-gender	/תה 
-frontend/messages/he.json	slash-gender	/תה 
-frontend/messages/he.json	slash-gender	/תה.

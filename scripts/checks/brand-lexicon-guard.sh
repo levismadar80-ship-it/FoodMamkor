@@ -111,7 +111,8 @@ RULES=(
   $'home-cooks\thome[[:space:]]+cooks\t-\ti'
   # Slash gender forms «מסכים/ה», «מארגן/ת», «ראה/תה» (BRAND.md §4/§9, ADR-037:
   # a neutral plural or a rewrite, never a slash). Found 18/11 in the
-  # legacy-vs-today's-rules audit, in strings written before the rule. The
+  # legacy-vs-today's-rules audit, in strings written before the rule; all 65
+  # were reworded in the same PR (Sapir approved the table 18/11). The
   # suffix must END the word (space, punctuation or end of line follows), so
   # «תאריך/תמונה» is not a hit. No Hebrew range class: see `(ה)?` above.
   $'slash-gender\t/(ה|ת|תה|ית|ות)([[:space:]]|[[:punct:]]|$)\t-\t'
@@ -326,12 +327,6 @@ write_baseline() {
 #     instruction is neither, and the word is load-bearing there (it tells the
 #     model what KIND of fraud to look for). Rewording it would change a
 #     moderation prompt to satisfy a copy rule, which is the wrong trade.
-#
-#   slash-gender · /ה /ת /תה   (frontend/messages/he.json, 18/11/2026)
-#     The registration form («מסכים/ה», «מארגן/ת») and four business guides
-#     were written before ADR-037 banned slash forms. The rule now stops new
-#     ones; rewording these is new user-facing copy, so the rewrites wait for
-#     Sapir's word-for-word approval (rule 22). Remove each line with its fix.
 HEAD
     scan "$1" | keys_of
   } > "$2"
