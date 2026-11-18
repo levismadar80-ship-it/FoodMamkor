@@ -42,6 +42,7 @@ from app.schemas.menu_import import (
     MenuReadOut,
 )
 from app.services import approved_edit_moderation as approved_edit
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.menu_reader import read_menu
 
 router = APIRouter(prefix="/producers/me/menu-import", tags=["producer-management"])
@@ -124,6 +125,10 @@ def publish_my_menu(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> MenuPublishOut:
+    # MEH-3247: the menu screen sends no photos, but the body is ProductCreate,
+    # so a hand-made request could store another business's Cloudinary URL.
+    # Same check as POST /producers/me/products (producer_me.py).
+    assert_own_new_images(user, [p.image_url for p in body.products if p.image_url])
     # Two publishes at once must not both pass the cap: lock the business row.
     # REUSES: backend/app/services/product_import.py:import_drafts
     producer = (

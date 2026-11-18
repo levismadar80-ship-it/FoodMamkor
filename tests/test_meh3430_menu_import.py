@@ -242,3 +242,13 @@ def test_reader_treats_a_cut_off_answer_as_unread(monkeypatch):
     client = type("C", (), {"messages": type("M", (), {"create": staticmethod(lambda **kw: _Resp('{"items": [', "max_tokens"))})()})()
     monkeypatch.setattr(menu_reader, "_client", client)
     assert menu_reader.read_menu([("image/jpeg", JPEG)]) is None
+
+
+def test_publish_refuses_another_business_photo(client, db):
+    # MEH-3247 parity with POST /producers/me/products (security review, 18/11).
+    user, producer = _owner(db)
+    foreign = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/owner/owner_" + str(uuid.uuid4()) + ".jpg"
+    body = {"products": [_row("לחם", image_url=foreign)]}
+    r = client.post("/producers/me/menu-import/publish", json=body, headers=auth_header(user))
+    assert r.status_code == 403
+    assert db.query(Product).filter(Product.producer_id == producer.id).count() == 0
