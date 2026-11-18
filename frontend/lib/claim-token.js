@@ -66,6 +66,17 @@ const OWNER_INVITE_PATH_ENCODED = new RegExp(
   "gi",
 );
 
+// MEH-3377: /draft-preview/<jwt> and the API read behind it,
+// /producer-preview/<jwt>. Read-only, but it opens a page that is not public
+// yet, and the token stays in the address for as long as the page is open (a
+// business owner reloads it, forwards it, comes back to it), so every event
+// from that page would carry it.
+const DRAFT_PREVIEW_PATH = new RegExp(String.raw`(/(?:draft|producer)-preview)/${JWT}`, "g");
+const DRAFT_PREVIEW_PATH_ENCODED = new RegExp(
+  String.raw`(%2F(?:[a-z]{2}%2F)?(?:draft|producer)-preview)%2F${JWT}`,
+  "gi",
+);
+
 export function stashClaimToken(token) {
   try {
     window.sessionStorage.setItem(STORAGE_KEY, token);
@@ -167,7 +178,9 @@ export function redactClaimPath(value) {
     .replace(REG_PATH, "$1/[token]")
     .replace(REG_PATH_ENCODED, "$1%2F[token]")
     .replace(OWNER_INVITE_PATH, "$1/[token]")
-    .replace(OWNER_INVITE_PATH_ENCODED, "$1%2F[token]");
+    .replace(OWNER_INVITE_PATH_ENCODED, "$1%2F[token]")
+    .replace(DRAFT_PREVIEW_PATH, "$1/[token]")
+    .replace(DRAFT_PREVIEW_PATH_ENCODED, "$1%2F[token]");
 }
 
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and

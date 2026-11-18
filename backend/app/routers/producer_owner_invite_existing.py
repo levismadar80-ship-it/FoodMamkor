@@ -85,6 +85,7 @@ from app.services.auth_emails import send_owner_invite_code_email
 from app.services.auth_notifications import notify_admin_owner_invite_accepted
 from app.services.email import send_email
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
+from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
 
 logger = structlog.get_logger(__name__)
 
@@ -235,6 +236,9 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
     locked.terms_version = TERMS_VERSION  # type: ignore[assignment]
     u_id, u_email, u_version = locked.id, locked.email, locked.token_version
     db.commit()
+    # MEH-3258: she now owns a business — her reviews on it and on businesses
+    # sharing its categories leave the stored rating (post-commit, fail-open).
+    recompute_after_owner_linked(db, u_id)
 
     logger.info(
         "owner_invite.accepted_existing",

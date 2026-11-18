@@ -78,6 +78,7 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | → draft | owner registers | `routers/auth.py` | — |
 | → approved | admin creates | `routers/admin.py` | pre-approved unless `as_draft` |
 | draft → pending | owner | `routers/producer_me_review.py` `submit_for_review` | draft only; `submission_missing_items` |
+| draft → approved | admin, for an ownerless draft whose owner agreed in writing | `routers/producer_draft_preview.py` `publish_draft_with_consent` | ownerless draft only; consent note required; `_assert_approvable` (phone gate overridden, licence only with `allow_without_license`) |
 | rejected → pending | owner | `routers/producer_me_review.py` `request_producer_review` | row lock; resubmission cap |
 | non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
