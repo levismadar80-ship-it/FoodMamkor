@@ -21,7 +21,8 @@ import { describe, expect, it } from "vitest";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 import { CONTACT_METHODS } from "@/lib/contact-method";
-import { ADMIN_REVIEW_CHECKLIST } from "@/lib/admin-review-checklist";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const read = (messages, path) =>
   path.split(".").reduce((node, key) => (node == null ? node : node[key]), messages);
@@ -146,10 +147,20 @@ describe("no public copy promises a call with every business (MEH-2305)", () => 
     return out;
   };
 
-  it("the admin checklist still treats the call as conditional", () => {
-    const call = ADMIN_REVIEW_CHECKLIST.find((item) => item.id === "call");
-    expect(call, "call item moved — revisit this guard").toBeTruthy();
-    expect(call.label).toMatch(/רק אם/);
+  // MEH-2954: the items live in the admin_checklist_items table, seeded by
+  // this migration (the frontend array that used to be read here was dead).
+  // The seed is the only copy in the repo; /admin/settings edits the live rows.
+  it("the admin checklist seed still treats the call as conditional", () => {
+    const seed = readFileSync(
+      resolve(
+        __dirname,
+        "../../backend/alembic/versions/20260821_1700_d4a9c31e6f82_meh1399_admin_review_checklist.py",
+      ),
+      "utf8",
+    );
+    const call = seed.split("\n").find((line) => line.includes("שיחה"));
+    expect(call, "call item moved out of the seed — revisit this guard").toBeTruthy();
+    expect(call).toMatch(/רק אם/);
   });
 
   it("he.json carries no unconditional call promise", () => {
