@@ -1,7 +1,7 @@
 """meh3339_secondary_phone
 
 Revision ID: c3e8a1f05d72
-Revises: f6c2a8d4e1b7
+Revises: a3d9e5c1f7b2
 Create Date: 2026-11-16 10:45:00.000000+00:00
 
 MEH-3339: a business can show one optional second phone number with a short
@@ -36,7 +36,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c3e8a1f05d72"
-down_revision: Union[str, None] = "f6c2a8d4e1b7"
+down_revision: Union[str, None] = "a3d9e5c1f7b2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
