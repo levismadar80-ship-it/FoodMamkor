@@ -18,7 +18,7 @@ import OrderCard from "@/components/dashboard/orders/OrderCard";
 import OrderPrepList from "@/components/dashboard/orders/OrderPrepList";
 import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
-import { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
+import OrderSettingsCard, { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
 import api from "@/lib/api";
 import { prepList } from "@/lib/product-ordering";
 
@@ -169,6 +169,14 @@ describe("products card: 0 / 1 / many × folded / open", () => {
     expect(screen.getByTestId("order-products").open).toBe(true);
   });
 
+  it("set up, nothing open yet: flipping the first product open does not snap the card shut", async () => {
+    api.put.mockResolvedValue({ data: { id: P1, is_orderable: true, in_stock: true, price_unit: "unit", contains_alcohol: false } });
+    render(wrap(<OrderProductsCard setUp initial={[product()]} />));
+    await act(async () => fireEvent.click(screen.getByTestId(`orderable-${P1}`)));
+    expect(screen.getByTestId(`orderable-${P1}`).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByTestId("order-products").open).toBe(true);
+  });
+
   it("a tap sends the whole row with only that field changed, and the switch follows the answer", async () => {
     api.put.mockResolvedValue({ data: { id: P1, is_orderable: true, in_stock: true, price_unit: "kg", contains_alcohol: true } });
     render(wrap(<OrderProductsCard initial={[product({ price_unit: "kg", contains_alcohol: true })]} />));
@@ -224,5 +232,18 @@ describe("per-slot cap: also without auto-confirm", () => {
   it("a cap typed with auto-confirm off is sent, not dropped", () => {
     expect(toBody(form).body.auto_confirm_slot_cap).toBe(4);
     expect(toBody({ ...form, cap: "" }).body.auto_confirm_slot_cap).toBeNull();
+  });
+
+  it("auto-confirm on, then off again: the default it filled in does not stay behind as a cap", async () => {
+    api.put.mockResolvedValue({ data: {} });
+    const settings = { ...form, auto_confirm_slot_cap: null, min_order_agorot: null, alcohol_licensed: false, producer_id: P1 };
+    render(wrap(<OrderSettingsCard settings={settings} onSaved={() => {}} />));
+    const cap = screen.getByTestId("orders-slot-cap");
+    fireEvent.click(screen.getByTestId("orders-auto"));
+    expect(cap.value).toBe("3");
+    fireEvent.click(screen.getByTestId("orders-auto"));
+    expect(cap.value).toBe("");
+    await act(async () => fireEvent.click(screen.getByTestId("orders-settings-save")));
+    expect(api.put.mock.calls[0][1].auto_confirm_slot_cap).toBeNull();
   });
 });

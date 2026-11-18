@@ -139,7 +139,15 @@ export default function OrderSettingsCard({ settings, onSaved, collapsed = false
         id="orders-auto"
         label={t("auto_confirm", { count: form.cap || DEFAULT_CAP })}
         checked={form.auto_confirm}
-        onChange={(on) => setForm((old) => ({ ...old, auto_confirm: on, cap: old.cap || String(DEFAULT_CAP) }))}
+        onChange={(on) =>
+          setForm((old) =>
+            on
+              ? { ...old, auto_confirm: true, capBefore: old.cap, cap: old.cap || String(DEFAULT_CAP) }
+              : // Off again: give back the cap she had before, so the default
+                // filled in for auto-confirm never becomes a silent limit.
+                { ...old, auto_confirm: false, cap: old.capBefore ?? old.cap }
+          )
+        }
       />
       {/* MEH-3216 gaps: one cap per slot, by hand or automatic — the server
           stops offering a slot that holds this many open orders. */}

@@ -29,7 +29,9 @@ function SwitchLine({ id, label, checked, busy, onChange }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
       <span id={id} className="text-sm text-fg-muted">{label}</span>
-      <Switch checked={checked} disabled={busy} aria-labelledby={id} onClick={() => onChange(!checked)} data-testid={id} />
+      {/* aria-busy, not disabled: a disabled button drops keyboard focus on
+          every tap. A tap while saving is ignored instead. */}
+      <Switch checked={checked} aria-busy={busy} aria-labelledby={id} onClick={() => !busy && onChange(!checked)} data-testid={id} />
     </div>
   );
 }
@@ -80,6 +82,12 @@ export default function OrderProductsCard({ setUp = false, initial = null }) {
   const t = useTranslations("dashboard.producer.orders");
   const [products, setProducts] = useState(/** @type {any[] | null} */ (initial));
   const [failed, setFailed] = useState(false);
+  // Decided once, on the first list: flipping the first «פתוח להזמנה באתר»
+  // must not snap the card shut under her hand.
+  const [startFolded, setStartFolded] = useState(/** @type {boolean | null} */ (null));
+  useEffect(() => {
+    if (products && startFolded === null) setStartFolded(setUp && products.some((p) => p.is_orderable));
+  }, [products, setUp, startFolded]);
   useEffect(() => {
     if (initial) return undefined;
     let live = true;
@@ -95,9 +103,8 @@ export default function OrderProductsCard({ setUp = false, initial = null }) {
   if (!products || products.length === 0) return null;
   const replace = (/** @type {any} */ saved) =>
     setProducts((old) => (old ?? []).map((p) => (p.id === saved.id ? saved : p)));
-  const startFolded = setUp && products.some((p) => p.is_orderable);
   return (
-    <details open={!startFolded} className="group rounded-lg border border-border bg-surface p-4 space-y-3" data-testid="order-products">
+    <details open={startFolded === null ? !(setUp && products.some((p) => p.is_orderable)) : !startFolded} className="group rounded-lg border border-border bg-surface p-4 space-y-3" data-testid="order-products">
       <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
         <h2 className="font-bold text-lg text-text">{t("products.title")}</h2>
         <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
