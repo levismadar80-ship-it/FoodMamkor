@@ -303,16 +303,9 @@ def test_admin_cannot_demote_herself(client, db):
 # -------------------------------------------------------------- finding
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "MEH-2902: promoting a business owner to admin flips role off "
-        "'producer'; require_producer gates on role alone, so every "
-        "/producers/me* 403s and the endpoint refuses role=producer, so there "
-        "is no way back. Needs a product decision."
-    ),
-    raises=KnownGap,
-)
+# MEH-2902 closed by MEH-2871 (Sapir 18/11): the endpoint refuses a role
+# change while a business is linked (409), so the owner keeps her dashboard.
+# Was a strict xfail; it XPASSed the moment the 409 landed.
 def test_promoting_a_business_owner_keeps_her_business(client, db):
     """Outcome only, so any of MEH-2902's options turns this XPASS: refuse the
     change, let a linked admin keep her dashboard, or restore producer."""
