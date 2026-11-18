@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.6 (18/11): admin draft preview link + publish with consent (MEH-3377),
+  // security and stability fixes. The owner-facing pieces (monthly freshness
+  // email, surprise-bag email) sit behind flags that default to off, so
+  // nothing new for businesses to learn yet (items: 0).
+  { version: "1.5.6", key: "v1_5_6", date: "2026-11-18", items: 0 },
   // 1.5.5 (16/11): hotfix — map tiles send a Referer so OSM stops answering
   // 403 «Access blocked» (MEH-3077). A bug fix, nothing to learn (items: 0).
   { version: "1.5.5", key: "v1_5_5", date: "2026-11-16", items: 0 },
