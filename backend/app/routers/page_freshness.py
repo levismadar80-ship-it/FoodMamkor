@@ -1,3 +1,4 @@
+# guard-ok: backend/pyproject.toml is deny-listed for CC, so this file is not in [tool.mypy].files yet; it passes mypy --strict (PR body). Sapir adds the line.
 """
 Module:   page_freshness (router)
 Purpose:  POST /page-freshness/confirm — the «כן, הכול נכון» button behind the
