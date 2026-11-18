@@ -71,7 +71,7 @@ component reviewed in English looks fine, because there `start-` is the empty
 left margin.
 
 **Reference implementation: `LocationModal.jsx` (MEH-2038)** — the close button at
-`end-4` (16→60px from the card edge) *and* `sm:pe-10` on the heading + subtitle (16 + 44 − 24 = 36px needed, 40px reserved).
+`end-4` (16→60px from the card edge) *and* `pe-10` on the heading + subtitle (on every width since MEH-3271) (16 + 44 − 24 = 36px needed, 40px reserved).
 The earlier reference, `OnboardingTip.jsx` (`top-0 end-0 w-11 h-11` + `pe-8`, MEH-1687: 0 + 44 − 16 = 28px needed, 32px reserved),
 left with the coach-mark tour in MEH-2394. `Lightbox.jsx:156` (`top-4 end-4`) is the
 position half.

@@ -181,6 +181,12 @@ class RegistrantEmail:
     cancel_url: str  # used only by the «moved» email
 
 
+def _on(date_text: str, prefix: str) -> str:
+    """« ב-<date>» — or nothing for a recurring item, whose stored date is its
+    long-past first occasion (MEH-2871). Removes words, adds none."""
+    return f" {prefix}{date_text}" if date_text else ""
+
+
 def send_registrant_delisted(
     to: str, m: RegistrantEmail, test_cause: bool = False
 ) -> None:
@@ -190,7 +196,7 @@ def send_registrant_delisted(
     subject = f'ההרשמה ל-"{title}" בוטלה'
     lines = [
         f"בית העסק {host} כבר לא מופיע במהמקור, ולכן ההרשמה שלכם "
-        f'ל-"{title}" ב-{m.date_text} בוטלה.',
+        f'ל-"{title}"{_on(m.date_text, "ב-")} בוטלה.',
         "אם סיכמתם משהו ישירות מול בית העסק, אפשר להמשיך מולו כרגיל.",
     ]
     _send_lines(to, subject, lines, test_cause=test_cause)
@@ -204,7 +210,7 @@ def send_registrant_cancelled(
     host = _one_line(m.host_name)
     subject = f'"{title}" בוטל'
     lines = [
-        f'{host} ביטל את "{title}" שתוכנן ל-{m.date_text}, ולכן ההרשמה שלכם '
+        f'{host} ביטל את "{title}"{_on(m.date_text, "שתוכנן ל-")}, ולכן ההרשמה שלכם '
         "בוטלה. אין צורך להגיע.",
         f"לשאלות אפשר לפנות ישירות ל{host}.",
     ]
