@@ -16,6 +16,7 @@ from app.services.job_heartbeat import (
     ANALYTICS_ROLLUP_CRON,
     FOLLOWUP_CRON,
     GROUP_BUY_EXPIRY_CRON,
+    PRODUCT_ORDERS_INTERVAL_MINUTES,
     RESCUE_DIGEST_INTERVAL_MINUTES,
     RETENTION_PURGE_CRON,
     WATCHDOG_INTERVAL_MINUTES,
@@ -610,6 +611,9 @@ def _register_weekly_owner_summary(scheduler: Any, now: datetime | None = None) 
     return True
 
 
+@heartbeat(
+    "product-orders-tick", interval_monitor_config(PRODUCT_ORDERS_INTERVAL_MINUTES)
+)
 def _run_product_order_jobs() -> None:
     """MEH-3296: one 2-minute tick for on-site orders — expire the requests
     nobody answered, then send the messages that are due.
@@ -648,7 +652,7 @@ def _register_product_order_job(scheduler: Any) -> None:
 
     scheduler.add_job(
         _run_product_order_jobs,
-        IntervalTrigger(minutes=2),
+        IntervalTrigger(minutes=PRODUCT_ORDERS_INTERVAL_MINUTES),
         id="meh_3296_product_orders",
         replace_existing=True,
         max_instances=1,
