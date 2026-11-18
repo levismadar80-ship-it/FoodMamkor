@@ -295,11 +295,10 @@ def list_audit_log(
         .all()
     )
     actor_ids = {r.actor_id for r in rows}
-    emails = (
-        dict(db.query(User.id, User.email).filter(User.id.in_(actor_ids)).all())
-        if actor_ids
-        else {}
-    )
+    emails: dict[Any, str | None] = {}
+    if actor_ids:
+        rows_found = db.query(User.id, User.email).filter(User.id.in_(actor_ids)).all()
+        emails = {row_id: email for row_id, email in rows_found}
     return {
         "items": [
             {
