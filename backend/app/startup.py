@@ -776,6 +776,45 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         )
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
+    _register_job_staleness_check(followup_scheduler)
+
+
+def _register_job_staleness_check(scheduler: Any) -> None:
+    """MEH-3332: every 30 minutes, email the admin about a registered
+    @heartbeat job with no recent success. Reads the job list off the
+    scheduler at each run, so a flag-gated job that is off is never checked.
+    Not itself a @heartbeat job: a dead scheduler thread is what the one
+    Sentry monitor (auto-reply-watchdog) catches."""
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    from app.services.job_heartbeat import _enabled
+    from app.services.job_staleness import CHECK_INTERVAL_MINUTES, check_jobs
+
+    if not _enabled():
+        return
+    booted_at = datetime.now(timezone.utc)
+
+    def _run_job_staleness_check() -> None:
+        try:
+            jobs = [
+                (j.func.heartbeat_slug, j.func.heartbeat_config)
+                for j in scheduler.get_jobs()
+                if hasattr(j.func, "heartbeat_slug")
+            ]
+            check_jobs(jobs, booted_at=booted_at)
+        except Exception as exc:
+            capture_background_exception(exc, task="job_staleness_check")
+            log.error("[JOB-STALENESS] check crashed", exc_info=True)
+
+    scheduler.add_job(
+        _run_job_staleness_check,
+        IntervalTrigger(minutes=CHECK_INTERVAL_MINUTES),
+        id="meh_3332_job_staleness_check",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300,
+    )
 
 
 @asynccontextmanager

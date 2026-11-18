@@ -1174,6 +1174,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "auto-reply to an inbound WhatsApp sender",
     ),
+    # MEH-3332: an ops alert to the admin about an overdue background job —
+    # about the system, not about any business or user, so no test cause.
+    ("services/job_staleness.py", "_alert", "send_email"): (
+        1,
+        NONE,
+        "ops alert to the admin; no business or user row behind it",
+    ),
     ("services/rating_dispatcher.py", "_default_sender", "send_text"): (
         1,
         NONE,
