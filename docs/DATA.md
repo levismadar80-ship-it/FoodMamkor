@@ -1185,6 +1185,7 @@ POST   /auth/owner-invite/email-code               public — 5/hour. v3. Body {
                                                      What differs is invisible: a taken address is not mailed and no code is stored, so the acceptance it would lead to dies at the
                                                      409 it was always going to die at. An invalid link still 404s — that is a fact about the LINK, which the caller already holds.
 POST   /auth/owner-invite/email-code-existing      signed in + verified email (require_verified_email) — 5/hour. MEH-3256 (grill retro D8). Body {token}.
+                                                     UI: /owner-invite renders OwnerInviteExistingAccount.jsx for a signed-in reader (no address, no password field); a signed-out reader gets «כבר יש לכם חשבון» → loginHrefBackHere(), shown only once the token has left the address bar.
                                                      Mails a code to the SIGNED-IN account's own address (no address input, so no oracle), records it on owner_invite_email.
                                                      403 for an admin / super-admin account, 409 for an account that already has a business (producer_id or is_producer)
                                                      or any role other than consumer (allow-list).
