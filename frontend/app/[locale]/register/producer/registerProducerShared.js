@@ -106,10 +106,10 @@ export const CROSS_STEP_REQUIRED = [
  * input that caused it. That is worse than re-typing three fields, which is
  * the whole thing the resume was for.
  *
- * So: with a token, the account frame is skipped anyway (`:318`) and any
+ * So: with a token, the account frame is skipped anyway (`RegisterProducerClient.jsx`, the mount effect) and any
  * collected step is reachable. Without one, ACCOUNT must be crossed on foot.
  * CONFIRM is never a resume target under either — it is the post-submit
- * acknowledgement frame, reached only from a 200 (`:613`).
+ * acknowledgement frame, reached only from a 200 (`RegisterProducerClient.jsx`, handleSubmit).
  */
 export function safeResumeStep(storedStep, hasToken) {
   if (!hasToken) return null;
