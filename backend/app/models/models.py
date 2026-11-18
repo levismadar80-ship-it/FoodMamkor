@@ -1152,9 +1152,9 @@ class Category(Base):
         Boolean, nullable=False, default=False, server_default=text("false")
     )
     # MEH-3255 (D10): the manufacturer-licence requirement lives on the row,
-    # answered when the category is created. EXPAND step — the readers still
-    # use constants.LICENSE_REQUIRED_CATEGORIES until the contract PR, and
-    # tests/test_meh3255_requires_license_parity.py holds the two equal.
+    # answered when the category is created. Every licence reader uses it
+    # (contract step); constants.LICENSE_REQUIRED_CATEGORIES only feeds the
+    # seed, held equal by tests/test_meh3255_requires_license_parity.py.
     requires_license = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )

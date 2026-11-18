@@ -105,12 +105,12 @@ export const DeleteCategoryAdminCategoriesCategoryIdDeleteResponse = /*#__PURE__
 /**
  * Rename / re-emoji a category. Two guards, both on the rename path only.
  *
- * MEH-1571: `LICENSE_REQUIRED_CATEGORIES` (app/constants.py) pins a משרד
- * הבריאות licensing requirement to the category NAME, and
- * `license_validation.categories_require_license` resolves ids -> names ->
- * intersection at request time. Renaming a licensed row here therefore
- * dropped it out of the regulatory set silently — no error, no log, and the
- * next producer in that category was no longer asked for a license number.
+ * MEH-1571: the licensing requirement used to be pinned to the category NAME
+ * (`LICENSE_REQUIRED_CATEGORIES`), so renaming a licensed row dropped it out
+ * of the regulatory set silently. Since MEH-3255 the row's own
+ * `requires_license` column decides and a rename no longer changes the
+ * answer, but the guard stays: a licensed row keeps its name so an admin
+ * cannot relabel a regulated category into something it is not.
  * The rename is refused; re-keying the taxonomy belongs in a reviewed,
  * reversible Alembic revision (the MEH-927 pattern), which writes raw SQL and
  * does not pass through this endpoint.
