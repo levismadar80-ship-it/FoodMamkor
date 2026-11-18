@@ -61,6 +61,15 @@ class WhatsAppTemplate(BaseModel):
     name: ClassVar[str]
     language: ClassVar[str] = "he"
 
+    # MEH-3414: may this template be sent outside production? The body text
+    # (and any URL button's base) is registered with Meta as-is, so a link in
+    # it is `https://mehamakor.co.il/...` in EVERY environment — a staging send
+    # points the reader at production. FAIL-CLOSED: False unless the template
+    # is known to carry no link. Outside production a blocked template is
+    # dropped (logged); the matching email still goes, with staging's own URL.
+    # DO NOT set True on a template whose Meta text holds a link (MEH-3414).
+    sends_outside_production: ClassVar[bool] = False
+
     def to_components(self) -> list[dict[str, object]]:
         """Build the Meta `components` array from the model fields.
 
@@ -144,6 +153,9 @@ class OtpCodeV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "producer_otp_v1"
+    # MEH-3414: the code and a copy-code button, no link to the site — and the
+    # OTP_TEST_NUMBERS harness needs it on staging.
+    sends_outside_production: ClassVar[bool] = True
     code: str
 
     def to_components(self) -> list[dict[str, object]]:
