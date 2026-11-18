@@ -51,6 +51,7 @@ import httpx
 from sqlalchemy import and_, or_
 
 from app.config import settings
+from app.services.outbound_guard import phone_allowed
 from app.services.whatsapp_templates import WhatsAppTemplate
 from app.utils.pii import mask_phone
 
@@ -319,6 +320,20 @@ def _skip_test_cause(kind: str, to: str) -> bool:
     return False
 
 
+def _blocked_outside_production(kind: str, to: str) -> bool:
+    """MEH-3402: outside production only ADMIN_WHATSAPP_TO and the
+    OTP_TEST_NUMBERS harness numbers receive WhatsApp. Returns True when the
+    send must be dropped (logged, nothing persisted, no HTTP)."""
+    if phone_allowed(to):
+        return False
+    logger.info(
+        "[WHATSAPP] NOT SENT outside production: %s to=%s is not a staff number",
+        kind,
+        mask_phone(to),
+    )
+    return True
+
+
 def send_text(to: str, body: str, test_cause: bool = False) -> bool:
     """Send a free-form WhatsApp text message.
 
@@ -333,6 +348,8 @@ def send_text(to: str, body: str, test_cause: bool = False) -> bool:
         return _skip_test_cause("text", to)
     if not _is_configured():
         logger.debug("[WHATSAPP] Would send text to %s", mask_phone(to))
+        return False
+    if _blocked_outside_production("text", to):
         return False
     payload = {
         "messaging_product": "whatsapp",
@@ -363,6 +380,8 @@ def send_template(
         logger.debug(
             "[WHATSAPP] Would send template %s to %s", template.name, mask_phone(to)
         )
+        return False
+    if _blocked_outside_production(f"template[{template.name}]", to):
         return False
     payload = {
         "messaging_product": "whatsapp",

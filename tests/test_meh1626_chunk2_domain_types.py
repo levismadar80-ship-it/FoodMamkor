@@ -81,9 +81,10 @@ REJECT_CASES = [
     (OutreachLeadCreate, "phone", "abc"),
     (OutreachLeadUpdate, "phone", "555"),
     (ProfileUpdate, "phone", "not-a-phone"),
-    # SanitizedUrlField
+    # Lead website (MEH-3318: a bare domain is now accepted as https://…;
+    # an explicit non-web scheme is still rejected)
     (OutreachLeadCreate, "website", "ftp://example.com"),
-    (OutreachLeadUpdate, "website", "example.com"),
+    (OutreachLeadUpdate, "website", "javascript:alert(1)"),
 ]
 
 

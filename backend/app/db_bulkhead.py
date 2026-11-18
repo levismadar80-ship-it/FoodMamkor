@@ -13,7 +13,8 @@ Related:  database.py:48-49 (pool size), database.py:119 (_release_session),
           middleware.py install_middlewares (position).
 History:  MEH-2955 (creation — local load test 11/11: 60+ concurrent requests
           froze the process until DB_POOL_TIMEOUT, and never recovered while
-          traffic kept arriving).
+          traffic kept arriving); MEH-3297 (body read before the slot, with a
+          deadline and a size cap — a slow body no longer holds a slot).
 
 Why a gate and not a bigger pool: sync endpoints and their response
 validation share anyio's default threadpool (40 tokens). In a burst every
@@ -41,7 +42,9 @@ import asyncio
 import json
 
 import anyio.to_thread
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from app.body_limit import MAX_BODY_BYTES
 
 # MEH-2955: how long a request may wait for a slot before it is shed. Long
 # enough to ride out a burst (a slot frees every few ms at normal latency),
@@ -52,6 +55,38 @@ BUSY_DETAIL = "האתר עמוס כרגע. נסו שוב בעוד רגע."
 
 # Connections reserved for users outside the gate (module docstring).
 POOL_HEADROOM = 2
+
+# MEH-3297: a request body is read before the request may take a slot.
+# - BODY_IDLE_SECONDS: longest gap between two body chunks (a stalled client).
+# - BODY_TOTAL_SECONDS: longest whole read. Generous on purpose: a 5 MB upload
+#   (upload.py MAX_FILE_SIZE) in 300 s needs ~140 kbit/s, a weak 3G uplink. A
+#   trickle holds no slot, so a long deadline costs only a coroutine.
+# - MAX_BUFFERED_BODY: per request. NOT a number of its own — it is
+#   `body_limit.MAX_BODY_BYTES`, the one owner of "how big may a body be"
+#   (MEH-3374, which landed on staging while this branch was open). Install
+#   order makes that the only possible answer: `install_middlewares` adds
+#   BodySizeLimitMiddleware AFTER DbBulkheadMiddleware and Starlette wraps in
+#   reverse, so the 6 MB cap sits OUTSIDE this gate and always replies first.
+#   A second constant here would be unreachable by construction and would
+#   drift from it — the MEH-271 two-parallel-mechanisms smell. The 413 below
+#   is therefore defence in depth, for the day that order changes.
+# - BUFFER_BUDGET: all bodies buffered at once. Before MEH-3297 at most `limit`
+#   bodies were read (inside slots); outside the gate nothing else bounds the
+#   count, so without this many fast large posts could exhaust RAM. Over
+#   budget answers like a full gate: 503 + Retry-After.
+# - FREE_BODY_BYTES: the first part of every body is never charged to the
+#   budget, so a few large uploads held open near BODY_TOTAL_SECONDS can fill
+#   the budget for uploads only — login, register and every small JSON POST
+#   still get in. uvicorn already buffers this much per connection before it
+#   pauses reading (its flow-control high-water mark), so it adds no new kind
+#   of memory use.
+BODY_IDLE_SECONDS = 15.0
+BODY_TOTAL_SECONDS = 300.0
+MAX_BUFFERED_BODY = MAX_BODY_BYTES
+BUFFER_BUDGET = 64 * 1024 * 1024
+FREE_BODY_BYTES = 64 * 1024
+BODY_TIMEOUT_DETAIL = "הבקשה הגיעה לאט מדי. נסו שוב."
+BODY_TOO_LARGE_DETAIL = "הבקשה גדולה מדי."
 
 # Only the DB-free probes bypass the gate (MEH-2955). DO NOT add
 # /health/readiness: it is sync and opens a DB connection, so an ungated
@@ -80,6 +115,8 @@ class DbBulkheadMiddleware:
         app: ASGIApp,
         limit: int | None = None,
         wait_seconds: float = WAIT_SECONDS,
+        body_idle_seconds: float = BODY_IDLE_SECONDS,
+        body_total_seconds: float = BODY_TOTAL_SECONDS,
     ) -> None:
         self.app = app
         if limit is None:
@@ -91,12 +128,90 @@ class DbBulkheadMiddleware:
             limit = gate_limit(DB_POOL_SIZE + DB_MAX_OVERFLOW, _default_thread_tokens())
         self.limit = limit
         self.wait_seconds = wait_seconds
+        self.body_idle_seconds = body_idle_seconds
+        self.body_total_seconds = body_total_seconds
+        # Bytes currently buffered across requests (one event loop: no lock).
+        self.buffered = 0
         self.semaphore = asyncio.Semaphore(limit)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or scope["path"] in _BYPASS_PATHS:
             await self.app(scope, receive, send)
             return
+        # MEH-3297: read the body BEFORE taking a slot. Starlette reads it
+        # inside the app, and uvicorn has no body-read timeout, so a client
+        # that sends headers and then trickles (or never sends) the body held
+        # a slot for as long as it liked — 13 such connections and every other
+        # request waited WAIT_SECONDS for a 503. Buffered here, a slow body
+        # costs a coroutine, never a slot.
+        reserved = 0
+        try:
+            if _has_body(scope):
+                declared = _content_length(scope)
+                if declared is not None and declared > MAX_BUFFERED_BODY:
+                    await _send_error(send, 413, BODY_TOO_LARGE_DETAIL)
+                    return
+                try:
+                    messages, reserved = await asyncio.wait_for(
+                        self._read_body(receive), self.body_total_seconds
+                    )
+                except TimeoutError:
+                    await _send_error(send, 408, BODY_TIMEOUT_DETAIL)
+                    return
+                except _BodyTooLarge:
+                    await _send_error(send, 413, BODY_TOO_LARGE_DETAIL)
+                    return
+                except _OverBudget:
+                    await _send_busy(send, close=True)
+                    return
+                if messages is None:  # client disconnected mid-body
+                    return
+                receive = _replay(messages, receive)
+            await self._admit(scope, receive, send)
+        finally:
+            self.buffered -= reserved
+
+    async def _read_body(self, receive: Receive) -> tuple[list[Message] | None, int]:
+        """All `http.request` messages up to the last one (None on
+        disconnect), and the bytes reserved against BUFFER_BUDGET.
+
+        Bytes are reserved as they ARRIVE, never from the declared
+        Content-Length: a client that declares 10 MB and sends nothing must
+        cost no budget, or a handful of them would 503 every POST. Only bytes
+        past FREE_BODY_BYTES are charged, so small bodies never see a 503 from
+        the budget. The caller
+        releases what is returned; on an exception path it is released here."""
+        reserved = 0
+
+        def reserve(n: int) -> None:
+            nonlocal reserved
+            if self.buffered + n > BUFFER_BUDGET:
+                raise _OverBudget
+            self.buffered += n
+            reserved += n
+
+        messages: list[Message] = []
+        size = 0
+        try:
+            while True:
+                message = await asyncio.wait_for(receive(), self.body_idle_seconds)
+                if message["type"] == "http.disconnect":
+                    return None, reserved
+                chunk = len(message.get("body", b""))
+                size += chunk
+                if size > MAX_BUFFERED_BODY:
+                    raise _BodyTooLarge
+                billable = size - FREE_BODY_BYTES
+                if billable > reserved:
+                    reserve(billable - reserved)
+                messages.append(message)
+                if not message.get("more_body", False):
+                    return messages, reserved
+        except BaseException:
+            self.buffered -= reserved
+            raise
+
+    async def _admit(self, scope: Scope, receive: Receive, send: Send) -> None:
         try:
             await asyncio.wait_for(self.semaphore.acquire(), self.wait_seconds)
         except TimeoutError:
@@ -108,6 +223,47 @@ class DbBulkheadMiddleware:
             self.semaphore.release()
 
 
+class _BodyTooLarge(Exception):
+    pass
+
+
+class _OverBudget(Exception):
+    pass
+
+
+def _content_length(scope: Scope) -> int | None:
+    for name, value in scope.get("headers", []):
+        if name == b"content-length":
+            try:
+                return int(value)
+            except ValueError:
+                return None
+    return None
+
+
+def _has_body(scope: Scope) -> bool:
+    for name, value in scope.get("headers", []):
+        if name == b"transfer-encoding":
+            return True
+        if name == b"content-length" and value.strip() not in (b"", b"0"):
+            return True
+    return False
+
+
+def _replay(messages: list[Message], receive: Receive) -> Receive:
+    """Hand the buffered body to the app, then fall through to the real
+    `receive` (so disconnect detection during a streamed response still
+    works)."""
+    pending = list(messages)
+
+    async def replay_receive() -> Message:
+        if pending:
+            return pending.pop(0)
+        return await receive()
+
+    return replay_receive
+
+
 def _default_thread_tokens() -> int:
     try:
         return int(anyio.to_thread.current_default_thread_limiter().total_tokens)
@@ -115,18 +271,33 @@ def _default_thread_tokens() -> int:
         return 40
 
 
-async def _send_busy(send: Send) -> None:
-    body = json.dumps({"detail": BUSY_DETAIL}, ensure_ascii=False).encode()
-    await send(
-        {
-            "type": "http.response.start",
-            "status": 503,
-            "headers": [
-                (b"content-type", b"application/json; charset=utf-8"),
-                (b"content-length", str(len(body)).encode()),
-                (b"retry-after", str(RETRY_AFTER_SECONDS).encode()),
-                (b"cache-control", b"no-store"),
-            ],
-        }
+async def _send_busy(send: Send, close: bool = False) -> None:
+    await _send_error(
+        send,
+        503,
+        BUSY_DETAIL,
+        [(b"retry-after", str(RETRY_AFTER_SECONDS).encode())],
+        close=close,
     )
+
+
+async def _send_error(
+    send: Send,
+    status: int,
+    detail: str,
+    extra_headers: list[tuple[bytes, bytes]] | None = None,
+    close: bool = True,
+) -> None:
+    body = json.dumps({"detail": detail}, ensure_ascii=False).encode()
+    headers = [
+        (b"content-type", b"application/json; charset=utf-8"),
+        (b"content-length", str(len(body)).encode()),
+        *(extra_headers or []),
+        (b"cache-control", b"no-store"),
+    ]
+    if close:
+        # The connection may still be mid-body; don't leave it half-read. Off
+        # only for the full-gate 503, whose body (if any) was fully read.
+        headers.append((b"connection", b"close"))
+    await send({"type": "http.response.start", "status": status, "headers": headers})
     await send({"type": "http.response.body", "body": body})

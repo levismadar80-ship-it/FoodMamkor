@@ -11,12 +11,14 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
+from app.models.admin_ops import AdminAuditLog
+from app.services import admin_audit
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
 from app.models import (
@@ -180,6 +182,16 @@ def list_users(
     return out
 
 
+# Wording approved word for word (rulings 17/11 §א3) — do not edit here.
+_DEMOTE_LINKED_OWNER = (
+    "אי אפשר להוריד את ההרשאה כל עוד המשתמשת מקושרת לבית עסק. קודם מנתקים את הבעלות."
+)
+
+
+# NEW copy, waiting for Sapir's word-for-word OK (rule 22) — see the PR body.
+_PROMOTE_LINKED_OWNER = "אי אפשר לתת הרשאת אדמין למי שמקושרת לבית עסק."
+
+
 @router.put("/users/{user_id}/role", response_model=None)
 def update_user_role(
     user_id: UUID,
@@ -187,7 +199,17 @@ def update_user_role(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    target = db.query(User).filter(User.id == user_id).first()
+    # Row lock + fresh read (MEH-3376 review): a claim, a register-upgrade or
+    # an invite acceptance may link a business to this account between the
+    # read and the commit. Those flows lock and re-read the user, so with the
+    # lock here too the two cannot interleave into "admin with a business".
+    target = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .with_for_update()
+        .populate_existing()
+        .first()
+    )
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     # MEH-955: never assign role="producer" here. require_producer
@@ -208,6 +230,20 @@ def update_user_role(
         )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
+    # MEH-3376: a business must never be left linked to an account that cannot
+    # run it. Demoting to consumer keeps `producer_id`, so the business would
+    # stay live with no working owner. Refused, whatever the business status;
+    # the way out is «ניתוק בעלים» (detach), then this request passes.
+    # MEH-3376 (Sapir 17/11: «בעלת עסק לא יכולה להיות אדמינית»): this route was
+    # the one way an account with a business could become an admin —
+    # registration (auth.py) and claim (producer_claim.py) already refuse the
+    # other direction. An admin with a business loses her dashboard
+    # (require_producer gates on role) and cannot be detached later.
+    if data.role == "admin" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_PROMOTE_LINKED_OWNER)
+    if data.role == "consumer" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_DEMOTE_LINKED_OWNER)
+    admin_audit.note(user, before={"role": target.role}, after={"role": data.role})
     target.role = data.role  # type: ignore[assignment]
     db.commit()
     return {"detail": "Role updated", "role": target.role}
@@ -225,8 +261,43 @@ def block_user(
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
     target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
+    admin_audit.note(user, after={"is_blocked": bool(target.is_blocked)})
     db.commit()
     return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
+
+
+@router.get("/audit-log", response_model=None)
+def list_audit_log(
+    limit: int = Query(50, ge=1, le=200),
+    before: datetime | None = None,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3306: the admin audit log, newest first. `before` pages back by
+    `created_at`. The stored IP is not returned: it is kept for an
+    investigation, not for a list."""
+    query = db.query(AdminAuditLog)
+    if before is not None:
+        query = query.filter(AdminAuditLog.created_at < before)
+    rows = (
+        query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": str(r.id),
+                "actor_id": str(r.actor_id),
+                "action": r.action,
+                "target_type": r.target_type,
+                "target_id": r.target_id,
+                "details": r.details,
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.delete("/users/{user_id}", response_model=None)

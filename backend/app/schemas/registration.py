@@ -7,8 +7,10 @@ Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """
 
+import re
 from datetime import datetime
 from typing import Any, Literal, Self
+from urllib.parse import urlparse
 from uuid import UUID
 from pydantic import (
     BaseModel,
@@ -28,6 +30,7 @@ from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.schemas.catalog import DeliveryAreaCreate
 from app.schemas.schemas import (
+    EMAIL_MAX_LENGTH,
     PhoneNumberField,
     SanitizedBusinessNameField,
     SanitizedPersonNameField,
@@ -45,7 +48,7 @@ from app.schemas.schemas import (
 
 
 class UserRegister(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     # MEH-1626 chunk 1: bleach only — NO letter floor. Two-letter Hebrew given
     # names (גל, טל, בר, רן) are legitimate, so the ≥3-letter floor used for
     # BUSINESS names would be a product regression on a person's name.
@@ -56,7 +59,8 @@ class UserRegister(BaseModel):
     # app.services.password_policy.validate_password — Pydantic validators
     # are sync and cannot await HIBP. Replaces MEH-248's 8-char floor.
     password: PasswordField
-    city: str | None = None
+    # MEH-3271: users.city is String(100); longer text was a 500 at commit.
+    city: str | None = Field(default=None, max_length=100)
     # MEH-1626 chunk 1: surfaced by the asymmetry scan rather than the issue's
     # list — same public signup body as `name` above, persisted at auth.py:313,
     # and it feeds the WhatsApp alert number. Left raw it is the exact MEH-1537
@@ -74,7 +78,7 @@ class UserRegister(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
 
 
 class ResetPasswordRequest(BaseModel):
@@ -94,7 +98,7 @@ class ProducerRegister(BaseModel):
     # User account — optional when upgrading an already-authenticated user
     # (MEH-143). Required for new (unauthenticated) registrations; the
     # router validates and raises 422 when they are absent in that case.
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-1626 chunk 1: the ACCOUNT-holder's person name (producer_name below
     # is the business). Surfaced by the asymmetry scan, not the issue's list:
     # UserRegister.name is sanitized, so leaving its twin on the producer
@@ -135,7 +139,7 @@ class ProducerRegister(BaseModel):
     website: str | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
-    contact_email: EmailStr | None = None
+    contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-2460: 'organizer' registers a market / events organizer (ADR-036).
     # Declared BEFORE category_ids on purpose: the category validator reads it
     # from `info.data`, and Pydantic v2 only exposes fields declared earlier.
@@ -460,7 +464,7 @@ class ProducerOAuthSignupRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     password: str
 
 
@@ -482,6 +486,15 @@ class ProducerRegistrationResponse(Token):
 # so it carries only what the business already shows on its own site — never
 # phone, email, address, license or admin fields.
 class ProducerClaimLinkOut(BaseModel):
+    url: str
+    expires_at: datetime
+
+
+class DraftPreviewLinkOut(BaseModel):
+    """MEH-3377. Its own shape, not ProducerClaimLinkOut: the two links grant
+    different things, and the claim-link inventory test pins that schema to the
+    one route that mints a claim link."""
+
     url: str
     expires_at: datetime
 
@@ -520,6 +533,65 @@ class ProducerClaimNewLinkOut(BaseModel):
     ok: bool
 
 
+# MEH-3377: «פרסום בהסכמה» for an ownerless draft
+# (routers/producer_draft_preview.py). Same two consent fields, same bounds
+# and same reason as OwnerInviteCreate below: no page goes live on someone's
+# behalf without a recorded written consent.
+_CLOUDINARY_IMAGE_PATH = re.compile(r"^/[A-Za-z0-9_-]+/image/upload/[^?#]+$")
+
+
+class DraftConsentPublishIn(BaseModel):
+    consent_confirmed: bool
+    consent_note: str = Field(min_length=1, max_length=500)
+    # Optional: a screenshot of the written consent, uploaded first through
+    # POST /upload/image. Only a Cloudinary image URL is stored — the admin
+    # page links to it, so an arbitrary URL here would be a link to anywhere
+    # under an «אישור» label. The handler also pins it to OUR cloud name.
+    consent_screenshot_url: str | None = Field(default=None, max_length=500)
+
+    @field_validator("consent_confirmed")
+    @classmethod
+    def _consent_required(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError(
+                "חובה לאשר שהתקבל אישור מפורש בכתב מבעלי העסק לפני פרסום העמוד"
+            )
+        return v
+
+    @field_validator("consent_note")
+    @classmethod
+    def _note_not_blank(cls, v: str) -> str:
+        # "   " passes min_length and is as useless as "" for an audit trail.
+        stripped = (v or "").strip()
+        if not stripped:
+            raise ValueError("חובה לתעד איך התקבלה ההסכמה")
+        return stripped
+
+    @field_validator("consent_screenshot_url")
+    @classmethod
+    def _screenshot_is_cloudinary_image(cls, v: str | None) -> str | None:
+        if v is None or not v.strip():
+            return None
+        parsed = urlparse(v.strip())
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "res.cloudinary.com"
+            # Anchored: `<cloud>/image/upload/…` and nothing else. A substring
+            # test would pass `/x/raw/upload/image/upload/a.html`.
+            or not _CLOUDINARY_IMAGE_PATH.match(parsed.path)
+            or parsed.username
+            or parsed.port
+        ):
+            raise ValueError("צילום המסך חייב להיות תמונה שהועלתה דרך האתר")
+        return v.strip()
+
+
+class DraftConsentPublishOut(BaseModel):
+    producer_id: UUID
+    status: str
+    slug: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # MEH-2974: owner invite for a business an admin built end to end.
 # Routers: routers/producer_owner_invite.py (admin + public).
@@ -544,7 +616,7 @@ class OwnerInviteCreate(BaseModel):
     # owner types her own on the acceptance page — where it is proven with a
     # one-time code before any account exists. When the admin DOES have an
     # address, the invite mail goes out as before.
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # Same reasoning as `UserRegister.name`: this is a PERSON's name, so bleach
     # only and no >=3-letter floor (two-letter Hebrew given names are real).
     name: SanitizedPersonNameField
@@ -645,7 +717,7 @@ class OwnerInviteAccept(BaseModel):
     # there is no path to an account without a verified address, including the
     # case where the admin pre-filled one (she still confirms it with a code,
     # because a pre-filled address is also just a string someone typed).
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     code: str = Field(min_length=1, max_length=12)
     # Same 12-char schema floor as every other password entry point; the full
     # policy (deny-list, HIBP) runs in the handler, which can await.
@@ -697,7 +769,7 @@ class OwnerInviteEmailCodeRequest(BaseModel):
     """
 
     token: str = Field(min_length=1, max_length=512)
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
 
     @field_validator("email", mode="before")
     @classmethod
