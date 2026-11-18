@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { CheckCircle, EnvelopeSimple, Leaf, ShareNetwork, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { renumberTitle, stepNumberOf } from "@/lib/wizard-step-numbers";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -405,6 +406,34 @@ function RegisterProducerPageBody({ routeKind }) {
   // the selected category IDs against the categories list fetched at mount.
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const isOrganizer = form.kind === "organizer"; // MEH-2460
+
+  // MEH-0000: every number a user SEES comes from a position in this array.
+  //
+  // The STEP enum stays the state machine — it is the single source for the
+  // 3→5 re-index (MEH-847) and every comparison still uses it. What it is not
+  // is a display value. Two steps are conditionally absent, and the enum cannot
+  // know that:
+  //   · an organizer never visits CATEGORY (MEH-2460), so /register/organizer
+  //     showed «01 02 04» in the stepper and jumped «2.» → «4.» in the headings;
+  //   · an upgrade (already signed in) starts past ACCOUNT, so its headings
+  //     began at «2.».
+  // Deriving from the visible position fixes both, and leaves the ordinary
+  // business path byte-identical (1, 2, 3, 4).
+  const visibleSteps = useMemo(
+    () =>
+      [STEP.ACCOUNT, STEP.DETAILS, STEP.CATEGORY, STEP.STORY].filter(
+        (s) =>
+          !(isOrganizer && s === STEP.CATEGORY) &&
+          !(isUpgrade && s === STEP.ACCOUNT),
+      ),
+    [isOrganizer, isUpgrade],
+  );
+
+  // Both helpers are pure and live in lib/wizard-step-numbers.js, so the digit
+  // swap can be tested against the REAL approved Hebrew — this file's test mock
+  // makes t(key) return the key path, which carries no number to swap.
+  const stepNumber = (s) => stepNumberOf(visibleSteps, s);
+  const numberedTitle = (title, s) => renumberTitle(title, stepNumber(s));
   // MEH-2640: the stored answer; the payload's booleans come from it.
   const fulfilment = form.fulfilment;
   const licenseRequired =
@@ -1070,7 +1099,10 @@ function RegisterProducerPageBody({ routeKind }) {
                 className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted"}`}
               >
                 <span dir="ltr" className="font-english italic text-2xl leading-none">
-                  {String(s).padStart(2, "0")}
+                  {/* MEH-0000: the VISIBLE position, not the enum value. The
+                      `s <= step` and `aria-current` comparisons above stay on
+                      the enum — only the printed digit is derived. */}
+                  {String(stepNumber(s)).padStart(2, "0")}
                 </span>
                 <span className="text-xs font-medium leading-none">{caption}</span>
               </div>
@@ -1120,7 +1152,7 @@ function RegisterProducerPageBody({ routeKind }) {
         {/* Step 1: Account */}
         {step === STEP.ACCOUNT && (
           <div className="space-y-4" data-testid="register-frame-account">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.account.title"), STEP.ACCOUNT)}</h2>
             {/* MEH-2183: step-top expectation line — names the time cost and
                 that the draft survives leaving (setAndSave already persists it). */}
             <p data-testid="register-account-duration-hint" className="text-xs text-fg-muted text-start">
@@ -1253,7 +1285,7 @@ function RegisterProducerPageBody({ routeKind }) {
         {/* Step 2: Business basics */}
         {step === STEP.DETAILS && (
           <div className="space-y-4" data-testid="register-frame-details">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.business.title"), STEP.DETAILS)}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
@@ -1467,7 +1499,7 @@ function RegisterProducerPageBody({ routeKind }) {
 
         {step === STEP.CATEGORY && (
           <div className="space-y-4" data-testid="register-frame-category">
-            <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
+            <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.category.title"), STEP.CATEGORY)}</h2>
             {/* MEH-1807: the selector is a card grid, not a form control, so it
                 has no id to focus and nothing to hang aria-describedby on. A
                 labelled group wrapper gives the required-gate both — tabIndex
@@ -1684,7 +1716,7 @@ function RegisterProducerPageBody({ routeKind }) {
 
         {step === STEP.STORY && (
           <div className="space-y-4" data-testid="register-frame-story">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.story.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.story.title"), STEP.STORY)}</h2>
             {/* MEH-2185: the step-top expectation line (photo_next_hint, added by
                 MEH-2183) is GONE, and deliberately not replaced. It overlapped in
                 substance with photo_disclosure further down this same step, which

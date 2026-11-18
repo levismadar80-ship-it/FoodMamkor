@@ -67,7 +67,7 @@ vi.mock("@/i18n/navigation", () => ({
     </a>
   ),
 }));
-// HeroSearch fetches /search/trending on focus and /search while typing.
+// HeroSearch fetches /search while typing.
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => new Promise(() => {})) },
 }));

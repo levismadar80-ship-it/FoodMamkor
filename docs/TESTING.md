@@ -50,7 +50,7 @@ No extra secrets needed — only the auto-provided `GITHUB_TOKEN`.
 
 GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older pending E2E job is cancelled by a newer one. A `cancelled` E2E on a PR therefore means "superseded in the queue", not a pass and not a failure (workflow rule 21): re-run it when the queue clears. E2E carries no merge vote, so this never blocks a merge.
 
-**On a PR, E2E runs only with the `run-e2e` label (MEH-2779).** Running it on every push of every PR, behind that one-at-a-time queue, made jobs wait up to 14 hours (measured 4–6/11/2026), and most were cancelled before anyone read them. Now a PR gets the suite when someone adds the `run-e2e` label (and on every later push while the label stays). Adding any other label does not start it. A push to `staging` still runs it; a burst of merges collapses to one running and one pending run (workflow-level group `e2e-staging-push`). A UI PR that needs the VRT verdict (workflow rule 23) adds the label once its code is ready.
+**On a PR, E2E runs when the diff touches the frontend or backend paths, or with the `run-e2e` label (MEH-2956; label-only from MEH-2779 until then).** `E2E gate` then requires `success` from a suite the paths said should run: `skipped` or `cancelled` no longer pass. The history of the label-only period follows. Running it on every push of every PR, behind that one-at-a-time queue, made jobs wait up to 14 hours (measured 4–6/11/2026), and most were cancelled before anyone read them. Now a PR gets the suite when someone adds the `run-e2e` label (and on every later push while the label stays). Adding any other label does not start it. A push to `staging` still runs it; a burst of merges collapses to one running and one pending run (workflow-level group `e2e-staging-push`). A UI PR that needs the VRT verdict (workflow rule 23) adds the label once its code is ready.
 
 ### Adding a new test
 
@@ -65,7 +65,7 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 `frontend/e2e/golden/` walks seven seeded personas on **staging**, one spec per persona, in order (`01-g1` … `07-a1`). The persona table is `frontend/e2e/golden/personas.ts`; the accounts are created by `seed_demo_business.py --golden` (see [DEPLOYMENT.md](./DEPLOYMENT.md), "Golden-path personas").
 
 - **Not in the default suite.** The project is defined only when the command line says `--project=golden` (`frontend/e2e/golden-selection.ts`), and every other project ignores `e2e/golden/`. A bare `npx playwright test` (what CI runs) lists the same tests as before. Guard: `frontend/__tests__/GoldenProjectSelection.test.js`.
-- **Logins are serial**, one worker, each through `withRateLimitRetry` (`e2e/login-retry.ts`, MEH-2895): `/auth/login` is 5/minute per IP. A golden-only run skips global-setup's demo-role logins. Never run it while an E2E job is running on staging.
+- **Logins are serial**, one worker, each through `withRateLimitRetry` (`e2e/login-retry.ts`, MEH-2895): `/auth/login` is 5/minute per IP, plus 10 failed attempts per address in 15 minutes (MEH-3372; a successful login is not counted). A golden-only run skips global-setup's demo-role logins. Never run it while an E2E job is running on staging.
 - **Read-mostly and self-cleaning.** What a spec creates (a product, an event, a group buy, a rescue bag and its reservation, a favourite, a review) it deletes or cancels in `finally`. Group buys and rescue bags have no delete route, so they end `cancelled`, under a golden business only.
 - **Rescue:** `04-g4-rescue` skips, and says why, when the pilot flag is off or `זכרון יעקב` is not in `RESCUE_BAGS_CITIES` on the target.
 - **API paths** go through a client named `api`, so `scripts/check_api_contract.py` checks them against the backend routes.
@@ -440,7 +440,7 @@ pages של Screaming Frog ו-Ahrefs) רשום ב-MEH-3111.
 אחרי כל push ל-`staging` / `main`, כשה-build החדש עלה, רצים מול האתר החי:
 
 ```
-python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש
+python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש, ומאמת את ה-backend
 python scripts/checks/smoke_production.py                                  # main בלבד
 node   scripts/link-check.mjs <URL> --smoke                                # עד 10 כתובות (MEH-2864)
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
@@ -461,6 +461,32 @@ npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
 - הסקריפטים ב-`scripts/checks/` הם `.py`/`.cjs`, ו-`run-all.sh` מריץ רק `*.sh`,
   כך שהם לא הופכים לרגל של Repo guards.
 - ה-workflow עצמו: [docs/ci/meh-2749-post-deploy-checks.patch.md](./ci/meh-2749-post-deploy-checks.patch.md).
+
+### ‏`wait_for_deploy` לא שואל «האם Railway פרס», אלא «האם הקוד שרץ הוא הקוד של ה-commit»
+
+השער של ה-frontend הוא ה-build id בדף הבית. ל-backend יש grace של 3 דקות, ואחריה
+הסקריפט **לא** משווה sha ל-sha — הוא שואל את git אם קובץ תחת `backend/`,
+`Dockerfile` או `railway.json` שונה בין ה-sha שרץ לבין ה-sha שנדחף:
+
+| מצב | יציאה | למה |
+|---|---|---|
+| ה-backend ב-sha שנדחף | 0 | — |
+| ה-sha מאחור, אבל אין הבדל בקבצי ה-backend | 0 | הקוד שרץ **הוא** הקוד של ה-commit. דחיפה שנגעה רק ב-frontend לא אמורה להאדים. |
+| ה-sha מאחור ויש הבדל | **2** | בילד ישן. כל הבדיקות שאחריו מודדות backend אחר. |
+| אי אפשר להכריע (אין `git_sha`, או ה-sha מחוץ ל-`fetch-depth: 50`) | **2** | backend שמאחור ביותר מ-50 commits הוא כשלעצמו ממצא. |
+
+השוואת sha ל-sha היא בדיוק מה שנמדד כשגוי ב-06/11: שני sha שונים הם נורמליים
+ולא מזיקים כשאף אחד מהם לא נגע ב-backend. רק ה-diff מבדיל.
+
+**יציאה 2 מכשילה את ה-job** (MEH-3358, הוחל מ-
+[docs/ci/meh-0000-deploy-sha-gate.patch.md](./ci/meh-0000-deploy-sha-gate.patch.md)):
+ל-step ב-`post-deploy-checks.yml` יש `id: deploy` ו-`continue-on-error`, וה-Verdict
+מאגד את התוצאה שלו. יציאה 1 (timeout) נשארת אזהרה. self-test שנכשל בתוך ריצה
+יוצא ב-2, כי השוואה שבורה לא יכולה להכריע כלום.
+
+`python scripts/checks/wait_for_deploy.py --self-test` מריץ מאגרי git מפוברקים
+עם תשובות ידועות, ורץ גם לפני השער עצמו: תשובה ישרה לדחיפת frontend ותשובה של
+השוואה שבורה הן שתיהן 0, ולכן ירוק מהסקריפט הוא ראיה רק אם ה-self-test עובר.
 
 ---
 

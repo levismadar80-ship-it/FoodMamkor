@@ -282,7 +282,10 @@ export default function AdminUsersPage() {
                                   onSelect: () => clearRescueBlock(u.id),
                                 }]
                               : []),
-                            ...(u.role !== "admin"
+                            // MEH-3376: an account with a linked business is
+                            // never offered «קידום לאדמין» — the server refuses
+                            // it (409), and an owner must not become an admin.
+                            ...(u.role !== "admin" && !u.producer_id
                               ? [{
                                   key: "promote",
                                   label: t("users.actions.promote"),

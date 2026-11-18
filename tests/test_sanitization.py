@@ -1,9 +1,8 @@
 """Unit tests for app.services.sanitization.sanitize_text (MEH-329).
 
-Behavior lock — these tests pin bleach 6.3.0's exact output for the
-inputs we care about. If a future bleach upgrade changes any output,
-verify the new output is still XSS-safe (no execution path) before
-updating the assertion.
+Behavior lock. Since MEH-3317 the output is plain text (entities decoded,
+tags stripped until stable). If a bleach upgrade changes any output, verify
+no stored value can open a tag before updating an assertion.
 """
 from app.services.sanitization import sanitize_text
 
@@ -50,13 +49,37 @@ def test_only_html_returns_none():
     assert sanitize_text("<script></script>") is None
 
 
-def test_html_entities_decoded():
-    # bleach 6.3.0 with tags=[] does NOT decode HTML entities — they
-    # remain encoded in the output. This is XSS-safe (encoded entities
-    # render as literal text in HTML; React encodes them again on output).
-    # Behavior lock per MEH-329 plan: if a bleach upgrade changes this,
-    # confirm the new output is still XSS-safe before updating.
-    assert sanitize_text("&lt;b&gt;bold&lt;/b&gt;") == "&lt;b&gt;bold&lt;/b&gt;"
+def test_entity_smuggled_tags_are_stripped_not_revived():
+    # MEH-3317: output is plain text now, so entities are decoded — and a tag
+    # written as entities must not come back to life after decoding. The loop
+    # strips it on the next pass.
+    assert sanitize_text("&lt;b&gt;bold&lt;/b&gt;") == "bold"
+    assert sanitize_text("&lt;img src=x onerror=alert(1)&gt;") is None
+    assert "<" not in (sanitize_text("&amp;lt;script&amp;gt;x") or "")
+
+
+def test_ampersand_and_angle_brackets_are_stored_as_typed():
+    # MEH-3317: «&» was stored as «&amp;» and shown that way on the site.
+    assert sanitize_text("קפה & מאפה") == "קפה & מאפה"
+    assert sanitize_text("Crust & Crumb") == "Crust & Crumb"
+    assert sanitize_text("5 < 6 > 4") == "5 < 6 > 4"
+
+
+def test_tags_still_stripped_with_text_around_them():
+    assert sanitize_text("<b>x</b> & co") == "x & co"
+
+
+def test_an_unclosed_tag_is_never_stored_as_a_raw_tag_opener():
+    # Reviewer finding on #4711: bleach leaves "<img …" with no ">" as text,
+    # so after decoding it would be a raw tag opener. It stays encoded.
+    out = sanitize_text("<img src=x onerror=alert(1)")
+    assert out is None or "<img" not in out
+
+
+def test_max_length_counts_plain_characters():
+    # 500 bare "<" used to become 2000 chars of "&lt;"; now each is one char.
+    out = sanitize_text("<" * 500 + " a", max_length=500)
+    assert out is not None and len(out) <= 500
 
 
 def test_strips_script_close_tag():

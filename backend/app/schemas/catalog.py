@@ -12,7 +12,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Literal, Self
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 from app.allergens import normalize_allergens
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
@@ -255,6 +255,32 @@ class ProducerLocationUpdate(BaseModel):
     @classmethod
     def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
+
+    # MEH-3342 finding 2: `kind` and `location_precision` are NOT NULL columns
+    # (models/catalog.py:231, :244). `None` is this schema's "not supplied"
+    # default, but the handler applies the patch with `exclude_unset=True`, so a
+    # body that says `{"kind": null}` counts as SUPPLIED, reaches `setattr`, and
+    # the write is an IntegrityError — a 500 for what is a malformed request.
+    # Measured before this validator: `NotNullViolation` on both columns.
+    #
+    # A field_validator runs only when the key is present in the input (Pydantic
+    # v2 skips defaults unless `validate_default=True`, which is deliberately
+    # NOT set here), so this rejects an explicit null and leaves "unsupplied
+    # means leave it alone" — the whole contract of this endpoint, MEH-1421 —
+    # exactly as it was. `test_omitting_kind_entirely_is_still_a_partial_update`
+    # is the control for that.
+    #
+    # The annotation keeps `| None` on purpose: it carries the default, and
+    # narrowing it would change `backend/openapi.json` and the generated client
+    # for a request shape the server never accepted anyway.
+    @field_validator("kind", "location_precision")
+    @classmethod
+    def _reject_explicit_null(cls, v: str | None, info: ValidationInfo) -> str | None:
+        if v is None:
+            raise ValueError(
+                f"השדה «{info.field_name}» לא יכול להיות ריק — השמיטו אותו כדי להשאיר אותו כמו שהוא"
+            )
+        return v
 
 
 class ProducerLocationOwnerOut(BaseModel):

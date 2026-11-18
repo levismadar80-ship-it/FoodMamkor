@@ -53,6 +53,13 @@ implementations: `LocationModal`, `LoginPromptModal`, `AccountSheet`,
 `Lightbox`. A non-blocking overlay may use `aria-modal="false"` but then should
 NOT trap focus — pick one mode, don't half-implement.
 
+What "containment" means here (MEH-3271): Tab and Shift+Tab wrap at the
+panel's edges **and** a Tab that starts with focus outside the panel (a click
+on the scrim, a focused control that was removed) lands back inside it; focus
+returns to the trigger on every way of closing, unmounting included
+(`hooks/useDialogFocus.js`, `lib/use-focus-return.js`). A tooltip closes on
+Escape without closing the dialog it sits in (WCAG 1.4.13).
+
 ### 8. RTL reading order — logical props by default
 Use logical Tailwind utilities: `ms-/me-/ps-/pe-/start-/end-/text-start/
 text-end`. Physical props (`ml-/mr-/left-/right-/pl-/pr-`) are only for the
