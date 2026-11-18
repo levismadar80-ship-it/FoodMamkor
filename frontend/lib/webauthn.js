@@ -24,7 +24,9 @@ export function bufferToBase64url(buf) {
   const bytes = new Uint8Array(buf);
   let bin = "";
   for (let i = 0; i < bytes.length; i += 1) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  // "=" only ever appears as trailing padding in base64, so dropping every one
+  // is exact — and avoids the backtracking /=+$/ (sonarjs/super-linear-regex).
+  return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
 /** @param {any[] | undefined} list */
