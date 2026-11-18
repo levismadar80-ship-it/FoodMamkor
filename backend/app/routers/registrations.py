@@ -583,7 +583,9 @@ def cancel_registration(
         getattr(item, "is_recurring", False)
     )
     # MEH-3314: the freed spot goes to the first one waiting (stamped here,
-    # mailed after the commit).
+    # mailed after the commit). Flush first: the session does not autoflush,
+    # so without it the count below still sees the cancelled party.
+    db.flush()
     offers = (
         waitlist.offer_places(db, item, _places_to_offer(db, item))
         if was_active
