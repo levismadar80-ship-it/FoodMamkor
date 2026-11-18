@@ -439,7 +439,7 @@ export default function ProducerSections({
                 {signatureImg ? (
                   <Image
                     src={signatureImg}
-                    alt={producer.top_product_name || ""}
+                    alt="" // MEH-3271: inside a button whose visible text already names it
                     fill
                     className="object-cover"
                     sizes="(min-width: 768px) 144px, 112px"
@@ -542,7 +542,7 @@ export default function ProducerSections({
                       {img ? (
                         <Image
                           src={img}
-                          alt={product.name}
+                          alt="" // MEH-3271: the row's visible text already names it
                           fill
                           className="object-cover"
                           sizes="80px"
