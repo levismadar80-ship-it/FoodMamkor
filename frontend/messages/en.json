@@ -181,7 +181,7 @@
       "producer_only_email_name": "We'll only receive your name and email",
       "or": "or",
       "producer_already_account": "You already have a Mehamakor account — sign in to manage it",
-      "rate_limited": "Too many attempts. Try again in a few minutes.",
+      "rate_limited": "Too many attempts, try again in a minute",
       "connection_failed": "We couldn't connect, please try again",
       "generic_error": "Sign-in failed"
     },

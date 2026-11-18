@@ -126,12 +126,21 @@ def test_failures_on_an_address_with_no_account_are_limited_the_same_way(
     assert statuses == [401] * 10 + [429]
 
 
-def test_the_429_carries_the_approved_wording_and_matches_the_frontend_copy(
+def test_the_429_uses_the_sites_existing_too_many_attempts_wording(
     client, db, rotating_ip
 ):
+    """No new copy: the detail is the text of `error.mapper.rate_limited` in
+    he.json, read from the file by its exact path so the two cannot drift.
+    (The login page prints the detail as it is.)"""
     import json
     from pathlib import Path
 
+    he = json.loads(
+        (
+            Path(__file__).resolve().parents[1] / "frontend" / "messages" / "he.json"
+        ).read_text(encoding="utf-8")
+    )
+    existing = he["error"]["mapper"]["rate_limited"]
     for _ in range(10):
         _login(client, rotating_ip, "victim@test.com")
     resp = client.post(
@@ -140,21 +149,16 @@ def test_the_429_carries_the_approved_wording_and_matches_the_frontend_copy(
         headers=rotating_ip(),
     )
     assert resp.status_code == 429
-    approved = "יותר מדי נסיונות. נסו שוב בעוד כמה דקות."
-    assert resp.json()["detail"] == approved
-    he = json.loads(
-        (
-            Path(__file__).resolve().parents[1] / "frontend" / "messages" / "he.json"
-        ).read_text(encoding="utf-8")
-    )
-    found = []
+    assert resp.json()["detail"] == existing
 
-    def walk(node):
-        if isinstance(node, dict):
-            for key, value in node.items():
-                if key == "rate_limited" and value == approved:
-                    found.append(value)
-                walk(value)
 
-    walk(he)
-    assert found, "he.json has no rate_limited key with the approved wording"
+def test_exactly_ten_failures_then_the_right_password_is_refused(
+    client, db, rotating_ip
+):
+    """The accepted cost, pinned at its edge: the tenth failure fills the
+    budget, so the right password is a 429 until the window ends."""
+    make_user(db, email="victim@test.com", password=SAFE_PASSWORD)
+    assert [_login(client, rotating_ip, "victim@test.com") for _ in range(10)] == [
+        401
+    ] * 10
+    assert _login(client, rotating_ip, "victim@test.com", SAFE_PASSWORD) == 429

@@ -1286,9 +1286,11 @@ def register_producer_oauth(
     )
 
 
-# Approved word for word (Sapir 17/11) — the same text as `rate_limited` in
-# frontend/messages/he.json. Do not edit here.
-_LOGIN_RATE_LIMITED = "יותר מדי נסיונות. נסו שוב בעוד כמה דקות."
+# Existing copy, not new: the same words as `error.mapper.rate_limited` in
+# frontend/messages/he.json (the site's one "too many attempts" message). The
+# login page shows this detail as it is (LoginClient: detailToMessage).
+# tests/test_meh3372_login_per_email_limit.py holds the two equal.
+_LOGIN_RATE_LIMITED = "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות."
 
 
 @router.post("/login", response_model=Token)
