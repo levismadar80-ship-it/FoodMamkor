@@ -13,18 +13,32 @@ import ast
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent.parent / "backend" / "app"
-CLIENT_NAMES = {"Anthropic", "AsyncAnthropic"}
+CLIENT_NAMES = {
+    "Anthropic", "AsyncAnthropic",
+    "AnthropicBedrock", "AsyncAnthropicBedrock", "AnthropicVertex", "AsyncAnthropicVertex",
+}
+
+
+def _client_names(tree: ast.AST) -> set[str]:
+    """CLIENT_NAMES plus any local alias (`from anthropic import Anthropic as A`)."""
+    names = set(CLIENT_NAMES)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            names |= {a.asname for a in node.names if a.asname and a.name in CLIENT_NAMES}
+    return names
 
 
 def calls_missing_http_client(source: str) -> list[int]:
     """Line numbers of Anthropic client constructions without http_client=."""
     missing = []
-    for node in ast.walk(ast.parse(source)):
+    tree = ast.parse(source)
+    names = _client_names(tree)
+    for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
         name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
-        if name not in CLIENT_NAMES:
+        if name not in names:
             continue
         keywords = {kw.arg for kw in node.keywords}
         # `**kwargs` (arg None) could carry it; treat it as unverifiable → missing.
@@ -39,10 +53,12 @@ def scan_app() -> tuple[int, list[str]]:
         source = path.read_text(encoding="utf-8")
         if "Anthropic" not in source:
             continue
+        tree = ast.parse(source)
+        names = _client_names(tree)
         tree_calls = [
-            n for n in ast.walk(ast.parse(source))
+            n for n in ast.walk(tree)
             if isinstance(n, ast.Call)
-            and (getattr(n.func, "attr", None) or getattr(n.func, "id", None)) in CLIENT_NAMES
+            and (getattr(n.func, "attr", None) or getattr(n.func, "id", None)) in names
         ]
         seen += len(tree_calls)
         bad += [f"{path.relative_to(APP.parent.parent)}:{line}" for line in calls_missing_http_client(source)]
@@ -57,6 +73,8 @@ def test_classifier_catches_a_missing_keyword() -> None:
         "c = anthropic.Anthropic(api_key=k, http_client=httpx.Client())\n"
     ) == []
     assert calls_missing_http_client("x = SomethingElse(api_key=k)\n") == []
+    assert calls_missing_http_client("from anthropic import Anthropic as A\nc = A()\n") == [2]
+    assert calls_missing_http_client("c = anthropic.AnthropicBedrock()\n") == [1]
 
 
 def test_classifier_on_a_real_call_site() -> None:

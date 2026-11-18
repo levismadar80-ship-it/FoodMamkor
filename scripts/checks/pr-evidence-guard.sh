@@ -12,8 +12,13 @@
 # Does NOT: check that the evidence is true: that the screenshots were read,
 #           that the self-check was done, that the approval is real. It makes
 #           each question impossible to skip. Rule 40's quoted E2E result is
-#           not checked: it can only be written after the run, and this
-#           workflow does not re-run on a body edit.
+#           not checked: it can only be written after the run. NOTE for every
+#           rule: pr-checks.yml has no `edited` trigger, so a line added to the
+#           body clears the red only on the next push or label change.
+#           Skipped: a release PR (staging → main: its diff is the whole
+#           rollup, each PR in it carried its own evidence) and dependabot/*.
+#           Reordering he.json lines is not new copy: a + line counts only if
+#           the same text is not also a - line.
 # Related:  big-sites-guard.sh (same UI-path test), hebrew-copy-skills-guard.sh
 #           (same he.json reader and BLOCK_FROM switch), workflow.md rules
 #           22, 23, 38, 40.
@@ -30,9 +35,12 @@ HE_FILE="frontend/messages/he.json"
 
 today_il() { [ -n "${PR_EVIDENCE_TODAY:-}" ] && { echo "$PR_EVIDENCE_TODAY"; return; }; TZ=Asia/Jerusalem date +%F; }
 
-event_field() {  # $1 = body | labels
+event_field() {  # $1 = body | labels. 1 = not a PR, 3 = a PR event we could not read
   local ev="${GITHUB_EVENT_PATH:-}"
-  [ -n "$ev" ] && [ -r "$ev" ] || return 1
+  local unreadable=1
+  case "${GITHUB_EVENT_NAME:-}" in pull_request*) unreadable=3 ;; esac
+  [ -n "$ev" ] && [ -r "$ev" ] || return "$unreadable"
+  command -v python3 >/dev/null 2>&1 || return "$unreadable"
   python3 -c '
 import json, sys
 pr = json.load(open(sys.argv[1], encoding="utf-8")).get("pull_request")
@@ -40,6 +48,10 @@ if pr is None: sys.exit(1)
 if sys.argv[2] == "body": print(pr.get("body") or "")
 else: print("\n".join(l.get("name", "") for l in pr.get("labels") or []))
 ' "$ev" "$1" 2>/dev/null
+  local rc=$?
+  [ "$rc" -eq 0 ] && return 0
+  [ "$rc" -eq 1 ] && [ "$unreadable" -eq 1 ] && return 1
+  return 3
 }
 
 pr_body()   { [ -n "${PR_EVIDENCE_BODY+x}" ] && { printf '%s\n' "$PR_EVIDENCE_BODY"; return 0; }; event_field body; }
@@ -55,14 +67,31 @@ base_range() {
 changed_files() {  # 0 ok, 1 no base, 2 git failed
   [ -n "${PR_EVIDENCE_FILES+x}" ] && { printf '%s\n' "$PR_EVIDENCE_FILES"; return 0; }
   local r; r="$(base_range)" || return 1
-  git diff --name-only "$r" 2>/dev/null || return 2
+  # --diff-filter=d: a deleted screenshot is not evidence. Two-dot fallback when
+  # the shallow fetch did not reach the merge base.
+  git diff --name-only --diff-filter=d "$r" 2>/dev/null \
+    || git diff --name-only --diff-filter=d "${r/.../ }" 2>/dev/null || return 2
 }
 
 he_added() {
-  [ -n "${PR_EVIDENCE_HE_ADDED+x}" ] && { printf '%s\n' "$PR_EVIDENCE_HE_ADDED"; return 0; }
+  [ -n "${PR_EVIDENCE_HE_ADDED+x}" ] && { printf '%s\n' "$PR_EVIDENCE_HE_ADDED" | moved_out; return 0; }
   local r d; r="$(base_range)" || return 1
-  d="$(git diff --unified=0 "$r" -- "$HE_FILE" 2>/dev/null)" || return 2
-  printf '%s\n' "$d" | { grep -E '^\+' || true; } | { grep -vE '^\+\+\+' || true; }
+  d="$(git diff --unified=0 "$r" -- "$HE_FILE" 2>/dev/null)" \
+    || d="$(git diff --unified=0 "${r/.../ }" -- "$HE_FILE" 2>/dev/null)" || return 2
+  printf '%s\n' "$d" | moved_out
+}
+
+# + lines whose text (trimmed, trailing comma dropped) is not also a - line.
+moved_out() {
+  python3 -c '
+import sys
+lines = sys.stdin.read().splitlines()
+norm = lambda l: l[1:].strip().rstrip(",")
+gone = {norm(l) for l in lines if l.startswith("-") and not l.startswith("---")}
+for l in lines:
+    if l.startswith("+") and not l.startswith("+++") and norm(l) not in gone:
+        print(l)
+'
 }
 
 has_hebrew() { python3 -c 'import re,sys; sys.exit(0 if re.search("[א-ת]", sys.stdin.read()) else 1)'; }
@@ -80,7 +109,14 @@ answered() {
 
 check() {
   local body labels files rc he ui="" code="" qa=0 missing=()
-  if ! body="$(pr_body)"; then echo "pr-evidence-guard: skipped — not a pull request"; return 0; fi
+  body="$(pr_body)"; rc=$?
+  if [ "$rc" -eq 1 ]; then echo "pr-evidence-guard: skipped — not a pull request"; return 0; fi
+  [ "$rc" -eq 3 ] && missing+=("this is a pull_request event but its payload could not be read")
+  case "${PR_EVIDENCE_HEAD:-${GITHUB_HEAD_REF:-}}" in
+    dependabot/*) echo "pr-evidence-guard: skipped — dependabot PR"; return 0 ;;
+    staging) [ "${PR_EVIDENCE_BASE:-${GITHUB_BASE_REF:-}}" = "main" ] \
+               && { echo "pr-evidence-guard: skipped — release PR (staging → main)"; return 0; } ;;
+  esac
   labels="$(pr_labels || true)"
   files="$(changed_files)"; rc=$?
   [ "$rc" -eq 1 ] && { echo "pr-evidence-guard: skipped — no base branch to diff against"; return 0; }
@@ -120,7 +156,7 @@ self_test() {
   local status=0
   run_case() {  # name expect body labels files he_added
     local got rc
-    PR_EVIDENCE_TODAY="${CASE_TODAY:-$BLOCK_FROM}" PR_EVIDENCE_BODY="$3" PR_EVIDENCE_LABELS="$4" \
+    GITHUB_HEAD_REF= GITHUB_BASE_REF= GITHUB_EVENT_NAME= PR_EVIDENCE_TODAY="${CASE_TODAY:-$BLOCK_FROM}" PR_EVIDENCE_BODY="$3" PR_EVIDENCE_LABELS="$4" \
       PR_EVIDENCE_FILES="$5" PR_EVIDENCE_HE_ADDED="$6" check >/dev/null 2>&1; rc=$?
     got=PASS; [ "$rc" -ne 0 ] && got=FAIL
     if [ "$got" = "$2" ]; then echo "  [ok] $1 → $got"; else echo "  [XX] $1 → $got, expected $2"; status=1; fi
@@ -142,7 +178,16 @@ self_test() {
   run_case "Hebrew added, no Copy approved"     FAIL "Self-check: ok" "run-e2e" "$ui" "$he"
   run_case "Hebrew added, Copy approved"        PASS "$good" "run-e2e" "$ui" "$he"
   run_case "English-only he.json change"        PASS "Self-check: ok" "run-e2e" "$ui" '+  "id": "x",'
+  PR_EVIDENCE_HEAD=staging PR_EVIDENCE_BASE=main run_case "release PR staging → main skipped" PASS "" "" "$ui" "$he"
+  PR_EVIDENCE_HEAD=staging PR_EVIDENCE_BASE=staging run_case "head named staging into staging still checked" FAIL "" "" "backend/app/main.py" ""
+  PR_EVIDENCE_HEAD=dependabot/npm/x run_case "dependabot PR skipped" PASS "" "" "frontend/package-lock.json" ""
+  run_case "he.json line moved, not new"            PASS "Self-check: ok" "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "שלום",'
+  run_case "he.json line changed = new copy"        FAIL "Self-check: ok" "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "להתראות",'
   CASE_TODAY="2026-11-21" run_case "before BLOCK_FROM only warns" PASS "" "" "backend/app/main.py" ""
+  local got; got="$(GITHUB_HEAD_REF= GITHUB_BASE_REF= GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/nonexistent PR_EVIDENCE_TODAY="$BLOCK_FROM" \
+    PR_EVIDENCE_FILES="docs/a.md" PR_EVIDENCE_HE_ADDED="" check >/dev/null 2>&1; echo $?)"
+  if [ "$got" -ne 0 ]; then echo "  [ok] unreadable pull_request payload → FAIL"
+  else echo "  [XX] unreadable pull_request payload → PASS, expected FAIL"; status=1; fi
   # Anchored to the real tree: a real component path must count as UI.
   local real; real="$(ls frontend/components/*.jsx 2>/dev/null | head -1)"
   if [ -z "$real" ]; then echo "  [XX] real-file anchor: no frontend/components/*.jsx"; status=1

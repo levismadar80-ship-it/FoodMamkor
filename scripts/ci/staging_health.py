@@ -64,7 +64,9 @@ def decide(runs: list[dict], jobs_of) -> Verdict:
             continue
         pw = [j for j in jobs_of(run) if (j.get("name") or "").startswith(PLAYWRIGHT_PREFIX)]
         ran = [j for j in pw if j.get("conclusion") not in (None, "skipped", "cancelled")]
-        if not ran:
+        # A cancelled shard means part of the suite never ran: the run is not a
+        # green and not a red, so it says nothing (fresh review, #4796).
+        if not ran or any(j.get("conclusion") == "cancelled" for j in pw):
             continue
         sha = (run.get("head_sha") or "")[:7]
         url = run.get("html_url") or ""
@@ -128,7 +130,11 @@ def main(argv: list[str]) -> int:
     cmd = argv[1] if len(argv) > 1 else "decide"
     if cmd == "--self-test":
         return self_test()
-    verdict = live_verdict(repo)
+    try:
+        verdict = live_verdict(repo)
+    except Exception as exc:  # noqa: BLE001 — any API failure must still post
+        # A failed read must not leave an older green standing on the PR.
+        verdict = Verdict("unknown", f"could not read staging runs: {type(exc).__name__}")
     print(f"staging health: {verdict.state} — {verdict.detail} {verdict.url}")
     if cmd == "decide":
         return 0 if verdict.state == "green" else 1
@@ -168,6 +174,8 @@ def self_test() -> int:
          {2: [], 1: [pw("failure")]}, "red"),
         ("newer green after a red decides", [run(2), run(1)],
          {2: [pw("success")], 1: [pw("failure")]}, "green"),
+        ("run with a cancelled shard passed over", [run(2), run(1)],
+         {2: [pw("success"), pw("cancelled", 2)], 1: [pw("failure")]}, "red"),
         ("WebKit shadow red carries no vote", [run(1)], {1: [pw("success"), webkit_red]}, "green"),
         ("only skips in the window = unknown", [run(1)], {1: [pw("skipped")]}, "unknown"),
         ("no runs at all = unknown", [], {}, "unknown"),
