@@ -56,7 +56,7 @@ describe("newsletter confirm page (MEH-3300)", () => {
     post.mockRejectedValue({ response: { status: 400 } });
     renderPage("abc");
     fireEvent.click(screen.getByTestId("newsletter-confirm-button"));
-    await screen.findByTestId("newsletter-confirm-invalid");
+    expect(await screen.findByTestId("newsletter-confirm-invalid")).toBeTruthy();
   });
 
   it("a 503 offers a retry that posts again", async () => {
