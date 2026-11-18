@@ -45,7 +45,7 @@ describe("upload size cap (MEH-3399)", () => {
       e.response = { status: 413, data: { detail: "הבקשה גדולה מדי." } };
       return Promise.reject(e);
     });
-    const err = await api.post("/producers/me", { a: 1 }, { adapter }).catch((e) => e);
+    const err = await api.put("/producers/me", { a: 1 }, { adapter }).catch((e) => e);
     expect(err.response.data.detail).toBe("הבקשה גדולה מדי.");
   });
 
