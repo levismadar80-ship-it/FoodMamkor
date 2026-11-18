@@ -4,6 +4,37 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-15 — חמישה קבצים גדולים פוצלו לפי תחום
+
+**שורה אחת:** #4519, #4612, #4613, #4614 ו-#4615 מוזגו ל-staging (רכבות 17 ו-18). אין שינוי התנהגות ואין מיגרציות.
+
+**מה צריך לדעת לפני עבודה:**
+- **איפה הקוד עכשיו:** כרטיסי העריכה ב-`producer/dashboard/edit/cards/<Name>Card.jsx`. ‏`routers/producer_me.py` הוא ארבעה קבצים (`_analytics`, `_review`, `_locations`). ‏`routers/admin.py` לצד `admin_decisions.py`, ‏`services/producer_approval.py`, ‏`services/admin_producer_emails.py`. המודלים והסכמות בקבצים לפי תחום תחת `backend/app/models/` ו-`backend/app/schemas/`.
+- **ייבוא:** `from app.models import X` ו-`from app.schemas import X` עובדים כמו קודם. קוד חדש מייבא מהקובץ שבו הסמל חי.
+- **טסטים:** `monkeypatch` על שם שעבר מכוון לקובץ החדש (למשל `app.schemas.producer_out`), לא לקובץ הישן.
+- **קובץ חדש ב-`backend/app`:** שורה משלו ב-`files` של mypy ב-`backend/pyproject.toml`, ממוינת.
+- **נדחה ל-1.5.2:** פיצול `routers/auth.py` (כ-76 טסטים עושים patch על `app.routers.auth`) ופיצול `RegisterProducerClient.jsx`. המפרט: `/mnt/project-files/shared-components/deferred-v152.md`. הכרטיסים עוד לא נפתחו, כי Linear בתקרת הכרטיסים.
+## 2026-11-16 — תגי תזונה: הפער היחיד נסגר בטסטים (MEH-388)
+
+**שורה אחת:** ‏#4671 מוזג ל-staging (`6c1901c`): שני טסטי סינון, ל«ללא גלוטן» ול«ללא לקטוז». הכרטיס נשאר Backlog / `post-launch`.
+
+**מה צריך לדעת לפני עבודה:**
+- **תגי התזונה קיימים מקצה לקצה** לארבעת התגים (טבעוני · צמחוני · ללא גלוטן · ללא לקטוז). מי שפותח את MEH-388 שוב, לא בונה מחדש: אוצר המילים של ערכים, סוג עסק ואזור עדיין מחכה להחלטה עריכתית של ספיר.
+- **ב-staging כל ארבעת הצ'יפים מוסתרים** (סופרים לפי `has_*_products`: 0 / 0 / 1 / 0, הסף 5). הפילטרים עצמם מחזירים: טבעוני 4, צמחוני 4, ללא גלוטן 1, ללא לקטוז 0, מתוך 33.
+- **פער לא מתוקן:** השער של הצ'יפ הטבעוני לא סופר הצהרות `vegan_scope='all'`, והפילטר כן. פירוט ב-CHANGELOG 16/11.
+- **סנדבוקס:** אין בו Postgres, ולכן ה-stop hook של pytest נכשל ב-`Connection refused` אחרי `uv sync`. זו לא תקלה בטסטים. הפתרון בצד שלך: `STOP_HOOK_SKIP=pytest`, או לאשר הרמת Postgres מקומי.
+## 2026-11-16 — סנדרה פירות: שש משימות פתוחות לבית עסק שאדמין בונה
+
+**שורה אחת:** שישה PRs פתוחים, אף אחד לא מוזג: #4659 · #4660 · #4661 · #4662 · #4666 · #4667.
+
+**מה צריך לדעת לפני עבודה:**
+- **סדר מיזוג:** #4660 → #4662 → #4666. שלושתם נוגעים ב-`frontend/components/admin/ProducerForm.jsx`, וכל אחד בנוי על הקודם (merge, לא rebase).
+- **Alembic:** ל-#4666 ול-#4667 יש שתי רוויזיות, ושתיהן יורדות מ-`f6c2a8d4e1b7`. מי שמתמזגת שנייה מעדכנת `down_revision` לראשונה, אחרת יהיו שני heads.
+- **mypips:** `scripts/import/mypips-extract.mjs` קורא רק דפים ציבוריים ומחזיר 30 מתוך 197 מוצרים. כדי לקבל את כולם צריך ייצוא מ-mypips או אישור לקרוא את תעבורת הרשת של הדף הציבורי.
+- **מחכה לספיר:** העלאת המכסה ל-250 מוצרים, הנוסח «תמונת בעלת העסק» ו-«slug_not_latin», ושלושת המודולים החדשים ברשימת mypy ב-`backend/pyproject.toml` (העריכה חסומה ל-CC).
+- **ממצאים שנפתחו:** MEH-3342 (חורים שנמצאו בדרך), והערה ב-MEH-3322 על ה-flake ב-`footer-nav-clearance.spec.ts:186`.
+
+**הצעד הבא:** אחרי המיזוג, לבנות את סנדרה ב-staging דרך מסכי האדמין (נקודות איסוף, ייבוא, טלפון נוסף, ביו) ולבדוק ב-390px.
 ## 2026-11-18 — «מה חדש» לבתי עסק: ‏#4561, ‏#4565 מוזגו
 
 **שורה אחת:** הערות גרסה לבתי עסק, כרטיס ברוכים הבאים, תווית «חדש» וכרטיסי רגע ראשון נמצאים ב-staging. הפירוט ב-CHANGELOG.
