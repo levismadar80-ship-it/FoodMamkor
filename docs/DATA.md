@@ -255,6 +255,15 @@ phone_otp_tokens (
   expires_at timestamp, used bool default false, created_at
 )
 
+-- MEH-3301 (D14): one-time WhatsApp code that verifies a USER's phone.
+-- `phone` = the canonical number the code is bound to; `attempts` = wrong guesses
+-- (5 per token). Written only by the MEH-3302 routes. Migration c7d3e1a9f4b2.
+user_phone_otp_tokens (
+  id uuid PK, user_id FK → users ON DELETE CASCADE (indexed),
+  phone varchar(30), code varchar(6),
+  expires_at timestamp, used bool default false, attempts int default 0, created_at
+)
+
 -- MEH-51: producer uploads cert → admin approves → badge activates
 kashrut_badge_requests (
   id uuid PK, producer_id FK,
@@ -269,6 +278,8 @@ users (
   id uuid PK,
   email unique, name, password_hash (nullable for OAuth),
   phone, city,
+  phone_verified_at timestamptz nullable,   -- MEH-3301: when THIS phone was verified; a phone change clears it
+  whatsapp_consent_at timestamptz nullable, -- MEH-3301: WhatsApp-updates consent; «הסר» clears it
   role: consumer|producer|admin,
   producer_id FK nullable,
   google_id, apple_id (unique when set),

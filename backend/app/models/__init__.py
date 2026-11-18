@@ -20,6 +20,7 @@ from app.models.models import (
     NewsletterSubscriber,
     OutreachLead,
     PhoneOtpToken,
+    UserPhoneOtpToken,
     Producer,
     ProducerCategory,
     ProducerLocation,
@@ -116,6 +117,7 @@ __all__ = [
     "ProducerWhatsAppClick",
     "OutreachLead",
     "PhoneOtpToken",
+    "UserPhoneOtpToken",
     "KashrutBadgeRequest",
     "SearchQuery",
     # MEH-588 — producer recipes (chunk 1/4)
