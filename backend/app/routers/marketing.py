@@ -289,26 +289,26 @@ def _send_newsletter_welcome(email: str) -> None:
 <html dir="rtl" lang="he">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="40" cellspacing="0"
+        <table width="100%" cellpadding="0" cellspacing="0"
                style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
-            <td style="text-align:right;direction:rtl;">
+            <td style="text-align:right;direction:rtl;padding:32px 24px;">
               {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכים הבאים למהמקור</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
+              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
+              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
                 נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
               </p>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
+              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
                 <span style="font-weight:bold;">ספיר ✨</span>
               </p>
-              <hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">
-              <p style="color:#888;font-size:12px;line-height:1.6;margin:0;">
+              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
+              <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
                 מהמקור — בתי עסק מקומיים, כולם במקום אחד.<br>
-                <a href="{unsubscribe_url}" style="color:#888;text-decoration:underline;">לבטל הרשמה</a>
+                <a href="{unsubscribe_url}" style="color:#5C584F;text-decoration:underline;">לבטל הרשמה</a>
               </p>
             </td>
           </tr>

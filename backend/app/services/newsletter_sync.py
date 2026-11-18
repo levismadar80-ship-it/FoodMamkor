@@ -26,6 +26,7 @@ import threading
 from app.config import settings
 from app.sentry import capture_background_exception
 from app.services.email import _is_reserved_domain, _mask
+from app.services.outbound_guard import newsletter_sync_allowed
 from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
@@ -81,6 +82,11 @@ def _contact_exists(resend: Any, email: str) -> bool:
 
 
 def _skip(email: str) -> bool:
+    # MEH-3402: Resend Contacts is the list real Broadcasts go to. Outside
+    # production nothing is added to it or deleted from it.
+    if not newsletter_sync_allowed():
+        logger.info("[NEWSLETTER] Resend sync skipped outside production")
+        return True
     return not email or _is_reserved_domain(email)
 
 

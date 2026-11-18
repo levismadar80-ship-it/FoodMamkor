@@ -37,7 +37,7 @@ import { LICENSE_REQUIRED_CATEGORIES, PRODUCER_LICENSE_REGEX } from "../../../li
  *
  * ─── Doc-vs-code drift found, REPORTED and not fixed ───────────────────────
  * D1 · MT:MEH-1167:1 lists a "צילום התעודה" control; the live label is
- *      «צילום התעודה (JPG/PNG, עד 5MB)» and the input carries accept="image/*".
+ *      «צילום התעודה (JPG/PNG, עד 4MB)» and the input carries accept="image/*".
  *      The PDF rejection in :4 is therefore a SERVER answer the client surfaces
  *      — the browser's own accept filter is bypassable and not what the row
  *      relies on.
@@ -239,7 +239,7 @@ test.describe("kashrut card", () => {
     await expect(b.getByText(/יש לעסק תעודת כשרות בתוקף\?/)).toBeVisible();
     await expect(select(page)).toHaveValue("");
     await expect(select(page).locator("option").first()).toHaveText("בחרו סוג כשרות");
-    await expect(b.getByText("צילום התעודה (JPG/PNG, עד 5MB)")).toBeVisible();
+    await expect(b.getByText("צילום התעודה (JPG/PNG, עד 4MB)")).toBeVisible();
     await expect(page.getByTestId("kashrut-cert-input")).toHaveAttribute("accept", "image/*");
     await expect(submit(page)).toBeDisabled();
     await expect(b.getByText("עוד אין תג כשרות לעסק. אפשר לבקש אחד כאן.")).toBeVisible();

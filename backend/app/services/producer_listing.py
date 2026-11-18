@@ -1233,10 +1233,10 @@ def _apply_search_filter(
 
 
 def _log_search(db: Session, search_q: str | None, total_count: int) -> None:
-    """MEH-99 — log every search (zero AND non-zero) so trending has signal.
+    """MEH-99 — log every search (zero AND non-zero).
 
-    Zero-result rows are used for discovery; non-zero rows drive
-    /search/trending. MEH-267: ORM insert (not raw SQL) so id +
+    Zero-result rows are used for discovery. (Non-zero rows fed
+    /search/trending until MEH-3257 removed it.) MEH-267: ORM insert (not raw SQL) so id +
     searched_at come from Python-side model defaults — alembic baseline
     has no server_default on these columns.
 

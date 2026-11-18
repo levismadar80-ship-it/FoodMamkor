@@ -17,6 +17,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
+    EMAIL_MAX_LENGTH,
     PhoneNumberField,
     SanitizedLabelField,
     SanitizedPersonNameField,
@@ -99,7 +100,7 @@ class ProfileUpdate(BaseModel):
     # "Unable to apply constraint 'max_length' to supplied value None" — the
     # same trap Chunk 1 hit and documented on the type itself.
     name: SanitizedPersonNameField | None = Field(None, min_length=1, max_length=200)
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
     # MEH-3104: required (checked in users_me._change_email) only when `email`
     # really changes. A plain str like PasswordChange.current_password —
     # verify_password is the only authority on it.
@@ -151,8 +152,9 @@ class BioGenerateIn(BaseModel):
 # MEH-460 Pkg 3: relocated from routers/search.py per ADR-006 R1.
 # Pure relocation — fields preserved verbatim. SearchOut composes the 3
 # Hit classes; all 4 move together so the list[X] references resolve in
-# module order. Router-local concerns (_trending_cache, _TRENDING_TTL,
-# _HEBREW_PREFIXES, _strip_hebrew_prefix, _empty) stay in search.py —
+# module order. Router-local concerns (_HEBREW_PREFIXES,
+# _strip_hebrew_prefix, _empty) stay in search.py — MEH-3257 removed
+# _trending_cache and _TRENDING_TTL with /search/trending itself —
 # handler-side, not schema fields.
 class ProducerHit(BaseModel):
     id: UUID
@@ -282,7 +284,7 @@ class StatsOut(BaseModel):
 
 
 class NewsletterIn(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
 
 
 # MEH-1330: the unsubscribe link carries a stateless signed token (the
@@ -302,6 +304,16 @@ class WeeklySummaryUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1, max_length=2048)
 
 
+# Page freshness: the «כן, הכול נכון» link in the monthly email.
+class PageFreshnessConfirmIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2048)
+
+
+class PageFreshnessConfirmOut(BaseModel):
+    business_name: str
+    confirmed_at: datetime
+
+
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of
 # truth for both the ContactIn validator (keys = allowed values) and the
 # router's label mapping (marketing.py imports this) — avoids the two-parallel-
@@ -317,7 +329,7 @@ CONTACT_TOPIC_LABELS = {
 
 class ContactIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     message: str = Field(..., min_length=1, max_length=5000)
     # MEH-1113: optional whitelisted topic. None → treated as "general".
     topic: str | None = None
@@ -425,7 +437,7 @@ class DeliveryWaitlistIn(BaseModel):
     count both sources on one key.
     """
 
-    email: EmailStr
+    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
     city: str = Field(..., min_length=1, max_length=COVERAGE_CITY_MAX_LENGTH)
     # MEH-2673: «אשמח לארח נקודת מסירה ב{עיר}» — optional, absent = False, so
     # the pre-MEH-2673 form keeps working unchanged.
