@@ -1632,7 +1632,7 @@ PUT    /admin/users/{id}/role                  admin. role=consumer **or role=ad
 GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at>. Newest first.
                                                { items: [{ id, actor_id, action, target_type, target_id, details, created_at }] }.
                                                The stored IP is not returned.
-POST   /admin/users/{id}/block                 admin
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
