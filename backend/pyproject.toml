@@ -3,31 +3,31 @@ name = "foodmamkor-backend"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi==0.162.0",
+    "fastapi==0.163.0",
     "uvicorn[standard]==0.54.0",
     # Held at 2.0: SQLAlchemy 2.1 resolves postgresql:// to psycopg v3, and this
     # backend ships psycopg2 only (Dependabot #3956 broke conftest import).
     "sqlalchemy==2.0.55",
     "psycopg2-binary==2.9.13",
     "alembic==1.20.1",
-    "joserfc==1.7.7",
+    "joserfc==1.8.0",
     "bcrypt==5.0.0",
     "bleach==6.4.0",
     "python-multipart==0.0.33",
-    "pydantic[email]==2.14.2",
-    "pydantic-settings==2.16.2",
-    "cloudinary==1.46.3",
-    "google-auth==2.62.0",
+    "pydantic[email]==2.14.3",
+    "pydantic-settings==2.16.3",
+    "cloudinary==1.47.0",
+    "google-auth==2.62.2",
     "PyJWT[crypto]==2.15.1",
     "requests==2.34.2",
     "httpx==0.28.1",
     "anthropic==0.107.1",
     "slowapi==0.1.10",
     "pywebpush==2.5.0",
-    "resend==2.50.1",
+    "resend==2.53.2",
     "structlog==24.4.0",
     "asgi-correlation-id==5.0.1",
-    "sentry-sdk[fastapi]==2.73.0",
+    "sentry-sdk[fastapi]==2.75.0",
     "apscheduler~=3.11",
 ]
 
@@ -42,7 +42,7 @@ dev = [
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.8.0",
     "ruff>=0.15.20",
-    "schemathesis>=4.0",
+    "schemathesis>=4.33.4",
 ]
 
 [tool.uv]

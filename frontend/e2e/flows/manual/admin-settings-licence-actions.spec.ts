@@ -39,6 +39,8 @@ import { ADMIN_REVIEW_CHECKLIST } from "../../../lib/admin-review-checklist.js";
  *   2. The contracts are pinned: AdminChecklistItemOut / the checklist PUT body
  *      (routers/admin_checklist.py), ProducerAdminOut + the admin PUT payload
  *      (ProducerForm.jsx:445-480), /admin/reports (routers/reports.py:81).
+ *      /admin/producers/{id}/locations is stubbed to [] (MEH-3333): the
+ *      locations editor reads it on load, and no test here asserts on it.
  *   3. The unmocked alternative rewrites the shared checklist every admin sees,
  *      suspends a real business and blocks a real user — writes against shared
  *      staging, and the first one is not even self-cancelling.
@@ -188,6 +190,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<{ items: () =
   // The review flow's other reads (12a/12b inventory).
   await page.route("**/admin/producers/rejection-presets", (r) => json(r, [{ key: "other", label: "אחר (פירוט חופשי)" }]));
   await page.route("**/admin/producers/*/review-checks", (r) => json(r, { producer_id: String(PRODUCER_ID), checks: [] }));
+  // MEH-3333: the edit page also mounts the pickup-locations editor, which reads
+  // this list on load. A stub, not a mock: nothing here asserts on locations.
+  await page.route((u) => /\/api\/admin\/producers\/[^/]+\/locations\/?$/.test(u.pathname), (r) => json(r, []));
   await page.route((u) => /\/api\/admin\/producers\/?$/.test(u.pathname), (r) =>
     json(r, [{ ...profile, id: 501, name: "ממתין לבדיקה", status: "pending", business_days_waiting: 1, submitted_for_review_at: "2026-09-01T08:00:00Z", created_at: "2026-08-30T08:00:00Z", images: [] }]),
   );

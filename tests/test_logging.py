@@ -13,6 +13,7 @@ import os
 
 import pytest
 import structlog
+import structlog.testing
 
 
 class TestStructlogConfigured:
@@ -30,7 +31,13 @@ class TestStructlogConfigured:
         # A configured logger has a _proxy attribute or is a BoundLoggerLazyProxy
         # whose underlying logger is not None after binding.
         bound = log.bind(test_key="test_value")
-        assert bound is not None
+        # MEH-3386: `bound is not None` could not fail — bind() always returns
+        # an object. What matters is that the bound key reaches the record.
+        with structlog.testing.capture_logs() as records:
+            bound.info("meh3386_probe")
+        probe = [r for r in records if r.get("event") == "meh3386_probe"]
+        assert probe, records
+        assert probe[0].get("test_key") == "test_value", probe[0]
 
 
 class TestCorrelationIdPropagation:

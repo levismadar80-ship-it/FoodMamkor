@@ -103,10 +103,16 @@ describe("group-buy card", () => {
   });
 
   it("open says how many are missing; funded states the count", async () => {
-    await renderList([GB, { ...GB, id: "gb-2", status: "funded", commits_count: 6 }]);
+    await renderList([
+      GB,
+      { ...GB, id: "gb-2", status: "funded", commits_count: 5 },
+      { ...GB, id: "gb-3", status: "funded", commits_count: 6 },
+    ]);
     const lines = screen.getAllByTestId("group-buy-progress-line").map((n) => n.textContent);
     expect(lines[0]).toBe("group_buys.detail.remaining_to_open 3");
-    expect(lines[1]).toBe("group_buys.card.progress_label 6 5");
+    expect(lines[1]).toBe("group_buys.card.progress_label 5 5");
+    // MEH-3289: past the minimum the group keeps filling — the count alone.
+    expect(lines[2]).toBe("group_buys.card.progress_joined 6");
   });
 });
 

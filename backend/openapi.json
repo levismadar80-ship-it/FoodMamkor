@@ -752,6 +752,20 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
+      "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post",
+        "type": "object"
+      },
       "Body_upload_avatar_upload_avatar_post": {
         "properties": {
           "file": {
@@ -5913,6 +5927,17 @@
             "default": false,
             "title": "Organic Certified",
             "type": "boolean"
+          },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
           },
           "phone": {
             "anyOf": [
@@ -15817,6 +15842,17 @@
             "title": "Cities",
             "type": "array"
           },
+          "corrected_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Query"
+          },
           "producers": {
             "default": [],
             "items": {
@@ -18796,6 +18832,231 @@
         "summary": "Grant Verified",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/locations": {
+      "get": {
+        "operationId": "admin_list_locations_admin_producers__producer_id__locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                  },
+                  "title": "Response Admin List Locations Admin Producers  Producer Id  Locations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Locations",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_location_admin_producers__producer_id__locations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerLocationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Create Location",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/locations/{location_id}": {
+      "delete": {
+        "operationId": "admin_delete_location_admin_producers__producer_id__locations__location_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete Location",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_location_admin_producers__producer_id__locations__location_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerLocationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Update Location",
+        "tags": [
+          "admin-producer-locations"
         ]
       }
     },
@@ -27984,6 +28245,63 @@
           }
         ],
         "summary": "Upload Owner Photo",
+        "tags": [
+          "upload"
+        ]
+      }
+    },
+    "/upload/owner-photo/{producer_id}": {
+      "post": {
+        "description": "MEH-3338: the admin uploads the owner photo for a business she builds\non the owner's behalf. Same validation, same fixed Cloudinary slot\n(`owner_{producer_id}`, overwrite) as the owner route — the business comes\nfrom the PATH, and only an admin reaches it (403 for anyone else, the owner\nincluded: she has her own route).",
+        "operationId": "admin_upload_owner_photo_upload_owner_photo__producer_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Upload Owner Photo",
         "tags": [
           "upload"
         ]

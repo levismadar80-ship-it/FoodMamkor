@@ -70,6 +70,14 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "verify-email",
         # MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
         "unsubscribe",
+        # MEH-3336 (review): static routes the frontend already reserves
+        # (lib/slug.js RESERVED) but this list did not. Latin slugs from an
+        # Instagram handle made them reachable ("@home", "@rescue").
+        "delivery-waitlist",
+        "home",
+        "recommend",
+        "registration",
+        "rescue",
     }
 )
 
@@ -177,3 +185,114 @@ def is_reserved(candidate: str) -> bool:
     if not candidate:
         return False
     return unicodedata.normalize("NFKC", str(candidate)).casefold() in RESERVED_SLUGS
+
+
+# ---------------------------------------------------------------------------
+# MEH-3336 — Latin slugs. A producer URL is now short and ASCII
+# ("sandra-perot"), because a Hebrew slug is percent-encoded when a link is
+# shared (%D7%A1%D7%A0...) and most of our links travel through WhatsApp.
+# `slugify` above is unchanged: it still owns the MEH-2020 allowlist that
+# `tests/test_slugify_charclass_equivalence.py` pins, and the admin-update
+# path still normalises a typed slug with it before the Latin check.
+# ---------------------------------------------------------------------------
+
+LATIN_SLUG_MAX = 40
+_LATIN_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+# A transliteration SUGGESTION, not a dictionary: Hebrew is written without
+# vowels, so "סנדרה" can only become "sndra". The admin overrides it in the
+# Slug field when a better Latin name exists (sandra-perot). Rules: a final
+# ה reads "a"; a ו or י between consonants reads "o" / "i"; an initial א / ע
+# reads "a"; otherwise both are silent.
+_HE_LATIN: dict[str, str] = {
+    "ב": "b", "ג": "g", "ד": "d", "ה": "h", "ו": "v", "ז": "z", "ח": "ch",
+    "ט": "t", "י": "y", "כ": "k", "ך": "ch", "ל": "l", "מ": "m", "ם": "m",
+    "נ": "n", "ן": "n", "ס": "s", "פ": "p", "ף": "f", "צ": "tz", "ץ": "tz",
+    "ק": "k", "ר": "r", "ש": "sh", "ת": "t", "א": "", "ע": "",
+}  # fmt: skip
+_HE_LETTER = re.compile(r"[א-ת]")
+
+
+def _transliterate_word(word: str) -> str:
+    out: list[str] = []
+    for i, ch in enumerate(word):
+        if not _HE_LETTER.match(ch):
+            out.append(ch)
+            continue
+        prev_he = i > 0 and bool(_HE_LETTER.match(word[i - 1]))
+        next_he = i + 1 < len(word) and bool(_HE_LETTER.match(word[i + 1]))
+        if ch in "אע" and not prev_he:
+            out.append("a")
+        elif ch == "ה" and prev_he and not next_he:
+            out.append("a")
+        elif ch == "ו" and prev_he and next_he:
+            out.append("o")
+        elif ch == "י" and prev_he and next_he:
+            out.append("i")
+        else:
+            out.append(_HE_LATIN[ch])
+    return "".join(out)
+
+
+def _latin_slug_from_text(text: str) -> str:
+    s = unicodedata.normalize("NFKD", str(text or "")).lower()
+    # Drop niqqud / combining marks and Latin accents (é → e).
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = re.sub(r"[\s_\-־]+", " ", s)
+    words = [_transliterate_word(w) for w in s.split()]
+    s = "-".join(re.sub(r"[^a-z0-9]", "", w) for w in words)
+    return re.sub(r"-+", "-", s).strip("-")
+
+
+def cap_slug(slug: str, limit: int = LATIN_SLUG_MAX) -> str:
+    """Cut at the last hyphen that fits, so a slug never ends mid-word."""
+    if len(slug) <= limit:
+        return slug
+    cut = slug[:limit]
+    if "-" in cut and slug[limit] != "-":
+        cut = cut.rsplit("-", 1)[0]
+    return cut.strip("-")
+
+
+def handle_from_instagram(instagram: str | None) -> str:
+    """'@Sandra.Perot', 'instagram.com/sandra_perot/' → 'sandra-perot'."""
+    if not instagram:
+        return ""
+    s = str(instagram).strip()
+    s = re.sub(r"^https?://", "", s, flags=re.I)
+    s = re.sub(r"^(www\.)?instagram\.com/", "", s, flags=re.I)
+    s = s.split("?")[0].strip("/").lstrip("@")
+    # MEH-3336 (review): only a real handle counts. A post URL ("p/Cx…"), a
+    # different host (m.instagram.com, linktr.ee) or anything else falls back
+    # to the business name instead of minting a nonsense public slug.
+    if not re.fullmatch(r"[A-Za-z0-9._]{1,30}", s):
+        return ""
+    s = re.sub(r"[._]+", "-", s)
+    return cap_slug(_latin_slug_from_text(s))
+
+
+def latin_slug(name: str | None, *, instagram: str | None = None) -> str:
+    """MEH-3336 — the suggested Latin slug for a business.
+
+    The Instagram handle wins when there is one (it is the name the business
+    already chose in Latin letters); otherwise the name is transliterated.
+    Returns "" when nothing Latin survives, and the caller stores NULL then
+    (MEH-1817's `or None`), never "".
+    """
+    return handle_from_instagram(instagram) or cap_slug(
+        _latin_slug_from_text(name or "")
+    )
+
+
+def latin_city_suffix(city: str | None) -> str:
+    """The collision suffix: the business's town, transliterated."""
+    return cap_slug(_latin_slug_from_text(city or ""), 20)
+
+
+def is_latin_slug(candidate: str | None) -> bool:
+    """a-z, 0-9 and single inner hyphens, at most LATIN_SLUG_MAX characters."""
+    return bool(
+        candidate
+        and len(candidate) <= LATIN_SLUG_MAX
+        and _LATIN_SLUG_RE.match(candidate)
+    )
