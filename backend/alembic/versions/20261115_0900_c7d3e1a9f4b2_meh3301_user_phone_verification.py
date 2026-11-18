@@ -24,7 +24,7 @@ Expand-only per ADR-007: two nullable columns and a new empty table; no
 existing read path depends on any of them, so the previous container keeps
 serving unchanged while this runs.
 
-Adds one table → EXPECTED_TABLES 57 -> 58 (.github/workflows/pr-checks.yml;
+Adds one table, counted in v1.5.6 train 3's EXPECTED_TABLES=64 (.github/workflows/pr-checks.yml;
 a .github change, committed by a human per security.md).
 
 downgrade() drops the table and the two columns — verification records are
