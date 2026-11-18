@@ -92,6 +92,26 @@ function ReviewDueToggle({ active, onToggle }) {
   );
 }
 
+// Page freshness: live pages the owner has not confirmed for 60 days. A
+// SERVER filter, same reason as ReviewDueToggle: last_confirmed_at is
+// admin-only and the clause needs the clock.
+function StaleToggle({ active, onToggle }) {
+  const t = useTranslations("admin");
+  const cls = active
+    ? "bg-warning-100 border-warning-400 text-warning-900"
+    : "bg-surface border-border text-muted hover:border-warning-400";
+  return (
+    <button
+      onClick={() => onToggle((v) => !v)}
+      className={`px-4 py-2 rounded-md text-sm border whitespace-nowrap transition ${cls}`}
+      aria-pressed={active}
+      data-testid="admin-freshness-stale-toggle"
+    >
+      {active ? t("producers.toolbar.show_all") : t("producers.toolbar.freshness_stale_label")}
+    </button>
+  );
+}
+
 function ToolbarActions({ onExport }) {
   const t = useTranslations("admin");
   return (
@@ -118,6 +138,7 @@ export default function AdminProducersToolbar({
   producerStatus, setProducerStatus,
   incompleteOnly, setIncompleteOnly, incompleteCount,
   reviewDueOnly, setReviewDueOnly,
+  staleOnly, setStaleOnly,
   onSearch, onExport,
 }) {
   const t = useTranslations("admin");
@@ -130,6 +151,7 @@ export default function AdminProducersToolbar({
       </Button>
       <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
       <ReviewDueToggle active={reviewDueOnly} onToggle={setReviewDueOnly} />
+      <StaleToggle active={staleOnly} onToggle={setStaleOnly} />
       <ToolbarActions onExport={onExport} />
     </div>
   );

@@ -5565,6 +5565,40 @@
         "title": "OwnerInvitePublicOut",
         "type": "object"
       },
+      "PageFreshnessConfirmIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "PageFreshnessConfirmIn",
+        "type": "object"
+      },
+      "PageFreshnessConfirmOut": {
+        "properties": {
+          "business_name": {
+            "title": "Business Name",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "format": "date-time",
+            "title": "Confirmed At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "business_name",
+          "confirmed_at"
+        ],
+        "title": "PageFreshnessConfirmOut",
+        "type": "object"
+      },
       "PasswordChange": {
         "properties": {
           "current_password": {
@@ -6376,6 +6410,18 @@
             "default": "unknown",
             "title": "Lactose Free Facility",
             "type": "string"
+          },
+          "last_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Confirmed At"
           },
           "lat": {
             "anyOf": [
@@ -17948,6 +17994,16 @@
               "title": "Recommended Review Due",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "freshness_stale",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Freshness Stale",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -23272,6 +23328,47 @@
         "summary": "Get Organizer",
         "tags": [
           "organizers"
+        ]
+      }
+    },
+    "/page-freshness/confirm": {
+      "post": {
+        "operationId": "confirm_page_freshness_page_freshness_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFreshnessConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFreshnessConfirmOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Page Freshness",
+        "tags": [
+          "page-freshness"
         ]
       }
     },

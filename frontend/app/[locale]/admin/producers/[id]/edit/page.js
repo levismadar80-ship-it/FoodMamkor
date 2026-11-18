@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import ProducerForm from "@/components/admin/ProducerForm";
@@ -29,6 +30,7 @@ export default function EditProducerPage() {
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const t = useTranslations("admin");
+  const locale = useLocale();
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) router.push("/login");
@@ -86,6 +88,14 @@ export default function EditProducerPage() {
       <div className="mb-6">
         <BackLink href="/admin?tab=producers" label={t("common.back")} />
         <h1 className="text-2xl font-bold mt-2">{t("producers.edit.title", { name: producer.name })}</h1>
+        {/* Page freshness: when the owner last pressed «כן, הכול נכון» in the
+            monthly email. Absent until she has; the stale filter on the list
+            is where unconfirmed pages are found. */}
+        {producer.last_confirmed_at && (
+          <p className="text-sm text-muted mt-1" data-testid="admin-last-confirmed">
+            {t("producers.edit.last_confirmed", { date: formatDate(producer.last_confirmed_at, locale) })}
+          </p>
+        )}
       </div>
       {/* MEH-2326: the catalogue the owner receives with the claim link. Only a
           draft; once she has claimed it the server answers 409, shown verbatim. */}

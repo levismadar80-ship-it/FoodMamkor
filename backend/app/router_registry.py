@@ -41,6 +41,7 @@ from app.routers import (
     rescue,
     producers,
     registrations,
+    page_freshness,
     report_info,
     reports,
     reviews,
@@ -160,6 +161,8 @@ def register_routers(app: FastAPI) -> None:
     # MEH-1443: email-only "report wrong info" (distinct from the DB-backed
     # abuse reports above — see routers/report_info.py "Does NOT").
     app.include_router(report_info.router)
+    # Page freshness: the «כן, הכול נכון» link in the monthly owner email.
+    app.include_router(page_freshness.router)
     app.include_router(upload.router)
     app.include_router(marketing.router)
     app.include_router(events.router)
