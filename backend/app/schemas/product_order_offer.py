@@ -8,7 +8,8 @@ Does NOT: model an order — those shapes arrive with the order route (stage
           2b of MEH-3216). Does NOT carry a price in any request: the price
           lives on the product and is read by the server.
 Related:  app/routers/product_order_offer.py, app/models/product_orders.py
-History:  MEH-3262 (creation; stage 2a of MEH-3216)
+History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3216 gaps (the
+          owner's product list for the two ordering switches)
 """
 
 from datetime import datetime, time
@@ -111,6 +112,18 @@ class ProductOrderingOut(BaseModel):
     in_stock: bool
     price_unit: PriceUnit
     contains_alcohol: bool
+
+
+class MyProductOrderingOut(ProductOrderingOut):
+    """One of the owner's own products, as the orders tab lists it: enough
+    to tell the products apart and to know a price is set."""
+
+    name: str
+    has_price: bool
+
+
+class MyProductsOrderingOut(BaseModel):
+    products: list[MyProductOrderingOut]
 
 
 class OrderMenuProductOut(BaseModel):
