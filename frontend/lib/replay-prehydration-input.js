@@ -36,7 +36,7 @@
  * own (flag-gated) enableHydrationChangeEvent does the same at hydration commit.
  */
 
-import { PREHYDRATION_CAPTURE_KEY } from "@/lib/prehydration-capture-inline";
+import { PREHYDRATION_CAPTURE_KEY } from "@/lib/prehydration-capture-key";
 
 const TEXT_TYPES = new Set(["", "text", "email", "search", "tel", "url", "password"]);
 
@@ -82,7 +82,8 @@ function reactProps(el) {
   return key ? el[key] : null;
 }
 
-function onEarlyInput(event) {
+/** Exported for tests only: jsdom cannot dispatch a trusted event. */
+export function onEarlyInput(event) {
   if (!reactProps(event.target)) {
     remember(event.target);
     return;
@@ -104,7 +105,12 @@ function onSubmit(event) {
   const form = event.target;
   if (!(form instanceof HTMLFormElement)) return;
   replayPrehydrationInput(form);
-  for (const el of form.querySelectorAll("input, textarea")) forget(el);
+  // A field React does not own yet keeps its capture: a submit before
+  // hydration is held and re-dispatched by React, and the field it reads may
+  // be emptied by then.
+  for (const el of form.querySelectorAll("input, textarea")) {
+    if (reactProps(el)) forget(el);
+  }
 }
 
 /** Starts recording pre-hydration values. Runs once at module evaluation. */
