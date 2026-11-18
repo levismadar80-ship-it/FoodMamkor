@@ -29,6 +29,7 @@ dependencies = [
     "asgi-correlation-id==5.0.1",
     "sentry-sdk[fastapi]==2.75.0",
     "apscheduler~=3.11",
+    "webauthn==3.0.1",
 ]
 
 [dependency-groups]
@@ -157,6 +158,7 @@ files = [
     "app/main.py",
     "app/middleware.py",
     "app/models/admin_ops.py",
+    "app/models/admin_passkeys.py",
     "app/models/analytics.py",
     "app/models/billing.py",
     "app/models/catalog.py",
@@ -337,6 +339,9 @@ files = [
     "app/utils/phone.py",
     "app/utils/pii.py",
     "app/utils/sql.py",
+    "app/routers/admin_passkey.py",
+    "app/schemas/admin_passkey.py",
+    "app/services/admin_passkey.py",
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

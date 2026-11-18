@@ -130,6 +130,14 @@ class Settings(BaseSettings):
     # App
     frontend_url: str = "http://localhost:3000"
 
+    # MEH-3305: admin passkeys (WebAuthn). The relying-party id is the bare
+    # domain the passkey is bound to (mehamakor.co.il / staging.mehamakor.online)
+    # and the origin is the exact https URL the browser reports. Either empty =
+    # the feature is off (local, vercel.app previews): admins sign in with
+    # their password only, as today. Not secrets — they are public names.
+    webauthn_rp_id: str = ""
+    webauthn_origin: str = ""
+
     # Anthropic (home-product moderation)
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-4-6"
@@ -177,6 +185,9 @@ class Settings(BaseSettings):
     # PAGE_FRESHNESS_ENABLED=true is set in Railway; confirming a link and the
     # admin stale filter work either way.
     page_freshness_enabled: bool = False
+    # MEH-3296: on-site product ordering (stages 2a-4). Off everywhere until
+    # Sapir turns it on; the routers read it with getattr(..., False).
+    product_orders_enabled: bool = False
 
     # MEH-2890 (Sapir 10/11): the one account no admin can demote or delete.
     # It used to be a hard-coded address in admin_extra.py AND in the admin
