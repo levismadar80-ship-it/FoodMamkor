@@ -33,6 +33,8 @@ import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
+import OrderStepper from "@/components/public/OrderStepper";
+import { shekelsText } from "@/lib/product-orders";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
 import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
 import ReportButton from "@/components/ReportButton";
@@ -164,6 +166,7 @@ export default function ProducerSections({
   reviewsVisible,
   isOwner = false,
   onReviewsTotalChange,
+  orderCart = null,
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -503,6 +506,12 @@ export default function ProducerSections({
               }}
             />
           )}
+          {/* MEH-3216 stage 5b: said once, above the rows that carry «הוספה». */}
+          {gridProducts.length > 0 && orderCart?.menu && (
+            <p className="text-sm font-medium text-primary mb-3" data-testid="order-open-line">
+              {t("producer.detail.order_cart.open_line")}
+            </p>
+          )}
           {gridProducts.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-6 border-t border-border">
               {(productsCollapsed ? gridProducts.slice(0, PRODUCTS_PREVIEW_DESKTOP) : gridProducts).map((product, idx) => {
@@ -523,7 +532,11 @@ export default function ProducerSections({
                     ? formatPriceRange(product.price_min, product.price_max)
                     : null;
                 const freeTextPrice = numericPrice ? null : product.price_range || null;
-                return (
+                // MEH-3216 stage 5b: the product as the order menu has it, or
+                // undefined when this business takes no orders or did not open
+                // this product for ordering. Only then does the row get «הוספה».
+                const orderable = orderCart?.byId.get(String(product.id));
+                const row = (
                   // MEH-1901: the row is the trigger for the product sheet, so
                   // it is a real <button> (keyboard + AT reachable), not a div
                   // with a click handler. min-h-[96px] already clears the 44px
@@ -532,11 +545,11 @@ export default function ProducerSections({
                   // voice-control user can say what they see (WCAG 2.5.3;
                   // «פרטים על X» replaced all of it, axe 4.14 label-content-name-mismatch).
                   <button
-                    key={product.id}
+                    key={orderable ? undefined : product.id}
                     type="button"
                     onClick={() => openSheetFor(product)}
                     data-testid="product-row"
-                    className={`${desktopOnly ? "hidden md:flex" : "flex"} w-full text-start items-center gap-3 py-2 min-h-[96px] border-b border-border transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40`}
+                    className={`${orderable ? "flex pe-32" : desktopOnly ? "hidden md:flex" : "flex"} w-full text-start items-center gap-3 py-2 min-h-[96px] border-b border-border transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40`}
                   >
                     <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden bg-background">
                       {img ? (
@@ -589,10 +602,37 @@ export default function ProducerSections({
                           carry them. Each row now names its own flags — icon +
                           the same label as the sheet (MEH-2584 icon+word). */}
                       <ProductDietPills product={product} t={t} />
+                      {orderable?.price_is_estimate && (
+                        <p className="text-xs text-fg-muted mt-1" data-testid="order-estimate">
+                          {t("producer.detail.order_cart.estimate", { price: shekelsText(orderable.price_min_agorot) })}
+                        </p>
+                      )}
+                      {orderable?.contains_alcohol && (
+                        <p className="text-xs text-fg-muted mt-1" data-testid="order-alcohol">
+                          {t("producer.detail.order_cart.alcohol")}
+                        </p>
+                      )}
                     </div>
-                    {/* Forward chevron points LEFT in RTL (ReviewExcerpt.jsx:86). */}
-                    <CaretLeft size={14} className="shrink-0 text-fg-muted" aria-hidden="true" />
+                    {/* Forward chevron points LEFT in RTL (ReviewExcerpt.jsx:86).
+                        A row with «הוספה» drops it: the control sits there. */}
+                    {!orderable && <CaretLeft size={14} className="shrink-0 text-fg-muted" aria-hidden="true" />}
                   </button>
+                );
+                if (!orderable) return row;
+                // The stepper is the row button's sibling, laid over its
+                // inline end (pe-32 keeps the text clear of it), because a
+                // control inside a <button> cannot be reached.
+                return (
+                  <div key={product.id} className={`${desktopOnly ? "hidden md:block" : "block"} relative`}>
+                    {row}
+                    <div className="absolute end-0 top-1/2 -translate-y-1/2">
+                      <OrderStepper
+                        product={orderable}
+                        qty={orderCart.picks[orderable.id] ?? 0}
+                        onChange={orderCart.change}
+                      />
+                    </div>
+                  </div>
                 );
               })}
             </div>

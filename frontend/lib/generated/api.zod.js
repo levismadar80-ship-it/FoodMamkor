@@ -936,6 +936,7 @@ export const listProducersAdminProducersGetResponseResubmissionCountDefault = 0;
 export const listProducersAdminProducersGetResponseReviewsCountDefault = 0;
 export const listProducersAdminProducersGetResponseSellsOnSiteDefault = false;
 export const listProducersAdminProducersGetResponseStatusDefault = `pending`;
+export const listProducersAdminProducersGetResponseTakesSiteOrdersDefault = false;
 export const listProducersAdminProducersGetResponseTrustTierDefault = 1;
 export const listProducersAdminProducersGetResponseVeganScopeDefault = `unknown`;
 export const listProducersAdminProducersGetResponseVegetarianScopeDefault = `unknown`;
@@ -1114,6 +1115,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseTrustTierDefault),
@@ -1193,6 +1195,7 @@ export const adminCreateProducerAdminProducersPostResponseResubmissionCountDefau
 export const adminCreateProducerAdminProducersPostResponseReviewsCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseSellsOnSiteDefault = false;
 export const adminCreateProducerAdminProducersPostResponseStatusDefault = `pending`;
+export const adminCreateProducerAdminProducersPostResponseTakesSiteOrdersDefault = false;
 export const adminCreateProducerAdminProducersPostResponseTrustTierDefault = 1;
 export const adminCreateProducerAdminProducersPostResponseVeganScopeDefault = `unknown`;
 export const adminCreateProducerAdminProducersPostResponseVegetarianScopeDefault = `unknown`;
@@ -1371,6 +1374,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseTrustTierDefault),
@@ -1447,6 +1451,7 @@ export const pendingProducersAdminProducersPendingGetResponseResubmissionCountDe
 export const pendingProducersAdminProducersPendingGetResponseReviewsCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseSellsOnSiteDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseStatusDefault = `pending`;
+export const pendingProducersAdminProducersPendingGetResponseTakesSiteOrdersDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseTrustTierDefault = 1;
 export const pendingProducersAdminProducersPendingGetResponseVeganScopeDefault = `unknown`;
 export const pendingProducersAdminProducersPendingGetResponseVegetarianScopeDefault = `unknown`;
@@ -1625,6 +1630,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseTrustTierDefault),
@@ -1764,6 +1770,7 @@ export const adminGetProducerAdminProducersProducerIdGetResponseResubmissionCoun
 export const adminGetProducerAdminProducersProducerIdGetResponseReviewsCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseSellsOnSiteDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseStatusDefault = `pending`;
+export const adminGetProducerAdminProducersProducerIdGetResponseTakesSiteOrdersDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseTrustTierDefault = 1;
 export const adminGetProducerAdminProducersProducerIdGetResponseVeganScopeDefault = `unknown`;
 export const adminGetProducerAdminProducersProducerIdGetResponseVegetarianScopeDefault = `unknown`;
@@ -1942,6 +1949,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseTrustTierDefault),
@@ -2018,6 +2026,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseResubmissionC
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReviewsCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseSellsOnSiteDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseStatusDefault = `pending`;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseTakesSiteOrdersDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseTrustTierDefault = 1;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseVeganScopeDefault = `unknown`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseVegetarianScopeDefault = `unknown`;
@@ -2196,6 +2205,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "submitted_for_review_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseTrustTierDefault),
@@ -4630,6 +4640,7 @@ export const readDraftPreviewProducerPreviewTokenGetResponseReservistOwnedDefaul
 export const readDraftPreviewProducerPreviewTokenGetResponseReviewsCountDefault = 0;
 export const readDraftPreviewProducerPreviewTokenGetResponseSellsOnSiteDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseStatusDefault = `pending`;
+export const readDraftPreviewProducerPreviewTokenGetResponseTakesSiteOrdersDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseTrustTierDefault = 1;
 export const readDraftPreviewProducerPreviewTokenGetResponseVeganScopeDefault = `unknown`;
 export const readDraftPreviewProducerPreviewTokenGetResponseVegetarianScopeDefault = `unknown`;
@@ -4772,6 +4783,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), readDraftPreviewProducerPreviewTokenGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseTrustTierDefault),
@@ -5023,6 +5035,7 @@ export const createProducerProducersPostResponseReservistOwnedDefault = false;
 export const createProducerProducersPostResponseReviewsCountDefault = 0;
 export const createProducerProducersPostResponseSellsOnSiteDefault = false;
 export const createProducerProducersPostResponseStatusDefault = `pending`;
+export const createProducerProducersPostResponseTakesSiteOrdersDefault = false;
 export const createProducerProducersPostResponseTrustTierDefault = 1;
 export const createProducerProducersPostResponseVeganScopeDefault = `unknown`;
 export const createProducerProducersPostResponseVegetarianScopeDefault = `unknown`;
@@ -5165,6 +5178,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseTrustTierDefault),
@@ -5238,6 +5252,7 @@ export const getProducerBySlugProducersBySlugSlugGetResponseReservistOwnedDefaul
 export const getProducerBySlugProducersBySlugSlugGetResponseReviewsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseSellsOnSiteDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseStatusDefault = `pending`;
+export const getProducerBySlugProducersBySlugSlugGetResponseTakesSiteOrdersDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseTrustTierDefault = 1;
 export const getProducerBySlugProducersBySlugSlugGetResponseVeganScopeDefault = `unknown`;
 export const getProducerBySlugProducersBySlugSlugGetResponseVegetarianScopeDefault = `unknown`;
@@ -5380,6 +5395,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseTrustTierDefault),
@@ -5488,6 +5504,7 @@ export const getMyProducerProducersMeGetResponseResubmissionCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReviewsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseSellsOnSiteDefault = false;
 export const getMyProducerProducersMeGetResponseStatusDefault = `pending`;
+export const getMyProducerProducersMeGetResponseTakesSiteOrdersDefault = false;
 export const getMyProducerProducersMeGetResponseTrustTierDefault = 1;
 export const getMyProducerProducersMeGetResponseUpcomingEventsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseVeganScopeDefault = `unknown`;
@@ -5640,6 +5657,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseTrustTierDefault),
@@ -5715,6 +5733,7 @@ export const updateMyProducerProducersMePutResponseResubmissionCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReviewsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseSellsOnSiteDefault = false;
 export const updateMyProducerProducersMePutResponseStatusDefault = `pending`;
+export const updateMyProducerProducersMePutResponseTakesSiteOrdersDefault = false;
 export const updateMyProducerProducersMePutResponseTrustTierDefault = 1;
 export const updateMyProducerProducersMePutResponseUpcomingEventsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseVeganScopeDefault = `unknown`;
@@ -5867,6 +5886,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseTrustTierDefault),
@@ -7115,6 +7135,7 @@ export const getProducerProducersProducerIdGetResponseReservistOwnedDefault = fa
 export const getProducerProducersProducerIdGetResponseReviewsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseSellsOnSiteDefault = false;
 export const getProducerProducersProducerIdGetResponseStatusDefault = `pending`;
+export const getProducerProducersProducerIdGetResponseTakesSiteOrdersDefault = false;
 export const getProducerProducersProducerIdGetResponseTrustTierDefault = 1;
 export const getProducerProducersProducerIdGetResponseVeganScopeDefault = `unknown`;
 export const getProducerProducersProducerIdGetResponseVegetarianScopeDefault = `unknown`;
@@ -7257,6 +7278,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseStatusDefault),
   "story_card_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "takes_site_orders": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseTakesSiteOrdersDefault),
   "top_product_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "top_product_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "trust_tier": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseTrustTierDefault),

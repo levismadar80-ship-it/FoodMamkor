@@ -22,6 +22,8 @@ import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
 import StickyContactBar from "./components/StickyContactBar";
+import OrderBar from "@/components/public/OrderBar";
+import { useOrderCart } from "@/lib/use-order-cart";
 import { useLazyReviews } from "./hooks/useLazyReviews";
 import { useProducerData } from "./hooks/useProducerData";
 import { useStickyBar } from "./hooks/useStickyBar";
@@ -70,6 +72,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const sectionRefs = useRef({});
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
   const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
+  // MEH-3216 stage 5b: the buyer's picks, shared by the product rows and the
+  // order bar. Reads the menu only for a business that takes orders.
+  const orderCart = useOrderCart(producer);
+  const [, setOrderSheetOpen] = useState(false);
 
   // MEH-1693: the post-save AlertPrefsPanel is owned HERE, not by either heart.
   // The page has two hearts on different surfaces — the hero overlay circle
@@ -277,6 +283,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             reviewsVisible={reviewsVisible}
             isOwner={user?.producer_id === producer.id}
             onReviewsTotalChange={setReviewsCount}
+            orderCart={orderCart}
           />
         </div>
 
@@ -293,12 +300,23 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         nearbyProducers={nearbyProducers}
       />
 
-      {/* StickyContactBar — mobile only, IO-driven, always mounted. */}
-      <StickyContactBar
-        producer={producer}
-        isVacation={isVacation}
-        isBarVisible={isBarVisible}
-      />
+      {/* StickyContactBar — mobile only, IO-driven. MEH-3216 stage 5b: once
+          the buyer picked a product, the order bar takes its place and keeps
+          the contact button beside it as a round icon. */}
+      {orderCart.count > 0 ? (
+        <OrderBar
+          producer={producer}
+          count={orderCart.count}
+          totalAgorot={orderCart.totalAgorot}
+          onOpen={() => setOrderSheetOpen(true)}
+        />
+      ) : (
+        <StickyContactBar
+          producer={producer}
+          isVacation={isVacation}
+          isBarVisible={isBarVisible}
+        />
+      )}
     </div>
   );
 }

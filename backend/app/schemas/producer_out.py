@@ -422,6 +422,11 @@ class ProducerDetailOut(ProducerListOut):
 
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
+    # MEH-3216 stage 5b: whether the page may offer «הוספה» on its products.
+    # Set by the route (services/product_order_menu.attach_takes_site_orders),
+    # never read off the row: it folds in the site flag and the business's own
+    # switch, so the page asks for the order menu only when it exists.
+    takes_site_orders: bool = False
     created_at: datetime | None = None
     # MEH-1291: public freshness signal ("עודכן לאחרונה"). Nullable — NULL for
     # producers never edited since the Chunk A migration (a3f1c9d2e4b7 added the

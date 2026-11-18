@@ -8427,6 +8427,11 @@
             ],
             "title": "Submitted For Review At"
           },
+          "takes_site_orders": {
+            "default": false,
+            "title": "Takes Site Orders",
+            "type": "boolean"
+          },
           "top_product_id": {
             "anyOf": [
               {
@@ -10276,6 +10281,11 @@
               }
             ],
             "title": "Story Card Url"
+          },
+          "takes_site_orders": {
+            "default": false,
+            "title": "Takes Site Orders",
+            "type": "boolean"
           },
           "top_product_id": {
             "anyOf": [
@@ -12749,6 +12759,11 @@
               }
             ],
             "title": "Story Card Url"
+          },
+          "takes_site_orders": {
+            "default": false,
+            "title": "Takes Site Orders",
+            "type": "boolean"
           },
           "top_product_id": {
             "anyOf": [

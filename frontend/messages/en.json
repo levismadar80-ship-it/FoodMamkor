@@ -974,6 +974,16 @@
           "fri": "Friday",
           "sat": "Saturday"
         }
+      },
+      "order_cart": {
+        "open_line": "You can order on the site",
+        "add": "Add",
+        "add_one": "One more: {name}",
+        "remove_one": "One less: {name}",
+        "sold_out": "Sold out today",
+        "estimate": "About {price} ₪ · the final price is set on weighing",
+        "alcohol": "18+ only. You will be asked to show ID at pickup.",
+        "bar": "Order · {count, plural, one {# item} two {# items} other {# items}} · {total} ₪"
       }
     },
     "card": {
