@@ -21,8 +21,15 @@ import { render, screen } from "@testing-library/react";
 import ProducerDashboardPage from "@/app/[locale]/producer/dashboard/page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+// MEH-2876: ONE user object for every render, like the real auth context
+// (state, not a fresh literal). A new object per call changed the `user`
+// dependency of the page's fetch effects on every render, so each fetch's
+// setState re-ran the effects: an endless fetch → render loop. The other
+// cases ended before it mattered; the «שתפו» click (outside act) made React
+// flush it synchronously and the worker spun at 100% CPU.
+const AUTH = vi.hoisted(() => ({ user: { id: 1, name: "דנה", role: "producer" }, loading: false }));
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ user: { id: 1, name: "דנה", role: "producer" }, loading: false }),
+  useAuth: () => AUTH,
 }));
 vi.mock("next-intl", () => {
   const t = (key) => key;
@@ -126,12 +133,9 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     expect(document.querySelector('a[href^="https://wa.me/?text="]')).toBeNull();
   });
 
-  // QUARANTINED — MEH-2876 (Sapir 10/11). The click path below hung the
-  // vitest worker in three attempts (inside this file alongside later cases;
-  // in its own file with act(); synchronous). The product behaviour it checks
-  // is verified in a real browser instead (Playwright on a local build, PR
-  // #4178). Un-skip when MEH-2876 finds what keeps the worker alive.
-  it.skip("«שתפו» opens the share sheet with the /p/{slug} link as url (MEH-2876)", async () => {
+  // MEH-2876: quarantined 10/11 because the click hung the worker. The cause
+  // was the unstable useAuth mock above, not the product.
+  it("«שתפו» opens the share sheet with the /p/{slug} link as url (MEH-2876)", async () => {
     const shareSpy = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "share", { value: shareSpy, configurable: true });
     setup({ status: "approved", complete: true });
@@ -140,6 +144,7 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     screen.getByTestId("vanity-share").click();
     expect(shareSpy).toHaveBeenCalledTimes(1);
     expect(shareSpy.mock.calls[0][0].url).toMatch(/\/p\/demo-farm$/);
+    delete navigator.share;
   });
 
   it("hides the share card + shows the locked hint when INCOMPLETE", async () => {
