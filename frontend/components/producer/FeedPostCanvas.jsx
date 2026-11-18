@@ -259,7 +259,7 @@ export default function FeedPostCanvas({ producer }) {
               {copied ? t("copied") : t("copy")}
             </Button>
           </div>
-          <pre dir="rtl" data-testid="feed-post-caption" className="mt-3 text-xs bg-green-50 rounded-sm p-3 whitespace-pre-wrap text-text font-body-md text-start">
+          <pre dir="rtl" data-testid="feed-post-caption" className="mt-3 text-xs bg-green-50 rounded-sm p-3 whitespace-pre-wrap [overflow-wrap:anywhere] text-text font-body-md text-start">
             {`${content.caption}\n${link}`}
           </pre>
         </>
