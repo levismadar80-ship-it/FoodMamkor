@@ -30,7 +30,6 @@ vi.mock("next-intl", () => ({
       "producer.detail.sections.products.sheet_close_aria": "סגירת פרטי המוצר",
       "whatsapp.question_chips.source_line": "הגעתי דרך מהמקור",
     };
-    if (full === "producer.detail.sections.products.sheet_open_aria") return `פרטים על ${vars?.name ?? ""}`;
     if (full === "producer.detail.sections.products.sheet_wa_prefill") return `היי, ראיתי את ״${vars?.name ?? ""}״`;
     if (full === "producer.card.aria.image_missing") return `${vars?.name ?? ""} — תמונה חסרה`;
     return HE[full] ?? full;
