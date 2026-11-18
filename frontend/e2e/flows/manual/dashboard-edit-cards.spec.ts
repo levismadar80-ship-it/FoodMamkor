@@ -424,7 +424,7 @@ test.describe("overview — completeness card", () => {
     await openOverview(page, profile({ city: null, locations: [], phone: null, whatsapp: null, primary_contact_method: null }));
     await expect(cardRoot(page)).not.toContainText("עוד כמה פרטים חשובים ואתם באוויר");
     await expect(cardRoot(page)).not.toContainText("חסר פרטים קריטיים");
-    await expect(cardRoot(page)).toContainText(/הפרופיל שלך \d+% מוכן/);
+    await expect(cardRoot(page)).toContainText(/העמוד שלך \d+% מוכן/);
   });
 
   // MT:MEH-288:6 — a11y: progressbar value + CTA name.

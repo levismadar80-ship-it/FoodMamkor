@@ -5,7 +5,7 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * Purpose:  MEH-2100 — the draft→submit-for-review state machine, end to end in
  *           a real browser. Pins the four things the batch actually changed:
  *             A — a `draft` business gets the COMPLETION surface and never the
- *                 "הפרופיל שלך בסקירה" review banner, with the missing items
+ *                 "העמוד שלך בבדיקה" review banner, with the missing items
  *                 named, the CTA disabled and the OTP card mounted in place.
  *             B — completing the requirements enables the CTA; confirming POSTs
  *                 to /producers/me/submit-for-review exactly once and the

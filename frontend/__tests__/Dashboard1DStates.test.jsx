@@ -168,14 +168,12 @@ describe("Dashboard 1D — availability-disable (MEH-964)", () => {
     await screen.findByTestId("producer-overview");
     expect(screen.getByTestId("share-locked-hint")).toBeInTheDocument();
     expect(screen.queryByTestId("availability-pause-switch")).toBeNull();
-    expect(screen.queryByTestId("availability-disabled-hint")).toBeNull();
   });
 
   it("enables the pause switch (no hint) once approved", async () => {
     setup({ status: "approved", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
-    expect(screen.queryByTestId("availability-disabled-hint")).not.toBeInTheDocument();
     expect(screen.getByTestId("availability-pause-switch")).not.toBeDisabled();
   });
 });

@@ -104,7 +104,6 @@ test("the card shows one enabled «בהפסקה» switch, off, and no radios", a
   await expectPaused(page, false);
   await expect(page.getByRole("radio")).toHaveCount(0);
   await expect(page.getByRole("radiogroup")).toHaveCount(0);
-  await expect(page.getByTestId("availability-disabled-hint")).toHaveCount(0);
 });
 
 // MT:MEH-291:5 — turning the switch on reveals the mini-form BEFORE any save; nothing leaves the browser.

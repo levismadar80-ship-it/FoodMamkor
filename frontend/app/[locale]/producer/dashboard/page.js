@@ -522,7 +522,7 @@ export default function ProducerDashboardPage() {
           IS the message, and "awaiting approval" would contradict it (the ball
           is in the owner's court). Both otherwise stack on a pending producer. */}
       {/* MEH-2100: a business in `draft` has NOT asked to be reviewed, so it
-          gets the completion banner instead of "הפרופיל שלך בסקירה". This is
+          gets the completion banner instead of "העמוד שלך בבדיקה". This is
           the REPLACEMENT the ticket asks for — the pending banner below is
           keyed on status === "pending" and therefore cannot co-render.
           On success the local status flips to "pending" with no reload, so
@@ -570,7 +570,7 @@ export default function ProducerDashboardPage() {
         >
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
           {/* MEH-1347: informational only — the completeness card below owns
-              the single "השלימו פרופיל" CTA (audit found two clashing CTAs
+              the single "להשלמת העמוד" CTA (audit found two clashing CTAs
               with opposite arrows on one screen). */}
           <p className="text-yellow-700">
             {t("status.pending.body")}
@@ -748,27 +748,16 @@ export default function ProducerDashboardPage() {
           type="button"
           role="switch"
           data-testid="availability-pause-switch"
-          aria-checked={pauseOn && isApproved}
-          aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
-          // MEH-964 1D: locked until the business is published (approved) — an
-          // unpublished listing has no public surface for a pause to affect.
-          disabled={!isApproved}
+          aria-checked={pauseOn}
+          // MEH-3079: the card renders for an approved business only, so the
+          // MEH-964 1D locked state (disabled + why-locked hint) is gone.
           onClick={togglePause}
           // MEH-2759: same switch as CoverageCtaToggle.jsx (house pattern).
-          className={`group inline-flex items-center gap-3 min-h-touch text-sm font-medium text-text focus-visible:outline-none ${
-            !isApproved ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className="group inline-flex items-center gap-3 min-h-touch text-sm font-medium text-text focus-visible:outline-none"
         >
-          <SwitchTrack on={pauseOn && isApproved} />
+          <SwitchTrack on={pauseOn} />
           {t("availability.options.on_vacation")}
         </button>
-        {/* MEH-964 1D: why-locked hint, associated with the pause switch via
-            aria-describedby so it's announced (not colour/opacity-only). */}
-        {!isApproved && (
-          <p id="availability-disabled-hint" data-testid="availability-disabled-hint" className="text-xs text-fg-muted mt-3">
-            {t("states.availability_disabled")}
-          </p>
-        )}
         {/* MEH-999: reachable as soon as vacation is selected — not gated on the
             server already being on_vacation — so the return date can be picked
             and submitted together (combined mini-form). */}
@@ -867,7 +856,7 @@ export default function ProducerDashboardPage() {
           stats. Guarded on `profile` (the full /producers/me record carries
           the fields the heuristic reads). MEH-1134: this slot served the
           approved+complete state; MEH-1397 removes it — once the business is
-          approved AND complete the collapsed "הפרופיל מלא ✓" card is noise with
+          approved AND complete the collapsed "העמוד מלא ✓" card is noise with
           no action (reverses MEH-288's "never fully disappears", per Sapir
           21/07). The card now mounts ONLY in the completenessFirst slot above
           (pending OR incomplete), where the green collapse still gives value
