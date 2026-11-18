@@ -5574,6 +5574,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  *
  * Returns:
  *   - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}
+ *   - share_visits (MEH-3331): visits through a link the owner shared, same shape
  *   - follower_count + new_followers_this_week
  *   - average_rating + total_reviews (from the producers.avg_rating aggregate)
  *   - home_products_count (active only, scoped to the owning user)
