@@ -29,6 +29,7 @@ import { shareFile } from "@/lib/share-link";
 import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
+import InlineMessage from "@/components/ui/InlineMessage";
 import { Link } from "@/i18n/navigation";
 import { drawPost } from "./feed-post-draw";
 
@@ -131,8 +132,8 @@ function usePostActions({ producer }) {
 function EmptyOrError({ t, failed, retry }) {
   if (failed) {
     return (
-      <div role="alert" data-testid="feed-post-error" className="mt-3 text-sm text-fg-muted">
-        <p className="mb-2">{t("load_error")}</p>
+      <div data-testid="feed-post-error" className="mt-3">
+        <InlineMessage className="mb-2">{t("load_error")}</InlineMessage>
         <Button variant="outlined" size="sm" onClick={retry}>{t("retry")}</Button>
       </div>
     );
