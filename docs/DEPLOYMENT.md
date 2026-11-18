@@ -162,7 +162,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
-   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
+   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). **In production the backend refuses to boot when it is empty or contains `localhost`, `127.0.0.1` or `staging`** (MEH-3388; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`), so a wrong value fails the deploy instead of sending every email link to the wrong site. |
    | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain is verified (SPF+DKIM) — `mehamakor.co.il` for production (the `email_from_address` default), `mehamakor.online` if staging sends from it. **The two domains are verified in two different Resend accounts**; a key from the wrong account fails every send with 422 (MEH-2341, 24/10). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
    | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.co.il>` (`config.py:115`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
@@ -491,7 +491,7 @@ were ever started:
 |---|---|
 | APScheduler jobs — onboarding follow-ups (MEH-539) + auto-reply watchdog | Each worker runs its own scheduler → **duplicate emails** and double watchdog runs |
 | slowapi rate limiter (in-memory store) | Per-worker counters → effective limit multiplied by the worker count (login/abuse limits weaken ×N) |
-| Analytics request-metrics deque + trending cache | Fragmented per worker → the admin dashboard sees only one worker's slice |
+| Analytics request-metrics deque | Fragmented per worker → the admin dashboard sees only one worker's slice |
 | JWKS cache | Redundant fetches; no correctness break, but wasted work |
 
 Because Railway's worker/replica count is a platform setting (Sapir

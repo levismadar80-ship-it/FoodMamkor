@@ -177,10 +177,11 @@ def delete_user_and_data(
     # commits internally. Local import avoids the auth<->reviews import cycle
     # (reviews.py imports app.auth).
     if reviewed_producer_ids:
-        from app.routers.reviews import _recompute_producer_rating
+        # MEH-3258: the owner of the recompute is the service, not the router.
+        from app.services.review_conflicts import recompute_producer_rating
 
         for reviewed_pid in reviewed_producer_ids:
-            _recompute_producer_rating(reviewed_pid, db)
+            recompute_producer_rating(reviewed_pid, db)
 
     # MEH-375: post-commit Cloudinary cleanup. fail-open per
     # destroy_image contract — failures log via app.upload, the cleanup
