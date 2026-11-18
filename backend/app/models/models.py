@@ -706,11 +706,18 @@ class Producer(Base):
     # broke 4 tests before the argument was added). The catalogue joins on the
     # child's owner column; the featured-product FK points the other way and
     # is a scalar, never a collection.
+    # MEH-3385: the owner's order, pinned here so every load path carries it —
+    # a selectinload SELECT has no ORDER BY of its own. Unplaced products
+    # (position NULL) last; `is_(None)` is the portable nulls-last key this
+    # codebase uses (producer_listing.py:373). No tiebreak among unplaced rows
+    # on purpose: adding one would reshuffle every business that never ordered
+    # its products, and the frontend keeps API order for them.
     products = relationship(
         "Product",
         back_populates="producer",
         cascade="all, delete-orphan",
         foreign_keys="Product.producer_id",
+        order_by="[Product.position.is_(None), Product.position]",
     )
     delivery_areas = relationship(
         "DeliveryArea", back_populates="producer", cascade="all, delete-orphan"
