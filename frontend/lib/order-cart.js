@@ -69,9 +69,10 @@ export function pickedCount(picks) {
 }
 
 /**
- * The sum the bar shows, in agorot. A product sold by weight counts at its
- * lower price — the same estimate the order route stores — and a pick whose
- * product left the menu counts as nothing.
+ * The sum the bar shows, in agorot. A price range counts at its HIGH end, the
+ * same price the order route stores (services/product_order_create.py::_lines:
+ * the buyer is told the most she might pay), and a pick whose product left
+ * the menu or sold out counts as nothing.
  * @param {Picks} picks
  * @param {MenuProduct[]} products
  */
@@ -80,9 +81,17 @@ export function pickedTotalAgorot(picks, products) {
   let total = 0;
   for (const [id, qty] of Object.entries(picks)) {
     const product = byId.get(id);
-    if (product && product.in_stock) total += product.price_min_agorot * qty;
+    if (product && product.in_stock) total += unitPriceAgorot(product) * qty;
   }
   return total;
+}
+
+/**
+ * One unit as the order route prices it: the higher end of a range.
+ * @param {MenuProduct} product
+ */
+export function unitPriceAgorot(product) {
+  return Math.max(product.price_min_agorot, product.price_max_agorot);
 }
 
 /**

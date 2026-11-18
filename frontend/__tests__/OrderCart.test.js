@@ -66,12 +66,12 @@ describe("sums", () => {
     expect(pickedCount({ [ID_A]: 2, [ID_B]: 1 })).toBe(3);
   });
 
-  it("totals at the lower price and skips what left the menu or sold out", () => {
+  it("totals a range at its high end, as the order route stores it, and skips what left the menu or sold out", () => {
     const products = [
       product(ID_A),
       product(ID_B, { price_min_agorot: 6000, price_max_agorot: 8000, price_is_estimate: true }),
     ];
-    expect(pickedTotalAgorot({ [ID_A]: 2, [ID_B]: 1 }, products)).toBe(11000);
+    expect(pickedTotalAgorot({ [ID_A]: 2, [ID_B]: 1 }, products)).toBe(13000);
     expect(pickedTotalAgorot({ [ID_A]: 1, gone: 5 }, products)).toBe(2500);
     const soldOut = [product(ID_A, { in_stock: false })];
     expect(pickedTotalAgorot({ [ID_A]: 1 }, soldOut)).toBe(0);
