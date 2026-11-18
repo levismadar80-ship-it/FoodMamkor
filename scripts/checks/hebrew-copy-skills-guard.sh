@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Module:   hebrew-copy-skills-guard.sh
-# Purpose:  BLOCKING. A pull request that adds or changes Hebrew text in
+# Purpose:  WARN until BLOCK_FROM, BLOCKING from that date. A pull request that adds or changes Hebrew text in
 #           frontend/messages/he.json must name both Hebrew-copy skills in its
 #           `Skills:` line: hebrew-content-writer and clarify (workflow rule 43).
 # Touches:  nothing — reads the PR body and the diff, writes only to stdout.
@@ -25,6 +25,15 @@ set -uo pipefail
 
 HE_FILE="frontend/messages/he.json"
 REQUIRED_SKILLS="hebrew-content-writer clarify"
+# Warn-only while the v1.5.6 train (~50 open PRs, many touching he.json) lands;
+# the switch to blocking is a date in code, so nobody has to remember it.
+# Override for the self-test: HEBREW_COPY_TODAY (YYYY-MM-DD, Israel date).
+BLOCK_FROM="2026-11-22"
+
+today_il() {
+  if [ -n "${HEBREW_COPY_TODAY:-}" ]; then echo "$HEBREW_COPY_TODAY"; return; fi
+  TZ=Asia/Jerusalem date +%F
+}
 
 pr_body() {
   if [ -n "${HEBREW_COPY_PR_BODY+x}" ]; then printf '%s\n' "$HEBREW_COPY_PR_BODY"; return 0; fi
@@ -79,6 +88,10 @@ check() {
     echo "hebrew-copy-skills-guard: OK — Hebrew copy changed, Skills: line names both skills"
     return 0
   fi
+  if [[ "$(today_il)" < "$BLOCK_FROM" ]]; then
+    echo "::warning::hebrew-copy-skills-guard WARNING (blocking from $BLOCK_FROM): $HE_FILE Hebrew text changed, Skills: line missing:$missing"
+    return 0
+  fi
   echo "$HE_FILE: Hebrew text added or changed, but the PR body's Skills: line is missing:$missing"
   echo "  Run the skill(s) on the new copy (workflow rule 43), then write e.g."
   echo "  'Skills: hebrew-content-writer, clarify' in the PR body."
@@ -89,7 +102,7 @@ self_test() {
   local status=0
   run_case() {
     local name="$1" expect="$2" body="$3" added="$4" got rc
-    HEBREW_COPY_PR_BODY="$body" HEBREW_COPY_ADDED="$added" check >/dev/null 2>&1; rc=$?
+    HEBREW_COPY_TODAY="${CASE_TODAY:-$BLOCK_FROM}" HEBREW_COPY_PR_BODY="$body" HEBREW_COPY_ADDED="$added" check >/dev/null 2>&1; rc=$?
     got=PASS; [ "$rc" -ne 0 ] && got=FAIL
     if [ "$got" = "$expect" ]; then echo "  [ok] $name → $got"
     else echo "  [XX] $name → $got, expected $expect"; status=1; fi
@@ -105,6 +118,8 @@ self_test() {
   run_case "Hebrew added, none fit"             FAIL $'Skills: none fit — rename\n' "$he"
   run_case "no Hebrew in added lines"           PASS $'no skills line\n' "$en_only"
   run_case "he.json untouched"                  PASS $'no skills line\n' ""
+  CASE_TODAY="2026-11-21" run_case "day before BLOCK_FROM warns only" PASS $'Summary only\n' "$he"
+  CASE_TODAY="$BLOCK_FROM" run_case "on BLOCK_FROM it blocks"          FAIL $'Summary only\n' "$he"
   # Anchored to the real file: a line taken from the current he.json must count as Hebrew.
   local real
   real="+$(python3 -c 'import re,sys
