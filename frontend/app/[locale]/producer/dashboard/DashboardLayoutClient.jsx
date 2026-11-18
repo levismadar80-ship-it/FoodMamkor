@@ -151,7 +151,7 @@ function TabIcon({ tab, active, count }) {
       {count > 0 && (
         <span
           data-testid="dashboard-orders-count"
-          className="absolute -top-2 -end-3 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-xs leading-5 text-center font-bold"
+          className="absolute -top-2 -start-3 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-xs leading-5 text-center font-bold"
         >
           {count}
         </span>

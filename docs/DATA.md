@@ -1363,7 +1363,7 @@ DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city
                                                               sync). A location of ANOTHER business under the path →
                                                               404 (not 403); unknown business → 404. 120/hr on writes.
                                                               No admin "sensitive edit" ping — the actor is the admin.
-GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
+GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys, pending_orders (on-site orders waiting for an answer; 0 while PRODUCT_ORDERS_ENABLED is off, MEH-3316)} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +

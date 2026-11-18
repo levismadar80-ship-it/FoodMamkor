@@ -17,7 +17,7 @@ import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import { buttonsFor } from "@/components/dashboard/orders/OrderActions";
 import { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
 import { prefillFrom } from "@/components/dashboard/orders/OrderWindowsCard";
-import { agorotFromInput, groupOrders, israelDay, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { agorotFromInput, groupOrders, israelDay, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 
 const NOW = new Date("2026-11-19T08:00:00Z"); // Thursday 10:00 in Israel
 const hours = (n) => new Date(NOW.getTime() + n * 3600 * 1000).toISOString();
@@ -125,6 +125,14 @@ describe("board: 0 / 1 / many × the four lists", () => {
     expect(cards).toHaveLength(1);
     expect(within(cards[0]).getByTestId("order-status")).toHaveTextContent("נמסרה");
     expect(within(cards[0]).queryByTestId("order-actions")).toBeNull();
+  });
+
+  it("the slot's two times are one left-to-right run, so RTL does not swap them", () => {
+    const start = "2026-11-19T19:08:00Z"; // 21:08 in Israel
+    const end = "2026-11-19T20:08:00Z";
+    expect(rangeEnds(start, end)).toEqual({ from: "\u206621:08", until: "22:08\u2069" });
+    renderBoard([order({ slot_start: start, slot_end: end })]);
+    expect(screen.getByTestId("order-slot").textContent).toContain("\u206621:08–22:08\u2069");
   });
 
   it("with nothing waiting it opens on «מאושרות»", () => {

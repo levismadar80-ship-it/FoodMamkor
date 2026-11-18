@@ -128,7 +128,7 @@ function SlotSelect({ slots, value, onChange }) {
       <option value="">{t("propose_same_slot")}</option>
       {slots.map((slot) => (
         <option key={`${slot.fulfilment}-${slot.start}`} value={slot.start}>
-          {`${dayLabel(slot.start, locale)} ${hhmm(slot.start)}–${hhmm(slot.end)}`}
+          {`${dayLabel(slot.start, locale)} \u2066${hhmm(slot.start)}–${hhmm(slot.end)}\u2069`}
         </option>
       ))}
     </Select>

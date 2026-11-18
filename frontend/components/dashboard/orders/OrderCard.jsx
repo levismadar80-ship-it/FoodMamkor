@@ -16,7 +16,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Phone } from "@phosphor-icons/react";
 
 import Badge from "@/components/ui/Badge";
-import { dayLabel, hhmm, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import OrderActions from "./OrderActions";
 
 /** @param {{ order: any }} props */
@@ -62,8 +62,7 @@ function OrderHead({ order }) {
           {t("card.slot", {
             kind: tWindows(order.fulfilment),
             day: dayLabel(order.slot_start, locale),
-            from: hhmm(order.slot_start),
-            until: hhmm(order.slot_end),
+            ...rangeEnds(order.slot_start, order.slot_end),
           })}
         </p>
       </div>

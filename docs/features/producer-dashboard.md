@@ -6,6 +6,7 @@
 * `frontend/app/[locale]/producer/dashboard/` — הבית.
 * `frontend/app/[locale]/producer/dashboard/edit/` · `frontend/app/[locale]/producer/dashboard/insights/` · `frontend/app/[locale]/producer/dashboard/tools/` — הלשוניות.
 * `frontend/app/[locale]/producer/dashboard/preview/` · `frontend/app/[locale]/producer/dashboard/whats-new/` · `frontend/app/[locale]/producer/dashboard/qr-card/`
+* `frontend/app/[locale]/producer/dashboard/orders/` — «הזמנות» (הזמנה באתר, MEH-3316): לשונית שנייה עם מונה, רק כשבשרת `PRODUCT_ORDERS_ENABLED` דולק. הרכיבים ב-`frontend/components/dashboard/orders/`, הקריאות ב-`frontend/lib/product-orders.js`, הטסט `frontend/__tests__/ProductOrdersDashboard.test.jsx`.
 
 **קבצים מרכזיים**
 * `frontend/lib/business-features.js` — הרישום שמכתיב מה קיים ואיפה זה יושב (`dashboard: { home, href }`).
@@ -14,7 +15,7 @@
 * `backend/app/routers/producer_me.py` — כל המספרים שהלוח מציג.
 * `frontend/lib/producer-completeness.js` · `frontend/components/ProfileCompletenessCard.jsx`
 
-**Flags.** אין.
+**Flags.** `PRODUCT_ORDERS_ENABLED` (צד שרת) — מדליק את לשונית «הזמנות» ואת השורה שלה בכרטיס «מה מחכה לך».
 
 **טסטים**
 * `frontend/__tests__/DashboardPlacementGuard.test.js` — **השומר**: כל עמוד בלוח חייב מקום ברישום, קישור נכנס, ולכל היותר שתי הקשות מהבית.

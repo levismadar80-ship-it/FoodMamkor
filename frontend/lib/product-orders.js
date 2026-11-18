@@ -100,6 +100,22 @@ export function hhmm(iso) {
   }).format(d);
 }
 
+// Unicode isolates: "from–until" is ONE left-to-right unit. Without them an
+// RTL line shows the two times swapped ("22:08–21:08" for 21:08 to 22:08).
+const LRI = "\u2066";
+const PDI = "\u2069";
+
+/**
+ * The two ends of a time range, isolated as one LTR run. Pass them as the
+ * {from} / {until} of a message whose text puts the dash between them.
+ * @param {string} startIso
+ * @param {string} endIso
+ * @returns {{ from: string, until: string }}
+ */
+export function rangeEnds(startIso, endIso) {
+  return { from: `${LRI}${hhmm(startIso)}`, until: `${hhmm(endIso)}${PDI}` };
+}
+
 /** «יום שישי 20.11» — the day of a slot, on the Israel clock. */
 export function dayLabel(iso, locale = "he") {
   const d = new Date(iso);
