@@ -60,16 +60,26 @@ const OPEN_GB = {
   user_commit: null,
 };
 
+// One cell per state the card can be in: the line sits OUTSIDE the
+// open-only commit form, so a move into that branch reds the closed cells.
+const state = vi.hoisted(() => ({ gb: null }));
 vi.mock("@/lib/api", () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({ data: OPEN_GB })),
+    get: vi.fn(() => Promise.resolve({ data: state.gb ?? OPEN_GB })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
     delete: vi.fn(() => Promise.resolve({})),
   },
 }));
 
 describe("GroupBuyDetailClient — not a party to the transaction (MEH-3398)", () => {
-  it("the join card carries the disclaimer and its /terms link", async () => {
+  it.each([
+    ["open, signed out", {}, null],
+    ["open, already joined", { user_committed: true, user_commit: { quantity: 1 } }, { id: "u1" }],
+    ["cancelled", { status: "cancelled" }, { id: "u1" }],
+    ["deadline passed", { deadline: "2000-01-01T00:00:00Z" }, null],
+  ])("the join card carries the disclaimer and its /terms link — %s", async (_name, patch, user) => {
+    state.gb = { ...OPEN_GB, ...patch };
+    auth.user = user;
     render(<GroupBuyDetailClient id="gb-1" />);
     const card = await screen.findByTestId("group-buy-join-card");
     const note = within(card).getByRole("note");
