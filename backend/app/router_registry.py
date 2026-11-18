@@ -14,6 +14,7 @@ from app.routers import (
     admin_whatsapp,
     alerts,
     auth,
+    auth_register_producer,
     business_suggestions,
     category_requests,
     chat,
@@ -125,6 +126,7 @@ def register_routers(app: FastAPI) -> None:
     inline AFTER the `app.include_router(...)` block.
     """
     app.include_router(auth.router)
+    app.include_router(auth_register_producer.router)  # MEH-3293: split out of auth.py
     app.include_router(cities.router)
     app.include_router(producer_name_check.router)  # MEH-3086
     _include_producer_me(app)

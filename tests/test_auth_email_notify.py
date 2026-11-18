@@ -43,8 +43,12 @@ def test_verify_email_task_dispatched_on_new_signup(client, monkeypatch):
     response no longer signals whether the email was sent (MEH-328)."""
     sender = MagicMock()
     monkeypatch.setattr("app.routers.auth._send_verify_email", sender)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", sender)
     monkeypatch.setattr(
         "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+    )
+    monkeypatch.setattr(
+        "app.routers.auth_register_producer._send_welcome_email", lambda *a, **kw: None
     )
 
     resp = client.post(
@@ -64,8 +68,12 @@ def test_dispatch_independent_of_resend_api_key(client, monkeypatch):
     response cannot leak that distinction (MEH-328)."""
     sender = MagicMock()
     monkeypatch.setattr("app.routers.auth._send_verify_email", sender)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", sender)
     monkeypatch.setattr(
         "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+    )
+    monkeypatch.setattr(
+        "app.routers.auth_register_producer._send_welcome_email", lambda *a, **kw: None
     )
 
     from app.routers import auth as auth_module

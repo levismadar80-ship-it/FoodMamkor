@@ -6,7 +6,7 @@
 > `--append-system-prompt "$(cat .ai/diagrams/*.md)"` so I start with
 > architecture context without needing to re-read files.
 >
-> **Ground truth:** `backend/app/routers/auth.py` + `backend/app/auth.py`
+> **Ground truth:** `backend/app/routers/auth.py` + `backend/app/routers/auth_register_producer.py` (business registration, MEH-3293) + `backend/app/auth.py`
 > (see `docs/DATA.md` endpoints table). If the diagrams drift from the
 > code, the code wins — update the diagram.
 

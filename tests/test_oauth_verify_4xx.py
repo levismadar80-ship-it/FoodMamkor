@@ -19,6 +19,7 @@ test asserts `!= 503` first so a re-appearance of the unconfigured-503
 regression surfaces with a clear message instead of the generic 401 mismatch.
 """
 import app.routers.auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 from app.config import settings
 
 
@@ -35,6 +36,7 @@ def _assert_4xx_not_503(r):
 def test_fuzz002_google_verify_returns_401_not_503(client, monkeypatch):
     monkeypatch.setattr(settings, "google_client_id", "dummy-client-id")
     monkeypatch.setattr(auth_router, "_verify_google_token", _reject_token)
+    monkeypatch.setattr(reg_router, "_verify_google_token", _reject_token)
     r = client.post("/auth/google", json={"id_token": "not-a-real-jwt"})
     _assert_4xx_not_503(r)
 
@@ -42,6 +44,7 @@ def test_fuzz002_google_verify_returns_401_not_503(client, monkeypatch):
 def test_fuzz003_apple_verify_returns_401_not_503(client, monkeypatch):
     monkeypatch.setattr(settings, "apple_client_id", "dummy-client-id")
     monkeypatch.setattr(auth_router, "_verify_apple_token", _reject_token)
+    monkeypatch.setattr(reg_router, "_verify_apple_token", _reject_token)
     r = client.post("/auth/apple", json={"id_token": "not-a-real-jwt"})
     _assert_4xx_not_503(r)
 
@@ -49,6 +52,7 @@ def test_fuzz003_apple_verify_returns_401_not_503(client, monkeypatch):
 def test_fuzz004_producer_oauth_google_returns_401_not_503(client, monkeypatch):
     monkeypatch.setattr(settings, "google_client_id", "dummy-client-id")
     monkeypatch.setattr(auth_router, "_verify_google_token", _reject_token)
+    monkeypatch.setattr(reg_router, "_verify_google_token", _reject_token)
     r = client.post(
         "/auth/register/producer/oauth",
         json={"provider": "google", "id_token": "not-a-real-jwt"},
@@ -61,6 +65,7 @@ def test_fuzz004_producer_oauth_apple_returns_401_not_503(client, monkeypatch):
     # apple_client_id 503 guard — pin it too, not just the google branch.
     monkeypatch.setattr(settings, "apple_client_id", "dummy-client-id")
     monkeypatch.setattr(auth_router, "_verify_apple_token", _reject_token)
+    monkeypatch.setattr(reg_router, "_verify_apple_token", _reject_token)
     r = client.post(
         "/auth/register/producer/oauth",
         json={"provider": "apple", "id_token": "not-a-real-jwt"},

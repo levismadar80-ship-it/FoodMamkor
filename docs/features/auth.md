@@ -11,6 +11,7 @@
 **קבצים מרכזיים**
 * `backend/app/auth.py` — ה-JWT, ה-scope, ‏`token_version`, טביעת האצבע. **כל PR שנוגע כאן עובר גם בדיקת CVE בחיפוש רשת וגם `/security-review`** (`.claude/rules/security.md`).
 * `backend/app/routers/auth.py`
+* `backend/app/routers/auth_register_producer.py` — ‏`/auth/register/producer` ו-`/auth/register/producer/oauth` (הופרדו מ-`auth.py` ב-MEH-3293).
 * `backend/app/config.py` — ‏`JWT_SECRET_KEY` נדרש ב-production; חסר = `RuntimeError` באתחול.
 * `frontend/lib/safe-redirect.js` — יעד חזרה בטוח אחרי התחברות.
 * `backend/app/routers/users_me.py` + `backend/app/services/email_change_guard.py` — שינוי אימייל: דורש סיסמה, 5 סיסמאות שגויות לשעה לכל חשבון, ומנתק את שאר המכשירים (MEH-3104, MEH-3425).

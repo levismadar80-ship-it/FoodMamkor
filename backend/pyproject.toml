@@ -126,6 +126,7 @@ max-complexity = 10
 # Existing god-files — large refactor tickets pending. Remove ignore after merge.
 "app/routers/producers.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-438
 "app/routers/auth.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-440
+"app/routers/auth_register_producer.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-3293: moved out of auth.py with its code
 
 # Auto-generated migrations are long by design.
 "alembic/versions/**" = ["PLR0915", "PLR0912"]
@@ -183,6 +184,7 @@ files = [
     "app/routers/admin_whatsapp.py",
     "app/routers/alerts.py",
     "app/routers/auth.py",
+    "app/routers/auth_register_producer.py",
     "app/routers/billing.py",
     "app/routers/business_suggestions.py",
     "app/routers/category_requests.py",
