@@ -65,15 +65,15 @@ export const BUSINESS_FEATURE_GROUPS = [
  */
 export const BUSINESS_FEATURES = [
   // ── page ────────────────────────────────────────────────────────────────
-  { id: "gallery_story", group: "page", status: "live", tile: { icon: "Image" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx", "frontend/components/ImageGallery.jsx"] },
+  { id: "gallery_story", group: "page", status: "live", tile: { icon: "Image" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/OwnerCard.jsx", "frontend/components/ImageGallery.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx"] },
   { id: "product_details", group: "page", status: "live", tile: { icon: "Tag" }, codeRef: ["frontend/components/ProductsSection.jsx", "frontend/components/public/ProductSheet.jsx"] },
-  { id: "top_product", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx"] },
-  { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js"] },
+  { id: "top_product", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/PricingCard.jsx"] },
+  { id: "hours", group: "page", status: "live", tile: { icon: "Clock" }, codeRef: ["frontend/lib/hours.js", "frontend/app/[locale]/producer/[id]/lib/order-status.js", "frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx", "frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx", "frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx"] },
   { id: "vacation_mode", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx"] },
   { id: "map_precision", group: "page", status: "live", tip: true, codeRef: ["frontend/lib/producerPoints.js", "frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
   { id: "multi_locations", group: "page", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx"] },
   { id: "draft_claim", group: "page", status: "live", tile: { icon: "PencilSimple" }, codeRef: ["backend/app/routers/producer_claim.py", "frontend/components/admin/ClaimLinkPanel.jsx"] },
-  { id: "ai_writer", group: "page", status: "live", codeRef: ["backend/app/services/bio_generator.py"] },
+  { id: "ai_writer", group: "page", status: "live", codeRef: ["backend/app/services/bio_generator.py", "frontend/app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx"] },
   { id: "guides", group: "page", status: "live", codeRef: ["frontend/app/[locale]/about/for-businesses/guides/page.js"] },
   { id: "social_signup", group: "page", status: "live", codeRef: ["backend/app/routers/auth.py", "frontend/app/[locale]/register/RegisterClient.jsx"] },
   { id: "wa_approval", group: "page", status: "live", codeRef: ["backend/app/services/whatsapp_templates.py"] },
@@ -81,7 +81,7 @@ export const BUSINESS_FEATURES = [
 
   // ── found ───────────────────────────────────────────────────────────────
   { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/app/[locale]/producer/dashboard/page.js"] },
-  { id: "discovery", group: "found", status: "live", tile: { icon: "MapPin" }, codeRef: ["frontend/app/[locale]/producers/diet/[dietSlug]/page.js", "frontend/app/sitemap.js"] },
+  { id: "discovery", group: "found", status: "live", tile: { icon: "MapPin" }, codeRef: ["frontend/app/[locale]/producers/diet/[dietSlug]/page.js", "frontend/app/sitemap.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CategoriesCard.jsx"] },
   { id: "similar_businesses", group: "found", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx"] },
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx"] },
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
@@ -90,18 +90,18 @@ export const BUSINESS_FEATURES = [
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
-  { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx"] },
+  { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ContactChannelsCard.jsx"] },
   { id: "wa_prefill", group: "contact", status: "live", tile: { icon: "PaperPlaneTilt" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "product_wa", group: "contact", status: "live", codeRef: ["frontend/components/public/ProductSheet.jsx"] },
   { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },
-  { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js"] },
+  { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx"] },
   { id: "delivery_checker", group: "contact", status: "live", tile: { icon: "Truck" }, codeRef: ["frontend/components/DeliveryChecker.jsx"] },
   { id: "wa_group", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "nav_buttons", group: "contact", status: "live", tile: { icon: "NavigationArrow" }, codeRef: ["frontend/components/NavAppGlyphs.jsx"] },
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },
 
   // ── return ──────────────────────────────────────────────────────────────
-  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx"] },
+  { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/OffersCard.jsx"] },
   { id: "group_buys", group: "return", status: "live", highlight: true, tip: true, tile: { icon: "UsersThree" }, codeRef: ["frontend/app/[locale]/group-buys/GroupBuysClient.jsx", "frontend/app/[locale]/producer/dashboard/group-buys"], dashboard: { home: "tools", href: "/producer/dashboard/group-buys" } },
   { id: "events", group: "return", status: "live", highlight: true, tile: { icon: "CalendarBlank" }, codeRef: ["frontend/app/[locale]/events/EventsClient.jsx", "frontend/app/[locale]/producer/dashboard/events"], dashboard: { home: "tools", href: "/producer/dashboard/events" } },
   // MEH-2885: experiences (hosted visits) — he copy approved word for word by Sapir 10/11.
@@ -112,10 +112,10 @@ export const BUSINESS_FEATURES = [
   { id: "rescue_bags", group: "return", status: "live", highlight: true, tip: true, flag: () => rescueBagsEnabled(), tile: { icon: "ShoppingBag" }, codeRef: ["frontend/components/rescue/RescueSection.jsx", "frontend/lib/rescue.js"], dashboard: { home: "tools", href: "/producer/dashboard/rescue" } },
 
   // ── trust ───────────────────────────────────────────────────────────────
-  { id: "verified_badge", group: "trust", status: "live", tile: { icon: "ShieldCheck" }, codeRef: ["frontend/lib/badges.js"] },
-  { id: "kashrut_verified", group: "trust", status: "live", tile: { icon: "Certificate" }, codeRef: ["frontend/app/[locale]/admin/kashrut/page.js", "frontend/lib/badges.js"] },
+  { id: "verified_badge", group: "trust", status: "live", tile: { icon: "ShieldCheck" }, codeRef: ["frontend/lib/badges.js", "frontend/app/[locale]/producer/dashboard/edit/cards/LicenseCard.jsx"] },
+  { id: "kashrut_verified", group: "trust", status: "live", tile: { icon: "Certificate" }, codeRef: ["frontend/app/[locale]/admin/kashrut/page.js", "frontend/lib/badges.js", "frontend/app/[locale]/producer/dashboard/edit/cards/KashrutCard.jsx"] },
   { id: "editor_pick", group: "trust", status: "live", tile: { icon: "Medal" }, codeRef: ["frontend/lib/featured-producer.js", "frontend/lib/badges.js"] },
-  { id: "reservist_diet_tags", group: "trust", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ReservistBadgeLine.jsx", "frontend/lib/badges.js"] },
+  { id: "reservist_diet_tags", group: "trust", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ReservistBadgeLine.jsx", "frontend/lib/badges.js", "frontend/app/[locale]/producer/dashboard/edit/ReservistOwnedCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/TagsCard.jsx"] },
   { id: "reviews_contacted", group: "trust", status: "live", tile: { icon: "Star" }, codeRef: ["backend/app/routers/reviews.py", "frontend/components/ReviewsSection.jsx", "frontend/app/[locale]/producer/dashboard/reviews/page.js"], dashboard: { home: "tools", href: "/producer/dashboard/reviews" } },
   { id: "review_request", group: "trust", status: "live", codeRef: ["frontend/components/producer/RequestReviewCard.jsx"] },
 
@@ -177,6 +177,20 @@ export const DASHBOARD_SUBPAGES = {
  * «Launch tier»), so it is not invented here.
  */
 export const DASHBOARD_PAGES_WITHOUT_ENTRY = {};
+
+/**
+ * MEH-3416 — every editor file under producer/dashboard/edit/ is either named
+ * in some tool's `codeRef` above, or listed here with why it is not a tool.
+ * __tests__/BusinessFeaturesRegistry.test.js fails on an editor file that is
+ * neither, so a new editor cannot ship without a decision about the tool list.
+ * A real new tool does NOT go here: it needs an entry, which needs approved
+ * copy (workflow.md «Launch tier» א׳).
+ */
+export const EDITOR_FILES_WITHOUT_TOOL = {
+  "frontend/app/[locale]/producer/dashboard/edit/cards/BusinessNameCard.jsx": "account detail: a name-change request, not a tool",
+  "frontend/app/[locale]/producer/dashboard/edit/cards/ViewOnPageLink.jsx": "UI helper: back-link inside a card",
+  "frontend/app/[locale]/producer/dashboard/edit/OrganizerCityCard.jsx": "organizers only, not shown to a business",
+};
 
 /** The four cards above the tabs. */
 export const HIGHLIGHT_FEATURE_IDS = BUSINESS_FEATURES.filter((f) => f.highlight).map(
