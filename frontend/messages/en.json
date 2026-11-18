@@ -3939,7 +3939,33 @@
         "pick_review": "Pick a review",
         "download_review": "Download review card",
         "review_headline": "What our customers say",
-        "reviews_empty": "No reviews to share yet. <link>Send customers a review request link</link>"
+        "reviews_empty": "No reviews to share yet. <link>Send customers a review request link</link>",
+        "post": {
+          "title": "A post ready to share",
+          "subtitle": "Built from the details on your page. Pick what to tell, then share.",
+          "moments_label": "What to tell",
+          "moment_week": "This week",
+          "moment_new": "New product",
+          "moment_holiday": "For {holiday}",
+          "kicker_week": "This week",
+          "kicker_new": "New",
+          "kicker_holiday": "For {holiday}",
+          "footer": "All the details at the link",
+          "pick_product": "Pick a product",
+          "share": "Share",
+          "download": "Download the image",
+          "copy": "Copy caption and link",
+          "copied": "Copied",
+          "generating": "Preparing the image",
+          "empty": "To create a post you need at least one product in your price list.",
+          "empty_cta": "Add products",
+          "load_error": "We couldn't load your products.",
+          "retry": "Try again",
+          "caption_week": "What we have this week: {items}. All the details and prices at the link:",
+          "caption_new": "New: {item}. All the details at the link:",
+          "caption_holiday": "For {holiday}: {items}. All the details at the link:",
+          "image_alt": "Preview of the post"
+        }
       },
       "caption_from": "{name} from {city}"
     }
