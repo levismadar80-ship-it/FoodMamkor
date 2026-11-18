@@ -144,7 +144,7 @@ export default function MobileSheetSelectedCard({
           data-testid="map-selected-card-close"
           className="absolute top-0 end-0 w-11 h-11 rounded-full flex items-center justify-center text-text hover:text-primary focus-ring"
         >
-          <span className="w-7 h-7 rounded-full bg-background border border-border shadow-md flex items-center justify-center" aria-hidden="true">
+          <span className="w-7 h-7 rounded-full bg-background border border-border shadow-sm flex items-center justify-center" aria-hidden="true">
             <X size={14} weight="bold" />
           </span>
         </button>
