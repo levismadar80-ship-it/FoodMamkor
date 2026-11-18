@@ -106,6 +106,7 @@ erDiagram
         timestamp owner_invite_sent_at "nullable — MEH-2974, tz-aware; latest invite sent"
         timestamp owner_invite_accepted_at "nullable — MEH-2974, tz-aware; set once. Also the onboarding-sequence clock: COALESCE(this, created_at)"
         text owner_invite_consent_note "nullable — MEH-2974; the admin's record of the written consent. Kept on cancel — it is the audit trail"
+        string consent_screenshot_url "nullable — MEH-3377, VARCHAR(500); optional Cloudinary image of that written consent. ProducerAdminOut only"
         string owner_invite_created_by "nullable — MEH-2974, UUID FK users.id ON DELETE SET NULL, named + use_alter (users<->producers cycle)"
         string owner_invite_code_hash "nullable — MEH-2974 v3, VARCHAR(64); sha256 HEX of the 6-digit email code. NEVER the code; on no response schema"
         timestamp owner_invite_code_expires_at "nullable — MEH-2974 v3, tz-aware; send + 10 minutes"

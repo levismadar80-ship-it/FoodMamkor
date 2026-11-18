@@ -1,7 +1,7 @@
 """page_freshness_columns
 
 Revision ID: a8d41c2e7f90
-Revises: f6c2a8d4e1b7
+Revises: 5808c77bee3a
 Create Date: 2026-11-18 01:00:00.000000+00:00
 
 Page freshness: a monthly email asks a business owner whether her page is
@@ -18,7 +18,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "a8d41c2e7f90"
-down_revision = "f6c2a8d4e1b7"
+down_revision = "5808c77bee3a"
 branch_labels = None
 depends_on = None
 

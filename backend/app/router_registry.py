@@ -26,6 +26,7 @@ from app.routers import (
     marketing,
     organizers,
     producer_claim,
+    producer_draft_preview,
     producer_me,
     producer_me_analytics,
     producer_me_locations,
@@ -110,6 +111,9 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(billing.router)  # MEH-3181
     # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
     app.include_router(producer_claim.router)
+    # MEH-3377: read-only preview link for an ownerless draft, and the admin's
+    # «פרסום בהסכמה» for it.
+    app.include_router(producer_draft_preview.router)
     # MEH-2974: two routers, one module — the admin half carries
     # `require_admin`, the public half is reached with the invite token alone.
     # Same split, same reason, as admin_outreach's `prefill_router` below.
