@@ -281,6 +281,8 @@ def _run_followup_job() -> None:
     from app.database import SessionLocal
     from app.services.onboarding_followup import send_due_followups
     from app.services.pending_nudge import send_pending_nudges
+    from app.services.page_freshness import send_freshness_emails
+    from app.services.page_freshness_digest import send_stale_digest
 
     db = SessionLocal()
     try:
@@ -321,6 +323,24 @@ def _run_followup_job() -> None:
             # separate filterable stream from the follow-up sequence.
             capture_background_exception(exc, task="pending_nudge")
             log.error("[PENDING-NUDGE] daily run crashed", exc_info=True)
+
+        # Page freshness: the monthly "is everything still correct?" email
+        # shares the daily tick. Off until `page_freshness_enabled` is set.
+        try:
+            fresh = send_freshness_emails(db)
+            log.info("[PAGE-FRESHNESS] daily run complete counts=%s", fresh)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="page_freshness")
+            log.error("[PAGE-FRESHNESS] daily run crashed", exc_info=True)
+        # Sunday only: the admin gets the pages unconfirmed for 60+ days.
+        try:
+            listed = send_stale_digest(db)
+            log.info("[PAGE-FRESHNESS] stale digest listed=%s", listed)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="page_freshness_digest")
+            log.error("[PAGE-FRESHNESS] stale digest crashed", exc_info=True)
     finally:
         db.close()
 
