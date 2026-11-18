@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-3013: the content width every «מה קורה» hub tab uses below the shared
  * head (components/HubShell.jsx) — the same width the tab row and hero text

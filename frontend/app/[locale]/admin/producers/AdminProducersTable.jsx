@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import React from "react";
@@ -362,7 +363,7 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
           (MEH-1023 pattern) — same guards, same handlers, same busy keys as
           the inline buttons they replace; only the trigger location moved.
           Story-card behavior is unchanged (reposition only). MEH-2509 removed
-          the ambassador item (it duplicated «בחירת העורכת»). */}
+          the ambassador item (it duplicated «בחירת העורכות»). */}
       <AdminRowMenu
         ariaLabel={t("producers.table.actions.menu_aria")}
         items={[

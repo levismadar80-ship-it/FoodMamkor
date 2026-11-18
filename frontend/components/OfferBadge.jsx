@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * OfferBadge — MEH-1823 chunk 3.
  *

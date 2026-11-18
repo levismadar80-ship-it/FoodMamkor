@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   event-categories
  * Purpose:  Single source of truth for the /events (4) and /experiences (7)

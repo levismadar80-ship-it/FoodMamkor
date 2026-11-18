@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   hours
  * Purpose:  Parse a producer's `opening_hours` string and compute the

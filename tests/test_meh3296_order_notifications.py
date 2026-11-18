@@ -232,7 +232,14 @@ def test_a_deleted_account_owes_the_buyer_nothing_and_tells_the_business(
     shop = Shop(db)
     buyer = make_user(db, email="buyer@example.com")
     order = stored_order(db, shop, "pending", user_id=buyer.id)
-    assert client.delete("/auth/me", headers=auth_header(buyer)).status_code == 200
+    assert (
+        client.post(
+            "/auth/me/delete",
+            json={"password": "Zx7Yp9Mq2Lr4"},
+            headers=auth_header(buyer),
+        ).status_code
+        == 200
+    )
     assert owed(db, order.id) == [("buyer_cancelled", "email")]
 
 

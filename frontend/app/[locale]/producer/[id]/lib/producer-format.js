@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Display-format helpers for ProducerDetail.
  *

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   HomeSeasonalNow
  * Purpose:  The "עכשיו בעונה" homepage module — an editorially curated strip of

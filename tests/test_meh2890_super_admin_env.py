@@ -19,8 +19,8 @@ from pathlib import Path
 import pytest
 
 from app import config
+from app.config import settings as app_settings  # MEH-3248: was admin_extra.settings
 from app.models.models import User
-from app.routers import admin_extra
 from tests.conftest import auth_header, make_user
 
 OWNER = "owner@example.com"
@@ -35,6 +35,9 @@ def _boot(monkeypatch, *, env, super_admin_email="", railway=""):
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", railway)
     monkeypatch.setenv("SECRET_KEY", "x" * 64)
     monkeypatch.setenv("SUPER_ADMIN_EMAIL", super_admin_email)
+    # MEH-3388: production also requires a production FRONTEND_URL; set one so
+    # these tests keep measuring SUPER_ADMIN_EMAIL alone.
+    monkeypatch.setenv("FRONTEND_URL", "https://mehamakor.co.il")
     return config._load_settings()
 
 
@@ -98,7 +101,7 @@ def test_outside_production_a_bad_value_is_dropped_not_half_used(monkeypatch):
 
 @pytest.fixture
 def owner_configured(monkeypatch):
-    monkeypatch.setattr(admin_extra.settings, "super_admin_email", OWNER)
+    monkeypatch.setattr(app_settings, "super_admin_email", OWNER)
 
 
 def test_role_change_of_the_owner_is_refused(client, db, owner_configured):
@@ -157,7 +160,7 @@ def test_another_users_role_change_still_works(client, db, owner_configured):
 def test_unset_protects_nobody(client, db, monkeypatch):
     """Dev / tests / a staging without the var: the same address is an ordinary
     account. Production cannot reach this state — it does not boot."""
-    monkeypatch.setattr(admin_extra.settings, "super_admin_email", "")
+    monkeypatch.setattr(app_settings, "super_admin_email", "")
     admin = make_user(db, role="admin")
     owner = make_user(db, role="producer", email=OWNER)
 

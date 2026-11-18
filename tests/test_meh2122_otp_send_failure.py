@@ -13,7 +13,7 @@ History:  MEH-2122 chunk B (creation, 14/11).
 
 from tests.conftest import auth_header, make_producer, make_user
 
-from app.routers import producer_me
+from app.routers import producer_me_review as producer_me
 
 PHONE = "0501234577"
 

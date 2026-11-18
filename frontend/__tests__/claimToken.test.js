@@ -230,3 +230,32 @@ describe("owner-invite storage", () => {
     expect(readClaimToken()).toBe(TOKEN);
   });
 });
+
+/**
+ * MEH-3377 — the draft-preview link carries a JWT in its path for as long as
+ * the page is open, and the page fetches /producer-preview/<jwt>.
+ */
+describe("draft-preview link", () => {
+  it.each([
+    [`https://mehamakor.co.il/draft-preview/${TOKEN}`, "https://mehamakor.co.il/draft-preview/[token]"],
+    [`/en/draft-preview/${TOKEN}?utm=x`, "/en/draft-preview/[token]?utm=x"],
+    [`/api/producer-preview/${TOKEN}`, "/api/producer-preview/[token]"],
+    [`/login?redirect=%2Fhe%2Fdraft-preview%2F${TOKEN}`, "/login?redirect=%2Fhe%2Fdraft-preview%2F[token]"],
+  ])("%s", (input, expected) => {
+    expect(redactClaimPath(input)).toBe(expected);
+  });
+
+  it("leaves the route's own files alone, so stack frames keep their source", () => {
+    const frame = "webpack://_N_E/./app/[locale]/draft-preview/[token]/DraftPreviewClient.jsx";
+    expect(redactClaimPath(frame)).toBe(frame);
+  });
+
+  it("is scrubbed out of a whole event", () => {
+    const event = {
+      request: { url: `/he/draft-preview/${TOKEN}` },
+      breadcrumbs: [{ category: "fetch", data: { url: `/api/producer-preview/${TOKEN}` } }],
+    };
+    scrubClaimTokens(event);
+    expect(JSON.stringify(event)).not.toContain(TOKEN);
+  });
+});

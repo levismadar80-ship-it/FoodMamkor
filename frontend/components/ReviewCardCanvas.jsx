@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -43,7 +44,6 @@ import { showToast } from "@/lib/toast";
 import { ReviewsPageSchema } from "@/lib/api-schemas";
 import { SITE_URL } from "@/lib/env";
 import {
-  STORY_SAFE_BOTTOM,
   STORY_SAFE_TOP,
   drawLockup,
   loadFonts,

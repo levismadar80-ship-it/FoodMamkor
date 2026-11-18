@@ -3,7 +3,7 @@
  * When auth:expired fires, AuthProvider should clear user state and show a Hebrew toast.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, act, screen } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import { AuthProvider, useAuth } from "../lib/auth-context.js";
 
 // MEH-474 Wave 4 chunk 4: AuthProvider now calls useTranslations("auth.toasts").

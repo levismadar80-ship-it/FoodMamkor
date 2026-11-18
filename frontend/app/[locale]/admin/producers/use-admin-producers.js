@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -62,6 +63,8 @@ function useProducersData() {
   // public list payload at all (it is admin-only, ProducerAdminOut). So it
   // joins `producerStatus` in the effect dependency list below and re-fetches.
   const [reviewDueOnly, setReviewDueOnly] = useState(false);
+  // Page freshness: server filter, like reviewDueOnly.
+  const [staleOnly, setStaleOnly] = useState(false);
   // MEH-23 — client-side pagination on the admin producers table.
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
@@ -76,6 +79,7 @@ function useProducersData() {
     // (admin.py defaults it to False) but would put a dead parameter on every
     // request, and the backend reads presence-or-absence for the other flags.
     if (reviewDueOnly) params.recommended_review_due = true;
+    if (staleOnly) params.freshness_stale = true;
     setLoadError(false);
     api
       .get("/admin/producers", { params })
@@ -86,7 +90,7 @@ function useProducersData() {
   useEffect(() => {
     loadAllProducers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [producerStatus, reviewDueOnly]);
+  }, [producerStatus, reviewDueOnly, staleOnly]);
 
   return {
     producers, setProducers,
@@ -95,6 +99,7 @@ function useProducersData() {
     producerStatus, setProducerStatus,
     incompleteOnly, setIncompleteOnly,
     reviewDueOnly, setReviewDueOnly,
+    staleOnly, setStaleOnly,
     page, setPage,
     perPage, setPerPage,
     storyCardOpenId, setStoryCardOpenId,

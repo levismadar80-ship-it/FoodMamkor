@@ -10,7 +10,7 @@ Does NOT: test the purge (chunk C — does not exist) or the `days=N` arms'
           seam (ruled raw-only for now; the ≥30-day retention condition is
           recorded on the card, not asserted here).
 Related:  backend/app/services/analytics_rollup.py;
-          backend/app/routers/producer_me.py::_count_in_window;
+          backend/app/services/producer_insights.py::count_in_window;
           backend/app/startup.py::_run_analytics_rollup_job;
           backend/scripts/rollup_analytics.py;
           tests/test_meh160_view_dedupe.py (the dedupe these numbers inherit).
@@ -520,7 +520,14 @@ def test_scheduler_registration_and_crash_isolation(monkeypatch, db):
     assert callable(startup._run_analytics_rollup_job)
     src = inspect.getsource(startup)
     assert "meh_2283_analytics_rollup_daily" in src
-    assert "_run_analytics_rollup_job,\n        CronTrigger(hour=1, minute=30)" in src
+    # MEH-3155: the trigger is built from a shared crontab constant now, so
+    # assert the REGISTERED trigger fires when CronTrigger(hour=1, minute=30)
+    # did, instead of grepping the source for one spelling of it.
+    _assert_registered_fires_like(
+        startup,
+        "meh_2283_analytics_rollup_daily",
+        CronTrigger(hour=1, minute=30, timezone="UTC"),
+    )
     fields = {f.name: str(f) for f in CronTrigger(hour=1, minute=30).fields}
     assert (fields["hour"], fields["minute"]) == ("1", "30")
 
@@ -580,3 +587,21 @@ def test_the_cli_backfills_and_reports_json(db, capsys):
         == 2
     )
     assert "never today" in capsys.readouterr().err
+
+
+def _assert_registered_fires_like(startup, job_id, expected):
+    from datetime import datetime, timezone
+
+    from apscheduler.schedulers.background import BackgroundScheduler
+
+    sched = BackgroundScheduler(timezone="UTC")
+    startup.register_scheduler_jobs(sched)  # never started
+    trig = sched.get_job(job_id).trigger
+    t = datetime(2026, 3, 26, 23, 0, tzinfo=timezone.utc)  # spans the DST switch
+    for _ in range(5):
+        got, want = (
+            trig.get_next_fire_time(None, t),
+            expected.get_next_fire_time(None, t),
+        )
+        assert got == want, (job_id, got, want)
+        t = got

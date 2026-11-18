@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   ProductsSection
  * Purpose:  Producer-self CRUD editor for their product catalog (name, price
@@ -29,6 +30,7 @@ import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phos
 import { chipIcon } from "@/lib/chip-icons";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import api from "@/lib/api";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -78,6 +80,7 @@ const PRODUCT_FIELD_ORDER = ["name", "price_min", "price_max"];
 const PRODUCT_FIELD_ID_SUFFIX = { name: "name", price_min: "price-min", price_max: "price-max" };
 
 function validateProductForm(f, tErr) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
   if (f.price_min === "") {
@@ -124,6 +127,24 @@ function clearFieldError(setErrors, field) {
 // (page.js:596/:627/:866). Driving the toggle from the prop and patching upward
 // keeps one owner, so marking a product updates the checklist in the same tick
 // instead of leaving it stale until reload.
+/**
+ * @typedef {{
+ *   name: string, description: string, image_url: string,
+ *   price_min: string | number, price_max: string | number,
+ *   is_gluten_free: boolean, is_vegan: boolean, is_vegetarian: boolean,
+ *   is_lactose_free: boolean, is_no_added_sugar: boolean,
+ *   ingredients: string, allergens: string[],
+ * }} ProductForm
+ */
+/**
+ * @param {{
+ *   embedded?: boolean,
+ *   onCountChange?: (count: number) => void,
+ *   topProductName?: string | null,
+ *   topProductId?: string | number | null,
+ *   onTopProductChange?: ((change: { top_product_id: string | number | null, top_product_name: string | null }) => void) | null,
+ * }} [props]
+ */
 export default function ProductsSection({
   embedded = false,
   onCountChange,
@@ -138,7 +159,6 @@ export default function ProductsSection({
   const t = useTranslations("settings.products");
   const tForm = useTranslations("settings.products.form");
   const tErr = useTranslations("settings.products.errors");
-  const tCommon = useTranslations("settings.common");
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -146,10 +166,10 @@ export default function ProductsSection({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [editFormErrors, setEditFormErrors] = useState({});
+  const [editForm, setEditForm] = useState(/** @type {Partial<ProductForm>} */ ({}));
+  const [editFormErrors, setEditFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [savingEdit, setSavingEdit] = useState(false);
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
   // double-delete of the same product and disables the row's trash button.
@@ -265,7 +285,7 @@ export default function ProductsSection({
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(tErr("upload_size"));
       e.target.value = "";
       return;
@@ -391,7 +411,7 @@ export default function ProductsSection({
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(tErr("upload_size"));
       e.target.value = "";
       return;
@@ -1066,6 +1086,7 @@ export default function ProductsSection({
 // like every other field in the card. Plain number, no ₪ — the currency glyph
 // is already rendered inside the input below, and products are numeric since
 // MEH-295.
+/** @param {{ id: string, label: import("react").ReactNode, optionalSuffix?: import("react").ReactNode, value: string | number, onChange: (e: import("react").ChangeEvent<HTMLInputElement>) => void, placeholder?: string, required?: boolean, error?: import("react").ReactNode }} props */
 function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, required = false, error }) {
   return (
     <Input
@@ -1183,6 +1204,7 @@ function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngred
 // REUSES: components/CategorySelector.jsx:163-200 selected idiom
 // (border-primary bg-green-50 vs border-border hover:border-primary) — ADR-019
 // states via the primary/cream family, no new state token.
+/** @param {{ label: import("react").ReactNode, pressed: boolean, onToggle: () => void, iconKey?: string }} props */
 function DietChip({ label, pressed, onToggle, iconKey }) {
   // MEH-1472: leading Phosphor glyph from the canonical chip-icon map. null for
   // keys without an icon (e.g. vegetarian) → the chip stays text-only, matching

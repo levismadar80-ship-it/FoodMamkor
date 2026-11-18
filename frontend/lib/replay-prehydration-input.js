@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-2602: typing that lands before hydration must not be silently dropped.
  *
@@ -25,9 +26,17 @@
  * order. The App Router runs React 19, which leaves the DOM value alone, so
  * there the capture is a backstop and the DOM value alone is enough.
  *
+ * MEH-3164: on a slow WebKit load this chunk evaluated after the keystroke and
+ * after hydration had already emptied the field, so the capture now starts in
+ * an inline <head> script (lib/prehydration-capture-inline.js) and this module
+ * adopts its map. Captures also survive the replay that applies them — see
+ * replayPrehydrationInput.
+ *
  * Industry precedent: kurtextrem.de/posts/replay-input-after-hydration; React's
  * own (flag-gated) enableHydrationChangeEvent does the same at hydration commit.
  */
+
+import { PREHYDRATION_CAPTURE_KEY } from "@/lib/prehydration-capture-key";
 
 const TEXT_TYPES = new Set(["", "text", "email", "search", "tel", "url", "password"]);
 
@@ -36,11 +45,31 @@ function isTextField(el) {
   return el instanceof HTMLInputElement && TEXT_TYPES.has((el.getAttribute("type") || "").toLowerCase());
 }
 
-const captured = new WeakMap();
+// MEH-3164: shared with the <head> script (lib/prehydration-capture-inline.js),
+// which starts recording from the first byte — before this chunk evaluates.
+const globalScope = /** @type {any} */ (typeof window !== "undefined" ? window : null);
+const captured = /** @type {WeakMap<Element, string>} */ (
+  globalScope?.[PREHYDRATION_CAPTURE_KEY] || new WeakMap()
+);
+if (globalScope) globalScope[PREHYDRATION_CAPTURE_KEY] = captured;
+// When a capture first matched React state, and how often it was replayed.
+const matchedAt = new WeakMap();
+const replays = new WeakMap();
 let capturing = false;
+
+/** A capture that has matched state this long is consumed (ms). */
+export const SETTLE_MS = 1000;
+/** An onChange that rewrites the text never matches; stop after this many. */
+const MAX_REPLAYS = 3;
 
 function remember(el) {
   if (el && isTextField(el)) captured.set(el, el.value);
+}
+
+function forget(el) {
+  captured.delete(el);
+  matchedAt.delete(el);
+  replays.delete(el);
 }
 
 /**
@@ -53,21 +82,49 @@ function reactProps(el) {
   return key ? el[key] : null;
 }
 
-function onEarlyInput(event) {
-  // A field React already owns hears this event itself — recording it would
-  // later "replay" stale or untransformed text over what its onChange did.
-  if (reactProps(event.target)) captured.delete(event.target);
-  else remember(event.target);
+/** Exported for tests only: jsdom cannot dispatch a trusted event. */
+export function onEarlyInput(event) {
+  if (!reactProps(event.target)) {
+    remember(event.target);
+    return;
+  }
+  // A field React owns. A trusted event is the visitor typing after
+  // hydration — her new text wins over anything captured. An UNTRUSTED one is
+  // React re-dispatching a held keystroke as a clone onto the field hydration
+  // just emptied (MEH-3164); dropping the capture on it lost the text.
+  if (event.isTrusted) forget(event.target);
+}
+
+/**
+ * A submit reads the field (ProducersClient: MEH-3153). If a commit emptied it
+ * after the visitor typed and no pass has run since, restore it first, then let
+ * the form own its fields: a form that clears itself after sending is never
+ * refilled from an old capture.
+ */
+function onSubmit(event) {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  replayPrehydrationInput(form);
+  // A field React does not own yet keeps its capture: a submit before
+  // hydration is held and re-dispatched by React, and the field it reads may
+  // be emptied by then.
+  for (const el of form.querySelectorAll("input, textarea")) {
+    if (reactProps(el)) forget(el);
+  }
 }
 
 /** Starts recording pre-hydration values. Runs once at module evaluation. */
 export function startPrehydrationCapture() {
   if (typeof document === "undefined" || capturing) return;
   capturing = true;
-  for (const el of document.querySelectorAll("input, textarea")) {
-    if (el.value !== el.defaultValue) remember(el);
+  const fields = /** @type {NodeListOf<HTMLInputElement | HTMLTextAreaElement>} */ (
+    document.querySelectorAll("input, textarea")
+  );
+  for (const el of fields) {
+    if (!captured.has(el) && el.value !== el.defaultValue) remember(el);
   }
   document.addEventListener("input", onEarlyInput, true);
+  document.addEventListener("submit", onSubmit, true);
 }
 
 /** Stops recording. The component calls it after its last replay pass. */
@@ -75,6 +132,7 @@ export function stopPrehydrationCapture() {
   if (!capturing) return;
   capturing = false;
   document.removeEventListener("input", onEarlyInput, true);
+  document.removeEventListener("submit", onSubmit, true);
 }
 
 startPrehydrationCapture();
@@ -90,35 +148,79 @@ function keepCaret(el, write) {
   if (range && range[0] != null) el.setSelectionRange(range[0], range[1]);
 }
 
+/** Counts a capture that already matches state; consumes it once settled. */
+function settle(el, now) {
+  if (!matchedAt.has(el)) matchedAt.set(el, now);
+  else if (now - matchedAt.get(el) >= SETTLE_MS) forget(el);
+}
+
+/** Fires one input event so the field's own onChange sees `typed`. */
+function writeThroughOnChange(el, rendered, typed) {
+  const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  const setNative = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+  if (!setNative) return false;
+  keepCaret(el, () => {
+    el.value = rendered; // instance setter: React's tracker now holds the rendered value
+    setNative.call(el, typed); // prototype setter: DOM holds `typed`, tracker does not
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  return true;
+}
+
+/** One field of a pass. True when it was replayed. */
+function replayField(el, now) {
+  if (!isTextField(el) || el.disabled || el.readOnly) return false;
+  const props = reactProps(el);
+  if (props?.value === null || props?.value === undefined || typeof props.onChange !== "function") return false;
+  const hasCapture = captured.has(el);
+  const typed = hasCapture ? /** @type {string} */ (captured.get(el)) : el.value;
+  const rendered = String(props.value);
+  if (typed === rendered) {
+    // a prefilled field she cleared is "" ≠ "x", and replays below
+    if (hasCapture) settle(el, now);
+    return false;
+  }
+  if (!hasCapture) return writeThroughOnChange(el, rendered, typed);
+  matchedAt.delete(el);
+  const count = (replays.get(el) || 0) + 1;
+  if (count > MAX_REPLAYS) {
+    forget(el);
+    return false;
+  }
+  replays.set(el, count);
+  return writeThroughOnChange(el, rendered, typed);
+}
+
 /**
  * Replays pre-hydration edits inside `root`. Returns the number of fields
  * replayed (for tests; callers ignore it).
  *
  * Only a CONTROLLED field React already owns is touched, and only when the
- * text the visitor typed differs from the value React rendered — so a field
- * React heard her type into after hydration (state already matches) is never
- * re-fired, uncontrolled fields keep their own DOM value untouched, and a field
- * not yet hydrated is left for the next pass.
+ * text the visitor typed differs from the value React rendered — so uncontrolled
+ * fields keep their own DOM value untouched and a field not yet hydrated is left
+ * for the next pass.
+ *
+ * MEH-3164: a captured value is NOT consumed by the replay that applies it. A
+ * commit after hydration can write the rendered "" back over the field (seen on
+ * WebKit), and a consumed capture left every later pass seeing DOM == state ==
+ * "". The capture is consumed once state has matched it for SETTLE_MS, after
+ * MAX_REPLAYS, on a trusted keystroke after hydration, or when its form submits.
+ *
+ * @param {ParentNode | null} [root]
+ * @param {{ now?: number, capturedOnly?: boolean }} [options]
  */
-export function replayPrehydrationInput(root = typeof document !== "undefined" ? document : null) {
+export function replayPrehydrationInput(
+  root = typeof document !== "undefined" ? document : null,
+  { now = Date.now(), capturedOnly = false } = {},
+) {
   if (!root) return 0;
   let replayed = 0;
-  for (const el of root.querySelectorAll("input, textarea")) {
-    if (!isTextField(el) || el.disabled || el.readOnly) continue;
-    const props = reactProps(el);
-    if (props?.value == null || typeof props.onChange !== "function") continue;
-    const typed = captured.has(el) ? captured.get(el) : el.value;
-    captured.delete(el);
-    if (typed === String(props.value)) continue; // includes a prefilled field she cleared: "" ≠ "x" replays
-    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-    const setNative = Object.getOwnPropertyDescriptor(proto, "value")?.set;
-    if (!setNative) continue;
-    keepCaret(el, () => {
-      el.value = String(props.value); // instance setter: React's tracker now holds the rendered value
-      setNative.call(el, typed); // prototype setter: DOM holds `typed`, tracker does not
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    replayed += 1;
+  const fields = /** @type {NodeListOf<HTMLInputElement | HTMLTextAreaElement>} */ (
+    root.querySelectorAll("input, textarea")
+  );
+  for (const el of fields) {
+    if (capturedOnly && !captured.has(el)) continue;
+    if (replayField(el, now)) replayed += 1;
   }
   return replayed;
 }

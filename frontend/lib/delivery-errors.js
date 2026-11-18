@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-1943 chunk 3 — code→copy resolver for the two delivery 422s from
  * backend/app/services/delivery_validation.py (owner PUT /producers/me and

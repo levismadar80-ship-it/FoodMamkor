@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 
 from app.config import settings
-from app.routers.admin import (
+from app.services.admin_producer_emails import (
     _producer_approved_body,
     _producer_changes_requested_body,
     _producer_rejected_body,
@@ -176,7 +176,7 @@ def test_sibling_bodies_never_carry_the_invite(invite_url):
 _OWNED_FILES = (
     ".env.example",
     "backend/app/config.py",
-    "backend/app/routers/admin.py",
+    "backend/app/services/admin_producer_emails.py",
     "tests/test_meh2134_approval_email_community.py",
 )
 

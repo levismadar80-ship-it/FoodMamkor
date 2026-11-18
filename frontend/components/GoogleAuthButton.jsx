@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/browser-globals.d.ts" />
 "use client";
 
 import { useRef } from "react";
@@ -7,6 +9,7 @@ import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
+/** @param {{ onSuccess?: () => void, onError?: (message: string) => void, termsAccepted?: boolean }} props */
 export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithGoogle } = useAuth();
@@ -40,5 +43,9 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
 
   if (!clientId) return null;
 
-  return <div ref={buttonRef} className="w-full" />;
+  // MEH-3343: reserve the 40px GSI "large" button before Google's script
+  // paints it — the late iframe pushed the form below it down 40px (CLS 0.03
+  // per element on /login, /register, /favorites). ProducerOAuthButtons
+  // already reserves its own container the same way.
+  return <div ref={buttonRef} className="w-full min-h-10" data-testid="google-auth-slot" />;
 }

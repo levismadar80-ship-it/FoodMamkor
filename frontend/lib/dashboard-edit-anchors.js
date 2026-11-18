@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   dashboard-edit-anchors
  * Purpose:  The deep-link registry for the producer dashboard's edit page —

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedBurst from "@/components/brand/SeedBurst";
@@ -31,6 +32,8 @@ import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { parseNaiveUtc } from "@/lib/dates";
+import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -44,6 +47,27 @@ function clampQuantity(value) {
   const n = Math.floor(Number(value));
   if (!Number.isFinite(n)) return QTY_MIN;
   return Math.min(QTY_MAX, Math.max(QTY_MIN, n));
+}
+
+// MEH-3130: a guest's chosen quantity survives the trip to /login and back
+// (the «כניסה להצטרפות» button), as the review row keeps a tapped star.
+const QTY_DRAFT_KEY = (gbId) => `group_buy_draft_qty_${gbId}`;
+
+function saveDraftQuantity(gbId, value) {
+  try {
+    sessionStorage.setItem(QTY_DRAFT_KEY(gbId), String(clampQuantity(value)));
+  } catch {}
+}
+
+/** Read and clear the kept quantity; null when none (or storage is blocked). */
+function takeDraftQuantity(gbId) {
+  try {
+    const raw = sessionStorage.getItem(QTY_DRAFT_KEY(gbId));
+    if (raw === null) return null;
+    sessionStorage.removeItem(QTY_DRAFT_KEY(gbId));
+    return clampQuantity(raw);
+  } catch {}
+  return null;
 }
 
 export default function GroupBuyDetailClient({ id }) {
@@ -64,7 +88,13 @@ export default function GroupBuyDetailClient({ id }) {
   const { user, loading: authLoading } = useAuth();
   const [gb, setGb] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
+  // A string while typing, clamped back to a number on blur.
+  const [quantity, setQuantity] = useState(/** @type {number | string} */ (1));
+  useEffect(() => {
+    if (!user) return;
+    const kept = takeDraftQuantity(id);
+    if (kept) setQuantity(kept);
+  }, [user, id]);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
@@ -131,6 +161,7 @@ export default function GroupBuyDetailClient({ id }) {
     e.preventDefault();
     if (!user) {
       // MEH-2982: come back to this group buy after signing in, not to "/".
+      saveDraftQuantity(id, quantity);
       router.push(loginHrefBackHere());
       return;
     }
@@ -199,7 +230,12 @@ export default function GroupBuyDetailClient({ id }) {
   const fulfilled = gb.status === "fulfilled";
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
-  const expired = new Date(gb.deadline) < new Date();
+  // MEH-3219 B13: deadline is naive UTC — parsed as UTC, not device-local.
+  const expired = parseNaiveUtc(gb.deadline) < new Date();
+  // MEH-3289: a funded group still takes joiners until it is full or the
+  // deadline passes (group_buys.py commit route); leaving stays open the same way.
+  const joinable = (open || funded) && !expired;
+  const full = typeof gb.max_participants === "number" && gb.commits_count >= gb.max_participants;
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const heroSrc = gb.producer_image_url
     ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
@@ -222,7 +258,11 @@ export default function GroupBuyDetailClient({ id }) {
     // that silently does nothing.
     else if (outcome === "failed") showToast.error(tSharePage("copy_failed_toast"));
   };
-  const progressLabel = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
+  // MEH-3289: past the minimum the group keeps filling, so «7 מתוך 5» would read
+  // as an error — the count alone is shown instead.
+  const progressLabel = gb.commits_count > gb.min_participants
+    ? t("progress_joined", { commits: gb.commits_count })
+    : t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
   // Stacked (count above, mark full width) for the bar and for 6–10 seeds;
   // side by side only while the seeds fit beside the count at 375.
@@ -276,13 +316,13 @@ export default function GroupBuyDetailClient({ id }) {
         )}
         <p className="mt-2.5 border-t border-accent/35 pt-2 flex w-full items-center gap-1 text-xs text-fg-muted">
           <Clock size={14} aria-hidden="true" />
-          {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
+          {t("deadline_prefix", { date: formatEventDate(parseNaiveUtc(gb.deadline), locale, { day: "numeric", month: "long", year: "numeric" }) })}
         </p>
       </div>
 
       <div className="mt-5">
         {/* Commit form */}
-        {open && !expired && !gb.user_committed && (
+        {joinable && !full && !gb.user_committed && (
           <form onSubmit={handleCommit} className="space-y-4">
             {/* MEH-1145 Wave E2: number field → ui/Input; the clamp-on-blur and
                 the ltr end-anchored digits (a text-align via className, not a
@@ -326,7 +366,7 @@ export default function GroupBuyDetailClient({ id }) {
               {t("committed_confirm")}
               {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
             </div>
-            {open && !expired && (
+            {joinable && (
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
@@ -338,9 +378,16 @@ export default function GroupBuyDetailClient({ id }) {
           </div>
         )}
 
-        {expired && open && (
+        {/* MEH-3287: the daily job cancels a group that missed its minimum by the
+            deadline — that page says the deadline passed, not «בוטלה». */}
+        {expired && (open || cancelled) && (
           <div className="rounded-md bg-border px-4 py-3 text-fg-muted text-sm text-center">
             {t("deadline_passed")}
+          </div>
+        )}
+        {joinable && full && !gb.user_committed && (
+          <div className="rounded-md bg-border px-4 py-3 text-fg-muted text-sm text-center" data-testid="group-buy-full">
+            {t("full")}
           </div>
         )}
       </div>
@@ -355,6 +402,10 @@ export default function GroupBuyDetailClient({ id }) {
           {tShare("trigger")}
         </button>
       </div>
+      {/* MEH-3398: the buyer commits to an order HERE, through the site's own
+          tools, so this is where «not a party to the transaction» has to be
+          read. Same locked legal line as the business page; no new copy. */}
+      <DirectoryDisclaimer className="mt-4" />
     </div>
   );
 
@@ -390,7 +441,7 @@ export default function GroupBuyDetailClient({ id }) {
             <p className="text-sm mt-1 opacity-90">{t("funded_subtitle", { name: gb.producer_name })}</p>
           </div>
         )}
-        {cancelled && (
+        {cancelled && !expired && (
           <div className="mb-5 rounded-md bg-border px-5 py-3 text-center text-fg-muted text-sm">{t("cancelled")}</div>
         )}
         {fulfilled && (

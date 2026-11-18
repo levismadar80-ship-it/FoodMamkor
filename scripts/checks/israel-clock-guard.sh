@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# israel-clock-guard.sh — warn-only guard against a NEW private
+# israel-clock-guard.sh — BLOCKING guard (MEH-3160; warn-only until 14/11/2026,
+# when a warning nobody read let five findings accumulate) against a NEW private
 # "what day is it in Israel" implementation on the client (MEH-1988).
 #
 # WHY THIS EXISTS
@@ -34,18 +35,15 @@
 #   violation and let frontend/lib/hours.js through, and hours.js is exactly the
 #   unrecorded site this guard should surface.
 #
-# WARN-ONLY, ON PURPOSE — AND HOW THAT IS ENCODED
-#   This exits 0 always. It prints the token WARNING, which run-all.sh surfaces
-#   inline and summarises as WARN without changing the run's exit code (see its
-#   "WARN SURFACING (MEH-1715)" block). It does NOT print the bare string
-#   `mode: WARN-ONLY` on clean runs, because the dispatcher deliberately does
-#   not match that token and a guard that printed it unconditionally would be
-#   invisible either way.
-#
-#   Born warn-only because MEH-1868 measured what happens otherwise: a gate that
-#   arrives already blocking gets routed around, and four such gates in this
-#   repo became four non-gates. Promotion to blocking is a separate, deliberate
-#   step once the tree is known clean and has stayed clean.
+# BLOCKING SINCE MEH-3160 (14/11/2026) — AND WHY IT WAS NOT BEFORE
+#   Exit 1 on any finding. It was born warn-only (MEH-1988), because MEH-1868
+#   measured that a gate which arrives already blocking gets routed around;
+#   promotion was to be "a separate, deliberate step once the tree is known
+#   clean". This is that step. In between, the warning was a line in a log
+#   nobody read and five findings accumulated: four were legitimate uses whose
+#   `guard-ok` note sat outside the +/-1 window, one (lib/seo.js) was a real
+#   second formatter and now imports `israelToday`. The tree is clean, so a
+#   finding from here on is a new one.
 #
 # WHAT IT DOES NOT DO
 #   It cannot tell a *correct* Israel-tz implementation from a wrong one, and it
@@ -59,7 +57,7 @@
 #   `rtl-ok` marker. A reason is required; the bare marker does not suppress.
 #
 # USAGE
-#   bash scripts/checks/israel-clock-guard.sh    # always exit 0 (warn-only)
+#   bash scripts/checks/israel-clock-guard.sh    # exit 1 on any finding
 #
 set -uo pipefail
 
@@ -112,7 +110,7 @@ suppressed() {
 }
 
 report() {
-  echo "  WARNING $1:$2"
+  echo "  FAIL $1:$2"
   echo "      $3"
   findings=$(( findings + 1 ))
 }
@@ -154,9 +152,9 @@ done < <(grep -rnE 'timeZone:[[:space:]]*"Asia/Jerusalem"' "$SCAN_DIR" \
 
 echo
 if [ "$findings" -gt 0 ]; then
-  echo "israel-clock-guard WARNED — $findings finding(s). Not blocking (warn-only, MEH-1988)."
+  echo "israel-clock-guard FAILED — $findings finding(s). Blocking since MEH-3160 (was warn-only, MEH-1988)."
   echo "Fix by importing from frontend/lib/israel-date.js, or annotate with 'guard-ok: <reason>' within +/-1 line."
-  exit 0
+  exit 1
 fi
 echo "israel-clock-guard OK — no new private Israel-clock implementations."
 exit 0

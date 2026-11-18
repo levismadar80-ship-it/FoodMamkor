@@ -23,7 +23,8 @@
  * autocomplete works before the backend responds (or on an unseeded env).
  *
  * SYNC DUTY (MEH-1349): backend/app/data/cities.py holds a byte-for-byte
- * copy of ISRAEL_CITIES. Any change here must land there in the same PR.
+ * copy of ISRAEL_CITIES, same order. Enforced by
+ * __tests__/IsraelCitiesParity.test.js (MEH-3337), which fails when they differ.
  */
 /**
  * MEH-2797 — everyday short names for a locality whose official name is longer.
@@ -161,6 +162,38 @@ export const ISRAEL_CITIES = [
   "רמת השרון",
   "תל מונד",
   "חצור הגלילית",
+  // MEH-3334: עמק חפר regional-council settlements (region chip "hefer_valley")
+  "בית חירות",
+  "בית יצחק-שער חפר",
+  "הדר עם",
+  "העוגן",
+  "כפר הס",
+  "כפר ויתקין",
+  "כפר חיים",
+  "כפר ידידיה",
+  "מעברות",
+  "משמר השרון",
+  "נורדיה",
+  "צור משה",
+  "חופית",
+  // MEH-3334: חוף הכרמל regional-council settlements (region chip "carmel_coast").
+  // עתלית is already above (also in REGIONS "haifa") — listed once here.
+  "עין איילה",
+  "הבונים",
+  "כרם מהר\"ל",
+  "גבע כרמל",
+  "כפר גלים",
+  "מגדים",
+  "דור",
+  "נווה ים",
+  "נחשולים",
+  "ניר עציון",
+  "עופר",
+  "עין הוד",
+  "עין כרמל",
+  "צרופה",
+  "החותרים",
+  "שדות ים",
   // Major neighborhoods (תל אביב)
   "פלורנטין",
   "נווה צדק",

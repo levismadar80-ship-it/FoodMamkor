@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   time-format
  * Purpose:  The single owner of how a time-of-day is SHOWN to a reader —

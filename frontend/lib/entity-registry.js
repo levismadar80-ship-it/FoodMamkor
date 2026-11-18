@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   entity-registry
  * Purpose:  One list of the site's public entities (business, organizer,
@@ -132,6 +133,9 @@ export const NON_ENTITY_ROUTES = {
   // not an entity id. The segment is swapped out of the address on first
   // load, so the route never settles on a URL anyone could share or index.
   "app/[locale]/owner-invite/[token]": "one-time owner-invite link",
+  // MEH-3377. A signed, expiring read of a draft that is not public yet; the
+  // entity it shows gets its own page (/[slug]) only once it is published.
+  "app/[locale]/draft-preview/[token]": "read-only preview link for an unpublished draft",
   "app/[locale]/p/[slug]": "redirect stub to /[slug] (MEH-2099)",
   "app/[locale]/producers/[category]/[region]": "listing page, not one entity",
   "app/[locale]/producers/diet/[dietSlug]": "listing page, not one entity",

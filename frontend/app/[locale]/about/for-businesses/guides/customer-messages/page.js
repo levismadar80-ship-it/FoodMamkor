@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   guide-customer-messages
  * Purpose:  /about/for-businesses/guides/customer-messages — Guide 3 of 3

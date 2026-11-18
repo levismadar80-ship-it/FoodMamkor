@@ -39,9 +39,9 @@ import re
 
 import pytest
 
-import app.routers.admin as admin_module
+import app.routers.admin_decisions as admin_module
 from app.config import settings
-from app.routers.admin import (
+from app.services.admin_producer_emails import (
     _APPROVED_COMMUNITY_BLOCK,
     _APPROVED_DASHBOARD_LABEL,
     _APPROVED_HTML_BUTTON_LABEL,
@@ -508,11 +508,21 @@ def test_card_table_tag_probe_discriminates():
     # recognise the shape this builder actually emits.
     # `.startswith("<table")` stood here and was too weak to be evidence: it is
     # true of the OUTER table too, so it could not show the extractor picked the
-    # card. Caught by the CI reviewer on #3072. Anchored instead to the card's
-    # distinguishing attribute — the outer table is cellpadding="0".
+    # card. Caught by the CI reviewer on #3072.
+    #
+    # It was then anchored to cellpadding="40", which MEH-0000 removed — 40 on a
+    # width="100%" card is 80px of side padding, about 280px of text on a 360px
+    # phone. So the discriminator moved to `max-width:560px`, which the card
+    # carries and the outer table does not, and which is the cap the next test
+    # in this file is about anyway. The REQUIREMENT is unchanged: the assertion
+    # must be false of the outer table, or it is not evidence.
+    outer = '<table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">'
+    assert "max-width:560px" not in outer, (
+        "the discriminator must not be true of the outer table, or this proves nothing"
+    )
     real = _card_table_tag(_producer_approved_html(NAME, SLUG))
-    assert 'cellpadding="40"' in real, (
-        f"extractor did not return the card table (outer is cellpadding=0): {real}"
+    assert "max-width:560px" in real, (
+        f"extractor did not return the card table (the outer one has no max-width): {real}"
     )
 
 

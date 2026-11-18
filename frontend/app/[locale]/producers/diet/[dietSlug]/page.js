@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   producers-diet-landing
  * Purpose:  /producers/diet/[dietSlug] — the six indexable diet landing pages
@@ -55,6 +56,7 @@ async function fetchDietProducers(filterParam, limit) {
   const url = `${API_URL}/producers?${filterParam}=true&limit=${limit}&offset=0`;
   const res = await serverFetch(url, { next: { revalidate: 60 } });
   if (!res.ok) {
+    /** @type {Error & { status?: number, filterParam?: string }} */
     const err = new Error(
       `diet listing failed: ${res.status} ${res.statusText} (filter=${filterParam})`,
     );
@@ -72,6 +74,7 @@ async function fetchDietProducers(filterParam, limit) {
   const rawTotal = res.headers.get("x-total-count");
   const total = Number(rawTotal);
   if (rawTotal === null || !Number.isFinite(total)) {
+    /** @type {Error & { status?: number, filterParam?: string }} */
     const err = new Error(
       `diet listing missing X-Total-Count (filter=${filterParam}) — refusing to infer an empty result`,
     );

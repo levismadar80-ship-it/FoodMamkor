@@ -1,7 +1,9 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
 
 import { useOptionalAuth } from "@/lib/auth-context";
@@ -23,6 +25,9 @@ import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
+import LoginPromptModal from "@/components/LoginPromptModal";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import { isUnverifiedEmailError } from "@/lib/errors";
 
 /**
  * Module:   RescueSection
@@ -48,6 +53,9 @@ function worthAgorot(offer) {
   if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
   return v > offer.price_agorot ? v : null;
 }
+
+const UNVERIFIED_KEY = "errors.unverified";
+
 export default function RescueSection({ producer }) {
   const t = useTranslations("rescue");
   // Allergen labels come from the product sheet's vocabulary (MEH-2662), so
@@ -57,6 +65,9 @@ export default function RescueSection({ producer }) {
   const [order, setOrder] = useState(null);
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState(null);
+  // MEH-3130: a guest's tap opens the shared login prompt (title + why +
+  // «היכנסו» back to this page). It was an inline line with no way to sign in.
+  const [loginOpen, setLoginOpen] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   // MEH-2737: shown once the cancel went through, until the next reserve.
   const [cancelled, setCancelled] = useState(false);
@@ -156,7 +167,8 @@ export default function RescueSection({ producer }) {
     // request would 401, and the refresh interceptor would then add its
     // "session expired" toast — wrong for someone who never signed in.
     if (auth && !auth.loading && !auth.user) {
-      setErrorKey("errors.sign_in");
+      setErrorKey(null);
+      setLoginOpen(true);
       return;
     }
     setBusy(true);
@@ -166,7 +178,8 @@ export default function RescueSection({ producer }) {
     try {
       setOrder(await reserveBag({ offerId: offer.id }));
     } catch (err) {
-      setErrorKey(reserveErrorKey(err));
+      // MEH-3225: an unverified account gets the resend notice, not a dead end.
+      setErrorKey(isUnverifiedEmailError(err) ? UNVERIFIED_KEY : reserveErrorKey(err));
     } finally {
       setBusy(false);
     }
@@ -234,9 +247,20 @@ export default function RescueSection({ producer }) {
   const worth = shekels(worthAgorot(offer));
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
-  const errorLine = errorKey && (
+  const errorLine = errorKey === UNVERIFIED_KEY ? (
+    <UnverifiedEmailNotice className="mt-3" text={t(UNVERIFIED_KEY)} />
+  ) : errorKey && (
     <InlineMessage className="font-body-sm" data-testid="rescue-section-error">
-      {t(errorKey)}
+      {/* MEH-3226: «כתבו לנו» on the block message is a real link to /contact. */}
+      {errorKey === "errors.blocked"
+        ? t.rich(errorKey, {
+            contact: (chunks) => (
+              <Link href="/contact" className="underline" data-testid="rescue-blocked-contact">
+                {chunks}
+              </Link>
+            ),
+          })
+        : t(errorKey)}
     </InlineMessage>
   );
   const from = israelTime(offer?.pickup_start);
@@ -249,6 +273,17 @@ export default function RescueSection({ producer }) {
       className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
       <SectionHeading size="content">{t("section.title")}</SectionHeading>
+      <LoginPromptModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        title={t("login_prompt_title")}
+        message={t("login_prompt_message")}
+        nextPath={
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search}#${RESCUE_SECTION_ID}`
+            : "/"
+        }
+      />
 
       {cancelled && (
         <p

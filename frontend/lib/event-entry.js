@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * toEventEntry — normalizes an event OR experience API row into the one shape
  * EventEntryRow renders. Plain module (no "use client"): the organizer page is

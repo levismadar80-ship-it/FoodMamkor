@@ -40,7 +40,7 @@ const ALLOWED = {
   "app/[locale]/home/HomeProducersGrid.jsx": 1,
   "app/[locale]/login/LoginClient.jsx": 1,
   "app/[locale]/map/components/MapPane.jsx": 1,
-  "app/[locale]/producer/dashboard/edit/cards.jsx": 1,
+  "app/[locale]/producer/dashboard/edit/cards/DescriptionCard.jsx": 1,
   "app/[locale]/producer/dashboard/insights/page.js": 1,
   "app/[locale]/producer/dashboard/tools/page.js": 1,
   "app/[locale]/register/RegisterClient.jsx": 1,

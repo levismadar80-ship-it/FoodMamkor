@@ -7,7 +7,7 @@ from uuid import UUID
 
 import bcrypt
 import structlog
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.services import admin_audit
 from app.utils.clock import utc_now
 
 # MEH-648: rounds=12 pinned explicitly. Matches the passlib default at time
@@ -50,6 +51,12 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    # MEH-3271: hash_password refuses a NUL byte, so no stored hash can match a
+    # candidate that has one. Answer "no match" instead of letting the
+    # ValueError reach the caller as a 500 (login, password change, deletion).
+    # No account-specific timing: the answer is the same for every account.
+    if "\x00" in plain:
+        return False
     return bcrypt.checkpw(_bcrypt_secret(plain), hashed.encode("ascii"))
 
 
@@ -397,6 +404,10 @@ def get_current_user(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    # MEH-3306: injected by FastAPI on a route; None when this function is
+    # called directly (the lenient variant below, and unit tests), and then
+    # nothing is scheduled.
+    background_tasks: BackgroundTasks = None,  # type: ignore[assignment]
 ) -> User:
     if token is None:
         raise HTTPException(
@@ -439,6 +450,14 @@ def get_current_user(
 
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
+    # MEH-3306: the admin audit row is scheduled HERE — the one place every
+    # signed-in request passes — so it covers a route gated by require_admin
+    # and equally an owner route an admin enters through an inline role check
+    # (delete an event, a review...). No route carries logging code.
+    # DO NOT move this into require_admin or into routes: the inline-check
+    # routes would fall out of the log again.
+    if background_tasks is not None and user.role == "admin":
+        admin_audit.schedule(request, background_tasks, user)
     return user
 
 
@@ -446,6 +465,7 @@ def get_current_user_optional(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None,  # type: ignore[assignment]  # MEH-3306
 ) -> User | None:
     """Optional auth with RFC 6750 semantics — three states, not two.
 
@@ -479,7 +499,9 @@ def get_current_user_optional(
         return None
     # No try/except: a token that was sent but does not verify is an
     # error, and the caller must hear about it.
-    return get_current_user(request=request, token=token, db=db)
+    return get_current_user(
+        request=request, token=token, db=db, background_tasks=background_tasks
+    )
 
 
 def get_current_user_lenient(

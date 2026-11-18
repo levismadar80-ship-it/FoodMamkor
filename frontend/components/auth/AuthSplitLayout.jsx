@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import Image from "next/image";
@@ -21,6 +22,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 const DEFAULT_HERO =
   "https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg";
 
+/** @param {{ title?: import("react").ReactNode, subtitle?: import("react").ReactNode, children?: import("react").ReactNode, heroSrc?: string, testId?: string }} props */
 export default function AuthSplitLayout({
   title,
   subtitle,

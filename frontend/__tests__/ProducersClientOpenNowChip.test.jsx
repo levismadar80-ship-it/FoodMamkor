@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ProducersClient from "@/components/ProducersClient";
 import {
@@ -210,10 +210,23 @@ const CHIP = () => {
   return screen.queryByTestId("chip-open_for_orders_now");
 };
 
+// MEH-3098: WINDOW is open 00:00–23:59, so in the last minute of an Israel day
+// nothing is open and the MEH-2131 condition hides the chip — this file failed
+// at 22:02 UTC (≈00:00 Israel). Freeze the clock at Israel noon so every case
+// measures only what it is named for. Only Date is faked: real timers keep
+// Testing Library's async waits working.
+const ISRAEL_NOON = new Date("2026-11-17T10:00:00Z");
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(ISRAEL_NOON);
   window.history.replaceState(null, "", "/");
   params = {};
   router.replace.mockClear();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("MEH-1881 — open-now chip data gate", () => {

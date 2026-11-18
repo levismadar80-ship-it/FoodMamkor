@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   availability
  * Purpose:  One enum-first read of a business's availability, so every surface

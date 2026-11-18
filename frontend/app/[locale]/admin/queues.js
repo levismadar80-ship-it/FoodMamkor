@@ -1,3 +1,4 @@
+// @ts-check
 import {
   Bread,
   ChatCircleSlash,
@@ -53,6 +54,10 @@ export function queueCount(stats, queue) {
  * and the one the admin is standing on (`isActive`), whatever its count:
  * approving the last recipe must not make the «מתכונים» entry vanish from
  * under the highlighted page.
+ *
+ * @param {object | null} stats
+ * @param {boolean} [countsError]
+ * @param {(href: string) => boolean} [isActive]
  */
 export function visibleQueues(stats, countsError = false, isActive = () => false) {
   return QUEUES.filter((q) => {

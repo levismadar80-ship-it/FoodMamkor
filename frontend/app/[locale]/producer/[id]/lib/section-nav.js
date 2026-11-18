@@ -1,3 +1,4 @@
+// @ts-check
 import { primaryPoint } from "@/lib/producerPoints";
 import { isPriceLabel } from "@/lib/utils";
 import { parseHasLocation } from "../components/ProducerSections";

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   register-route
  * Purpose:  The ONE predicate for "is this pathname inside the registration

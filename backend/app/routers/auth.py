@@ -40,7 +40,14 @@ from app.services.auth_emails import (
 from app.services.auth_notifications import (
     notify_producer_registered,
 )
+from app.services.account_guards import (  # MEH-3248
+    AccountDeleteRequest,
+    assert_deletable,
+    is_super_admin,
+    verify_deletion_credentials,
+)
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
+from app.services import resend_verify_cap  # MEH-2906
 from app.services.verify_session import (  # MEH-3087
     set_signup_marker,
     verify_email_session,
@@ -62,9 +69,16 @@ from app.services.producer_queries import (
     persist_registration_delivery_areas,
 )
 from app.services.password_policy import validate_password
+from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
 from app.database import get_db
 from app.models import Category, Producer, ProducerCategory, User
-from app.rate_limit import email_from_body, limiter
+from app.services.farmer_declaration import farmer_declaration_stamp
+from app.rate_limit import (
+    email_from_body,
+    limiter,
+    login_failures_exceeded,
+    record_login_failure,
+)
 from app.schemas.schemas import (
     AppleAuthRequest,
     AppleAuthResponse,
@@ -510,6 +524,13 @@ async def register_producer(
             db, data.category_ids, data.producer_license_number
         )
 
+    # MEH-2923: the grower declaration is checked HERE (after the license check, so
+    # that 422 keeps its priority), not only by the client
+    # gate, and recorded on its own columns (services/farmer_declaration.py).
+    farmer_stamp = farmer_declaration_stamp(
+        db, data.category_ids, data.farmer_declaration_accepted
+    )
+
     if upgrade_path:
         # ---- UPGRADE PATH (UNCHANGED in MEH-328) -----------------------
         # Authenticated user upgrading to producer. No enumeration vector —
@@ -572,6 +593,7 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
+            **farmer_stamp,  # MEH-2923: grower declaration, its own record
             # MEH-2100: registration creates a DRAFT, not a queue entry. The
             # business is invisible to the admin review queue until the owner
             # presses "שליחה לבדיקה" (POST /producers/me/submit-for-review),
@@ -668,6 +690,10 @@ async def register_producer(
             user.terms_accepted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
             user.terms_version = TERMS_VERSION  # type: ignore[assignment]
         db.commit()
+        db.refresh(user)
+        # MEH-3258: she now owns a business — her reviews on it and on
+        # businesses sharing its categories leave the public rating.
+        recompute_after_owner_linked(db, user.id)
         db.refresh(user)
 
         # Capture producer primitives NOW — expire_on_commit=True means ORM
@@ -807,6 +833,7 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
+            **farmer_stamp,  # MEH-2923: grower declaration, its own record
             # MEH-2100: see the upgrade branch above — same value, same reason.
             # These two branches are the only Producer writers on this route
             # and both had to move; a fix to one alone would have left the
@@ -1152,7 +1179,10 @@ def register_producer_oauth(
         if user:
             # Email registered via password or the *other* OAuth provider.
             # Refuse silent link — same rule as /auth/google and /auth/apple.
-            if not getattr(user, sub_field):
+            # MEH-3272: compare the provider id itself (MEH-3104 fixed the
+            # two siblings). `if not getattr(...)` let an account linked to a
+            # DIFFERENT Google/Apple identity through with a full session.
+            if getattr(user, sub_field) != oauth_sub:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
@@ -1256,14 +1286,36 @@ def register_producer_oauth(
     )
 
 
+# Existing copy, not new: the same words as `error.mapper.rate_limited` in
+# frontend/messages/he.json (the site's one "too many attempts" message). The
+# login page shows this detail as it is (LoginClient: detailToMessage).
+# tests/test_meh3372_login_per_email_limit.py holds the two equal.
+_LOGIN_RATE_LIMITED = "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות."
+
+
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
+# MEH-3372: next to the per-IP limit, a soft ceiling on FAILED attempts per
+# address (10 in 15 minutes) — a password guessed for ONE account from many
+# IPs never trips the IP bucket. Counted in the handler, not by a decorator,
+# because a decorator counts every request: successful logins would use the
+# budget (the shared staging demo accounts, anyone who signs in often). No
+# lockout and no state on the account: a 429 that clears by itself.
+# REMAINING COST, accepted (Sapir 17/11, option ב): ten wrong attempts in a
+# window also stop the right password until the window ends, and can be
+# repeated. Open sessions and Google / Apple sign-in are not affected.
 def login(
     request: Request,
     response: Response,
     data: LoginRequest,
     db: Session = Depends(get_db),
 ) -> Token:
+    # Checked before any lookup or bcrypt, and for every address alike —
+    # existing or not — so the 429 says nothing about whether an account exists.
+    if login_failures_exceeded(data.email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=_LOGIN_RATE_LIMITED
+        )
     user = db.query(User).filter(User.email == data.email).first()
     # MEH-626: three failure branches must take indistinguishable time
     # before the 401. Each runs exactly one bcrypt-cost operation so an
@@ -1273,6 +1325,7 @@ def login(
         # Timing parity: run bcrypt against sentinel so this branch
         # matches wrong-password timing (MEH-626).
         verify_password(data.password, SENTINEL_HASH)
+        record_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
         )
@@ -1280,10 +1333,12 @@ def login(
         # Timing parity: OAuth-only user — same sentinel bcrypt to
         # match wrong-password timing (MEH-626).
         verify_password(data.password, SENTINEL_HASH)
+        record_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
         )
     if not verify_password(data.password, user.password_hash):  # type: ignore[arg-type]
+        record_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
         )
@@ -1310,6 +1365,8 @@ def get_me(
 ) -> UserOut:
     """Return current user, enriched with producer status/rejection_reason."""
     out = UserOut.model_validate(user)
+    # MEH-3248: /settings explains instead of offering a delete button.
+    out.is_super_admin = is_super_admin(user)
     if user.producer_id:
         producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
         if producer:
@@ -1584,9 +1641,11 @@ def resend_verify(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Re-send verification email. Rate-limited to 3/hour per IP."""
+    """Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
+    per account (MEH-2906, services/resend_verify_cap.py)."""
     if user.email_verified:
         return {"detail": "האימייל כבר מאומת"}
+    resend_verify_cap.enforce_per_account_cap(str(user.id))  # MEH-2906
     token = secrets.token_urlsafe(32)
     expires = utc_now() + timedelta(hours=24)
     user.email_verify_token = token  # type: ignore[assignment]
@@ -1601,15 +1660,24 @@ def resend_verify(
     return {"detail": "אימייל אימות נשלח"}
 
 
-@router.delete("/me", response_model=None)
-@limiter.limit("3/hour")
+# MEH-3248: POST with a body replaces the bodyless DELETE /auth/me, which let
+# any live session delete the account (admins included) with no re-check.
+# DO NOT add the DELETE back as an alias — it would reopen that door.
+@router.post("/me/delete", response_model=None)
+@limiter.limit("5/hour")
 def delete_account(
     request: Request,
+    body: AccountDeleteRequest,
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Delete user account and all associated data.
+
+    MEH-3248: refused for admin accounts (account_guards.assert_deletable,
+    checked first), then the caller proves she owns the account: password, or
+    a fresh Google/Apple id_token for an account without one
+    (account_guards.verify_deletion_credentials).
 
     Required by Apple App Store Guidelines; also closes the GDPR /
     חוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who
@@ -1630,6 +1698,8 @@ def delete_account(
     reviews_count (maintained only in reviews.py) are recomputed after the
     deletion commits so they don't keep counting reviews that no longer exist.
     """
+    assert_deletable(user, door="self")
+    verify_deletion_credentials(user, body)
     user_email = user.email
     user_name = user.name
     # MEH-2952: captured BEFORE the row is deleted — a test account's

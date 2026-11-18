@@ -11,9 +11,9 @@ Touches:  producers (the eleven `owner_invite_*` columns; `declared_at` /
           business-approved email, to the new owner.
 Does NOT: create a `users` row at invite time (closed decision 2 — that is what
           keeps forgot-password from becoming a way around the declaration
-          step), link an EXISTING account to a business (v1: 409 — the fix for
-          an owner who already has an account is to edit and approve the draft
-          she already started), publish anything (the business is already
+          step), link an EXISTING account to a business (that is
+          producer_owner_invite_existing.py since MEH-3256 — she signs in and
+          accepts there; this module's `/accept` still 409s a taken address), publish anything (the business is already
           approved — that is the precondition, not the effect), verify a phone
           (`phone_verified` stays false; she can verify from the dashboard), or
           touch the `/claim` flow for DRAFT businesses (routers/producer_claim.py
@@ -99,7 +99,10 @@ from app.constants import (
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
-from app.routers.admin import _producer_approved_body, _producer_approved_html
+from app.services.admin_producer_emails import (
+    _producer_approved_body,
+    _producer_approved_html,
+)
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import (
     OwnerInviteAccept,
@@ -110,8 +113,10 @@ from app.schemas.schemas import (
     ProducerClaimPreviewOut,
     Token,
 )
+from app.services.invite_gate import assert_invitable_content  # MEH-3246
 from app.services import indexnow  # MEH-2852
 from app.services.email import send_email
+from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.auth_notifications import notify_admin_owner_invite_accepted
 from app.services.auth_emails import (
     send_owner_invite_code_email,
@@ -209,7 +214,10 @@ def _email_taken(db: Session, email: str) -> bool:
 def _requires_farmer_declaration(producer: Producer) -> bool:
     """Reads the categories already loaded on the row — no extra query, the
     same membership-by-name test `license_pending` makes over
-    LICENSE_REQUIRED_CATEGORIES."""
+    LICENSE_REQUIRED_CATEGORIES. MEH-3137: a business whose grower line is
+    already recorded is not asked again (the accept route ignores it then)."""
+    if producer.farmer_declared_at is not None:
+        return False
     return any(
         c.name in FARMER_DECLARATION_CATEGORIES for c in (producer.categories or [])
     )
@@ -349,6 +357,7 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
     admin corrects a typo in the address without a separate revoke step.
     """
     producer = _load_invitable(db, producer_id)
+    assert_invitable_content(db, producer)  # MEH-3246
     # Only when she gave one: v3 lets the admin mint a link with no address at
     # all, and the owner then types her own on the page, where it is proven
     # with a code. An absent address cannot collide with anything.
@@ -419,6 +428,7 @@ def resend_owner_invite(
     # «resend» 404 for exactly the link the admin is most likely to re-copy.
     if not producer.owner_invite_token_hash:
         raise HTTPException(status_code=404, detail=_NO_INVITE)
+    assert_invitable_content(db, producer)  # MEH-3246
     # NOT a 409 any more, and the reason is a v3 consequence the first version
     # missed: since the code endpoint, `owner_invite_email` may have been
     # written by WHOEVER HOLDS THE LINK, not by the admin. Refusing to resend
@@ -746,6 +756,60 @@ def _verify_email_code(
         raise HTTPException(status_code=422, detail=_BAD_CODE)
 
 
+def _claim_invite(
+    db: Session,
+    producer_id: UUID,
+    token: str,
+    now: datetime,
+    farmer_stamp: dict[str, Any],
+) -> int:
+    """The one conditional UPDATE that spends an invite (MEH-1820). Shared by
+    `/accept` (new account) and `/accept-existing` (MEH-3256, signed-in
+    account) so the claim — and every column it clears — has ONE owner.
+    Returns the affected-row count; 0 means another request won or the link
+    died. The comments inside are the original `/accept` ones."""
+    affected: int = (
+        db.query(Producer)
+        .filter(
+            Producer.id == producer_id,
+            Producer.owner_invite_token_hash == _hash_token(token),
+            Producer.owner_invite_accepted_at.is_(None),
+            Producer.owner_invite_expires_at > now,
+            Producer.status.in_(_INVITABLE_STATUSES),
+        )
+        .update(
+            {
+                # The token dies here, in the same statement that claims it.
+                Producer.owner_invite_token_hash: None,
+                Producer.owner_invite_accepted_at: now,
+                # MEH-759 (ADR-022 gate 2): the licensing declaration is HERS,
+                # stamped from her own click. An admin created this page and
+                # deliberately did NOT sign this (admin_create_producer leaves
+                # both NULL) — this is the moment it becomes signed.
+                Producer.declared_at: now,
+                Producer.declaration_version: DECLARATION_VERSION,
+                # MEH-3137: {} unless a grower category needed the line.
+                **{getattr(Producer, k): v for k, v in farmer_stamp.items()},
+                # v3: the page goes live in the SAME statement that claims the
+                # token. Set unconditionally rather than only when the row
+                # read `inactive`: both invitable statuses END at `approved`,
+                # so writing the end state needs no read to be still true —
+                # which is the whole point of doing it here and not after a
+                # second SELECT.
+                Producer.status: _LIVE_STATUS,
+                # The code is spent with the token. Nothing may be accepted
+                # twice, and a code left behind would outlive the invite it
+                # belonged to.
+                Producer.owner_invite_code_hash: None,
+                Producer.owner_invite_code_expires_at: None,
+                Producer.owner_invite_code_attempts: None,
+            },
+            synchronize_session=False,
+        )
+    )
+    return affected
+
+
 @public_router.post("/accept", response_model=Token)
 # 10 per 15 minutes, matching `reset_password` — the other unauthenticated
 # endpoint that consumes a single-use token and sets a password. The token
@@ -796,6 +860,14 @@ async def accept_owner_invite(
     producer = _live_invite(db, body.token)
     if producer is None:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
+    # MEH-3137: the grower line is a consent, checked with the other consents —
+    # before the code is spent, so a 422 leaves both the link and the code live.
+    farmer_stamp = farmer_declaration_stamp_for_existing(
+        db,
+        producer,
+        [c.id for c in producer.categories],
+        body.farmer_declaration_accepted,
+    )
 
     invited_name = producer.owner_invite_name
 
@@ -849,43 +921,7 @@ async def accept_owner_invite(
     # belt-and-braces — the read above is NOT under a lock, so its answer is
     # already stale by the time we get here, and this clause is the only one
     # whose verdict counts.
-    claimed = (
-        db.query(Producer)
-        .filter(
-            Producer.id == producer.id,
-            Producer.owner_invite_token_hash == _hash_token(body.token),
-            Producer.owner_invite_accepted_at.is_(None),
-            Producer.owner_invite_expires_at > now,
-            Producer.status.in_(_INVITABLE_STATUSES),
-        )
-        .update(
-            {
-                # The token dies here, in the same statement that claims it.
-                Producer.owner_invite_token_hash: None,
-                Producer.owner_invite_accepted_at: now,
-                # MEH-759 (ADR-022 gate 2): the licensing declaration is HERS,
-                # stamped from her own click. An admin created this page and
-                # deliberately did NOT sign this (admin_create_producer leaves
-                # both NULL) — this is the moment it becomes signed.
-                Producer.declared_at: now,
-                Producer.declaration_version: DECLARATION_VERSION,
-                # v3: the page goes live in the SAME statement that claims the
-                # token. Set unconditionally rather than only when the row
-                # read `inactive`: both invitable statuses END at `approved`,
-                # so writing the end state needs no read to be still true —
-                # which is the whole point of doing it here and not after a
-                # second SELECT.
-                Producer.status: _LIVE_STATUS,
-                # The code is spent with the token. Nothing may be accepted
-                # twice, and a code left behind would outlive the invite it
-                # belonged to.
-                Producer.owner_invite_code_hash: None,
-                Producer.owner_invite_code_expires_at: None,
-                Producer.owner_invite_code_attempts: None,
-            },
-            synchronize_session=False,
-        )
-    )
+    claimed = _claim_invite(db, producer.id, body.token, now, farmer_stamp)  # type: ignore[arg-type]
     if not claimed:
         db.rollback()
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
@@ -969,8 +1005,8 @@ async def accept_owner_invite(
 
     # The business is already approved, so the one email that is TRUE for her
     # is the one every other approved business's owner got — the same builders
-    # admin.approve_producer uses, byte for byte, reached by import rather than
-    # by a copy (there is no cycle: routers/admin.py imports no router).
+    # admin_decisions.approve_producer uses, byte for byte, reached by import
+    # rather than by a copy (no cycle: services/admin_producer_emails.py imports no router).
     # Deliberately NOT sent: the welcome mail (it tells a new business to go
     # finish its profile — hers is finished and live) and the WhatsApp
     # template (one parameter, no buttons, and nothing here to say).

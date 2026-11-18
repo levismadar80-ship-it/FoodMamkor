@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-54: Web Push subscription utility.
  * Handles the browser-side push subscription flow.

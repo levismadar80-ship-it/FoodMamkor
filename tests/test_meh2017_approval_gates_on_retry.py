@@ -24,7 +24,7 @@ History:  MEH-2017 (creation). The limitation was recorded as a comment in
 """
 
 from app.models import Producer, User
-from app.routers import admin as admin_module
+from app.services import producer_approval as admin_module
 from tests.conftest import auth_header, make_producer, make_user
 
 IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/x.jpg"
@@ -93,11 +93,11 @@ def test_retry_path_re_runs_the_photo_gate(client, db, monkeypatch):
     real_ensure = admin_module._ensure_unique_slug
     calls = {"n": 0}
 
-    def racing_ensure(session, base_slug):
+    def racing_ensure(session, base_slug, **kwargs):  # MEH-3336: city=
         calls["n"] += 1
         if calls["n"] == 1:
             return "חוות-התאומים"
-        return real_ensure(session, base_slug)
+        return real_ensure(session, base_slug, **kwargs)
 
     monkeypatch.setattr(admin_module, "_ensure_unique_slug", racing_ensure)
 
@@ -172,11 +172,11 @@ def test_retry_path_re_runs_the_phone_gate(client, db, monkeypatch):
     real_ensure = admin_module._ensure_unique_slug
     calls = {"n": 0}
 
-    def racing_ensure(session, base_slug):
+    def racing_ensure(session, base_slug, **kwargs):  # MEH-3336: city=
         calls["n"] += 1
         if calls["n"] == 1:
             return "מאפיית-התאומות"
-        return real_ensure(session, base_slug)
+        return real_ensure(session, base_slug, **kwargs)
 
     monkeypatch.setattr(admin_module, "_ensure_unique_slug", racing_ensure)
 

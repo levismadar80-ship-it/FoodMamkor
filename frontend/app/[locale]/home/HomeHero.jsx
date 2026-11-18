@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useMemo } from "react";
@@ -44,6 +45,7 @@ export { HERO_IMAGE };
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
 // CSS utility (MEH-136, globals.css). Reduced-motion honored globally via
 // <MotionConfig reducedMotion="user"> at the layout root (#1053).
+/** @type {[number, number, number, number]} cubic-bezier control points */
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
 // MEH-1690: headline scrim reinforcement — REQUIRED by this ticket's own
@@ -215,14 +217,15 @@ export function HomeHero({
           // locale), so /en never matches it and keeps --hero-bg.
           className="kenburns-right absolute [background-image:var(--hero-bg)] max-[639px]:[html[lang=he]_&]:[background-image:var(--hero-phone)]"
           data-testid="hero-image-layer"
-          style={{
+          // CSS custom properties are not in React's CSSProperties type.
+          style={/** @type {import("react").CSSProperties} */ ({
             inset: "-5%",
             "--hero-bg": `url(${HERO_IMAGE})`,
             "--hero-phone": HERO_IMAGE_SET_PHONE,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
-          }}
+          })}
         />
         {/* --scrim-ink (globals.css) — warm-ink bottom band. It carried H1 +
             subtitle alone before MEH-1690; it now also underlies the pill and

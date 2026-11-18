@@ -11,13 +11,14 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
-from app.config import settings
+from app.models.admin_ops import AdminAuditLog
+from app.services import admin_audit
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
@@ -45,6 +46,7 @@ from app.models.models import (
     ProducerRecipe,
 )
 from app.schemas.schemas import (
+    CategoryCreate,
     CategoryIn,
     CategoryOut,
     RiskScoreResponse,
@@ -54,8 +56,18 @@ from app.schemas.schemas import (
     UserRoleUpdate,
     VacationModeState,
 )
+from app.services.account_guards import (  # MEH-3248: moved here, re-exported
+    assert_deletable,
+    is_super_admin,
+)
 from app.services.analytics import israel_day_of, server_health, unique_views_count
+from app.services import indexnow  # MEH-2871
+from app.services.booking_cancellations import hide_business  # MEH-2871
 from app.services.category_slug import resolve_unique_slug
+from app.services.rescue_no_show import (
+    NO_SHOW_BLOCK_AT,
+    active_no_show_counts,
+)  # MEH-3226
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services.vacation_state import read_vacation_state
 from app.services.whatsapp import undelivered_predicate
@@ -64,17 +76,6 @@ from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 logger = logging.getLogger(__name__)
-
-
-def is_super_admin(target: User) -> bool:
-    """MEH-2890: the protected owner account, from SUPER_ADMIN_EMAIL (config).
-    EXACT match on the stored address, as the old constant was: emails are
-    unique case-sensitively, so a case-insensitive match would hand the
-    protection to anyone who registers a case variant. Never true when the
-    setting is empty — and production cannot run with it empty
-    (config._load_settings refuses to boot)."""
-    protected = settings.super_admin_email
-    return bool(protected) and (target.email or "").strip() == protected
 
 
 # MEH-1571: shared Hebrew copy for the two update_category guards. Named
@@ -158,6 +159,8 @@ def list_users(
         .group_by(Favorite.user_id)
         .all()
     )
+    # MEH-3226: one grouped query, the same count the reserve gate reads.
+    no_shows = active_no_show_counts(db, [u.id for u in users])  # type: ignore[misc]
     out = []
     for u in users:
         out.append(
@@ -174,10 +177,22 @@ def list_users(
                 is_super_admin=is_super_admin(u),
                 producer_id=u.producer_id,
                 favorites_count=fav_counts.get(u.id, 0),
+                rescue_active_no_shows=no_shows.get(u.id, 0),
+                rescue_blocked=no_shows.get(u.id, 0) >= NO_SHOW_BLOCK_AT,
                 created_at=u.created_at or utc_now(),
             )
         )
     return out
+
+
+# Wording approved word for word (rulings 17/11 §א3) — do not edit here.
+_DEMOTE_LINKED_OWNER = (
+    "אי אפשר להוריד את ההרשאה כל עוד המשתמשת מקושרת לבית עסק. קודם מנתקים את הבעלות."
+)
+
+
+# NEW copy, waiting for Sapir's word-for-word OK (rule 22) — see the PR body.
+_PROMOTE_LINKED_OWNER = "אי אפשר לתת הרשאת אדמין למי שמקושרת לבית עסק."
 
 
 @router.put("/users/{user_id}/role", response_model=None)
@@ -187,7 +202,17 @@ def update_user_role(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    target = db.query(User).filter(User.id == user_id).first()
+    # Row lock + fresh read (MEH-3376 review): a claim, a register-upgrade or
+    # an invite acceptance may link a business to this account between the
+    # read and the commit. Those flows lock and re-read the user, so with the
+    # lock here too the two cannot interleave into "admin with a business".
+    target = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .with_for_update()
+        .populate_existing()
+        .first()
+    )
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     # MEH-955: never assign role="producer" here. require_producer
@@ -208,14 +233,49 @@ def update_user_role(
         )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
+    # MEH-3376: a business must never be left linked to an account that cannot
+    # run it. Demoting to consumer keeps `producer_id`, so the business would
+    # stay live with no working owner. Refused, whatever the business status;
+    # the way out is «ניתוק בעלים» (detach), then this request passes.
+    # MEH-3376 (Sapir 17/11: «בעלת עסק לא יכולה להיות אדמינית»): this route was
+    # the one way an account with a business could become an admin —
+    # registration (auth.py) and claim (producer_claim.py) already refuse the
+    # other direction. An admin with a business loses her dashboard
+    # (require_producer gates on role) and cannot be detached later.
+    if data.role == "admin" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_PROMOTE_LINKED_OWNER)
+    if data.role == "consumer" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_DEMOTE_LINKED_OWNER)
+    admin_audit.note(user, before={"role": target.role}, after={"role": data.role})
     target.role = data.role  # type: ignore[assignment]
     db.commit()
     return {"detail": "Role updated", "role": target.role}
 
 
+def _business_left_ownerless(db: Session, target: User) -> Producer | None:
+    """The live business ``target`` owns, if blocking her leaves it with no
+    owner who can still sign in (MEH-2871). A co-owner keeps it up."""
+    if target.producer_id is None:
+        return None
+    producer = db.query(Producer).filter(Producer.id == target.producer_id).first()
+    if producer is None or producer.status != "approved":
+        return None
+    other_owner = (
+        db.query(User.id)
+        .filter(
+            User.producer_id == producer.id,
+            User.id != target.id,
+            User.is_blocked.is_not(True),
+        )
+        .first()
+    )
+    return None if other_owner else producer
+
+
 @router.post("/users/{user_id}/block", response_model=None)
 def block_user(
     user_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -225,8 +285,60 @@ def block_user(
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
     target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
+    admin_audit.note(user, after={"is_blocked": bool(target.is_blocked)})
+    # MEH-2871 (Sapir 18/11): blocking the only owner of a live business takes
+    # the business off the site, the way an admin pause does — otherwise it
+    # stayed live with nobody able to hand over a bag or answer a booking.
+    # Airbnb and Etsy hide a suspended account's listings the same way.
+    # Unblocking does not put it back: an admin un-pauses it, through the
+    # approval gates (admin.py toggle).
+    hidden = None
+    if target.is_blocked:
+        hidden = _business_left_ownerless(db, target)
+        if hidden is not None:
+            hide_business(db, hidden, background_tasks)
     db.commit()
-    return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
+    if hidden is not None:
+        indexnow.schedule(background_tasks, indexnow.producer_urls(hidden))
+    return {
+        "detail": "Blocked toggled",
+        "is_blocked": target.is_blocked,
+        "business_hidden": hidden is not None,
+    }
+
+
+@router.get("/audit-log", response_model=None)
+def list_audit_log(
+    limit: int = Query(50, ge=1, le=200),
+    before: datetime | None = None,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3306: the admin audit log, newest first. `before` pages back by
+    `created_at`. The stored IP is not returned: it is kept for an
+    investigation, not for a list."""
+    query = db.query(AdminAuditLog)
+    if before is not None:
+        query = query.filter(AdminAuditLog.created_at < before)
+    rows = (
+        query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": str(r.id),
+                "actor_id": str(r.actor_id),
+                "action": r.action,
+                "target_type": r.target_type,
+                "target_id": r.target_id,
+                "details": r.details,
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.delete("/users/{user_id}", response_model=None)
@@ -237,7 +349,7 @@ def admin_delete_user(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """MEH-2585: hard-delete a user and her data — same cascade as the
-    self-service DELETE /auth/me (services/user_deletion.py), minus the
+    self-service POST /auth/me/delete (services/user_deletion.py), minus the
     confirmation email (an admin removal, often of a test account).
 
     Admins are refused: demote first, so removing an admin is always two
@@ -248,13 +360,8 @@ def admin_delete_user(
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="אי אפשר למחוק את עצמך מכאן")
-    if is_super_admin(target):
-        raise HTTPException(status_code=403, detail="לא ניתן למחוק את האדמין הראשי")
-    if target.role == "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="לא ניתן למחוק אדמין. קודם מורידים את הרשאת האדמין.",
-        )
+    # MEH-3248: one rule for both doors (services/account_guards.py).
+    assert_deletable(target, door="admin")
     # Irreversible, so leave a trail in the Railway logs: ids only, no email.
     logger.info(
         "[admin.delete_user] admin_id=%s deleted user_id=%s role=%s producer_id=%s",
@@ -311,7 +418,7 @@ def list_categories_admin(
 
 @router.post("/categories", response_model=CategoryOut, status_code=201)
 def create_category(
-    data: CategoryIn,
+    data: CategoryCreate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> CategoryOut | Category:
@@ -327,6 +434,7 @@ def create_category(
         name=data.name,
         emoji=data.emoji,
         slug=resolve_unique_slug(db, data.name),
+        requires_license=data.requires_license,  # MEH-3255
     )
     db.add(cat)
     # MEH-2139: `resolve_unique_slug` above is a SELECT and this is the INSERT,

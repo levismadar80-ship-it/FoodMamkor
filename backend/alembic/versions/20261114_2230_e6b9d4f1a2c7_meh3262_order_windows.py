@@ -1,7 +1,7 @@
 """meh3262_order_windows
 
 Revision ID: e6b9d4f1a2c7
-Revises: d5a7c3e9f1b4
+Revises: a3d9e5c1f7b2 (re-parented 18/11 onto the train head; was d5a7c3e9f1b4, stage 1)
 Create Date: 2026-11-14 22:30:00.000000+00:00
 
 MEH-3262 (stage 2a of MEH-3216, on-site ordering). Additive only:
@@ -35,7 +35,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "e6b9d4f1a2c7"
-down_revision: Union[str, None] = "d5a7c3e9f1b4"
+down_revision: Union[str, None] = "a3d9e5c1f7b2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

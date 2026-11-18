@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   admin/help/topics
  * Purpose:  MEH-2591 — the ordered list of «איך עושים…» help topics on
@@ -40,6 +41,7 @@ export const HELP_TOPICS = [
   { id: "outreach", group: "more", href: "/admin/outreach", list: "ol" },
   { id: "settings", group: "more", href: "/admin/settings", list: "ul" },
   { id: "analytics", group: "more", href: "/admin/analytics", list: "ul" },
+  { id: "billing", group: "more", href: "/admin/billing", list: "ul" },
   // Not in the sidebar since MEH-2359; this link is the way in.
   { id: "group_buys", group: "more", href: "/admin/group-buys", list: "ul" },
 ];

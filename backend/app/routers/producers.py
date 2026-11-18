@@ -60,6 +60,7 @@ from app.services.analytics import (
     is_internal_viewer,
     record_analytics_event,
 )
+from app.services.farmer_declaration import farmer_declaration_stamp  # MEH-3137
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
     MAX_CITIES_PER_QUERY,
@@ -447,6 +448,19 @@ def get_producer_by_slug(
         # status, not the HTML's. Everything else that misses stays 404.
         if retired_slugs.is_gone(db, slug):
             raise HTTPException(status_code=410, detail="בית העסק כבר לא במהמקור")
+        # MEH-3336: a renamed business. Still a 404 to every client that only
+        # asks "is it here" — the page edge (middleware.js) reads `slug` and
+        # answers the browser with a 301 to the current URL.
+        new_slug = retired_slugs.moved_to(db, slug)
+        if new_slug:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "slug_moved",
+                    "message": "בית העסק עבר לכתובת חדשה",
+                    "slug": new_slug,
+                },
+            )
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)
@@ -922,6 +936,11 @@ def create_producer(
     # a `producer_license_number`. Format check is intentionally absent
     # (frontend warning only — manual-approval flow stays open).
     ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
+    # MEH-3137: same grower gate as registration, after the license 422 —
+    # but NOT recorded. This row is an ownerless draft (no owner_id), so
+    # whoever calls this route is not the business owner; the stamp stays
+    # NULL and the claim / owner invite asks the real owner.
+    farmer_declaration_stamp(db, data.category_ids, data.farmer_declaration_accepted)
     return create_producer_with_relations(db, data)
 
 
