@@ -31,6 +31,14 @@ def send_push_notification(
         log.debug("[push] push notifications disabled — VAPID keys not set")
         return
 
+    # MEH-3402: push only from production — a subscription is a browser, not
+    # a staff member, and a restored production backup carries real ones.
+    from app.services.outbound_guard import push_allowed
+
+    if not push_allowed():
+        log.info("[push] NOT SENT outside production")
+        return
+
     try:
         from pywebpush import webpush, WebPushException  # noqa: F401
 

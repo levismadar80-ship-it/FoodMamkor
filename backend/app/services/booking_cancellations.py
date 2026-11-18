@@ -43,6 +43,7 @@ from app.models import (
     RescueOrder,
     User,
 )
+from app.services import billing_ledger
 from app.services.email import send_email
 from app.services.group_buy_delist import cancel_live_group_buys
 from app.services.registration_emails import (
@@ -109,17 +110,27 @@ def _active_registrations(
 
 
 def _cancel_and_queue(
+    db: Session,
     background_tasks: BackgroundTasks,
     regs: list[tuple[Registration, Event | Experience, str]],
     sender: Any,
     test_cause: bool,
 ) -> int:
-    """Cancel each sign-up and queue one email per sign-up (plain values)."""
+    """Cancel each sign-up and queue one email per sign-up (plain values).
+
+    MEH-2871: also void its billing-ledger row. Every caller passes upcoming
+    items only, so these are bookings the business never received — the same
+    rule the registrant's own cancel applies (registrations.py)."""
     now = utc_now()
     for reg, item, host_name in regs:
         message = _message(reg, item, host_name)
         reg.status = "cancelled"  # type: ignore[assignment]
         reg.cancelled_at = now  # type: ignore[assignment]
+        billing_ledger.void(
+            db,
+            kind="event_registration" if reg.event_id else "experience_registration",
+            source_id=reg.id,
+        )
         if reg.email:
             background_tasks.add_task(sender, reg.email, message, test_cause=test_cause)
     return len(regs)
@@ -205,7 +216,7 @@ def _cancel_upcoming_signups(
         for r in _active_registrations(db, Registration.experience_id, list(by_ex))
     ]
     return _cancel_and_queue(
-        background_tasks, regs, send_registrant_delisted, bool(producer.is_test)
+        db, background_tasks, regs, send_registrant_delisted, bool(producer.is_test)
     )
 
 
@@ -256,7 +267,7 @@ def send_owner_delisted(
     lines = [first]
     if cancelled_any:
         lines.append(
-            "שריונים לסלי הצלה, הרשמות לאירועים וקניות קבוצתיות פתוחות בוטלו, "
+            "שריונים לסלי הצלה, הרשמות לאירועים וקבוצות רכישה פתוחות בוטלו, "
             "והלקוחות קיבלו על כך מייל."
         )
     lines.append(f"לשאלות אפשר לכתוב לנו: {contact}")
@@ -342,7 +353,7 @@ def cancel_item_signups(
         for r in _active_registrations(db, _column_for(item), [item.id])
     ]
     return _cancel_and_queue(
-        background_tasks, regs, send_registrant_cancelled, test_cause
+        db, background_tasks, regs, send_registrant_cancelled, test_cause
     )
 
 

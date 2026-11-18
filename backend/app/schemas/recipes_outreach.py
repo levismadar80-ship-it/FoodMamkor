@@ -8,9 +8,17 @@ every name is still importable from app.schemas.schemas.
 """
 
 from datetime import datetime
-from typing import Any, Self
+import re
+from typing import Annotated, Any, Self
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     PhoneNumberField,
@@ -185,11 +193,49 @@ class OutreachLeadOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# MEH-3318: the leads sheet stores websites the way people type them —
+# "havivian.co.il", "www.x.co.il/page", or prose ("קטלוג ב-Drive"). The strict
+# SanitizedUrlField 422'd the WHOLE lead on any of those, so a row could not be
+# saved as it is in the sheet. Leads only: a bare domain gains "https://",
+# prose is dropped (the field is stored empty, the lead is kept). Public forms
+# keep the strict SanitizedUrlField.
+_BARE_DOMAIN = re.compile(
+    r"^(?:www\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:/\S*)?$",
+    re.IGNORECASE,
+)
+_OTHER_SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
+_LEAD_WEBSITE_MAX = 200  # outreach_leads.website is String(200)
+
+
+def _lenient_lead_website(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    if stripped.lower().startswith(("http://", "https://")):
+        candidate = stripped
+    elif _OTHER_SCHEME.match(stripped):
+        # An explicit non-web scheme (ftp:, javascript:, data:) is still a 422:
+        # it is not a typo for a website, and it must never reach an href.
+        raise ValueError("כתובת אתר חייבת להתחיל ב-http:// או https://")
+    elif _BARE_DOMAIN.match(stripped):
+        candidate = "https://" + stripped
+    else:
+        return None
+    return candidate if len(candidate) <= _LEAD_WEBSITE_MAX else None
+
+
+LeadWebsiteField = Annotated[
+    str, Field(max_length=200), AfterValidator(_lenient_lead_website)
+]
+
+
 class OutreachLeadCreate(BaseModel):
     name: SanitizedLabelField = Field(..., min_length=1, max_length=200)
     phone: PhoneNumberField | None = None
     instagram: str | None = Field(None, max_length=100)
-    website: SanitizedUrlField | None = None
+    website: LeadWebsiteField | None = None
     city: str | None = Field(None, max_length=100)
     category: str | None = Field(None, max_length=100)
     notes: str | None = None
@@ -212,7 +258,7 @@ class OutreachLeadUpdate(BaseModel):
     name: SanitizedLabelField | None = None
     phone: PhoneNumberField | None = None
     instagram: str | None = None
-    website: SanitizedUrlField | None = None
+    website: LeadWebsiteField | None = None
     city: str | None = None
     category: str | None = None
     notes: str | None = None

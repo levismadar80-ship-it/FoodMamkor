@@ -3,7 +3,7 @@
 
 /**
  * Module:   OwnerWelcomeCard
- * Purpose:  A one-time «ברוכים הבאים למהמקור» note from Sapir at the top of
+ * Purpose:  A one-time «ברוכים הבאים למהמקור» note from the founders (Sapir + Topaz, MEH-3323) at the top of
  *           the dashboard home for a new business (≤ 30 days old), closed for
  *           good on «סגירה». No tour: NN/g found tours don't help (MEH-3200
  *           research, copy approved word for word by Sapir 14/11).

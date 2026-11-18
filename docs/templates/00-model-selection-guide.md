@@ -1,5 +1,7 @@
 # 🎯 Template 00 — Model Selection Guide
 
+> **Claude Code:** לבחירת מודל ו-effort בתוך session של Claude Code יש כלל נפרד, והוא הקובע שם: [.claude/rules/model-routing.md](../../.claude/rules/model-routing.md). המסמך הזה עוסק בשיחות ב-claude.ai.
+
 מאיזה מודל לבקש מה. מבוסס על Anthropic 2026 official docs. גרסה 2.2 · 21/10/2026 — עודכן לדור 5.5 (Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1). מספרי benchmark של הדור הקודם הוסרו; המקור העדכני: https://platform.claude.com/docs/en/models/overview
 
 ---
@@ -20,8 +22,8 @@ Anthropic ממליצה היום להתחיל מ-Opus 5.5 לרוב העומסים
 |---|---|---|---|
 | **מחיר (MTok input/output)** | $2 / $10 | $4 / $20 | $10 / $50 |
 | **Max output tokens** | 128K | 128K | 128K |
-| **Default effort** | high | high | — |
-| **Fast mode** | — | /fast (2.5x speed, 3x cheaper, research preview) | — |
+| **Default effort** | medium | medium | — |
+| **Fast mode** | — | /fast (עד 2.5x מהירות output, במחיר premium — $8/$40) | — |
 | **Context window** | 1M | 1M | 1M |
 | **Speed** | מהיר | בינוני (משקיע ב-thinking) | — |
 | **Best at** | קוד יומיומי, CRUD, copy, classification | קוד מורכב, vision, multi-file, design taste, research | נקודות החלטה בלבד — ראו הסעיף למטה (MEH-1376) |
@@ -115,16 +117,15 @@ Anthropic ממליצה היום להתחיל מ-Opus 5.5 לרוב העומסים
 
 ```
 low      → trivial, latency-sensitive (Haiku territory)
-medium   → routine Sonnet work, cost-conscious
-high     → Sonnet default + Opus 5.5 default
+medium   → default של Sonnet 5.5 / Opus 5.5 / Haiku 5.5 / Fable 5.2 (אומת מול התיעוד 17/11/2026)
+high     → באג קשה: קוד לא מוכר, טסט פלאקי, שינוי schema
 xhigh    → hard / async tasks
 max      → hardest problems only (session-only). אזהרה: prone to overthinking.
 fast routine (copy, i18n, token cleanup) → /fast
 ```
 
 **אצל Sapir (Claude Code Max):**
-- Sonnet 5.5 → השאירי על default (high)
-- Opus 5.5 → השאירי על high (default). `xhigh` ל-hard/async, `max` (session-only) רק ל-MEH-99 / MEH-122 / MEH-329 רמה.
+- ברירת המחדל היא `medium`. `high` לבאג קשה, `xhigh` רק אחרי ש-`high` נכשל, בלי `max` (הכרעה 16/11/2026, `.claude/rules/model-routing.md`).
 
 ---
 
@@ -220,7 +221,7 @@ Opus 5.5 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 - **More structure helps.** ה-XML tags, examples, success criteria — חשובים יותר מ-Opus.
 - **Multishot חזק.** 3-5 examples — לא דבר של מותרות, זה הgame.
 - **פחות autonomous.** תנו spec מפורט עד הסוף, אל תסמכו על inference.
-- **`<thinking>` tags עוזרים.** Sonnet לא חושב אדפטיבית כברירת מחדל.
+- **אין צורך ב-`<thinking>` tags.** ב-Claude Code וב-API‏ Sonnet 5.5 חושב אדפטיבית כברירת מחדל; את העומק קובעים ב-effort, לא בטקסט. (המתג ב-claude.ai הוא עניין נפרד — ראו למעלה.)
 - **דגל אדום:** אם הוא טועה אותה טעות פעמיים → עברי ל-Opus, זה לא Sonnet בעיה.
 
 ### 🟣 Opus 5.5 — "staff engineer ש-thinks for itself"
@@ -289,13 +290,13 @@ Opus 5.5 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 
 ## 📚 מקורות
 
-- [Anthropic Opus 5.5 announcement (May 28, 2026)](https://claude.com/blog/claude-opus-4-8)
-- [Anthropic Opus 5.5 announcement (Apr 16, 2026)](https://www.anthropic.com/news/claude-opus-4-7)
+- [Anthropic Opus 4.8 announcement (May 28, 2026)](https://claude.com/blog/claude-opus-4-8)
+- [Anthropic Opus 4.7 announcement (Apr 16, 2026)](https://www.anthropic.com/news/claude-opus-4-7)
 - [Anthropic Prompting Best Practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
-- [Best practices for Claude Opus 5.5 with Claude Code](https://claude.com/blog/best-practices-for-using-claude-opus-4-7-with-claude-code)
+- [Best practices for Claude Opus 4.7 with Claude Code](https://claude.com/blog/best-practices-for-using-claude-opus-4-7-with-claude-code)
 - [Effort docs](https://platform.claude.com/docs/en/build-with-claude/effort)
 - Wharton 2025 "Playing Pretend" (arXiv 2512.05858)
 
 ---
 
-**מתעדכן:** כל release חדש של Anthropic. Fable 5.1 זמין GA (claude.ai + API, מזהה `claude-fable-5`) — ראו סעיף Advisor-only למעלה; השכבה שדורשת partnership היא **Mythos 5**, לא Fable (אותו מודל בסיס, זמין ללא אמצעי הבטיחות הנוספים לארגונים מאושרים בלבד).
+**מתעדכן:** כל release חדש של Anthropic. Fable 5.1 זמין GA (claude.ai + API, מזהה `claude-fable-5-1`) — ראו סעיף Advisor-only למעלה; השכבה שדורשת partnership היא **Mythos 5**, לא Fable (אותו מודל בסיס, זמין ללא אמצעי הבטיחות הנוספים לארגונים מאושרים בלבד).

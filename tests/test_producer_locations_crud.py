@@ -252,3 +252,156 @@ def test_invalid_kind_is_422(client, db):
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
+
+
+# --- MEH-3342 findings 1 + 2 (16/11 review leftovers) ------------------------
+#
+# Finding 1: the branch-only rule on a primary was enforced only on PROMOTION
+# (`want_primary is True`), so `PUT {"kind": "pickup"}` on a row that is
+# ALREADY primary returned 200 and left a primary that is not a branch — the
+# third answer to "where is the business" that MEH-1938's note says must have
+# one. The owner dashboard offers that exact edit (LocationsEditor.jsx's kind
+# picker), so it is reachable without hand-writing an API call.
+#
+# Finding 2: `kind` and `location_precision` are NOT NULL columns
+# (models/catalog.py:231, :244) whose update schema accepts null, and the
+# handler applies the patch with `exclude_unset=True` — so an explicit null IS
+# "supplied", reaches `setattr`, and becomes an IntegrityError and a 500.
+# `location_precision` is the sibling the card did not name; the Bug Protocol's
+# grep-for-siblings step found it in the same model. `is_primary` is NOT NULL
+# too but is `pop`ped from the patch, so an explicit null there reads as
+# "unsupplied" and is a no-op, not a 500 — left as it is, deliberately.
+
+
+def _primary_of(client, user):
+    rows = client.get("/producers/me/locations", headers=auth_header(user)).json()
+    return next(r for r in rows if r["is_primary"])
+
+
+def test_primary_cannot_be_turned_into_a_pickup_point(client, db):
+    """Finding 1 — the invariant has to hold on EDIT, not only on promotion."""
+    user, _ = _producer_user(db)
+    client.post(
+        "/producers/me/locations", json=_base_location(), headers=auth_header(user)
+    )
+    primary = _primary_of(client, user)
+
+    resp = client.put(
+        f"/producers/me/locations/{primary['id']}",
+        json={"kind": "pickup"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+    # The row is untouched — a rejected edit must not half-apply.
+    assert _primary_of(client, user)["kind"] == "branch"
+
+
+def test_primary_cannot_be_turned_into_a_market_stand(client, db):
+    """The other secondary-layer kind, for the same reason (MEH-1938)."""
+    user, _ = _producer_user(db)
+    client.post(
+        "/producers/me/locations", json=_base_location(), headers=auth_header(user)
+    )
+    primary = _primary_of(client, user)
+
+    resp = client.put(
+        f"/producers/me/locations/{primary['id']}",
+        json={"kind": "market_stand"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_a_non_primary_location_may_still_become_a_pickup_point(client, db):
+    """CONTROL — the fix must not forbid the ordinary edit. Without this a
+    blanket «kind must be branch» would pass both tests above while breaking
+    the feature the kind picker exists for."""
+    user, _ = _producer_user(db)
+    client.post(
+        "/producers/me/locations", json=_base_location(), headers=auth_header(user)
+    )
+    second = client.post(
+        "/producers/me/locations",
+        json=_base_location(city="עכו", label="סניף עכו", is_primary=False),
+        headers=auth_header(user),
+    )
+    assert second.status_code == 201, second.text
+
+    resp = client.put(
+        f"/producers/me/locations/{second.json()['id']}",
+        json={"kind": "pickup"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["kind"] == "pickup"
+
+
+def test_the_primary_may_still_be_edited_and_re_set_to_branch(client, db):
+    """CONTROL — an edit that keeps the invariant is still a 200."""
+    user, _ = _producer_user(db)
+    client.post(
+        "/producers/me/locations", json=_base_location(), headers=auth_header(user)
+    )
+    primary = _primary_of(client, user)
+
+    resp = client.put(
+        f"/producers/me/locations/{primary['id']}",
+        json={"kind": "branch", "phone": "050-1234567"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["kind"] == "branch"
+
+
+def test_explicit_null_kind_is_422_not_500(client, db):
+    """Finding 2 — a NOT NULL column must refuse null at the schema, not at the
+    database. A 500 here is an unhandled IntegrityError."""
+    user, _ = _producer_user(db)
+    client.post(
+        "/producers/me/locations", json=_base_location(), headers=auth_header(user)
+    )
+    primary = _primary_of(client, user)
+
+    resp = client.put(
+        f"/producers/me/locations/{primary['id']}",
+        json={"kind": None},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_explicit_null_location_precision_is_422_not_500(client, db):
+    """Finding 2's sibling, found by the grep the Bug Protocol asks for:
+    `location_precision` is NOT NULL too and had the same hole."""
+    user, _ = _producer_user(db)
+    client.post(
+        "/producers/me/locations", json=_base_location(), headers=auth_header(user)
+    )
+    primary = _primary_of(client, user)
+
+    resp = client.put(
+        f"/producers/me/locations/{primary['id']}",
+        json={"location_precision": None},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_omitting_kind_entirely_is_still_a_partial_update(client, db):
+    """CONTROL — rejecting an explicit null must not break «unsupplied means
+    leave it alone», which is the whole contract of this endpoint (MEH-1421).
+    A validator declared with `validate_default=True` would fail this."""
+    user, _ = _producer_user(db)
+    client.post(
+        "/producers/me/locations", json=_base_location(), headers=auth_header(user)
+    )
+    primary = _primary_of(client, user)
+
+    resp = client.put(
+        f"/producers/me/locations/{primary['id']}",
+        json={"city": "נהריה"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["kind"] == "branch"
+    assert resp.json()["location_precision"] == "exact"

@@ -24,3 +24,14 @@ describe("MEH-2728 rescue dashboard back link", () => {
     expect(back.getAttribute("href")).toBe("/producer/dashboard/tools");
   });
 });
+
+// MEH-3271 (found by the staging persona sweep): the page had no h1, so a
+// screen-reader user's heading list started at level 2.
+describe("rescue dashboard heading", () => {
+  it("has exactly one h1, and it is the page title", async () => {
+    render(await RescueDashboardPage());
+    const h1s = screen.getAllByRole("heading", { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0].textContent).toBe("rescue.dashboard.title");
+  });
+});

@@ -13,7 +13,8 @@ import { rescueBagsEnabled } from "@/lib/rescue";
  * Does NOT: exist while the pilot is off — notFound(), matching the backend,
  *           which 404s every rescue route behind the same switch.
  * History:  MEH-2649 (creation); MEH-2728 («חזרה לכלים», like every other
- *           screen opened from the tools tab — it was the only one without).
+ *           screen opened from the tools tab — it was the only one without);
+ *           MEH-3271 (the title is the h1).
  */
 export default async function RescueDashboardPage() {
   if (!rescueBagsEnabled()) notFound();
@@ -22,7 +23,9 @@ export default async function RescueDashboardPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10" data-testid="rescue-dashboard-page">
       <BackLink href="/producer/dashboard/tools" label={t("back")} />
-      <h2 className="font-headline-md text-xl font-black text-text mt-1 mb-1">{t("title")}</h2>
+      {/* MEH-3271: the page title is the page's h1 (it was an h2 with no h1
+          above it). Same classes, so nothing moves on screen. */}
+      <h1 className="font-headline-md text-xl font-black text-text mt-1 mb-1">{t("title")}</h1>
       <p className="font-body-sm text-sm text-fg-muted mb-2">{t("lead")}</p>
       {/* MEH-2733: the printable till card (MEH-2649) was reachable from nowhere. */}
       <Link

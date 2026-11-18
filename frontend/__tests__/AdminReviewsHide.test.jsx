@@ -13,7 +13,7 @@
  * carries code "review_not_found" — not any 404 with Hebrew in it.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved, within } from "@testing-library/react";
 import AdminReviewsPage from "@/app/[locale]/admin/reviews/page";
 
 vi.mock("@phosphor-icons/react", () => ({
@@ -27,6 +27,8 @@ vi.mock("next-intl", () => {
   const flat = {
     "admin.reviews.count": "{filtered} מתוך {total}",
     "admin.reviews.empty": "אין ביקורות להצגה",
+    // MEH-3346: the real he.json value — renderWith waits for this row to GO.
+    "admin.reviews.loading": "טעינת ביקורות...",
     "admin.reviews.hidden": "מוסתרת",
     "admin.reviews.hide": "הסתירי",
     "admin.reviews.unhide": "החזירי",
@@ -77,6 +79,14 @@ const row = (id, is_hidden) => ({
 async function renderWith(rows) {
   apiMock.get.mockImplementation(() => Promise.resolve({ data: rows }));
   render(<AdminReviewsPage />);
+  // MEH-3346: the count line renders from the FIRST frame, and while the fetch
+  // is in flight both numbers are 0 — so `0 מתוך 0` is also what the loading
+  // state prints, and awaiting it alone returned with the loading row still in
+  // the tbody. Measured, not assumed: with `api.get` replaced by a promise that
+  // never resolves, that await still succeeded and the empty-list message was
+  // absent. The loading row leaving is the one marker only a settled fetch can
+  // produce, so wait for that first; the count is then a real count.
+  await waitForElementToBeRemoved(() => screen.queryByText("טעינת ביקורות..."));
   await screen.findByText(`${rows.length} מתוך ${rows.length}`);
 }
 
