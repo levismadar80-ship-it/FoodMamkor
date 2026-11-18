@@ -10,7 +10,9 @@ every name is still importable from app.schemas.schemas.
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import Literal
+
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     PhoneNumberField,
@@ -28,6 +30,11 @@ class UserOut(BaseModel):
     name: str
     city: str | None = None
     phone: str | None = None
+    # MEH-3302: the current phone was verified with a WhatsApp code. WhatsApp
+    # alerts are paused until it is (string 19). Timestamps are never exposed.
+    phone_verified: bool = False
+    # MEH-3302: phone_verified AND consent standing; false after «הסר».
+    whatsapp_ready: bool = False
     role: str
     producer_id: UUID | None = None
     # MEH-16: whether the user signed in via OAuth. Used by /settings to
@@ -284,6 +291,34 @@ class ProducerInfoReportCreate(BaseModel):
         if not stripped:
             raise ValueError("message must not be empty")
         return stripped
+
+
+# MEH-3260: why a visitor reports a review (the public dialog's radio list).
+REVIEW_REPORT_REASONS = ("fake", "abusive", "personal", "irrelevant", "other")
+
+
+class ReviewReportCreate(BaseModel):
+    """MEH-3260: «דיווח על ביקורת» — emailed to the admin, no DB row, no
+    automatic action. `details` is optional except for reason "other"."""
+
+    producer_slug: str = Field(..., min_length=1, max_length=200)
+    review_id: UUID
+    reason: Literal["fake", "abusive", "personal", "irrelevant", "other"]
+    details: str | None = Field(None, max_length=1000)
+    reporter_email: EmailStr | None = None
+
+    @field_validator("details")
+    @classmethod
+    def _clean_details(cls, v: str | None) -> str | None:
+        v = sanitize_text(v, max_length=1000)
+        stripped = (v or "").strip()
+        return stripped or None
+
+    @model_validator(mode="after")
+    def _other_needs_details(self) -> "ReviewReportCreate":
+        if self.reason == "other" and not self.details:
+            raise ValueError("ספרו לנו בכמה מילים מה הבעיה")
+        return self
 
 
 # --- Rating ---

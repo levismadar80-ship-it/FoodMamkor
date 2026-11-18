@@ -195,6 +195,9 @@ class SearchOut(BaseModel):
     products: list[ProductHit] = []
     cities: list[str] = []
     categories: list[CategoryHit] = []
+    # MEH-3415: set when nothing matched the query as typed and the results
+    # are for the query re-read on the other keyboard layout ("sca" -> "דבש").
+    corrected_query: str | None = None
 
 
 # --- Alerts (alerts.py) ---
@@ -293,10 +296,25 @@ class NewsletterUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1)
 
 
+# MEH-3300 (D13): the confirm link's signed token (scope newsletter_confirm, 48 h).
+class NewsletterConfirmIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2000)
+
+
 # MEH-3079: the weekly owner summary's unsubscribe link — same shape, its own
 # token scope (services/weekly_owner_summary.py).
 class WeeklySummaryUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1, max_length=2048)
+
+
+# Page freshness: the «כן, הכול נכון» link in the monthly email.
+class PageFreshnessConfirmIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2048)
+
+
+class PageFreshnessConfirmOut(BaseModel):
+    business_name: str
+    confirmed_at: datetime
 
 
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of

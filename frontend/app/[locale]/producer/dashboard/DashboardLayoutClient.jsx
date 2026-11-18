@@ -37,7 +37,9 @@ import {
   Storefront,
   CalendarBlank,
   SignOut,
+  Basket,
 } from "@phosphor-icons/react";
+import { useOrdersTab } from "@/lib/use-orders-tab";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import AuthUnreachableState from "@/components/AuthUnreachableState";
@@ -85,9 +87,14 @@ function tabIsActive(tab, pathname) {
     : [tab.href, ...(tab.also ?? [])].some((p) => pathname.startsWith(p));
 }
 
+// MEH-3316: «הזמנות», second, only while the server has on-site ordering
+// (its settings route answers 404 otherwise). Placement approved 14/11.
+const ORDERS_TAB = { key: "orders", href: "/producer/dashboard/orders", Icon: Basket };
+
 /** The tab set for this owner. `/auth/me` carries producer_kind (MEH-2460). */
-function tabsFor(user) {
-  return user?.producer_kind === "organizer" ? ORGANIZER_TABS : TABS;
+function tabsFor(user, withOrders = false) {
+  if (user?.producer_kind === "organizer") return ORGANIZER_TABS;
+  return withOrders ? [TABS[0], ORDERS_TAB, ...TABS.slice(1)] : TABS;
 }
 
 /**
@@ -136,6 +143,27 @@ function DashboardChromeSkeleton({ label }) {
   );
 }
 
+const MAX_BADGE = 9;
+
+/** The tab's icon; «הזמנות» carries the waiting count (MEH-3316). */
+function TabIcon({ tab, active, count }) {
+  const tAttention = useTranslations("dashboard.producer.attention");
+  return (
+    <span className="relative inline-flex">
+      <tab.Icon size={18} weight={active ? "fill" : "regular"} aria-hidden="true" />
+      {count > 0 && (
+        <span
+          data-testid="dashboard-orders-count"
+          className="absolute -top-2 -start-3 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-xs leading-5 text-center font-bold"
+        >
+          <span aria-hidden="true">{count > MAX_BADGE ? `${MAX_BADGE}+` : count}</span>
+          <span className="sr-only">{tAttention("orders", { count })}</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
 export default function ProducerDashboardLayout({ children }) {
   const t = useTranslations("dashboard.producer.nav");
   const tDenied = useTranslations("errors.access_denied.producer");
@@ -149,7 +177,11 @@ export default function ProducerDashboardLayout({ children }) {
   const { user, loading: authLoading, logout, authUnreachable } = useAuth();
   // MEH-3191: each screen gets its own <title> — the active tab's label.
   const locale = useLocale();
-  const titleTab = tabsFor(user).find((tab) => tabIsActive(tab, pathname));
+  const orders = useOrdersTab({
+    enabled: user?.role === "producer" && !!user?.producer_id && user?.producer_kind !== "organizer",
+    refreshKey: pathname,
+  });
+  const titleTab = tabsFor(user, orders.visible).find((tab) => tabIsActive(tab, pathname));
   useDashboardTitle(titleTab ? t(titleTab.key) : null, locale, pathname);
 
   // MEH-1599: 401 and 403 are DIFFERENT outcomes and must not share a branch.
@@ -206,7 +238,7 @@ export default function ProducerDashboardLayout({ children }) {
   }
 
   const isActive = (tab) => tabIsActive(tab, pathname);
-  const tabs = tabsFor(user);
+  const tabs = tabsFor(user, orders.visible);
   const isOrganizer = user.producer_kind === "organizer";
 
   return (
@@ -240,7 +272,7 @@ export default function ProducerDashboardLayout({ children }) {
                     : "border-transparent text-fg-muted hover:text-text"
                 }`}
               >
-                <tab.Icon size={18} weight={active ? "fill" : "regular"} aria-hidden="true" />
+                <TabIcon tab={tab} active={active} count={tab.key === "orders" ? orders.pending : 0} />
                 <span className="inline-flex items-center gap-1">
                   {t(tab.key)}
                   {tab.key === "tools" && newTools.size > 0 && (

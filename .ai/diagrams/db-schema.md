@@ -71,6 +71,7 @@ erDiagram
         string availability_status "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
         string availability_state "accepting_orders|on_vacation (MEH-2758 pause-only writes; MEH-2782 removed available_today|full_this_week)"
         date vacation_until "nullable — required when availability_state=on_vacation"
+        timestamptz availability_confirmed_at "nullable — MEH-2697: when the OWNER last said her availability is still true; NULL = never"
         timestamp recommended_at "nullable — MEH-1494 chunk A, revision e2a7c9d4b6f1; when the current editorial pick was made. No backfill: NULL = picked before the clock existed, due for review"
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
         date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
@@ -106,6 +107,7 @@ erDiagram
         timestamp owner_invite_sent_at "nullable — MEH-2974, tz-aware; latest invite sent"
         timestamp owner_invite_accepted_at "nullable — MEH-2974, tz-aware; set once. Also the onboarding-sequence clock: COALESCE(this, created_at)"
         text owner_invite_consent_note "nullable — MEH-2974; the admin's record of the written consent. Kept on cancel — it is the audit trail"
+        string consent_screenshot_url "nullable — MEH-3377, VARCHAR(500); optional Cloudinary image of that written consent. ProducerAdminOut only"
         string owner_invite_created_by "nullable — MEH-2974, UUID FK users.id ON DELETE SET NULL, named + use_alter (users<->producers cycle)"
         string owner_invite_code_hash "nullable — MEH-2974 v3, VARCHAR(64); sha256 HEX of the 6-digit email code. NEVER the code; on no response schema"
         timestamp owner_invite_code_expires_at "nullable — MEH-2974 v3, tz-aware; send + 10 minutes"
@@ -114,6 +116,8 @@ erDiagram
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
         string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        string secondary_phone "nullable — MEH-3339, VARCHAR(20); optional second number, same format as phone; one text line, no CTA reads it"
+        string secondary_phone_label "nullable — MEH-3339, VARCHAR(30); its label (e.g. להזמנות); requires secondary_phone"
         integer established_year "nullable — MEH-1541, self-reported founding year; app-validated 1800..current year; public 'מאז {שנה}' masthead line (NULL = absent from DOM)"
         integer delivery_fee "nullable — MEH-1577, whole shekels; 0 is a VALUE (משלוח חינם), NULL = not stated; INTEGER to match delivery_areas.min_order, app-validated >= 0, no DB CHECK"
         integer free_delivery_above "nullable — MEH-1577, whole shekels; app-validated > 0 (0 rejected — unlike delivery_fee); independent of delivery_fee, renders alone"
@@ -122,6 +126,8 @@ erDiagram
         timestamp email_pending_nudge_sent_at "nullable — MEH-1818, tz-aware; day-1 pending-nudge stamp. NULL = not yet nudged. Stamped even when nothing was missing (no email sent), which is what holds the send to exactly once"
         boolean weekly_summary_opt_out "NOT NULL default false — MEH-3079; set by the signed unsubscribe link of the weekly summary email"
         timestamp weekly_summary_sent_at "nullable — MEH-3079, tz-aware; weekly summary idempotency stamp (skip if < 6 days old)"
+        timestamp last_confirmed_at "nullable — page freshness, tz-aware; owner pressed «כן, הכול נכון»"
+        timestamp freshness_email_sent_at "nullable — page freshness, tz-aware; monthly email idempotency stamp"
         timestamp submitted_for_review_at "nullable — MEH-2100, tz-aware; stamped when the owner submits for review (draft→pending). NULL = never submitted, and stays NULL for a draft. No backfill: readers use submitted_for_review_at or created_at; the admin SLA (MEH-2869) uses resubmitted_at or submitted_for_review_at or created_at"
     }
 
@@ -131,7 +137,7 @@ erDiagram
         string slug UK "MEH-2139, VARCHAR(50) NOT NULL UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. Nullable in a7c3e91d5f28, NOT NULL in c9f2a41e8b03 once a column default (services/category_slug) made every writer produce one. A rename never re-derives it"
         string emoji
         boolean is_system "NOT NULL, server_default false — MEH-1456 chunk A, revision b7d3e5a9c1f4; TRUE for the 18 seed_data.CATEGORIES rows (backfilled by name + written by the seed), FALSE for admin-created rows. Chunk 2b refuses rename/delete on TRUE"
-        boolean requires_license "NOT NULL, server_default false — MEH-3255 expand, revision f1a7c3e9b5d2; TRUE for licence-required categories (backfilled from the constants name list; required on admin create)"
+        boolean requires_license "NOT NULL, server_default false — MEH-3255, revision f1a7c3e9b5d2; TRUE for licence-required categories (backfilled from the constants name list; required on admin create). Since the contract step every licence reader asks this column, not the name list"
     }
 
     products {
@@ -143,6 +149,8 @@ erDiagram
         string image_url
         decimal price_min "MEH-295: NUMERIC(10,2) NULL"
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
+        boolean is_draft "MEH-2312: admin-imported, waiting for approval; hidden from every public read"
+        text source_image_url "MEH-2312: source store image URL, stored only (MEH-1184)"
         boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
         boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"
@@ -154,7 +162,7 @@ erDiagram
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
         varchar price_unit "MEH-3218: unit|kg|100g, default unit"
-        boolean is_orderable "MEH-3218: default false, the owner opts each product in"
+        boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
     }
@@ -167,9 +175,21 @@ erDiagram
         int cancel_cutoff_hours "0..168, default 24"
         boolean shabbat_observant
         int min_order_agorot "nullable"
+        int slot_minutes "MEH-3262: 30|60|120, default 60"
+        int lead_time_hours "MEH-3262: 0..168, default 24"
         boolean alcohol_licensed "admin only"
         timestamp created_at
         timestamp updated_at
+    }
+
+    producer_order_windows {
+        uuid id PK
+        uuid producer_id FK "CASCADE; whole-list replace, max 28 per business (MEH-3262)"
+        smallint weekday "0 = Sunday .. 6 = Saturday, as producers.order_window"
+        time start_time "Israel clock"
+        time end_time
+        string fulfilment "pickup|delivery"
+        timestamp created_at
     }
 
     product_orders {
@@ -194,8 +214,38 @@ erDiagram
         timestamp confirmed_at
         timestamp handed_at
         timestamp closed_at
+        string status_token_hash "MEH-3263: sha256 of the buyer's token; partial UNIQUE"
+        string idempotency_key "MEH-3263: client UUID per attempt; partial UNIQUE"
+        string delivery_city "MEH-3263: canonical city, delivery only"
+        timestamp proposed_slot_start "MEH-3263: while change_proposed"
+        timestamp proposed_slot_end
+        int proposed_total_agorot
+        text proposal_note
         timestamp created_at
         timestamp updated_at
+    }
+
+    product_order_phone_codes {
+        uuid id PK
+        string phone "canonical 9725XXXXXXXX (MEH-3263)"
+        string code_hash "HMAC-SHA256(secret, phone:code); the code is never stored"
+        timestamp expires_at "10 minutes"
+        int attempts "5 wrong tries burn the code"
+        timestamp used_at "nullable; single use"
+        timestamp created_at
+    }
+
+    product_order_notifications {
+        uuid id PK
+        uuid order_id FK "CASCADE (MEH-3296)"
+        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before"
+        string channel "whatsapp email"
+        string outcome "pending sent failed skipped"
+        timestamp send_after "due time; moved to the end of Shabbat/chag for an observant business"
+        int attempts "max 5, backoff 5 min doubling"
+        string last_error "short code, never message text"
+        timestamp sent_at
+        timestamp created_at
     }
 
     product_order_items {
@@ -255,6 +305,37 @@ erDiagram
         timestamp reviewed_at "nullable until decided"
     }
 
+    admin_audit_log {
+        uuid id PK
+        uuid actor_id "NOT NULL, indexed — deliberately not a FK (MEH-3306)"
+        string action "method + route template"
+        string target_type "nullable"
+        string target_id "nullable"
+        jsonb details "nullable — reduced before/after, no PII"
+        string ip "nullable — not returned by the list route"
+        timestamptz created_at "NOT NULL DEFAULT now(), indexed — append-only"
+    }
+    admin_passkeys {
+        uuid id PK
+        uuid user_id FK "users.id ON DELETE CASCADE, indexed (MEH-3305)"
+        bytea credential_id "UNIQUE — the authenticator's id"
+        bytea public_key "COSE key"
+        bigint sign_count "authenticator counter; going backwards = cloned key"
+        string aaguid "nullable, authenticator model"
+        boolean backup_eligible "synced passkey"
+        boolean backup_state
+        string transports "nullable"
+        string name "nullable, the admin's own label"
+        timestamptz created_at
+        timestamptz last_used_at "nullable"
+    }
+    admin_recovery_codes {
+        uuid id PK
+        uuid user_id FK "users.id ON DELETE CASCADE, indexed (MEH-3305)"
+        string code_hash "hash only — the code is shown once and never stored"
+        timestamptz used_at "nullable — set = spent"
+        timestamptz created_at
+    }
     admin_checklist_items {
         uuid id PK
         int position "indexed; written as index*10 by the router, never accepted from the client — a client-supplied position lets two items claim one slot"
@@ -361,9 +442,13 @@ erDiagram
         string phone
         string email
         string cancel_token UK "cancel link credential"
-        string status "registered|cancelled"
+        string status "registered|cancelled|waitlisted"
         timestamp created_at
         timestamp cancelled_at
+        timestamp reminder_sent_at "MEH-3312 day-before reminder, one-way"
+        timestamp waitlist_offered_at "MEH-3314 the one offer email"
+        int party_size "MEH-3315 1-10, places taken"
+        string attendance "MEH-3315 NULL|attended|no_show"
     }
 
     business_billing {
@@ -442,6 +527,7 @@ erDiagram
         timestamp created_at
         string source "MEH-1428: click | invite_link — NOT NULL default 'click' (rev 3f9a7c2e5d18)"
         string ai_moderation_status "MEH-2349: APPROVED | FLAGGED | NULL (no verdict: predates column or fail-open, MEH-2390) — AI verdict on the body at the last write; CHECK ck_producer_reviews_ai_moderation_status (rev c4e81a2f9b6d)"
+        string reply_ai_moderation_status "MEH-3259: APPROVED | FLAGGED | NULL — AI verdict on the owner reply; CHECK ck_producer_reviews_reply_ai_moderation_status (rev f2c7a9d4b1e6)"
         timestamp edited_after_hidden_at "MEH-2381: author changed body/stars while hidden; NULL after hide/unhide (rev d7a3f5c1e2b8)"
     }
 ```
@@ -600,10 +686,12 @@ erDiagram
     users ||--o{ rescue_orders : "reserves"
     producers ||--o| rescue_typical_items : "usual contents"
     producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
+    producers ||--o{ producer_order_windows : "weekly ordering windows (MEH-3262)"
     producers ||--o{ product_orders : "order requests (MEH-3218)"
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"
     product_orders ||--o{ product_order_events : "status log"
+    product_orders ||--o{ product_order_notifications : "messages owed, once per kind+channel (MEH-3296)"
     products |o--o{ product_order_items : "SET NULL on delete"
 
     rescue_offers {
@@ -717,5 +805,5 @@ erDiagram
 
 - **No PostGIS.** Coordinates are plain `FLOAT`. Distance queries use Haversine in raw SQL over `producer_locations.lat/lng` — `backend/app/services/producer_queries.py::haversine_min_km`, the nearest row per business, with NO fallback to the legacy `producers.lat/lng` mirror since MEH-1938 chunk 5a. Reverting this breaks Railway deploy.
 - **IPs are always hashed.** `producer_page_views.viewer_ip_hash` is SHA-256 of `ip + settings.secret_key[:32]` — never raw IP, per Privacy Law amendment 13 (2025) and `docs/SECURITY.md` §8a.
-- **Cached rating aggregates.** `producers.avg_rating` + `producers.reviews_count` are cached from `producer_reviews` to avoid a JOIN on every producer detail request. Update them transactionally when writing/deleting a review.
+- **Cached rating aggregates.** `producers.avg_rating` + `producers.reviews_count` are cached from `producer_reviews` to avoid a JOIN on every producer detail request. Update them transactionally when writing/deleting a review. MEH-3258: they also exclude conflict-of-interest reviews, so they are recomputed when an author starts or stops owning a business (claim, registration upgrade, admin delete) and when a business's categories change or it is approved — `services/review_conflicts.py`.
 - **Experience vs Event moderation are different flows.** Events: direct admin approval. Experiences: Claude Haiku pre-check → admin queue → approval. Don't conflate them (see `docs/MODERATION.md`).

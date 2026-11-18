@@ -22,6 +22,8 @@ docs/audits/subagent-trace.log
 coverage.xml
 # MEH-558: mutmut scratch tree (regenerated on every `mutmut run`)
 backend/mutants/
+backend/mutants-run.log
+.hypothesis/
 # Playwright test artifacts (generated when run from repo root)
 test-results/
 playwright-report/

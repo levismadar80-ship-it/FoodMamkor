@@ -158,21 +158,23 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | Variable | How to set on staging |
    |---|---|
    | `DATABASE_URL` | Auto-injected from the staging Postgres service via Add Reference — don't override. |
+   | `MIGRATION_DATABASE_URL` | **Optional (MEH-3307).** The schema owner's URL for the boot migration step only, when the app URL logs in as `app_runtime`. Unset = migrations use the app URL. Order: §1.3. |
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
-   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
+   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). **In production the backend refuses to boot when it is empty or contains `localhost`, `127.0.0.1` or `staging`** (MEH-3388; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`), so a wrong value fails the deploy instead of sending every email link to the wrong site. |
    | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain is verified (SPF+DKIM) — `mehamakor.co.il` for production (the `email_from_address` default), `mehamakor.online` if staging sends from it. **The two domains are verified in two different Resend accounts**; a key from the wrong account fails every send with 422 (MEH-2341, 24/10). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
    | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.co.il>` (`config.py:115`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
+   | `ADMIN_EMAIL` | **Set it on staging (MEH-3402).** Outside production every email to an address that is not `ADMIN_EMAIL` / `CONTACT_EMAIL` / `SUPER_ADMIN_EMAIL` (or a `+alias` of one) is **redirected here**, subject `[STAGING → ***@domain] …`, full original recipient on the first body line. Unset on staging = those emails are not sent at all (logged at WARNING). Register test businesses as `you+biz1@…` to receive their mail directly. |
    | `SUPER_ADMIN_EMAIL` | **Required in production — the backend refuses to boot without a valid address** (MEH-2890; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`). The owner's login email, **exactly as it appears in `/admin/users`** (the match is case-sensitive). That account cannot be demoted or deleted from `/admin/users`. Set the same value on staging; unset on staging only means nobody is protected there (logged). |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
-   | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
+   | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Outside production the backend sends WhatsApp only to `ADMIN_WHATSAPP_TO` and `OTP_TEST_NUMBERS` whatever is configured here (MEH-3402); prefer Meta's free test number for staging (MEH-3405). And even to those numbers, a template whose Meta-registered text links to `mehamakor.co.il` is not sent outside production (MEH-3414 — the link would open production); only templates marked `sends_outside_production` (today: the OTP) go. The matching email still arrives, with staging's own link. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
    | `WHATSAPP_ACCESS_TOKEN` | Never-expiring System User token from Meta Business Suite. Store in Railway variables, never in `.env` files. |
    | `WHATSAPP_BUSINESS_ID` | WhatsApp Business Account ID (WABA). |
    | `WHATSAPP_API_VERSION` | `v21.0` (hardcoded fallback; override only to pin a different Graph version). |
-   | `OTP_TEST_NUMBERS` | **Staging only, optional.** Comma-separated `producer.phone` values (exact match) that receive a fixed OTP instead of a WhatsApp send, so a harness can pass the `phone_verified` gate (MEH-2231). Empty = feature OFF. Refused outright when `ENV=production`, and on a remote DB host unless `RAILWAY_ENVIRONMENT=staging` — set the values in Railway variables, never in a committed file. |
+   | `OTP_TEST_NUMBERS` | **Staging only, optional.** Comma-separated `producer.phone` values (exact match) that receive a fixed OTP instead of a WhatsApp send; also the only numbers, with `ADMIN_WHATSAPP_TO`, that any WhatsApp from staging may reach (MEH-3402 — digits compared, `0…` = `972…`), so a harness can pass the `phone_verified` gate (MEH-2231). Empty = feature OFF. Refused outright when `ENV=production`, and on a remote DB host unless `RAILWAY_ENVIRONMENT=staging` — set the values in Railway variables, never in a committed file. |
    | `OTP_TEST_CODE` | Exactly 6 digits; the fixed code handed to the numbers above. Anything else turns the feature OFF rather than half-on. Every issue is logged at WARNING with the producer id (never the phone or the code). |
    | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
 
@@ -1250,6 +1252,60 @@ run anything manually.
 > column. It was dead code — never read, never written — and blocked
 > deployment on vanilla Railway. It has been removed. See commit history
 > for the Haversine migration.
+
+### 1.3 Two database roles — the app cannot change the schema (MEH-3307)
+
+The backend and the migrations can connect as two different Postgres roles:
+
+| Who | Variable | Role | Can |
+|---|---|---|---|
+| The app (every request, every job) | `DATABASE_URL_<ENV>`, else `DATABASE_URL` | `app_runtime` | read and write rows, `SET ROLE mcp_reader` for the chat tools |
+| The migrations at boot (`scripts/migrate_on_boot.py`, `alembic/env.py`) | `MIGRATION_DATABASE_URL` | the schema owner (Railway's `postgres`) | everything |
+
+`MIGRATION_DATABASE_URL` unset → the migrations use the app's URL, as before
+(`app/database.py::migration_database_url`). The SQL for the role is printed by
+`python backend/scripts/app_runtime_role.py`; `tests/test_meh3307_app_runtime_role.py`
+runs that same SQL on a database migrated to head and checks that the role
+writes rows and that every kind of DDL is refused.
+
+**Order, per environment (staging first, then production).** Each step can be
+undone by restoring the previous variable value in Railway. `<db>` below is the
+Postgres service's name as Railway shows it in that environment (§1.1 names it
+`mehamakor-db`); a wrong name in a `${{…}}` reference resolves to nothing, so
+copy it from the service.
+
+1. The code is deployed with no variable changed. Nothing changes.
+2. On the backend service, add `MIGRATION_DATABASE_URL` as a reference to the
+   owner URL the service uses today (`${{<db>.DATABASE_URL}}`). Redeploy, and
+   do not go on until the boot log shows `running \`alembic upgrade head\``
+   (or `database at <head>`) and the app is up: that is the proof the new
+   variable connects.
+3. On the Postgres service, add `APP_RUNTIME_PASSWORD` with Railway's
+   generator (`${{secret(40)}}`). In the Postgres service's query tab, run the
+   printed SQL with that value in place of the placeholder. The value is never
+   pasted anywhere else. Run it as the same role `MIGRATION_DATABASE_URL`
+   logs in as (Railway's `postgres`, which is what the query tab uses): the
+   default privileges below cover only tables that role creates later.
+4. On the backend service, change the app URL variable (the one it has set:
+   `DATABASE_URL_STAGING` / `DATABASE_URL_PRODUCTION`, else `DATABASE_URL`) to
+   `postgresql://app_runtime:${{<db>.APP_RUNTIME_PASSWORD}}@${{<db>.PGHOST}}:${{<db>.PGPORT}}/${{<db>.PGDATABASE}}`.
+   Redeploy.
+5. Check: `/health` 200, a sign-in, one write (a favourite). A
+   `permission denied` in the backend log is the role missing a grant: put
+   the old URL back (step 4) and report it.
+
+**What stays on the owner URL:** the backup cron service
+(`scripts/backup_production_db.py`) has its own variable and is not changed.
+**Connections:** the migration step opens its connections once at boot, so
+the split does not change how many the app holds; `SHOW max_connections` in
+production is recorded on MEH-3307.
+
+**A new migration needs nothing extra:** the grants include
+`ALTER DEFAULT PRIVILEGES`, so a table or sequence the owner creates later is
+readable and writable by `app_runtime` at once, as long as the migrations log
+in as the role that ran the SQL (step 3). A migration that creates a table as
+some other role would need its own `GRANT`. Staging and production are
+separate Postgres services, so each has its own `app_runtime` and password.
 
 ---
 

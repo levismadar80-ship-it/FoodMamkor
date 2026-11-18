@@ -19,8 +19,10 @@ The probe is validated against known answers before its output is believed
 import re
 from pathlib import Path
 
+# MEH-3293: both business-registration functions moved out of auth.py.
 AUTH_PY = (
-    Path(__file__).resolve().parents[1] / "backend" / "app" / "routers" / "auth.py"
+    Path(__file__).resolve().parents[1]
+    / "backend" / "app" / "routers" / "auth_register_producer.py"
 )
 
 # A dispatch of the welcome mail. Matches the `add_task(...)` form and a direct
@@ -63,7 +65,7 @@ def _function_body(source: str, name: str) -> str:
         ),
         None,
     )
-    assert start is not None, f"{name} not found in auth.py — has it been renamed?"
+    assert start is not None, f"{name} not found in {AUTH_PY.name} — has it been renamed?"
     for i in range(start + 1, len(lines)):
         if (
             lines[i].startswith("def ")

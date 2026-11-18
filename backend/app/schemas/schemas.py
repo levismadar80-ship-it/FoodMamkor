@@ -883,6 +883,7 @@ from app.schemas.admin_review import (  # noqa: E402
     LicenseExpiryReminderOut as LicenseExpiryReminderOut,
     LicenseExpiryReminderRow as LicenseExpiryReminderRow,
     OtpConfirmIn as OtpConfirmIn,
+    UserPhoneOtpConfirmIn as UserPhoneOtpConfirmIn,
     ProducerRejectIn as ProducerRejectIn,
     ProducerReviewCheckOut as ProducerReviewCheckOut,
     ProducerReviewChecksIn as ProducerReviewChecksIn,
@@ -929,6 +930,8 @@ from app.schemas.community import (  # noqa: E402
     RatingSubmit as RatingSubmit,
     ReportCreate as ReportCreate,
     ReportOut as ReportOut,
+    REVIEW_REPORT_REASONS as REVIEW_REPORT_REASONS,
+    ReviewReportCreate as ReviewReportCreate,
     UserOut as UserOut,
 )
 from app.schemas.events import (  # noqa: E402
@@ -958,6 +961,7 @@ from app.schemas.experiences import (  # noqa: E402
     RegistrationCreatedOut as RegistrationCreatedOut,
     RegistrationMethod as RegistrationMethod,
     RegistrationOwnerOut as RegistrationOwnerOut,
+    RegistrationAttendanceIn as RegistrationAttendanceIn,
     _EXPERIENCE_CATEGORY_KEYS as _EXPERIENCE_CATEGORY_KEYS,
     _experience_category as _experience_category,
 )
@@ -1071,6 +1075,7 @@ from app.schemas.site import (  # noqa: E402
     NameCheckOut as NameCheckOut,
     NameMatch as NameMatch,
     NewsletterIn as NewsletterIn,
+    NewsletterConfirmIn as NewsletterConfirmIn,
     NewsletterUnsubscribeIn as NewsletterUnsubscribeIn,
     OutboundMessageAdminOut as OutboundMessageAdminOut,
     PasswordChange as PasswordChange,

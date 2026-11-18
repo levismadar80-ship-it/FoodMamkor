@@ -31,6 +31,7 @@ from app.schemas.schemas import (
     GroupBuyStatusUpdate,
 )
 from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
+from app.services.group_buy_goal_flap import notify_back_at_goal, notify_below_goal
 from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
@@ -252,6 +253,8 @@ def _maybe_notify_funded(
     never touch `db`, which is closed once the response is sent.
     """
     if gb.funded_notified_at is not None:
+        # MEH-3311: back at the goal after a drop → everyone hears it once.
+        notify_back_at_goal(db, gb, background_tasks)
         return
 
     # Requires the caller to have flushed the new commit, or the participant
@@ -289,6 +292,28 @@ def _maybe_notify_funded(
     )
 
 
+def _notify_late_joiner(
+    gb: GroupBuy, user: User, background_tasks: BackgroundTasks
+) -> None:
+    """MEH-3289: a join to an already-funded group gets the existing funded
+    email, to her alone. The group-wide send is latched (funded_notified_at,
+    MEH-1651) and never fires again, so without this she would never get the
+    «how to arrange your order» email the others got."""
+    if not user.email:
+        return
+    background_tasks.add_task(
+        send_funded_notifications,
+        None,
+        [str(user.email)],
+        str(gb.title),
+        gb.producer.name if gb.producer else "",
+        str(gb.id),
+        str(gb.producer_id),
+        test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+        late_joiner=True,
+    )
+
+
 @router.post("/{group_buy_id}/commit", status_code=201, response_model=None)
 @limiter.limit("20/minute")  # MEH-3022
 def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
@@ -308,7 +333,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
     # MEH-2484: a group buy whose page is 404 cannot be joined via a held link.
     if not gb or not _is_public(db, gb.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
-    if gb.status != "open":
+    # MEH-3289: a funded group keeps taking joins until full or past deadline.
+    was_funded = gb.status == "funded"
+    if gb.status not in ("open", "funded"):
         raise HTTPException(status_code=400, detail="קבוצת הרכישה אינה פתוחה להצטרפות")
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
@@ -351,7 +378,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
     # Auto-fund when min_participants reached
     new_count = current_count + 1
-    if new_count >= gb.min_participants:
+    if was_funded:
+        _notify_late_joiner(gb, current_user, background_tasks)
+    elif new_count >= gb.min_participants:
         gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
 
@@ -362,9 +391,10 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
 @router.delete("/{group_buy_id}/commit", status_code=200, response_model=None)
 @limiter.limit("20/minute")  # MEH-3022
-def cancel_commit(
+def cancel_commit(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3311 added background_tasks
     request: Request,  # required by slowapi (MEH-3022)
     group_buy_id: UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -404,6 +434,8 @@ def cancel_commit(
         #        allowed to flap, the notification is not. Clearing it re-arms
         #        the send, so re-crossing the threshold would re-spam every
         #        participant. The latch is deliberately one-way.
+        # MEH-3311: those who stayed are told once (its own one-way stamp).
+        notify_below_goal(db, gb, background_tasks, current_user.id)
     db.commit()
     return {"detail": "ההצטרפות בוטלה"}
 

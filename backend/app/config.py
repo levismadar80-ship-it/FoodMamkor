@@ -130,6 +130,14 @@ class Settings(BaseSettings):
     # App
     frontend_url: str = "http://localhost:3000"
 
+    # MEH-3305: admin passkeys (WebAuthn). The relying-party id is the bare
+    # domain the passkey is bound to (mehamakor.co.il / staging.mehamakor.online)
+    # and the origin is the exact https URL the browser reports. Either empty =
+    # the feature is off (local, vercel.app previews): admins sign in with
+    # their password only, as today. Not secrets — they are public names.
+    webauthn_rp_id: str = ""
+    webauthn_origin: str = ""
+
     # Anthropic (home-product moderation)
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-4-6"
@@ -171,6 +179,15 @@ class Settings(BaseSettings):
     # in Vercel, set together with this one (it is inlined at build time).
     rescue_bags_enabled: bool = False
     rescue_bags_cities: str = ""
+
+    # MEH-3393: monthly page-freshness email to owners + the Sunday admin
+    # digest of pages unconfirmed for 60 days. Off until
+    # PAGE_FRESHNESS_ENABLED=true is set in Railway; confirming a link and the
+    # admin stale filter work either way.
+    page_freshness_enabled: bool = False
+    # MEH-3296: on-site product ordering (stages 2a-4). Off everywhere until
+    # Sapir turns it on; the routers read it with getattr(..., False).
+    product_orders_enabled: bool = False
 
     # MEH-2890 (Sapir 10/11): the one account no admin can demote or delete.
     # It used to be a hard-coded address in admin_extra.py AND in the admin
@@ -261,6 +278,20 @@ def _load_settings() -> Settings:
             "is protected from demotion or deletion in this environment."
         )
         s.super_admin_email = ""
+
+    _frontend_url = s.frontend_url.strip()
+    if _is_production and (
+        not _frontend_url
+        or "localhost" in _frontend_url
+        or "127.0.0.1" in _frontend_url
+        or "staging" in _frontend_url.lower()
+    ):
+        raise RuntimeError(
+            "FRONTEND_URL must be the production site in production — it is "
+            f"{_frontend_url or '(empty)'!r}. Every link in every email is "
+            "built from it, so a localhost or staging value sends customers "
+            "there. Set it on the Railway production environment."
+        )
 
     return s
 

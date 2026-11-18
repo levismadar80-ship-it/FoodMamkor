@@ -129,7 +129,7 @@ describe("EmailTypoHint is wired in the public forms with an email field", () =>
     // RecommendClient left this list in MEH-2642: the form has no email field
     // any more (RecommendBusiness.test.jsx asserts the field is absent).
     ["app/[locale]/register/RegisterClient.jsx", '"register-email"', "email"],
-    ["app/[locale]/register/producer/RegisterProducerClient.jsx", '"producer-account-email"', "email"],
+    ["app/[locale]/register/producer/steps/AccountStep.jsx", '"producer-account-email"', "email"],
     ["components/DeliveryWaitlistForm.jsx", "{inputId}", ""],
   ])("%s → fieldId=%s", (file, id, setter) => {
     const src = readFileSync(path.join(__dirname, "..", file), "utf8");

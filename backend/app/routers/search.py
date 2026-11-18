@@ -27,7 +27,7 @@ from app.services.producer_listing import is_business  # MEH-2459
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
 from app.schemas.schemas import CategoryHit, ProducerHit, ProductHit, SearchOut
-from app.utils.hebrew_search import token_patterns, tokenize
+from app.utils.hebrew_search import layout_alternative, token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE
 
 logger = structlog.get_logger(__name__)
@@ -87,11 +87,37 @@ def smart_search(
     request: Request,
     q: str = Query("", max_length=200),
     limit: int = Query(8, ge=1, le=20),
+    # MEH-3415: «לחפש בכל זאת» — the client asks for the query exactly as
+    # typed, with no keyboard-layout re-read.
+    as_typed: bool = Query(False),
     db: Session = Depends(get_db),
 ) -> SearchOut:
     q_clean = (q or "").strip()
     if not q_clean:
         return _empty()
+    result = _search_once(db, q_clean, limit)
+    if _is_empty(result) and not as_typed:
+        # MEH-3415 — nothing for the query as typed: re-read it on the other
+        # keyboard layout ("sca" -> "דבש") and try once more. Only on a miss,
+        # so a real word with results is never rewritten; corrected_query tells
+        # the client which word the results are for.
+        alternative = layout_alternative(q_clean)
+        if alternative:
+            corrected = _search_once(db, alternative, limit)
+            if not _is_empty(corrected):
+                corrected.corrected_query = alternative
+                return corrected
+    return result
+
+
+def _is_empty(result: SearchOut) -> bool:
+    return not (
+        result.producers or result.products or result.cities or result.categories
+    )
+
+
+def _search_once(db: Session, q_clean: str, limit: int) -> SearchOut:
+    """The four grouped sub-queries for one cleaned query string."""
     # MEH-1664 — tokenise once; every sub-query below AND-s the same per-token
     # conditions over its own column set. q_clean stays the raw cleaned query
     # so the relevance boosts keep comparing against what the user typed.
@@ -134,6 +160,7 @@ def smart_search(
         .options(joinedload(Product.producer))
         .join(Producer, Producer.id == Product.producer_id)
         .filter(is_business())  # MEH-2459
+        .filter(Product.is_draft.is_(False))  # MEH-2312: drafts are not public
         .filter(*_token_conditions(tokens, [Product.name, Product.description]))
         .order_by((Product.name != q_clean), Product.name.asc())
         .limit(limit)

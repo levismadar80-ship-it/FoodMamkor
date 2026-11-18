@@ -22,6 +22,7 @@ import {
   BRAND_NAME_LATIN,
   BRAND_SAME_AS,
   CANONICAL_SENTENCE,
+  SITE_DESCRIPTION,
 } from "./constants";
 import { createTranslator } from "next-intl";
 import he from "../messages/he.json";
@@ -153,8 +154,28 @@ export function buildDescription(producer, locale = "he") {
  */
 export function ogImage(url) {
   if (!url || typeof url !== "string") return null;
-  if (!url.includes("res.cloudinary.com")) return url;
+  let host;
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return url;
+  }
+  // MEH-3419: the host itself, not a substring anywhere in the URL.
+  if (host !== "res.cloudinary.com") return url;
   return url.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/");
+}
+
+/**
+ * MEH-3329: the branded link-preview card of a business page, or null when it
+ * has no slug (the route is keyed by slug). `v` = updated_at in epoch seconds,
+ * so an edited page gets a new URL and Facebook/WhatsApp caches cannot keep
+ * the old card.
+ */
+export function producerOgCardUrl(producer) {
+  if (!producer?.slug) return null;
+  const ts = Date.parse(producer.updated_at || "");
+  const v = Number.isFinite(ts) ? `?v=${Math.floor(ts / 1000)}` : "";
+  return `/og/business/${encodeURIComponent(producer.slug)}.png${v}`;
 }
 
 /**
@@ -582,10 +603,10 @@ export function buildJsonLd(producer, locale = "he") {
  * carries address/geo/openingHours semantics that would be false here — the
  * producers each have their own FoodEstablishment node (see buildJsonLd).
  *
- * `description` is CANONICAL_SENTENCE (lib/constants.js) — the same sentence
- * public/llms.txt carries, so every machine-identity surface says one thing.
- * MEH-2192 AC; it previously read SITE_DESCRIPTION (the per-page meta
- * description), which left two brand sentences broadcasting side by side.
+ * `description` is SITE_DESCRIPTION (lib/constants.js) — the same sentence
+ * public/llms.txt and every meta description carry, so every surface that
+ * describes the site says one thing (MEH-3424 / ADR-043). CANONICAL_SENTENCE,
+ * which held this field from MEH-2192 until then, is the `slogan`.
  */
 export function buildOrganizationNode() {
   return {
@@ -596,7 +617,9 @@ export function buildOrganizationNode() {
     // on; same constant the sitemap/share surfaces already use (MEH-476).
     alternateName: BRAND_NAME_LATIN,
     url: SITE_URL,
-    description: CANONICAL_SENTENCE,
+    description: SITE_DESCRIPTION,
+    // MEH-3424 / ADR-043: the brand sentence moved here from `description`.
+    slogan: CANONICAL_SENTENCE,
     logo: {
       "@type": "ImageObject",
       url: `${SITE_URL}/logo.png`,
@@ -673,7 +696,10 @@ export function buildProducerMetadata(producer, locale = "he") {
 
   const description = buildDescription(producer, locale);
   const pageUrl = buildPageUrl(producer);
-  const img = ogImage(producer.images?.[0]);
+  // MEH-3329: its own photo first; a business with no photo gets its branded
+  // card (name, type · city, brand pill — app/og/business/[file]/route.js)
+  // instead of the generic site image.
+  const img = ogImage(producer.images?.[0]) || producerOgCardUrl(producer);
 
   return {
     title: buildTitle(producer, locale),
@@ -996,13 +1022,14 @@ export function buildOrganizerJsonLd(organizer, locale = "he") {
 }
 
 /**
- * MEH-2478: the ONE rule for "this group buy can still be joined" — open AND
- * before its deadline. Nothing closes an open group buy when its deadline
- * passes (group_buys.py, OWNER_TRANSITIONS note), so status alone is not
- * enough. Shared by the sitemap and the Offer availability below.
+ * MEH-2478: the ONE rule for "this group buy can still be joined" — open or
+ * funded (MEH-3289: a funded group takes joiners until full) AND before its
+ * deadline. The deadline job (MEH-3287) runs once a day, so status alone is
+ * not enough. Shared by the sitemap and the Offer availability below.
  */
 export function isGroupBuyLive(groupBuy, now = new Date()) {
-  if (groupBuy?.status !== "open" || !groupBuy.deadline) return false;
+  const joinable = groupBuy?.status === "open" || groupBuy?.status === "funded";
+  if (!joinable || !groupBuy.deadline) return false;
   const deadline = parseNaiveUtc(groupBuy.deadline);
   return deadline != null && deadline > now;
 }

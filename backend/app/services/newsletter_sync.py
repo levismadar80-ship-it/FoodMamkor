@@ -26,6 +26,7 @@ import threading
 from app.config import settings
 from app.sentry import capture_background_exception
 from app.services.email import _is_reserved_domain, _mask
+from app.services.outbound_guard import newsletter_sync_allowed
 from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
@@ -81,16 +82,24 @@ def _contact_exists(resend: Any, email: str) -> bool:
 
 
 def _skip(email: str) -> bool:
+    # MEH-3402: Resend Contacts is the list real Broadcasts go to. Outside
+    # production nothing is added to it or deleted from it.
+    if not newsletter_sync_allowed():
+        logger.info("[NEWSLETTER] Resend sync skipped outside production")
+        return True
     return not email or _is_reserved_domain(email)
 
 
-def sync_subscribe(email: str) -> None:
+def sync_subscribe(email: str, *, resubscribe: bool = False) -> None:
     """Add `email` to Resend and to the newsletter segment.
 
-    An EXISTING contact keeps its subscription status: POST /newsletter is
-    anonymous single opt-in, so a third party could otherwise submit someone
-    else's address and undo their opt-out (anti-spam §30A). Re-opting in after
-    an unsubscribe is done in the Resend dashboard.
+    By default an EXISTING contact keeps its subscription status, so an
+    anonymous request can never undo someone's opt-out (anti-spam §30A). That
+    default is what POST /newsletter's back-fill of an existing row uses.
+
+    MEH-3300: `resubscribe=True` is passed only by POST /newsletter/confirm.
+    A click on the confirm link mailed to the address is the owner's own,
+    fresh consent, so there — and only there — an earlier opt-out is cleared.
     """
     if _skip(email):
         return
@@ -104,6 +113,8 @@ def sync_subscribe(email: str) -> None:
         # opt-out. An existing contact only joins the segment; its status is
         # never touched. A 404 is the only answer that leads to `create`.
         if _contact_exists(resend, email):
+            if resubscribe:
+                resend.Contacts.update({"email": email, "unsubscribed": False})
             resend.Contacts.Segments.add({"email": email, "segment_id": segment_id})
         else:
             resend.Contacts.create(

@@ -4,6 +4,9 @@ on-site sign-ups it stores.
 
 Purpose:  - registered_counts(): active on-site sign-ups per item, in ONE query
             for a whole list (the list routes would otherwise go N+1);
+          - refuse_too_few_places(): MEH-2871 — the places cannot drop
+            below the people already signed up on the site (MEH-3310: a
+            cancelling edit is exempt);
           - method_problem(): the prerequisite each method needs before an
             owner may pick it — a mobile for whatsapp (a landline opens wa.me
             with no recipient, the bug that started this), a phone for phone,
@@ -12,7 +15,7 @@ Does NOT: decide visibility or capacity (routers/registrations.py does), or
           send anything.
 Related:  app/routers/registrations.py, app/routers/events.py,
           app/routers/experiences.py
-History:  MEH-2763 (creation)
+History:  MEH-2763 (creation); MEH-3310 + MEH-2871 (one cap rule, 422)
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from typing import Any
 from collections.abc import Iterable
 from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -31,7 +35,8 @@ from app.utils.phone import canonical_il_msisdn
 def registered_counts(
     db: Session, *, event_ids: Iterable[UUID] = (), experience_ids: Iterable[UUID] = ()
 ) -> dict[UUID, int]:
-    """{item id: active sign-ups}. Items with none are absent (read as 0)."""
+    """{item id: places taken by active sign-ups (sum of party_size)}. Items
+    with none are absent (read as 0)."""
     out: dict[UUID, int] = {}
     for column, ids in (
         (Registration.event_id, list(event_ids)),
@@ -40,13 +45,49 @@ def registered_counts(
         if not ids:
             continue
         rows = (
-            db.query(column, func.count(Registration.id))
+            # MEH-3315: a sign-up takes party_size places, not one.
+            db.query(column, func.sum(Registration.party_size))
             .filter(column.in_(ids), Registration.status == "registered")
             .group_by(column)
             .all()
         )
         out.update({item_id: int(n) for item_id, n in rows})
     return out
+
+
+def refuse_too_few_places(
+    db: Session,
+    changes: dict[str, Any],
+    *,
+    event_id: UUID | None = None,
+    experience_id: UUID | None = None,
+    stored_max: Any = None,
+) -> None:
+    """MEH-2871 (Sapir 18/11): a host may not set fewer places than the
+    sign-ups already taken — the extra sign-ups had no way out. Eventbrite and
+    Meetup refuse the same edit. Only an edit that sends ``max_participants``
+    is checked; None (unlimited) is always allowed. A value equal to the
+    stored one is not a change — the forms re-send every field on each save,
+    and a row cut below its sign-ups before this rule must stay editable."""
+    new_max = changes.get("max_participants")
+    if new_max is None or new_max == stored_max:
+        return
+    # MEH-3310: an edit that also cancels the item cancels every sign-up with
+    # it (MEH-3227), so its places no longer have anyone to strand.
+    if changes.get("is_active") is False:
+        return
+    item_id = event_id or experience_id
+    counts = registered_counts(
+        db,
+        event_ids=[event_id] if event_id else (),
+        experience_ids=[experience_id] if experience_id else (),
+    )
+    taken = counts.get(item_id, 0) if item_id else 0
+    if int(new_max) < taken:
+        raise HTTPException(
+            status_code=422,
+            detail=f"כבר נרשמו {taken}, ולכן אי אפשר להגדיר פחות מקומות מזה.",
+        )
 
 
 def method_problem(

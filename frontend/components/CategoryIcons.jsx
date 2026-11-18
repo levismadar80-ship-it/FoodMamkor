@@ -42,6 +42,7 @@ import {
   Wine,
   HandSoap,
   FlowerLotus,
+  CoffeeBean,
 } from "@phosphor-icons/react";
 
 /* ---------- vendored line shell (Tabler MIT, viewBox 24, normalized) ----------
@@ -190,4 +191,6 @@ export const CATEGORY_ICONS = {
   "קוסמטיקה טבעית": Perfume,
   "צמחי מרפא ותוספים": FlowerLotus,
   "נרות וארומה": Candle,
+  // MEH-3401: roasteries only, so the bean, not a café cup.
+  "קפה": CoffeeBean,
 };

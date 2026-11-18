@@ -30,6 +30,7 @@ import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phos
 import { chipIcon } from "@/lib/chip-icons";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import api from "@/lib/api";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -104,6 +105,14 @@ function focusFirstInvalidProductField(errors, idPrefix) {
   const el = document.getElementById(`${idPrefix}-${PRODUCT_FIELD_ID_SUFFIX[first]}`);
   el?.focus();
   el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+}
+
+// MEH-3261: the backend's own Hebrew sentence for a refused save (409 cap,
+// 422 AI REJECTED). A Pydantic 422 carries a list, which yields null here.
+function serverSentence(err) {
+  const status = err?.response?.status;
+  if (status !== 409 && status !== 422) return null;
+  return detailToMessage(err.response.data?.detail);
 }
 
 function clearFieldError(setErrors, field) {
@@ -284,7 +293,7 @@ export default function ProductsSection({
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(tErr("upload_size"));
       e.target.value = "";
       return;
@@ -366,10 +375,8 @@ export default function ProductsSection({
     } catch (err) {
       // MEH-3022: the per-business cap answers 409 with the approved Hebrew
       // sentence — show it instead of the generic "save failed".
-      setError(
-        (err?.response?.status === 409 && detailToMessage(err.response.data?.detail)) ||
-          tErr("save_failed"),
-      );
+      // MEH-3261: so does the AI check's 422 (REJECTED) on an approved business.
+      setError(serverSentence(err) || tErr("save_failed"));
     } finally {
       setSaving(false);
     }
@@ -410,7 +417,7 @@ export default function ProductsSection({
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(tErr("upload_size"));
       e.target.value = "";
       return;
@@ -483,8 +490,8 @@ export default function ProductsSection({
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
       setEditingId(null);
       showToast.success(t("toast_updated")); // MEH-1446
-    } catch {
-      setError(tErr("save_failed"));
+    } catch (err) {
+      setError(serverSentence(err) || tErr("save_failed")); // MEH-3261
     } finally {
       setSavingEdit(false);
     }

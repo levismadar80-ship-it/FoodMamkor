@@ -73,3 +73,16 @@ def redact_url_tokens(value: str | None) -> str | None:
     for pattern, replacement in _URL_TOKEN_PATTERNS:
         value = pattern.sub(replacement, value)
     return value
+
+
+# ---------------------------------------------------------------------------
+# MEH-3219 (B17) — a visitor's location is kept to ~1 km
+# ---------------------------------------------------------------------------
+
+
+def round_coord(value: float | None) -> float | None:
+    """Round a visitor-supplied latitude/longitude to 2 decimals (at most
+    ~0.7 km off). The frontend already rounds before it sends; this is the
+    server half, so a client that skips it still never has its exact point
+    used in a query or carried further. The privacy page promises it."""
+    return None if value is None else round(value, 2)

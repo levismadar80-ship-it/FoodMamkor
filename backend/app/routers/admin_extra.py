@@ -11,13 +11,14 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
-from sqlalchemy import func
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
+from sqlalchemy import func, tuple_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
-from app.constants import LICENSE_REQUIRED_CATEGORIES
+from app.models.admin_ops import AdminAuditLog
+from app.services import admin_audit
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
 from app.models import (
@@ -59,6 +60,8 @@ from app.services.account_guards import (  # MEH-3248: moved here, re-exported
     is_super_admin,
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
+from app.services import indexnow  # MEH-2871
+from app.services.booking_cancellations import hide_business  # MEH-2871
 from app.services.category_slug import resolve_unique_slug
 from app.services.rescue_no_show import (
     NO_SHOW_BLOCK_AT,
@@ -181,6 +184,16 @@ def list_users(
     return out
 
 
+# Wording approved word for word (rulings 17/11 §א3) — do not edit here.
+_DEMOTE_LINKED_OWNER = (
+    "אי אפשר להוריד את ההרשאה כל עוד המשתמשת מקושרת לבית עסק. קודם מנתקים את הבעלות."
+)
+
+
+# NEW copy, waiting for Sapir's word-for-word OK (rule 22) — see the PR body.
+_PROMOTE_LINKED_OWNER = "אי אפשר לתת הרשאת אדמין למי שמקושרת לבית עסק."
+
+
 @router.put("/users/{user_id}/role", response_model=None)
 def update_user_role(
     user_id: UUID,
@@ -188,7 +201,17 @@ def update_user_role(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    target = db.query(User).filter(User.id == user_id).first()
+    # Row lock + fresh read (MEH-3376 review): a claim, a register-upgrade or
+    # an invite acceptance may link a business to this account between the
+    # read and the commit. Those flows lock and re-read the user, so with the
+    # lock here too the two cannot interleave into "admin with a business".
+    target = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .with_for_update()
+        .populate_existing()
+        .first()
+    )
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     # MEH-955: never assign role="producer" here. require_producer
@@ -209,14 +232,49 @@ def update_user_role(
         )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
+    # MEH-3376: a business must never be left linked to an account that cannot
+    # run it. Demoting to consumer keeps `producer_id`, so the business would
+    # stay live with no working owner. Refused, whatever the business status;
+    # the way out is «ניתוק בעלים» (detach), then this request passes.
+    # MEH-3376 (Sapir 17/11: «בעלת עסק לא יכולה להיות אדמינית»): this route was
+    # the one way an account with a business could become an admin —
+    # registration (auth.py) and claim (producer_claim.py) already refuse the
+    # other direction. An admin with a business loses her dashboard
+    # (require_producer gates on role) and cannot be detached later.
+    if data.role == "admin" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_PROMOTE_LINKED_OWNER)
+    if data.role == "consumer" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_DEMOTE_LINKED_OWNER)
+    admin_audit.note(user, before={"role": target.role}, after={"role": data.role})
     target.role = data.role  # type: ignore[assignment]
     db.commit()
     return {"detail": "Role updated", "role": target.role}
 
 
+def _business_left_ownerless(db: Session, target: User) -> Producer | None:
+    """The live business ``target`` owns, if blocking her leaves it with no
+    owner who can still sign in (MEH-2871). A co-owner keeps it up."""
+    if target.producer_id is None:
+        return None
+    producer = db.query(Producer).filter(Producer.id == target.producer_id).first()
+    if producer is None or producer.status != "approved":
+        return None
+    other_owner = (
+        db.query(User.id)
+        .filter(
+            User.producer_id == producer.id,
+            User.id != target.id,
+            User.is_blocked.is_not(True),
+        )
+        .first()
+    )
+    return None if other_owner else producer
+
+
 @router.post("/users/{user_id}/block", response_model=None)
 def block_user(
     user_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -226,8 +284,75 @@ def block_user(
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
     target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
+    admin_audit.note(user, after={"is_blocked": bool(target.is_blocked)})
+    # MEH-2871 (Sapir 18/11): blocking the only owner of a live business takes
+    # the business off the site, the way an admin pause does — otherwise it
+    # stayed live with nobody able to hand over a bag or answer a booking.
+    # Airbnb and Etsy hide a suspended account's listings the same way.
+    # Unblocking does not put it back: an admin un-pauses it, through the
+    # approval gates (admin.py toggle).
+    hidden = None
+    if target.is_blocked:
+        hidden = _business_left_ownerless(db, target)
+        if hidden is not None:
+            hide_business(db, hidden, background_tasks)
     db.commit()
-    return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
+    if hidden is not None:
+        indexnow.schedule(background_tasks, indexnow.producer_urls(hidden))
+    return {
+        "detail": "Blocked toggled",
+        "is_blocked": target.is_blocked,
+        "business_hidden": hidden is not None,
+    }
+
+
+@router.get("/audit-log", response_model=None)
+def list_audit_log(
+    limit: int = Query(50, ge=1, le=200),
+    before: datetime | None = None,
+    before_id: UUID | None = None,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3306: the admin audit log, newest first. `before` pages back by
+    `created_at`; with `before_id` too (the last row's id) it is a keyset
+    cursor on (created_at, id), so two rows sharing one created_at at a page
+    boundary are not skipped. The stored IP is not returned: it is kept for an
+    investigation, not for a list. `actor_email` is looked up in one query
+    for the page, and is None when that account no longer exists (actor_id
+    is not a FK, on purpose — models/admin_ops.py)."""
+    query = db.query(AdminAuditLog)
+    if before is not None and before_id is not None:
+        query = query.filter(
+            tuple_(AdminAuditLog.created_at, AdminAuditLog.id) < (before, before_id)
+        )
+    elif before is not None:
+        query = query.filter(AdminAuditLog.created_at < before)
+    rows = (
+        query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())
+        .limit(limit)
+        .all()
+    )
+    actor_ids = {r.actor_id for r in rows}
+    emails: dict[Any, str | None] = {}
+    if actor_ids:
+        rows_found = db.query(User.id, User.email).filter(User.id.in_(actor_ids)).all()
+        emails = {row_id: email for row_id, email in rows_found}
+    return {
+        "items": [
+            {
+                "id": str(r.id),
+                "actor_id": str(r.actor_id),
+                "actor_email": emails.get(r.actor_id),
+                "action": r.action,
+                "target_type": r.target_type,
+                "target_id": r.target_id,
+                "details": r.details,
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in rows
+        ]
+    }
 
 
 @router.delete("/users/{user_id}", response_model=None)
@@ -364,12 +489,12 @@ def update_category(
 ) -> CategoryOut | Category:
     """Rename / re-emoji a category. Two guards, both on the rename path only.
 
-    MEH-1571: `LICENSE_REQUIRED_CATEGORIES` (app/constants.py) pins a משרד
-    הבריאות licensing requirement to the category NAME, and
-    `license_validation.categories_require_license` resolves ids -> names ->
-    intersection at request time. Renaming a licensed row here therefore
-    dropped it out of the regulatory set silently — no error, no log, and the
-    next producer in that category was no longer asked for a license number.
+    MEH-1571: the licensing requirement used to be pinned to the category NAME
+    (`LICENSE_REQUIRED_CATEGORIES`), so renaming a licensed row dropped it out
+    of the regulatory set silently. Since MEH-3255 the row's own
+    `requires_license` column decides and a rename no longer changes the
+    answer, but the guard stays: a licensed row keeps its name so an admin
+    cannot relabel a regulated category into something it is not.
     The rename is refused; re-keying the taxonomy belongs in a reviewed,
     reversible Alembic revision (the MEH-927 pattern), which writes raw SQL and
     does not pass through this endpoint.
@@ -394,10 +519,10 @@ def update_category(
         # this one.
         if cat.is_system:
             raise HTTPException(status_code=422, detail=CATEGORY_SYSTEM_RENAME_ERROR_HE)
-        # Guard on the row's CURRENT name: that is the value the regulatory
-        # lookup matches on today. Checking the INCOMING name instead would
-        # invert the guard and let the bypass through.
-        if cat.name in LICENSE_REQUIRED_CATEGORIES:
+        # MEH-3255: the licence rule now reads the row's column, so a rename
+        # no longer moves a category out of it. The guard stays (a licensed
+        # category keeps its name, as before), keyed on the column.
+        if cat.requires_license:
             raise HTTPException(
                 status_code=422, detail=CATEGORY_LICENSE_RENAME_ERROR_HE
             )

@@ -693,6 +693,9 @@ SEND_NAMES = frozenset(
         "send_email",
         "send_text",
         "send_template",
+        # MEH-3296: the outcome-returning twins the order outbox uses.
+        "send_template_result",
+        "send_email_result",
         "_send_email",
         "_send_notification_email",
         "_send_whatsapp",
@@ -946,10 +949,26 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "newsletter sign-up — no business or account",
     ),
+    ("routers/marketing.py", "_send_newsletter_confirm", "send_email"): (
+        1,
+        NONE,
+        "newsletter double opt-in confirm link (MEH-3300) — no business or account",
+    ),
     ("routers/marketing.py", "_send_contact_email", "send_email"): (
         1,
         NONE,
         "public contact form",
+    ),
+    # --- MEH-3296: the on-site order outbox (business and buyer alike) ---
+    ("services/product_order_outbox.py", "_wa.send", "send_template_result"): (
+        1,
+        BUS,
+        "producer.is_test or owner.is_test or buyer.is_test (_compose)",
+    ),
+    ("services/product_order_outbox.py", "_mail.send", "send_email_result"): (
+        1,
+        OWN,
+        "producer.is_test or owner.is_test or buyer.is_test (_compose)",
     ),
     ("routers/producer_me_review.py", "_send_whatsapp_otp", "send_template"): (
         1,
@@ -960,6 +979,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         BUS,
         "producer.is_test — admin mail about a business page",
+    ),
+    ("routers/report_info.py", "report_review", "send_email"): (
+        1,
+        BUS,
+        "producer.is_test — admin mail about a reported review (MEH-3260)",
     ),
     ("routers/whatsapp_webhook.py", "_maybe_process_optout", "send_text"): (
         1,
@@ -990,6 +1014,14 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test — producer.is_test or user.is_test, captured pre-commit",
     ),
+    # MEH-3256 (D9): «ניתוק בעלים» tells the former owner. Its one caller,
+    # detach_owner, passes producer.is_test or the owner's is_test (the
+    # wrapper-caller walk below holds it to passing test_cause).
+    ("services/owner_detach.py", "send_owner_detached_email", "send_email"): (
+        1,
+        OWN,
+        "wrapper param ← detach_owner's test_cause",
+    ),
     # --- auth_emails: a user's own auth action ---
     ("services/auth_emails.py", "send_reset_email", "send_email"): (
         1,
@@ -1015,6 +1047,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         AUTH,
         "wrapper param ← user.is_test captured before delete",
+    ),
+    # MEH-3104: the notice to the OLD address after an email change.
+    ("services/auth_emails.py", "send_email_changed_notice", "send_email"): (
+        1,
+        AUTH,
+        "wrapper param ← user.is_test (users_me._queue_email_change_mails)",
     ),
     # MEH-2974: the invite itself. There is no `users` row yet — the whole
     # point of the flow — so the only is_test signal available is the
@@ -1153,10 +1191,26 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "aggregate admin digest; test rows are filtered out by the query (MEH-3147)",
     ),
+    (
+        "services/billing_start_signal.py",
+        "send_billing_start_signal",
+        "send_email",
+    ): (
+        1,
+        NONE,
+        "aggregate admin email; billing_summary excludes test businesses (MEH-3413)",
+    ),
     ("services/auto_reply_watchdog.py", "run_watchdog", "send_template"): (
         1,
         NONE,
         "auto-reply to an inbound WhatsApp sender",
+    ),
+    # MEH-3332: an ops alert to the admin about an overdue background job —
+    # about the system, not about any business or user, so no test cause.
+    ("services/job_staleness.py", "_alert", "send_email"): (
+        1,
+        NONE,
+        "ops alert to the admin; no business or user row behind it",
     ),
     ("services/rating_dispatcher.py", "_default_sender", "send_text"): (
         1,
@@ -1167,6 +1221,30 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         OWN,
         "p.is_test or user.is_test",
+    ),
+    (
+        "services/approved_edit_moderation.py",
+        "notify_admin_content_edit",
+        "send_text",
+    ): (1, OWN, "wrapper param ← _test_cause(producer, user) (MEH-3261)"),
+    (
+        "services/approved_edit_moderation.py",
+        "notify_admin_content_edit",
+        "send_email",
+    ): (1, OWN, "same"),
+    ("services/page_freshness.py", "send_freshness_emails", "send_email"): (
+        1,
+        OWN,
+        "cand.test_business or owner.is_test",
+    ),
+    (
+        "services/page_freshness_digest.py",
+        "send_stale_digest",
+        "send_email",
+    ): (
+        1,
+        NONE,
+        "aggregate admin digest; test rows are filtered out by the query",
     ),
     ("services/pending_nudge.py", "send_pending_nudges", "send_email"): (
         1,
@@ -1294,6 +1372,26 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_business_reservation_email",
         "send_email",
     ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
+    (
+        "services/group_buy_goal_flap.py",
+        "send_below_goal_emails",
+        "send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3311)"),
+    (
+        "services/registration_emails.py",
+        "send_registration_reminder",
+        "send_email",
+    ): (1, CON, "wrapper param ← is_test_item(item) (MEH-3312)"),
+    (
+        "services/registration_emails.py",
+        "send_waitlist_confirmation",
+        "send_email",
+    ): (1, CON, "wrapper param ← producer.is_test / host_test_cause(host) (MEH-3314)"),
+    (
+        "services/registration_emails.py",
+        "send_waitlist_offer",
+        "send_email",
+    ): (1, CON, "wrapper param ← producer.is_test (MEH-3314)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",

@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from app.models import Event, Experience, Producer, ProducerReview, Registration
 from app.models.models import GroupBuy
 from app.utils.clock import utc_now
+from app.services.review_conflicts import conflict_free  # MEH-3258
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +43,14 @@ class OwnerAttention(TypedDict):
     unreplied_reviews: int
     new_signups: list[SignupItem]
     funded_group_buys: int
+    pending_orders: int
 
 
 def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
     # Same visibility as the public list (reviews.py `list_reviews`): a hidden
     # review, or any review of an organizer (ADR-036), is not on the page, so
-    # it is not waiting for an answer.
+    # it is not waiting for an answer. MEH-3258: nor is a review whose author
+    # is in conflict (owns this business or a competitor) — off the page too.
     n: Any = (
         db.query(func.count(ProducerReview.id))
         .join(Producer, Producer.id == ProducerReview.producer_id)
@@ -56,6 +59,7 @@ def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
             ProducerReview.is_hidden.is_(False),
             ProducerReview.reply.is_(None),
             Producer.kind == "producer",
+            conflict_free(),
         )
         .scalar()
     )
@@ -103,6 +107,24 @@ def _funded_group_buys(db: Session, producer_id: UUID) -> int:
     return int(n or 0)
 
 
+def _pending_orders(db: Session, producer_id: UUID) -> int:
+    # MEH-3316: on-site order requests waiting for her answer. Zero while
+    # ordering is off on this server, so the row never shows for a dark feature.
+    from app.models.product_orders import ProductOrder
+    from app.routers.product_orders import product_orders_enabled
+
+    if not product_orders_enabled():
+        return 0
+    n: Any = (
+        db.query(func.count(ProductOrder.id))
+        .filter(
+            ProductOrder.producer_id == producer_id, ProductOrder.status == "pending"
+        )
+        .scalar()
+    )
+    return int(n or 0)
+
+
 def owner_attention(
     db: Session, producer_id: UUID, host_user_id: Any
 ) -> OwnerAttention:
@@ -117,7 +139,12 @@ def owner_attention(
     except Exception:  # noqa: BLE001 — logged; the dashboard must still load
         logger.exception("owner_attention failed for producer %s", producer_id)
         db.rollback()
-        return {"unreplied_reviews": 0, "new_signups": [], "funded_group_buys": 0}
+        return {
+            "unreplied_reviews": 0,
+            "new_signups": [],
+            "funded_group_buys": 0,
+            "pending_orders": 0,
+        }
 
 
 def _counts(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention:
@@ -125,4 +152,5 @@ def _counts(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention
         "unreplied_reviews": _unreplied_reviews(db, producer_id),
         "new_signups": _new_signups(db, producer_id, host_user_id),
         "funded_group_buys": _funded_group_buys(db, producer_id),
+        "pending_orders": _pending_orders(db, producer_id),
     }

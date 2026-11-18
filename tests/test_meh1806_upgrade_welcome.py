@@ -29,6 +29,7 @@ import pytest
 from app.config import settings
 from app.models import User
 from app.routers import auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 from tests.conftest import (
     auth_header,
     make_user,
@@ -37,6 +38,8 @@ from tests.conftest import (
 
 GOOGLE_SUB = "google-sub-1806"
 PATCH_TARGET = "app.routers.auth._send_welcome_email"
+# MEH-3293: business registration moved to its own module; patch both.
+PATCH_TARGET_REG = "app.routers.auth_register_producer._send_welcome_email"
 
 
 @pytest.fixture
@@ -53,6 +56,16 @@ def google_verified(monkeypatch):
             "picture": None,
         },
     )
+    monkeypatch.setattr(
+        reg_router,
+        "_verify_google_token",
+        lambda token: {
+            "sub": GOOGLE_SUB,
+            "email": "oauth_owner@example.com",
+            "name": "דנה",
+            "picture": None,
+        },
+    )
 
 
 @pytest.fixture
@@ -60,7 +73,9 @@ def welcome(monkeypatch):
     """Count welcome dispatches; silence the verify sender."""
     mock = Mock()
     monkeypatch.setattr(PATCH_TARGET, mock)
+    monkeypatch.setattr(PATCH_TARGET_REG, mock)
     monkeypatch.setattr("app.routers.auth._send_verify_email", lambda *a, **kw: None)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None)
     return mock
 
 
@@ -221,6 +236,7 @@ def test_upgrade_path_still_sends_no_verify_email(client, db, monkeypatch):
     # from the request turned the assertion below into a NameError that masks
     # the real error. monkeypatch reverts automatically and has no such gap.
     monkeypatch.setattr("app.routers.auth._send_verify_email", verify)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", verify)
 
     resp = client.post(
         "/auth/register/producer",

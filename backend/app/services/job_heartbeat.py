@@ -52,12 +52,20 @@ RETENTION_PURGE_CRON = "30 2 * * *"  # MEH-2303
 # 08:00/09:00 Israel: an expired group is told in the morning, not at night.
 GROUP_BUY_EXPIRY_CRON = "0 6 * * *"  # MEH-3287
 ADMIN_PENDING_REMINDER_CRON = "0 5 * * *"  # 07:00/08:00 Israel (MEH-3147)
+# The 1st–3rd of the month, after the previous month closed on the Israel
+# clock. Three mornings because there is no persistent jobstore: a restart over
+# the 1st would otherwise lose the month. The service sends once per month.
+BILLING_START_SIGNAL_CRON = "0 5 1-3 * *"  # MEH-3413
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
+PRODUCT_ORDERS_INTERVAL_MINUTES = 2  # MEH-3296: order expiry + outbox tick
 # Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the
 # schedule so DST moves the UTC fire time, in the trigger and the monitor alike.
 WEEKLY_OWNER_SUMMARY_CRON = "0 8 * * sun"
 WEEKLY_OWNER_SUMMARY_TZ = "Asia/Jerusalem"
+# MEH-3312: the evening-before reminder, 17:00 on the Israel clock.
+REGISTRATION_REMINDER_CRON = "0 17 * * *"
+REGISTRATION_REMINDER_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -91,6 +99,10 @@ def interval_monitor_config(minutes: int) -> dict[str, Any]:
 # (MEH-3350): the account holds exactly ONE cron monitor, `auto-reply-watchdog`,
 # because the Developer ($0) plan allows one and it is at 100% (MEH-3332).
 #
+# MEH-3332 (18/11): "unmonitored" below means by SENTRY. The seven are now
+# watched for free instead: every run that returns is recorded, and
+# services/job_staleness.py emails the admin when one stops running.
+#
 # The other seven send check-ins for a monitor that was never created. That is not
 # a code bug to fix here — it is a plan limit, and Sapir's to decide. It IS a
 # fact the code used to hide: @heartbeat on a job reads as "this job is
@@ -112,6 +124,13 @@ UNMONITORED_SLUGS = frozenset(
         # separately, so the slug landed unclassified and pytest went red.
         # No Sentry monitor exists for it (plan limit, MEH-3332).
         "group-buy-expiry-daily",
+        # MEH-3312: the evening-before reminder. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "registration-reminder-daily",
+        # MEH-3413: monthly billing-start signal. Same plan limit (MEH-3332).
+        "billing-start-signal-monthly",
+        # MEH-3296: on-site orders tick; flag-gated, no Sentry monitor (plan limit).
+        "product-orders-tick",
     }
 )
 
@@ -175,6 +194,11 @@ def heartbeat(
             try:
                 job()
                 status = "ok"
+                # MEH-3332: the free monitor. Sentry's $0 plan holds one cron
+                # monitor; job_staleness emails the admin about the others.
+                from app.services.job_staleness import record_ok
+
+                record_ok(slug)
             finally:
                 _safe_checkin(
                     monitor_slug=slug,
@@ -184,6 +208,9 @@ def heartbeat(
                     monitor_config=monitor_config,
                 )
 
+        # MEH-3332: job_staleness reads these off the registered jobs.
+        run.heartbeat_slug = slug  # type: ignore[attr-defined]
+        run.heartbeat_config = monitor_config  # type: ignore[attr-defined]
         return run
 
     return decorate

@@ -34,7 +34,8 @@
 ## 1. מטריצת קטגוריה ← זכאות ← מסמך מזכה
 
 הקטגוריות והסיווג מיושרים ל-`backend/app/constants.py:LICENSE_REQUIRED_CATEGORIES`
-(הרשימה האוכפת, post-MEH-743 — פיצול דבש) ולנספח א'. עמודת "מסמך מזכה"
+(הרשימה שממלאת את העמודה `categories.requires_license` לקטגוריות הזרע, post-MEH-743 — פיצול דבש) ולנספח א'.
+מאז MEH-3255 האכיפה קוראת את העמודה; קטגוריה שאדמין יוצרת מקבלת את התשובה שלה בטופס. עמודת "מסמך מזכה"
 חלה רק על שאיפה לתג "מאומת" (שכבה 1); קטגוריה פטורה יכולה להיוותר ב"מוצהר"
 ללא כל מסמך.
 
@@ -218,7 +219,7 @@
 - [ADR-022 — מודל רישוי דו-שכבתי (מאומת / מוצהר)](./decisions/ADR-022-two-tier-licensing-model.md) — ההחלטה האב.
 - [תדריך עורך/ת הדין — מודל רישוי דו-שכבתי, נספח א'](./legal/2026-06-lawyer-brief-licensing-tiers.md) — מקור הסיווג הרגולטורי + שלוש ההשלכות המוצריות.
 - [MEH-759](https://linear.app/mehamakor/issue/MEH-759) — עמודות audit להצהרת שכבה 2 (`declared_at` / `declaration_version`) — scope נפרד מהתיעוד הידני כאן.
-- `backend/app/constants.py` → `LICENSE_REQUIRED_CATEGORIES` — רשימת האכיפה (מקור האמת לעמודת הזכאות).
+- `categories.requires_license` — מקור האמת לעמודת הזכאות (MEH-3255); `backend/app/constants.py` → `LICENSE_REQUIRED_CATEGORIES` ממלא אותה לקטגוריות הזרע.
 - MEH-534 — עמוד "תהליך הקבלה" יצרוך מטריצה זו כתוכן ציבורי (downstream).
 
 ---

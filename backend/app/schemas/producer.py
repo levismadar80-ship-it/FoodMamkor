@@ -140,6 +140,10 @@ class ProducerAdminCreate(BaseModel):
     contact_name: SanitizedPersonNameField | None = None
     description: str | None = None
     short_description: str | None = None
+    owner_bio: str | None = None  # MEH-3338
+    # MEH-3339 (review): the admin form shows these on create too.
+    secondary_phone: str | None = None
+    secondary_phone_label: str | None = Field(default=None, max_length=30)
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -205,6 +209,13 @@ class ProducerAdminCreate(BaseModel):
     def _sanitize_short_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
+    # MEH-3338: the admin fills "מאחורי העסק" when she builds a page on the
+    # owner's behalf. Same sanitize + 300 cap as ProducerUpdate.owner_bio.
+    @field_validator("owner_bio")
+    @classmethod
+    def _sanitize_owner_bio(cls, v: str | None) -> str | None:
+        return sanitize_text(v, max_length=300)
+
     @field_validator("admin_notes")
     @classmethod
     def _sanitize_admin_notes(cls, v: str | None) -> str | None:
@@ -226,6 +237,23 @@ class ProducerAdminCreate(BaseModel):
     @classmethod
     def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
+
+    # MEH-3339 (review): same rules as ProducerUpdate on the create path.
+    @field_validator("secondary_phone")
+    @classmethod
+    def _validate_secondary_phone(cls, v: str | None) -> str | None:
+        return _phone_validator(v)
+
+    @field_validator("secondary_phone_label")
+    @classmethod
+    def _sanitize_secondary_phone_label(cls, v: str | None) -> str | None:
+        return sanitize_text(v, max_length=30) or None
+
+    @model_validator(mode="after")
+    def _create_label_needs_a_number(self) -> Self:
+        if self.secondary_phone_label and not self.secondary_phone:
+            raise ValueError("לתווית של הטלפון הנוסף צריך גם מספר")
+        return self
 
     @field_validator("whatsapp_group")
     @classmethod
@@ -344,6 +372,10 @@ class ProducerUpdate(BaseModel):
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None
+    # MEH-3339: an optional second number + its short label ("להזמנות").
+    # Every CTA stays on `phone`; this is shown as one quiet text line.
+    secondary_phone: str | None = None
+    secondary_phone_label: str | None = Field(default=None, max_length=30)
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
@@ -652,6 +684,20 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
+
+    # MEH-3339: same format rule as `phone`; the label is plain text.
+    @field_validator("secondary_phone")
+    @classmethod
+    def _validate_secondary_phone(cls, v: str | None) -> str | None:
+        return _phone_validator(v)
+
+    @field_validator("secondary_phone_label")
+    @classmethod
+    def _sanitize_secondary_phone_label(cls, v: str | None) -> str | None:
+        return sanitize_text(v, max_length=30) or None
+
+    # MEH-3339: the number/label pair is judged on the MERGED state in the
+    # PUT handlers (routers/producer_me.py:reconcile_secondary_phone), not here.
 
     @field_validator("whatsapp_group")
     @classmethod

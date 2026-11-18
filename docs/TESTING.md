@@ -50,7 +50,7 @@ No extra secrets needed — only the auto-provided `GITHUB_TOKEN`.
 
 GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older pending E2E job is cancelled by a newer one. A `cancelled` E2E on a PR therefore means "superseded in the queue", not a pass and not a failure (workflow rule 21): re-run it when the queue clears. E2E carries no merge vote, so this never blocks a merge.
 
-**On a PR, E2E runs only with the `run-e2e` label (MEH-2779).** Running it on every push of every PR, behind that one-at-a-time queue, made jobs wait up to 14 hours (measured 4–6/11/2026), and most were cancelled before anyone read them. Now a PR gets the suite when someone adds the `run-e2e` label (and on every later push while the label stays). Adding any other label does not start it. A push to `staging` still runs it; a burst of merges collapses to one running and one pending run (workflow-level group `e2e-staging-push`). A UI PR that needs the VRT verdict (workflow rule 23) adds the label once its code is ready.
+**On a PR, E2E runs when the diff touches the frontend or backend paths, or with the `run-e2e` label (MEH-2956; label-only from MEH-2779 until then).** `E2E gate` then requires `success` from a suite the paths said should run: `skipped` or `cancelled` no longer pass. The history of the label-only period follows. Running it on every push of every PR, behind that one-at-a-time queue, made jobs wait up to 14 hours (measured 4–6/11/2026), and most were cancelled before anyone read them. Now a PR gets the suite when someone adds the `run-e2e` label (and on every later push while the label stays). Adding any other label does not start it. A push to `staging` still runs it; a burst of merges collapses to one running and one pending run (workflow-level group `e2e-staging-push`). A UI PR that needs the VRT verdict (workflow rule 23) adds the label once its code is ready.
 
 ### Adding a new test
 
@@ -65,7 +65,7 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 `frontend/e2e/golden/` walks seven seeded personas on **staging**, one spec per persona, in order (`01-g1` … `07-a1`). The persona table is `frontend/e2e/golden/personas.ts`; the accounts are created by `seed_demo_business.py --golden` (see [DEPLOYMENT.md](./DEPLOYMENT.md), "Golden-path personas").
 
 - **Not in the default suite.** The project is defined only when the command line says `--project=golden` (`frontend/e2e/golden-selection.ts`), and every other project ignores `e2e/golden/`. A bare `npx playwright test` (what CI runs) lists the same tests as before. Guard: `frontend/__tests__/GoldenProjectSelection.test.js`.
-- **Logins are serial**, one worker, each through `withRateLimitRetry` (`e2e/login-retry.ts`, MEH-2895): `/auth/login` is 5/minute per IP. A golden-only run skips global-setup's demo-role logins. Never run it while an E2E job is running on staging.
+- **Logins are serial**, one worker, each through `withRateLimitRetry` (`e2e/login-retry.ts`, MEH-2895): `/auth/login` is 5/minute per IP, plus 10 failed attempts per address in 15 minutes (MEH-3372; a successful login is not counted). A golden-only run skips global-setup's demo-role logins. Never run it while an E2E job is running on staging.
 - **Read-mostly and self-cleaning.** What a spec creates (a product, an event, a group buy, a rescue bag and its reservation, a favourite, a review) it deletes or cancels in `finally`. Group buys and rescue bags have no delete route, so they end `cancelled`, under a golden business only.
 - **Rescue:** `04-g4-rescue` skips, and says why, when the pilot flag is off or `זכרון יעקב` is not in `RESCUE_BAGS_CITIES` on the target.
 - **API paths** go through a client named `api`, so `scripts/check_api_contract.py` checks them against the backend routes.
@@ -478,17 +478,30 @@ npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
 השוואת sha ל-sha היא בדיוק מה שנמדד כשגוי ב-06/11: שני sha שונים הם נורמליים
 ולא מזיקים כשאף אחד מהם לא נגע ב-backend. רק ה-diff מבדיל.
 
-**יציאה 2 עדיין חסרת שיניים** עד שספיר תקמט את
-[docs/ci/meh-0000-deploy-sha-gate.patch.md](./ci/meh-0000-deploy-sha-gate.patch.md):
-השורה ב-`post-deploy-checks.yml` עוטפת את הסקריפט ב-`|| echo "::warning …"`, וה-step
-של ה-Verdict מאגד רק smoke/links/headers/lighthouse. הסקריפט אומר את זה בעצמו
-בפלט שלו.
+**יציאה 2 מכשילה את ה-job** (MEH-3358, הוחל מ-
+[docs/ci/meh-0000-deploy-sha-gate.patch.md](./ci/meh-0000-deploy-sha-gate.patch.md)):
+ל-step ב-`post-deploy-checks.yml` יש `id: deploy` ו-`continue-on-error`, וה-Verdict
+מאגד את התוצאה שלו. יציאה 1 (timeout) נשארת אזהרה. self-test שנכשל בתוך ריצה
+יוצא ב-2, כי השוואה שבורה לא יכולה להכריע כלום.
 
 `python scripts/checks/wait_for_deploy.py --self-test` מריץ מאגרי git מפוברקים
 עם תשובות ידועות, ורץ גם לפני השער עצמו: תשובה ישרה לדחיפת frontend ותשובה של
 השוואה שבורה הן שתיהן 0, ולכן ירוק מהסקריפט הוא ראיה רק אם ה-self-test עובר.
 
 ---
+
+## טסטים שעוברים מהסיבה הלא נכונה (MEH-3295)
+
+ארבע בדיקות אוטומטיות, הכללים ב-[.claude/rules/testing.md](../.claude/rules/testing.md) «Tests that pass for the wrong reason»:
+
+| מה | איפה | מתי |
+|---|---|---|
+| טסט vitest בלי `expect` נכשל | `frontend/vitest.config.js` (`expect.requireAssertions`) | כל ריצה |
+| טסט pytest חדש בלי בדיקה, skip/xfail בלי כרטיס, xfail לא strict, `.only` | `scripts/checks/test-honesty-guard.sh` | Repo guards, חוסם |
+| בדיקת מוטציות על קבצי הכסף וההרשאות | `bash scripts/mutation/run.sh` · `[tool.mutmut]` ב-`backend/pyproject.toml` · הסברים ב-`backend/mutation-survivors.txt` | PR שנוגע בקבצים (`mutation-guard.sh` מזהיר) + הסריקה השבועית (חמישי) |
+| טסטים מבוססי-תכונות (Hypothesis) לעמלות ולימי עסקים | `tests/test_meh3295_properties.py` | כל ריצה |
+
+תוצאות הריצה הראשונה: [docs/research/mutation-testing.md](./research/mutation-testing.md).
 
 ## Agent Teams — בדיקה מתקדמת (מהתמונות)
 

@@ -23,6 +23,21 @@ The opposing axes:
 
 This is the DNA. Every product decision passes through "does this push toward magazine or marketplace?" If the answer is marketplace, STOP and ask.
 
+## 1b · Which sentence goes where (locked — see ADR-043)
+
+Uniformity where a machine reads, variety where a person reads. Three approved sentences, one job each:
+
+| Sentence | Job | Where |
+|---|---|---|
+| **במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.** | What the site is (`SITE_DESCRIPTION`) | Google meta description, Organization JSON-LD `description`, `llms.txt`, PWA manifest |
+| **אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.** | The promise to someone looking for food (`CANONICAL_SENTENCE`) | Home hero subheading, the shared-link card (og/twitter), JSON-LD `slogan` |
+| **מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.** | The promise to a business owner (§2) | Footer; presenting the site to a business |
+
+- The descriptor leads with **finding** («מוצאים»), because the problem the site solves is not knowing where to find local food. Approved word for word by Sapir, 18/11/2026.
+- **Do not** replace it with a category noun. «מדריך» was read as "a guide for businesses" (MEH-3424 research).
+- A new surface picks its row by who reads it: a machine → the descriptor; a consumer → the brand sentence; a business → the tagline.
+- English has no approved descriptor yet; `en.json` keeps its own description until it does.
+
 ## 2 · Tagline (locked — see ADR-011)
 
 > **מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.**
@@ -32,11 +47,11 @@ Two clauses, distinct functions:
 - **Clause 1** (`מהמקור — הבית הראשון של העסק שלך`) — promise to producers: this is your home, not your channel.
 - **Clause 2** (`המקום שבו הסיפור מתחיל`) — promise to readers: curated origin, not an aggregator.
 
-Surfaces may use clause 1 alone where space forbids the full version (mobile meta description, OG card). Clause 2 must never appear alone — it loses its referent. Modification requires a new ADR superseding ADR-011.
+Surfaces may use clause 1 alone where space forbids the full version. Clause 2 must never appear alone — it loses its referent. Modification requires a new ADR superseding ADR-011.
 
 ### Tagline vs hero subtitle — different decisions
 
-The **tagline** is specced for: footer brand line, OpenGraph card, `/about` narrative. **Not the Hebrew meta description** since 2026-11-12: that carries the canonical sentence (`CANONICAL_SENTENCE`), because ChatGPT read the tagline there as the site's self-description ([ADR-041](./decisions/ADR-041-home-meta-description-canonical-sentence.md), MEH-2968). **As of 2026-10-26 no code surface renders it** — the footer brand line is `nav.footer.brand_tagline` = `"ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד"` (`Footer.jsx:136`), a string that predates ADR-011 and was never switched. Implement-or-retire is open: MEH-2364. The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16; `עסקים` → `בתי עסק` per ADR-024): `"ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך."` (`he.json` `…subtitle`) — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
+The **tagline** is specced for: footer brand line, `/about` narrative. **Not the OpenGraph card or the Hebrew meta description** since 2026-11-18: the meta description carries the descriptor and the OpenGraph card the brand sentence (§1b, [ADR-043](./decisions/ADR-043-site-descriptor.md)). Before that, from 2026-11-12, the meta description carried the canonical sentence (`CANONICAL_SENTENCE`), because ChatGPT read the tagline there as the site's self-description ([ADR-041](./decisions/ADR-041-home-meta-description-canonical-sentence.md), MEH-2968). The footer renders it from `nav.footer.brand_tagline` (MEH-2364; pinned by `frontend/__tests__/adr011-tagline.test.js`). The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16; `עסקים` → `בתי עסק` per ADR-024): `"ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך."` (`he.json` `…subtitle`) — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
 
 ## 3 · Brand LOCKs (cannot change without formal discussion)
 
@@ -237,7 +252,7 @@ v1.3 קבע «רק מי שמייצר או מגדל בעצמו». ספיר תיק
 
 | רמה | מי | מה עושים |
 |---|---|---|
-| 1 | מייצר או מגדל בעצמו את מה שהוא מוכר | הליבה. ראשונים בפנייה, ראשונים בבחירת העורכת |
+| 1 | מייצר או מגדל בעצמו את מה שהוא מוכר | הליבה. ראשונים בפנייה, ראשונים בבחירת העורכות |
 | 2 | מייצר או מגדל בעצמו, ומוכר גם מוצרים של אחרים | מצטרף. עדיף שהדף יציג קודם את המוצרים שלו |
 | 3 | מוכר רק מוצרים של אחרים: חנות, מעדנייה, מסעדה | אפשרי, מקרה לגופו, באישור ספיר. לא ברירת מחדל ולא יעד של הפנייה הראשונה |
 

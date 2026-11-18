@@ -65,7 +65,9 @@ const SECTION_IDS = [
 // (RegistrationCta.jsx). It is the one collection point whose data leaves us
 // for a third party the visitor chose — the business hosting the date — so it
 // gets its own line rather than hiding inside `identity`.
-const DATA_ITEMS = ["identity", "business", "technical", "location", "cookies", "ugc", "registrations"];
+// MEH-3299 (MEH-2208 option א): `outreach` = the leads list — contact details
+// of businesses that have not joined, taken from public sources for outreach.
+const DATA_ITEMS = ["identity", "business", "outreach", "technical", "location", "cookies", "ugc", "registrations"];
 const WHY_ITEMS = ["service", "analytics", "notifications", "compliance"];
 // MEH-1058 (Amendment 13 disclosure duty): full live sub-processor list —
 // twilio was STALE (WhatsApp ships via Meta Cloud API, services/whatsapp.py);
@@ -75,7 +77,7 @@ const WHY_ITEMS = ["service", "analytics", "notifications", "compliance"];
 // it was the one processor wired in code (`lib/analytics.js:10`) but absent
 // from this list. An enumeration that names eight and omits a live ninth is
 // worse than a general statement, because it presents itself as complete.
-const THIRD_PARTY_ITEMS = ["cloudinary", "google", "anthropic", "meta", "resend", "sentry", "clarity", "posthog", "infra"];
+const THIRD_PARTY_ITEMS = ["cloudinary", "google", "osm", "anthropic", "meta", "resend", "sentry", "clarity", "posthog", "infra"];
 const RIGHTS_ITEMS = ["access", "rectify", "erase", "object", "portability"];
 
 function MailLink({ email }) {

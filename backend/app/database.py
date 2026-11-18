@@ -110,6 +110,21 @@ def _engine_kwargs_for(database_url: str) -> dict[str, Any]:
 engine = create_engine(
     settings.database_url, **_engine_kwargs_for(settings.database_url)
 )
+
+
+# MEH-3307: the app and the migrations may connect as two different database
+# roles. The app's role (DATABASE_URL / DATABASE_URL_<ENV>) can read and write
+# rows but not change the schema; MIGRATION_DATABASE_URL is the schema owner,
+# used only by alembic/env.py and scripts/migrate_on_boot.py at boot. Unset →
+# the migrations use the app's URL, exactly as before. Read here and not in
+# config.py for the reason the pool knobs above are (config.py is
+# permission-protected); runbook: docs/DEPLOYMENT.md «Two database roles».
+# DO NOT use this URL for request handling — only the migration step.
+def migration_database_url() -> str:
+    """The URL Alembic connects with: MIGRATION_DATABASE_URL, else the app's."""
+    return (os.getenv("MIGRATION_DATABASE_URL") or "").strip() or settings.database_url
+
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

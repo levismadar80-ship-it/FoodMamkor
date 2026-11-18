@@ -123,7 +123,10 @@ function GroupBuyRow({ gb }) {
   const daysLeft = Math.max(0, Math.ceil(((parseNaiveUtc(gb.deadline)?.getTime() ?? 0) - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
-  const progress = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
+  // MEH-3289: past the minimum, the count alone (see the group-buy page).
+  const progress = gb.commits_count > gb.min_participants
+    ? t("progress_joined", { commits: gb.commits_count })
+    : t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
 
   // MEH-2827 PR 7: a SMALL card, and the whole card is the one link to the
   // group's page — no buttons inside (joining and sharing live there).

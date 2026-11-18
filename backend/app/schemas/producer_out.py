@@ -142,6 +142,9 @@ class ProducerListOut(BaseModel):
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
+    # MEH-2697: when the owner last confirmed her availability (tz-aware UTC);
+    # None = never, and then nothing is shown.
+    availability_confirmed_at: datetime | None = None
     # MEH-1880: the declared weekly order window. Expand-only (ADR-007) and no
     # migration — the column has existed since f4a1e9c3b7d2; only the LIST
     # serializer was missing it, which is why no list surface (home grid,
@@ -311,10 +314,10 @@ class ProducerListOut(BaseModel):
         cls, data: Any, handler: ModelWrapValidatorHandler[Self]
     ) -> Self:
         # MEH-762 (ADR-022 D2/D3): resolve the public tier from verified_at +
-        # the category licensing requirement. Mirrors the MEH-530 name-
-        # membership predicate (license_validation.categories_require_license)
-        # against the already-loaded categories — same single source of truth
-        # (constants.LICENSE_REQUIRED_CATEGORIES), no DB round-trip in the
+        # the category licensing requirement. Mirrors the predicate in
+        # license_validation.categories_require_license against the
+        # already-loaded categories — same single source of truth
+        # (categories.requires_license, MEH-3255), no DB round-trip in the
         # serialization layer. One license-required category is enough to
         # exclude "declared"; an unverified license-required producer resolves
         # to None (no badge, no negative label — D3). Does NOT touch
@@ -335,7 +338,6 @@ class ProducerListOut(BaseModel):
         # returned model against response_model), whose tier was resolved
         # from the row then — it is kept as is. A dict without one stays None
         # (fail-closed).
-        from app.constants import LICENSE_REQUIRED_CATEGORIES
         from app.services.verification_status import verification_is_current
 
         model = handler(data)
@@ -348,7 +350,9 @@ class ProducerListOut(BaseModel):
         if verification_is_current(model.verified_at, source("license_expires_at")):
             model.verification_tier = "verified"
         elif source("declared_at") is not None and not any(
-            c.name in LICENSE_REQUIRED_CATEGORIES for c in (model.categories or [])
+            # MEH-3255: the category's own answer, not its name.
+            c.requires_license
+            for c in (model.categories or [])
         ):
             model.verification_tier = "declared"
         else:
@@ -393,6 +397,9 @@ class ProducerDetailOut(ProducerListOut):
     # privacy-first precedent.
     contact_name: str | None = None
     phone: str | None = None
+    # MEH-3339: shown as one text line; no CTA reads these.
+    secondary_phone: str | None = None
+    secondary_phone_label: str | None = None
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
@@ -501,6 +508,8 @@ class ProducerAdminOut(ProducerDetailOut):
     # and for every draft; the admin table renders the tooltip from
     # created_at in that case rather than showing an empty timestamp.
     submitted_for_review_at: datetime | None = None
+    # Page freshness: when the owner last pressed «כן, הכול נכון». Admin-only.
+    last_confirmed_at: datetime | None = None
     # Computed server-side (routers/admin.py) rather than derived per client,
     # so the badge and the queue ordering can never disagree about age.
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
@@ -591,6 +600,9 @@ class ProducerAdminOut(ProducerDetailOut):
     owner_invite_expires_at: datetime | None = None
     owner_invite_accepted_at: datetime | None = None
     owner_invite_consent_note: str | None = None
+    # MEH-3377: the optional screenshot of the written consent. Same class as
+    # the note above — admin-only, never on the public or owner shapes.
+    consent_screenshot_url: str | None = None
     # Derived, never stored — hydrated per response beside `has_owner` by
     # routers/admin.py `_attach_has_owner`, in that one batched query. None
     # means "this route did not hydrate it", exactly as for `has_owner`: a
@@ -633,21 +645,16 @@ class ProducerAdminOut(ProducerDetailOut):
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
     # so an override-approved producer (chunk-4 allow_without_license) still
-    # shows it. Mirrors _compute_verification_tier's name-membership predicate
-    # over the already-loaded categories (constants.LICENSE_REQUIRED_CATEGORIES)
+    # shows it. Mirrors _compute_verification_tier's predicate over the
+    # already-loaded categories (categories.requires_license, MEH-3255)
     # — no DB round-trip, no N+1. Admin-only: lives on ProducerAdminOut, never
     # the public ProducerListOut/DetailOut.
     license_pending: bool = False
 
     @model_validator(mode="after")
     def _compute_license_pending(self) -> Self:
-        # Inline import mirrors the sibling _compute_verification_tier validator
-        # (above) — keeps the constants dependency out of the module-top imports.
-        from app.constants import LICENSE_REQUIRED_CATEGORIES
-
-        needs_license = any(
-            c.name in LICENSE_REQUIRED_CATEGORIES for c in (self.categories or [])
-        )
+        # MEH-3255: the category's own answer, not its name.
+        needs_license = any(c.requires_license for c in (self.categories or []))
         license_missing = not (self.producer_license_number or "").strip()
         self.license_pending = needs_license and license_missing
         return self

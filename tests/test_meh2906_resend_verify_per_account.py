@@ -25,6 +25,7 @@ def sent(monkeypatch):
         return True
 
     monkeypatch.setattr("app.routers.auth._send_verify_email", _record)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", _record)
     return calls
 
 

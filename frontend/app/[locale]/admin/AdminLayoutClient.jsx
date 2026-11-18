@@ -12,6 +12,7 @@ import { usePathname } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import {
   CaretDown,
+  ClockCounterClockwise,
   Gauge,
   Question,
   Storefront,
@@ -79,6 +80,8 @@ const NAV_SECTIONS = [
       { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
       // MEH-3182: read-only billing view (placement: Sapir's card, 14/11).
       { href: "/admin/billing", key: "billing", Icon: Receipt },
+      // MEH-3306: read-only audit log of admin changes.
+      { href: "/admin/audit-log", key: "audit_log", Icon: ClockCounterClockwise },
       { href: "/admin/settings", key: "settings", Icon: GearSix },
       { href: "/admin/help", key: "help", Icon: Question },
     ],

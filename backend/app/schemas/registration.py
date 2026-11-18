@@ -7,8 +7,10 @@ Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """
 
+import re
 from datetime import datetime
 from typing import Any, Literal, Self
+from urllib.parse import urlparse
 from uuid import UUID
 from pydantic import (
     BaseModel,
@@ -150,7 +152,7 @@ class ProducerRegister(BaseModel):
     )
     # MEH-530: optional at Pydantic level. Router calls
     # ensure_license_for_categories which 422s if license is missing for
-    # a category in LICENSE_REQUIRED_CATEGORIES. max_length=20 mirrors the
+    # a category whose requires_license is true (MEH-3255). max_length=20 mirrors the
     # DB column — boundary defense only (no regex; format warning lives on
     # the frontend per MEH-530 product decision).
     producer_license_number: str | None = Field(default=None, max_length=20)
@@ -488,6 +490,15 @@ class ProducerClaimLinkOut(BaseModel):
     expires_at: datetime
 
 
+class DraftPreviewLinkOut(BaseModel):
+    """MEH-3377. Its own shape, not ProducerClaimLinkOut: the two links grant
+    different things, and the claim-link inventory test pins that schema to the
+    one route that mints a claim link."""
+
+    url: str
+    expires_at: datetime
+
+
 class ProducerClaimPreviewOut(BaseModel):
     name: str
     city: str | None = None
@@ -520,6 +531,65 @@ class ProducerClaimOut(BaseModel):
 class ProducerClaimNewLinkOut(BaseModel):
     # MEH-3122: always the same body — see request_new_claim_link.
     ok: bool
+
+
+# MEH-3377: «פרסום בהסכמה» for an ownerless draft
+# (routers/producer_draft_preview.py). Same two consent fields, same bounds
+# and same reason as OwnerInviteCreate below: no page goes live on someone's
+# behalf without a recorded written consent.
+_CLOUDINARY_IMAGE_PATH = re.compile(r"^/[A-Za-z0-9_-]+/image/upload/[^?#]+$")
+
+
+class DraftConsentPublishIn(BaseModel):
+    consent_confirmed: bool
+    consent_note: str = Field(min_length=1, max_length=500)
+    # Optional: a screenshot of the written consent, uploaded first through
+    # POST /upload/image. Only a Cloudinary image URL is stored — the admin
+    # page links to it, so an arbitrary URL here would be a link to anywhere
+    # under an «אישור» label. The handler also pins it to OUR cloud name.
+    consent_screenshot_url: str | None = Field(default=None, max_length=500)
+
+    @field_validator("consent_confirmed")
+    @classmethod
+    def _consent_required(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError(
+                "חובה לאשר שהתקבל אישור מפורש בכתב מבעלי העסק לפני פרסום העמוד"
+            )
+        return v
+
+    @field_validator("consent_note")
+    @classmethod
+    def _note_not_blank(cls, v: str) -> str:
+        # "   " passes min_length and is as useless as "" for an audit trail.
+        stripped = (v or "").strip()
+        if not stripped:
+            raise ValueError("חובה לתעד איך התקבלה ההסכמה")
+        return stripped
+
+    @field_validator("consent_screenshot_url")
+    @classmethod
+    def _screenshot_is_cloudinary_image(cls, v: str | None) -> str | None:
+        if v is None or not v.strip():
+            return None
+        parsed = urlparse(v.strip())
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "res.cloudinary.com"
+            # Anchored: `<cloud>/image/upload/…` and nothing else. A substring
+            # test would pass `/x/raw/upload/image/upload/a.html`.
+            or not _CLOUDINARY_IMAGE_PATH.match(parsed.path)
+            or parsed.username
+            or parsed.port
+        ):
+            raise ValueError("צילום המסך חייב להיות תמונה שהועלתה דרך האתר")
+        return v.strip()
+
+
+class DraftConsentPublishOut(BaseModel):
+    producer_id: UUID
+    status: str
+    slug: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -717,6 +787,9 @@ class ProducerOwnerSummary(BaseModel):
     MEH-2541 removed from `GET /admin/producers`.
     """
 
+    # MEH-3256 (D9): the owner the admin is looking at, sent back by
+    # «ניתוק בעלים» as `expected_owner_user_id`. Admin-only like the rest.
+    id: UUID | None = None
     name: str
     email: EmailStr
 

@@ -65,7 +65,7 @@
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
       "newsletter_submit": "Join",
-      "newsletter_success": "Welcome to Mehamakor See you in your inbox",
+      "newsletter_success": "We sent you a confirmation email. Your signup is complete once you click the link in it.",
       "cookie_settings": "Cookie settings"
     },
     "opportunities": "Finds"
@@ -438,6 +438,15 @@
           "back_home": "Back to home"
         }
       }
+    },
+    "passkey": {
+      "title": "One more step",
+      "body": "The passkey did not confirm the sign-in. You can sign in again and retry, or enter one of your saved recovery codes.",
+      "code_label": "Recovery code",
+      "code_hint": "Ten characters, e.g. 7KQ2M-X9FHT",
+      "submit": "Sign in with code",
+      "back": "Back to sign in",
+      "error": "The code was not accepted"
     }
   },
   "account": {
@@ -755,6 +764,10 @@
       "country": "Israel",
       "offer_catalog_name": "Products"
     },
+    "draft_preview": {
+      "title": "Page preview",
+      "description": "The page we prepared for you on Mehamakor"
+    },
     "owner_invite": {
       "title": "Set a password for your business page",
       "description": "Your page on Mehamakor is ready"
@@ -852,7 +865,6 @@
             "lactose_free": "Lactose-free",
             "no_added_sugar": "No added sugar"
           },
-          "sheet_open_aria": "Details about {name}",
           "facts": {
             "ingredients_heading": "Ingredients",
             "allergens_heading": "Allergens",
@@ -935,7 +947,8 @@
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
         "reveal_phone": "Show phone number",
-        "report_info_link": "Wrong info? Let us know"
+        "report_info_link": "Wrong info? Let us know",
+        "secondary_phone_default_label": "Second phone"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message"
@@ -1149,7 +1162,7 @@
       "status_funded": "Reached the goal",
       "status_fulfilled": "Fulfilled",
       "status_hint_open": "Join now without paying. Once the minimum is reached, the group price unlocks.",
-      "status_hint_funded": "These groups reached the minimum. Joining is closed, and participants contact the business to arrange their order.",
+      "status_hint_funded": "These groups reached the minimum, and the group price is unlocked. You can still join until the group is full or the deadline passes. Participants contact the business to arrange their order.",
       "status_hint_fulfilled": "The orders were delivered to the participants.",
       "empty_title": "No active group-buys yet",
       "empty_subtitle": "When businesses open group-buys, you'll find them here"
@@ -1160,6 +1173,7 @@
       "unit_prefix": "/ {unit}",
       "min_hint": "Group price when {min} participants commit",
       "progress_label": "{commits} of {min} participants",
+      "progress_joined": "{commits} participants",
       "days_left": "{days} days left",
       "expired": "Expired",
       "cta_funded_details": "Details",
@@ -1178,6 +1192,7 @@
       "unit_suffix": "/ {unit}",
       "discount_hint": "Save {discount}% at the group price",
       "progress_label": "{commits} of {min} participants",
+      "progress_joined": "{commits} participants",
       "remaining_to_open": "{n} more participants to unlock the price",
       "deadline_prefix": "Deadline: {date}",
       "fulfillment_title": "Pickup & delivery",
@@ -1198,6 +1213,7 @@
       "cancel_confirm": "Cancel your commitment?",
       "cancel_dismiss": "No, keep it",
       "deadline_passed": "The deadline has passed — joining is no longer possible",
+      "full": "The group is full — joining is no longer possible",
       "share_wa": "Share with friends",
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "Israel",
@@ -1553,6 +1569,7 @@
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
         "billing": "Billing",
+        "audit_log": "Audit log",
         "settings": "Settings",
         "help": "Help",
         "name_change_requests": "Name changes"
@@ -1598,7 +1615,8 @@
         "export": "Export",
         "new_producer": "+ New business",
         "review_due_label": "Picks due for review",
-        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed",
+        "freshness_stale_label": "Not checked in 60+ days"
       },
       "table": {
         "status_tooltip_draft": "draft = not yet submitted for review",
@@ -1707,7 +1725,8 @@
       },
       "edit": {
         "title": "Edit: {name}",
-        "not_found": "Business not found"
+        "not_found": "Business not found",
+        "last_confirmed": "Last checked: {date}"
       },
       "form": {
         "errors": {
@@ -1734,7 +1753,8 @@
           "availability": "Availability",
           "admin_notes": "Internal notes (not visible to users)",
           "availability_tooltip": "Mark the business owner as on vacation. Shows a 'vacation' badge on their page and hides the WhatsApp button until the return date.",
-          "availability_tooltip_label": "Vacation mode info"
+          "availability_tooltip_label": "Vacation mode info",
+          "owner_story": "Behind the business"
         },
         "fields": {
           "name": "Business name",
@@ -1780,7 +1800,7 @@
           "grass_fed": "Grass-fed",
           "reservist_owned": "One of the owners serves in the reserves",
           "verified": "Verified",
-          "recommended": "Recommended (editor's pick)",
+          "recommended": "Recommended (editors' pick)",
           "recommended_note": "Editor's reason",
           "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
           "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
@@ -1822,7 +1842,12 @@
           "avail_vacation": "On break",
           "vacation_until": "Return date (optional)",
           "as_draft": "Draft the owner will receive by invite link",
-          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner."
+          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner.",
+          "owner_bio": "Behind the business — a line from the owner",
+          "owner_photo": "Owner photo",
+          "owner_photo_remove": "Remove photo",
+          "secondary_phone": "Second phone (optional)",
+          "secondary_phone_label": "What is this number for? (e.g. orders)"
         }
       },
       "toast_approved": "Business approved",
@@ -1858,6 +1883,36 @@
         "copy_failed": "Copying failed. You can select the link and copy it manually.",
         "expires": "Valid until {date}",
         "error": "Could not create the link"
+      },
+      "draft_preview": {
+        "title": "Preview link",
+        "intro": "A view-only link to this page, before it goes live. You can send it to the business. Valid for 14 days, and it stops working once the page is published or deleted.",
+        "create": "Create preview link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
+      },
+      "consent_publish": {
+        "title": "Publish with consent",
+        "intro": "Did the business confirm in writing that the page can go live? Write what was approved, where and when, and the page goes on the site.",
+        "note_label": "Record of consent",
+        "note_placeholder": "For example: confirmed on WhatsApp, 17.11",
+        "consent": "I hold explicit written approval from the business",
+        "without_license": "Publish without a licence number (without the “verified” badge)",
+        "submit": "Publish the page",
+        "publishing": "Publishing…",
+        "published": "The page is live",
+        "error": "Could not publish the page",
+        "screenshot_label": "Screenshot of the approval (optional)",
+        "screenshot_uploading": "Uploading the screenshot…",
+        "screenshot_attached": "Screenshot attached. View",
+        "screenshot_remove": "Remove",
+        "screenshot_error": "Could not upload the screenshot",
+        "screenshot_view": "Screenshot of the approval"
       },
       "draft_products": {
         "title": "Products in this draft",
@@ -1896,7 +1951,16 @@
         "link_shown_once": "The link is shown once only. If it is lost, send the invite again.",
         "resend": "Send again",
         "cancel_invite": "Cancel invite",
-        "error": "We could not send the invite"
+        "error": "We could not send the invite",
+        "detach": {
+          "button": "Detach owner",
+          "explain": "{name}'s account stays as a regular account, and all of its sessions are signed out. The business stays live with all its content, and you can then invite the new owner. We'll email {email} about it.",
+          "confirm_label": "To confirm, type the business name: {business}",
+          "confirm": "Detach",
+          "confirming": "Detaching…",
+          "cancel": "Cancel",
+          "error": "We couldn't detach the owner"
+        }
       },
       "status_label": {
         "draft": "Draft",
@@ -1956,6 +2020,30 @@
           "reverse_search_alt": "Reverse image search",
           "kashrut": "Kashrut",
           "certificate": "Certificate: {code}"
+        }
+      },
+      "product_import": {
+        "title": "Import products from an existing store",
+        "intro": "Products are saved as drafts and are not on the site until approved. A name the business already has is skipped; images are not imported.",
+        "paste_label": "Product list (JSON)",
+        "paste_help": "An array of products with the fields name, description, price, unit. For a mypips store: scripts/import/mypips-extract.mjs",
+        "import_cta": "Import as drafts",
+        "result": "{created} drafts added · {skipped} duplicates skipped · {invalid} invalid rows",
+        "invalid_row": "Row {n} ({name}): {reason}",
+        "approved": "{count} products approved and published",
+        "drafts_title": "Drafts ({count})",
+        "drafts_empty": "No drafts waiting for approval.",
+        "approve_all_cta": "Approve all drafts ({count})",
+        "delete_cta": "Delete",
+        "error": "That didn't work — please try again.",
+        "error_json": "The text is not valid JSON.",
+        "error_shape": "Expected an array of products, or an object with rows.",
+        "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
+        "load_failed": "Couldn't load the drafts. Try refreshing.",
+        "unit": {
+          "unit": "per unit",
+          "kg": "per kg",
+          "100g": "per 100 g"
         }
       }
     },
@@ -2348,6 +2436,13 @@
       "edited_after_hidden": "Edited after hidden",
       "keep_hidden": "Keep hidden",
       "ai_flagged_only": "Only flagged reviews",
+      "conflict_owner": "Not shown: the author owns this business",
+      "conflict_competitor": "Not shown: the author owns another business on the site",
+      "reply_label": "Business reply",
+      "remove_reply": "Remove reply",
+      "remove_reply_aria": "Remove the business's reply to {user}'s review",
+      "confirm_remove_reply": "Remove {producer}'s reply? It will disappear from the site, and the business can write a new one.",
+      "reply_removed_toast": "Reply removed",
       "hidden": "Hidden",
       "hide": "Hide",
       "unhide": "Unhide",
@@ -2515,7 +2610,34 @@
         "window_expired": "24-hour window closed",
         "accepted": "No delivery confirmation"
       },
-      "stuck_hint": "Messages Meta accepted more than a day ago that still have no delivery confirmation. If there are many, delivery confirmations may not be reaching us."
+      "stuck_hint": "Messages Meta accepted more than a day ago that still have no delivery confirmation. If there are many, delivery confirmations may not be reaching us.",
+      "blocked": {
+        "title": "Messages blocked in the test environment",
+        "subtitle": "In the test environment WhatsApp is sent only to approved numbers. Here you can see what every other message would have said.",
+        "content": "Message content"
+      }
+    },
+    "audit_log": {
+      "title": "Admin audit log",
+      "subtitle": "Every change made from an admin account: when, who, what and on what. Rows cannot be edited or deleted.",
+      "empty": "No actions recorded yet.",
+      "load_error": "Could not load the log",
+      "load_more": "Show earlier actions",
+      "deleted_actor": "Deleted account",
+      "columns": {
+        "when": "When",
+        "actor": "Who",
+        "action": "Action",
+        "target": "On what",
+        "change": "What changed"
+      },
+      "method": {
+        "POST": "Action",
+        "PUT": "Update",
+        "PATCH": "Update",
+        "DELETE": "Delete",
+        "OTHER": "Action"
+      }
     },
     "group_buys": {
       "title": "Group buys",
@@ -2744,6 +2866,14 @@
             "“WhatsApp” prepares a message with a profile link. Send only after she agreed on the phone."
           ]
         },
+        "audit_log": {
+          "q": "How do I check who changed something in the admin, and when?",
+          "steps": [
+            "On the «Audit log» screen: one row for every change made from an admin account, newest first.",
+            "Each row shows when, which account, which action, on what, and what changed (for example a role or a status).",
+            "Names, phone numbers and free text are not stored in the log, and its rows cannot be edited or deleted."
+          ]
+        },
         "settings": {
           "q": "How do I turn on the holiday window, Friday market or vacation mode?",
           "steps": [
@@ -2792,6 +2922,37 @@
       "update_error": "Failed to update the request",
       "approved_toast": "Name approved and updated",
       "rejected_toast": "Request rejected"
+    },
+    "passkeys": {
+      "title": "Passkey",
+      "subtitle": "A passkey on your phone or computer (fingerprint, face or device PIN) protects the admin account. Once one is added, every sign-in to this account asks for it after the password or Google.",
+      "off": "Passkeys are not available in this environment.",
+      "unsupported": "This browser does not support passkeys.",
+      "empty": "No passkey added yet.",
+      "unnamed": "Passkey",
+      "synced": "Synced",
+      "added": "Added {date}",
+      "last_used": "Last used {date}",
+      "never_used": "Not used yet",
+      "remove": "Remove",
+      "name_label": "Passkey name",
+      "name_placeholder": "e.g. My phone",
+      "password_label": "Account password",
+      "password_hint": "To confirm before adding",
+      "add": "Add a passkey",
+      "codes_title": "Recovery codes",
+      "codes_body": "Each code works once, if the device is lost. Keep them somewhere safe: they will not be shown again.",
+      "codes_left": "{count} recovery codes left",
+      "codes_new": "New recovery codes",
+      "codes_copy": "Copy",
+      "codes_done": "I saved them",
+      "recovery_label": "Recovery code (if the device is not available)",
+      "recovery_hint": "Confirms instead of the device, once",
+      "error": "That did not work. Please try again.",
+      "added_toast": "Passkey added",
+      "removed_toast": "Passkey removed",
+      "eye_show": "Show password",
+      "eye_hide": "Hide password"
     }
   },
   "events": {
@@ -3145,7 +3306,7 @@
         "body_2": "And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
       },
       "editors_pick": {
-        "heading": "Editor's Pick",
+        "heading": "Editors' Pick",
         "body_1": "Every so often we mark a business we especially loved — for the quality of its products, its freshness, or a story worth knowing. It's our personal choice, after getting to know the business.",
         "list_lead": "Two things worth knowing:",
         "item_1": "you can't pay for this tag — not with premium, not in any other way.",
@@ -3373,7 +3534,8 @@
         "spices": "Spice blends, cooking herbs",
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
-        "fish": "Fresh and smoked fish"
+        "fish": "Fresh and smoked fish",
+        "kph": "Coffee beans"
       },
       "section_results": "Results",
       "section_popular": "Popular",
@@ -3454,6 +3616,20 @@
     }
   },
   "reviews": {
+    "report": {
+      "menu_aria": "Options for {user}'s review",
+      "report_link": "Report this review",
+      "dialog_title": "Report a review",
+      "dialog_intro": "What's wrong with this review? We'll check it and decide whether to remove it.",
+      "reason_fake": "Looks fake or not based on a real experience",
+      "reason_abusive": "Offensive or abusive language",
+      "reason_personal": "Reveals personal details",
+      "reason_irrelevant": "Not about this business, or spam",
+      "reason_other": "Something else",
+      "details_label": "More details (optional)",
+      "details_required": "Tell us briefly what's wrong",
+      "success_toast": "Thanks, we got your report and will check it soon."
+    },
     "section_heading": "What customers say",
     "anonymous_fallback": "Customer",
     "star_aria": "{value, plural, one {1 star} other {{value} stars}}",
@@ -3500,6 +3676,13 @@
     "error_title": "This link isn't valid",
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
     "cta_home": "Back to home"
+  },
+  "newsletter_confirm": {
+    "meta_title": "Confirm signup",
+    "title": "Confirm your signup for Mehamakor updates",
+    "button": "Confirm signup",
+    "success_title": "You're signed up.",
+    "success_body": "We'll write when there's something worth telling."
   },
   "weekly_summary_unsubscribe": {
     "meta_title": "Stop the weekly summary",
@@ -3588,7 +3771,10 @@
       "section_categories": "Categories",
       "section_cities": "Cities",
       "recent_heading": "Recent searches",
-      "remove_recent_aria": "Remove {q} from recent searches"
+      "remove_recent_aria": "Remove {q} from recent searches",
+      "corrected_showing": "Showing results for <strong>{word}</strong>",
+      "corrected_typed": "You typed <bdi>{original}</bdi> — maybe the keyboard was set to English.",
+      "corrected_search_as_typed": "Search for “<bdi>{original}</bdi>” instead"
     },
     "smart": {
       "loading": "Loading results...",
@@ -3701,6 +3887,7 @@
   "gallery": {
     "open_aria": "Enlarge image {current}",
     "image_alt": "Image {current}",
+    "image_alt_named": "{name}, photo {current}",
     "prev_aria": "Previous image",
     "next_aria": "Next image",
     "thumb_aria": "Go to image {n}",
@@ -3797,7 +3984,56 @@
         "pick_review": "Pick a review",
         "download_review": "Download review card",
         "review_headline": "What our customers say",
-        "reviews_empty": "No reviews to share yet. <link>Send customers a review request link</link>"
+        "reviews_empty": "No reviews to share yet. <link>Send customers a review request link</link>",
+        "post": {
+          "title": "A post ready to share",
+          "subtitle": "Built from the details on your page. Pick what to tell, then share.",
+          "moments_label": "What to tell",
+          "moment_week": "This week",
+          "moment_new": "New product",
+          "moment_holiday": "For {holiday}",
+          "kicker_week": "This week",
+          "kicker_new": "New",
+          "kicker_holiday": "For {holiday}",
+          "footer": "All the details at the link",
+          "pick_product": "Pick a product",
+          "share": "Share",
+          "download": "Download the image",
+          "copy": "Copy caption and link",
+          "copied": "Copied",
+          "generating": "Preparing the image",
+          "empty": "To create a post you need at least one product in your price list.",
+          "empty_cta": "Add products",
+          "load_error": "We couldn't load your products.",
+          "retry": "Try again",
+          "caption_week": "What we have this week: {items}. All the details and prices at the link:",
+          "caption_new": "New: {item}. All the details at the link:",
+          "caption_holiday": "For {holiday}: {items}. All the details at the link:",
+          "image_alt": "Preview of the post"
+        },
+        "links": {
+          "title": "Your link, everywhere",
+          "subtitle": "Once, and everyone looking for you reaches your page.",
+          "instagram": {
+            "label": "Instagram bio",
+            "how": "In Edit profile: Links → Add external link."
+          },
+          "facebook": {
+            "label": "Facebook page button",
+            "how": "On your business page: Add button → paste the link."
+          },
+          "google": {
+            "label": "Your Google profile",
+            "how": "In your Google business profile: Edit → Website."
+          },
+          "whatsapp": {
+            "label": "WhatsApp Business profile",
+            "how": "In business settings: Profile → Website."
+          },
+          "copy": "Copy the link",
+          "copied": "Copied",
+          "done": "Done"
+        }
       },
       "caption_from": "{name} from {city}"
     }
@@ -4066,13 +4302,17 @@
             "label": "Business details (for sellers):",
             "value": "Business name, description, address, categories, delivery areas, social links."
           },
+          "outreach": {
+            "label": "Contact details of businesses that have not joined yet:",
+            "value": "Details published in public sources, such as the business's website, social networks, Google and government registries: the business or owner's name, phone, website, Instagram account, city and type of business. We use them only to reach out to the business and invite it to join. You can ask us at any time to delete these details, by writing to the email in the Contact section or by replying \"remove\" to our message, and we will delete them and not contact you again."
+          },
           "technical": {
             "label": "Technical data:",
             "value": "IP address, browser type, operating system, device identifier."
           },
           "location": {
             "label": "Location data:",
-            "value": "Approximate location (only if you grant browser permission), to display nearby businesses on the map."
+            "value": "Approximate location (only if you allowed it in your browser), used to show nearby businesses. It is rounded to about one kilometre before it is saved on your device or sent to our server. On the map itself, the area shown is loaded directly from the map provider."
           },
           "cookies": {
             "label": "Cookies and behavioral data:",
@@ -4114,7 +4354,8 @@
         "intro": "We use external service providers to operate the platform. Each is subject to its own privacy policy:",
         "items": {
           "cloudinary": "<b>Cloudinary</b> — storage and processing of images uploaded by users.",
-          "google": "<b>Google</b> — Google OAuth for sign-in and Google Fonts.",
+          "google": "<b>Google</b> — Google OAuth for sign-in, Google Fonts, and address search (Google Places) in forms.",
+          "osm": "<b>OpenStreetMap</b> — the site's maps, and address search when no other provider is available. When a map loads, your browser contacts OpenStreetMap's servers and they see which area is shown. When you allow location, a rounded location is sent to them to find the name of your town.",
           "anthropic": "<b>Anthropic</b> — artificial-intelligence services (Claude). Some of the content you provide is sent to Anthropic's models in order to operate the service: (1) messages you write in the support chat — to provide a response; (2) content you submit for publication (product, recipe, and experience listings, and reviews) — for automated content moderation before publication; (3) business-registration details — for automated risk screening and to generate a business description (if you requested it). The content is sent solely to operate the service, is not sold, and is not used to train Anthropic's models.",
           "meta": "<b>Meta (WhatsApp Cloud API)</b> — operational WhatsApp messages (signup confirmations, status updates, notifications).",
           "resend": "<b>Resend</b> — operational email (account verification, password reset, updates).",
@@ -4247,7 +4488,7 @@
         "launch": "During the launch period businesses are not charged. A business is charged only after written notice, {noticeDays} days ahead. A business may choose to keep the page only, without paid tools: the page stays on the site free, with no time limit, also after the notice.",
         "scope": "The commission applies only to bookings recorded in the site's tools. Direct contact between a business and its customers, on WhatsApp, by phone or by email, is not charged. Customers pay the business directly. The commission is a payment from the business to the site for using the tools, and does not change the section «Nature of the service»: the site is not a party to the transaction between a business and its customers.",
         "dispute": "Once a month, before the charge, the business receives a summary of the bookings that were counted. The business may tell us, within {disputeDays} days of receiving the summary, about a booking that did not take place. Such a booking is not charged until it is checked, and if it did not take place it is removed from the charge.",
-        "early": "A business that registered on the site before the end of the launch period pays, without a subscription, the reduced commission that subscribers pay, as published on the price list (currently {subPercent}% of a paid booking), for the first {earlyMonths} months in which it is charged. After that the regular price list applies. The launch period lasts until the site starts charging businesses. Its end date will be published on the price list {priceChangeDays} days ahead.",
+        "early": "A business that registered on the site before the end of the launch period receives the reduced-commission subscription without a subscription fee, for the first {earlyMonths} months in which it is charged, with no need to choose a track. During this time it pays the reduced commission that subscribers pay, as published on the price list (currently {subPercent}% of a paid booking). {noticeDays} days before the period ends, the business will be notified in writing and will choose a track. The launch period lasts until the site starts charging businesses. Its end date will be published on the price list {priceChangeDays} days ahead.",
         "change": "Despite the section «Changes to these terms», a change to the price list is published on the price list and sent in writing to businesses, and takes effect only {priceChangeDays} days after the notice. A yearly subscription keeps the price it was bought at until it renews.",
         "threshold": "A business is charged a commission only for a calendar month in which the paid bookings recorded in the site's tools totalled ₪{threshold} or more. A free registration is not counted.",
         "nochoice": "A business that has not picked a track by the end of the notice period keeps the page only. Paid tools close to new bookings, and bookings made earlier go ahead as usual.",
@@ -4593,7 +4834,8 @@
         "insights": "Insights",
         "tools": "Tools",
         "view_page": "View page",
-        "organizer_events": "Your events"
+        "organizer_events": "Your events",
+        "orders": "Orders"
       },
       "load_error": {
         "title": "We couldn't load your dashboard",
@@ -4708,7 +4950,9 @@
         "signups": "{count, plural, one {One new sign-up for {title}} other {# new sign-ups for {title}}}",
         "signups_cta": "See the list",
         "group_buys": "{count, plural, one {A group buy reached its goal} other {# group buys reached their goal}}",
-        "group_buys_cta": "Details"
+        "group_buys_cta": "Details",
+        "orders": "{count, plural, one {One order waiting for confirmation} other {# orders waiting for confirmation}}",
+        "orders_cta": "Confirm"
       },
       "status": {
         "pending": {
@@ -4745,24 +4989,6 @@
           "email_label": "Email",
           "close_cta": "Close"
         }
-      },
-      "phone_verify": {
-        "title": "Verify your business phone",
-        "reverify_title": "Your business WhatsApp number isn't verified yet",
-        "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
-        "send_cta": "Send verification code",
-        "sending": "Sending...",
-        "resend_in": "You can resend a code in {seconds}s",
-        "code_label": "Verification code",
-        "code_placeholder": "6-digit code",
-        "confirm_cta": "Verify",
-        "confirming": "Verifying...",
-        "success": "Phone verified! Once every step is ready, press \"Send for review\" so we can get to know your business.",
-        "error_invalid": "Wrong or expired code. Please try again.",
-        "error_no_phone": "No phone number on your profile. Add one, then verify.",
-        "error_generic": "Something went wrong. Please try again.",
-        "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
-        "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog →",
       "availability": {
@@ -4873,7 +5099,8 @@
         "pickup_hosts": {
           "title": "Willing to host a pickup point",
           "sub": "People who ticked “happy to host” when they signed up for updates. You can reach them by email."
-        }
+        },
+        "share_visits": "{count, plural, one {1 visit} other {# visits}} from your shares in the last 30 days"
       },
       "completeness": {
         "red_headline": "A few key details left before you're live",
@@ -4999,7 +5226,11 @@
         "save_cta": "Save contact channels",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "field_secondary_phone": "Second phone (optional)",
+        "field_secondary_phone_label": "What is this number for? (e.g. orders)",
+        "secondary_phone_placeholder": "050-1234567",
+        "secondary_phone_where": "Shown on your business page"
       },
       "categories": {
         "heading": "Categories",
@@ -5294,7 +5525,7 @@
         "approved_heading": "Your kosher badges",
         "select_label": "Kosher type",
         "select_placeholder": "Choose a kosher type",
-        "upload_label": "Certificate photo (JPG/PNG, up to 5MB)",
+        "upload_label": "Certificate photo (JPG/PNG, up to 4MB)",
         "upload_cta": "Upload photo",
         "upload_replace_cta": "Replace photo",
         "uploading": "Uploading…",
@@ -5434,6 +5665,106 @@
       },
       "reviews_page": {
         "summary": "{unanswered} without a reply · {total} in total"
+      },
+      "orders": {
+        "title": "Orders",
+        "settings": {
+          "title": "Orders on the site",
+          "lead": "Customers pick products and a time on your page, and you confirm. They pay you directly. You can switch it off at any time.",
+          "enabled": "Take orders on the site",
+          "auto_confirm": "Confirm orders automatically, up to {count} per slot",
+          "auto_cap": "How many orders to confirm automatically per slot",
+          "cutoff": "Customers can cancel up to {hours} hours before the slot",
+          "cutoff_label": "Cancellation by customers",
+          "shabbat": "No orders or messages on Shabbat and holidays",
+          "min_order": "Minimum order in shekels (optional)",
+          "slot_minutes": "Length of each slot",
+          "slot_30": "Half an hour",
+          "slot_60": "An hour",
+          "slot_120": "Two hours",
+          "lead_time": "How far ahead customers must order",
+          "lead_hours": "{hours, plural, =0 {No minimum} one {An hour ahead} other {# hours ahead}}",
+          "save": "Save",
+          "saved": "Saved",
+          "cap_required": "To confirm automatically, choose how many orders per slot",
+          "bad_amount": "Write the amount in numbers"
+        },
+        "windows": {
+          "title": "When orders are handed over",
+          "lead": "The hours customers can collect or get a delivery. The slots they choose are built from these.",
+          "prefilled": "We filled this in from the hours you take orders. You can change it before saving.",
+          "empty": "No hand-over hours yet, so customers cannot order.",
+          "day": "Day",
+          "kind": "Pickup or delivery",
+          "pickup": "Pickup",
+          "delivery": "Delivery",
+          "add": "Add hours",
+          "saved": "Hours saved"
+        },
+        "tabs": {
+          "aria": "Order lists",
+          "waiting": "Waiting",
+          "confirmed": "Confirmed",
+          "today": "Today",
+          "done": "Done"
+        },
+        "empty": "No orders yet. When the first one arrives, we will let you know on WhatsApp and by email.",
+        "empty_list": "No orders here right now.",
+        "load_error": "We could not load the orders. Please try again.",
+        "retry": "Try again",
+        "card": {
+          "slot": "{kind} on {day} {from}–{until}",
+          "line": "{qty} × {name}",
+          "estimate": "Estimated price, set after weighing",
+          "total": "To pay: {total} ₪",
+          "delivery_fee": "Includes delivery {fee} ₪",
+          "address": "Delivery address: {address}",
+          "note": "Note from the customer: {note}",
+          "age": "The order has alcohol · ask for ID at hand-over",
+          "phone": "Phone",
+          "proposal_sent": "You proposed a change. Waiting for the customer.",
+          "expires": "If you do not answer by {when}, the order will be cancelled."
+        },
+        "status": {
+          "pending": "New",
+          "change_proposed": "Waiting for the customer",
+          "confirmed": "Confirmed",
+          "ready": "Ready for pickup",
+          "handed": "Handed over",
+          "declined": "Declined",
+          "cancelled": "Cancelled",
+          "expired": "Cancelled, not answered in time",
+          "no_show": "The customer did not come"
+        },
+        "actions": {
+          "confirm": "Confirm",
+          "propose": "Propose a change",
+          "decline": "Decline",
+          "ready": "Ready for pickup",
+          "handed": "Handed over",
+          "no_show": "The customer did not come",
+          "cancel": "Cancel the order",
+          "send": "Send",
+          "back": "Back",
+          "final_price": "Final price after weighing",
+          "final_price_help": "Up to {max} ₪ for the products, the amount the customer saw. For a higher amount, propose a change.",
+          "decline_title": "Why decline the order?",
+          "reason_stock": "Out of stock",
+          "reason_full": "The slot is full",
+          "reason_other": "Another reason",
+          "reason_text": "The reason, as the customer will see it",
+          "propose_title": "Propose a change to the customer",
+          "propose_slot": "Another slot (optional)",
+          "propose_same_slot": "Keep the slot",
+          "propose_total": "New amount for the products in shekels, without delivery (optional)",
+          "propose_note": "What changed, in your words",
+          "propose_needs_change": "Choose another slot or a new amount",
+          "pickup_code": "The customer's pickup code (optional)",
+          "cancel_title": "Cancel an order you already confirmed?",
+          "cancel_lead": "The customer will get a message about it.",
+          "cancel_note": "Note to the customer (optional)",
+          "failed": "That did not work. Please try again."
+        }
       }
     },
     "page_preview": {
@@ -5492,7 +5823,9 @@
       "saving": "Saving…",
       "save_success_toast": "Settings updated",
       "save_error_toast": "Save error, please try again",
-      "phone_placeholder": "050-1234567"
+      "phone_placeholder": "050-1234567",
+      "whatsapp_paused": "WhatsApp updates are paused until you verify your number.",
+      "whatsapp_verify_description": "We'll send a 6-digit code to this number on WhatsApp. Once verified, updates from the businesses you saved will be sent there. You can stop any time by replying \"STOP\"."
     },
     "layout": {
       "skip_to_main": "Skip to content"
@@ -5573,7 +5906,7 @@
       "saved_msg": "Details saved",
       "save_error_fallback": "We couldn't save. Please try again.",
       "upload_type_error": "Only image files allowed: JPG, PNG, WEBP, GIF",
-      "upload_size_error": "File too large — 5MB maximum",
+      "upload_size_error": "File too large — 4MB maximum",
       "avatar_uploaded_msg": "Profile photo updated",
       "avatar_upload_error_fallback": "Upload error — please try again",
       "field_name_label": "Full name",
@@ -5595,7 +5928,7 @@
       "add_cta": "Add product",
       "errors": {
         "upload_type": "Only image files allowed: JPG, PNG, WEBP, GIF",
-        "upload_size": "File too large — 5MB maximum",
+        "upload_size": "File too large — 4MB maximum",
         "upload_failed_fallback": "Upload error — please try again",
         "name_required": "Product name is required",
         "price_required": "Please enter a price",
@@ -5986,8 +6319,8 @@
         "intro": "The business showed us a document and we checked it by hand. <link>How we check</link>"
       },
       "editorial": {
-        "heading": "Editor's pick",
-        "intro": "A badge the editor gives on personal judgement."
+        "heading": "Editors' pick",
+        "intro": "A badge the editors give on personal judgement."
       },
       "self-declared": {
         "heading": "Declared by the business",
@@ -6135,6 +6468,14 @@
       }
     }
   },
+  "draft_preview": {
+    "banner": "This is a preview of the page we prepared for you on Mehamakor. It is not on the site yet, and only people with this link can see it.",
+    "invalid": {
+      "title": "This link is no longer active",
+      "body": "It may have expired, or the page may already be live. Write to us and we will send a new link.",
+      "contact": "Contact us"
+    }
+  },
   "claim": {
     "loading": "Loading the page…",
     "kicker": "We prepared a page for you on Mehamakor",
@@ -6185,6 +6526,7 @@
       "instagram": "Instagram",
       "website": "Website",
       "facebook": "Facebook",
+      "meta_description_fallback": "{name} on Mehamakor: food markets and events.",
       "owner_heading": "Behind the events",
       "since_prefix": "Active since",
       "phone": "Call",
@@ -6420,8 +6762,8 @@
       "tooltip": "The business showed a licence or an official exemption document that was checked by hand."
     },
     "recommended": {
-      "label": "Editor's pick",
-      "tooltip": "A personal pick by the Mehamakor editor — for quality, freshness or a special story. This badge cannot be bought."
+      "label": "Editors' pick",
+      "tooltip": "A personal pick by the Mehamakor editors — for quality, freshness or a special story. This badge cannot be bought."
     },
     "new": {
       "label": "New",
@@ -6503,11 +6845,17 @@
       "invalid_url": "That address is not valid — start with https://"
     },
     "list": {
-      "summary": "Sign-ups on the site ({count})",
+      "summary": "Signed up on the site ({count})",
       "empty": "No sign-ups on the site yet",
       "cancelled": "Cancelled",
       "offline_label": "Signed up outside the site",
-      "load_error": "Couldn't load the list."
+      "load_error": "Couldn't load the list.",
+      "waitlist": "Waitlist ({count})",
+      "party": "{count} people",
+      "attendance": "Did they come",
+      "attended": "Came",
+      "no_show": "Didn't come",
+      "attendance_error": "Couldn't save. Try again."
     },
     "cta": {
       "signup_experience": "Sign up for the workshop",
@@ -6518,7 +6866,8 @@
       "question": "Or ask the host",
       "full": "No spots left",
       "whatsapp_message": "Hi! I'd like to sign up for \"{title}\"",
-      "question_message": "Hi! I have a question about \"{title}\""
+      "question_message": "Hi! I have a question about \"{title}\"",
+      "waitlist_join": "Join the waitlist"
     },
     "signup": {
       "name": "Name",
@@ -6532,7 +6881,10 @@
       "name_short": "The name needs at least 2 letters",
       "email_invalid": "That email address isn't valid",
       "phone_invalid": "Invalid phone number",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "waitlist_submit": "Join the waitlist",
+      "waitlist_success": "You're on the waitlist. If a spot opens up, we'll email you a sign-up link.",
+      "party_size": "How many people"
     },
     "cancel": {
       "title": "Cancel sign-up for \"{title}\"",
@@ -6543,7 +6895,10 @@
       "generic": "Something went wrong. Try again.",
       "back_event": "To the event page",
       "back_experience": "To the workshop page",
-      "page_title": "Cancel sign-up"
+      "page_title": "Cancel sign-up",
+      "waitlisted": "You're on the waitlist. If a spot opens up, we'll email you.",
+      "confirm_waitlist": "Leave the waitlist",
+      "done_waitlist": "You've left the waitlist."
     }
   },
   "filter_axes": {
@@ -6622,7 +6977,9 @@
     "regions": {
       "north": "the North",
       "haifa": "Haifa & the Krayot",
+      "carmel_coast": "the Carmel Coast",
       "sharon": "the Sharon",
+      "hefer_valley": "the Hefer Valley",
       "gush_dan": "Gush Dan",
       "shfela": "the Shfela",
       "jerusalem": "the Jerusalem area",
@@ -6824,8 +7181,8 @@
         "tile_line": "After the certificate has been checked"
       },
       "editor_pick": {
-        "label": "\"Editor's pick\", which is not for sale",
-        "tile_title": "Editor's pick",
+        "label": "\"Editors' pick\", which is not for sale",
+        "tile_title": "Editors' pick",
         "tile_line": "Not for sale"
       },
       "reservist_diet_tags": {
@@ -6900,6 +7257,14 @@
     "submit_publish": "Approve and publish the page",
     "submitting": "Signing in…",
     "submit_error": "We could not complete the sign-up",
+    "existing": {
+      "signed_in_as": "You're signed in as {email}. The page will move to this account.",
+      "code_sent": "We sent a code to {email}. Not there? Check your spam folder, or write to us.",
+      "has_account": "Already have a Mehamakor account?",
+      "login_link": "Sign in",
+      "resend": "Send a new code",
+      "sign_out": "Not the right account? Sign out"
+    },
     "invalid": {
       "body": "This link is no longer valid. Write to us and we will send a new one.",
       "contact": "Contact us"
@@ -6929,7 +7294,7 @@
       "results_lead": "A business whose paid bookings through the site reach ₪{threshold} in a month chooses how to continue:",
       "sub_title": "Reduced-commission subscription",
       "sub_price": "₪{monthly} a month",
-      "sub_note": "Or ₪{yearly} a year.",
+      "sub_note": "Or ₪{yearly} a year. A fixed amount, even in a month with no bookings.",
       "sub_fee": "Plus a reduced commission on bookings: {subPercent}% instead of {percent}%, and ₪{subBagFee} a bag instead of ₪{bagFee}.",
       "sub_fee_no_rescue": "Plus a reduced commission on bookings: {subPercent}% instead of {percent}%.",
       "fee_title": "No subscription",
@@ -6944,8 +7309,8 @@
       "notice_title": "Before the first charge",
       "notice_body": "We will tell you {noticeDays} days ahead, in writing. If you do not pick a track you keep your page, free: paid tools close to new bookings, and bookings already made go ahead as usual.",
       "early_title": "If you join during the launch period",
-      "early_body": "A reduced commission without a subscription: {subPercent}% and ₪{subBagFee} a bag, for the first {earlyMonths} months of billing. After that, the price list applies.",
-      "early_body_no_rescue": "A reduced commission without a subscription: {subPercent}%, for the first {earlyMonths} months of billing. After that, the price list applies.",
+      "early_body": "The reduced-commission subscription as a gift for the first {earlyMonths} months of billing, with nothing to choose and no ₪{monthly} to pay: a {subPercent}% commission and ₪{subBagFee} a bag. {noticeDays} days before it ends we'll let you know, and you choose how to continue.",
+      "early_body_no_rescue": "The reduced-commission subscription as a gift for the first {earlyMonths} months of billing, with nothing to choose and no ₪{monthly} to pay: a {subPercent}% commission. {noticeDays} days before it ends we'll let you know, and you choose how to continue.",
       "dispute_title": "If a booking that did not happen was counted",
       "dispute_body": "Before each charge we send a summary of the bookings. You have {disputeDays} days from receiving it to write to us, and we do not charge for that booking until we have checked.",
       "change_title": "If the price list changes",
@@ -6967,7 +7332,7 @@
       "back_link": "Back to the join page",
       "or": "or",
       "sub_fit": "A fit for a business with many paid bookings.",
-      "sub_example": "After a few bookings a month the subscription pays for itself: once commissions reach ₪{breakEvenFees}.",
+      "sub_example": "The subscription pays off in any month your commissions without it would reach ₪{breakEvenFees} or more.",
       "fee_fit": "A fit for a business that is starting out or has few bookings.",
       "fee_note": "You pay only for a month in which paid bookings reached ₪{threshold}.",
       "fee_example": "For example: on a ₪{examplePrice} booking, the fee is ₪{exampleFee} and you keep ₪{exampleKeep}.",
@@ -6987,5 +7352,33 @@
   "account_deleted": {
     "heading": "Account deleted",
     "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
+  },
+  "page_freshness": {
+    "meta_title": "Page check",
+    "ask_title": "Is everything on your page still correct?",
+    "ask_body": "Hours, delivery, prices and contact details.",
+    "cta_yes": "Yes, all correct",
+    "cta_update": "I want to update",
+    "sending": "Saving…",
+    "done_title": "Thanks! We marked your page as checked today.",
+    "dead_title": "This link is no longer active. You can update your page from your dashboard."
+  },
+  "phone_verify": {
+    "title": "Verify your business phone",
+    "reverify_title": "Your business WhatsApp number isn't verified yet",
+    "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
+    "send_cta": "Send verification code",
+    "sending": "Sending...",
+    "resend_in": "You can resend a code in {seconds}s",
+    "code_label": "Verification code",
+    "code_placeholder": "6-digit code",
+    "confirm_cta": "Verify",
+    "confirming": "Verifying...",
+    "success": "Phone verified! Once every step is ready, press \"Send for review\" so we can get to know your business.",
+    "error_invalid": "Wrong or expired code. Please try again.",
+    "error_no_phone": "No phone number on your profile. Add one, then verify.",
+    "error_generic": "Something went wrong. Please try again.",
+    "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
+    "error_rate_limited": "Too many attempts. Please try again shortly."
   }
 }

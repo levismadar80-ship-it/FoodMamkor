@@ -189,6 +189,38 @@ Eight instances in one week:
 
 ---
 
+## Tests that pass for the wrong reason (MEH-3295)
+
+A green test is evidence only if it would go red when the code broke. Four
+mechanical checks, then one rule for the threads:
+
+- **A vitest test with no `expect` fails** (`expect.requireAssertions` in
+  `frontend/vitest.config.js`). "Does not throw" is
+  `expect(() => fn()).not.toThrow()`. Never switch the option off for a test.
+- **`scripts/checks/test-honesty-guard.sh`** (Repo guards, blocking) fails a
+  NEW pytest test with no assert / `pytest.raises` / mock `assert_*` /
+  asserting helper, a skip or xfail whose reason names no `MEH-<N>`, a
+  non-strict xfail, a vitest `.only`, a vitest `.skip`/`.todo` without a card.
+  "Not raising is the behaviour" → `# no-assert: <reason>` in the test.
+  `test-honesty-baseline.txt` only shrinks.
+- **Mutation testing on the money-and-permissions set** — `[tool.mutmut]
+  only_mutate` in `backend/pyproject.toml`. A PR that changes one of those
+  files runs `bash scripts/mutation/run.sh` (≈1 h, one child, its own
+  `mehamakor_mutation` database) and pastes its table under `## Mutation`
+  (`mutation-guard.sh` warns without it). Every `NEW SURVIVOR` is killed by a
+  new test, or explained in `backend/mutation-survivors.txt` with a reason.
+  The weekly repo-health scan (MEH-3143) re-runs the whole set and opens a
+  card per new survivor. Google runs it the same way: changed code only, at
+  review time (Petrović et al., ICSE-SEIP 2018; TSE 2021).
+- **Property tests for pure money and date math** (Hypothesis,
+  `tests/test_meh3295_properties.py`). A new fee, rounding, cap or
+  business-day function gets a rule checked against an independent oracle,
+  not only examples.
+- A strict xfail or skip whose card is Done/Canceled has outlived its reason:
+  the weekly scan opens a card for it.
+
+---
+
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
@@ -200,6 +232,14 @@ brief always asks one more question: which docs describe what this diff changed
 its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
 the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a
 web-search CVE check ([security.md](./security.md)).
+
+**RED-tier PRs: the fresh reviewer runs on Fable (Sapir 15/11, MEH-3271).** For a
+RED-tier PR (auth, schema/Alembic, security, central components, prod — ADR-016)
+the rule-5a reviewer subagent is started with `model: "fable"`. If Fable is
+refused or its usage is exhausted, run the same reviewer on Opus and say so in
+the PR body — never skip the review. YELLOW/GREEN keep the default reviewer.
+Measured cost (14/11): ~120k tokens for a small PR, ~165–215k for a whole area;
+on 14/11 every Fable pass found a bug the earlier passes missed.
 
 **Round cap (MEH-2334):** if a 3rd adversarial round on one PR still produces new
 findings, stop the fix loop and hand Sapir the remaining findings as one list.
@@ -233,8 +273,9 @@ run adversarial even if the build fails.
 `protect-staging` (ruleset 15240090) requires exactly two aggregators:
 `CI gate` and `Deploy gate`. Named jobs skip on docs/config-only diffs and a
 skipped leg still aggregates to success — docs-only PRs merge with no override
-and **don't poll E2E**. `Playwright E2E` runs on a PR only once it carries the
-`run-e2e` label (MEH-2779; staging pushes always) and carries no vote until
+and **don't poll E2E**. `Playwright E2E` runs on a PR whose diff touches the
+frontend or backend paths, or that carries the `run-e2e` label (MEH-2956 —
+until then label-only, MEH-2779; staging pushes always), and carries no vote until
 Sapir applies `docs/ci/e2e-gate.patch.md` and adds the context to the ruleset
 (both are hers). So with auto-merge armed a PR lands on the two gates
 alone — an instruction like "wait for N green E2E runs" is enforced only by
@@ -282,7 +323,7 @@ Staging carries three QA users, and their passwords are in every session's env:
 
 Log in inside the same Playwright context (fill `/login`, or POST
 `/api/auth/login` as `frontend/e2e/global-setup.ts` does); a token fetched with
-curl fails the fingerprint check. `/auth/login` is 5/minute per IP — one login
+curl fails the fingerprint check. `/auth/login` is 5/minute per IP, plus 10 failed attempts per address in 15 minutes (MEH-3372) — one login
 per role per run. Never write "I could not see the dashboard / admin": check it
 on the demo account, or say which step failed. If a login is refused, that is a
 finding to report (the E2E run logs in with the same three on every staging

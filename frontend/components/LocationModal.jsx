@@ -6,7 +6,7 @@ import { Crosshair, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import CitySearch from "@/components/CitySearch";
 import { useFocusReturn } from "@/lib/use-focus-return";
-import { setUserLocation } from "@/lib/user-location";
+import { roundCoord, setUserLocation } from "@/lib/user-location";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -131,9 +131,12 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         // resolves a city name for the filter), so persistence never depends on
         // Nominatim succeeding. Third and last geolocate flow after MEH-1230.
         setUserLocation(pos.coords.latitude, pos.coords.longitude);
+        // MEH-3219 (B17): OpenStreetMap gets the rounded point, never the raw fix.
+        const lat = roundCoord(pos.coords.latitude);
+        const lng = roundCoord(pos.coords.longitude);
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=he`,
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=he`,
           );
           const data = await res.json();
           const city =
@@ -215,7 +218,9 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           <div className="w-11 h-[5px] rounded-full bg-border" />
         </div>
 
-        {/* MEH-1430: the X exists on desktop only (sm+); the sheet has none.
+        {/* MEH-1430 had the X on desktop only; MEH-3271 (Sapir 18/11) shows it
+            on the phone sheet too — a visible, non-drag way out (WCAG 2.2
+            2.5.7), as iOS and Material sheets carry one.
             MEH-2306: z-10 because the h2/p below are `relative` (to paint over
             the contour SVG) and come later in the DOM, so without it the h2
             paints over the X and takes its clicks. */}
@@ -223,7 +228,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="absolute z-10 top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 hidden sm:flex items-center justify-center text-text transition-colors"
+          className="absolute z-10 top-4 end-4 w-11 h-11 rounded-full bg-background hover:bg-green-50 flex items-center justify-center text-text transition-colors"
           aria-label={t("close_aria")}
         >
           <X size={16} weight="regular" />
@@ -234,11 +239,11 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
             so 36px of overlap needs clearing. */}
         <h2
           id="location-modal-title"
-          className="relative font-headline-md text-headline-md font-bold text-text mb-1 sm:pe-10"
+          className="relative font-headline-md text-headline-md font-bold text-text mb-1 pe-10"
         >
           {t("title")}
         </h2>
-        <p id="location-modal-subtitle" className="relative text-fg-muted text-sm mb-5 sm:pe-10">
+        <p id="location-modal-subtitle" className="relative text-fg-muted text-sm mb-5 pe-10">
           {t("subtitle")}
         </p>
 

@@ -12,6 +12,7 @@ import pytest
 from app.config import settings
 from app.models import Producer, User
 from app.routers import auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 from conftest import make_user
 
 
@@ -35,6 +36,16 @@ def google_verified(monkeypatch):
             "picture": "https://example.com/yael.jpg",
         },
     )
+    monkeypatch.setattr(
+        reg_router,
+        "_verify_google_token",
+        lambda token: {
+            "sub": GOOGLE_SUB,
+            "email": EMAIL,
+            "name": NAME,
+            "picture": "https://example.com/yael.jpg",
+        },
+    )
 
 
 @pytest.fixture
@@ -42,6 +53,11 @@ def apple_verified(monkeypatch):
     monkeypatch.setattr(settings, "apple_client_id", "dummy-apple-id")
     monkeypatch.setattr(
         auth_router,
+        "_verify_apple_token",
+        lambda token: {"sub": APPLE_SUB, "email": EMAIL},
+    )
+    monkeypatch.setattr(
+        reg_router,
         "_verify_apple_token",
         lambda token: {"sub": APPLE_SUB, "email": EMAIL},
     )
@@ -211,6 +227,7 @@ class TestProducerOAuthSignup:
     def test_invalid_google_token_returns_401(self, client, monkeypatch):
         monkeypatch.setattr(settings, "google_client_id", "dummy-google-id")
         monkeypatch.setattr(auth_router, "_verify_google_token", lambda t: None)
+        monkeypatch.setattr(reg_router, "_verify_google_token", lambda t: None)
         resp = client.post(
             "/auth/register/producer/oauth",
             json={"provider": "google", "id_token": "bad"},

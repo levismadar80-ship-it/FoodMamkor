@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import Popover from "@/components/ui/Popover";
 
 // MEH-800: contract tests for the click-popover primitive. The dismissal
@@ -65,7 +65,8 @@ describe("ui/Popover", () => {
   it("wires aria: haspopup + expanded on the trigger, labelledby on the content", () => {
     renderPopover();
     const btn = screen.getByText("פתחי");
-    expect(btn).toHaveAttribute("aria-haspopup", "true");
+    // A toggletip is a disclosure, not a menu: no aria-haspopup ("true" = menu).
+    expect(btn).not.toHaveAttribute("aria-haspopup");
     expect(btn).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(btn);
     expect(btn).toHaveAttribute("aria-expanded", "true");
@@ -73,6 +74,22 @@ describe("ui/Popover", () => {
     expect(content).toHaveAttribute("role", "tooltip");
     expect(content).toHaveAttribute("aria-labelledby", btn.id);
     expect(btn.id).not.toBe("");
+  });
+
+  it("announces a dialog only when the panel is one (role=dialog or the mobile sheet)", () => {
+    const { unmount } = render(
+      <Popover trigger={<button type="button">דיאלוג</button>} role="dialog">
+        תוכן
+      </Popover>,
+    );
+    expect(screen.getByText("דיאלוג")).toHaveAttribute("aria-haspopup", "dialog");
+    unmount();
+    render(
+      <Popover trigger={<button type="button">גיליון</button>} sheetOnMobile>
+        תוכן
+      </Popover>,
+    );
+    expect(screen.getByText("גיליון")).toHaveAttribute("aria-haspopup", "dialog");
   });
 
   it("still runs the trigger's own onClick before toggling", () => {
@@ -128,6 +145,38 @@ describe("ui/Popover", () => {
       } finally {
         restore();
       }
+    });
+
+    // MEH-3271 (Sapir 18/11): a visible ✕ on the sheet when the caller names it.
+    it("the sheet shows a labelled ✕ that closes it and returns focus", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
+        const trigger = screen.getByText("פתחי");
+        fireEvent.click(trigger);
+        const close = screen.getByTestId("close-pop-content");
+        expect(close).toHaveAttribute("aria-label", "סגור");
+        fireEvent.click(close);
+        expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+        expect(document.activeElement).toBe(trigger);
+      } finally {
+        restore();
+      }
+    });
+
+    it("no ✕ without a label, and never on the anchored desktop panel", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true });
+        fireEvent.click(screen.getByText("פתחי"));
+        expect(screen.queryByTestId("close-pop-content")).not.toBeInTheDocument();
+      } finally {
+        restore();
+      }
+      cleanup();
+      renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
+      fireEvent.click(screen.getByText("פתחי"));
+      expect(screen.queryByTestId("close-pop-content")).not.toBeInTheDocument();
     });
 
     it("backdrop click closes the sheet; Esc still returns focus to trigger", () => {

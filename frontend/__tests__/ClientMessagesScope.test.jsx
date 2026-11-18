@@ -36,6 +36,7 @@ import {
 const ROOT = path.resolve(__dirname, "..");
 const REPROVIDED = ["app/[locale]/admin/", "app/[locale]/producer/dashboard/", "app/[locale]/register/producer/"];
 const SIGNUP_FORM = "app/[locale]/register/producer/RegisterProducerClient.jsx";
+const SIGNUP_STEPS = "app/[locale]/register/producer/steps/";
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -139,7 +140,12 @@ describe("root client messages (MEH-2233)", () => {
   // form should read NOTHING from the admin namespace, and the strongest
   // version of this test is the one that says so.
   it("the producer sign-up form reads NO admin string at all", () => {
-    const s = src.get(path.join(ROOT, SIGNUP_FORM));
+    // MEH-3294: the form is the main file plus its step files.
+    const s = [...src]
+      .filter(([f]) => f === path.join(ROOT, SIGNUP_FORM) || f.startsWith(path.join(ROOT, SIGNUP_STEPS)))
+      .map(([, text]) => text)
+      .join("\n");
+    expect(s).toContain("producer-account-email");
     const keys = [...s.matchAll(/\bt\(\s*["'`](admin\.[a-z_.]+)["'`]/g)].map((m) => m[1]);
     expect(keys, `the register flow is borrowing admin copy again: ${keys.join(", ")}`).toEqual([]);
   });

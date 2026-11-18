@@ -4,13 +4,16 @@
 
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/lib/auth-context";
+import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
 export default function AppleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithApple } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const clientId = env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const redirectUri = env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
   // MEH-2080: the listener below is bound once per clientId, so it reads the
@@ -41,6 +44,12 @@ export default function AppleAuthButton({ onSuccess, onError, termsAccepted = fa
         await loginWithApple(authorization.id_token, name, { termsAccepted: termsRef.current });
         onSuccess?.();
       } catch (err) {
+        // MEH-3305: the recovery-code form lives on /login (the ticket stays in
+        // the auth context across the client-side move); on /login it shows in place.
+        if (err instanceof PasskeyStepRequired) {
+          if (pathname !== "/login") router.push("/login");
+          return;
+        }
         onError?.(detailToMessage(err.response?.data?.detail) || t("apple_error"));
       }
     };

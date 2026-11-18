@@ -14,7 +14,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
-import { CANONICAL_SENTENCE } from "@/lib/constants";
+import { CANONICAL_SENTENCE, SITE_DESCRIPTION } from "@/lib/constants";
 
 const APPROVED_HE = "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.";
 const APPROVED_EN =
@@ -27,9 +27,12 @@ describe("canonical sentence copy (MEH-2313)", () => {
     expect(CANONICAL_SENTENCE).toBe(APPROVED_HE);
   });
 
-  it("llms.txt line 3 is the approved sentence", () => {
+  // MEH-3424 / ADR-043: llms.txt's summary line moved to SITE_DESCRIPTION.
+  // The brand sentence lives on as the hero subheading and the JSON-LD slogan.
+  it("llms.txt line 3 is SITE_DESCRIPTION, no longer the brand sentence", () => {
     const lines = readFileSync(join(__dirname, "../public/llms.txt"), "utf-8").split("\n");
-    expect(lines[2]).toBe(APPROVED_HE);
+    expect(lines[2]).toBe(SITE_DESCRIPTION);
+    expect(lines[2]).not.toBe(APPROVED_HE);
   });
 
   it("the consumer hero subheading carries it in he and en", () => {

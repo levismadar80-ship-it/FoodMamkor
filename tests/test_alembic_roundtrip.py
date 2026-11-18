@@ -65,7 +65,12 @@ def _base_url() -> str:
 
 def _alembic(url: str, *args: str) -> str:
     env = {**os.environ, "DATABASE_URL": url, "ENV": "test"}
-    for key in ("DATABASE_URL_STAGING", "DATABASE_URL_PRODUCTION"):
+    # MEH-3307: MIGRATION_DATABASE_URL would send the migration elsewhere.
+    for key in (
+        "DATABASE_URL_STAGING",
+        "DATABASE_URL_PRODUCTION",
+        "MIGRATION_DATABASE_URL",
+    ):
         env.pop(key, None)
     proc = subprocess.run(
         [sys.executable, "-m", "alembic", "-c", str(BACKEND / "alembic.ini"), *args],

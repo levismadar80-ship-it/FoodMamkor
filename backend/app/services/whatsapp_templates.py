@@ -61,6 +61,15 @@ class WhatsAppTemplate(BaseModel):
     name: ClassVar[str]
     language: ClassVar[str] = "he"
 
+    # MEH-3414: may this template be sent outside production? The body text
+    # (and any URL button's base) is registered with Meta as-is, so a link in
+    # it is `https://mehamakor.co.il/...` in EVERY environment — a staging send
+    # points the reader at production. FAIL-CLOSED: False unless the template
+    # is known to carry no link. Outside production a blocked template is
+    # dropped (logged); the matching email still goes, with staging's own URL.
+    # DO NOT set True on a template whose Meta text holds a link (MEH-3414).
+    sends_outside_production: ClassVar[bool] = False
+
     def to_components(self) -> list[dict[str, object]]:
         """Build the Meta `components` array from the model fields.
 
@@ -144,6 +153,9 @@ class OtpCodeV1(WhatsAppTemplate):
     """
 
     name: ClassVar[str] = "producer_otp_v1"
+    # MEH-3414: the code and a copy-code button, no link to the site — and the
+    # OTP_TEST_NUMBERS harness needs it on staging.
+    sends_outside_production: ClassVar[bool] = True
     code: str
 
     def to_components(self) -> list[dict[str, object]]:
@@ -292,3 +304,95 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
     name: ClassVar[str] = "admin_business_pending_v1"
     producer_name: str
     city: str
+
+
+# --- MEH-3296: on-site product orders ---------------------------------------
+#
+# UTILITY category, no buttons. Bodies are the approved copy table of 14/11
+# (/mnt/project-files/product-ordering/copy-table-he.md), one {{n}} per field
+# in field order. The exact bodies submitted to Meta (18/11) live in
+# whatsapp_template_bodies.py and are linted by tests/test_whatsapp_template_lint.py.
+# Until Meta approves one, a send answers 132001 and the outbox marks the row failed.
+# DO NOT put a newline or a tab in a parameter — Meta rejects the send
+# (132000). The outbox passes `wa_param()` output.
+
+
+class ProductOrderNewV1(WhatsAppTemplate):
+    """To the business.
+
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
+    """
+
+    name: ClassVar[str] = "product_order_new_v1"
+    customer_name: str
+    count: str
+    total: str
+    fulfilment: str
+    day: str
+    starts: str
+    ends: str
+    link: str
+
+
+class ProductOrderWaitingV1(WhatsAppTemplate):
+    """To the business, after 4 active hours with no answer.
+
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
+    """
+
+    name: ClassVar[str] = "product_order_waiting_v1"
+    hours: str
+    deadline: str
+    link: str
+
+
+class ProductOrderConfirmedV1(WhatsAppTemplate):
+    """To the buyer.
+
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
+    """
+
+    name: ClassVar[str] = "product_order_confirmed_v1"
+    business_name: str
+    fulfilment: str
+    day: str
+    starts: str
+    ends: str
+    total: str
+    link: str
+
+
+class ProductOrderChangeV1(WhatsAppTemplate):
+    """To the buyer.
+
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
+    """
+
+    name: ClassVar[str] = "product_order_change_v1"
+    business_name: str
+    link: str
+
+
+class ProductOrderClosedV1(WhatsAppTemplate):
+    """To the buyer: declined, cancelled by the business, or expired.
+
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
+    """
+
+    name: ClassVar[str] = "product_order_closed_v1"
+    business_name: str
+    link: str
+
+
+class ProductOrderTomorrowV1(WhatsAppTemplate):
+    """To the buyer, the day before.
+
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
+    """
+
+    name: ClassVar[str] = "product_order_tomorrow_v1"
+    fulfilment: str
+    business_name: str
+    starts: str
+    ends: str
+    link: str

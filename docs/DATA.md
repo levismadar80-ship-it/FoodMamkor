@@ -45,7 +45,7 @@
 | 21 | `producer_recipes` | Producer-owned recipes promoting their products (admin-moderated) | `ProducerRecipe` |
 | 22 | `producer_recipe_products` | Many-to-many recipe ↔ product link (same-producer enforced in router) | _(association `Table`)_ |
 | 23 | `inbound_messages` | Inbound WhatsApp messages — populated by future PR2c receiver, consumed by MEH-509 PR2b watchdog | `InboundMessage` |
-| 24 | `outbound_messages` | Outbound WhatsApp sends — one row per real send written by the send layer (MEH-771 Chunk A); `status` lifecycle `accepted`→`delivered`/`failed` reconciled via the Chunk B delivery webhook; `meta_message_id` (wamid) UNIQUE for idempotency. Mirrors `inbound_messages` phone-key pattern (no FK) | `OutboundMessage` |
+| 24 | `outbound_messages` | Outbound WhatsApp sends — one row per real send written by the send layer (MEH-771 Chunk A); `status` lifecycle `accepted`→`delivered`/`failed` reconciled via the Chunk B delivery webhook; outside production also `blocked_nonprod` rows with the would-be content in `error_message` (MEH-3402, OTP codes masked, 7-day window, deduped 24 h); `meta_message_id` (wamid) UNIQUE for idempotency. Mirrors `inbound_messages` phone-key pattern (no FK) | `OutboundMessage` |
 | 25 | `producer_locations` | Physical presence points of a producer — branch / pickup / market_stand (a business can have many; e.g. 10 pickup points). Multi-location model (epic MEH-1388) | `ProducerLocation` |
 | 26 | `producer_offers` | ONE owner-declared, typed, expiring offer per business — free delivery / gift / first-order / pickup discount, with an optional non-monetary threshold. At most one row ACTIVE at a time (unique partial index); superseded rows persist as history (MEH-1823) | `ProducerOffer` |
 
@@ -61,7 +61,7 @@
 
 > **MEH-2080 chunk 2 (2026-10-29) — OAuth signup from /register records the consent.** `GoogleAuthRequest` / `AppleAuthRequest` gained an **optional** `terms_accepted: bool = False`. `/register` forwards its checkbox to both buttons (read when the provider answers, not at mount); `/auth/google` and `/auth/apple` stamp `terms_accepted_at` + `TERMS_VERSION` only when it is `True` — new or existing user, same as `register_producer`. An absent/`False` flag writes nothing and erases nothing, so `/login` (no checkbox) is unchanged and its new accounts stay NULL (the honest state; a sign-in-time consent banner would need new copy). Owners are covered elsewhere: Step 2 of `/register/producer` and `/producer-claim` both stamp it, so `/auth/register/producer/oauth` step-0 is deliberately left alone.
 
-> **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; the legacy `is_verified` column was fully retired and DROPPED in MEH-766 (writers ch3 #1420, contract ch5 #1578, column ch6 revision `d4e7a92c81b5`). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category is in `LICENSE_REQUIRED_CATEGORIES` → `"declared"`; else `null` (no badge, no negative label). Mirrors the MEH-530 name-membership predicate (`license_validation.categories_require_license`) against the loaded categories. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
+> **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; the legacy `is_verified` column was fully retired and DROPPED in MEH-766 (writers ch3 #1420, contract ch5 #1578, column ch6 revision `d4e7a92c81b5`). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category has `requires_license` (MEH-3255; was the `LICENSE_REQUIRED_CATEGORIES` name list) → `"declared"`; else `null` (no badge, no negative label). Same predicate as `license_validation.categories_require_license`, read from the loaded categories' `requires_license`. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
 
 > **MEH-2520 (2026-10-28) — the tier says only what is still true.** The resolver above is narrowed, not replaced; predicate in `app/services/verification_status.py`, shared by the schema tier and the `?verified` filter. `"verified"` additionally requires that the admin-captured `license_expires_at` (MEH-2072) is not before `israel_today()` — NULL = not captured, never expired; the business stays listed, only the badge drops, and a lapsed row counts under `?verified=false`. `"declared"` additionally requires `declared_at IS NOT NULL` — an admin-created, unclaimed business signed nothing, so it gets `null` and the «חתם על הצהרה מחייבת» line is not shown. No backfill (ADR-007): a retroactive `declared_at` would assert a signature nobody gave. Production impact, as last recorded 26/10 (not re-measured here — CC cannot query prod): 1 business, status draft, so no approved row loses a tier.
 
@@ -77,6 +77,10 @@
 >
 > `admin_checklist_items` — `id` UUID PK, `position` INT NOT NULL (indexed), `label` TEXT NOT NULL, `hint` TEXT NULL, `active` BOOL NOT NULL DEFAULT true, `updated_at` TIMESTAMPTZ NOT NULL DEFAULT now() with model-level `onupdate=func.now()`. Seeded in the migration with the same 7 items `frontend/lib/admin-review-checklist.js` already shipped, so the switch is a change of source and not of content; the constant survives only as that seed plus two copy exports. `position` is written as `index * 10` by the router (never accepted from the client — a client-supplied position lets two items claim one slot and makes the order depend on an unspecified tiebreak), spaced so a later insertion needs no renumbering. **Only `updated_at`, no `created_at`:** the question anyone asks of a config row is when it last changed; the audit surface is the other table.
 >
+> `admin_audit_log` (MEH-3306) — `id` UUID PK, `actor_id` UUID NOT NULL (indexed, **deliberately not a FK**: CASCADE would erase the record with the account, SET NULL is an UPDATE on an append-only table), `action` VARCHAR(160) NOT NULL (method + route template, e.g. `PUT /admin/users/{user_id}/role`), `target_type` VARCHAR(40) NULL, `target_id` VARCHAR(64) NULL (the first path parameter), `details` JSONB NULL (reduced before/after: a role, a status, a flag — never names, phones or free text), `ip` VARCHAR(64) NULL, `created_at` TIMESTAMPTZ NOT NULL DEFAULT now() (indexed). **One row per SUCCESSFUL change made by an admin account**: `get_current_user` (`auth.py`) schedules the write for every signed-in mutating request whose user is an admin, so it covers the `/admin` routes and equally an owner route an admin enters by an inline role check (delete an event, a review). Reads, refused requests and changes that did not go through (404/409/422) leave no row. Append-only in the code (`services/admin_audit.py` inserts; nothing updates or deletes). Not logged: telemetry sent with `get_current_user_lenient`. Fail-open: the row is written after the response, and a failed write is logged, never raised.
+>
+> `admin_passkeys` + `admin_recovery_codes` (MEH-3305, migration `b4f2c8e1d6a3`, expand-only) — an admin account's second factor. `admin_passkeys`: `id` UUID PK, `user_id` FK users ON DELETE CASCADE (indexed), `credential_id` BYTEA UNIQUE (one credential never signs in as two accounts), `public_key` BYTEA, `sign_count` BIGINT DEFAULT 0 (a counter that goes backwards = a cloned key), `aaguid` VARCHAR(36) NULL (authenticator model), `backup_eligible` / `backup_state` BOOLEAN DEFAULT false (a synced passkey), `transports` VARCHAR(120) NULL, `name` VARCHAR(60) NULL, `created_at`, `last_used_at` NULL. `admin_recovery_codes`: `id`, `user_id` FK CASCADE (indexed), `code_hash` VARCHAR(128) (the code is shown once and never stored), `used_at` NULL (set = spent), `created_at`. Nothing reads them until the passkey routes ship (MEH-3305 chunk 3). CASCADE on both: a deleted admin leaves no usable key or code.
+>
 > `producer_review_checks` — `id` UUID PK, `producer_id` UUID → `producers.id` **ON DELETE CASCADE** (indexed), `item_id` UUID → `admin_checklist_items.id` **ON DELETE RESTRICT** (indexed **in its own right** — the composite unique below leads with `producer_id`, so it cannot serve the `item_id`-only lookup Postgres runs to enforce the RESTRICT on every parent DELETE), `label_snapshot` TEXT NOT NULL, `checked_by` UUID → `users.id` **ON DELETE SET NULL**, nullable, `checked_at` TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE `(producer_id, item_id)`. **An unchecked item is the ABSENCE of a row**, not a row with a false flag — "never ticked" and "ticked then un-ticked" are deliberately indistinguishable, because the ticket asks for a record of what was verified, not a keystroke log.
 >
 > **The three delete behaviours are each a decision.** CASCADE on the producer: the checks describe a business, and with the business gone there is nothing left to attest about. **RESTRICT on the item: this is the ticket's "no delete — deactivate only" rule enforced in the schema rather than trusted to the router** — a DELETE against an item that has ever been ticked fails at the database, so audit history cannot be destroyed by removing its subject; `active = false` is the sanctioned retirement path, and the settings UI therefore offers «הפסקת שימוש» and no bin. SET NULL on the actor: deleting an admin account must not delete the record that a check happened; a null actor is a weaker record than a named one and a far better one than none (matches the existing `users.id SET NULL` precedent).
@@ -85,7 +89,7 @@
 >
 > **Ticks never gate approval.** The hard gates (photo 422 / licence 422) live in `admin_decisions.py::approve_producer` (rules: `services/producer_approval.py`) and are untouched; a tick is a record that a human looked, never a permission. **Re-ticking does not restamp** — an item already ticked keeps its FIRST `checked_by`/`checked_at`, or every autosave would rewrite the audit trail to the most recent page load.
 
-> **MEH-971 chunk 3 (2026-06-28):** `ProducerAdminOut` gains a derived **`license_pending: bool`** — **computed** in `_compute_license_pending` (`@model_validator(mode="after")`), never a stored column / no migration. True iff the producer is in ≥1 `LICENSE_REQUIRED_CATEGORIES` category AND `producer_license_number` is empty/NULL; status-independent (an override-approved producer still shows it). Mirrors the MEH-762 `_compute_verification_tier` predicate over the already-loaded `categories` (no DB round-trip). **Admin-only** — on `ProducerAdminOut` only, NOT public `ProducerListOut`/`ProducerDetailOut`. Surfaced as the "רישיון ממתין" badge on the `/admin/producers` queue so an admin verifies the license before approving (pairs with the chunk-4 `allow_without_license` approval guard).
+> **MEH-971 chunk 3 (2026-06-28):** `ProducerAdminOut` gains a derived **`license_pending: bool`** — **computed** in `_compute_license_pending` (`@model_validator(mode="after")`), never a stored column / no migration. True iff the producer is in ≥1 category with `requires_license` (MEH-3255; was the name list) AND `producer_license_number` is empty/NULL; status-independent (an override-approved producer still shows it). Mirrors the MEH-762 `_compute_verification_tier` predicate over the already-loaded `categories` (no DB round-trip). **Admin-only** — on `ProducerAdminOut` only, NOT public `ProducerListOut`/`ProducerDetailOut`. Surfaced as the "רישיון ממתין" badge on the `/admin/producers` queue so an admin verifies the license before approving (pairs with the chunk-4 `allow_without_license` approval guard).
 
 > **MEH-2495 (2026-10-28):** `ProducerAdminOut` gains a derived **`has_owner: bool | None`** (default `None`, so a route that forgot to hydrate it **fails closed** — the admin UI renders neither chip nor action for a non-boolean) — True iff at least one `users` row has `producer_id` = the producer (the same predicate as `producer_claim._has_owner`, which 409s the claim link). **Never stored, no migration.** Hydrated by `admin.py::_attach_has_owner` in **one** `SELECT DISTINCT users.producer_id … IN (…)` per response (no N+1; DISTINCT because `users.producer_id` has no unique index) on every route that returns `ProducerAdminOut` (`GET /admin/producers`, `/pending`, `/{id}`, `PUT /{id}`, `POST`). **Admin-only** — absent from `ProducerListOut` / `ProducerDetailOut` / `ProducerOwnerOut` (asserted in `tests/test_meh2495_admin_draft_owner.py`). Drives the drafts-list chips «מחכה לבעלים» / «נקלט, בהשלמה» and the row action «העתקת הודעה עם קישור» (ownerless drafts only). The set of routes returning `ProducerAdminOut` is pinned by an OpenAPI-derived inventory test, so a sixth route has to be added — and hydrated — on purpose.
 
@@ -114,7 +118,7 @@
 > **MEH-1889 chunk B (MEH-2264, 2026-09-05):** the rest landed, no migration. `special_hours` is now **owner-writable** (`_PRODUCER_WRITABLE_FIELDS`, row 45 of the guidance audit) and **serialized on `ProducerListOut`** — the list contract, not only the detail one, for the MEH-1880 reason (ProducerCard's "open for orders" line and the open-now chip read the order axis from list data). The validator additionally **rejects dates older than `israel_today() − 30`** (422 «התאריך … כבר עבר — אפשר להגדיר שעות מיוחדות רק לתאריכים מה-30 הימים האחרונים ואילך»), after the shape checks. **Readers:** `GET /producers?open_for_orders_now=` consults today's override first (`special_hours -> <today> -> ranges` via JSONB subscripts; `[]` = closed; no key = the weekly answer byte-for-byte; an override with no weekly window is still a declaration, so it lands on the closed side rather than vanishing from both), and the frontend `getOrderWindowStatus(orderWindow, now, specialHours)` does the same for the header status, the card line and the chip evaluator, scanning 14 days ahead. Past dates are ignored by every reader and dropped by the editor on its next save. **Editor:** `SpecialHoursEditor.jsx` in the dashboard's זמנים group; holiday suggestion chips read `holidaysOn(today)` in `frontend/lib/holidays.js`; since MEH-3017 the dates are computed from the Hebrew calendar (`frontend/lib/hebrew-holidays.js`), not typed per year.
 > **MEH-1456 chunk A (2026-09-04, night session):** `categories.is_system` — `BOOLEAN NOT NULL server_default false` (revision `b7d3e5a9c1f4`, expand-only; `EXPECTED_TABLES` unchanged). Declared ownership **on the row** for the 18 `seed_data.CATEGORIES` categories (Oracle Siebel *Protect Seed Data*, IBM RDU `WRITE_PROTECTED`; GBP's closed taxonomy and Etsy's immutable `taxonomy_id` say the same thing). **Two writers, on purpose:** the revision backfills existing databases by `name` — `name` is UNIQUE and is the seed's own conflict key (`seed_data.py:283`), so a seed-named row *is* the seed row and no prod measurement is needed — and `seed_categories` writes `is_system=True` on its own INSERT, because on a fresh database migrations run **before** the boot seed inserts anything, so a migration-only backfill would leave every seeded row `False`. The revision fails loud if categories exist but none carries a seed name (CATEGORIES drifted from its snapshot). `slug` already existed (`a7c3e91d5f28` / `c9f2a41e8b03`), `emoji` is **live** (`search.py:182`, admin stats) and is not dropped. Exposed read-only as `is_system: bool` on `CategoryOut` (ADR-006 R1, same PR — the CI reviewer caught its absence), so it rides every nested `categories[]` in the producer responses and is recorded in `producer_contract_snapshot.json`; deliberately **not** on `CategoryHit` (a search hit never gates an edit). **Chunk 2b** makes `update_category` / `delete_category` refuse a rename or delete while `is_system` is `True`.
 
-> **MEH-3255 (grill retro D10, 2026-11-14) — expand step:** `categories.requires_license` — `BOOLEAN NOT NULL server_default false` (revision `f1a7c3e9b5d2`, ADR-007 expand-only; `EXPECTED_TABLES` unchanged). Backfilled by name from a snapshot of `constants.LICENSE_REQUIRED_CATEGORIES` (9 names); fresh databases get it from `seed_categories` on INSERT. `POST /admin/categories` now takes `CategoryCreate`, where `requires_license` is **required** (no default → 422), and the admin form asks «הקטגוריה דורשת רישיון ייצור ממשרד הבריאות?». `PUT` keeps `CategoryIn` — the flag is not editable there. Exposed as `requires_license: bool` on `CategoryOut`. **Nothing reads it yet:** licence enforcement still uses the name tuple until the contract PR switches the readers and deletes it; `tests/test_meh3255_requires_license_parity.py` holds the two equal meanwhile.
+> **MEH-3255 (grill retro D10, 2026-11-14) — expand step:** `categories.requires_license` — `BOOLEAN NOT NULL server_default false` (revision `f1a7c3e9b5d2`, ADR-007 expand-only; `EXPECTED_TABLES` unchanged). Backfilled by name from a snapshot of `constants.LICENSE_REQUIRED_CATEGORIES` (9 names); fresh databases get it from `seed_categories` on INSERT. `POST /admin/categories` now takes `CategoryCreate`, where `requires_license` is **required** (no default → 422), and the admin form asks «הקטגוריה דורשת רישיון ייצור ממשרד הבריאות?». `PUT` keeps `CategoryIn` — the flag is not editable there. Exposed as `requires_license: bool` on `CategoryOut`. **Contract step (same card):** every reader now uses the column — `license_validation.categories_require_license`, `_compute_verification_tier`, `_compute_license_pending`, the category rename guard (`admin_extra.update_category`, now `if cat.requires_license`) and the frontend `requiresProducerLicense` (falls back to the name list only for an object without the field). `constants.LICENSE_REQUIRED_CATEGORIES` stays as the seed's source; `tests/test_meh3255_requires_license_parity.py` keeps the seed and the migration snapshot equal to it.
 
 > **MEH-1494 chunk A (2026-09-04, night session):** `producers.recommended_at` (`TIMESTAMPTZ`, nullable) + `producers.recommended_note` (`TEXT`, nullable) — revision `e2a7c9d4b6f1`, expand-only, `EXPECTED_TABLES` unchanged. The editor's pick (`is_recommended`, MEH-18) gets a **date** and a **reason**, the way the programmes it imitates work in cycles: TripAdvisor Travelers' Choice is a 12-month window, the MICHELIN Guide re-inspects every 12–18 months and withdraws stars. **No backfill** — rows already recommended keep `recommended_at = NULL`, which chunk B's review list reads as "picked before the clock existed, due now" rather than a fabricated date. **`recommended_note` is admin-only and is on no public schema**; `test_meh1494_recommended_at_note.py` asserts its absence from `ProducerListOut` and `ProducerDetailOut` by name. Chunk B: the admin toggle stamps `recommended_at` (False→True = now(), True→False = NULL), the note field joins `admin/ProducerForm.jsx`, the review list is `recommended_at IS NULL OR < now() - 12 months`, and `ProducerUpdate`'s stale `is_recommended` declaration (`schemas.py:1841`, ignored on write) is removed.
 
@@ -147,6 +151,8 @@
 > **MEH-2286 (2026-10-21):** `direct_outreach` («מהמקור פנו אליי ישירות») added to `REFERRAL_SOURCE_KEYS` — 9 keys. Code-side allowlist only; no migration.
 
 > **MEH-3079 (2026-11-14):** weekly summary email to business owners. `producers.weekly_summary_opt_out` (`BOOLEAN NOT NULL`, `server_default false`) and `producers.weekly_summary_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**), migration `0cfa83f0f53e`, Expand-only (ADR-007), no backfill. opt_out is written only by `POST /weekly-summary/unsubscribe` (signed token, scope `weekly_summary_unsubscribe`, sub = producer id); sent_at only by `services/weekly_owner_summary.py::send_weekly_summaries` (Sunday 08:00 Asia/Jerusalem, registered only when `WEEKLY_OWNER_SUMMARY_ENABLED`). A business is skipped when stamped within the last 6 days, opted out, not live (`is_business()`), its owner has no verified email, or its deduped 7-day page views are 0. **Not exposed on any response schema.**
+
+> **Page freshness (2026-11-18):** the monthly "is everything still correct?" email. `producers.last_confirmed_at` and `producers.freshness_email_sent_at` (both `TIMESTAMP WITH TIME ZONE`, **nullable**), migration `a8d41c2e7f90`, Expand-only (ADR-007), no backfill. `freshness_email_sent_at` is written only by `services/page_freshness.py::send_freshness_emails` (daily tick, off until `PAGE_FRESHNESS_ENABLED`); a live business older than 30 days whose owner has a verified email gets at most one email per 30 days, and none while she confirmed within them. `last_confirmed_at` is written only by `POST /page-freshness/confirm` (signed token, scope `page_freshness_confirm`, `exp` 21 days). `last_confirmed_at` is on `ProducerAdminOut` only. `GET /admin/producers?freshness_stale=true` lists live businesses older than 60 days not confirmed within 60 days, ownerless pages included.
 
 > **MEH-1818 (2026-08-02):** day-1 pending-nudge email. `producers.email_pending_nudge_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `d3b7f1a92c64`) records when a business still awaiting approval was sent the one-time "here is what is missing" email. Mirrors the MEH-539 `email_followup_*` tracking columns exactly — `nullable=True`, **no `server_default`, NO backfill** (ADR-007 Expand-only; a backfill would retro-suppress the nudge for the exact pending businesses the feature exists to reach). No new index: the candidate query filters `created_at`, already covered by `idx_producers_created_at`. **Not exposed on any schema** — public, owner, and admin serializers all omit it; the sole consumer is `app/services/pending_nudge.py:send_pending_nudges`, invoked from the daily 10:00 UTC scheduler tick. Candidate predicate: `status IN ('draft','pending') AND created_at <= now()-24h AND email_pending_nudge_sent_at IS NULL`; the day-marks then count from `max(created_at, declared_at)` (MEH-2340), so an admin draft its owner claimed by link starts the sequence at the claim, not at the admin's creation (MEH-2100 added `draft`; MEH-2124 removed `pending_whatsapp`) — status membership is an explicit tuple, so a status value added later is excluded by default (fail-closed, same reasoning as the MEH-1587 approved-only gate). **The stamp is written even when nothing was missing and no email was sent** (a complete-but-unapproved business is waiting on admin review, not on itself): that is what removes it from the candidate set permanently and holds the send to exactly one email per producer.
 >
@@ -197,6 +203,12 @@ producers (
   -- guessed at. Readers fall back to top_product_name, which is unchanged and
   -- still the only writer until the switch step. Revision f4b1c8e0a297.
   top_product_id uuid nullable references products(id) on delete set null,
+  -- MEH-3339: optional second phone + label (migration c3e8a1f05d72, expand-only).
+  -- Public on ProducerDetailOut as one text line «{label}: {number}» («טלפון נוסף»
+  -- when unlabelled). Every CTA, phone verification and WhatsApp notification
+  -- stays on `phone`. Owner PUT /producers/me + admin PUT; label without number → 422.
+  secondary_phone       VARCHAR(20) NULL,
+  secondary_phone_label VARCHAR(30) NULL,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
@@ -245,6 +257,15 @@ phone_otp_tokens (
   expires_at timestamp, used bool default false, created_at
 )
 
+-- MEH-3301 (D14): one-time WhatsApp code that verifies a USER's phone.
+-- `phone` = the canonical number the code is bound to; `attempts` = wrong guesses
+-- (5 per token). Written only by the MEH-3302 routes. Migration c7d3e1a9f4b2.
+user_phone_otp_tokens (
+  id uuid PK, user_id FK → users ON DELETE CASCADE (indexed),
+  phone varchar(30), code varchar(6),
+  expires_at timestamp, used bool default false, attempts int default 0, created_at
+)
+
 -- MEH-51: producer uploads cert → admin approves → badge activates
 kashrut_badge_requests (
   id uuid PK, producer_id FK,
@@ -259,6 +280,8 @@ users (
   id uuid PK,
   email unique, name, password_hash (nullable for OAuth),
   phone, city,
+  phone_verified_at timestamptz nullable,   -- MEH-3301: when THIS phone was verified; a phone change clears it
+  whatsapp_consent_at timestamptz nullable, -- MEH-3301: WhatsApp-updates consent; «הסר» clears it
   role: consumer|producer|admin,
   producer_id FK nullable,
   google_id, apple_id (unique when set),
@@ -283,7 +306,9 @@ products       (id, producer_id FK, name, description,
                 is_low_carb Boolean NOT NULL DEFAULT FALSE,
                 ingredients Text NULL,                           -- MEH-2662: owner-declared free-text ingredient list; NULL = not filled
                 price_unit String(8) NOT NULL DEFAULT 'unit',    -- MEH-3218: unit | kg | 100g (CHECK products_price_unit_check). The price itself stays price_min/price_max; min == max is an exact price
-                is_orderable Boolean NOT NULL DEFAULT FALSE,     -- MEH-3218: the owner opts each product into on-site ordering
+                is_draft Boolean NOT NULL DEFAULT false,         -- MEH-2312 (b1d19ee0e8c1): an admin-imported product waiting for approval. Invisible to every public read: the Producer.products relationship filters it (page, list, ?q=, diet/pickup .any(), favorites) and search.py / producer_listing.py has_product filter it too; the owner's own list / edit / reorder / featured / recipe-link skip it
+                source_image_url Text NULL,                      -- MEH-2312: the source store's image URL, stored only (MEH-1184 pending); never on a public schema, never uploaded
+                is_orderable Boolean NOT NULL DEFAULT TRUE,      -- MEH-3218: the opt-in is per BUSINESS (producer_order_settings.enabled); the owner can take a single product out
                 in_stock Boolean NOT NULL DEFAULT TRUE,          -- MEH-3218
                 contains_alcohol Boolean NOT NULL DEFAULT FALSE, -- MEH-3218
                 allergens Text[] NULL)                           -- MEH-2662: owner-declared codes from app/allergens.py (14-item closed list, canonical order, unknown → 422); NULL = not filled, never "none"      -- MEH-1934: 6th dietary axis ("דל פחמימות"). Partial index idx_products_dietary on (producer_id) WHERE any flag TRUE — predicate extended with is_vegetarian in MEH-1438 and with both MEH-1934 flags in revision a2f7d4c8e153 (a product marked only low-carb would otherwise fall outside the index)
@@ -346,6 +371,7 @@ producer_reviews (
   created_at,
   source varchar(20) NOT NULL DEFAULT 'click' CHECK (source IN ('click','invite_link')),  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18 (ck_producer_reviews_source)
   ai_moderation_status varchar(16) NULL CHECK (ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-2349: AI verdict on the body at the last write. NULL = no verdict: rows that predate the column, or a fail-open (MEH-2390 — it was stored as APPROVED and so never re-checked on an unchanged re-save; the review still publishes, its signal is the Sentry report). REJECTED is never stored (422). Informational — a FLAGGED review still publishes. Revision c4e81a2f9b6d
+  reply_ai_moderation_status varchar(16) NULL CHECK (reply_ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-3259: AI verdict on the owner `reply` at its last write; same NULL rules as ai_moderation_status (no reply, fail-open, or predates the column). REJECTED is a 422 and never stored. An unchanged reply keeps its verdict. Revision f2c7a9d4b1e6
   edited_after_hidden_at timestamp NULL,  -- MEH-2381: the author's last change to body or stars while is_hidden. NULL = not edited since the admin last hid/unhid it; PUT /hide (also on an already-hidden row) and /unhide clear it. Admin-only (AdminReviewOut). Revision d7a3f5c1e2b8
   UNIQUE(producer_id, user_id)   -- one review per user per producer
 )
@@ -429,8 +455,12 @@ registrations (
   experience_id FK experiences ON DELETE CASCADE,-- (CHECK ck_registrations_one_item)
   name varchar(100), phone varchar(20), email varchar(200),  -- what the visitor typed; no account
   cancel_token varchar(64) UNIQUE,               -- the visitor's only credential (cancel link in her email)
-  status: registered|cancelled,
-  created_at, cancelled_at
+  status: registered|cancelled|waitlisted,     -- waitlisted: MEH-3314
+  created_at, cancelled_at,
+  reminder_sent_at,                              -- MEH-3312
+  waitlist_offered_at,                           -- MEH-3314: the one offer email went out
+  party_size smallint DEFAULT 1 CHECK 1..10,     -- MEH-3315: places this sign-up takes
+  attendance NULL|attended|no_show               -- MEH-3315: the owner's note, blocks nothing
 )
 ```
 
@@ -507,6 +537,20 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
   until billing is switched on. `history` is the month and the five before it,
   newest first, each as it would have been billed (shadow billing; computed on
   read, nothing stored). Read by `/admin/billing` (MEH-3182).
+
+**Billing-start signal (MEH-3413, `services/billing_start_signal.py`).** On the
+1st, 2nd and 3rd of each month at 05:00 UTC the scheduler reads `overview()`
+for the month that just ended and emails `ADMIN_EMAIL` «הגיע הזמן» when
+`businesses_over_two_months >= start_billing_businesses` — once per month per
+process (three mornings, so a restart over the 1st does not lose the month).
+Below that, nothing is sent; once `BILLING_PHASE` is `billing`, nothing is
+sent. Repeats each month the rule holds. Writes nothing; the same numbers are
+on `/admin/billing`.
+
+**Terms §11 → code (MEH-3413).** Every paragraph of «terms.sections.pricing»
+is classified in `tests/test_meh3413_terms11_enforcement.py`: kept by a named
+test, or listed in `pricing.SWITCH_ON_BLOCKERS`, which keeps billing off until
+it is built. Price list 1 is frozen by the same file.
 
 **Capabilities (MEH-3181, `services/capabilities.py`).** What a business may do is
 asked of this module, not read off `producers.plan`. Today it owns one rule, moved
@@ -640,7 +684,7 @@ producer_page_views (
   producer_id FK producers.id ON DELETE CASCADE (indexed),
   viewer_ip_hash varchar(64) NULL,       -- SHA-256 hex
   city varchar(100) NULL,                -- from authed user.city, else NULL
-  referrer varchar(30) NULL,             -- search|map|category|home|favorites|follow|NULL
+  referrer varchar(30) NULL,             -- search|map|category|home|favorites|follow|producers-index|similar|nearby|share|NULL (allowlist: services/analytics.py _ALLOWED_REFERRERS; share = MEH-3331)
   created_at timestamp (indexed)
 )
 
@@ -777,6 +821,10 @@ product_orders         (id uuid PK, producer_id uuid FK→producers CASCADE,
                         delivery_fee_agorot int default 0, status, payment_status,
                         pickup_code char(4) nullable, age_declared bool,
                         expires_at, confirmed_at, handed_at, closed_at,
+                        status_token_hash char(64) nullable, idempotency_key varchar(64) nullable,
+                        delivery_city varchar(100) nullable,
+                        proposed_slot_start, proposed_slot_end, proposed_total_agorot,
+                        proposal_note,                                -- MEH-3263
                         created_at, updated_at)                       -- MEH-3218
 product_order_items    (id uuid PK, order_id uuid FK→product_orders CASCADE,
                         product_id uuid FK→products SET NULL nullable,
@@ -787,9 +835,23 @@ product_order_events   (id uuid PK, order_id uuid FK→product_orders CASCADE,
                         from_status nullable, to_status, actor customer|business|admin|system,
                         actor_user_id uuid FK→users SET NULL nullable, note,
                         created_at)                                   -- MEH-3218
+product_order_phone_codes (id uuid PK, phone varchar(20), code_hash char(64),
+                        expires_at, attempts int default 0, used_at nullable,
+                        created_at)                                   -- MEH-3263
+product_order_notifications (id uuid PK, order_id FK→product_orders CASCADE,
+                        kind, channel, outcome default 'pending', send_after,
+                        attempts int default 0, last_error varchar(20),
+                        sent_at, created_at;
+                        UNIQUE (order_id, kind, channel))             -- MEH-3296
 ```
 
-> **MEH-3218 — on-site ordering, stage 1 (14/11/2026):** the tables behind «בקשת הזמנה» (parent MEH-3216), all dormant until `PRODUCT_ORDERS_ENABLED` (default off). A buyer picks products, pickup or delivery and a time; the business confirms. **No payment anywhere:** the buyer pays the business directly, so `payment_status` has the single value `direct_to_business` and the CHECK refuses anything else (ADR-042 §5). The column exists so on-site payment can be added later as a CHECK widening. Money is integer agorot; `estimated_total_agorot` is what the buyer saw, `final_total_agorot` is set at confirmation (weighed goods), `delivery_fee_agorot` is separate. An order line **copies** the product's name and price, and `product_id` is SET NULL, so renaming or deleting a product does not rewrite past orders. `status` is one of pending · confirmed · change_proposed · ready · handed · declined · cancelled · expired · no_show, and the **only writer** is `services/product_order_state.py::apply_transition`, which also appends the `product_order_events` row (from, to, who). Ordering is **opt-in per business**: no `producer_order_settings` row, or `enabled=false`, means off. `alcohol_licensed` is admin-only. Also adds four columns to `products`, each NOT NULL with a server default (no backfill): `price_unit` ('unit' · 'kg' · '100g'), `is_orderable` (true), `in_stock` (true), `contains_alcohol` (false). **No new price column:** `price_min == price_max` is the exact price. Vocabularies live once in `app/models/product_orders.py`; `tests/test_meh3218_product_orders.py` reds if the revision's CHECK literals drift. Migration `d5a7c3e9f1b4`; **`EXPECTED_TABLES` +4**. Routes (all 404 while the flag is off): `GET /producers/me/order-settings` 👤 (the defaults, ordering off, when never saved) · `PUT /producers/me/order-settings` 👤 (saves the whole form; auto-confirm needs a per-slot cap; never touches `alcohol_licensed`) · `PUT /admin/producers/{producer_id}/order-settings/alcohol` 🛡️. No route creates or changes an order yet.
+> **MEH-3218 — on-site ordering, stage 1 (14/11/2026):** the tables behind «בקשת הזמנה» (parent MEH-3216), all dormant until `PRODUCT_ORDERS_ENABLED` (default off). A buyer picks products, pickup or delivery and a time; the business confirms. **No payment anywhere:** the buyer pays the business directly, so `payment_status` has the single value `direct_to_business` and the CHECK refuses anything else (ADR-042 §5). The column exists so on-site payment can be added later as a CHECK widening. Money is integer agorot; `estimated_total_agorot` is what the buyer saw, `final_total_agorot` is set at confirmation (weighed goods), `delivery_fee_agorot` is separate. An order line **copies** the product's name and price, and `product_id` is SET NULL, so renaming or deleting a product does not rewrite past orders. `status` is one of pending · confirmed · change_proposed · ready · handed · declined · cancelled · expired · no_show, and the **only writer** is `services/product_order_state.py::apply_transition`, which also appends the `product_order_events` row (from, to, who). Ordering is **opt-in per business**: no `producer_order_settings` row, or `enabled=false`, means off. `alcohol_licensed` is admin-only. Also adds four columns to `products`, each NOT NULL with a server default (no backfill): `price_unit` ('unit' · 'kg' · '100g'), `is_orderable` (true), `in_stock` (true), `contains_alcohol` (false). **No new price column:** `price_min == price_max` is the exact price. Vocabularies live once in `app/models/product_orders.py`; `tests/test_meh3218_product_orders.py` reds if the revision's CHECK literals drift. Migration `d5a7c3e9f1b4`; **`EXPECTED_TABLES` +4**. Routes (all 404 while the flag is off): `GET /producers/me/order-settings` 👤 (the defaults, ordering off, when never saved) · `PUT /producers/me/order-settings` 👤 (saves the whole form; auto-confirm needs a per-slot cap; never touches `alcohol_licensed`) · `PUT /admin/producers/{producer_id}/order-settings/alcohol` 🛡️. Stage 1 itself has no route that creates or changes an order; those arrive in stage 2b (MEH-3263, below).
+>
+> **MEH-3262 — on-site ordering, stage 2a (14/11/2026):** what a business offers, still behind `PRODUCT_ORDERS_ENABLED`. New table `producer_order_windows` (id, producer_id FK CASCADE, `weekday` **0 = Sunday … 6 = Saturday**, the convention of `producers.order_window`, `start_time`, `end_time`, `fulfilment` pickup · delivery; CHECK end > start, so a window ends by 23:59): the weekly windows in which the business **hands orders over**. This is not `producers.order_window`, which is when the owner *answers* orders and has no pickup/delivery split; the two are different facts with different owners. They share the calendar above them: a date closed in `producers.special_hours` (`ranges: []`) and the owner's vacation (`availability_state = on_vacation`, through `vacation_until`, or every day when no return date is set) offer no slot. Written only as a whole list, capped at 28 rows a business. `producer_order_settings` gains `slot_minutes` (30 · 60 · 120, default 60) and `lead_time_hours` (0..168, default 24); both are required fields of `PUT /producers/me/order-settings`. `services/product_order_slots.py` cuts the windows into slots for the next 14 Israel days (pure function, no clock read): a slot must start at least `lead_time_hours` from now; on the two clock-change nights a slot is offered only when it really lasts its length (the skipped hour and the two-hour repeated hour are dropped); a slot touching 23:00–07:00 is marked `alcohol_ok=false`; for a `shabbat_observant` business a slot touching Friday 14:00 – Saturday 21:00 is dropped (a fixed wide margin; since MEH-3296 the same 14:00-eve to 21:00-day margin also covers every festival, computed from the Hebrew calendar). Migration `e6b9d4f1a2c7`; **`EXPECTED_TABLES` +1**. Routes (all 404 while the flag is off): `GET` / `PUT /producers/me/order-windows` 👤 (PUT replaces the whole week under a row lock on the business; overlapping windows of the same kind on one day → 422) · `PUT /producers/me/products/{product_id}/ordering` 👤 (`is_orderable`, `in_stock`, `price_unit`, `contains_alcohol`; another business's product → 404; orderable without `price_min` → 422) · `GET /producers/{producer_id}/order-menu` (public: minimum, cutoff, lead time, the orderable priced products with prices in agorot and `price_is_estimate`, and the slots; a product with alcohol appears only when the business is `alcohol_licensed`; one 404 for unknown / not approved / test row / ordering off). **Deleting a business:** both hard-delete paths (`DELETE /auth/me` via `services/user_deletion.py`, `DELETE /admin/producers/{id}`) answer 409 while the business has an order in pending · change_proposed · confirmed · ready (`services/product_order_guards.py`); closed orders go with the business (CASCADE), because they hold a buyer's name, phone and address.
+
+> **MEH-3263 — on-site ordering, stage 2b (14/11/2026):** the order itself, still behind `PRODUCT_ORDERS_ENABLED` (every route 404 while off). Revision `f7c1a5e9b3d2`: table `product_order_phone_codes`; seven nullable columns on `product_orders` (above); three partial UNIQUE indexes — `(producer_id, pickup_code) WHERE status IN ('confirmed','ready')`, `idempotency_key`, `status_token_hash`. **Buyer routes** (`routers/product_order_buyer.py`): `POST /product-orders/phone-code` `{producer_id, phone}` sends a six-digit WhatsApp code (template `producer_otp_v1`) only for a business that takes orders now; 3 codes an hour per phone and 500 a day site-wide, both counted in the table; 503 when WhatsApp is not configured (no code, no order). Only `HMAC-SHA256(server secret, phone:code)` is stored; 10 minutes, 5 wrong tries (each committed before the 422), single use. `POST /product-orders` `{producer_id, items[{product_id, qty}] (≤30, qty 1..99), fulfilment, slot_start, customer_name, phone, code, delivery_city?, delivery_address?, note?, age_declared, idempotency_key (UUID)}` → 201 with the buyer view plus `status_token` (shown once). A guest and a logged-in buyer take the same path; both prove the phone. **The request carries no price**: every line is priced from `products` (a range is stored at its high end and marked an estimate; a weighed product is always an estimate), `estimated_total_agorot` is goods only, and `delivery_fee_agorot` comes from the business's existing delivery facts (`delivery_areas.delivery_fee` for the city, else `producers.delivery_fee`, zeroed at `free_delivery_above`; whole shekels → agorot). Refusals: 404 business not taking orders · 422 wrong/expired/used code, alcohol without the age declaration · 403 two no-shows on the phone in 90 days · 409 three open orders on the phone, 200 open orders on the business, slot no longer offered, a product no longer orderable, below the minimum, alcohol in a night slot, city not served / no published fee, an idempotency key that belongs to another request. A retry with the same key, phone and business within 10 minutes returns the same order and the same token. Auto-confirm (business setting + per-slot cap + no estimated line) moves the order to `confirmed` as `system` and assigns a pickup code. `POST /product-orders/status`, `POST /product-orders/status/cancel`, `POST /product-orders/status/accept-change` take `{token}` or — logged in — `{order_id}` in the **body** (never the URL) and answer with `Cache-Control: no-store`; the buyer view masks the phone, omits the street address, shows `pickup_code` only while the order is `confirmed`/`ready`, and stops answering 30 days after the order closed. A buyer cancels freely while `pending`/`change_proposed`, and a `confirmed` order until `cancel_cutoff_hours` before the slot. `GET /users/me/product-orders` lists the logged-in buyer's orders (50, newest first). **Business routes** (`routers/product_order_business.py`, own business only, another's order is 404): `GET /producers/me/product-orders?status=&limit=&offset=` and `POST /producers/me/product-orders/{order_id}/confirm` `{final_total_agorot?}` (required when a line is an estimate) · `POST /producers/me/product-orders/{order_id}/decline` `{note?}` · `POST /producers/me/product-orders/{order_id}/propose-change` `{slot_start?, total_agorot?, note}` (the slot must be one of the business's own windows) · `POST /producers/me/product-orders/{order_id}/ready` · `POST /producers/me/product-orders/{order_id}/handed` `{pickup_code?}` (a wrong code is 409) · `POST /producers/me/product-orders/{order_id}/no-show` (only after the slot ended) · `POST /producers/me/product-orders/{order_id}/cancel` `{note?}`. The business view carries the full phone and address and never the pickup code. Every move goes through `services/product_order_state.py`; the system may now also cancel an open order, used only when a buyer deletes her account (`services/product_order_privacy.py`: open orders cancelled, name / phone / address / note / token removed from all of them, rows kept). Order creation locks the phone (advisory lock) and then the business row; the delete guard of MEH-3262 now locks the same row. Not in this stage: any message to the business or the buyer about an order, the 24-hour expiry timer, the purge of closed guest orders (moved to stage 6), any screen. **Review fixes (same PR):** `confirm` and `accept-change` answer 409 once the (proposed) slot has started, so an order can never be confirmed late and then reported as a no-show. `final_total_agorot` on confirm is accepted **only** when a line is an estimate and only up to `estimated_total_agorot` (the figure the buyer saw); a higher total, or any change to a fixed price, goes through propose-change and the buyer's acceptance (422 otherwise). `expires_at` is stored but not yet enforced: the timer that moves a stale `pending` / `change_proposed` to `expired` is stage 3. A goods total above 100,000 ₪ → 409. The proposal columns are cleared on every move out of `change_proposed`. A buyer cancelling a packed (`ready`) order gets the same 409 as past the cutoff. `POST /product-orders/phone-code` is 5/hour per IP. `GET /users/me/product-orders` deliberately has no 30-day stop: it is the account's own history; the stop applies to the guest link. **Known gaps, accepted for now:** deleting an account erases the phone from its orders, so its no-show count restarts (a keyed phone hash on no-show rows is listed for stage 6); a nationwide business accepts a delivery city that is not in the static list (the list holds ~110 cities, not every moshav; the business reads the city and can decline; the customer UI of stage 5 sends the city from the picker).
+
+> **MEH-3296 — on-site ordering, stage 3: messages and timers (15/11/2026):** still dark behind `PRODUCT_ORDERS_ENABLED`. Revision `a8d2c6f4e1b7` on `f7c1a5e9b3d2`, additive: table `product_order_notifications` (an **outbox**: one row per message an order owes, UNIQUE per order × kind × channel, so a retry or a double move never writes a second). Every status move writes its rows **in the same transaction** through `services/product_order_outbox.py::on_status`, called from `product_order_state.py` (`apply_transition` and `record_created`). What is owed: new order → WhatsApp + email to the business, and a reminder after 4 active hours if still pending; confirmed → WhatsApp to the buyer, plus «מחר» 24 h before the slot when the slot is at least 26 h away; change proposed, declined / expired / cancelled by the business → WhatsApp to the buyer; cancelled by the buyer → email to the business. An account deletion sends nothing to the buyer. **Dispatcher** (`dispatch_due`, at least once): picks due `pending` rows with `SKIP LOCKED`, sends, marks, commits per row; a 5xx / network failure retries after 5 min doubling, up to 5 tries; a 4xx (e.g. a template Meta has not approved) is final `failed`; a row more than 6 h late is `skipped`, and a reminder whose order moved on is `skipped`. Test businesses and test buyers are never messaged (`is_test`). The buyer link is `/he/order/{id}#t={token}`: the token sits in the fragment, never sent to a server. **Shabbat and chagim** are computed from the Hebrew calendar (`services/hebrew_calendar.py`, arithmetic, no library, Israel one-day festivals): rest runs 14:00 on the eve to 21:00 on the day, adjacent days merged. The 24-hour answer window and the 4-hour reminder count only hours outside rest (`product_order_clock.active_deadline`); no hand-over slot is offered inside rest; a Shabbat-observant business gets no message during rest (postponed to its end) and takes no new order then (409 «ההזמנות נפתחות שוב במוצאי שבת»). **Timer** (`services/product_order_sweeper.py::expire_due`): moves `pending` / `change_proposed` past `expires_at` to `expired` as `system`. Both run every 2 minutes in the app scheduler, each step guarded on its own, and the job is registered **only while the flag is on**. An order the business auto-confirms tells the business by email only («הזמנה חדשה התקבלה ואושרה»; the WhatsApp template asks for approval, so it is not sent). The business WhatsApp goes to `producers.phone` in international form; a landline gets email only. The account-deletion case is recognised only when the system cancels with its own note. The six WhatsApp templates (`ProductOrder*V1` in `whatsapp_templates.py`) must be approved by Meta before buyers get messages; until then those rows end `failed` and the business still gets its email. Not in this stage: the purge of closed guest orders (stage 6), any screen.
 
 > **MEH-2903 — `alembic_lineage` (11/11/2026):** boot bookkeeping, not app data. `alembic_version` stores only the current head, so an older image booting on a newer database (a backend rollback) cannot tell its own head is an ancestor of the database's revision. `backend/scripts/migrate_on_boot.py` (the only writer) records the image's whole revision chain here after every successful `upgrade head`; an image whose database is ahead of it takes rollback mode only if its own head is listed here, and otherwise fails the boot naming both revisions. Nothing in `app/` reads or writes it. Migration `19ac967d78fb`; **`EXPECTED_TABLES` 49 → 50**.
 
@@ -846,7 +908,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > (declared or received). 408 / 413 close the connection.
 
 > **MEH-3022 — per-business caps.** Creates answer **409** with a Hebrew
-> `detail` once a business holds the maximum: products 100, recipes 50,
+> `detail` once a business holds the maximum: products 100 (MEH-2312: drafts count), recipes 50,
 > locations 20, upcoming events 30, upcoming/recurring experiences 30, open or
 > funded group buys 30. `PUT /producers/me` refuses more than 20 `images` or
 > 300 delivery cities/areas with a Hebrew 422. All numbers live in
@@ -994,6 +1056,50 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > nothing. All mail is a BackgroundTask (fail-open, `test_cause` for a test
 > business).
 >
+> **MEH-3312 — the evening-before reminder (2026-11-15).** Migration
+> `b8e4f2a6c9d1` adds `registrations.reminder_sent_at` (TIMESTAMP NULL, naive
+> UTC). A daily job at 17:00 Israel (`REGISTRATION_REMINDER_CRON`, Sentry
+> heartbeat `registration-reminder-daily`) mails every `registered` sign-up to
+> an active event, or an approved, active, non-recurring experience, dated
+> tomorrow on the Israel clock: «תזכורת: "{title}" מחר», with time, place and
+> the cancel link. Rows are stamped and committed before sending, so a rerun
+> sends nothing. Recurring workshops are skipped until a sign-up carries its
+> occurrence date (MEH-3264). Service: `app/services/registration_reminders.py`.
+>
+> **MEH-3314 — the waitlist (2026-11-18).** Migration `c9f5a3b7d2e8` adds
+> `registrations.waitlist_offered_at` and `'waitlisted'` to
+> `ck_registrations_status`. A full item still answers a plain sign-up 409
+> `registration_full`; the same body with `waitlist: true` stores a
+> `waitlisted` row (201 `{status: "waitlisted"}`, max 50 per item, else 409
+> `waitlist_full`), emails the visitor her cancel link, and sends no owner
+> email and writes no ledger row. A cancel on an upcoming item emails the
+> first waitlisted visitor not yet offered, once, with the item link; the spot
+> is not held. Re-submitting the form with the same email promotes her row.
+> Service: `app/services/registration_waitlist.py`.
+>
+> **MEH-3315 — party size and attendance (2026-11-18).** Migration
+> `d4a6b8c0e2f1` adds `registrations.party_size` (1–10, default 1) and
+> `registrations.attendance` (NULL / `attended` / `no_show`). Places are the
+> SUM of `party_size` over registered rows (`services/registrations.py`
+> `registered_counts`), so `spots_left`, the cap check and «נשארו N מקומות»
+> count people. A party that no longer fits gets 409 `registration_not_enough`
+> «נשארו רק N מקומות» (or the waitlist, with `waitlist: true`). The owner or an
+> admin marks attendance; nothing reads it to block a visitor. A cancel offers
+> the freed places, in list order, to every waiting party that fits
+> (`registration_waitlist.offer_places`): a party too big for what is free is
+> skipped, not spent. The owner's «הרשמה חדשה» email adds «כמה אנשים» above 1.
+>
+> **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
+> `max_participants` below the item's active on-site sign-ups → **422**
+> «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
+> `services/registrations.refuse_too_few_places`), nothing written. Not checked
+> when the value equals the stored one, or when the same PUT cancels the item:
+> those sign-ups are cancelled with it, so nobody is left holding a place. Switching
+> `registration_method` away from `site_form` on an active item keeps every
+> sign-up and mails each registrant once («עדכון על ההרשמה ל"{title}"», with the
+> cancel link). A PUT that also moves the date sends only the «moved» email. Both dashboards keep showing the list while `registered_count`
+> > 0. No schema change.
+>
 > **MEH-2502 — the admin edit cannot change status.** `PUT
 > /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
 > סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status
@@ -1029,21 +1135,40 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
 
-### Auth (`app/routers/auth.py`)
+> **MEH-3289 — joining continues after the minimum (2026-11-15):** `POST /group-buys/{id}/commit` accepts status `open` **or** `funded` (was `open` only), still refused past the deadline (400) and at `max_participants` (400 «קבוצת הרכישה מלאה»). A join into a `funded` group leaves it `funded` and emails **only the joiner** the funded email (`send_funded_notifications(..., late_joiner=True)`: no business email, no re-send to earlier participants). Before this, `max_participants` could never be reached, because the first commit at the minimum closed joining. `DELETE /group-buys/{id}/commit` already allowed `funded`. No schema change.
+
+> **MEH-3311 — a funded group buy that drops below its goal (2026-11-15).** Migration `a7d3e9c1b5f2` adds two nullable naive-UTC columns to `group_buys`: `below_goal_notified_at`, `refunded_notified_at`. When `DELETE /group-buys/{id}/commit` reverts `funded → open` on a group whose funded email went out (`funded_notified_at` set), everyone who stayed gets one email «מהמקור — הקבוצה "{title}" ירדה מתחת ליעד» and `below_goal_notified_at` is stamped. When a later join re-crosses the minimum, every participant gets the funded email again (not the business) and `refunded_notified_at` is stamped. Each stamp is set once, so a flapping group mails a participant at most three times in all; `funded_notified_at` stays one-way (MEH-1651). The account-deletion revert (`group_buy_delist.withdraw_user_commits`) sends nothing. Service: `app/services/group_buy_goal_flap.py`.
+
+### Auth (`app/routers/auth.py`; `/auth/register/producer` and `/auth/register/producer/oauth` live in `app/routers/auth_register_producer.py` since MEH-3293)
 
 ```
 POST   /auth/register            public  — consumer signup → RegisterAck {detail} (MEH-328 OWASP anti-enum; no auto-login; verify via email)
 POST   /auth/register/producer   public  — producer multi-step; non-upgrade → RegisterAck {detail}; upgrade (auth) → Token + whatsapp_sent (MEH-328 Chunk B; MEH-306 sub-A out of scope). MEH-971 chunk 2: optional body field license_pending:bool=False — when true, skips the register-time license 422 so a license-required producer can submit with NULL license into the pending queue (transient input, not persisted; downstream approval guard + status gate still enforce licensed-only)
-POST   /auth/login               public  — email+password → JWT (no policy validation; verifies hash only per OWASP)
+POST   /auth/login               public  — email+password → JWT (no policy validation; verifies hash only per OWASP). Limits: 5/minute per IP + 10 FAILED attempts per address in 15 minutes (429, no lockout; a successful login is not counted — MEH-3372)
 GET    /auth/me                  auth    — current user; producer_kind (MEH-2460) beside producer_status
 POST   /auth/google              public  — Google OAuth ID token exchange
 POST   /auth/apple               public  — Apple Sign In ID token (App Store)
 POST   /auth/me/delete           auth    — account deletion (App Store). MEH-3248: 403 for admins / super-admin (account_guards.assert_deletable); body {password} or, for an account without one, {id_token} — a Google/Apple token for THIS account, issued ≤5 min ago (either linked provider when both are; fails closed when the provider's client id is not configured); 5/hour. Replaces the bodyless DELETE /auth/me (removed) services/user_deletion.py; MEH-3252: also erases the email/phone-keyed rows (newsletter incl. Resend Contacts, contact_messages, delivery_waitlist, WhatsApp inbound/outbound incl. her business phone) and clears outreach_leads suggester fields
 POST   /auth/check-password      public  — MEH-306 stateless policy preview (30/min/IP), no DB write
+```
+
+### Admin passkeys (`app/routers/admin_passkey.py`, MEH-3305)
+
+Off where `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` are unset (local, vercel.app previews): the routes answer 404 and every sign-in works as before. On, an **admin account with ≥1 passkey** gets `PasskeyRequired {passkey_required: true, ticket, options}` from `/auth/login`, `/auth/google` and `/auth/apple` instead of a token — no session cookie is set until the second step. `ticket` = a 5-minute single-use JWT (scope `passkey_ticket`, bound to its purpose, the account and its `token_version`).
+
+```
+GET    /auth/passkey                    admin   — {enabled, passkeys[{id,name,synced,created_at,last_used_at}], recovery_codes_left, has_password}
+POST   /auth/passkey/step-up/options    admin   — {ticket, options} for a device check before a change (10/min)
+POST   /auth/passkey/register/options   admin   — body StepUp → {ticket, options}. Proof: a passkey (ticket+credential) or a recovery code once one exists, else the password, else (Google/Apple account) the session. 409 at 10 passkeys (10/min)
+POST   /auth/passkey/register/verify    admin   — {ticket, credential, name?} → {passkey, recovery_codes} — 10 codes on the FIRST passkey only, shown once (10/min)
+POST   /auth/passkey/{id}/delete        admin   — body StepUp → 204. Own passkeys only (another admin's = 404). The last one takes the recovery codes with it (10/min)
+POST   /auth/passkey/recovery-codes     admin   — body StepUp → {recovery_codes}: replaces all 10 (5/min)
+POST   /auth/passkey/login/verify       public  — {ticket, credential} → Token + the same cookies as /auth/login (10/min)
+POST   /auth/passkey/login/recovery     public  — {ticket, code} → Token; a code works once; wrong codes count toward the MEH-3372 per-address failure ceiling (5/min)
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
-PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED)
+PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); MEH-3425: 5 wrong passwords an hour per account → 429, an account with no password → its own 403, and a real change bumps `token_version` (other devices signed out; this one gets fresh cookies); after the commit the OLD address gets a notice that the address changed (no name in the greeting; new address shown as `n***@d***.tld`; link to /contact)
 ```
 
 ### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)
@@ -1071,6 +1196,30 @@ DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 
                                                      Once she owns the page the products are hers, edited from /producers/me/products only.
 ```
 
+### Draft preview link + publish with recorded consent (`app/routers/producer_draft_preview.py`) — MEH-3377
+
+For a business that has not registered: an admin builds its page as an ownerless DRAFT, shows it to the business before anything is public, and publishes it once the business has agreed in writing. The preview token is read-only and is a different scope from the claim token, so a forwarded preview link cannot take the page over, and a claim link cannot be used to read it here.
+
+The public page is `frontend/app/[locale]/draft-preview/[token]/` (noindex, `referrer: no-referrer`, `force-dynamic`). It renders the regular business page under `PreviewModeProvider` with a banner that says the page is not on the site yet. `middleware.js` lists `/draft-preview/:path*` because the token has dots.
+
+```
+POST   /admin/producers/{id}/preview-link          admin  — 30/hour. Ownerless draft only (409 «אפשר רק לטיוטה שעוד אין לה בעלים»), 404 if missing.
+                                                     → {url: {frontend_url}/draft-preview/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_draft_preview"},
+                                                     14-day TTL, exp essential (services/draft_preview.py). Stateless — no table, no revocation before exp;
+                                                     it stops working the moment the draft is claimed, published, rejected or deleted.
+GET    /producer-preview/{token}                   public — 60/min. → ProducerDetailOut of the draft, hydrated like GET /producers/{id}.
+                                                     Bad signature, expired, wrong scope, no longer an ownerless draft → the same 404 «הקישור לא תקף או שפג תוקפו».
+POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank), consent_screenshot_url? (https res.cloudinary.com image URL, else 422)}; query allow_without_license.
+                                                     Ownerless draft only (409). Row FOR UPDATE. Runs the same gates as an approval (`_assert_approvable`:
+                                                     photo; licence unless allow_without_license, which also withholds the verified badge), with the
+                                                     phone-verified gate overridden — there is no owner to verify it yet. Sets status "approved", stores the
+                                                     note in producers.owner_invite_consent_note and the optional screenshot URL in producers.consent_screenshot_url
+                                                     (migration `c3e7a1f9d5b2`, VARCHAR(500) NULL, Expand-only; on ProducerAdminOut only), pings IndexNow. Sends NOTHING to the business.
+                                                     → {producer_id, status, slug}. The owner gets her account afterwards through the owner invite (below).
+```
+
+`POST /admin/producers/{id}/approve` still answers 409 on a draft (MEH-2121). This route is the one exit from `draft` that skips `pending`, and it exists only for an ownerless draft with a recorded consent.
+
 ### Owner invite (`app/routers/producer_owner_invite.py`) — MEH-2974
 
 The mirror image of the owner-claim link above, and **not** a duplicate of it. There, an admin prepares a DRAFT and its owner takes it over with an account she already has. Here, the admin builds and APPROVES the whole page — after written consent from the owner — and then hands over a live page to someone who has no account at all. The link is what creates one.
@@ -1092,6 +1241,13 @@ POST   /admin/producers/{id}/owner-invite/resend   admin — 10/hour. No body: r
 DELETE /admin/producers/{id}/owner-invite          admin — 30/hour. Withdraws an unaccepted invite and clears the invitee's email + name with the token (PII of a
                                                      non-user, MEH-2208's תיקון 13 class). Keeps owner_invite_created_by + the consent note — the record that an invite WAS sent.
                                                      404 when there is nothing to cancel, 409 once accepted. v3: a resend and a cancel each clear the three code columns too.
+POST   /admin/producers/{id}/detach-owner          admin — 10/hour (MEH-3256 D9, «ניתוק בעלים»). Body {confirm_name, expected_owner_user_id}. The owner's account stays:
+                                                     role → consumer, producer_id → NULL, is_producer → false, token_version += 1 (every session retired). The business keeps
+                                                     its data and status; `owner_invite_accepted_at` → NULL, so the row is invitable again. 404 no business / no owner,
+                                                     409 the owner is not `expected_owner_user_id` (changed since the page loaded), 409 two accounts are linked to the business,
+                                                     409 the owner hosts a live experience (`experiences.host_user_id`, active, not rejected, dated today or later or
+                                                     recurring: the experience belongs to her account, not the business, so it must be cancelled or end first),
+                                                     422 the typed name differs (spaces around it ignored), 403 the owner is an admin or the SUPER_ADMIN_EMAIL account. Mails the former owner (`services/owner_detach.send_owner_detached_email`). → {ok: true}.
 GET    /auth/owner-invite/{token}                  public — 30/hour. → {producer_name, email, requires_farmer_declaration, will_publish, preview} and nothing else.
                                                      v3: `email` is null when the invite carries none (the page renders an empty, editable field); `will_publish` is true while the
                                                      business is hidden, which is what the submit button's copy branches on; `preview` is the same five public fields the claim
@@ -1109,6 +1265,7 @@ POST   /auth/owner-invite/email-code               public — 5/hour. v3. Body {
                                                      What differs is invisible: a taken address is not mailed and no code is stored, so the acceptance it would lead to dies at the
                                                      409 it was always going to die at. An invalid link still 404s — that is a fact about the LINK, which the caller already holds.
 POST   /auth/owner-invite/email-code-existing      signed in + verified email (require_verified_email) — 5/hour. MEH-3256 (grill retro D8). Body {token}.
+                                                     UI: /owner-invite renders OwnerInviteExistingAccount.jsx for a signed-in reader (no address, no password field); a signed-out reader gets «כבר יש לכם חשבון» → loginHrefBackHere(), shown only once the token has left the address bar.
                                                      Mails a code to the SIGNED-IN account's own address (no address input, so no oracle), records it on owner_invite_email.
                                                      403 for an admin / super-admin account, 409 for an account that already has a business (producer_id or is_producer)
                                                      or any role other than consumer (allow-list).
@@ -1142,6 +1299,8 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                has_delivery, verified, kosher, city (producer city), availability_state, grass_fed,
                                                near_city (MEH-2602 — the map's city filter: own city OR a location row in it OR
                                                delivers there; located ones ordered first, non-geo mode only)
+                                               MEH-3219 (B17): lat/lng are rounded to 2 decimals (~1 km) on entry, here and in
+                                               GET /rescue/offers, before any distance math; the client rounds before storing too
                                                sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
                                                (byte-identical default). "rating" → unreviewed (NULL avg or reviews_count<1) LAST, then
                                                MEH-2617 Bayesian score (avg*n + 4.0*5)/(n + 5) DESC, tiebreak
@@ -1190,6 +1349,17 @@ GET    /producers/by-slug/{slug}                  public
                                                or renamed-away slug → 404. Middleware rewrites (no status — a 410 rewrite shows Vercel's
                                                own GONE page) to /[locale]/business-gone → ProducerGone, 200 + noindex.
                                                Not via [slug]: its Data Cache keeps the last 200 after a delete (MEH-2576).
+                                               MEH-3336: a slug RENAMED away from a business that is still public →
+                                               404 {detail: {code: "slug_moved", message, slug: <current>}}; the
+                                               middleware answers the browser 301 → /<current> (locale prefix kept,
+                                               query kept, only a-z0-9- slugs followed). Every old slug points at the
+                                               business, so renames chain. A renamed business that is no longer
+                                               public → plain 404. Slugs are minted Latin (a-z0-9-, ≤40): Instagram
+                                               handle, else the name transliterated; collision → town appended
+                                               (`-2` only as the last resort); a typed slug must be Latin (422
+                                               `slug_not_latin`), checked only when the slug CHANGES so a legacy
+                                               Hebrew slug stays editable. A name that transliterates to nothing
+                                               (all-Arabic, no handle) → NULL slug, /producer/{id}.
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
@@ -1221,6 +1391,16 @@ PUT    /producers/me                              producer — MEH-999: license 
                                                   and edit vegan_scope the next day unobserved. Fail-open at the task boundary
                                                   (_sensitive_edit_task), because the notifier's preamble sits outside its own
                                                   per-channel try blocks and a raising BackgroundTask would break the owner's 200.
+                                                  MEH-3261 (D11): for an APPROVED business, a changed description / short_description /
+                                                  owner_bio (compared after strip) goes through the AI check first
+                                                  (services/approved_edit_moderation.py) — REJECTED → 422 «הטקסט אינו עומד בהנחיות
+                                                  הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב.» and nothing in the PUT is saved; fail-open
+                                                  saves. One admin ping «📝 עסק מאושר עדכן תוכן» per save that changed any of those
+                                                  three or the `images` set (a reorder alone does not ping), « — טקסט סומן ע״י AI» when FLAGGED.
+                                                  Product POST/PUT of an approved business get the same check on name/description/
+                                                  ingredients (422 on REJECTED; ping only when FLAGGED). AI call: 10 s timeout, 1 retry.
+POST   /users/me/verify-phone                    auth      — MEH-3302 (D14): send a WhatsApp code to the user's OWN phone (3/10min burst; 3 per user and 3 per canonical phone per rolling day across accounts → 429; after the 3-per-day caps, a number whose latest inbound message is «הסר»/stop → 503 with the generic «לא הצלחנו לשלוח» text, so the route does not reveal what a number replied; no phone → 400; already verified → 200). Token in user_phone_otp_tokens, 10 min, bound to the canonical phone
+POST   /users/me/verify-phone/confirm            auth      — MEH-3302: { code: 6 digits } → stamps users.phone_verified_at + whatsapp_consent_at (5/min). Wrong guess increments attempts; the 5th kills the token. PATCH /users/me with a DIFFERENT canonical number clears phone_verified_at and kills unused codes; a reformatted same number keeps it. «הסר» clears whatsapp_consent_at. fire_alerts sends WhatsApp only when both stamps are set (the whatsapp_opt_in flag is kept, so verifying resumes alerts). GET /auth/me → phone_verified (bool) + whatsapp_ready (verified AND consent; false after «הסר», and then a new code restores consent). Caps run before the opt-out check, so a capped opted-out number answers 429 like any capped one
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min); MEH-2122 B: 503 «לא הצלחנו לשלוח את הקוד בוואטסאפ כרגע…» when WhatsApp is configured and the send failed (test rows and unconfigured envs stay 200)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min). MEH-3245: the code must have been sent to the CURRENT number (a code for an earlier number → 400)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
@@ -1240,6 +1420,10 @@ PATCH  /admin/name-change-requests/{id}          admin     — {status: approved
 GET    /producers/me/review-link                 producer  — MEH-1428 chunk 1: the owner's shareable "request a review" URL → {url}. Approved only (else 403 «קישור לבקשת ביקורת זמין רק לעסק מאושר»), 30/min, no DB write. URL = {frontend_url}/p/{slug}?rt=<token> (or /producer/{id} when the business has no slug). Token = HS256 JWT {producer_id, scope:"review_invite"}, 30-day TTL, NOT single-use (auth.py create_review_invite_token); a fresh call re-mints. Presenting it as `review_token` on POST /producers/{id}/reviews satisfies the contact-click gate for THAT producer only — invalid/expired/forged/other-producer → the same 403 as no contact; the row is stamped source="invite_link" (DB + admin payload only; the public ReviewOut never exposes it).
 POST   /producers/me/request-review              producer  — MEH-1236 resubmit-for-review ping: pending → notification-only (admin WhatsApp+email via notify_admin_producer_resubmit, fail-open), NO DB write, requested_changes stays admin-owned. MEH-2210: ALSO admits rejected → cap 3 (constants.MAX_PRODUCER_RESUBMISSIONS) else 409; then the MEH-2120 completeness gate (unverified phone → 422); then status=pending, resubmission_count+=1, resubmitted_at=now(), rejection_reason+code KEPT, admin ping «🔁 שליחה חוזרת #n», returns {detail,status,resubmission_count}. Every other status → 409. 3/hr
 POST   /producers/me/submit-for-review           producer  — MEH-2100 draft→pending: DRAFT ONLY (else 409), 5/hr. Server-side completeness gate via services/submission_gate.submission_missing_items — image>=1 · product>=1 · category>=1 · location · phone_verified. On failure 422 with detail={code:"submit_gate_incomplete", message, params:{missing:[codes]}} (MEH-1943 shape, so detailToMessage renders `message` unchanged). On success: status="pending", submitted_for_review_at=now(tz-aware), admin ping via notify_admin_new_producer (post-commit BackgroundTask, fail-open). License is deliberately NOT gated (MEH-971 license_pending must still reach the queue); opening hours are recommended, not required.
+POST   /producers/me/availability-confirm          producer  — MEH-2697 «עדיין נכון»: stamps producers.availability_confirmed_at = now (tz-aware UTC)
+                                                              and changes nothing else. 20/hour. Returns { availability_confirmed_at }.
+                                                              The same stamp is written by availability-state below; an ADMIN edit never
+                                                              writes it. Public: ProducerListOut.availability_confirmed_at (null = never).
 POST   /producers/me/availability-state            producer  — MEH-291 enum write. MEH-2758: WRITES are pause-only
                                                               body: { state: "accepting_orders"|"on_vacation", vacation_until?: ISO date }
                                                               any other value → 400 (available_today / full_this_week removed, MEH-2782)
@@ -1279,7 +1463,15 @@ DELETE /producers/me/locations/{id}               producer  — delete. Cross-ow
                                                               automatically — that had no kind filter, so deleting the primary
                                                               could make a pickup point the business's navigation target.
                                                               Deleting the last row is allowed.
-GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
+GET    /admin/producers/{producer_id}/locations   admin     — MEH-3333: the same CRUD for any business, mounted on
+POST   /admin/producers/{producer_id}/locations   admin       the admin edit page (LocationsEditor basePath). Same
+PUT    /admin/producers/{producer_id}/locations/{location_id}  admin  invariants, imported from producer_me_locations.py
+DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city label, branch-only primary — also on a
+                                                              kind edit of the primary row —, single primary, city
+                                                              sync). A location of ANOTHER business under the path →
+                                                              404 (not 403); unknown business → 404. 120/hr on writes.
+                                                              No admin "sensitive edit" ping — the actor is the admin.
+GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys, pending_orders (on-site orders waiting for an answer; 0 while PRODUCT_ORDERS_ENABLED is off, MEH-3316)} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +
@@ -1292,7 +1484,13 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               last 30 days, from producer_whatsapp_clicks rows whose
                                                               city IS NOT NULL — i.e. «לא מגיעים ל{עיר}?» clicks only);
                                                               pickup_hosts (MEH-2673: [{email, city}], this business's
-                                                              delivery_waitlist rows with wants_to_host, newest first, max 50)
+                                                              delivery_waitlist rows with wants_to_host, newest first, max 50);
+                                                              share_visits (MEH-3331: {last_7d, last_30d, total}, page
+                                                              views with referrer='share' — links the owner shared from
+                                                              the share kit — visitors per Israel day. No roll-up
+                                                              column, so `total` is raw-only and shrinks once raw
+                                                              page views are purged (MEH-2283 chunk C); read
+                                                              last_7d / last_30d. The dashboard reads last_30d only)
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row
@@ -1397,17 +1595,19 @@ CTA and «או שאלה למארחת». Experiences already carry it as `host.pr
 ### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
 
 ```
-POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
-POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item). Same email twice → same 201, nothing stored or sent.
-GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled.
+POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required, `party_size` 1–10 (default 1, MEH-3315). 201 {status:"registered"} (no token, no PII back); on a full event `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
+POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item), unless the body carries `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Same email twice → same 201, nothing stored or sent.
+GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled and waitlisted, oldest first.
 GET    /experiences/{id}/registrations    auth — host or admin; others 404.
-GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page.
-POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner.
+GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page (status may be waitlisted; the same link leaves the waitlist).
+PATCH  /registrations/{registration_id}/attendance  auth — the item's owner (event: her business; workshop: the host) or an admin, else 403; 404 unknown id; 409 unless the row is registered. Body {attendance: "attended"|"no_show"|null}. 60/minute. MEH-3315.
+POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner and, when the form would still take a sign-up (active, site_form, not started, below the cap), offers the place to the first waitlisted visitor not yet offered (MEH-3314). A waitlisted row leaves the list the same way.
 ```
 
 Emails (`services/registration_emails.py`, fail-open, queued after commit):
 visitor confirmation with the cancel link; owner «הרשמה חדשה» with name,
-phone, email and «נשארו N מקומות»; owner «ביטול הרשמה». A home experience's
+phone, email and «נשארו N מקומות»; owner «ביטול הרשמה»; visitor «תזכורת:
+"…" מחר» the evening before (MEH-3312, daily job). A home experience's
 address never goes in the visitor email (city only, MEH-1417).
 
 No per-event moderation. An **approved** producer publishes and it's live;
@@ -1577,8 +1777,11 @@ DELETE /admin/home-products/{id}               admin
 
 # Users
 GET    /admin/users                            admin — search · rows carry rescue_active_no_shows + rescue_blocked (MEH-3226)
-PUT    /admin/users/{id}/role                  admin
-POST   /admin/users/{id}/block                 admin
+PUT    /admin/users/{id}/role                  admin. role=consumer **or role=admin** on an account with a linked business (producer_id set) → 409 (MEH-3376): an owner is never an admin, and is not demoted while the business is linked; detach the owner first.
+GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at> [&before_id=<uuid>]. Newest first. With both, a keyset cursor on (created_at, id), so a tie on created_at at a page edge is not skipped.
+                                               { items: [{ id, actor_id, actor_email, action, target_type, target_id, details, created_at }] }. actor_email is None when the account is gone.
+                                               The stored IP is not returned.
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
@@ -1621,6 +1824,14 @@ GET    /admin/whatsapp/failed     admin — undelivered outbound (status IN fail
                                   undelivered_whatsapp_7d uses the same
                                   predicate (services/whatsapp.py
                                   undelivered_predicate).
+GET    /admin/whatsapp/blocked    admin — MEH-3402 follow-up: messages the
+                                  outbound guard dropped outside production
+                                  (status = blocked_nonprod), last 7 days,
+                                  newest first, max 200. error_message holds
+                                  what the message would have said (text body,
+                                  or "template_name: param | param"). Never
+                                  written in production, so empty there; kept
+                                  out of the undelivered list and count.
 ```
 
 ### Admin — experiences (`app/routers/admin_experiences.py`)
@@ -1647,6 +1858,14 @@ GET    /producers/{slug}/recipes            public    — published+approved onl
 GET    /producers/{slug}/recipes/{id}       public    — 404 if not published+approved
 
 # Admin (require_admin)
+POST   /admin/producers/{producer_id}/product-import          admin — MEH-2312: rows [{name, description, price, unit, source_image_url}] (≤100) →
+                                                               DRAFT products. Each row validated through ProductCreate (name, price 1..10000);
+                                                               bad rows → `invalid[]`, an existing name (draft or published, case/space-folded)
+                                                               or a repeat in the batch → `skipped_duplicates[]`. The cap counts drafts (409).
+GET    /admin/producers/{producer_id}/product-drafts          admin — the business's drafts (incl. source_image_url, admin-only)
+POST   /admin/producers/{producer_id}/product-drafts/approve  admin — {product_ids?} → publish those drafts, or all; filtered on producer_id
+                                                               AND is_draft, so another business's ids match nothing. No "new product" alerts.
+DELETE /admin/producers/{producer_id}/product-drafts/{product_id}  admin — a draft only (a published product → 404)
 GET    /admin/recipes?moderation_status=…   admin     — filter or all
 GET    /admin/recipes/pending               admin     — queue (oldest first)
 POST   /admin/recipes/{id}/approve          admin     — sets published=true
@@ -1661,12 +1880,14 @@ GET    /producers/{id}/reviews   public (optional auth) — MEH-3221: items carr
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row from the last 90 days (older WhatsApp rows are purged and older contact rows lose `user_id`, MEH-3244) OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
-GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null, MEH-3259 `reply` / `reply_at` / `reply_ai_moderation_status`, MEH-3258 `conflict` "owner" | "competitor" | null)
+                                 MEH-3258: a review whose author NOW owns the business, or owns one sharing a category (the MEH-2076 intersection), is left out of both public GETs, `total`, `rating_counts` and the stored avg_rating/reviews_count. Computed per read (services/review_conflicts.py), never stored; is_hidden untouched. Rating recomputed on claim, registration upgrade, owner/admin category save, approval, and admin delete of the author's business (each fail-open, logged). Applies to any linked account, admin included, and to a business in any status (draft counts: the conflict is the ownership, not the listing). The owner's unreplied-reviews badge (services/owner_attention.py) uses the same filter
 PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, edited_after_hidden_at=NULL, recompute aggregates (on a hidden row = "keep hidden", MEH-2381; optional ?seen=<the ISO value the page showed> → 409 {code: "review_changed"} when a newer edit landed)
 PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, edited_after_hidden_at=NULL, recompute aggregates (MEH-2348)
+PUT    /admin/reviews/{id}/clear-reply admin — MEH-3259: reply, reply_at, reply_ai_moderation_status = NULL; the review itself is untouched; the business may reply again. No notification to the business (v1 gap)
 ```
 
-Unknown id on hide/unhide → **404 `{code: "review_not_found", message: "ביקורת לא נמצאה"}`**
+Unknown id on hide/unhide/clear-reply → **404 `{code: "review_not_found", message: "ביקורת לא נמצאה"}`**
 (MEH-2389). `/admin/reviews` reads `code` to drop a row deleted elsewhere.
 
 **MEH-2348 (sticky hide):** only the admin endpoints write `is_hidden`, so a
@@ -1699,21 +1920,41 @@ POST /reports/producer-info    🌐 public, rate-limited 5/day/IP — visitor re
                                Body {producer_slug, message(1..1000), reporter_email?}. Resolves producer by slug
                                OR uuid id (else 404). Emails admin (RTL HTML, message escaped); NO DB persist. 204.
                                MEH-1443. Distinct from the DB-backed abuse reports above.
+POST /reports/review           🌐 public (optional auth), rate-limited 5/day/IP — MEH-3260 «דיווח על ביקורת».
+                               Body {producer_slug, review_id, reason: fake|abusive|personal|irrelevant|other,
+                               details?(≤1000, required for other), reporter_email?}. 404 «ביקורת לא נמצאה» unless
+                               the review is a visible review of that business. Emails admin: subject
+                               «מהמקור - דיווח על ביקורת: {business}», reason, «מי דיווחה: אורחת / משתמשת רשומה /
+                               בעלת העסק», the review text, the review id, a link to /admin/reviews. Same IP + same
+                               review within 24 h → 204, no second email; the first report wins even if the reason
+                               changed (in-memory, capped at 5,000 keys). NO DB row, no
+                               automatic action. 204.
 ```
 
 ### Marketing (`app/routers/marketing.py`)
 
 ```
 GET  /stats                      public — { producers_count, categories_count, cities_count }
-POST /newsletter                 public — { email } → newsletter_subscribers
-                                 rate-limited 5/hour per IP
-                                 + background mirror to Resend Contacts, segment
-                                   `newsletter` (MEH-2611; never clears an opt-out)
+POST /newsletter                 public — { email } → MEH-3300 double opt-in: writes NOTHING; a new
+                                 address gets a confirmation email (signed token, scope
+                                 `newsletter_confirm`, exp 48 h); an address already on the list gets
+                                 no email (grandfathered) and the same 201 answer (no enumeration)
+                                 rate-limited 5/hour per IP + 3/hour per email
+                                 + existing rows only: background mirror to Resend Contacts
+                                   (MEH-2611 back-fill; never clears an opt-out)
+POST /newsletter/confirm         public — { token } → inserts newsletter_subscribers (idempotent),
+                                 Resend sync, welcome email on the first confirm only; 400 on a
+                                 bad/expired/wrong-scope token; 20/hour. The page
+                                 /newsletter/confirm POSTs only from a button click
 POST /newsletter/unsubscribe     public — { token } → deletes the row
                                  + deletes the Resend contact (MEH-2611); a Broadcast-footer opt-out stays sticky
 POST /weekly-summary/unsubscribe public — { token } → producers.weekly_summary_opt_out = true (MEH-3079)
                                  rate-limited 20/hour per IP; token scope `weekly_summary_unsubscribe`,
                                  sub = producer id; 400 «הקישור אינו תקין או שפג תוקפו.»; idempotent 200
+POST /page-freshness/confirm     public — { token } → producers.last_confirmed_at = now (page freshness)
+                                 rate-limited 20/hour per IP; token scope `page_freshness_confirm`,
+                                 sub = producer id, exp 21 days; one 404 body for every dead link
+                                 (expired, other scope, garbage, business no longer live)
 POST /contact                    public — { name, email, message, topic? } → contact_messages row
                                  + SMTP email to CONTACT_EMAIL (falls back to
                                  ADMIN_EMAIL). Fail-open: if SMTP is unconfigured
@@ -1801,8 +2042,9 @@ GET  /admin/outreach/metrics/summary
 ### Search (`app/routers/search.py` — MEH-99)
 
 ```
-GET  /search            public — q (max 100 chars), limit (1–20, default 8)
-                                 returns { producers, products, cities, categories }
+GET  /search            public — q (max 100 chars), limit (1–20, default 8),
+                                 as_typed (bool, default false — skip the keyboard-layout re-read)
+                                 returns { producers, products, cities, categories, corrected_query }
                                  rate-limited 60/minute per IP
 ```
 
@@ -1811,6 +2053,16 @@ GET  /search            public — q (max 100 chars), limit (1–20, default 8)
 matches the same three plus `city`, category names, product names + descriptions and
 delivery-area cities (`producer_listing._token_search_filter`). Both use the same
 per-token ilike patterns (`hebrew_search.token_patterns`, escaped).
+
+**Wrong keyboard layout, niqqud, final letters (MEH-3415).** The query is normalised
+first (`hebrew_search.normalise`: niqqud dropped, nothing else; a trailing regular
+letter also tries its final form). When the query as typed returns nothing, both
+endpoints re-read it on the other SI 1452 layout (`hebrew_search.layout_alternative`:
+`sca` → `דבש`, `נרקשג` → `bread`; ≥ 3 characters, no 1-character token, one script
+only) and run once more. `GET /search` then sets `corrected_query` to the
+word the results are for (`null` otherwise; `as_typed=true` skips the re-read — the hero
+dropdown's «לחפש בכל זאת», `frontend/components/SearchCorrectionNote.jsx`); `GET /producers?q=` serves the corrected
+results silently and logs the query as typed with the count served.
 
 ### Chat widget (`app/routers/chat.py`)
 
@@ -1826,6 +2078,7 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
 | | |
 |---|---|
 | Login | none (`NOLOGIN`; assumed via `SET LOCAL ROLE` inside a READ ONLY transaction) |
+| Members | the app's login role: the schema owner, or `app_runtime` once DEPLOYMENT.md §1.3 is applied (MEH-3307 grants `mcp_reader` to it) |
 | SELECT (column-level) | `producers` (id, name, city, slug, status, kind) · `categories` (id, name, slug) · `producer_categories` (producer_id, category_id) · `producer_locations` (producer_id, kind, city) · `events` (producer_id, title, event_date, event_time, city, location, category, is_active) |
 | Everything else | denied — including `producers.phone/contact_email/contact_name/address/whatsapp_group`, `users`, `home_products`, `reports` and all writes |
 | statement_timeout | 5000 ms, per transaction |
@@ -1840,6 +2093,11 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically
+POST /upload/owner-photo/{producer_id}  admin — MEH-3338: the same upload for the business in the PATH
+                                 (admin builds the page on the owner's behalf). Shared helper
+                                 `_store_owner_photo`: same size cap, magic-byte sniff, fixed slot.
+                                 Owner → 403 (she has the route above); unknown business → 404. 30/hr.
+                                 `ProducerAdminCreate` also accepts `owner_bio` (sanitized, ≤300).
 ```
 
 > **Destroying an old photo (MEH-3247).** Every post-commit cleanup
@@ -1848,10 +2106,33 @@ POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no free
 > skips the destroy when one does (another business's photo, or the same photo
 > still in a gallery). A failed check skips too (fail closed). The column list
 > (`SCALAR_URL_SOURCES` / `ARRAY_URL_SOURCES`) is the same one the orphan sweep
-> `backend/scripts/cleanup_cloudinary_orphans.py` uses. Consequence: a photo
-> another row hot-links outlives the uploader's account deletion until that row
-> drops it (follow-up card). No upload ledger exists, so PUT still accepts a
-> foreign Cloudinary URL (follow-up card).
+> `backend/scripts/cleanup_cloudinary_orphans.py` uses.
+>
+> **Only your own photos (MEH-3247 part 2).** `POST /upload/image` stores into
+> `mehamakor/u/<owner_key>/` and `POST /upload/kashrut-cert` into
+> `mehamakor/kashrut/u/<owner_key>/` (`owner_key` = HMAC of the user id, so the
+> id is not in the URL). Every non-admin write that stores an image URL
+> (gallery + owner photo on PUT /producers/me, products, events, experiences,
+> recipes, PATCH /users/me avatar, rescue review photo, kashrut request; also
+> home products, whose router is not mounted today) calls `services/image_ownership.assert_own_new_images`: a NEW
+> URL that mentions Cloudinary (host percent-decoded and Unicode-folded first)
+> must be the canonical upload shape (no query, transformation segment or `..`;
+> the id must equal what `extract_public_id` parses), and if its public_id is in `mehamakor/` it must be in the
+> caller's own folder or her fixed avatar / owner-photo id → else **403**
+> «אפשר להוסיף רק תמונה שהעליתם בעצמכם. העלו את התמונה מחדש.». URLs already
+> on the row are not re-checked (old rows still save; an old flat-folder photo
+> moved into a different field is refused). `tests/test_meh3247_own_uploads_only.py`
+> fails on a route whose body carries an image field without the check.
+> Limits: no scrub on account deletion (a non-admin write can no longer create
+> a hot-link, and prod had no businesses before this); a photo from ANOTHER
+> Cloudinary account outside `mehamakor/` is still accepted, and removing it
+> asks our cloud to destroy that public_id (harmless: our assets all live
+> under `mehamakor/`); Google sign-in avatars (`mehamakor/avatars/<uuid>`) are
+> not in the caller's own set, so they re-save in place but cannot move to
+> another field; photos a former owner uploaded stay
+> on a business that changed owner (invite flow), by design. Never add a blind
+> delete-by-folder on account deletion — `destroy_image(db=)` already skips an
+> asset another row uses.
 
 ### Health (`app/routers/health.py`)
 
@@ -1967,7 +2248,7 @@ design). No env var, no retry, no Google.
 Critical:
 - `DATABASE_URL` — Railway Postgres reference
 - `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
-- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`admin_extra.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
+- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`services/account_guards.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
 - `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
 - `ENV` — `development|staging|production`
 - `CORS_ORIGINS` — comma-separated, production MUST set explicitly
