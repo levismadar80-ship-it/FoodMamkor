@@ -22,10 +22,10 @@ the badge / favorites attachment all preserved.
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, case, cast, func, or_
+from sqlalchemy import and_, case, cast, ColumnElement, func, or_
 from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONPATH
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import joinedload, Query, selectinload, Session
 
 from app.models import (
     Category,
@@ -54,7 +54,7 @@ from app.utils.sql import LIKE_ESCAPE, escape_like
 logger = structlog.get_logger(__name__)
 
 
-def catalog_default_availability_condition():
+def catalog_default_availability_condition() -> ColumnElement[bool]:
     """The catalog's default-hide rule, as a reusable SQLAlchemy condition.
 
     MEH-1986 — this rule used to live only inside ``build_producers_query``
@@ -88,11 +88,26 @@ def catalog_default_availability_condition():
     owns that literal for every write path, and its own docstring already says
     it does not decide listing exclusion — which is this function's job. One
     owner for the value, one owner for the decision.
+
+    MEH-3219 B5: a vacation whose ``vacation_until`` has passed (Israel
+    calendar day, the same ``<`` the response schema uses — schemas.py
+    ``_compute_trust_tier``, MEH-155 / MEH-1883) no longer hides the business.
+    Nothing clears the column on the return date, so without the date half the
+    business stayed off every browse surface forever while its own page
+    already said «מקבל הזמנות». A NULL ``vacation_until`` keeps hiding: the
+    write path requires a date for ``on_vacation``, so NULL is legacy data and
+    hiding is the conservative reading.
     """
-    return Producer.availability_state != ON_VACATION
+    return or_(
+        Producer.availability_state != ON_VACATION,
+        and_(
+            Producer.vacation_until.isnot(None),
+            Producer.vacation_until < israel_today(),
+        ),
+    )
 
 
-def not_test_producer():
+def not_test_producer() -> ColumnElement[bool]:
     """MEH-2952: the row is not a seeded test business (``is_test`` false).
 
     A building block of ``is_business()`` below, exported only for the few
@@ -104,7 +119,7 @@ def not_test_producer():
     return Producer.is_test.is_(False)
 
 
-def is_business(*, include_test: bool = False):
+def is_business(*, include_test: bool = False) -> ColumnElement[bool]:
     """The ONE rule for "this row is a live business" (MEH-2459, ADR-036).
 
     ``status == 'approved' AND kind == 'producer'``. Every surface that lists,
@@ -140,7 +155,7 @@ def is_business(*, include_test: bool = False):
     return and_(live, not_test_producer())
 
 
-def is_live_owner_row(producer) -> bool:
+def is_live_owner_row(producer: Any) -> bool:
     """A loaded owner row whose content is public: approved and not a seeded
     test row (MEH-2952), whatever its ``kind`` (an organizer's events are
     public on purpose, ADR-036). The rule behind the event detail and sign-up
@@ -151,7 +166,7 @@ def is_live_owner_row(producer) -> bool:
     )
 
 
-def is_business_row(producer, *, include_test: bool = False) -> bool:
+def is_business_row(producer: Any, *, include_test: bool = False) -> bool:
     """``is_business()`` for a row already loaded in Python (MEH-2952).
 
     Same three conditions, same ``include_test`` allowlist. For the gates
@@ -239,7 +254,7 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
     require_physical: bool = False,
     sort_origin: tuple[float, float] | None = None,
     near_city: str | None = None,
-):
+) -> tuple["Query[Any]", "Query[Any]"]:
     """Initial q + count_q.
 
     `near_city` (MEH-2602, non-geo mode only) prepends one order key: the
@@ -290,7 +305,7 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
         # MEH-1938 chunk 5a: the COALESCE fallback to Producer.lat/lng that
         # used to back this during the Expand overlap is gone — location rows
         # are now the only source (producer_queries.py, haversine_min_km).
-        distance_expr = haversine_min_km(lat, lng).label("distance_km")
+        distance_expr: Any = haversine_min_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
             .options(
@@ -378,20 +393,20 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
         # ties so two co-located businesses order deterministically.
         origin_lat, origin_lng = sort_origin
         distance_expr = haversine_min_km(origin_lat, origin_lng)
-        order = (
+        order = (  # type: ignore[assignment]
             distance_expr.is_(None),
             distance_expr.asc(),
             Producer.created_at.desc(),
         )
     else:
-        order = (Producer.created_at.desc(),)
+        order = (Producer.created_at.desc(),)  # type: ignore[assignment]
     if near_city:
         # FALSE < TRUE, so "not located" sorts after "located" — the same
         # boolean-key idiom as the rating and distance branches above.
         # coalesce: a NULL Producer.city makes the condition NULL, not FALSE,
         # and Postgres sorts NULL last — which split the deliverers' group.
         located = func.coalesce(_located_in_city_condition(near_city), False)
-        order = (~located, *order)
+        order = (~located, *order)  # type: ignore[assignment]
     # MEH-2787: a unique, always-LAST tiebreaker, appended once rather than
     # written into each branch above — that is what makes it reach all four
     # (default created_at, rating, distance, near_city) AND stay last, which a
@@ -406,7 +421,7 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
     # It cannot move the visible catalog order: it only orders rows that every
     # preceding key has already tied on. `Producer.id` is a random UUID4
     # (models.py:57), so this buys determinism, not a meaningful sequence.
-    order = (*order, Producer.id.asc())
+    order = (*order, Producer.id.asc())  # type: ignore[assignment]
     # MEH-1829: the distance sort selects the distance alongside the row (the
     # same two-entity shape as the geo path) so `_finalize_results` can attach
     # `distance_km` to each producer. Every other sort keeps the single-entity
@@ -449,7 +464,7 @@ _MAX_DELIVERY_CITIES = 40
 MAX_CITIES_PER_QUERY = _MAX_DELIVERY_CITIES
 
 
-def _city_matches(column, city: str):
+def _city_matches(column: Any, city: str) -> ColumnElement[bool]:
     """MEH-2602: `lower(column)` is one of the spellings of `city` (alias,
     «קרית»/«קריית», hyphen spacing — app.data.cities.city_variants). Rows
     written before writes were canonicalised keep their old spelling, and
@@ -457,7 +472,7 @@ def _city_matches(column, city: str):
     return func.lower(column).in_(city_variants(city))
 
 
-def _delivery_city_condition(city: str):
+def _delivery_city_condition(city: str) -> ColumnElement[bool]:
     """A producer 'delivers to <city>' iff it has a delivery_areas row for
     that city OR delivers nationwide and hasn't excluded it (MEH-1255).
 
@@ -492,7 +507,7 @@ def _delivery_city_condition(city: str):
     )
 
 
-def _located_in_city_condition(city: str):
+def _located_in_city_condition(city: str) -> ColumnElement[bool]:
     """MEH-2602 — the business IS in <city>: its own city, or any of its
     location rows (store, pickup point, market stand). Case-folded on both
     sides like _delivery_city_condition. A location row with a NULL city
@@ -504,13 +519,13 @@ def _located_in_city_condition(city: str):
     )
 
 
-def _near_city_condition(city: str):
+def _near_city_condition(city: str) -> ColumnElement[bool]:
     """MEH-2602 — the map's city filter: located in the city OR delivers to
     it. Ordering puts the located ones first (_build_base_queries)."""
     return or_(_located_in_city_condition(city), _delivery_city_condition(city))
 
 
-def _has_delivery_condition():
+def _has_delivery_condition() -> ColumnElement[bool]:
     """MEH-1836 — "delivers at all": an explicit delivery_areas row OR the
     nationwide flag.
 
@@ -546,7 +561,7 @@ def _has_delivery_condition():
     )
 
 
-def _pickup_condition(cities: list[str] | None = None):
+def _pickup_condition(cities: list[str] | None = None) -> ColumnElement[bool]:
     """MEH-2046 — "offers self-pickup": at least one pickup / market_stand
     location row. Covers market stands deliberately, per the ticket.
 
@@ -580,11 +595,11 @@ def _pickup_condition(cities: list[str] | None = None):
     if cities:
         # `.lower()` on both sides mirrors _delivery_city_condition:274 so the
         # two city axes match case-identically.
-        conds.append(or_(*[_city_matches(ProducerLocation.city, c) for c in cities]))
+        conds.append(or_(*[_city_matches(ProducerLocation.city, c) for c in cities]))  # type: ignore[arg-type]
     return Producer.locations.any(and_(*conds))
 
 
-def _on_site_condition():
+def _on_site_condition() -> ColumnElement[bool]:
     """MEH-2598 — "buy on site": a physical store with opening hours stated.
 
     Mirrors frontend/lib/hours.js resolveStoreHours exactly — the primary
@@ -600,7 +615,7 @@ def _on_site_condition():
     together by test_fulfillment_flags_match_filter_membership.
     """
 
-    def has_text(col):
+    def has_text(col: Any) -> ColumnElement[bool]:
         return and_(col.isnot(None), col.op("~")(r"\S"))
 
     return and_(
@@ -623,7 +638,7 @@ def _on_site_condition():
 _MAX_DELIVERY_DAYS = len(DELIVERY_DAYS)
 
 
-def _normalize_delivery_days(days, day: str | None = None) -> list[str]:
+def _normalize_delivery_days(days: Any, day: str | None = None) -> list[str]:
     """MEH-2036: fold the plural `delivery_days` and the legacy singular
     `delivery_day` into one de-duplicated, bounded list.
 
@@ -646,7 +661,9 @@ def _normalize_delivery_days(days, day: str | None = None) -> list[str]:
     return seen[:_MAX_DELIVERY_DAYS]
 
 
-def _delivery_day_condition(days: list[str], city: str | None = None):
+def _delivery_day_condition(
+    days: list[str], city: str | None = None
+) -> ColumnElement[bool]:
     """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
     producers and day-less rows ("בתיאום מראש") are excluded from day
     filtering; the integrity of "משלוח ביום X" beats recall.
@@ -667,7 +684,7 @@ def _delivery_day_condition(days: list[str], city: str | None = None):
     # REUSES: the category block below — Category.id.in_ inside an EXISTS.
     conds = [DeliveryArea.delivery_day.in_(days)]
     if city:
-        conds.append(_city_matches(DeliveryArea.city, city))
+        conds.append(_city_matches(DeliveryArea.city, city))  # type: ignore[arg-type]
     # MEH-2242: `offers_delivery` is conjoined here exactly as MEH-1848 did on
     # _delivery_city_condition (:305). A day row is delivery SCOPE, not a
     # delivery promise — a business that switched delivery off while its
@@ -681,7 +698,7 @@ def _delivery_day_condition(days: list[str], city: str | None = None):
     )
 
 
-def _kosher_condition(kosher: bool):
+def _kosher_condition(kosher: bool) -> ColumnElement[bool]:
     """MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
     verified-only — it matches admin-verified kashrut (kashrut_verified_at,
     stamped by admin_kashrut.py:75), NEVER the free-text Producer.kosher.
@@ -748,7 +765,7 @@ _OPEN_NOW_JSONPATH = "$.%s[*] ? (@.open <= $now && @.close > $now)"
 _OPEN_NOW_OVERRIDE_JSONPATH = "$[*] ? (@.open <= $now && @.close > $now)"
 
 
-def _open_for_orders_now_condition(open_now: bool):
+def _open_for_orders_now_condition(open_now: bool) -> ColumnElement[bool]:
     """MEH-1881: match on the DECLARED ordering window, not on opening_hours.
 
     The two are different facts (`opening_hours` is when the shop is staffed;
@@ -802,7 +819,9 @@ def _open_for_orders_now_condition(open_now: bool):
     return matches.is_(True) if open_now else matches.isnot(True)
 
 
-def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, PLR0915  # 15 boolean filter pairs by design (MEH-1438 added the vegetarian OR-branch) — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (vegetarian / kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
+def _apply_scalar_filters(  # noqa: C901, PLR0912, PLR0915  # 15 boolean filter pairs by design (MEH-1438 added the vegetarian OR-branch) — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (vegetarian / kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
+    q: "Query[Any]", count_q: "Query[Any]", **filters: Any
+) -> tuple["Query[Any]", "Query[Any]"]:
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
     # boolean column needs only an extra row, not a new branch.
@@ -1027,7 +1046,9 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         # use-home-page.js), so narrowing it by day would shrink a list whose
         # whole purpose is to be a wider net after the strict query returned 0.
         # Cap + empty-strip guard bound a hostile / malformed list.
-        cities = [c for c in delivery_cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
+        cities: list[Any] | None = [c for c in delivery_cities if c and c.strip()][
+            :_MAX_DELIVERY_CITIES
+        ]
         if cities:
             scope_cities = cities
             delivery_scope_cond = or_(*[_delivery_city_condition(c) for c in cities])
@@ -1096,7 +1117,7 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     return q, count_q
 
 
-def _token_search_filter(db: Session, token: str):
+def _token_search_filter(db: Session, token: str) -> ColumnElement[bool]:
     """MEH-1664 — the match condition for ONE search token.
 
     OR across the seven searchable sources (tagline added by MEH-2478); within each source, OR across the
@@ -1107,7 +1128,7 @@ def _token_search_filter(db: Session, token: str):
     """
     patterns = token_patterns(token)
 
-    def _any(*columns):
+    def _any(*columns: Any) -> ColumnElement[bool]:
         return or_(
             *[
                 column.ilike(pattern, escape=LIKE_ESCAPE)
@@ -1165,8 +1186,13 @@ def _token_search_filter(db: Session, token: str):
 
 
 def _apply_search_filter(
-    db: Session, q, count_q, search_q: str | None, *, geo_search: bool
-):
+    db: Session,
+    q: "Query[Any]",
+    count_q: "Query[Any]",
+    search_q: str | None,
+    *,
+    geo_search: bool,
+) -> tuple["Query[Any]", "Query[Any]"]:
     """MEH-99 cross-field search: name · description · tagline (MEH-2478) · city · category names · product names + descriptions · delivery cities.
 
     Adds relevance ordering in non-geo mode (exact-match first, then
@@ -1207,10 +1233,10 @@ def _apply_search_filter(
 
 
 def _log_search(db: Session, search_q: str | None, total_count: int) -> None:
-    """MEH-99 — log every search (zero AND non-zero) so trending has signal.
+    """MEH-99 — log every search (zero AND non-zero).
 
-    Zero-result rows are used for discovery; non-zero rows drive
-    /search/trending. MEH-267: ORM insert (not raw SQL) so id +
+    Zero-result rows are used for discovery. (Non-zero rows fed
+    /search/trending until MEH-3257 removed it.) MEH-267: ORM insert (not raw SQL) so id +
     searched_at come from Python-side model defaults — alembic baseline
     has no server_default on these columns.
 
@@ -1227,7 +1253,9 @@ def _log_search(db: Session, search_q: str | None, total_count: int) -> None:
         logger.warning("[producers] search_queries INSERT failed", exc_info=True)
 
 
-def _finalize_results(q, db: Session, *, with_distance: bool, limit: int, offset: int):
+def _finalize_results(
+    q: "Query[Any]", db: Session, *, with_distance: bool, limit: int, offset: int
+) -> list[Any]:
     """Paginate, geo-dedup, attach badges + favorites. Returns the row list.
 
     `with_distance` is True for every query that selects `(Producer,
@@ -1243,8 +1271,8 @@ def _finalize_results(q, db: Session, *, with_distance: bool, limit: int, offset
         # relationship (categories) can emit duplicate rows — the legacy
         # Query identity-map dedupe only applies to single-entity queries.
         # De-dupe by producer id while preserving the distance-ASC order.
-        seen: set = set()
-        results: list = []
+        seen: set[Any] = set()
+        results: list[Any] = []
         # Slice at the SQL layer: offset first, then limit.
         for producer, distance_km in q.offset(offset).limit(limit).all():
             if producer.id in seen:

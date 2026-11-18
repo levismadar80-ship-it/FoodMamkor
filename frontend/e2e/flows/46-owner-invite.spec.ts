@@ -102,6 +102,8 @@ const RUN_TAG = `e2e-${Date.now().toString(36)}-${Math.random().toString(36).sli
 // floor; this reaches the REAL password policy (HIBP included), so it also
 // has to be a string nobody has ever actually used.
 const OWNER_PASSWORD = "example-pw-meh2974";
+// Same Cloudinary demo photo flows/19 and flows/22 use; flows/ stubs its bytes.
+const TEST_IMAGE = "https://res.cloudinary.com/demo/image/upload/sample.jpg";
 
 let admin: APIRequestContext;
 
@@ -147,6 +149,11 @@ async function createBusiness(
       short_description: "עסק בדיקה אוטומטי",
       description: "נוצר ע״י ספק הבדיקות של MEH-2974 ונמחק בסוף הריצה.",
       category_ids: [],
+      // MEH-3246: an invite needs a business that is complete enough to
+      // publish — at least one photo, and a licence number when a category
+      // requires one (services/invite_gate.py, 422 otherwise). No category
+      // here, so no licence is owed; the photo is the one the other flows use.
+      images: [TEST_IMAGE],
     },
   });
   expect(r.status(), `admin create -> ${r.status()} ${await r.text()}`).toBeLessThan(300);

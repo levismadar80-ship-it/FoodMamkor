@@ -24,6 +24,8 @@ vi.mock("next-intl", () => ({
       delivery_to_my_area: "אפשר משלוח לאזור שלי?",
       delivery_to_city: `אפשר משלוח ל${vars?.city ?? ""}?`,
       greeting_template: `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
+      // MEH-3170: the wa.me suffix is catalog copy now; asserted against he.json below.
+      wa_suffix: " (וואטסאפ)",
       // These two MUST be mapped. `map[key] ?? key` falls back to the key
       // itself, so an unmapped key makes the href assertion below pass
       // identically whether the string resolves or is broken — a green with two
@@ -50,7 +52,10 @@ vi.mock("@phosphor-icons/react", () => {
   return { CaretDown: Stub, ChatCircle: Stub };
 });
 
-import WhatsAppQuestionChips, { WA_SUFFIX } from "@/components/WhatsAppQuestionChips";
+import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import he from "@/messages/he.json";
+
+const WA_SUFFIX = he.whatsapp.question_chips.wa_suffix;
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 
 const PID = 7;

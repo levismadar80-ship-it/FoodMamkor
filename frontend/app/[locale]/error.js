@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect } from "react";
@@ -8,6 +9,7 @@ import * as Sentry from "@sentry/nextjs";
 import { useTranslations } from "next-intl";
 import { BRAND_NAME } from "@/lib/constants";
 import Button from "@/components/ui/Button";
+import { COLOR } from "@/lib/color-tokens";
 
 export default function GlobalError({ error, reset }) {
   const t = useTranslations("errors.boundary");
@@ -26,7 +28,7 @@ export default function GlobalError({ error, reset }) {
         </Link>
         <WarningCircle
           size={64}
-          color="#2e6853"
+          color={COLOR.primary}
           className="mx-auto mb-5"
           aria-hidden="true"
         />

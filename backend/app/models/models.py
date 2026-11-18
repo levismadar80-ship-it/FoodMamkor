@@ -1,7 +1,18 @@
+"""
+Module:    models/models
+Purpose:   The core tables every other model module points at: City,
+           Producer, User, RetiredSlug, AdminSetting, StaticPage, Category,
+           ProducerCategory.
+Does NOT:  Hold the rest. Catalog, engagement, home products, events,
+           analytics, admin ops, recipes and rescue each have their own
+           module in this package (MEH-3269); every name they define is
+           re-exported at the bottom of this file, so
+           `from app.models.models import X` still works for all of them.
+"""
+
 import uuid
 
 from sqlalchemy import (
-    CHAR,
     Boolean,
     CheckConstraint,
     Column,
@@ -11,17 +22,14 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    Numeric,
     String,
-    Table,
     Text,
-    Time,
     UniqueConstraint,
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
-from sqlalchemy.orm import backref, relationship, validates
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.orm import relationship, validates
 
 # MEH-2139: imported under its own name so the column definition below reads as
 # a declaration rather than a call into a service.
@@ -200,7 +208,7 @@ class Producer(Base):
     # datetime.now(timezone.utc) — never naive utcnow. Expand-only (ADR-007).
     # Paired migration: e2a7c9d41b06.
     submitted_for_review_at = Column(DateTime(timezone=True), nullable=True)
-    images = Column(ARRAY(Text), default=[])
+    images: Column[list[str]] = Column(ARRAY(Text), default=[])
     # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
     # is verification_tier/verified_at only (ADR-022). Do not re-add.
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
@@ -317,7 +325,7 @@ class Producer(Base):
     )
     organic_certified = Column(Boolean, default=False)
     # MEH-1508 chunk 1 (schema only): business-level dietary scope — distinguishes
-    # "one tagged product" (product-level flags, below) from "the whole catalog".
+    # "one tagged product" (product-level flags, on Product in models/catalog.py) from "the whole catalog".
     # VARCHAR + app-level validation (no PG enum), like availability_state.
     # NOT NULL with both a Python-side `default` (ORM inserts) AND a DB
     # `server_default` ('unknown') — mirrors the MEH-293 product flags
@@ -371,8 +379,13 @@ class Producer(Base):
     # Admin-owned (MEH-530 precedent): ProducerAdminOut only, never the public
     # ProducerDetailOut/ListOut, and withheld from _PRODUCER_WRITABLE_FIELDS so
     # PUT /producers/me cannot write it — same shape as google_place_id
-    # (MEH-1490). Tests assert both. No enforcement anywhere: v1 is capture +
-    # remind only. Paired migration: c3e9a1f7b204.
+    # (MEH-1490). Tests assert both. Enforcement lives in
+    # services/verification_status.py (MEH-2520): `licence_lapsed` /
+    # `verification_is_current` drop the verified tier once this date has
+    # passed, and both the public tier and the `?verified` filter read through
+    # them. NULL means "not captured", never "lapsed", so an expired licence
+    # with no captured date stays indistinguishable (MEH-2637). Paired
+    # migration: c3e9a1f7b204.
     license_expires_at = Column(Date, nullable=True)
     # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") captured at the
     # final registration step. `referral_source` holds an English key from
@@ -394,6 +407,10 @@ class Producer(Base):
     # (ProducerAdminOut), never public — MEH-530 privacy-first precedent.
     declared_at = Column(DateTime(timezone=True), nullable=True)
     declaration_version = Column(String(10), nullable=True)
+    # MEH-2923: the grower declaration, recorded APART from the licensing pair
+    # above. NULL = not a grower category, or a row from before the revision.
+    farmer_declared_at = Column(DateTime(timezone=True), nullable=True)
+    farmer_declaration_version = Column(String(10), nullable=True)
     # MEH-762 (ADR-022 public tier contract, Chunk 1): tier-1 "מאומת"
     # verification trail. Both nullable, Expand-only (ADR-007, no backfill).
     # `verified_at` = when the admin checked the qualifying document
@@ -432,6 +449,12 @@ class Producer(Base):
     )
     # MEH-155: optional vacation end date — cleared automatically when past.
     vacation_until = Column(Date, nullable=True)
+    # MEH-2697: when the OWNER last said her availability is still true —
+    # tz-aware UTC. Written only by the owner (setting the state, or the
+    # «עדיין נכון» confirm route in producer_me.py). NULL = never confirmed:
+    # the public tag shows nothing, never "confirmed long ago".
+    # DO NOT stamp this from an admin edit — the tag reads «אושר ע״י בית העסק».
+    availability_confirmed_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
     opening_hours = Column(String, nullable=True)
     # MEH-1543: optional weekly ORDER-acceptance window — distinct from
@@ -485,12 +508,12 @@ class Producer(Base):
     offers_delivery = Column(Boolean, nullable=False, default=False)
     # Delivery scope — mutually exclusive: nationwide flag XOR city list.
     delivery_nationwide = Column(Boolean, nullable=False, default=False)
-    delivery_cities = Column(ARRAY(Text), nullable=False, default=[])
+    delivery_cities: Column[list[str]] = Column(ARRAY(Text), nullable=False, default=[])
     # MEH-1255: nationwide exclusion list — "משלוחים לכל הארץ חוץ מ:".
     # Only meaningful when delivery_nationwide=true; CHECK constraint
     # delivery_excluded_requires_nationwide keeps it empty otherwise
     # (ShipperHQ include/exclude zone model).
-    delivery_excluded_cities = Column(
+    delivery_excluded_cities: Column[list[str]] = Column(
         ARRAY(Text),
         nullable=False,
         default=[],
@@ -527,11 +550,11 @@ class Producer(Base):
     # MEH-51: trust ladder + kashrut badges
     phone_verified = Column(Boolean, default=False)
     ambassador = Column(Boolean, default=False)
-    kashrut_badges = Column(ARRAY(Text), default=[])
+    kashrut_badges: Column[list[str]] = Column(ARRAY(Text), default=[])
     kashrut_verified_at = Column(DateTime, nullable=True)
     kashrut_expires_at = Column(DateTime, nullable=True)
     # MEH-210 Phase 2 — producer-defined WhatsApp question chips (overrides category defaults).
-    custom_questions = Column(ARRAY(Text), nullable=True)
+    custom_questions: Column[list[str]] = Column(ARRAY(Text), nullable=True)
     # MEH-283 — admin reject reason surfaced on /auth/me as producer_rejection_reason.
     # Accessed in auth.py::get_me; missing column was raising AttributeError for any
     # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
@@ -598,6 +621,10 @@ class Producer(Base):
     # «אישור בוואטסאפ, 12/11». Required (non-blank) on every invite — this
     # column plus `owner_invite_created_by` IS the audit trail.
     owner_invite_consent_note = Column(Text, nullable=True)
+    # MEH-3377: an optional screenshot of that written consent (the WhatsApp
+    # «כן»), attached on «פרסום בהסכמה». A Cloudinary URL. Admin-only: it shows
+    # a private person's chat, so it is on ProducerAdminOut and no other shape.
+    consent_screenshot_url = Column(String(500), nullable=True)
     # `use_alter` + an explicit name, exactly as `top_product_id` above does,
     # and for the same reason: `users.producer_id` already points HERE, so this
     # reference closes a producers ↔ users cycle. Without the pair, SQLAlchemy
@@ -666,6 +693,19 @@ class Producer(Base):
     # which is what holds the send to EXACTLY ONE email.
     # See migration d3b7f1a92c64.
     email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # Page freshness: the monthly "is everything still correct?" email.
+    # last_confirmed_at is set when the owner presses "yes" in that email;
+    # freshness_email_sent_at is the idempotency stamp. Expand-only (ADR-007),
+    # migration a8d41c2e7f90. Sender: services/page_freshness.
+    last_confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    freshness_email_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-3079: weekly summary email. opt_out is set by the signed unsubscribe
+    # link; sent_at is the idempotency stamp (skip if < 6 days old). Expand-only
+    # (ADR-007), migration 0cfa83f0f53e. Sender: services/weekly_owner_summary.
+    weekly_summary_opt_out = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    weekly_summary_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     # MEH-1297: order_by position so categories[0] is deterministic (the
     # producer's primary/first-selected category), not an arbitrary row.
@@ -740,7 +780,7 @@ class Producer(Base):
         return [cc for c in value if (cc := canonical_city(c))]
 
     @property
-    def active_offer(self):
+    def active_offer(self) -> "ProducerOffer | None":
         """MEH-1823 chunk 2: the one offer that is live RIGHT NOW, or None.
 
         This is what `ProducerListOut.active_offer` serializes, and it is the
@@ -760,6 +800,7 @@ class Producer(Base):
         revisit if that ever stops being true.
         """
         today = israel_today()
+        offer: ProducerOffer
         for offer in self.offers:
             # BOTH ends of the window, not just the far one. Omitting the
             # starts_at half served a scheduled offer as live from the moment it
@@ -974,6 +1015,18 @@ class User(Base):
         """
         return not self.password_hash
 
+    @property
+    def oauth_provider(self) -> str | None:
+        """MEH-3248: which provider an account without a password signs in
+        with, so /settings knows which button confirms a deletion. Google
+        wins when both are linked — verify_deletion_credentials checks the
+        same order."""
+        if self.google_id:
+            return "google"
+        if self.apple_id:
+            return "apple"
+        return None
+
 
 class RetiredSlug(Base):
     """MEH-2528 — a public business URL that must never pass to another row.
@@ -1014,68 +1067,6 @@ class AdminSetting(Base):
 
     key = Column(String(100), primary_key=True)
     value = Column(Text, nullable=True)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
-
-
-class OutreachLead(Base):
-    """Producer outreach lead (MEH-22).
-
-    Manual list of prospective businesses an admin is reaching out to.
-    Status pipeline: new → contacted → replied → registered (or declined).
-    `prefill_token` lets an admin send a single-use registration link
-    that pre-populates the /register/producer form so the prospect's
-    only friction is choosing a password.
-
-    Soft uniqueness via `(lower(name), lower(city))` — handled at the
-    application layer in the create endpoint, not as a DB UNIQUE
-    constraint, so case-and-trim variations are caught the same way.
-    """
-
-    __tablename__ = "outreach_leads"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(200), nullable=False)
-    phone = Column(String(20), nullable=True)
-    instagram = Column(String(100), nullable=True)
-    website = Column(String(200), nullable=True)
-    city = Column(String(100), nullable=True)
-    category = Column(String(100), nullable=True)
-    notes = Column(Text, nullable=True)
-    # MEH-2633: "community" is a visitor suggestion from POST
-    # /business-suggestions (routers/business_suggestions.py) — the suggester
-    # columns below are populated only for that value.
-    source = Column(
-        String(50), default="manual"
-    )  # manual | community | claude_search (future)
-    status = Column(
-        String(20), default="new"
-    )  # new | contacted | replied | registered | declined
-    # Prefill token — minted on demand for "הכן פרופיל". Single-use is
-    # not enforced; the token expires 30 days after mint and is rotated
-    # whenever the admin clicks the button again.
-    prefill_token = Column(String(64), unique=True, nullable=True, index=True)
-    prefill_token_expires_at = Column(DateTime, nullable=True)
-    # MEH-2633: community-suggestion columns. Populated ONLY when
-    # source == "community"; NULL on every manually-added lead, which is the
-    # honest value (nobody suggested it). Paired with revision d7a511246b14.
-    # PII: `suggested_by_email` is NEVER returned by a public endpoint — the
-    # only reader is OutreachLeadOut, behind require_admin — and never logged
-    # unmasked (services/email.py:47 `_mask`).
-    # DO NOT add these columns in main.py — Alembic is the sole schema
-    #        authority since MEH-267.
-    suggested_by_name = Column(String(100), nullable=True)
-    suggested_by_email = Column(String(254), nullable=True)
-    # NOT NULL + server_default false: consent to be emailed has no "unknown"
-    # state and the default is the one that sends nothing. Same shape as
-    # categories.is_system (:977).
-    suggester_wants_update = Column(
-        Boolean, nullable=False, default=False, server_default=text("false")
-    )
-    suggestion_reason = Column(Text, nullable=True)
-    # Stamped by POST /admin/outreach/{id}/thank-suggester; it IS that
-    # endpoint's idempotency key, so nothing else may write it.
-    suggester_thanked_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
@@ -1144,6 +1135,13 @@ class Category(Base):
     is_system = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    # MEH-3255 (D10): the manufacturer-licence requirement lives on the row,
+    # answered when the category is created. EXPAND step — the readers still
+    # use constants.LICENSE_REQUIRED_CATEGORIES until the contract PR, and
+    # tests/test_meh3255_requires_license_parity.py holds the two equal.
+    requires_license = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
@@ -1167,2114 +1165,84 @@ class ProducerCategory(Base):
     position = Column(Integer, nullable=False, server_default=text("'0'"))
 
 
-class Product(Base):
-    __tablename__ = "products"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    name = Column(String(200), nullable=False)
-    description = Column(Text)
-    # LEGACY(2026-11-30, MEH-2064)
-    # MEH-2145: the swap MEH-1857 asked for. That marker pointed at ITSELF
-    # because the "MEH-295 follow-up" the line below promised had never been
-    # opened, and it said in as many words: "whoever opens it should swap the
-    # id here." MEH-2064 was opened on 13/08 and is the real removal ticket,
-    # so the marker now names it. **The DATE is unchanged** — swapping the
-    # owner is not an extension, and extending an expiry is Sapir's call made
-    # deliberately in a reviewed PR, never a side effect of re-pointing it.
-    #
-    # MEH-2064 is RED and carries its own entry conditions (a count of rows
-    # with price_range set and price_min NULL, and the removal of the frontend
-    # fallbacks) — naming it here records who removes this column, not that
-    # the removal is ready.
-    #
-    # Separate instance from the producer-level price alias MEH-1855 retired
-    # (chunk 2, 9849fab1637a) — same class, different column.
-    price_range = Column(String(50))  # legacy: removal tracked in MEH-2064
-    image_url = Column(Text)
-    price_min = Column(Numeric(10, 2), nullable=True)
-    price_max = Column(Numeric(10, 2), nullable=True)
-    # MEH-293: per-product dietary flags. Old producer-level columns
-    # (producers.gluten_free / vegan / lactose_free) preserved during the
-    # 7-day overlap; reads aggregate `any(p.is_X for p in producer.products)`
-    # and the public filter switches to an EXISTS subquery on these.
-    is_gluten_free = Column(
-        Boolean, default=False, nullable=False, server_default=text("false")
-    )
-    is_vegan = Column(
-        Boolean, default=False, nullable=False, server_default=text("false")
-    )
-    # MEH-1438: vegetarian axis (4th dietary flag). A vegan product is
-    # vegetarian by definition, so the public ?vegetarian filter matches
-    # `is_vegetarian OR is_vegan` (producer_listing.py) and the aggregation
-    # counts is_vegan too — the owner needn't mark both. Mirrors MEH-293.
-    is_vegetarian = Column(
-        Boolean, default=False, nullable=False, server_default=text("false")
-    )
-    is_lactose_free = Column(
-        Boolean, default=False, nullable=False, server_default=text("false")
-    )
-    # MEH-1934: fifth + sixth dietary axes — "ללא סוכר מוסף" / "דל פחמימות".
-    # Same any-product, self-declared mechanic as the four above. Unlike
-    # MEH-1438's is_vegetarian these are NOT backfilled from any existing flag:
-    # nothing in the catalog implies "no added sugar" or "low carb", so seeding
-    # would invent a nutrition claim on the business's behalf. The owner's
-    # product form is the only writer.
-    is_no_added_sugar = Column(
-        Boolean, default=False, nullable=False, server_default=text("false")
-    )
-    is_low_carb = Column(
-        Boolean, default=False, nullable=False, server_default=text("false")
-    )
-    # MEH-2662: owner-declared, optional — free-text ingredient list and
-    # allergen codes from the closed list in app/allergens.py. NULL = not
-    # filled (the sheet shows nothing), never "contains none".
-    ingredients = Column(Text, nullable=True)
-    # MEH-3055: owner order (NULL = never ordered) + group id from
-    # producers.product_groups (no FK; cleared by routers/product_organize.py).
-    position = Column(Integer, nullable=True)
-    group_id = Column(String(36), nullable=True)
-    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
-
-    # MEH-2137: the other half of the same disambiguation — see the comment on
-    # Producer.products. Without it this side raises the same error.
-    producer = relationship(
-        "Producer", back_populates="products", foreign_keys="Product.producer_id"
-    )
-    # MEH-588: M2M back-ref so a Product can list the producer's recipes
-    # that promote it. `secondary` points to the link Table defined below.
-    recipes = relationship(
-        "ProducerRecipe",
-        secondary="producer_recipe_products",
-        back_populates="products",
-    )
-
-    # idx_products_dietary — added in MEH-293 migration 1afe844d11f4
-    # (2026-05-07). Partial index covers products with at least one
-    # dietary flag set; mirrors EXISTS-subquery filter pattern.
-    # MEH-1438: predicate extended with is_vegetarian (the MEH-1438 migration
-    # drops + recreates the index). Keep this text byte-identical to the
-    # migration's create_index predicate so `alembic check` stays drift-free.
-    # MEH-1934: extended again with is_no_added_sugar + is_low_carb (revision
-    # a2f7d4c8e153 drops + recreates). Without them in the predicate, a product
-    # marked ONLY low-carb falls outside the partial index and the ?low_carb
-    # EXISTS subquery seq-scans products.
-    __table_args__ = (
-        Index(
-            "idx_products_dietary",
-            "producer_id",
-            postgresql_where=text(
-                "is_gluten_free OR is_vegan OR is_vegetarian OR is_lactose_free "
-                "OR is_no_added_sugar OR is_low_carb"
-            ),
-        ),
-    )
-
-
-class DeliveryArea(Base):
-    __tablename__ = "delivery_areas"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    city = Column(String(100), nullable=False)
-    min_order = Column(Integer)
-    delivery_day = Column(String(50))
-    # MEH-1772: per-area OVERRIDE of producers.delivery_fee (MEH-1577).
-    # NULL = no override → the public page inherits the producer-level fee.
-    # 0 is NOT absence: it means "משלוח חינם" to this area specifically, so
-    # every read must gate on `is not None`, never on truthiness.
-    # INTEGER to match min_order above AND the producer-level column it
-    # overrides — a Decimal/int fork would serialize two JSON shapes for the
-    # same rendered "₪" (whole shekels, display-only; Sapir 27/07).
-    # DO NOT add the column here without the paired Alembic revision —
-    # Alembic is the sole schema authority since MEH-267 (a4f7c2e91b58).
-    delivery_fee = Column(Integer)
-
-    producer = relationship("Producer", back_populates="delivery_areas")
-
-    @validates("city")
-    def _canonical_city(self, _key: str, value: str | None) -> str | None:
-        # MEH-2602 — same one-spelling rule as Producer.city.
-        return canonical_city(value)
-
-
-class ProducerLocation(Base):
-    """MEH-1395 (MEH-1388 chunk 1): a physical presence point of a producer —
-    a branch, a self-pickup point, or a market stand. One producer can have
-    many (evidence: "הלחם של גל" self-pickup from 10 points, MEH-1382). This
-    chunk lays the Expand-phase data layer ONLY: no serialization (schemas),
-    no routers, no map/geo query wiring — those are MEH-1388 chunks 2-4.
-
-    Conventions mirrored from the recent child models:
-      - id / producer_id FK CASCADE / created_at / updated_at follow
-        ProducerRecipe (models.py:1328-1365) and DeliveryArea (models.py:511).
-      - `opening_hours` is the SAME unbounded free-text String as
-        Producer.opening_hours (models.py:166, MEH-102) — the ticket asks for
-        parity; not a bounded column.
-      - `kind` / `location_precision` CHECK constraints are declared BOTH here
-        (so a fresh create_all test DB has them) AND mirrored in the paired
-        Alembic revision, matching the Producer MEH-272 precedent
-        (models.py:292-306). Alembic autogenerate does not diff CHECK
-        conditions, so no canonical-form worry (unlike the MEH-291 index
-        predicate at models.py:269-272).
-
-    Delivery *areas* stay in the separate `delivery_areas` table — a delivery
-    zone is not a physical location (MEH-1382 constraint). Paired migration:
-    drafted in the MEH-1395 PR body, committed by Sapir (alembic/versions is
-    CC-deny).
-
-    History: MEH-1395 (creation, chunk 1/5 of the producer_locations epic
-    MEH-1388).
-    """
-
-    __tablename__ = "producer_locations"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    # branch | pickup | market_stand — CHECK mirrored in the revision.
-    kind = Column(String(20), nullable=False)
-    label = Column(String(200), nullable=True)
-    city = Column(String(100), nullable=True, index=True)
-    address = Column(String(255), nullable=True)
-    lat = Column(Float, nullable=True)
-    lng = Column(Float, nullable=True)
-    # Same unbounded free-text type as Producer.opening_hours (MEH-102).
-    opening_hours = Column(String, nullable=True)
-    phone = Column(String(20), nullable=True)
-    is_primary = Column(
-        Boolean, nullable=False, default=False, server_default=text("false")
-    )
-    # exact | approximate — CHECK mirrored in the revision.
-    location_precision = Column(
-        String(20),
-        nullable=False,
-        default="exact",
-        server_default=text("'exact'"),
-    )
-    created_at = Column(
-        DateTime, nullable=False, default=utc_now, server_default=text("now()")
-    )
-    updated_at = Column(
-        DateTime,
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now,
-        server_default=text("now()"),
-    )
-
-    producer = relationship("Producer", back_populates="locations")
-
-    @validates("city")
-    def _canonical_city(self, _key: str, value: str | None) -> str | None:
-        # MEH-2602 — same one-spelling rule as Producer.city.
-        return canonical_city(value)
-
-    __table_args__ = (
-        CheckConstraint(
-            "kind IN ('branch', 'pickup', 'market_stand')",
-            name="producer_location_kind",
-        ),
-        CheckConstraint(
-            "location_precision IN ('exact', 'approximate')",
-            name="producer_location_precision",
-        ),
-    )
-
-
-class ProducerOffer(Base):
-    """MEH-1823 chunk 1: ONE owner-declared, typed, expiring offer per business.
-
-    An offer is a bounded, dated object with its own lifecycle — it expires and
-    it is replaced — so it is a table, not columns on `producers`. The five
-    types are a closed vocabulary:
-
-      free_delivery_above  — free delivery over a threshold
-      gift_above           — a gift with a purchase over a threshold
-      first_order          — a first-order benefit
-      pickup_discount      — a discount on self-pickup
-      custom               — MEH-1898: the owner words the offer herself
-
-    `custom` is the only type with no typed sentence behind it, so on every
-    consumer surface its `headline` IS the offer text rather than a secondary
-    line under one. That is a RENDERING rule and it lives on the rendering
-    side (OfferBadge.jsx), which is also where the empty case resolves: a
-    `custom` offer with no headline renders nothing at all, instead of a bare
-    gift icon with no words next to it.
-
-    **It is deliberately NOT a sixth CHECK.** "custom implies headline IS NOT
-    NULL" is expressible in SQL and was still rejected: the agreed set is five
-    CHECKs (02/08), and it would be the first constraint in this table that
-    branches on `offer_type` — the exact shape of the cross-constraint that
-    decision turned down. The empty-headline row is not corrupt data; it is an
-    offer the site declines to display, which the reader never sees either way.
-    Full reasoning: ProducerOfferCreate's docstring in schemas.py.
-
-    `threshold_value` + `threshold_unit` exist because the evidence that opened
-    the ticket had nowhere to live: a litres/units/kg threshold cannot be stored
-    in `producers.free_delivery_above`, which is INTEGER shekels (models.py:262).
-    The pair is both-or-neither — a number with no unit is unrenderable, a unit
-    with no number is meaningless.
-
-    `expires_at` is NOT NULL, and that is the property protecting the business
-    rather than the reader: an always-on offer converges on discounting buyers
-    who would have paid full price. An offer that cannot expire is a permanent
-    discount nobody decided to give.
-
-    **The threshold is optional for EVERY type, and is deliberately NOT gated by
-    offer_type — at this layer or any other.** An automated reviewer proposed a
-    cross-constraint forcing a threshold on free_delivery_above / gift_above and
-    forbidding it on the other two. It was rejected on 02/08 (Sapir) because the
-    forbidden combinations are real offers: "10% off pickup over ₪100" and
-    "first order over ₪150". Which types may carry a threshold is a product
-    question, not a data invariant, so there is no CHECK here and no
-    type-conditional branch in ProducerOfferCreate either. Do not add one
-    without a decision that overturns this note — five CHECKs is the agreed set.
-
-    All five CHECKs and the unique partial index are declared BOTH here (so a
-    fresh `create_all` test DB has them) AND in the paired Alembic revision —
-    the MEH-272 precedent (models.py:380-401) and the same choice
-    ProducerLocation made above. Alembic autogenerate does not diff CHECK
-    conditions, so there is no canonical-form worry for those; the INDEX
-    predicate does round-trip through `alembic check`, so its text is kept
-    byte-identical to the revision's `postgresql_where`.
-
-    # DO NOT add a column here without the paired Alembic revision — Alembic is
-    #        the sole schema authority since MEH-267 (revision b6e1d94a3f27).
-
-    Does NOT: serialize, validate, or expose anything. Pydantic schemas, the
-    owner write path and the public read path are chunk 2 — see
-    producer_me.py's delivery_areas pattern for the shape they will take.
-
-    History: MEH-1823 (creation, chunk 1/3).
-    """
-
-    __tablename__ = "producer_offers"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    offer_type = Column(Text, nullable=False)
-    # NULL together with threshold_unit = "no threshold"; > 0 when stated.
-    threshold_value = Column(Integer, nullable=True)
-    threshold_unit = Column(Text, nullable=True)
-    headline = Column(Text, nullable=True)
-    # NULL = active now. A future date is a scheduled offer; nothing reads it
-    # in chunks 2-3.
-    starts_at = Column(Date, nullable=True)
-    expires_at = Column(Date, nullable=False)
-    is_active = Column(
-        Boolean, nullable=False, default=True, server_default=text("true")
-    )
-    created_at = Column(
-        DateTime, nullable=False, default=utc_now, server_default=text("now()")
-    )
-    updated_at = Column(
-        DateTime,
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now,
-        server_default=text("now()"),
-    )
-
-    producer = relationship("Producer", back_populates="offers")
-
-    __table_args__ = (
-        CheckConstraint(
-            # MEH-1898 added 'custom'. Kept byte-identical to the condition in
-            # revision e4b1c72d9a35, which DROPs and re-ADDs this constraint —
-            # Postgres has no ALTER CHECK, and autogenerate does not diff CHECK
-            # conditions, so a drift between the two surfaces would be silent.
-            "offer_type IN ('free_delivery_above', 'gift_above', "
-            "'first_order', 'pickup_discount', 'custom')",
-            name="producer_offer_type",
-        ),
-        CheckConstraint(
-            "threshold_unit IN ('ils', 'units', 'liters', 'kg')",
-            name="producer_offer_threshold_unit",
-        ),
-        # Equality form, not two OR'd implications: it is total, so neither
-        # direction can be added later and forgotten, and IS NULL always
-        # yields true/false (no three-valued-logic edge).
-        CheckConstraint(
-            "(threshold_value IS NULL) = (threshold_unit IS NULL)",
-            name="producer_offer_threshold_pair",
-        ),
-        # A stated threshold is positive. "Over 0" is not a threshold — it is
-        # unconditional, which NULL already spells; rejecting 0 removes a
-        # duplicate spelling rather than a meaning.
-        CheckConstraint(
-            "threshold_value IS NULL OR threshold_value > 0",
-            name="producer_offer_threshold_positive",
-        ),
-        # A dated window runs forwards. Strict `>`: a same-day window would
-        # expire on the day it opens.
-        CheckConstraint(
-            "starts_at IS NULL OR expires_at > starts_at",
-            name="producer_offer_date_order",
-        ),
-        # At most ONE active offer per business — and the lookup index for that
-        # active row, which is the same index. A non-unique twin would carry
-        # identical columns and predicate: double the write cost, no read gain.
-        Index(
-            "uq_producer_offers_active_per_producer",
-            "producer_id",
-            unique=True,
-            postgresql_where=text("is_active"),
-        ),
-    )
-
-
-class Favorite(Base):
-    __tablename__ = "favorites"
-
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    created_at = Column(DateTime, default=utc_now)
-
-    user = relationship("User", back_populates="favorites")
-    producer = relationship("Producer", back_populates="favorited_by")
-
-
-# MEH-2556: the content types a user can save next to a business. One list,
-# mirrored by the DB CHECK in Alembic revision 9c534d477f2b — a new type means
-# a new revision AND an entry here, never one without the other.
-SAVED_ITEM_TYPES = ("recipe", "event", "experience")
-
-
-class SavedItem(Base):
-    """MEH-2556 — a recipe, event or experience a user saved to «המועדפים שלי».
-
-    Businesses keep their own `favorites` table: `FavoriteAlert` (the
-    «קבלת עדכונים» preferences) hangs off a saved business, and nothing hangs
-    off a saved recipe or event. Two tables, two jobs — this one is not a
-    second owner of business favorites (MEH-271 smell #1).
-
-    `item_id` has no foreign key on purpose: it points at a different table per
-    `item_type`. The read path (MEH-2557) joins each type against its own table
-    and serves only rows that are still public, so a deleted or hidden item
-    drops out of the list instead of 500'ing — the same contract
-    `GET /users/me/favorites` keeps for businesses (MEH-248, MEH-2513).
-
-    `user_id` cascades: deleting an account deletes its saves. No separate
-    index on it: the UNIQUE (user_id, item_type, item_id) btree leads with
-    user_id and already serves every per-user query.
-    """
-
-    __tablename__ = "saved_items"
-    __table_args__ = (
-        UniqueConstraint(
-            "user_id", "item_type", "item_id", name="uq_saved_items_user_item"
-        ),
-        # Built from SAVED_ITEM_TYPES so the model holds one copy of the list,
-        # not two; the revision's literal CHECK is pinned by a test.
-        CheckConstraint(
-            "item_type IN ({})".format(", ".join(f"'{t}'" for t in SAVED_ITEM_TYPES)),
-            name="saved_items_item_type_check",
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    item_type = Column(String(20), nullable=False)
-    item_id = Column(UUID(as_uuid=True), nullable=False)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-
-
-class FavoriteAlert(Base):
-    """MEH-54: per-producer alert preferences for favorited producers.
-
-    One row per (user, producer) pair — UNIQUE enforced at DB level.
-    Each bool controls whether that alert type fires for this user+producer.
-    push_subscription stores the Web Push API subscription JSON
-    ({endpoint, keys: {p256dh, auth}}); nullable when push not granted.
-    """
-
-    __tablename__ = "favorite_alerts"
-    __table_args__ = (
-        UniqueConstraint(
-            "user_id", "producer_id", name="uq_favorite_alert_per_producer"
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    notify_new_product = Column(Boolean, default=True)
-    notify_new_event = Column(Boolean, default=True)
-    notify_delivery_area = Column(Boolean, default=True)
-    # MEH-1361: 4th alert type — fires when a favorited producer's recipe
-    # first becomes publicly visible (admin approve). server_default in the
-    # migration opts existing rows in, matching the sibling columns' default.
-    notify_new_recipe = Column(Boolean, default=True)
-    # MEH-2828: 5th alert type — fires when a favorited producer opens a group
-    # buy. Nullable + server_default true, exactly like MEH-1361; unlike the
-    # siblings, the code reads NULL as ON (alerts.py, Sapir 08/11).
-    notify_new_group_buy = Column(Boolean, default=True)
-    # MEH-3117: 6th alert type — fires when a favorited producer publishes
-    # rescue bags for TODAY. Same shape as notify_new_group_buy (NULL = ON).
-    notify_new_rescue = Column(Boolean, default=True)
-    push_subscription = Column(JSON, nullable=True)
-    whatsapp_opt_in = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=utc_now)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
-
-    user = relationship("User")
-    producer = relationship("Producer")
-
-
-class DeliveryWaitlistEntry(Base):
-    """MEH-2618: «תודיעו לי כשתגיעו ל{עיר}» — one row per (business, city, email).
-
-    The Oddbox / Hungry Harvest pattern: a visitor whose city the business does
-    not deliver to leaves an email and the city, with NO account, and is mailed
-    once when the business adds that city to its delivery areas
-    (services/delivery_waitlist.notify_cities, fired from PUT /producers/me).
-
-    `city` keeps the visitor's own spelling for the email she receives;
-    `city_key` is `app.data.cities.city_key(city)` — the same comparison form
-    `GET /cities` and the favorite-alert geo filter use — so "תל אביב - יפו"
-    typed by the business matches "תל אביב-יפו" typed by her. The UNIQUE is on
-    the key, not the display spelling, so one person cannot occupy two rows
-    with two spellings.
-
-    `user_id` is set when she was signed in (ON DELETE SET NULL: deleting the
-    account keeps the email's own consent intact; the unsubscribe link in
-    every email removes the row). `notified_at` is the once-only guard.
-    """
-
-    __tablename__ = "delivery_waitlist"
-    __table_args__ = (
-        UniqueConstraint(
-            "producer_id", "city_key", "email", name="uq_delivery_waitlist_city_email"
-        ),
-        Index("ix_delivery_waitlist_producer_city", "producer_id", "city_key"),
-        # MEH-2673: the per-address resend cooldown looks up by email.
-        Index("ix_delivery_waitlist_email_host_sent", "email", "host_confirm_sent_at"),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    city = Column(String(60), nullable=False)
-    city_key = Column(String(60), nullable=False)
-    email = Column(String(200), nullable=False)
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-    notified_at = Column(DateTime, nullable=True)
-    # MEH-2673: «אשמח לארח נקודת מסירה ב{עיר}». True = she ticked the box AND
-    # clicked the confirmation link mailed to this address — consent for THIS
-    # business to see her email; the owner reads it on /producers/me/analytics
-    # → pickup_hosts. Set only by POST /delivery-waitlist/host-confirm; a later
-    # plain signup does not flip it back (the unsubscribe link removes the row).
-    wants_to_host = Column(
-        Boolean, nullable=False, default=False, server_default=text("false")
-    )
-    # MEH-2673: when the last host-confirmation mail went out — the per-entry
-    # resend cooldown (services/delivery_waitlist.claim_host_confirm_send).
-    host_confirm_sent_at = Column(DateTime, nullable=True)
-    # MEH-2673: when the link was clicked — the consent record behind
-    # wants_to_host (Privacy Law amendment 13: who consented to what, when).
-    host_confirmed_at = Column(DateTime, nullable=True)
-
-    producer = relationship("Producer")
-
-
-class AlertLog(Base):
-    """MEH-1338: append-only ledger of delivered favorite-alerts, per channel —
-    the frequency-cap backing store for `fire_alerts`.
-
-    The cap is "at most one message per (user, producer, channel) in a rolling
-    24h window", so the cap check is an EXISTS on
-    (user_id, producer_id, channel, sent_at >= now-24h) — the composite index
-    below serves exactly that lookup. `alert_type` is recorded but is NOT part
-    of the cap key (a new_product and a new_event from the same producer on the
-    same channel within 24h still collapse to one send); it is kept for a
-    future digest / analytics.
-
-    Append-only from the request path; rows older than 30 days are deleted by
-    the daily retention purge (services/retention_purge.py, MEH-2303). Rows
-    CASCADE-delete with their user/producer.
-    """
-
-    __tablename__ = "alert_log"
-    __table_args__ = (
-        Index(
-            "ix_alert_log_cap_lookup",
-            "user_id",
-            "producer_id",
-            "channel",
-            "sent_at",
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    channel = Column(String(16), nullable=False)  # "push" | "whatsapp"
-    alert_type = Column(
-        String(32), nullable=False
-    )  # new_event|new_product|delivery_area
-    sent_at = Column(DateTime, default=utc_now, nullable=False)
-
-
-# MEH-587: Recipe + RecipeIngredient removed (chunk 0/4) ahead of the
-# producer-recipes feature. Tables verified empty on staging AND
-# production before drop. See backend/alembic/versions/
-# 20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
-
-
-# --- New models for MVP v1 ---
-
-
-class HomeProduct(Base):
-    __tablename__ = "home_products"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    title = Column(String(200), nullable=False)
-    description = Column(Text)
-    photo = Column(Text)  # Cloudinary URL (primary/cover — first of `images`)
-    quantity = Column(String(100))
-    price = Column(Numeric(10, 2))
-    neighborhood = Column(String(100))
-    city = Column(String(100))
-    # Private address details (docs/archive/FIXES_V2.md fix 7c) — persisted server-side
-    # but NEVER exposed in the public HomeProductOut schema. Only the
-    # seller and admin can see these via a future authenticated endpoint.
-    street = Column(String(200), nullable=True)
-    zip_code = Column(String(20), nullable=True)
-    phone = Column(String(20))  # for WhatsApp redirect
-    available_until = Column(DateTime, nullable=True)  # expiry date
-    is_active = Column(Boolean, default=True)
-    is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
-    # --- expanded fields (docs/archive/FIXES_V2.md fix 2) ---
-    category = Column(String(50), nullable=True)  # e.g. "בשר ועוף" / "דגים" / "ירקות"
-    prep_date = Column(Date, nullable=True)  # preparation / harvest date
-    expiry_date = Column(Date, nullable=True)  # expiry date
-    # e.g. "מקרר" / "מקפיא" / "טמפרטורת חדר"
-    storage_type = Column(String(30), nullable=True)
-    allergens = Column(Text, nullable=True)  # "חיטה, ביצים, חלב..."
-    kosher = Column(String(30), nullable=True)  # values: "כשר" / "לא כשר" / "לא ידוע"
-    is_organic = Column(Boolean, default=False)
-    unit = Column(String(30), nullable=True)  # e.g. "ק״ג" / "יח׳" / "ליטר" / "מנות"
-    delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
-    location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
-    images = Column(ARRAY(Text), default=[])  # up to 4 photos (Cloudinary URLs)
-    # AI moderation (see docs/MODERATION.md)
-    moderation_status = Column(
-        String(20), default="APPROVED"
-    )  # APPROVED|FLAGGED|REJECTED
-    moderation_reason = Column(Text, nullable=True)
-    moderation_suggestion = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=utc_now)
-
-    user = relationship("User")
-    ratings = relationship(
-        "HomeProductRating", back_populates="home_product", cascade="all, delete-orphan"
-    )
-    whatsapp_clicks = relationship(
-        "HomeProductWhatsAppClick",
-        back_populates="home_product",
-        cascade="all, delete-orphan",
-    )
-
-
-class Report(Base):
-    __tablename__ = "reports"
-    # MEH-773: one report per (reporter, producer) — closes the
-    # check-then-act race (matches migration 382128b23383).
-    __table_args__ = (
-        UniqueConstraint(
-            "reporter_id", "producer_id", name="uq_report_reporter_producer"
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    reporter_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    reason = Column(Text)
-    created_at = Column(DateTime, default=utc_now)
-    # MEH-1266: report lifecycle. status ∈ {open, resolved, dismissed};
-    # dashboard counters + /admin/reports filter on status == "open".
-    status = Column(
-        String,
-        nullable=False,
-        default="open",
-        server_default=text("'open'"),
-    )
-    resolved_at = Column(DateTime, nullable=True)
-    # SET NULL (not CASCADE): closing an account must not delete the report
-    # history — only drop the resolver attribution.
-    resolved_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-
-    reporter = relationship("User", foreign_keys=[reporter_id])
-    resolver = relationship("User", foreign_keys=[resolved_by])
-    producer = relationship("Producer", back_populates="reports")
-
-
-class HomeProductWhatsAppClick(Base):
-    __tablename__ = "home_product_whatsapp_clicks"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    home_product_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("home_products.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    clicked_at = Column(DateTime, default=utc_now)
-    rating_sent = Column(Boolean, default=False)
-    rated = Column(Boolean, default=False)
-    rating_token = Column(String(100), unique=True, nullable=True)
-
-    user = relationship("User")
-    home_product = relationship("HomeProduct", back_populates="whatsapp_clicks")
-    rating = relationship("HomeProductRating", back_populates="click", uselist=False)
-
-
-class Event(Base):
-    __tablename__ = "events"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    title = Column(String(300), nullable=False)
-    description = Column(Text)
-    event_date = Column(Date, nullable=False)
-    event_time = Column(Time, nullable=True)
-    # MEH-2469: optional end time ("09:30–15:00"); end > event_time is
-    # enforced in the request schemas + update route, not by a DB CHECK.
-    end_time = Column(Time, nullable=True)
-    location = Column(String(300))  # "בחווה שלנו" / full address
-    city = Column(String(100))
-    lat = Column(Float)
-    lng = Column(Float)
-    image_url = Column(Text)
-    # MEH-1657: one of routers/events.py VALID_CATEGORIES —
-    # "שוק" | "קטיף" | "טעימות" | "אחר".
-    category = Column(String(30), nullable=False)
-    price = Column(Integer, default=0)  # 0 = free
-    max_participants = Column(Integer, nullable=True)
-    registration_url = Column(String(500), nullable=True)  # external signup link
-    # MEH-2763: how a visitor signs up — the owner picks it per event. One of
-    # REGISTRATION_METHODS; CHECK in revision e8c4a1f2b7d9.
-    registration_method = Column(
-        String(20),
-        nullable=False,
-        server_default=text("'site_form'"),
-        default="site_form",
-    )
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=utc_now)
-
-    producer = relationship("Producer")
-
-
-class Experience(Base):
-    """
-    Community-submitted experiences (workshops, food tours, nutrition classes).
-
-    Intentionally separate from `Event`. The axis is ONE-TIME vs SIGN-UP
-    (locked 27/07, reaffirmed 28/07 — MEH-1657):
-      - Event      = something that happens ONCE, on a date. An open day, a
-                     market stall, a seasonal harvest, a launch. Flat `price`,
-                     an external `registration_url`, and that's it.
-      - Experience = a guided activity people SIGN UP for. Priced per person,
-                     capped, and repeatable — which is why this model carries
-                     `is_recurring`, `recurring_schedule`, `price_per_person`,
-                     `participants_count`, `duration_minutes` and
-                     `requirements`, and Event carries none of them.
-
-    Industry precedent for the split: Airbnb Experiences (recurring, bookable,
-    per-person) vs Eventbrite (dated events, multiple dates resolved *inside*
-    one event rather than as a separate entity).
-
-    Host type is an IMPLEMENTATION DETAIL of that axis, not the definition:
-    an Experience is keyed on `host_user_id` (a User) while an Event is keyed
-    on `producer_id`, and an Experience additionally requires Claude
-    pre-moderation AND admin approval. This docstring previously stated the
-    axis WAS who hosts — that was stale, the fields had already overtaken it,
-    and it actively misled readers into thinking the two models overlap.
-
-    Moderation flow:
-      status: pending | approved | rejected | changes_requested
-      moderation_status: APPROVED | FLAGGED | REJECTED (from Claude)
-
-    REJECTED from Claude blocks the create call (HTTP 400). APPROVED/FLAGGED
-    both persist as status='pending' and wait for admin review — the
-    distinction is surfaced to admin so FLAGGED submissions get extra
-    scrutiny. Admin clears the queue via /admin/experiences approve /
-    reject / request-changes.
-
-    Privacy: `address` is stored but NOT returned in the public list
-    (mirrors home_products.street/zip_code behaviour from FIXES_V2.md #7c).
-    Only the owner + admin see the full address in the detail endpoint.
-    """
-
-    __tablename__ = "experiences"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
-    # Core content
-    title = Column(String(300), nullable=False)
-    description = Column(Text, nullable=False)
-    image_url = Column(Text, nullable=True)
-    # e.g. "בישול" | "תזונה" | "סיור אוכל" — keys mirror
-    # frontend/lib/event-categories.js EXPERIENCE_CATEGORIES.
-    category = Column(String(50), nullable=True)
-
-    # Host — an email-verified producer-role user (not necessarily an
-    # approved business): submit_experience requires require_verified_producer
-    # (MEH-2246: role + email_verified), and the public feed INNER-JOINs
-    # Producer + is_business() (experiences._publicly_visible_query), so a
-    # consumer-hosted row could never be public. MEH-2870: this used to say
-    # "any logged-in user (consumer / producer / admin)".
-    host_user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-
-    # Schedule — matches Event.event_date/event_time convention for consistency
-    event_date = Column(Date, nullable=False)
-    event_time = Column(Time, nullable=True)
-    duration_minutes = Column(Integer, nullable=True)
-    is_recurring = Column(Boolean, default=False)
-    recurring_schedule = Column(Text, nullable=True)  # "כל שישי 9:00-12:00"
-
-    # Location — producer_farm is explicitly NOT an option; that's what Event is for
-    location_type = Column(String(20), default="home")  # home | public
-    city = Column(String(100))
-    address = Column(Text, nullable=True)  # private — only owner/admin see it
-    lat = Column(Float, nullable=True)
-    lng = Column(Float, nullable=True)
-
-    # Capacity + pricing
-    max_participants = Column(Integer, nullable=True)
-    # MEH-2665: optional minimum to run it; the page reads it against the
-    # host-reported participants_count («נפתחת ב-N נרשמים לפחות»).
-    min_participants = Column(Integer, nullable=True)
-    participants_count = Column(Integer, default=0)
-    price_per_person = Column(Numeric(10, 2), nullable=True)  # NULL / 0 = free
-
-    # Prep
-    requirements = Column(Text, nullable=True)
-
-    # MEH-2763: how a visitor signs up — the host picks it per experience (one
-    # of REGISTRATION_METHODS). registration_url is used by "external_url" only.
-    registration_method = Column(
-        String(20),
-        nullable=False,
-        server_default=text("'site_form'"),
-        default="site_form",
-    )
-    registration_url = Column(String(500), nullable=True)
-
-    # Moderation
-    status = Column(
-        String(30), default="pending"
-    )  # pending | approved | rejected | changes_requested
-    moderation_status = Column(
-        String(20), nullable=True
-    )  # APPROVED | FLAGGED | REJECTED
-    moderation_reason = Column(Text, nullable=True)
-    moderation_suggestion = Column(Text, nullable=True)
-    admin_feedback = Column(Text, nullable=True)  # populated on "request changes"
-    rejection_reason = Column(Text, nullable=True)  # populated on "reject"
-
-    # MEH-1419: reversible host cancel — mirrors Event.is_active (models.py:903).
-    # Non-null + server_default true to match the MEH-1419 Alembic migration
-    # (keeps `alembic check` drift-free; existing rows backfill to active). The
-    # public list filters is_active IS TRUE; /mine returns inactive too so the
-    # dashboard can show + reactivate a cancelled experience.
-    is_active = Column(
-        Boolean, nullable=False, server_default=text("true"), default=True
-    )
-
-    created_at = Column(DateTime, default=utc_now)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
-
-    host = relationship("User", foreign_keys=[host_user_id])
-
-
-# MEH-2763: the four ways an event / experience owner can take sign-ups.
-# "site_form" stores a Registration row; the other three are outbound links
-# the site never observes (ADR-031).
-REGISTRATION_METHODS = ("site_form", "whatsapp", "phone", "external_url")
-
-
-class Registration(Base):
-    """MEH-2763 — one visitor's sign-up to an event OR an experience, taken
-    through the on-site form (registration_method = "site_form").
-
-    No account: name, phone and email are what the visitor typed. They are
-    shown to the owner (dashboard list + notification email) and purged 30
-    days after the item's date (services/retention_purge.py) — the promise the
-    form makes under the submit button.
-
-    Exactly one of event_id / experience_id is set (CHECK). Two real FKs
-    rather than a (kind, item_id) pair, so deleting the item cascades.
-    cancel_token is the only credential for the visitor's cancel link.
-    """
-
-    __tablename__ = "registrations"
-    __table_args__ = (
-        CheckConstraint(
-            "(event_id IS NULL) <> (experience_id IS NULL)",
-            name="ck_registrations_one_item",
-        ),
-        CheckConstraint(
-            "status IN ('registered', 'cancelled')",
-            name="ck_registrations_status",
-        ),
-        Index("ix_registrations_event_id", "event_id"),
-        Index("ix_registrations_experience_id", "experience_id"),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    event_id = Column(
-        UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=True
-    )
-    experience_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("experiences.id", ondelete="CASCADE"),
-        nullable=True,
-    )
-    name = Column(String(100), nullable=False)
-    phone = Column(String(20), nullable=False)
-    email = Column(String(200), nullable=False)
-    cancel_token = Column(String(64), nullable=False, unique=True)
-    status = Column(
-        String(20),
-        nullable=False,
-        server_default=text("'registered'"),
-        default="registered",
-    )
-    created_at = Column(DateTime, nullable=False, default=utc_now)
-    cancelled_at = Column(DateTime, nullable=True)
-
-    event = relationship("Event")
-    experience = relationship("Experience")
-
-
-class NewsletterSubscriber(Base):
-    __tablename__ = "newsletter_subscribers"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String(200), unique=True, nullable=False)
-    created_at = Column(DateTime, default=utc_now)
-
-
-class ContactMessage(Base):
-    __tablename__ = "contact_messages"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(200), nullable=False)
-    email = Column(String(200), nullable=False)
-    message = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=utc_now)
-
-
-class ProducerReview(Base):
-    """Public reviews for producers (not for home-products — those have
-    HomeProductRating). One review per user per producer (unique constraint).
-    Aggregates maintained on producers.avg_rating + reviews_count.
-    """
-
-    __tablename__ = "producer_reviews"
-    __table_args__ = (
-        UniqueConstraint(
-            "producer_id", "user_id", name="uq_one_review_per_producer_per_user"
-        ),
-        # MEH-1428: DB-level twin of the Pydantic Literal on `source` — added
-        # by revision 3f9a7c2e5d18 alongside the column.
-        CheckConstraint(
-            "source IN ('click', 'invite_link')",
-            name="ck_producer_reviews_source",
-        ),
-        # MEH-2349: REJECTED is never stored (it is a 422), so only these two.
-        # A CHECK passes on NULL, so no "IS NULL OR" is needed.
-        CheckConstraint(
-            "ai_moderation_status IN ('APPROVED', 'FLAGGED')",
-            name="ck_producer_reviews_ai_moderation_status",
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    stars = Column(Integer, nullable=False)  # 1-5
-    body = Column(Text, nullable=True)
-    is_hidden = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=utc_now)
-    # MEH-1039: business-owner reply to a customer review — one per review,
-    # set/edited only by the producer owner (review.producer_id ==
-    # user.producer_id). Both nullable / Expand-only (ADR-007) — existing rows
-    # predate the reply. Naive DateTime to match created_at above and the
-    # utcnow() the endpoint writes (CHUNK B). Alembic revision b8f3d21a9c47.
-    reply = Column(Text, nullable=True)
-    reply_at = Column(DateTime, nullable=True)
-    # MEH-1428 chunk 1: how the reviewer passed the contact gate —
-    # "click" (a WhatsApp/contact click row, the pre-MEH-1428 path) or
-    # "invite_link" (a signed "request a review" token, reviews.py guard 3).
-    # NOT NULL with a server_default so every pre-existing row reads "click"
-    # without a backfill — Expand-only (ADR-007). Alembic revision
-    # 3f9a7c2e5d18 (down_revision f5b8d2c7a3e9 — re-pointed 05/09 when the
-    # branch was synced onto staging; the revision docstring records it).
-    source = Column(String(20), nullable=False, server_default="click")
-    # MEH-2349: the AI verdict on the body at the last write — "APPROVED" |
-    # "FLAGGED". NULL = no verdict: no body, every row that predates the
-    # column, and (MEH-2390) a fail-open, so its next save re-checks; the
-    # fail-open signal is the MEH-2352 Sentry report. Informational: a
-    # FLAGGED review still publishes.
-    # Nullable, Expand-only (ADR-007). Alembic revision c4e81a2f9b6d.
-    ai_moderation_status = Column(String(16), nullable=True)
-    # MEH-2381: when the author last changed body or stars while the review
-    # was hidden. NULL = not edited since the admin last hid or unhid it (both
-    # clear it). Admin-only signal. Nullable, Expand-only (ADR-007). Alembic
-    # revision d7a3f5c1e2b8.
-    edited_after_hidden_at = Column(DateTime, nullable=True)
-
-    producer = relationship("Producer", back_populates="reviews")
-    user = relationship("User")
-
-
-class HomeProductRating(Base):
-    __tablename__ = "home_product_ratings"
-    __table_args__ = (UniqueConstraint("click_id", name="uq_one_rating_per_click"),)
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    click_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("home_product_whatsapp_clicks.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    home_product_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("home_products.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    stars = Column(Integer, nullable=False)  # 1-5
-    comment = Column(String(100))
-    created_at = Column(DateTime, default=utc_now)
-
-    click = relationship("HomeProductWhatsAppClick", back_populates="rating")
-    user = relationship("User")
-    home_product = relationship("HomeProduct", back_populates="ratings")
-
-
-# ============================================================
-# Analytics — feature/producer-analytics
-# ============================================================
-
-
-class ProducerPageView(Base):
-    """Raw row per GET /producers/{id} hit (minus bot user-agents).
-
-    The row is the source of truth for:
-      - Producer dashboard: profile_views (7d / 30d / total), views_by_day
-        (30-day chart), top_cities aggregation, search_appearances (rows
-        with referrer='search'), weekly_trend (rank_in_city too, until MEH-2529
-        removed it).
-      - Admin dashboard: top cities across all producers.
-
-    MEH-160: EVERY one of those readers counts through
-    `services/analytics.py::unique_views_count` — one view per visitor per
-    Israel calendar day. Rows stay raw here; the dedupe is entirely at read
-    time, so the change is reversible and no history is lost. A new reader
-    that calls `func.count(id)` on this table re-introduces the inflation
-    the column was added to prevent.
-
-    Privacy: we store `viewer_ip_hash` (SHA-256, salted from
-    `settings.secret_key`) rather than the raw IP — enough to dedupe uniques
-    without keeping PII indefinitely. The salt is deploy-scoped, NOT
-    time-rotating: it changes only when the deploy's secret changes, which
-    resets uniques (rare, accepted). See docs/SECURITY.md for the full
-    rationale.
-    """
-
-    __tablename__ = "producer_page_views"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    # SHA-256 hex (64 chars) of IP + salt. NULL only if the request had
-    # no usable client IP (unit tests, some proxy configs).
-    viewer_ip_hash = Column(String(64), nullable=True)
-    # City the viewer is located in — filled from the authenticated user's
-    # `city` field when available, NULL for anonymous viewers. We deliberately
-    # do NOT geolocate raw IPs (no MaxMind DB in the image, no external API
-    # dependency on the hot path of /producers/{id}).
-    city = Column(String(100), nullable=True)
-    # Where the view came from — lets the producer dashboard answer
-    # "how often did people find me via search" without a separate impression
-    # table. NULL = direct/unknown, or a value outside the allowlist.
-    # MEH-1558: the allowlist is the authority (_ALLOWED_REFERRERS,
-    # services/analytics.py:213, enforced by record_analytics_event) — this
-    # comment mirrors it and must be updated with it. Anything not listed
-    # there is stored as NULL.
-    referrer = Column(
-        String(30), nullable=True
-    )  # search | map | category | home | favorites | follow
-    # | producers-index | similar | nearby | None
-    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
-
-
-class ProducerWhatsAppClick(Base):
-    """Raw row per click on a WhatsApp CTA on a producer detail page.
-
-    Distinct from `HomeProductWhatsAppClick` — that table tracks clicks on
-    *home-product* cards (which also dispatches a rating SMS 24h later).
-    Producer-page clicks are simpler: we just count them for the producer
-    dashboard's `whatsapp_clicks` metric, no rating loop.
-
-    Written from `POST /producers/{id}/whatsapp-click`, which is anonymous
-    and rate-limited 10/minute per IP (slowapi). user_id is set when the
-    caller is authenticated (optional JWT) so the producer can see how many
-    unique registered users clicked.
-    """
-
-    __tablename__ = "producer_whatsapp_clicks"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-    clicked_at = Column(DateTime, default=utc_now, nullable=False, index=True)
-    # MEH-1677: the city a coverage-request click ("לא מגיעים אליך?") was
-    # asking about. NULL on an ORDINARY WhatsApp click and on every row that
-    # predates this column -- only CoverageRequestCta sends a city, so NULL
-    # means "not a coverage click" and never "we lost it". Length mirrors the
-    # 60-char cap the request schema enforces after trim.
-    city = Column(String(60), nullable=True)
-
-
-class ProducerAnalyticsDaily(Base):
-    """MEH-2079 chunk A: the anonymous daily roll-up that lets the raw
-    analytics tables be pruned without the owner's dashboard losing history.
-
-    Sapir's ruling 05/09: `producer_page_views` and `producer_whatsapp_clicks`
-    keep 90 days of RAW rows and are then deleted, while this table keeps the
-    per-day counts forever. The point of the pair is stated in the ruling as
-    "אפס שינוי נראה לבעלת העסק" — the owner's numbers must not move when the
-    purge first runs.
-
-    ANONYMOUS BY CONSTRUCTION, and that is the whole reason it may be kept
-    without a bound: no `viewer_ip_hash`, no `city`, no `user_id`, no row-level
-    anything. A count per (business, day) says nothing about any person, so
-    Amendment 13's storage-limitation principle does not bite on it the way it
-    bites on the pseudonymous raw rows (`analytics.py:163` — SHA-256 of the IP
-    with a deploy-scoped salt is personal data, not anonymous data).
-
-    THE COUNTS ARE DEDUPED, NOT RAW ROW COUNTS. `views_unique` and
-    `views_search_unique` store what `services/analytics.py::unique_views_count`
-    computes — one view per visitor per Israel calendar day (MEH-160) — because
-    that is what every reader of the raw table already shows. Summing raw rows
-    here instead would make the owner's "total" jump upward the moment the
-    aggregate half of the window starts being read, which is the same
-    inflation MEH-160 removed, reintroduced through a side door.
-    `whatsapp_clicks` is a plain count, matching its reader
-    (`producer_me.py`'s `windowed(ProducerWhatsAppClick, ...)`, no distinct).
-
-    `day` is an Israel calendar day (`utils/clock.py::israel_today`), a DATE
-    and not a timestamp — the same MEH-1883 reasoning as every other date
-    column here.
-
-    Chunk A creates the table and NOTHING else: no writer, no reader, no
-    scheduler entry. Chunk B adds the roll-up job and the `windowed()` total
-    path; chunk C adds the purge and must not merge before the privacy-policy
-    wording is live (MEH-1981).
-
-    # DO NOT add a person-level column to this table — its whole licence to
-    #        exist unbounded is that it carries none.
-    # DO NOT write raw row counts into views_unique; use unique_views_count.
-    """
-
-    __tablename__ = "producer_analytics_daily"
-
-    # `server_default` as well as the Python `default` (MEH-2282, revision
-    # 0396917da2ea). Chunk B2's roll-up writes with a raw
-    # `INSERT … ON CONFLICT DO NOTHING` that never instantiates this class, so
-    # `default=uuid.uuid4` is not consulted on the one path that writes every
-    # row; the DB has to be able to mint the id itself. Declared on both sides
-    # so model and migration agree (ADR-006). `gen_random_uuid()` is Postgres
-    # 13+ core — the same call b7d3e1a94c26 (MEH-1872) and d4a9c31e6f82
-    # (MEH-1399) already use.
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
-    )
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    # CASCADE, like the raw tables: when a business deletes its account the
-    # aggregate goes with it. The ruling keeps the aggregate "anonymous" for
-    # RETENTION purposes, which is not a reason to keep a deleted business's
-    # numbers — deletion is a different right from storage limitation, and the
-    # card is explicit that the existing CASCADE is not a substitute for either.
-    day = Column(Date, nullable=False, index=True)
-    views_unique = Column(Integer, nullable=False, server_default="0")
-    views_search_unique = Column(Integer, nullable=False, server_default="0")
-    whatsapp_clicks = Column(Integer, nullable=False, server_default="0")
-
-    __table_args__ = (
-        # One row per business per day. The roll-up (services/analytics_rollup.py,
-        # MEH-2283) inserts with `ON CONFLICT DO NOTHING` on this constraint —
-        # SKIP, never upsert-overwrite (Sapir's ruling 06/09): a rolled-up day
-        # is immutable, because after chunk C a re-roll would read partially
-        # purged raw rows and write an undercount over a correct number. This
-        # comment used to say "corrects the row"; that was the pre-ruling plan.
-        UniqueConstraint(
-            "producer_id", "day", name="uq_producer_analytics_daily_producer_day"
-        ),
-    )
-
-
-class ContactClick(Base):
-    """MEH-82: one row per click on a non-WhatsApp contact method (phone/instagram/website/email).
-
-    Tracked via POST /producers/{id}/contact-click so the producer dashboard
-    can show a breakdown by method alongside the existing whatsapp_clicks metric.
-    IP is hashed (SHA-256 + rotating salt) for privacy; user_id is set when the
-    caller is authenticated.
-    """
-
-    __tablename__ = "producer_contact_clicks"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-    # phone | instagram | website | email | whatsapp_group (MEH-2626: updates link)
-    method = Column(String(20), nullable=False)
-    ip_hash = Column(String(64), nullable=True)
-    clicked_at = Column(DateTime, default=utc_now, nullable=False, index=True)
-
-    __table_args__ = (
-        Index("ix_contact_clicks_producer_at", "producer_id", "clicked_at"),
-    )
-
-
-class GroupBuy(Base):
-    """MEH-52: group purchase with commit counter and price unlock."""
-
-    __tablename__ = "group_buys"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    title = Column(String(200), nullable=False)
-    description = Column(Text, nullable=True)
-    product_name = Column(String(200), nullable=False)
-    unit = Column(String(50), nullable=True)
-    price_per_unit_regular = Column(Numeric(10, 2), nullable=False)
-    price_per_unit_group = Column(Numeric(10, 2), nullable=False)
-    min_participants = Column(Integer, nullable=False)
-    max_participants = Column(Integer, nullable=True)
-    deadline = Column(DateTime, nullable=False)
-    city = Column(String(100), nullable=True)
-    # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).
-    # Nullable — hidden on the public page when NULL. Alembic-only (MEH-267).
-    fulfillment_note = Column(Text, nullable=True)
-    # MEH-2621: the same answer split in two — where/when to pick up, and
-    # where/for how much it is delivered. New rows carry one or both; rows
-    # from before carry only fulfillment_note. Alembic-only (MEH-267).
-    pickup_note = Column(Text, nullable=True)
-    delivery_note = Column(Text, nullable=True)
-    # open | funded | cancelled | fulfilled
-    status = Column(String(20), default="open", nullable=False)
-    # MEH-1651: one-way latch for the open->funded notification pair. NULL =
-    # never sent. `status` cannot carry this on its own because it legitimately
-    # flaps: cancelling below min_participants reverts it to "open" and the next
-    # join re-crosses the threshold, so a status-keyed send would re-spam every
-    # participant on every flap.
-    # DO NOT clear this on the funded->open revert path — that re-arms the
-    #        notification, which is the exact failure the column prevents.
-    funded_notified_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-
-    # MEH-2503: passive_deletes defers to the DB ON DELETE CASCADE. Without it
-    # db.delete(producer) tried to NULL the NOT NULL producer_id → 500 on
-    # every delete of a business that ever had a group buy (MEH-816 class).
-    producer = relationship(
-        "Producer", backref=backref("group_buys", passive_deletes=True)
-    )
-    commits = relationship(
-        "GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan"
-    )
-
-
-class GroupBuyCommit(Base):
-    """MEH-52: a user's commitment to join a group buy."""
-
-    __tablename__ = "group_buy_commits"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    group_buy_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("group_buys.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    quantity = Column(Integer, default=1, nullable=False)
-    phone = Column(String(30), nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),
-    )
-
-    group_buy = relationship("GroupBuy", back_populates="commits")
-    # MEH-2503: same as GroupBuy.producer — a user who ever joined a group buy
-    # could not delete her account (NotNullViolation on user_id).
-    user = relationship(
-        "User", backref=backref("group_buy_commits", passive_deletes=True)
-    )
-
-
-class PhoneOtpToken(Base):
-    """MEH-51: one-time WhatsApp OTP for phone verification."""
-
-    __tablename__ = "phone_otp_tokens"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    phone = Column(String(30), nullable=False)
-    code = Column(String(6), nullable=False)
-    expires_at = Column(DateTime, nullable=False)
-    used = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-
-    # MEH-773 (Chunk B): passive_deletes defers child cleanup to the DB
-    # ON DELETE CASCADE (producer_id is NOT NULL) instead of the ORM
-    # unit-of-work trying to nullify it → NotNullViolation 500 (MEH-755).
-    producer = relationship(
-        "Producer", backref=backref("otp_tokens", passive_deletes=True)
-    )
-
-
-class KashrutBadgeRequest(Base):
-    """MEH-51: producer uploads cert → admin approves → badge activates."""
-
-    __tablename__ = "kashrut_badge_requests"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    badge_code = Column(String(50), nullable=False)
-    cert_url = Column(Text, nullable=True)
-    status = Column(
-        String(20), default="pending", nullable=False
-    )  # pending|approved|rejected
-    reviewed_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-
-    # MEH-773 (Chunk B): passive_deletes defers to DB ON DELETE CASCADE —
-    # closes the latent NotNullViolation on producer delete (kashrut_requests
-    # had no explicit pre-delete, unlike phone_otp_tokens / MEH-755).
-    producer = relationship(
-        "Producer", backref=backref("kashrut_requests", passive_deletes=True)
-    )
-    reviewer = relationship("User", backref="kashrut_reviews")
-
-
-class CategoryRequest(Base):
-    """MEH-141: producer signals a missing category during registration."""
-
-    __tablename__ = "category_requests"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    requested_name = Column(String(100), nullable=False)
-    examples = Column(Text, nullable=True)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-    status = Column(String(20), default="pending", nullable=False, index=True)
-    admin_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-    reviewed_at = Column(DateTime, nullable=True)
-
-    producer = relationship("Producer", backref="category_requests")
-
-
-class ProducerNameChangeRequest(Base):
-    """MEH-1872: an owner's request to change her business name, held for
-    re-moderation instead of written straight onto ``producers.name``.
-
-    MEH-1851 removed `name` from `_PRODUCER_WRITABLE_FIELDS` because a plain
-    `setattr` let an approved business become a different business after
-    approval — a hole in the DNA-LOCK "every business is approved by hand".
-    Closing it left owners with no way to fix a typo at all. This table is the
-    sanctioned route back: the request waits, the public name does not move.
-
-    A separate table rather than a `pending_name` column (Sapir's ruling,
-    09/08) so the decision keeps an audit trail and a second request cannot
-    silently overwrite the first.
-
-    REUSES: the CategoryRequest shape directly above — same status/admin_notes/
-    reviewed_at triple, same admin-queue idiom.
-    """
-
-    __tablename__ = "producer_name_change_requests"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    # The name as it stood when the request was filed. Stored rather than read
-    # back from the producer at review time: the admin must judge the change
-    # she was actually asked to approve, and `producers.name` can move under
-    # her (another approved request, an admin edit) between filing and review.
-    current_name = Column(String(100), nullable=False)
-    requested_name = Column(String(100), nullable=False)
-    reason = Column(Text, nullable=True)
-    status = Column(String(20), default="pending", nullable=False, index=True)
-    admin_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-    reviewed_at = Column(DateTime, nullable=True)
-
-    # MEH-2503: same NOT NULL + no-cascade shape as GroupBuy.producer.
-    producer = relationship(
-        "Producer", backref=backref("name_change_requests", passive_deletes=True)
-    )
-
-
-class SearchQuery(Base):
-    """Search telemetry — one row per /producers?search=... query.
-
-    Written from producers.py:310 (after search).  Read from search.py:218 to
-    compute /search/trending.
-    """
-
-    __tablename__ = "search_queries"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    query = Column(Text, nullable=False)
-    results_count = Column(Integer, nullable=False, default=0)
-    searched_at = Column(DateTime, nullable=False, default=utc_now)
-
-
-# MEH-588: producer-recipes schema (chunk 1/4). M2M link table declared
-# at module scope (not inside ProducerRecipe) so Product.recipes can
-# reference it by the string "producer_recipe_products" via `secondary`.
-# Mirror of the Alembic table created in revision f4c8a91e2b07.
-producer_recipe_products = Table(
-    "producer_recipe_products",
-    Base.metadata,
-    Column(
-        "recipe_id",
-        UUID(as_uuid=True),
-        ForeignKey("producer_recipes.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Column(
-        "product_id",
-        UUID(as_uuid=True),
-        ForeignKey("products.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Index("ix_producer_recipe_products_product_id", "product_id"),
+# --- Re-exports (MEH-3269) -------------------------------------------------
+# The classes below live in sibling modules, one per area. They are imported
+# here, at the bottom, for two reasons: every `from app.models.models import X`
+# keeps working, and importing this module still registers every table on
+# `Base.metadata` and every class for string-named relationships.
+from app.models.admin_ops import (  # noqa: E402
+    AdminAuditLog as AdminAuditLog,
+    AdminChecklistItem as AdminChecklistItem,
+    AlembicLineage as AlembicLineage,
+    CategoryRequest as CategoryRequest,
+    InboundMessage as InboundMessage,
+    KashrutBadgeRequest as KashrutBadgeRequest,
+    OutboundMessage as OutboundMessage,
+    OutreachLead as OutreachLead,
+    PhoneOtpToken as PhoneOtpToken,
+    ProducerNameChangeRequest as ProducerNameChangeRequest,
+    ProducerReviewCheck as ProducerReviewCheck,
+)
+from app.models.analytics import (  # noqa: E402
+    ContactClick as ContactClick,
+    ProducerAnalyticsDaily as ProducerAnalyticsDaily,
+    ProducerPageView as ProducerPageView,
+    ProducerWhatsAppClick as ProducerWhatsAppClick,
+)
+from app.models.catalog import (  # noqa: E402
+    DeliveryArea as DeliveryArea,
+    ProducerLocation as ProducerLocation,
+    ProducerOffer as ProducerOffer,
+    Product as Product,
+)
+from app.models.engagement import (  # noqa: E402
+    AlertLog as AlertLog,
+    ContactMessage as ContactMessage,
+    DeliveryWaitlistEntry as DeliveryWaitlistEntry,
+    Favorite as Favorite,
+    FavoriteAlert as FavoriteAlert,
+    NewsletterSubscriber as NewsletterSubscriber,
+    ProducerReview as ProducerReview,
+    Report as Report,
+    SAVED_ITEM_TYPES as SAVED_ITEM_TYPES,
+    SavedItem as SavedItem,
+    SearchQuery as SearchQuery,
+)
+from app.models.events import (  # noqa: E402
+    Event as Event,
+    Experience as Experience,
+    GroupBuy as GroupBuy,
+    GroupBuyCommit as GroupBuyCommit,
+    REGISTRATION_METHODS as REGISTRATION_METHODS,
+    Registration as Registration,
+)
+from app.models.home_products import (  # noqa: E402
+    HomeProduct as HomeProduct,
+    HomeProductRating as HomeProductRating,
+    HomeProductWhatsAppClick as HomeProductWhatsAppClick,
+)
+from app.models.recipes import (  # noqa: E402
+    ProducerRecipe as ProducerRecipe,
+    producer_recipe_products as producer_recipe_products,
+)
+from app.models.rescue import (  # noqa: E402
+    RESCUE_MAX_QTY_PER_OFFER as RESCUE_MAX_QTY_PER_OFFER,
+    RESCUE_MAX_QTY_PER_ORDER as RESCUE_MAX_QTY_PER_ORDER,
+    RESCUE_OFFER_STATUSES as RESCUE_OFFER_STATUSES,
+    RESCUE_ORDER_STATUSES as RESCUE_ORDER_STATUSES,
+    RescueNoShowTombstone as RescueNoShowTombstone,
+    RescueOffer as RescueOffer,
+    RescueOrder as RescueOrder,
+    RescueReview as RescueReview,
+    RescueTypicalItems as RescueTypicalItems,
+    _check_in as _check_in,
 )
 
 
-class ProducerRecipe(Base):
-    """MEH-588: a recipe owned by a producer that can promote one or more
-    of that producer's products via the producer_recipe_products M2M.
-
-    `moderation_status` mirrors the four-state machine used elsewhere
-    (pending / approved / rejected / needs_revision). The DB-level CHECK
-    constraint is created by Alembic revision f4c8a91e2b07 and mirrored
-    in `__table_args__` below for autogenerate parity — the migration
-    remains the schema authority (ADR-003); the ORM copy declares only
-    what the DB already has, and creates nothing.
-
-    History: MEH-588 (creation, chunk 1/4 of the producer-recipes epic;
-    chunk 0 = MEH-587 cleared the legacy `recipes` namespace).
-    """
-
-    __tablename__ = "producer_recipes"
-    # MEH-588: mirror the partial index declared in Alembic revision
-    # f4c8a91e2b07 so `alembic check` (Base.metadata vs DB schema) does
-    # not flag ORM/migration drift. Plain `producer_id` index is covered
-    # by the column-level `index=True` below.
-    __table_args__ = (
-        Index(
-            "ix_producer_recipes_published_moderation",
-            "published",
-            "moderation_status",
-            postgresql_where=text("published = true"),
-        ),
-        # MEH-588: mirror the CHECK created in revision f4c8a91e2b07. Alembic
-        # 1.19.0 added by-name CHECK autogenerate detection, which surfaced
-        # this as ORM/migration drift; the DB was always correct.
-        CheckConstraint(
-            "moderation_status IN ('pending', 'approved', 'rejected', 'needs_revision')",
-            name="producer_recipes_moderation_status_check",
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    title = Column(Text, nullable=False)
-    description = Column(Text, nullable=True)
-    ingredients = Column(Text, nullable=False)
-    instructions = Column(Text, nullable=False)
-    prep_time_min = Column(Integer, nullable=True)
-    cook_time_min = Column(Integer, nullable=True)
-    servings = Column(Integer, nullable=True)
-    image_url = Column(Text, nullable=True)
-    moderation_status = Column(
-        Text,
-        nullable=False,
-        default="pending",
-        server_default=text("'pending'"),
-    )
-    moderation_notes = Column(Text, nullable=True)
-    published = Column(
-        Boolean,
-        nullable=False,
-        default=False,
-        server_default=text("false"),
-    )
-    created_at = Column(
-        DateTime, nullable=False, default=utc_now, server_default=text("now()")
-    )
-    updated_at = Column(
-        DateTime,
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now,
-        server_default=text("now()"),
-    )
-
-    producer = relationship("Producer", back_populates="producer_recipes")
-    products = relationship(
-        "Product",
-        secondary=producer_recipe_products,
-        back_populates="recipes",
-    )
-
-
-class InboundMessage(Base):
-    """MEH-509 PR2b — durable record of inbound WhatsApp messages.
-
-    Populated by the future PR2c webhook receiver (Meta sends POST to
-    /webhook/whatsapp). Consumed by the auto-reply watchdog in
-    app/services/auto_reply_watchdog.py, which scans every 5 min for
-    rows with `bot_replied=False AND human_replied=False` received in
-    the last 30 min, then dispatches `vacation_response_he_v2` or
-    `after_hours_response_he` and flips `bot_replied=True`.
-
-    `meta_message_id` is UNIQUE for webhook idempotency (Meta delivers
-    at-least-once). `bot_template_sent` is audit-trail-only so we can
-    diff "tried to send" (bot_replied=True) vs "send succeeded"
-    (bot_template_sent set).
-    """
-
-    __tablename__ = "inbound_messages"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    from_phone = Column(String(20), nullable=False, index=True)
-    body = Column(Text, nullable=False)
-    received_at = Column(
-        DateTime,
-        nullable=False,
-        default=utc_now,
-        server_default=text("now()"),
-        index=True,
-    )
-    meta_message_id = Column(String(100), unique=True, nullable=True)
-    # Watchdog gate — flip True BEFORE attempting send, so a failure
-    # leaves the message permanently un-auto-replied (one shot, no
-    # retry storm). Indexed for the watchdog WHERE clause.
-    bot_replied = Column(
-        Boolean,
-        nullable=False,
-        default=False,
-        server_default=text("false"),
-        index=True,
-    )
-    bot_replied_at = Column(DateTime, nullable=True)
-    bot_template_sent = Column(String(50), nullable=True)
-    human_replied = Column(
-        Boolean,
-        nullable=False,
-        default=False,
-        server_default=text("false"),
-    )
-
-
-class OutboundMessage(Base):
-    """MEH-771 / AUD-009/010 — durable record of OUTBOUND WhatsApp sends.
-
-    Written by app/services/whatsapp.py per send (template + freeform).
-    A Graph 200 only means *accepted* (queued); true delivery arrives
-    later via the Meta status webhook (MEH-771 Chunk B), which flips
-    `status` to 'delivered'/'failed' and sets `updated_at`.
-
-    `meta_message_id` (the wamid) is UNIQUE for webhook idempotency
-    (Meta delivers at-least-once). `status` is app-enforced (no DB
-    enum/CHECK), by-convention 'accepted' | 'delivered' | 'failed' |
-    'window_expired', consistent with availability_state.
-    """
-
-    __tablename__ = "outbound_messages"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    to_phone = Column(String(20), nullable=False, index=True)
-    kind = Column(String(64), nullable=False)
-    meta_message_id = Column(String(100), unique=True, nullable=True)
-    status = Column(
-        String(20),
-        nullable=False,
-        default="accepted",
-        server_default=text("'accepted'"),
-        index=True,
-    )
-    error_code = Column(Integer, nullable=True)
-    error_message = Column(Text, nullable=True)
-    created_at = Column(
-        DateTime,
-        nullable=False,
-        default=utc_now,
-        server_default=text("now()"),
-    )
-    updated_at = Column(DateTime, nullable=True)
-
-
-class AdminChecklistItem(Base):
-    """MEH-1399: one row of the pre-approval review checklist, editable by the
-    admin without a deploy.
-
-    Phase 1 (MEH-1396) shipped these 7 items as a frozen frontend constant
-    (``frontend/lib/admin-review-checklist.js``). That file is now the SEED, not
-    the source: the migration copies its contents in, and every reader goes
-    through this table afterwards.
-
-    Rows are retired with ``active = False``, never deleted. That is not a
-    convention to remember — ``producer_review_checks.item_id`` is
-    ``ON DELETE RESTRICT``, so the database refuses to delete an item any admin
-    has ever ticked. Deleting one would orphan the audit trail's subject.
-
-    ``position`` orders the list; the seed spaces values 10 apart so an item can
-    be inserted between two others without renumbering the rest.
-    """
-
-    __tablename__ = "admin_checklist_items"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    position = Column(Integer, nullable=False, index=True)
-    label = Column(Text, nullable=False)
-    hint = Column(Text, nullable=True)
-    active = Column(Boolean, nullable=False, default=True, server_default=text("true"))
-    # Only `updated_at`, deliberately: the question anyone asks of a config row
-    # is when it last changed, not when it was first written. The audit surface
-    # is ProducerReviewCheck below.
-    updated_at = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
-
-
-class ProducerReviewCheck(Base):
-    """MEH-1399: the audit record — this item was ticked for this producer, by
-    this admin, at this time.
-
-    Phase 1's ticks were session-local and evaporated on collapse, so nothing
-    recorded WHAT was verified before a business went live. One row per
-    (producer, item); the unique constraint makes the tick idempotent, so a
-    double-click cannot produce two conflicting attestations.
-
-    ``label_snapshot`` looks redundant next to ``item_id`` and is the opposite.
-    The FK says WHICH item was ticked; the snapshot says what that item SAID at
-    the moment of ticking. Without it, an admin editing an item's wording later
-    would silently rewrite the meaning of every historical attestation — the
-    audit trail would then describe a check nobody actually performed. Same
-    reasoning as ProducerNameChangeRequest.current_name.
-
-    ``checked_by`` is nullable with ON DELETE SET NULL: deleting an admin
-    account must not delete the record that a check happened. A null actor is a
-    weaker record than a named one and a far better one than none.
-
-    An UNCHECKED item is the ABSENCE of a row, not a row with a false flag —
-    which is why there is no `checked` boolean. "Never ticked" and "ticked then
-    un-ticked" are deliberately indistinguishable here; the ticket asks for a
-    record of what was verified, not a keystroke log.
-    """
-
-    __tablename__ = "producer_review_checks"
-    __table_args__ = (
-        UniqueConstraint(
-            "producer_id", "item_id", name="uq_producer_review_checks_producer_item"
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    item_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("admin_checklist_items.id", ondelete="RESTRICT"),
-        nullable=False,
-        # Indexed in its own right. The unique constraint in __table_args__ is
-        # (producer_id, item_id) and leads with producer_id, so it cannot serve
-        # the item_id-only lookup Postgres performs to enforce the RESTRICT on
-        # every DELETE against admin_checklist_items.
-        index=True,
-    )
-    label_snapshot = Column(Text, nullable=False)
-    checked_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        # Same reasoning as item_id above, on the other FK: SET NULL makes
-        # Postgres find every referencing row on each admin-account DELETE, and
-        # unindexed that is a sequential scan of an append-only audit table.
-        # Rare operation, unbounded table — the index is cheap insurance.
-        index=True,
-    )
-    checked_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-
-    item = relationship("AdminChecklistItem")
-
-
-# MEH-2644: the statuses a rescue bag offer and a reservation can hold. One
-# list each, mirrored by the DB CHECKs in Alembic revision a1c9f3e8d204 — a new
-# status means a new revision AND an entry here, never one without the other
-# (the SAVED_ITEM_TYPES precedent, models.py:1384).
-#
-# `paid` is deliberately absent from RESCUE_ORDER_STATUSES: the 03/11 pilot has
-# no payment at all (buyers pay the business at the counter), so an order can
-# never be in it. Re-adding it is an expand-phase CHECK widening, not a rewrite.
-RESCUE_OFFER_STATUSES = ("active", "cancelled")
-RESCUE_ORDER_STATUSES = ("reserved", "handed", "no_show", "cancelled")
-
-# Pilot caps, held at the database by the CHECKs below as well as in the
-# chunk-2 validators: at most 20 bags in one offer, at most 2 per buyer.
-RESCUE_MAX_QTY_PER_OFFER = 20
-RESCUE_MAX_QTY_PER_ORDER = 2
-
-
-def _check_in(column: str, values: tuple[str, ...]) -> str:
-    """`col IN ('a', 'b')` built from one Python tuple, so the model holds a
-    single copy of the list. The revision's literal CHECK is pinned against
-    these tuples by tests/test_rescue_migration.py.
-    """
-    return "{} IN ({})".format(column, ", ".join(f"'{v}'" for v in values))
-
-
-class RescueOffer(Base):
-    """MEH-2644 — one day's rescue bags at one physical pickup point.
-
-    Hangs off `producer_locations`, not `producers`: a bag is collected at a
-    place, and chunk 2 refuses a location whose `location_precision` is not
-    `exact` (the MEH-829 exception that lets the full address be shown while a
-    bag is live). A business with three branches publishes three offers.
-
-    `qty_left` is the live counter. Chunk 2 decrements it under
-    `with_for_update` exactly as group_buys.py does (MEH-773); the
-    `0 <= qty_left <= qty_total` CHECK is what turns a lost race into a failed
-    transaction instead of a negative stock number.
-
-    Money is integer agorot throughout — never Float, never Numeric here: these
-    are whole-shekel pilot prices and the frontend formats them.
-
-    `status` carries only active | cancelled. Sold out is `qty_left == 0` and
-    finished is `pickup_end` in the past, so neither earns a status value; a
-    second owner for a derivable fact is the MEH-271 smell.
-
-    Does NOT: serve anything. No router reads this table until chunk 2, and
-              nothing renders it until chunk 4 — the whole feature is behind
-              RESCUE_BAGS_ENABLED.
-    History:  MEH-2644 (creation, chunk 1/4 of the rescue-bags pilot)
-    """
-
-    __tablename__ = "rescue_offers"
-    __table_args__ = (
-        CheckConstraint(
-            _check_in("status", RESCUE_OFFER_STATUSES),
-            name="rescue_offers_status_check",
-        ),
-        CheckConstraint(
-            f"qty_total >= 1 AND qty_total <= {RESCUE_MAX_QTY_PER_OFFER}",
-            name="rescue_offers_qty_total_check",
-        ),
-        CheckConstraint(
-            "qty_left >= 0 AND qty_left <= qty_total",
-            name="rescue_offers_qty_left_check",
-        ),
-        CheckConstraint("price_agorot >= 0", name="rescue_offers_price_check"),
-        CheckConstraint(
-            "pickup_end > pickup_start", name="rescue_offers_pickup_window_check"
-        ),
-        CheckConstraint(
-            "qty_donated >= 0 AND qty_donated <= qty_total",
-            name="rescue_offers_qty_donated_check",
-        ),
-        Index("ix_rescue_offers_location_date", "producer_location_id", "date"),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_location_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producer_locations.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    date = Column(Date, nullable=False)
-    qty_total = Column(Integer, nullable=False)
-    qty_left = Column(Integer, nullable=False)
-    price_agorot = Column(Integer, nullable=False)
-    value_min_agorot = Column(Integer, nullable=True)
-    value_max_agorot = Column(Integer, nullable=True)
-    pickup_start = Column(DateTime, nullable=False)
-    pickup_end = Column(DateTime, nullable=False)
-    cancel_until = Column(DateTime, nullable=False)
-    status = Column(String(20), default="active", nullable=False)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-    # MEH-2703: bags the business reports it gave away free after the pickup
-    # window — never reserved, or reserved and not collected. Owner-reported;
-    # the API caps it at that leftover, the CHECK only at qty_total (the
-    # no-show half lives on rescue_orders, out of a row CHECK's reach).
-    qty_donated = Column(Integer, nullable=False, default=0, server_default=text("0"))
-    # MEH-2756: when the pickup_start WhatsApp digest of this offer's codes was
-    # sent to the business. NULL = not sent, and it is the ONLY duplicate-send
-    # guarantee the digest has. Delivery is at-least-once: the send is an
-    # outbound HTTP call and the commit follows it, so a failed commit after
-    # Meta accepted leaves this NULL and the next tick re-sends. Deliberate —
-    # for counter codes a duplicate is cheaper than a miss.
-    #
-    # Deliberately INTERNAL: no `*Out` schema carries it and no endpoint reads
-    # or writes it (ADR-006 R1/R2 — a new column reaches the schema unless it is
-    # internal, and this one is). Its only reader and writer is
-    # services/rescue_digest.py. A buyer has no use for it and the dashboard
-    # shows the codes themselves, not when they were messaged.
-    # DO NOT backfill: an existing offer was never digested, which is what NULL
-    # says. TIMESTAMPTZ here while pickup_start/pickup_end/created_at above are
-    # naive-UTC — deliberate, see the revision docstring and docs/DATA.md.
-    codes_sent_at = Column(DateTime(timezone=True), nullable=True)
-
-    location = relationship("ProducerLocation")
-    # passive_deletes defers to the DB ON DELETE CASCADE — without it a
-    # db.delete(offer) tries to NULL the NOT NULL orders.offer_id (the MEH-816
-    # class, fixed for group_buys in MEH-2503).
-    orders = relationship(
-        "RescueOrder",
-        back_populates="offer",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-
-class RescueOrder(Base):
-    """MEH-2644 — one buyer's reservation of one offer's bags.
-
-    `pickup_code` is four digits the buyer reads aloud at the counter.
-    UNIQUE (offer_id, pickup_code) is what lets the business type 4 digits and
-    land on exactly one order. It is unique per OFFER, not globally: two
-    businesses may both issue 0431 on the same evening, and a globally unique
-    4-digit code would exhaust after 10k rows.
-
-    No `amount_agorot`, no `paid_at`: the 03/11 pilot has no payment. The price
-    lives on the offer; the money changes hands at the counter and this table
-    never records it.
-
-    `handed_by` is SET NULL, not CASCADE — deleting the staff account that
-    handed a bag over must not delete the evidence that it was handed over.
-
-    Does NOT: enforce the two-no-shows-in-30-days block. That gate is chunk 2,
-              reading `status` over a window and `User.rescue_no_show_count`.
-    History:  MEH-2644 (creation)
-    """
-
-    __tablename__ = "rescue_orders"
-    __table_args__ = (
-        UniqueConstraint("offer_id", "pickup_code", name="uq_rescue_orders_code"),
-        CheckConstraint(
-            _check_in("status", RESCUE_ORDER_STATUSES),
-            name="rescue_orders_status_check",
-        ),
-        CheckConstraint(
-            f"qty >= 1 AND qty <= {RESCUE_MAX_QTY_PER_ORDER}",
-            name="rescue_orders_qty_check",
-        ),
-        CheckConstraint(
-            "pickup_code ~ '^[0-9]{4}$'", name="rescue_orders_pickup_code_check"
-        ),
-        Index("ix_rescue_orders_user_id", "user_id"),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    offer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("rescue_offers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    qty = Column(Integer, nullable=False)
-    pickup_code = Column(CHAR(4), nullable=False)
-    status = Column(String(20), default="reserved", nullable=False)
-    handed_at = Column(DateTime, nullable=True)
-    handed_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    cancelled_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-
-    offer = relationship("RescueOffer", back_populates="orders")
-    # Two FKs point at `users`, so the join condition has to be spelled out or
-    # SQLAlchemy raises AmbiguousForeignKeysError on first use.
-    user = relationship("User", foreign_keys=[user_id])
-    hander = relationship("User", foreign_keys=[handed_by])
-    review = relationship(
-        "RescueReview",
-        back_populates="order",
-        uselist=False,
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-
-class RescueReview(Base):
-    """MEH-2644 — the buyer's review of one collected bag. One per order.
-
-    `contents_tags` / `highlight_tags` are JSONB (not JSON) so a later
-    containment query stays cheap, matching producers.order_window
-    (models.py:434). Chunk 4 writes the contents chips into the first.
-
-    Does NOT: feed the public business rating. `ProducerReview` owns that;
-              this is bag feedback for the pilot and is read by the chunk-5
-              metrics endpoint only.
-    History:  MEH-2644 (creation)
-    """
-
-    __tablename__ = "rescue_reviews"
-    __table_args__ = (
-        UniqueConstraint("order_id", name="uq_rescue_reviews_order"),
-        CheckConstraint(
-            "rating >= 1 AND rating <= 5", name="rescue_reviews_rating_check"
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("rescue_orders.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    rating = Column(Integer, nullable=False)
-    contents_tags = Column(JSONB, nullable=True)
-    highlight_tags = Column(JSONB, nullable=True)
-    photo_url = Column(String(500), nullable=True)
-    comment = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-
-    order = relationship("RescueOrder", back_populates="review")
-
-
-class RescueTypicalItems(Base):
-    """MEH-2644 — «בדרך כלל: …», what this business usually packs in a bag.
-
-    One row per business, hence `producer_id` UNIQUE. Keyed on the producer and
-    not on a location because what a bakery typically packs does not change
-    between its branches.
-
-    `items` is a JSONB list of strings, written once by the chunk-5 editor and
-    read by the chunk-4 bag section. NOT NULL with a `[]` default so a read
-    never has to distinguish "no row" from "empty list" — only the first.
-    History:  MEH-2644 (creation)
-    """
-
-    __tablename__ = "rescue_typical_items"
-    __table_args__ = (
-        UniqueConstraint("producer_id", name="uq_rescue_typical_items_producer"),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    items = Column(JSONB, nullable=False, default=list)
-    # MEH-2752: the 14-code allergen list this business declares for its bag.
-    # NULL = nothing filled; [] is NEVER stored, because an empty list reads as
-    # "contains none of them", which is a food-safety claim nobody made.
-    # `normalize_allergens` collapses both to None on the way in.
-    # Annotated like the products column at models.py:1117 (MEH-2662): mypy
-    # --strict reaches this file transitively from app/auth.py and asks for an
-    # annotation on a generic ARRAY column (`var-annotated`). The six unannotated
-    # ones above are grandfathered in backend/mypy-baseline.txt; a NEW one is
-    # annotated rather than added to the baseline.
-    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
-
-    producer = relationship("Producer")
-
-
-class AlembicLineage(Base):
-    """MEH-2903 — every Alembic revision a booted image has applied here.
-
-    `alembic_version` holds only the current head, so an OLDER image booting on
-    a newer database (a rollback) cannot tell whether its own head is an
-    ancestor of the database's revision. `scripts/migrate_on_boot.py` records
-    the image's whole chain after each successful `upgrade head`, and an older
-    image takes rollback mode only if its head is listed here.
-
-    Boot bookkeeping, not app data: nothing in `app/` reads or writes it.
-    History:  MEH-2903 (creation)
-    """
-
-    __tablename__ = "alembic_lineage"
-
-    revision = Column(String(64), primary_key=True)
-    recorded_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+# MEH-3218: the on-site ordering tables live in their own module (this file was
+# on the file-size baseline then). Imported here, at the end, so that everything
+# importing models.py — Alembic's env.py included — registers them on
+# Base.metadata. It sits at the end only to keep the model definitions above
+# free of a mid-file import; product_orders.py imports nothing from this file,
+# so there is no cycle either way.
+import app.models.product_orders  # noqa: E402,F401

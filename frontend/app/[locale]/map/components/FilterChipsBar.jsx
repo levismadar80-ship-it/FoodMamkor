@@ -1,3 +1,4 @@
+// @ts-check
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Faders } from "@phosphor-icons/react";
@@ -159,10 +160,10 @@ export default function FilterChipsBar({
               // MEH-2514: `max-[374px]:px-3` + the sr-only word below — at 320 the
               // row's three buttons are 320px wide in a 296px row and this one
               // sat 12px off the left edge (ServiceChipRow.jsx has the rest).
-              // `max-[359px]:min-h-[42px]`: with the word hidden and no count the
-              // button holds only the 16px glyph and shrank to 38px beside 42px
-              // chips (py-2.5 + the 20px text line + border) — measured.
-              className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
+              // `min-h-11` (MEH-3195): every filter chip is now a 44px touch
+              // target; it also keeps this button from shrinking to 38px when
+              // the word is hidden and there is no count (was max-[359px]:42px).
+              className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 min-h-11 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
             >
               <Faders size={16} aria-hidden="true" />
               {/* MEH-2514: under 360px the word is for screen readers only — the

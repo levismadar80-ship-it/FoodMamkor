@@ -9,7 +9,7 @@ Does NOT: decide whether the submission was valid (submission_gate.py owns
           that), notify the admin (auth_notifications.notify_admin_new_producer,
           fired from the same endpoint), or nudge a business that has NOT
           submitted (pending_nudge.py).
-Related:  app/routers/producer_me.py submit_for_review (the only caller),
+Related:  app/routers/producer_me_review.py submit_for_review (the only caller),
           app/utils/clock.py (Israel-local date), MEH-2110's badge — the same
           promise, rendered on the admin's side of the queue.
 History:  MEH-2112 (creation); MEH-2113 (reply-to moved to the published

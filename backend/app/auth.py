@@ -1,4 +1,5 @@
 import hashlib
+import math
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -6,7 +7,7 @@ from uuid import UUID
 
 import bcrypt
 import structlog
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
@@ -17,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.services import admin_audit
 from app.utils.clock import utc_now
 
 # MEH-648: rounds=12 pinned explicitly. Matches the passlib default at time
@@ -49,6 +51,12 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    # MEH-3271: hash_password refuses a NUL byte, so no stored hash can match a
+    # candidate that has one. Answer "no match" instead of letting the
+    # ValueError reach the caller as a 500 (login, password change, deletion).
+    # No account-specific timing: the answer is the same for every account.
+    if "\x00" in plain:
+        return False
     return bcrypt.checkpw(_bcrypt_secret(plain), hashed.encode("ascii"))
 
 
@@ -98,7 +106,7 @@ def create_refresh_token(user_id: UUID, token_version: int) -> str:
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
-def decode_refresh_token(token: str) -> dict | None:
+def decode_refresh_token(token: str) -> dict[str, Any] | None:
     """MEH-326: validate a refresh token. Returns claims on success, None
     on any failure (invalid signature, expired, wrong scope). Never raises
     — callers branch on None.
@@ -210,6 +218,48 @@ def decode_producer_claim_token(token: str) -> UUID | None:
         return None
 
 
+# MEH-3122: how long after `exp` an owner can still ASK for a new link.
+PRODUCER_CLAIM_RENEW_GRACE_DAYS = 90
+
+
+def decode_lapsed_producer_claim_token(token: str) -> UUID | None:
+    """Return the producer id of a claim token that is correctly signed and
+    scoped, whether or not it has expired — up to
+    PRODUCER_CLAIM_RENEW_GRACE_DAYS past `exp`. None on anything else.
+
+    DO NOT use this to grant anything. It exists for ONE caller: the «send me
+    a new link» request (routers/producer_claim.py), which only tells the
+    admin that the owner of that draft asked. The claim and its preview keep
+    decode_producer_claim_token, where an expired link is dead.
+
+    The signature, the scope and the presence of `exp` are checked exactly as
+    there; only the "not yet expired" test is replaced by a bounded window.
+    """
+    try:
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+    except (JoseError, ValueError):
+        return None
+    claims = token_obj.claims
+    if claims.get("scope") != PRODUCER_CLAIM_SCOPE:
+        return None
+    exp = claims.get("exp")
+    if (
+        isinstance(exp, bool)
+        or not isinstance(exp, (int, float))
+        or not math.isfinite(exp)
+    ):
+        return None
+    oldest = datetime.now(timezone.utc) - timedelta(
+        days=PRODUCER_CLAIM_RENEW_GRACE_DAYS
+    )
+    if exp < oldest.timestamp():
+        return None
+    try:
+        return UUID(str(claims.get("producer_id")))
+    except (TypeError, ValueError):
+        return None
+
+
 def generate_fingerprint() -> str:
     """MEH-327: 50 random bytes (100 hex chars) per OWASP JWT Cheat
     Sheet "Token Sidejacking". Sent to the browser as an HttpOnly
@@ -243,7 +293,8 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
     if last is not None and (now - last) < _LAST_ACTIVE_THROTTLE:
         return
     try:
-        user.last_active_at = now
+        # Legacy Column[] typing (no Mapped[]); same idiom as auto_reply_watchdog.py:170.
+        user.last_active_at = now  # type: ignore[assignment]
         db.commit()
     except Exception:
         logger.warning(
@@ -278,7 +329,7 @@ _INVALID_TOKEN_HEADERS = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
 _NO_CREDENTIAL_HEADERS = {"WWW-Authenticate": 'Bearer realm="mehamakor"'}
 
 
-def _validate_access_scope(claims: dict) -> None:
+def _validate_access_scope(claims: dict[str, Any]) -> None:
     # MEH-326: only access-scope tokens are valid here. Refresh tokens go
     # to /auth/refresh; presenting one as a Bearer access token is rejected.
     # Fail-open on missing scope claim — pre-MEH-326 tokens (no scope) are
@@ -293,7 +344,7 @@ def _validate_access_scope(claims: dict) -> None:
         )
 
 
-def _check_password_change_invalidation(user: User, claims: dict) -> None:
+def _check_password_change_invalidation(user: User, claims: dict[str, Any]) -> None:
     # MEH-305: invalidate sessions issued before the most-recent password
     # change. Fail-open when iat is absent (legacy tokens issued before
     # MEH-305 deployed) or when password_changed_at is NULL (user has
@@ -315,7 +366,7 @@ def _check_password_change_invalidation(user: User, claims: dict) -> None:
         )
 
 
-def _check_token_version(user: User, claims: dict) -> None:
+def _check_token_version(user: User, claims: dict[str, Any]) -> None:
     # MEH-206: token_version check — fail-open so tokens issued before
     # this column was added (no `tv` claim) are still accepted.
     tv = claims.get("tv")
@@ -327,7 +378,7 @@ def _check_token_version(user: User, claims: dict) -> None:
         )
 
 
-def _check_fingerprint(request: Request, claims: dict) -> None:
+def _check_fingerprint(request: Request, claims: dict[str, Any]) -> None:
     # MEH-327: fingerprint check — fail-open for tokens without the claim
     # (pre-MEH-327, max 15-min window). Mirrors MEH-206/MEH-326 fail-open
     # patterns. Gate runs before _maybe_bump_last_active so invalid tokens
@@ -353,6 +404,10 @@ def get_current_user(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    # MEH-3306: injected by FastAPI on a route; None when this function is
+    # called directly (the lenient variant below, and unit tests), and then
+    # nothing is scheduled.
+    background_tasks: BackgroundTasks = None,  # type: ignore[assignment]
 ) -> User:
     if token is None:
         raise HTTPException(
@@ -395,6 +450,14 @@ def get_current_user(
 
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
+    # MEH-3306: the admin audit row is scheduled HERE — the one place every
+    # signed-in request passes — so it covers a route gated by require_admin
+    # and equally an owner route an admin enters through an inline role check
+    # (delete an event, a review...). No route carries logging code.
+    # DO NOT move this into require_admin or into routes: the inline-check
+    # routes would fall out of the log again.
+    if background_tasks is not None and user.role == "admin":
+        admin_audit.schedule(request, background_tasks, user)
     return user
 
 
@@ -402,6 +465,7 @@ def get_current_user_optional(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None,  # type: ignore[assignment]  # MEH-3306
 ) -> User | None:
     """Optional auth with RFC 6750 semantics — three states, not two.
 
@@ -435,7 +499,9 @@ def get_current_user_optional(
         return None
     # No try/except: a token that was sent but does not verify is an
     # error, and the caller must hear about it.
-    return get_current_user(request=request, token=token, db=db)
+    return get_current_user(
+        request=request, token=token, db=db, background_tasks=background_tasks
+    )
 
 
 def get_current_user_lenient(

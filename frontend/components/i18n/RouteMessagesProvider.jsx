@@ -1,3 +1,4 @@
+// @ts-check
 import { getMessages } from "next-intl/server";
 import { routeScopedMessages } from "@/lib/client-messages";
 import MergeMessagesProvider from "./MergeMessagesProvider";

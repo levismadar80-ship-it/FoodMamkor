@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import React from "react";
@@ -48,7 +49,8 @@ const RISK_LOW_MAX = 30;
 const RISK_MED_MAX = 70;
 
 function StatusBadge({ status }) {
-  const label = getProducerStatusLabel(status);
+  const t = useTranslations("admin");
+  const label = getProducerStatusLabel(status, t);
   const cls = getProducerStatusColor(status);
   return <span className={`text-xs px-2 py-1 rounded-full ${cls}`}>{label}</span>;
 }
@@ -361,7 +363,7 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
           (MEH-1023 pattern) — same guards, same handlers, same busy keys as
           the inline buttons they replace; only the trigger location moved.
           Story-card behavior is unchanged (reposition only). MEH-2509 removed
-          the ambassador item (it duplicated «בחירת העורכת»). */}
+          the ambassador item (it duplicated «בחירת העורכות»). */}
       <AdminRowMenu
         ariaLabel={t("producers.table.actions.menu_aria")}
         items={[

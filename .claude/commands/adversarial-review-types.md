@@ -18,7 +18,7 @@ cross-check the 3 layers field-by-field: DB column → Pydantic input/output →
 (where present in `frontend/lib/schemas.js`).
 
 1. **Missing field** — DB column present, Pydantic `*Out` absent (or vice versa).
-   Recipe: `grep -n "<column>" backend/app/models/models.py backend/app/schemas/schemas.py`.
+   Recipe: `grep -rn "<column>" backend/app/models/ backend/app/schemas/`.
    Canonical: MEH-283 — `rejection_reason` Alembic-added but ORM-missing.
 2. **Nullability mismatch** — DB `NULL` allowed, Pydantic field non-Optional (or
    reverse). Cross-check `Mapped[T | None]` ↔ `field: T | None = None` ↔ Zod

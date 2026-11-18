@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedBurst from "@/components/brand/SeedBurst";
@@ -31,6 +32,8 @@ import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { parseNaiveUtc } from "@/lib/dates";
+import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -44,6 +47,27 @@ function clampQuantity(value) {
   const n = Math.floor(Number(value));
   if (!Number.isFinite(n)) return QTY_MIN;
   return Math.min(QTY_MAX, Math.max(QTY_MIN, n));
+}
+
+// MEH-3130: a guest's chosen quantity survives the trip to /login and back
+// (the «כניסה להצטרפות» button), as the review row keeps a tapped star.
+const QTY_DRAFT_KEY = (gbId) => `group_buy_draft_qty_${gbId}`;
+
+function saveDraftQuantity(gbId, value) {
+  try {
+    sessionStorage.setItem(QTY_DRAFT_KEY(gbId), String(clampQuantity(value)));
+  } catch {}
+}
+
+/** Read and clear the kept quantity; null when none (or storage is blocked). */
+function takeDraftQuantity(gbId) {
+  try {
+    const raw = sessionStorage.getItem(QTY_DRAFT_KEY(gbId));
+    if (raw === null) return null;
+    sessionStorage.removeItem(QTY_DRAFT_KEY(gbId));
+    return clampQuantity(raw);
+  } catch {}
+  return null;
 }
 
 export default function GroupBuyDetailClient({ id }) {
@@ -64,7 +88,13 @@ export default function GroupBuyDetailClient({ id }) {
   const { user, loading: authLoading } = useAuth();
   const [gb, setGb] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
+  // A string while typing, clamped back to a number on blur.
+  const [quantity, setQuantity] = useState(/** @type {number | string} */ (1));
+  useEffect(() => {
+    if (!user) return;
+    const kept = takeDraftQuantity(id);
+    if (kept) setQuantity(kept);
+  }, [user, id]);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
@@ -131,6 +161,7 @@ export default function GroupBuyDetailClient({ id }) {
     e.preventDefault();
     if (!user) {
       // MEH-2982: come back to this group buy after signing in, not to "/".
+      saveDraftQuantity(id, quantity);
       router.push(loginHrefBackHere());
       return;
     }
@@ -199,7 +230,8 @@ export default function GroupBuyDetailClient({ id }) {
   const fulfilled = gb.status === "fulfilled";
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
-  const expired = new Date(gb.deadline) < new Date();
+  // MEH-3219 B13: deadline is naive UTC — parsed as UTC, not device-local.
+  const expired = parseNaiveUtc(gb.deadline) < new Date();
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const heroSrc = gb.producer_image_url
     ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
@@ -276,7 +308,7 @@ export default function GroupBuyDetailClient({ id }) {
         )}
         <p className="mt-2.5 border-t border-accent/35 pt-2 flex w-full items-center gap-1 text-xs text-fg-muted">
           <Clock size={14} aria-hidden="true" />
-          {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
+          {t("deadline_prefix", { date: formatEventDate(parseNaiveUtc(gb.deadline), locale, { day: "numeric", month: "long", year: "numeric" }) })}
         </p>
       </div>
 
@@ -355,6 +387,10 @@ export default function GroupBuyDetailClient({ id }) {
           {tShare("trigger")}
         </button>
       </div>
+      {/* MEH-3398: the buyer commits to an order HERE, through the site's own
+          tools, so this is where «not a party to the transaction» has to be
+          read. Same locked legal line as the business page; no new copy. */}
+      <DirectoryDisclaimer className="mt-4" />
     </div>
   );
 

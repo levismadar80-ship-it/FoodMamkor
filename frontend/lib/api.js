@@ -1,3 +1,4 @@
+// @ts-check
 import axios from "axios";
 import * as Sentry from "@sentry/nextjs";
 
@@ -9,16 +10,62 @@ const api = axios.create({
   // parsing reads repeated bare keys; the bracketed form is silently ignored,
   // which would drop a multi-id category filter. Applies to every array param.
   paramsSerializer: { indexes: null },
+  // MEH-3193: no request waits forever. Before this, a stalled backend left
+  // /events, /experiences and /map on skeletons with no message (measured
+  // 20 s stall, 14/11); after 15 s the page's own error state takes over.
+  timeout: 15000,
 });
+
+// MEH-3193: a file upload is not "a stalled backend" — a multi-MB photo on a
+// slow phone connection can need far longer than 15 s (the trap MEH-2396
+// recorded in EventsClient). FormData bodies get 2 minutes unless the caller
+// set its own timeout.
+export const UPLOAD_TIMEOUT_MS = 120000;
+
+// MEH-3399: uploads go through Vercel's `/api` proxy, which answers any body
+// above ~4.5MB with its own English plain-text 413 (FUNCTION_PAYLOAD_TOO_LARGE,
+// measured on staging 18/11) before the backend's Hebrew 413 (#4725) can be
+// sent. So the cap is enforced here, below Vercel's: a file above 4MB never
+// leaves the browser, and any 413 that does come back carries one Hebrew line.
+import { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL } from "./upload-limits";
+export { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL };
+
+/** @param {unknown} data */
+function oversizedUpload(data) {
+  if (typeof FormData === "undefined" || !(data instanceof FormData)) return false;
+  for (const [, value] of data.entries()) {
+    if (typeof Blob !== "undefined" && value instanceof Blob && value.size > MAX_UPLOAD_BYTES) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Attach JWT token to requests
 api.interceptors.request.use((config) => {
+  if (oversizedUpload(config.data)) {
+    // Shaped like an axios response error so every caller's existing
+    // `err.response?.data?.detail` path shows the Hebrew line.
+    return Promise.reject(
+      Object.assign(new Error("upload too large"), {
+        config,
+        response: { status: 413, data: { detail: UPLOAD_TOO_LARGE_DETAIL } },
+      }),
+    );
+  }
+  if (
+    typeof FormData !== "undefined" &&
+    config.data instanceof FormData &&
+    config.timeout === 15000
+  ) {
+    config.timeout = UPLOAD_TIMEOUT_MS;
+  }
   // MEH-1627: _noAuth marks the deliberate anonymous retry issued after a
   // failed refresh. Honour it structurally rather than relying on
   // _expireSession() having emptied localStorage first — otherwise a token
   // written by another tab mid-flight would re-authenticate a request whose
   // whole point is to carry no credentials.
-  if (config._noAuth) {
+  if (/** @type {typeof config & { _noAuth?: boolean }} */ (config)._noAuth) {
     delete config.headers.Authorization;
     return config;
   }
@@ -64,9 +111,17 @@ const SKIP_REFRESH = [
 const REFRESH_ALLOWED_EXACT = new Set(["/auth/register/producer"]);
 
 function _expireSession() {
+  // MEH-3173: announce the expiry only if there WAS a session to end. Several
+  // requests in flight together (the home page fires 5+ GETs at once) all
+  // 401, share one refresh, and each one lands here when it fails. The first
+  // call clears the stored session; every later call finds nothing to end and
+  // stays silent — one auth:expired, one toast, not five. A guest with no
+  // stored session never gets a "session expired" notice at all.
+  // Every sign-in path stores `token`, so its presence is the session.
+  const hadSession = localStorage.getItem("token") !== null;
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  if (typeof window !== "undefined") {
+  if (hadSession && typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("auth:expired"));
   }
 }
@@ -77,6 +132,18 @@ api.interceptors.response.use(
   async (error) => {
     const status = error.response?.status;
     const url = error.config?.url ?? "";
+
+    // MEH-3399: a 413 on an upload (Vercel's plain text, the backend's JSON)
+    // reaches the caller as the same Hebrew detail. Only FormData bodies: a
+    // 413 on any other request keeps the backend's own generic line.
+    if (
+      status === 413 &&
+      typeof FormData !== "undefined" &&
+      error.config?.data instanceof FormData
+    ) {
+      error.response.data = { detail: UPLOAD_TOO_LARGE_DETAIL };
+      return Promise.reject(error);
+    }
 
     // MEH-1627: the exact-match allowlist wins over the prefix skip-list.
     const path = url.split("?")[0];

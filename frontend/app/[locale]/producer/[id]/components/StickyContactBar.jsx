@@ -1,3 +1,4 @@
+// @ts-check
 import { useTranslations } from "next-intl";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
@@ -80,7 +81,7 @@ export default function StickyContactBar({
       // (Sapir, 13/11). A pill's ends follow the screen corner instead.
       // pointer-events-none on the shell + auto on the pill: the transparent
       // gutter band passes taps through to the page (MEH-1253's BottomNav fix).
-      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] flex px-[14px] pointer-events-none"
+      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-sticky-bar flex px-[14px] pointer-events-none"
       data-testid="sticky-contact-bar"
       style={{
         // MEH-2148: with the bar flush, its own height is the whole distance it

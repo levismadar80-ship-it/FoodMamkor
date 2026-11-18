@@ -26,6 +26,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "claim",
         # MEH-2974: owner-invite link landing page (/owner-invite/<token>).
         "owner-invite",
+        # MEH-3393: page-freshness confirm page (/freshness/confirm).
+        "freshness",
         # User/producer account routes
         "settings",
         "profile",
@@ -38,6 +40,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "organizers",
         # MEH-2576: the frontend rewrites a deleted business's URL here.
         "business-gone",
+        # MEH-3248: the confirmation page after an account deletion.
+        "account-deleted",
         # Admin
         "admin",
         # Content/legal
@@ -64,11 +68,13 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "share",
         "upgrade",
         "verify-email",
+        # MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
+        "unsubscribe",
     }
 )
 
 
-def slugify(text) -> str:
+def slugify(text: str) -> str:
     """Generate a URL-safe slug. **The single owner** — `admin.py::_slugify` and
     `producer_import.py::_slugify` are now aliases of this function, not copies.
 
@@ -126,7 +132,7 @@ def slugify(text) -> str:
     return s[:100]
 
 
-def rejected_characters(text) -> list[str]:
+def rejected_characters(text: str) -> list[str]:
     """The characters an explicitly-supplied slug carries that the allowlist bars.
 
     MEH-2020 — the ruling says disallowed scripts are **rejected, not filtered**,
@@ -150,7 +156,7 @@ def rejected_characters(text) -> list[str]:
     return sorted(set(bad))
 
 
-def is_reserved(candidate) -> bool:
+def is_reserved(candidate: str) -> bool:
     """Reserved-slug check under NFKC + casefold, not raw string equality.
 
     MEH-2020, layer (b) of the homograph decision. `RESERVED_SLUGS` was a bare

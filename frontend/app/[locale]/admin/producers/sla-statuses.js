@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   sla-statuses
  * Purpose:  The one answer to "is this row waiting on the admin, and therefore

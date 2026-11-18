@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -159,11 +160,12 @@ function PaymentContent({ answer, t }) {
 // it, which open in place, so the suffix names the destination before the tap.
 // It is appended here rather than at each call site precisely because this
 // component IS the wa.me branch: a row that renders in-page answers is a
-// Disclosure, never a WaItem.
-export const WA_SUFFIX = " (וואטסאפ)";
+// Disclosure, never a WaItem. MEH-3170: the suffix copy is
+// `whatsapp.question_chips.wa_suffix` in messages/*.json (leading space kept).
 
 /** WhatsApp deep-link row (unchanged idiom: ChatCircle glyph + quiet link). */
 function WaItem({ href, question, onTrack }) {
+  const t = useTranslations("whatsapp.question_chips");
   return (
     <li>
       <a
@@ -176,7 +178,7 @@ function WaItem({ href, question, onTrack }) {
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
         {question}
-        {WA_SUFFIX}
+        {t("wa_suffix")}
       </a>
     </li>
   );

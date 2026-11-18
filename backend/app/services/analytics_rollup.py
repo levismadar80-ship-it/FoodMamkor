@@ -14,8 +14,8 @@ Does NOT: purge anything (chunk C lives in retention_purge.py, MEH-2303); decide
           is THE dedupe expression and this module reuses it verbatim.
 Related:  backend/app/models/models.py::ProducerAnalyticsDaily;
           backend/app/services/analytics.py:70 (unique_views_count);
-          backend/app/routers/producer_me.py (`_count_in_window` — the
-          `total` arm reads through `rollup_snapshot`);
+          backend/app/services/producer_insights.py (`count_in_window` —
+          the `total` arm reads through `rollup_snapshot`);
           backend/app/startup.py (`_run_analytics_rollup_job`).
 History:  MEH-2079 chunk B2 / MEH-2283 (creation, 06/09). Rulings by Sapir,
           06/09 evening, restated in the function docstrings below.
@@ -58,11 +58,12 @@ either way — `today` is `israel_today()`.
 
 from __future__ import annotations
 
+from typing import Any, cast
 import logging
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from sqlalchemy import func, literal, select, union
+from sqlalchemy import CursorResult, func, literal, Select, select, Table, union
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -85,7 +86,7 @@ UNIQUE_CONSTRAINT = "uq_producer_analytics_daily_producer_day"
 #: the retention window has (after chunk C) no raw rows left to count, and a
 #: zero written for it would be an undercount frozen forever (property 1).
 #: Chunk C must use the same number; if it does not, the `days=N` arms in
-#: producer_me.py need the same seam as `total` (recorded on MEH-2283).
+#: producer_me_analytics.py need the same seam as `total` (recorded on MEH-2283).
 RAW_RETENTION_DAYS = 90
 
 
@@ -110,7 +111,9 @@ def rollup_watermark(db: Session) -> date | None:
     return db.execute(select(func.max(ProducerAnalyticsDaily.day))).scalar()
 
 
-def rollup_snapshot(db: Session, producer_id, column) -> tuple[date | None, int]:
+def rollup_snapshot(
+    db: Session, producer_id: Any, column: Any
+) -> tuple[date | None, int]:
     """`(watermark, Σ column over the producer's aggregate rows)` — from ONE
     statement, deliberately.
 
@@ -179,7 +182,7 @@ def pending_days(db: Session, *, today: date | None = None) -> list[date]:
     return [start + timedelta(days=i) for i in range((yesterday - start).days + 1)]
 
 
-def _day_select(day: date):
+def _day_select(day: date) -> Select[Any]:
     """One SELECT producing every producer's counts for `day`, in the column
     order of the INSERT below.
 
@@ -189,7 +192,7 @@ def _day_select(day: date):
     columns. The views dedupe through `unique_views_count(israel_day_of(...))`
     — the day is constant inside each group, so the tuple form is exactly the
     per-day count the raw readers compute; the search count applies the same
-    `referrer == "search"` WHERE that `_count_in_window` applies.
+    `referrer == "search"` WHERE that `producer_insights.count_in_window` applies.
     """
     pv_day = israel_day_of(ProducerPageView.created_at)
     wc_day = israel_day_of(ProducerWhatsAppClick.clicked_at)
@@ -266,7 +269,7 @@ def roll_up_day(db: Session, day: date) -> int | None:
         if _day_is_rolled(db, day):
             return None
         stmt = (
-            pg_insert(ProducerAnalyticsDaily.__table__)
+            pg_insert(cast("Table", ProducerAnalyticsDaily.__table__))
             .from_select(
                 [
                     "producer_id",
@@ -286,7 +289,7 @@ def roll_up_day(db: Session, day: date) -> int | None:
             )
             .on_conflict_do_nothing(constraint=UNIQUE_CONSTRAINT)
         )
-        inserted = db.execute(stmt).rowcount
+        inserted = cast("CursorResult[Any]", db.execute(stmt)).rowcount
         db.commit()
         return int(inserted or 0)
     except Exception:

@@ -1,3 +1,4 @@
+// @ts-check
 import { Link } from "@/i18n/navigation";
 import { Heart, MapPin, ChatCircle } from "@phosphor-icons/react/ssr";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -19,6 +20,8 @@ export async function generateMetadata({ params }) {
       locale: OG_LOCALE[locale],
     },
     alternates: buildAlternates("/messages", locale),
+    // MEH-3177: a signed-in inbox — never indexed.
+    robots: { index: false, follow: false },
   };
 }
 

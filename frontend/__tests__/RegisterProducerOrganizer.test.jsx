@@ -458,3 +458,28 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     await screen.findByPlaceholderText(STORY_MARKER);
   });
 });
+
+describe("MEH-0000: the stepper numerals are the VISIBLE position", () => {
+  /** The numerals as rendered, in DOM order. */
+  const numerals = () =>
+    [...document.querySelectorAll('[aria-current], [aria-current="step"], div')]
+      .filter((el) => el.querySelector(":scope > span[dir='ltr']"))
+      .map((el) => el.querySelector(":scope > span[dir='ltr']").textContent.trim());
+
+  it("the business wizard shows 01 02 03 04 (control — this path must not move)", async () => {
+    await renderWizard();
+    await screen.findByTestId("register-frame-account");
+    expect(numerals()).toEqual(["01", "02", "03", "04"]);
+  });
+
+  it("an organizer shows 01 02 03 — not 01 02 04", async () => {
+    render(<RegisterProducerClient kind="organizer" />);
+    await screen.findByTestId("register-frame-account");
+    const got = numerals();
+    expect(got).toEqual(["01", "02", "03"]);
+    // The defect, named so it cannot come back quietly.
+    expect(got).not.toContain("04");
+    // Three steps, because CATEGORY is not one of them for an organizer.
+    expect(got).toHaveLength(3);
+  });
+});

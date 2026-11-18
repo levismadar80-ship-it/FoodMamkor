@@ -278,7 +278,7 @@ def test_admin_create_category_returns_409_not_500_when_the_slug_is_taken(db):
         with TestClient(app, raise_server_exceptions=False) as c:
             resp = c.post(
                 "/admin/categories",
-                json={"name": "גבינת כבשים", "emoji": "🐑"},
+                json={"name": "גבינת כבשים", "emoji": "🐑", "requires_license": False},
                 headers=auth_header(admin),
             )
     finally:

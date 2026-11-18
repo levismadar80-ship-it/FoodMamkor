@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi import APIRouter, Request
 
 from app.database import SessionLocal
@@ -7,9 +8,9 @@ from app.rate_limit import limiter
 router = APIRouter()
 
 
-@router.get("/holiday-mode")
+@router.get("/holiday-mode", response_model=None)
 @limiter.limit("60/minute")
-def get_holiday_mode(request: Request):
+def get_holiday_mode(request: Request) -> dict[str, Any]:
     """Return holiday-mode state for the frontend banner.
 
     MEH-247 — reads the same admin_settings keys the /admin/settings page
@@ -34,7 +35,7 @@ def get_holiday_mode(request: Request):
             )
             .all()
         )
-        kv = {r.key: r.value for r in rows}
+        kv: dict[Any, Any] = {r.key: r.value for r in rows}
         return {
             "enabled": (kv.get("holiday_override_enabled") or "false").lower()
             == "true",

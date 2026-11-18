@@ -13,7 +13,7 @@
  * DashboardLoadError (MEH-956) isolation pattern.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
 
 const mockPush = vi.fn();

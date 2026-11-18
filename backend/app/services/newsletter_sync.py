@@ -19,12 +19,14 @@ here as a Sentry event, not as a broken signup.
 
 from __future__ import annotations
 
+from typing import Any
 import logging
 import threading
 
 from app.config import settings
 from app.sentry import capture_background_exception
 from app.services.email import _is_reserved_domain, _mask
+from app.services.outbound_guard import newsletter_sync_allowed
 from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ _segment_id: str | None = None
 _segment_lock = threading.Lock()
 
 
-def _resend():
+def _resend() -> Any:
     """Return the configured SDK module, or None when there is no key."""
     if not settings.resend_api_key:
         return None
@@ -47,7 +49,7 @@ def _resend():
     return configure_resend(settings.resend_api_key)
 
 
-def _get_segment_id(resend) -> str:
+def _get_segment_id(resend: Any) -> str:
     global _segment_id
     if _segment_id:
         return _segment_id
@@ -68,7 +70,7 @@ def _is_not_found(exc: BaseException) -> bool:
     return str(getattr(exc, "code", "")) == "404"
 
 
-def _contact_exists(resend, email: str) -> bool:
+def _contact_exists(resend: Any, email: str) -> bool:
     """True if Resend has a contact for `email`; any non-404 error propagates."""
     try:
         resend.Contacts.get(email=email)
@@ -80,6 +82,11 @@ def _contact_exists(resend, email: str) -> bool:
 
 
 def _skip(email: str) -> bool:
+    # MEH-3402: Resend Contacts is the list real Broadcasts go to. Outside
+    # production nothing is added to it or deleted from it.
+    if not newsletter_sync_allowed():
+        logger.info("[NEWSLETTER] Resend sync skipped outside production")
+        return True
     return not email or _is_reserved_domain(email)
 
 

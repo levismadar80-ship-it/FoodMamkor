@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -32,7 +33,9 @@ import InlineMessage from "@/components/ui/InlineMessage";
  * Related:  app/[locale]/register/producer/RegisterProducerClient.jsx (the
  *           declaration boxes and their strings, reused verbatim) ·
  *           components/admin/ClaimLinkPanel.jsx (where the link is minted).
- * History:  MEH-2324.
+ * History:  MEH-2324. MEH-3122: «שלחו לי קישור חדש» on a link that is no
+ *           longer active (POST /producer-claim/new-link-request — the admin
+ *           is told and sends the link; nothing is shown or sent from here).
  *
  * Token flow: /claim/<token> stashes the token in this tab and replaces the
  * address with /claim, so nothing after the first request carries it — not
@@ -66,6 +69,10 @@ export default function ClaimClient({ tokenFromPath = null }) {
   const [view, setView] = useState(VIEW.LOADING);
   const [preview, setPreview] = useState(null);
   const [attempt, setAttempt] = useState(0);
+  // MEH-3122: the link the server refused. Kept in memory only (storage is
+  // cleared as before), so the owner can ask for a new one for THAT business.
+  const [deadToken, setDeadToken] = useState(null);
+  const [newLink, setNewLink] = useState("idle"); // idle | sending | sent | failed
 
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
@@ -117,6 +124,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
         if (cancelled) return;
         const status = error?.response?.status;
         if (status === 404) {
+          setDeadToken(token);
           clearClaimToken();
           setView(VIEW.INVALID);
         } else if (status === 409) {
@@ -154,6 +162,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
         // licensing declaration the server stamps (MEH-759 Chunk C).
         declaration_accepted: declarationConfirmed && (!farmerRequired || farmerConfirmed),
         terms_accepted: agreedToTerms,
+        // MEH-3137: and on its own, so the server records it apart.
+        ...(farmerRequired && { farmer_declaration_accepted: farmerConfirmed }),
       });
       // Any 2xx means the draft is already hers. An unexpected body is logged,
       // not shown: calling it a failure would send her into a retry that the
@@ -185,14 +195,44 @@ export default function ClaimClient({ tokenFromPath = null }) {
   // MEH-2567: the three dead-end states share StatusPage (line icon, no
   // card, centred) with the 404 and the email pages. Copy unchanged.
   if (view === VIEW.INVALID) {
+    const contact = { href: "/contact?topic=business", label: t("invalid.contact") };
+    // MEH-3122: only when there is a link to speak for (not on a bare /claim),
+    // and only until the request went out.
+    const canAsk = Boolean(deadToken) && newLink !== "sent";
+    const askForNewLink = async () => {
+      if (newLink === "sending") return;
+      setNewLink("sending");
+      try {
+        await api.post("/producer-claim/new-link-request", { token: deadToken });
+        setNewLink("sent");
+      } catch {
+        setNewLink("failed");
+      }
+    };
     return (
       <StatusPage
         testid="claim-invalid"
         icon={LinkBreak}
         title={t("invalid.title")}
         body={t("invalid.body")}
-        primary={{ href: "/contact?topic=business", label: t("invalid.contact") }}
-      />
+        primary={
+          canAsk
+            ? { label: t("invalid.new_link"), onClick: askForNewLink, testid: "claim-new-link" }
+            : contact
+        }
+        secondary={canAsk ? contact : null}
+      >
+        {newLink === "sent" && (
+          <p className="mt-4 text-lg font-medium text-text" role="status" data-testid="claim-new-link-sent">
+            {t("invalid.new_link_sent")}
+          </p>
+        )}
+        {newLink === "failed" && (
+          <div className="mt-4">
+            <InlineMessage data-testid="claim-new-link-error">{tErr("generic")}</InlineMessage>
+          </div>
+        )}
+      </StatusPage>
     );
   }
 
@@ -350,6 +390,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
   );
 }
 
+/** @param {{ children: import("react").ReactNode, testid?: string }} props */
 function Shell({ children, testid }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-10" data-testid={testid}>
@@ -389,6 +430,7 @@ function Preview({ preview, kicker }) {
   );
 }
 
+/** @param {{ href: string, children: import("react").ReactNode, testid?: string }} props */
 function PrimaryLink({ href, children, testid }) {
   return (
     <Link

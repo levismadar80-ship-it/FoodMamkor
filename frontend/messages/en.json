@@ -37,6 +37,7 @@
       "about": "About",
       "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
+      "guides": "Guides for businesses",
       "add_business": "Add Your Business",
       "login": "Sign In",
       "terms": "Terms of Service",
@@ -59,13 +60,15 @@
       "group_business_heading": "For businesses",
       "producers": "All businesses",
       "why_local": "Why local?",
+      "badges": "What the badges mean",
       "newsletter_heading": "Good food is meant to be shared",
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
       "newsletter_submit": "Join",
-      "newsletter_success": "Welcome to Mehamakor See you in your inbox"
+      "newsletter_success": "Welcome to Mehamakor See you in your inbox",
+      "cookie_settings": "Cookie settings"
     },
-    "whats_on": "What's on"
+    "opportunities": "Finds"
   },
   "auth": {
     "verify": {
@@ -230,7 +233,7 @@
       "producer": {
         "heading": "Give your business a home",
         "organizer_heading": "Publish your markets and events",
-        "subtitle": "About 5 minutes. No commissions. The customer comes straight to you",
+        "subtitle": "About 5 minutes. Free to join. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
           "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
@@ -275,7 +278,7 @@
           "business": {
             "title": "2. Business details",
             "subtitle": "Just a few fields — you'll complete the rest in your dashboard, before sending it for review.",
-            "free_hint": "Registration and your page — free. No commissions, ever."
+            "free_hint": "Registration and your page are free. Every tool is free during the launch period."
           },
           "category": {
             "title": "3. Category"
@@ -418,7 +421,7 @@
           "next": "Completing these in your dashboard unlocks sending for review: a photo of your business, a first product in the catalogue, and verifying your WhatsApp number.",
           "cta": "To my dashboard",
           "heading": "We've got your details",
-          "signature": "Warmly, Sapir",
+          "signature": "Warmly, Sapir and Topaz",
           "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and sometimes a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
           "next_heading": "What's next?",
@@ -628,9 +631,9 @@
     },
     "about": {
       "title": "About Mehamakor — our vision and values",
-      "description": "Mehamakor was born from a real need — to find real food, straight from the source. The story of Sapir, our founder, our values, and how we vet the businesses we feature.",
+      "description": "Mehamakor was born from a real need — to find real food, straight from the source. The story of Sapir and Topaz, our founders, our values, and how we vet the businesses we feature.",
       "og_title": "About Mehamakor — our vision and values",
-      "og_description": "The story of Sapir, our values, and how we vet the businesses we feature."
+      "og_description": "The story of Sapir and Topaz, our values, and how we vet the businesses we feature."
     },
     "login": {
       "title": "Sign in to Mehamakor",
@@ -752,9 +755,19 @@
       "country": "Israel",
       "offer_catalog_name": "Products"
     },
+    "draft_preview": {
+      "title": "Page preview",
+      "description": "The page we prepared for you on Mehamakor"
+    },
     "owner_invite": {
       "title": "Set a password for your business page",
       "description": "Your page on Mehamakor is ready"
+    },
+    "pricing": {
+      "title": "Price list for businesses",
+      "description": "What is free for businesses on Mehamakor, what costs money and when payment starts. Your page is free, and during the launch period so is every tool.",
+      "og_title": "Price list for businesses",
+      "og_description": "What is free, what costs money, and when payment starts."
     }
   },
   "producer": {
@@ -1140,7 +1153,7 @@
       "status_funded": "Reached the goal",
       "status_fulfilled": "Fulfilled",
       "status_hint_open": "Join now without paying. Once the minimum is reached, the group price unlocks.",
-      "status_hint_funded": "These groups reached the minimum. Joining is closed and the business is in touch with the participants.",
+      "status_hint_funded": "These groups reached the minimum. Joining is closed, and participants contact the business to arrange their order.",
       "status_hint_fulfilled": "The orders were delivered to the participants.",
       "empty_title": "No active group-buys yet",
       "empty_subtitle": "When businesses open group-buys, you'll find them here"
@@ -1176,7 +1189,7 @@
       "delivery_label": "Delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
-      "how_unlock": "Once {min} people join, the group price unlocks and the business gets in touch",
+      "how_unlock": "Once {min} people join, the group price unlocks and you contact the business to arrange your order",
       "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
       "submitting": "Joining...",
@@ -1214,6 +1227,10 @@
       "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
+      "units_ordered": "{count, plural, one {Total ordered: 1 unit} other {Total ordered: # units}}",
+      "units_ordered_with_unit": "Total ordered: {count} (unit: {unit})",
+      "units_requested": "{count, plural, one {Requested so far: 1 unit} other {Requested so far: # units}}",
+      "units_requested_with_unit": "Requested so far: {count} (unit: {unit})",
       "deadline_prefix": "Deadline: {date}",
       "view_public": "View public page →",
       "form": {
@@ -1381,7 +1398,7 @@
       }
     },
     "errors": {
-      "load_failed": "Couldn't load businesses — please try again",
+      "load_failed": "Couldn't load the businesses",
       "invalid_search": "Invalid search",
       "radius_too_small": "Move the map before searching",
       "radius_too_large": "Area too large — zoom in to search"
@@ -1539,6 +1556,7 @@
         "category_requests": "Category requests",
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
+        "billing": "Billing",
         "settings": "Settings",
         "help": "Help",
         "name_change_requests": "Name changes"
@@ -1584,7 +1602,8 @@
         "export": "Export",
         "new_producer": "+ New business",
         "review_due_label": "Picks due for review",
-        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed",
+        "freshness_stale_label": "Not checked in 60+ days"
       },
       "table": {
         "status_tooltip_draft": "draft = not yet submitted for review",
@@ -1693,7 +1712,8 @@
       },
       "edit": {
         "title": "Edit: {name}",
-        "not_found": "Business not found"
+        "not_found": "Business not found",
+        "last_confirmed": "Last checked: {date}"
       },
       "form": {
         "errors": {
@@ -1705,6 +1725,10 @@
         "uploading": "Uploading...",
         "category_cap_hint": "Your first pick shows on the business card · up to 3 categories",
         "primary_badge": "Primary",
+        "photos": {
+          "main_label": "Main photo",
+          "make_main": "Make main photo"
+        },
         "sections": {
           "basic": "Basic details",
           "categories_tags": "Categories and tags",
@@ -1762,7 +1786,7 @@
           "grass_fed": "Grass-fed",
           "reservist_owned": "One of the owners serves in the reserves",
           "verified": "Verified",
-          "recommended": "Recommended (editor's pick)",
+          "recommended": "Recommended (editors' pick)",
           "recommended_note": "Editor's reason",
           "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
           "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
@@ -1841,6 +1865,36 @@
         "expires": "Valid until {date}",
         "error": "Could not create the link"
       },
+      "draft_preview": {
+        "title": "Preview link",
+        "intro": "A view-only link to this page, before it goes live. You can send it to the business. Valid for 14 days, and it stops working once the page is published or deleted.",
+        "create": "Create preview link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
+      },
+      "consent_publish": {
+        "title": "Publish with consent",
+        "intro": "Did the business confirm in writing that the page can go live? Write what was approved, where and when, and the page goes on the site.",
+        "note_label": "Record of consent",
+        "note_placeholder": "For example: confirmed on WhatsApp, 17.11",
+        "consent": "I hold explicit written approval from the business",
+        "without_license": "Publish without a licence number (without the “verified” badge)",
+        "submit": "Publish the page",
+        "publishing": "Publishing…",
+        "published": "The page is live",
+        "error": "Could not publish the page",
+        "screenshot_label": "Screenshot of the approval (optional)",
+        "screenshot_uploading": "Uploading the screenshot…",
+        "screenshot_attached": "Screenshot attached. View",
+        "screenshot_remove": "Remove",
+        "screenshot_error": "Could not upload the screenshot",
+        "screenshot_view": "Screenshot of the approval"
+      },
       "draft_products": {
         "title": "Products in this draft",
         "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
@@ -1879,6 +1933,66 @@
         "resend": "Send again",
         "cancel_invite": "Cancel invite",
         "error": "We could not send the invite"
+      },
+      "status_label": {
+        "draft": "Draft",
+        "pending": "Awaiting admin approval",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "inactive": "Inactive"
+      },
+      "review": {
+        "checklist": {
+          "title": "Pre-approval checklist",
+          "saving": "Saving…",
+          "loading": "Loading…",
+          "load_error": "Couldn't load the checklist.",
+          "retry": "Try again",
+          "empty": "No active items. You can add some in Settings."
+        },
+        "approve_confirm": {
+          "message": "{count} checklist items are still unticked. Approve anyway?",
+          "message_unavailable": "The checklist didn't load — there's no way to confirm every item was checked.",
+          "confirm": "Approve anyway",
+          "cancel": "Back to review"
+        },
+        "google_place": {
+          "heading": "Google profile",
+          "linked": "Linked ✓",
+          "replace": "Replace",
+          "not_linked": "Not linked — without a link, the Google rating won't appear on the business page.",
+          "searching": "Searching…",
+          "search_google": "Search Google",
+          "no_results": "No results on Google",
+          "search_error": "Search failed, try again",
+          "manual_label": "Name on Google or place_id",
+          "manual_submit": "Search",
+          "reviews_count": "{count} reviews",
+          "too_few_reviews": "Fewer than 20 reviews — the line won't be shown",
+          "saving": "Saving…",
+          "save_error": "Saving failed, try again"
+        },
+        "evidence": {
+          "heading": "Review file",
+          "license": "License",
+          "health_registry": "Ministry of Health registry",
+          "copied": "Copied ✓",
+          "copy_name": "Copy business name",
+          "license_number": "Number: {number}",
+          "no_license_number": "No license number",
+          "license_expiry": "Valid until: {date}",
+          "signals": "Signs of life",
+          "website": "Website",
+          "instagram": "Instagram",
+          "google_search": "Search Google",
+          "no_links": "No website or Instagram",
+          "photos": "Photos",
+          "no_photos": "No photos",
+          "reverse_search": "Reverse search",
+          "reverse_search_alt": "Reverse image search",
+          "kashrut": "Kashrut",
+          "certificate": "Certificate: {code}"
+        }
       }
     },
     "users": {
@@ -1914,7 +2028,8 @@
         "menu_aria": "More actions",
         "unblock": "Unblock",
         "block": "Block",
-        "delete": "Delete"
+        "delete": "Delete",
+        "clear_rescue_block": "Release bag block"
       },
       "favorites": {
         "of": "Favorites of {name}:",
@@ -1932,6 +2047,10 @@
         "prev": "Previous",
         "next": "Next",
         "page_of": "Page {page} of {total}"
+      },
+      "rescue": {
+        "blocked_badge": "Blocked from bags ({count} no-shows)",
+        "cleared": "Block released"
       }
     },
     "recipes": {
@@ -2124,7 +2243,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again."
       },
-      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir, who is building a site for local food businesses. Free, no commission. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free. No commission and no subscription. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir reviews and approves every business herself within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
+      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
       "badge_community": "Community pick",
       "thank_suggester": "Send thanks",
       "thank_disabled": {
@@ -2265,6 +2384,8 @@
       "edited_after_hidden": "Edited after hidden",
       "keep_hidden": "Keep hidden",
       "ai_flagged_only": "Only flagged reviews",
+      "conflict_owner": "Not shown: the author owns this business",
+      "conflict_competitor": "Not shown: the author owns another business on the site",
       "hidden": "Hidden",
       "hide": "Hide",
       "unhide": "Unhide",
@@ -2325,6 +2446,27 @@
         "submit": "Save settings",
         "nothing_to_save_title": "No changes to save",
         "unsaved_count": "{count} unsaved changes"
+      },
+      "checklist": {
+        "title": "Pre-approval checklist",
+        "load_error": "Couldn't load the checklist.",
+        "retry": "Try again",
+        "loading": "Loading…",
+        "intro": "The items you see when you review a business. A change here takes effect right away, no deploy. An item that's no longer relevant — stop using it; an item already ticked for any business can't be deleted, so the review record never loses its subject.",
+        "label_too_short": "Label too short — at least 3 letters",
+        "save_error_gone": "One of the items no longer exists — refresh the page",
+        "save_error": "Saving failed",
+        "move_up": "Move “{label}” up",
+        "move_down": "Move “{label}” down",
+        "new_item": "New item",
+        "item_label": "Item",
+        "hint_label": "Explanation (optional)",
+        "active": "In use",
+        "inactive": "No longer in use",
+        "add": "Add item",
+        "saving": "Saving…",
+        "save": "Save checklist",
+        "saved": "Saved ✓"
       }
     },
     "content": {
@@ -2348,7 +2490,12 @@
         "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The symbol can still be updated.",
         "name_taken_error": "A category with this name already exists",
         "system_badge": "System category",
-        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen."
+        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen.",
+        "license_question": "Does this category need a Ministry of Health manufacturer licence?",
+        "license_yes": "Yes, licence required",
+        "license_no": "No, not required",
+        "license_choose": "Choose whether this category needs a licence",
+        "license_badge": "Licence required"
       },
       "page_editor": {
         "title_placeholder": "Title",
@@ -2423,6 +2570,34 @@
       "until": "until {date}",
       "change_status": "Change status:",
       "view_page": "View page →"
+    },
+    "billing": {
+      "title": "Billing",
+      "lead": "This screen shows whether it is time to start charging businesses, and how much that would bring in.",
+      "switch_off_title": "Billing is off",
+      "switch_off_body": "No business pays the site right now. This screen only shows numbers; it charges nothing.",
+      "switch_on_title": "Billing is on",
+      "switch_on_body": "Businesses that reached the amount are charged once a month.",
+      "ready_title": "Is it time to start charging?",
+      "ready_no": "Not yet",
+      "ready_yes": "Yes, it is time",
+      "ready_rule": "Charging starts when {goal} businesses get paid bookings of <amount></amount> or more a month through the site, {months, plural, one {for one month} other {# months in a row}}.",
+      "ready_progress": "Now: {count} of {goal} businesses",
+      "month_title": "This month: {month}",
+      "month_over_label": "Businesses that got paid bookings of <amount></amount> or more this month",
+      "month_would_label": "What they would pay the site this month, if billing were on",
+      "rows_title": "Businesses with bookings this month",
+      "empty": "No business has had a booking through the site this month yet.",
+      "load_error": "We could not load the billing data. Try refreshing the page.",
+      "row_bookings": "{count, plural, one {# booking through the site} other {# bookings through the site}}, worth <amount></amount>",
+      "row_over": "Reached <amount></amount> this month. {months, plural, one {This is the first month in a row} other {# months in a row so far}}.",
+      "row_under": "Has not reached <amount></amount> this month, so would not pay.",
+      "row_would_pay": "Would pay the site this month: <amount></amount>",
+      "history_title": "Earlier months",
+      "history_lead": "What would have happened each month if billing had been on. None of it was charged.",
+      "history_line": "{over, plural, one {# business would have paid} other {# businesses would have paid}}, <amount></amount> in total",
+      "history_nobody": "No business reached <amount></amount>",
+      "history_none": "No bookings through the site"
     },
     "analytics": {
       "title": "Analytics",
@@ -2620,6 +2795,13 @@
           "q": "Where do I see numbers about the site?",
           "steps": [
             "On “Analytics”: monthly growth, popular categories, top cities, most-favourited businesses and a map."
+          ]
+        },
+        "billing": {
+          "q": "Where do I see whether it is time to start charging businesses?",
+          "steps": [
+            "On “Billing”: whether it is time to start charging, which businesses got bookings through the site this month, and what each would pay.",
+            "The screen is read-only. While it says “Billing is off”, nothing is charged."
           ]
         },
         "group_buys": {
@@ -2899,8 +3081,8 @@
       "duo_rear_alt": "A glass bottle of olive oil with olives"
     },
     "signature": {
-      "name": "Sapir Schnapp",
-      "role": "Founder, Mehamakor"
+      "name": "Sapir Schnapp and Topaz Schnapp",
+      "role": "Founders, Mehamakor"
     },
     "chapter": {
       "1": {
@@ -2940,16 +3122,16 @@
         "cta_map": "Discover businesses near you"
       },
       "story": {
-        "image_aria": "Photo of Sapir, founder of Mehamakor",
-        "image_alt": "Sapir, founder of Mehamakor",
-        "greeting": "Why I started Mehamakor",
-        "p1": "It was always important to me to know where my food comes from. I wanted to buy better — healthier, more local.",
-        "p2": "But I quickly discovered that it isn't accessible. To find truly good food, I had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
-        "p3": "And then it hit me: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
+        "image_aria": "Photo of Sapir, co-founder of Mehamakor",
+        "image_alt": "Sapir, co-founder of Mehamakor",
+        "greeting": "Why we started Mehamakor",
+        "p1": "It was always important to us to know where our food comes from. We wanted to buy better — healthier, more local.",
+        "p2": "But we quickly discovered that it isn't accessible. To find truly good food, we had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
+        "p3": "And then it hit us: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
         "p4": "There are farmers selling fresh vegetables minutes from home. There's someone baking sourdough bread in the next neighborhood. There are small businesses with amazing products — that most people have never even heard of. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
         "p5": "And that's how Mehamakor was born. One place that gathers real, local, healthy food for you — close to home. Without searching for hours.",
-        "caption1": "Founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
-        "caption3": "The criteria — I write them from what I myself look for in food."
+        "caption1": "Co-founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
+        "caption3": "The criteria — we write them from what we ourselves look for in food."
       },
       "parallax": {
         "quote": "Good food — not something we keep to ourselves"
@@ -3001,11 +3183,11 @@
         "body_2": "And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
       },
       "editors_pick": {
-        "heading": "Editor's Pick",
-        "body_1": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business.",
+        "heading": "Editors' Pick",
+        "body_1": "Every so often we mark a business we especially loved — for the quality of its products, its freshness, or a story worth knowing. It's our personal choice, after getting to know the business.",
         "list_lead": "Two things worth knowing:",
         "item_1": "you can't pay for this tag — not with premium, not in any other way.",
-        "item_2": "And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
+        "item_2": "And it isn't a score — a business without it is no less good; we simply haven't gotten to it yet, or the moment hasn't come."
       },
       "community_leader": {
         "heading": "Community leader",
@@ -3253,7 +3435,8 @@
     "title": {
       "all": "All businesses",
       "search_results": "Results for:",
-      "map_link": "View on map"
+      "map_link": "View on map",
+      "page": "{label} — page {page}"
     },
     "search_input": {
       "label": "Search businesses",
@@ -3303,6 +3486,9 @@
       "prev": "← Previous",
       "next": "Next →",
       "page_of": "Page {page} of {totalPages}"
+    },
+    "index_meta": {
+      "description": "Browse all local food businesses, growers, and farms on Mehamakor."
     }
   },
   "reviews": {
@@ -3331,6 +3517,9 @@
     "saved_toast": "Your review was saved",
     "invite_title": "How was {name}?",
     "invite_hint": "Every review here follows a real contact with the business",
+    "login_prompt_title": "Write a review",
+    "login_prompt_message": "To write a review, sign in to your account. Reviews here are written only after contacting the business through Mehamakor.",
+    "contact_first_toast": "To write a review, first contact the business with one of the buttons here.",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come from happy customers",
@@ -3348,6 +3537,16 @@
     "success_body": "You won't receive the newsletter anymore. You're always welcome back.",
     "error_title": "This link isn't valid",
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
+    "cta_home": "Back to home"
+  },
+  "weekly_summary_unsubscribe": {
+    "meta_title": "Stop the weekly summary",
+    "loading": "Updating…",
+    "success_title": "The weekly summary is off",
+    "success_body": "We won't send this business's weekly summary any more. All the numbers are still on your dashboard, under Insights.",
+    "error_title": "This link isn't valid",
+    "error_body": "The link may have opened only partway. Try again from the email, or get in touch.",
+    "cta_insights": "Go to Insights",
     "cta_home": "Back to home"
   },
   "delivery_waitlist_host_confirm": {
@@ -3407,7 +3606,6 @@
     "field_website_label": "Website",
     "field_reason_label": "What makes it special? (optional)",
     "field_suggester_name_label": "Your name (optional)",
-    "field_suggester_email_label": "Email (optional)",
     "privacy_link": "Privacy policy",
     "wants_update_label": "Let me know when the business joins",
     "submit": "Send recommendation",
@@ -3428,7 +3626,6 @@
       "section_categories": "Categories",
       "section_cities": "Cities",
       "recent_heading": "Recent searches",
-      "trending_heading": "Trending searches",
       "remove_recent_aria": "Remove {q} from recent searches"
     },
     "smart": {
@@ -3483,7 +3680,9 @@
     "empty_events": "No saved events yet",
     "empty_experiences": "No saved experiences yet",
     "updates_button": {
-      "label": "Get updates"
+      "label": "Get updates",
+      "login_prompt_title": "Get updates",
+      "login_prompt_message": "To get updates from this business, sign in to your account."
     },
     "button": {
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
@@ -3540,6 +3739,7 @@
   "gallery": {
     "open_aria": "Enlarge image {current}",
     "image_alt": "Image {current}",
+    "image_alt_named": "{name}, photo {current}",
     "prev_aria": "Previous image",
     "next_aria": "Next image",
     "thumb_aria": "Go to image {n}",
@@ -3595,7 +3795,8 @@
       "ordering_link_label": "Open",
       "escalation": "Another question? Get in touch",
       "escalation_email_subject": "A question via Mehamakor",
-      "more_questions": "More questions"
+      "more_questions": "More questions",
+      "wa_suffix": " (WhatsApp)"
     }
   },
   "directory": {
@@ -3636,7 +3837,8 @@
         "download_review": "Download review card",
         "review_headline": "What our customers say",
         "reviews_empty": "No reviews to share yet. <link>Send customers a review request link</link>"
-      }
+      },
+      "caption_from": "{name} from {city}"
     }
   },
   "footer": {
@@ -3646,8 +3848,8 @@
     "meta_title": "Accessibility Statement",
     "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
     "heading": "Accessibility Statement",
-    "date_label": "The site has been tested using automated tools and manual checks. A formal accessibility audit by an external certified accessibility examiner has not yet been performed.",
-    "statement_date": "Statement last updated: July 2026",
+    "date_label": "We tested the site in November 2026 with automated tools, at phone and desktop screen sizes. A formal audit by an external certified accessibility examiner has not yet been performed.",
+    "statement_date": "Statement last updated: November 2026",
     "sections": {
       "commitment": {
         "title": "Accessibility commitment",
@@ -3662,14 +3864,14 @@
         "item_rtl": "Full RTL and Hebrew screen-reader support.",
         "item_contrast": "Reasonable color contrast between text and background.",
         "item_alt": "Alternative text (alt) for meaningful images.",
-        "item_keyboard": "Keyboard navigation across all pages.",
+        "item_keyboard": "Keyboard navigation for menus, forms and buttons.",
         "item_labels": "Clear labels for forms and buttons.",
         "item_fonts": "Font sizes that can be enlarged in the browser.",
         "item_semantic": "Semantic structure (landmarks, headings) to support assistive technologies."
       },
       "gaps": {
         "title": "Areas not yet fully accessible",
-        "body": "Some pages, content, or features may not yet be fully accessible, including content uploaded by users (for example, images without alternative text). We work continuously to improve and expand accessibility."
+        "body": "These are the parts we know are not yet fully accessible: the interactive map, where the list of businesses beside it gives the same information; images that businesses upload themselves, some of which still have no alternative text, while the business's details are also written as text on its page; a few color pairs that do not yet meet the AA contrast level, such as the inactive labels in the bottom menu; and third-party content such as the map tiles. If any of these stops you from using the site, contact the accessibility coordinator and we will help another way. We work continuously to improve and expand accessibility."
       },
       "contact": {
         "title": "Contact the accessibility coordinator",
@@ -3690,7 +3892,7 @@
     "h1": "Your business. A page of its own.",
     "subhead": "A page with your photos and story, and local customers contact you directly, on the channel you choose.",
     "cta": "Join",
-    "trust_hint": "Free, no commissions",
+    "trust_hint": "Free to join",
     "how": {
       "eyebrow": "How it works",
       "heading": "Four steps",
@@ -3715,16 +3917,16 @@
       "eyebrow": "Common questions",
       "q_cost": "How much does it cost?",
       "q_price": "Who sets the price?",
-      "a_cost": "Free to join and be listed. No transaction fees.",
-      "a_price": "You do. The price on your page is yours, and we take no cut of any sale.",
+      "a_cost": "Joining and your page are free. During the launch period every tool is free too. Later, a business whose paid bookings through the site reach ₪{threshold} in a month will choose how to go on: a subscription of ₪{monthly} a month with a reduced commission, a small commission on each booking with no subscription, or just the page, free and without paid tools. We will tell you {noticeDays} days ahead, in writing.",
+      "a_price": "You do. The price on your page is yours.",
       "all_link": "All the questions",
       "heading": "What businesses ask",
       "q_google": "How is this different from Google and Instagram?",
       "q_updates": "Is this one more place I need to keep updated?",
       "a_google": "Google is good for being found in search, and it's worth keeping. Here you get a page of your own in an article style, a contact button on the channel you chose (on WhatsApp, with a ready-made message too), and reviews only from people who contacted you. You can also put the link to your Mehamakor page on your Google profile. Keep your Instagram as usual and link to it from your page; here the customer also sees prices, delivery areas and hours without asking.",
-      "a_updates": "Hardly. There are no orders or stock on the site, so when something runs out, customers just ask you. You only update when something permanent changes.",
+      "a_updates": "Hardly. There is no stock to keep up to date on the site, so when something runs out, customers just ask you. You only update when something permanent changes.",
       "q_revenue": "If everything is free, how do you make money?",
-      "a_revenue": "Right now we don't. In the future, income will come from an upgraded subscription that businesses choose of their own accord. Not from fees, and not from selling a place at the top of the list.",
+      "a_revenue": "Right now we don't. Later, income will come from a subscription and a small commission on bookings that came through the site, and only from a business that already sees results. Not from selling a place at the top of the list, not from ads and not from selling data.",
       "q_customers": "Who gets the customers?",
       "a_customers": "You do. Every enquiry reaches you directly, and the relationship stays yours even if you decide to leave."
     },
@@ -3761,7 +3963,7 @@
       "line": "One link with everything people need to know about you: for your Instagram bio, your WhatsApp status, and anyone who asks.",
       "question": "A question first?"
     },
-    "meta_line": "Free · no commissions · about 5 minutes · live within 3 business days"
+    "meta_line": "Free to join · about 5 minutes · live within 3 business days"
   },
   "about_business": {
     "meta_title": "FAQ for businesses",
@@ -3780,11 +3982,11 @@
     "faq": {
       "cost": {
         "q": "How much does it cost — and what happens when you start charging?",
-        "a": "Your page is free, and there are no transaction commissions. That's a founding principle, not a launch promotion: payment goes between you and your customers only. In the future we'll also offer an upgraded subscription with extra tools for anyone who wants it — but that will be entirely your choice, and the basic page will stay free, always."
+        "a": "Your page is free. During the launch period every tool is free too. When your paid bookings through the site reach ₪{threshold} in a month, I will tell you in writing {noticeDays} days ahead, and then you choose: a subscription of ₪{monthly} a month with a reduced commission, or a small commission on each booking with no subscription. If neither suits you, your page stays yours, free."
       },
       "revenue_model": {
         "q": "If everything is free — how does Mehamakor make money?",
-        "a": "Right now? It doesn't. Mehamakor is a young project, and I'm building it because I believe real, local food deserves a home. In the future the revenue will come from the upgraded subscription — extra tools that businesses choose, willingly. Not from commissions on your transactions, and not from selling a spot at the top of the list. That's how our interest stays aligned with yours: the site succeeds only if it genuinely works for you."
+        "a": "Right now it doesn't. Mehamakor is a young project, and we're building it because we believe real, local food deserves a home. Later, income will come from a subscription and a small commission on bookings, and only from a business the site already brings results to. Not from selling a spot at the top of the list. That way the site earns only if it works for you."
       },
       "customer_ownership": {
         "q": "Who gets the customers — you or me?",
@@ -3816,7 +4018,7 @@
       },
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
-        "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No commissions, no algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
+        "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No algorithm deciding who sees you. And behind the site are us, Sapir and Topaz — we read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
       },
       "organizers": {
         "q": "Organizing a market, an event or a group buy?",
@@ -3867,7 +4069,7 @@
     "meta_title": "Privacy Policy",
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
-    "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "date_label": "Last updated: November 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
     "collection_notice": {
       "chat": "What you write here is sent to Anthropic to draft the reply.",
       "password_reset": "Your email is used only to send the reset link.",
@@ -3960,6 +4162,7 @@
           "posthog": "<b>PostHog</b> — product analytics (which screens were viewed, which registration steps were completed). Loaded only after analytics-cookie consent in the cookie banner, with data stored on EU servers by default.",
           "infra": "<b>Vercel & Railway</b> — site infrastructure and servers; the database is hosted on Railway."
         },
+        "transfer": "Some of these providers store and process data outside Israel, mainly in the United States and the European Union. We pass them only what is needed to run the service, subject to each provider's terms of service and privacy policy.",
         "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
       },
       "rights": {
@@ -3991,11 +4194,11 @@
       },
       "cookies": {
         "title": "6. Cookies",
-        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time through your browser settings."
+        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time with the \"Cookie settings\" button here and at the bottom of the site's pages, or in your browser settings. Withdrawing consent stops collection from that moment; cookies already stored can be deleted in your browser settings."
       },
       "retention": {
         "title": "7. Data retention and security",
-        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. Raw page-view data for business pages (which includes a hashed identifier of the network address) is kept for 90 days and then deleted automatically; after that only anonymous daily summaries are kept. Internal alert logs are deleted after 30 days. When an account is deleted, all identifiable data is deleted immediately. We apply reasonable security measures including encryption, secure storage, access control, and backups."
+        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. Raw page-view data for business pages (which includes a hashed identifier of the network address) is kept for 90 days and then deleted automatically; after that only anonymous daily summaries are kept. Internal alert logs are deleted after 30 days. When an account is deleted, all identifiable data is deleted immediately. Billing records of the business, with no personal details, are kept after the account is deleted, as the law requires. One exception: if the account had no-shows for rescue-bag pickups in the last 30 days, only a hashed identifier of the email address and the no-show dates are kept, so that deleting and reopening the account does not lift the block. They are deleted automatically within 30 days. We apply reasonable security measures including encryption, secure storage, access control, and backups."
       },
       "minors": {
         "title": "8. Minors",
@@ -4077,8 +4280,23 @@
         "title": "10. Privacy",
         "body": "Use of the platform is also subject to the <privacylink>privacy policy</privacylink>, which forms an integral part of these terms."
       },
+      "pricing": {
+        "title": "11. Prices and payment for businesses",
+        "free": "Joining the site and the business page are free. The prices of the paid tools are published on <pricinglink>the price list</pricinglink>.",
+        "launch": "During the launch period businesses are not charged. A business is charged only after written notice, {noticeDays} days ahead. A business may choose to keep the page only, without paid tools: the page stays on the site free, with no time limit, also after the notice.",
+        "scope": "The commission applies only to bookings recorded in the site's tools. Direct contact between a business and its customers, on WhatsApp, by phone or by email, is not charged. Customers pay the business directly. The commission is a payment from the business to the site for using the tools, and does not change the section «Nature of the service»: the site is not a party to the transaction between a business and its customers.",
+        "dispute": "Once a month, before the charge, the business receives a summary of the bookings that were counted. The business may tell us, within {disputeDays} days of receiving the summary, about a booking that did not take place. Such a booking is not charged until it is checked, and if it did not take place it is removed from the charge.",
+        "early": "A business that registered on the site before the end of the launch period pays, without a subscription, the reduced commission that subscribers pay, as published on the price list (currently {subPercent}% of a paid booking), for the first {earlyMonths} months in which it is charged. After that the regular price list applies. The launch period lasts until the site starts charging businesses. Its end date will be published on the price list {priceChangeDays} days ahead.",
+        "change": "Despite the section «Changes to these terms», a change to the price list is published on the price list and sent in writing to businesses, and takes effect only {priceChangeDays} days after the notice. A yearly subscription keeps the price it was bought at until it renews.",
+        "threshold": "A business is charged a commission only for a calendar month in which the paid bookings recorded in the site's tools totalled ₪{threshold} or more. A free registration is not counted.",
+        "nochoice": "A business that has not picked a track by the end of the notice period keeps the page only. Paid tools close to new bookings, and bookings made earlier go ahead as usual.",
+        "trial": "A business that registers on the site after the end of the launch period is not charged a commission in its first {trialDays} days on the site, and is not asked for a payment method in that period.",
+        "cancel": "A subscription can be cancelled at any time. A monthly subscription stays in force until the end of the paid month. When a yearly subscription is cancelled, the share of the full months that remain is refunded.",
+        "unpaid": "A reminder is sent for a charge that was not paid. If the charge is not settled, paid tools close to new bookings until it is. The page stays on the site, and bookings made earlier go ahead as usual.",
+        "vat": "Prices include VAT, if it applies."
+      },
       "contact": {
-        "title": "11. Contact",
+        "title": "12. Contact",
         "intro": "For any question or inquiry regarding the terms of use:"
       }
     }
@@ -4090,7 +4308,7 @@
       "og_description": "Three short guides for businesses on Mehamakor — story, photography, messages.",
       "eyebrow": "Guides for business owners",
       "heading": "Three guides for your first month",
-      "intro": "Joined recently? These are the three guides I send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
+      "intro": "Joined recently? These are the three guides we send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
       "minutes_label": "About {minutes} min read",
       "cta": "Read the guide →",
       "footer_prefix": "Have a question the guides didn't answer? <link>Write to us</link>",
@@ -4102,8 +4320,8 @@
     },
     "article": {
       "eyebrow": "A guide for business owners · {minutes} min read",
-      "founder_name": "Sapir Schnapp",
-      "founder_role": "Founder · {brand}",
+      "founder_name": "Sapir Schnapp and Topaz Schnapp",
+      "founder_role": "Founders · {brand}",
       "back": "Back to guides"
     },
     "business_story": {
@@ -4182,7 +4400,7 @@
           "i4": "**Don't:** No emojis in the text. For emphasis use a heading, bold, or italics — not emojis."
         },
         "b51": "Help if you're stuck",
-        "b52": "If you're sitting in front of the field and can't get started — write to me. I'll read the story, point out where it's strong and where it's weak, and help edit. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b52": "If you're sitting in front of the field and can't get started — write to us. We'll read the story, point out where it's strong and where it's weak, and help edit. **Free, personal, but it takes us a few days — we go through every business ourselves.**",
         "b53": "This isn't an offer for everyone. It's an option for new business owners who don't yet know what it looks like. After you've written it once — you'll always know."
       }
     },
@@ -4300,7 +4518,7 @@
           "i2": "**Hire a local photographer** — sometimes worth the investment. A local photographer can give you many quality photos in half a day. Prices vary — ask for 2-3 quotes before deciding. If you're in for the year — it's a worthwhile investment."
         },
         "b63": "Help if you're stuck",
-        "b64": "Send me 2-3 photos you've taken. I'll look and explain which one works, which doesn't, and why. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b64": "Send us 2-3 photos you've taken. We'll look and explain which one works, which doesn't, and why. **Free, personal, but it takes us a few days — we go through every business ourselves.**",
         "b65": "It's not a regular service — it's an option for new business owners still learning what works."
       }
     },
@@ -4388,7 +4606,7 @@
           "i4": "**Don't:** Don't send 5 separate messages (\"Hi\" → \"I saw\" → \"Give me a minute\" → \"I'm at work\" → \"I'll get back later\"). Send one complete message."
         },
         "b66": "Help if you're stuck",
-        "b67": "Have a message you don't know how to reply to? **Send me a screenshot** (without the customer's identifying details — blur the name and phone). I'll reply with how I'd write it. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b67": "Have a message you don't know how to reply to? **Send us a screenshot** (without the customer's identifying details — blur the name and phone). We'll reply with how we'd write it. **Free, personal, but it takes us a few days — we go through every business ourselves.**",
         "b68": "It's not a regular service — it's an option for new business owners still learning the rhythm."
       }
     }
@@ -4425,6 +4643,60 @@
         "title": "Need help?",
         "body": "Write to us and we'll get back to you by the end of the business day.",
         "cta": "Contact the team"
+      },
+      "whats_new": {
+        "card_title": "New on Mehamakor",
+        "card_all": "All updates",
+        "card_close": "Close",
+        "row_title": "What's new on Mehamakor",
+        "row_body": "What changed on the site and in your dashboard",
+        "row_cta": "Read",
+        "row_unread": "New update",
+        "page_title": "What's new on Mehamakor",
+        "page_subtitle": "What changed for businesses, newest first",
+        "latest_label": "New",
+        "empty": "No updates yet. When something changes, it will show up here.",
+        "releases": {
+          "v1_5_1": {
+            "i0": "Your dashboard home now shows «Waiting for you»: reviews you haven't answered yet and new sign-ups.",
+            "i1": "You can reorder the products on your page by dragging them, and sort them into groups.",
+            "i2": "The «Share» button sends the link to your page straight to an Instagram story or WhatsApp."
+          }
+        }
+      },
+      "welcome_card": {
+        "title": "Welcome to Mehamakor",
+        "body": "We're Sapir and Topaz, sisters. We started Mehamakor so people can find businesses like yours. We approve every page personally, and everything you need to make your page work for you is here.",
+        "whatsapp": "Questions? We answer on WhatsApp.",
+        "cta": "Complete your page",
+        "close": "Close"
+      },
+      "new_tool": {
+        "pill": "New",
+        "dot": "There is a new tool"
+      },
+      "first_moments": {
+        "first_review": {
+          "title": "Your first review is here",
+          "body": "Someone took the time to write about you. A short reply shows others that you care.",
+          "cta": "Read and reply"
+        },
+        "first_whatsapp": {
+          "title": "Your first WhatsApp tap",
+          "body": "Someone tapped the button on your page to message you. It's worth checking whether a message arrived.",
+          "cta": "See all stats"
+        },
+        "views_100": {
+          "title": "100 views of your page",
+          "body": "A hundred times, someone stopped to read about you. Sharing your link will bring more.",
+          "cta": "See all stats"
+        },
+        "first_follower": {
+          "title": "Your first follower",
+          "body": "Someone saved your business, and updates on what you post will reach them.",
+          "cta": "See all stats"
+        },
+        "close": "Close"
       },
       "section_errors": {
         "analytics": "We couldn't load your stats",
@@ -4515,6 +4787,7 @@
       },
       "phone_verify": {
         "title": "Verify your business phone",
+        "reverify_title": "Your business WhatsApp number isn't verified yet",
         "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
         "send_cta": "Send verification code",
         "sending": "Sending...",
@@ -4527,6 +4800,7 @@
         "error_invalid": "Wrong or expired code. Please try again.",
         "error_no_phone": "No phone number on your profile. Add one, then verify.",
         "error_generic": "Something went wrong. Please try again.",
+        "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
         "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog →",
@@ -5059,7 +5333,7 @@
         "approved_heading": "Your kosher badges",
         "select_label": "Kosher type",
         "select_placeholder": "Choose a kosher type",
-        "upload_label": "Certificate photo (JPG/PNG, up to 5MB)",
+        "upload_label": "Certificate photo (JPG/PNG, up to 4MB)",
         "upload_cta": "Upload photo",
         "upload_replace_cta": "Replace photo",
         "uploading": "Uploading…",
@@ -5338,7 +5612,7 @@
       "saved_msg": "Details saved",
       "save_error_fallback": "We couldn't save. Please try again.",
       "upload_type_error": "Only image files allowed: JPG, PNG, WEBP, GIF",
-      "upload_size_error": "File too large — 5MB maximum",
+      "upload_size_error": "File too large — 4MB maximum",
       "avatar_uploaded_msg": "Profile photo updated",
       "avatar_upload_error_fallback": "Upload error — please try again",
       "field_name_label": "Full name",
@@ -5360,7 +5634,7 @@
       "add_cta": "Add product",
       "errors": {
         "upload_type": "Only image files allowed: JPG, PNG, WEBP, GIF",
-        "upload_size": "File too large — 5MB maximum",
+        "upload_size": "File too large — 4MB maximum",
         "upload_failed_fallback": "Upload error — please try again",
         "name_required": "Product name is required",
         "price_required": "Please enter a price",
@@ -5594,9 +5868,12 @@
         "confirm_email_label": "Type your email to confirm",
         "submit_cta": "Confirm deletion",
         "submit_deleting": "Deleting…",
-        "grace_heading": "Deletion request received",
-        "grace_body": "Your account will be disconnected within 30 days. Until then, you can cancel the request by logging in again.",
-        "back_to_login": "Back to login"
+        "business_warning": "Deleting your account also deletes {name}: the page, products, events, reviews and photos. Open group buys will be cancelled and participants notified. The page address will not be reused. This cannot be undone.",
+        "pause_offer": "Just need a break? Switch to \"On break\" until a date you choose. Your page stays up, marked as on break, and is hidden from search until you return.",
+        "pause_cta": "Go on break",
+        "admin_blocked": "A system admin account can't be deleted from here. Another admin must first remove its admin permission.",
+        "super_admin_blocked": "This is the site's main account and it can't be deleted.",
+        "reauth_prompt": "To confirm the deletion, sign in again with {provider}."
       }
     }
   },
@@ -5708,8 +5985,8 @@
     },
     "closing": {
       "em_mark": "Mehamakor",
-      "quote": "I want to know who I'm buying from. I built a place where you know too.",
-      "attrib": "— Sapir"
+      "quote": "We want to know who we're buying from. We built a place where you know too.",
+      "attrib": "— Sapir and Topaz"
     },
     "cta": {
       "h2": "Have a business that deserves a home?",
@@ -5748,8 +6025,8 @@
         "intro": "The business showed us a document and we checked it by hand. <link>How we check</link>"
       },
       "editorial": {
-        "heading": "Editor's pick",
-        "intro": "A badge the editor gives on personal judgement."
+        "heading": "Editors' pick",
+        "intro": "A badge the editors give on personal judgement."
       },
       "self-declared": {
         "heading": "Declared by the business",
@@ -5773,17 +6050,17 @@
     "money_h": "The money stays close",
     "money_body": "A shekel spent at a local business keeps circulating in the area, while most of one spent at a big chain leaves. A <nef>UK study by the New Economics Foundation</nef> found vegetable boxes from local businesses returned roughly twice as much to the local economy as chain purchases.",
     "fairness_h": "Fairness for the people doing the work",
-    "fairness_body": "No middlemen and no commissions — the money reaches whoever grew, baked, cooked, or made it, not whoever stood in between.",
+    "fairness_body": "No middlemen: the money goes straight to whoever grew, baked, cooked, or made it.",
     "provenance_h": "Knowing where it comes from",
     "provenance_body": "Local food has an address and a name. You can ask who grew it, how, and when — and get an answer from a person, not a sticker. Over time it becomes a real acquaintance, and that knowledge is its own kind of calm.",
     "env_h": "Good for the environment, good for all of us",
     "env_body": "Fewer road miles, less packaging, less time in cold storage. And something easy to forget: a region that can feed itself is a stronger region — whatever happens.",
     "start_h": "Where to start",
-    "start_body": "That's why Mehamakor exists: one place gathering local businesses — each hand-picked and approved, each with a page telling its story and a direct line to reach it. No commissions, no middlemen.",
+    "start_body": "That's why Mehamakor exists: one place gathering local businesses — each hand-picked and approved, each with a page telling its story and a direct line to reach it, with no middlemen.",
     "changes_h": "What changes along the way",
     "changes_1": "From the business, straight to you.",
     "changes_2": "Fewer hands along the way. You know who you bought from.",
-    "changes_3": "We take no commission. The price you see is the business's own.",
+    "changes_3": "The price you see is the business's own, and the payment goes straight to it.",
     "cta": "Discover businesses in your area",
     "sources_prefix": "Sources:",
     "source_sustain": "Sustain UK — What is local food and why does it matter?",
@@ -5897,6 +6174,14 @@
       }
     }
   },
+  "draft_preview": {
+    "banner": "This is a preview of the page we prepared for you on Mehamakor. It is not on the site yet, and only people with this link can see it.",
+    "invalid": {
+      "title": "This link is no longer active",
+      "body": "It may have expired, or the page may already be live. Write to us and we will send a new link.",
+      "contact": "Contact us"
+    }
+  },
   "claim": {
     "loading": "Loading the page…",
     "kicker": "We prepared a page for you on Mehamakor",
@@ -5904,7 +6189,9 @@
     "invalid": {
       "title": "This link is not active",
       "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
-      "contact": "Contact us"
+      "contact": "Contact us",
+      "new_link": "Send me a new link",
+      "new_link_sent": "Got it. We will send you a new link."
     },
     "claimed": {
       "title": "This page is already linked to an account",
@@ -6035,8 +6322,11 @@
       "failed": "We couldn't send your review. Try again.",
       "thanks": "Thank you! Your review is saved."
     },
+    "login_prompt_title": "Reserve a bag",
+    "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
-      "blocked": "Reservations are blocked after two no-shows. Please write to us.",
+      "unverified": "Please verify your email address first.",
+      "blocked": "Reservations are blocked after two no-shows. <contact>Write to us</contact>",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",
@@ -6177,8 +6467,8 @@
       "tooltip": "The business showed a licence or an official exemption document that was checked by hand."
     },
     "recommended": {
-      "label": "Editor's pick",
-      "tooltip": "A personal pick by the Mehamakor editor — for quality, freshness or a special story. This badge cannot be bought."
+      "label": "Editors' pick",
+      "tooltip": "A personal pick by the Mehamakor editors — for quality, freshness or a special story. This badge cannot be bought."
     },
     "new": {
       "label": "New",
@@ -6581,8 +6871,8 @@
         "tile_line": "After the certificate has been checked"
       },
       "editor_pick": {
-        "label": "\"Editor's pick\", which is not for sale",
-        "tile_title": "Editor's pick",
+        "label": "\"Editors' pick\", which is not for sale",
+        "tile_title": "Editors' pick",
         "tile_line": "Not for sale"
       },
       "reservist_diet_tags": {
@@ -6636,7 +6926,7 @@
         "label": "Experiences and visits at your place, with sign-up on the site"
       }
     },
-    "total_line": "{count} tools, all of them free. Tap a card to see all its tools.",
+    "total_line": "{count} tools, all of them free during the launch period. Tap a card to see all its tools.",
     "note_line": "Most of the tools do not need switching on. You fill in the details, and they work by themselves."
   },
   "owner_invite": {
@@ -6666,5 +6956,93 @@
     "rescue": "Want to know when there are bags? Save a business and turn on surprise-bag alerts.",
     "group_buys": "Want to know when a group opens? Save a business and turn on group-buy alerts.",
     "cta": "Browse businesses"
+  },
+  "pricing": {
+    "link_full": "See the full price list",
+    "link_short": "Price list",
+    "link_footer": "Price list",
+    "page": {
+      "eyebrow": "Price list for businesses",
+      "h1": "Free to join. You pay only once there are bookings.",
+      "lead": "No credit card and no commitment. Every price is here, up front.",
+      "launch_title": "Today: the launch period",
+      "launch_body": "Everything is free: your page and every tool.",
+      "free_title": "Free",
+      "free_lead": "For every approved business, with no time limit:",
+      "free_item_page": "Your page: story, photos and contact details",
+      "free_item_found": "A place on the map and in search",
+      "free_item_verified": "Licence verification and its badge",
+      "results_title": "Once there are results",
+      "results_lead": "A business whose paid bookings through the site reach ₪{threshold} in a month chooses how to continue:",
+      "sub_title": "Reduced-commission subscription",
+      "sub_price": "₪{monthly} a month",
+      "sub_note": "Or ₪{yearly} a year.",
+      "sub_fee": "Plus a reduced commission on bookings: {subPercent}% instead of {percent}%, and ₪{subBagFee} a bag instead of ₪{bagFee}.",
+      "sub_fee_no_rescue": "Plus a reduced commission on bookings: {subPercent}% instead of {percent}%.",
+      "fee_title": "No subscription",
+      "fee_price": "A commission per booking",
+      "fee_item_booking": "{percent}% of a paid registration to an event, experience or workshop",
+      "fee_item_group": "{percent}% of an order in a group buy that closed",
+      "fee_item_bag": "₪{bagFee} per rescue bag collected",
+      "fee_item_free": "Free registration: no commission",
+      "counted_title": "What counts as a booking",
+      "counted_body": "A registration that was not cancelled, an order in a group buy that closed, and a bag that was collected. A cancellation or a no-show is not counted. A free registration is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
+      "counted_body_no_rescue": "A registration that was not cancelled and an order in a group buy that closed. A cancellation or a no-show is not counted. A free registration is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
+      "notice_title": "Before the first charge",
+      "notice_body": "We will tell you {noticeDays} days ahead, in writing. If you do not pick a track you keep your page, free: paid tools close to new bookings, and bookings already made go ahead as usual.",
+      "early_title": "If you join during the launch period",
+      "early_body": "A reduced commission without a subscription: {subPercent}% and ₪{subBagFee} a bag, for the first {earlyMonths} months of billing. After that, the price list applies.",
+      "early_body_no_rescue": "A reduced commission without a subscription: {subPercent}%, for the first {earlyMonths} months of billing. After that, the price list applies.",
+      "dispute_title": "If a booking that did not happen was counted",
+      "dispute_body": "Before each charge we send a summary of the bookings. You have {disputeDays} days from receiving it to write to us, and we do not charge for that booking until we have checked.",
+      "change_title": "If the price list changes",
+      "change_body": "We will tell you {priceChangeDays} days ahead, in writing. A yearly subscription keeps its price until it renews.",
+      "trial_title": "Joining after the launch period?",
+      "trial_body": "Your first {trialDays} days carry no commission and need no credit card.",
+      "cancel_title": "Cancelling a subscription",
+      "cancel_body": "You can cancel at any time. A monthly subscription stays active until the end of the paid month. On a yearly one we refund the share of the full months that remain.",
+      "unpaid_title": "If a charge is not paid",
+      "unpaid_body": "We send a reminder. If it is still unpaid, paid tools close to new bookings until it is settled. Your page stays on the site.",
+      "compare_body": "Delivery apps take tens of percent of every order. Here, enquiries to you are free, and the commission is {percent}% only on a booking recorded in the site's tools.",
+      "vat": "Prices include VAT, if it applies.",
+      "money_title": "Your customers' money",
+      "money_body": "Goes straight to you. Mehamakor does not charge your customers and does not hold your money.",
+      "never_title": "What is not for sale",
+      "never_body": "A place at the top of the list, badges, verification and ads. Money does not change who appears first.",
+      "closing_heading": "Want a page of your own?",
+      "closing_line": "Signing up takes a few minutes, and your page is free.",
+      "back_link": "Back to the join page",
+      "or": "or",
+      "sub_fit": "A fit for a business with many paid bookings.",
+      "sub_example": "After a few bookings a month the subscription pays for itself: once commissions reach ₪{breakEvenFees}.",
+      "fee_fit": "A fit for a business that is starting out or has few bookings.",
+      "fee_note": "You pay only for a month in which paid bookings reached ₪{threshold}.",
+      "fee_example": "For example: on a ₪{examplePrice} booking, the fee is ₪{exampleFee} and you keep ₪{exampleKeep}.",
+      "tools_link": "See the full list of tools",
+      "as_of": "Price list as of {asOf}.",
+      "steps_label": "How it works",
+      "step2_title": "When the site brings you bookings",
+      "step2_body": "When paid bookings through the site reach ₪{threshold} in a month, we tell you in writing {noticeDays} days ahead.",
+      "step3_title": "You choose",
+      "step3_body": "A subscription, a commission per booking, or just the page, free.",
+      "stay_title": "Just the page",
+      "stay_price": "Free",
+      "stay_body": "No paid tools and nothing to pay. Your page stays on the site, as it is today.",
+      "cta": "Join, free"
+    }
+  },
+  "account_deleted": {
+    "heading": "Account deleted",
+    "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
+  },
+  "page_freshness": {
+    "meta_title": "Page check",
+    "ask_title": "Is everything on your page still correct?",
+    "ask_body": "Hours, delivery, prices and contact details.",
+    "cta_yes": "Yes, all correct",
+    "cta_update": "I want to update",
+    "sending": "Saving…",
+    "done_title": "Thanks! We marked your page as checked today.",
+    "dead_title": "This link is no longer active. You can update your page from your dashboard."
   }
 }

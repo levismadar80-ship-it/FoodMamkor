@@ -1,3 +1,4 @@
+from typing import Any
 import logging
 import os
 from collections.abc import Iterator
@@ -64,7 +65,7 @@ class _ObservableQueuePool(QueuePool):
     unchanged — we log and re-raise the identical exception.
     """
 
-    def _do_get(self):
+    def _do_get(self) -> Any:
         try:
             return super()._do_get()
         except PoolTimeoutError:
@@ -80,7 +81,7 @@ class _ObservableQueuePool(QueuePool):
             raise
 
 
-def _engine_kwargs_for(database_url: str) -> dict:
+def _engine_kwargs_for(database_url: str) -> dict[str, Any]:
     """MEH-770 (SEN-001): assemble ``create_engine`` kwargs.
 
     Pool sizing + the observable pool apply only to the psycopg2/Postgres path
@@ -93,7 +94,7 @@ def _engine_kwargs_for(database_url: str) -> dict:
     idled out. All pool values come from env with conservative defaults — see
     the capacity math in the PR body.
     """
-    kwargs: dict = {"pool_pre_ping": True}
+    kwargs: dict[str, Any] = {"pool_pre_ping": True}
     if database_url.startswith(("postgresql", "postgres")):
         kwargs.update(
             connect_args={"connect_timeout": 10},
@@ -114,6 +115,24 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
     pass
+
+
+def end_transaction(db: Session) -> None:
+    """MEH-2889: return a session's connection to the pool, keep its instances.
+
+    For a background task that was handed the request's session: by then
+    `_release_session` has closed it once, so the only open transaction is the
+    task's own, and its writes are already committed. `commit()` ends that
+    transaction (a no-op when none is open); `rollback()` is the fallback for
+    a session left in a failed state. Never raises: it runs in a `finally`.
+    """
+    try:
+        db.commit()
+    except Exception:  # noqa: BLE001 — a failed session must still let go
+        try:
+            db.rollback()
+        except Exception:  # noqa: BLE001
+            log.warning("end_transaction: rollback failed", exc_info=True)
 
 
 async def _release_session(db: Session) -> None:

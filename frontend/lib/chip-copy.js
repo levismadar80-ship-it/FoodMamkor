@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Purpose:  MEH-2748 — attach the words to a filter chip at render time.
  *           lib/filter-taxonomy.js (FILTER_AXES) and lib/map-chips.js

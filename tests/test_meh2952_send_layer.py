@@ -403,12 +403,12 @@ def test_group_own_auth_forgot_password(client, db, transport, is_test):
 def test_group_own_auth_account_deletion_reads_the_flag_before_the_row_goes(
     client, db, transport, is_test
 ):
-    """DELETE /auth/me: `is_test` is captured BEFORE the row is deleted."""
+    """POST /auth/me/delete: `is_test` is captured BEFORE the row is deleted."""
     user = make_user(db, email="leaving@sample.co.il")
     user.is_test = is_test
     db.commit()
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
 
     assert r.status_code == 200, r.text
     assert _to(transport.emails) == ([] if is_test else ["leaving@sample.co.il"])
@@ -507,6 +507,10 @@ def _notifier_calls():
         (
             "resubmit",
             lambda tc: an.notify_admin_producer_resubmit("x", "c", test_cause=tc),
+        ),
+        (
+            "claim_link_requested",
+            lambda tc: an.notify_admin_claim_link_requested("x", "c", test_cause=tc),
         ),
         (
             "review_ready",
@@ -889,38 +893,38 @@ BUS, OWN, CON, AUTH, NONE = "business", "owner", "consumer", "auth", "none"
 # (file, enclosing function, callee) → (count, group, where test_cause comes from)
 PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     # --- admin.py: business moderation (owner mail + admin WhatsApp ping) ---
-    ("routers/admin.py", "approve_producer", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "approve_producer", "_send_notification_email"): (
         1,
         OWN,
         "producer.is_test or owner.is_test (p_test)",
     ),
-    ("routers/admin.py", "approve_producer", "_send_whatsapp"): (
+    ("routers/admin_decisions.py", "approve_producer", "_send_whatsapp"): (
         1,
         BUS,
         "p_test — admin ping about the business",
     ),
-    ("routers/admin.py", "reject_producer", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "reject_producer", "_send_notification_email"): (
         1,
         OWN,
         "p_test",
     ),
-    ("routers/admin.py", "reject_producer", "_send_whatsapp"): (1, BUS, "p_test"),
-    ("routers/admin.py", "request_producer_changes", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "reject_producer", "_send_whatsapp"): (1, BUS, "p_test"),
+    ("routers/admin_decisions.py", "request_producer_changes", "_send_notification_email"): (
         1,
         OWN,
         "p_test",
     ),
-    ("routers/admin.py", "request_producer_changes", "_send_whatsapp"): (
+    ("routers/admin_decisions.py", "request_producer_changes", "_send_whatsapp"): (
         1,
         BUS,
         "p_test",
     ),
-    ("routers/admin.py", "_send_notification_email", "send_email"): (
+    ("routers/admin_decisions.py", "_send_notification_email", "send_email"): (
         1,
         OWN,
         "wrapper param",
     ),
-    ("routers/admin.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
+    ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
     # --- other routers ---
     ("routers/admin_kashrut.py", "kashrut_expiry_reminders", "send_template"): (
         1,
@@ -947,7 +951,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "public contact form",
     ),
-    ("routers/producer_me.py", "_send_whatsapp_otp", "send_template"): (
+    ("routers/producer_me_review.py", "_send_whatsapp_otp", "send_template"): (
         1,
         OWN,
         "wrapper param ← producer.is_test or user.is_test",
@@ -969,6 +973,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     (
         "routers/producer_owner_invite.py",
         "accept_owner_invite",
+        "add_task(send_email)",
+    ): (
+        1,
+        OWN,
+        "p_test — producer.is_test or user.is_test, captured pre-commit",
+    ),
+    # MEH-3256: the same acceptance for a signed-in existing account — same
+    # mail, same flag (producer.is_test or the locked user's is_test).
+    (
+        "routers/producer_owner_invite_existing.py",
+        "accept_owner_invite_existing",
         "add_task(send_email)",
     ): (
         1,
@@ -1053,6 +1068,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "same",
     ),
+    # MEH-3122: the owner of a draft asked for a new claim link.
+    (
+        "services/auth_notifications.py",
+        "notify_admin_claim_link_requested",
+        "send_text",
+    ): (1, BUS, "wrapper param ← producer.is_test"),
+    (
+        "services/auth_notifications.py",
+        "notify_admin_claim_link_requested",
+        "send_email",
+    ): (1, BUS, "same"),
     (
         "services/auth_notifications.py",
         "notify_admin_producer_resubmit",
@@ -1142,6 +1168,20 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p.is_test or user.is_test",
     ),
+    ("services/page_freshness.py", "send_freshness_emails", "send_email"): (
+        1,
+        OWN,
+        "cand.test_business or owner.is_test",
+    ),
+    (
+        "services/page_freshness_digest.py",
+        "send_stale_digest",
+        "send_email",
+    ): (
+        1,
+        NONE,
+        "aggregate admin digest; test rows are filtered out by the query",
+    ),
     ("services/pending_nudge.py", "send_pending_nudges", "send_email"): (
         1,
         OWN,
@@ -1151,6 +1191,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         OWN,
         "producer.is_test or owner.is_test",
+    ),
+    # MEH-3079: the weekly owner summary — mail to the business's owner about
+    # her own page, flagged by either row (read up front, before the claim).
+    ("services/weekly_owner_summary.py", "send_weekly_summaries", "send_email"): (
+        1,
+        OWN,
+        "producer_is_test or owner_is_test",
     ),
     # --- content_notifications ---
     ("services/content_notifications.py", "notify_recipe_approved", "send_email"): (
@@ -1189,7 +1236,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "wrapper param ← producer.is_test (the business that replied)",
     ),
     # --- delivery waitlist ---
-    ("services/delivery_waitlist.py", "notify_cities", "send_email"): (
+    ("services/delivery_waitlist.py", "_notify_cities", "send_email"): (
         1,
         CON,
         "producer.is_test",
@@ -1251,6 +1298,21 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_participant_cancelled_delisted",
         "_send_email",
     ): (1, CON, "wrapper param ← producer.is_test"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_participant_expired",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3287)"),
+    (
+        "services/rescue_business_emails.py",
+        "send_business_reservation_email",
+        "send_email",
+    ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
+    (
+        "services/group_buy_goal_flap.py",
+        "send_below_goal_emails",
+        "send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3311)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",
@@ -1267,6 +1329,18 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "wrapper param ← owner producer.is_test / host_test_cause(host)",
     ),
+    # MEH-3223: one email to the admin per new report.
+    ("services/report_notifications.py", "notify_admin_new_report", "send_email"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test",
+    ),
+    # MEH-3226 (D4): the buyer's mail on each no-show.
+    ("services/rescue_no_show.py", "send_no_show_email", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test or user.is_test",
+    ),
     ("services/rescue_emails.py", "send_reservation_email", "send_email"): (
         1,
         CON,
@@ -1277,9 +1351,25 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         CON,
         "wrapper param ← producer.is_test or user.is_test",
     ),
-    ("services/rescue_emails.py", "send_business_cancel_email", "send_email"): (
+    # MEH-3227 (D1): the two «הסל ב… בוטל» mails share one sender.
+    ("services/rescue_emails.py", "_send_bag_cancelled", "send_email"): (
         1,
         CON,
+        "wrapper param ← producer.is_test",
+    ),
+    ("services/registration_emails.py", "_send_lines", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    ("services/registration_emails.py", "send_registrant_moved", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    ("services/booking_cancellations.py", "send_owner_delisted", "send_email"): (
+        1,
+        OWN,
         "wrapper param ← producer.is_test",
     ),
     (
@@ -1399,9 +1489,9 @@ def queues_send_by_value_ok(bt, producer):
 
 
 def test_inventory_classifier_anchored_to_a_real_repo_file():
-    """Run against routers/admin.py as it is on disk: the approval site and the
+    """Run against routers/admin_decisions.py as it is on disk: the approval site and the
     admin-ping wrapper must be found, flagged with a non-constant value."""
-    rel = "routers/admin.py"
+    rel = "routers/admin_decisions.py"
     src = (APP_DIR / rel).read_text(encoding="utf-8")
     sites = collect_sites(src, rel)
     approve = [s for s in sites if s.func == "approve_producer"]

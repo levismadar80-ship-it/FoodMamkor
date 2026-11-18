@@ -48,7 +48,9 @@ describe("one contact form — link targets", () => {
     ["app/[locale]/about/for-businesses/page.js", 'href="/contact?topic=business"'],
     ["app/[locale]/producer/dashboard/edit/page.js", 'href="/contact?topic=business"'],
     ["app/[locale]/about/badges/BadgesExplainer.jsx", '"self-declared": "/contact?topic=correction"'],
-    ["app/[locale]/claim/ClaimClient.jsx", 'primary={{ href: "/contact?topic=business", label: t("invalid.contact") }}'],
+    // MEH-3122: the dead-link screen builds this action once and shows it as
+    // primary or secondary; the target is the same.
+    ["app/[locale]/claim/ClaimClient.jsx", 'const contact = { href: "/contact?topic=business", label: t("invalid.contact") };'],
     ["app/[locale]/claim/ClaimClient.jsx", '{ href: "/contact?topic=business", label: t("claimed.contact") }'],
     ["app/[locale]/about/for-businesses/guides/page.js", '<Link href="/contact?topic=business"'],
     ["app/[locale]/error.js", 'href="/contact"'],

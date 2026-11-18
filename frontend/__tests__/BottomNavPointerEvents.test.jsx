@@ -50,6 +50,7 @@ vi.mock("@phosphor-icons/react", () => ({
   MapTrifold: (props) => <span data-testid="icon-map" {...props} />,
   Flower: (props) => <span data-testid="icon-flower" {...props} />,
   CalendarBlank: (props) => <span data-testid="icon-calendar" {...props} />,
+  Basket: (props) => <span data-testid="icon-basket" {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
 }));
 
@@ -75,7 +76,7 @@ describe("BottomNav pointer-events shield (MEH-1253)", () => {
     expect(wrapper.className).toMatch(/\bpointer-events-none\b/);
     // Guardrail: pointer-events only — the fixed / z tokens are untouched.
     expect(wrapper.className).toMatch(/\bfixed\b/);
-    expect(wrapper.className).toMatch(/z-\[1000\]/);
+    expect(wrapper.className).toMatch(/(^|\s)z-bottom-nav(\s|$)/);
   });
 
   it("re-enables events on the <nav> pill with pointer-events-auto", () => {

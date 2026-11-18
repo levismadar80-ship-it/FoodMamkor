@@ -1,3 +1,4 @@
+// @ts-check
 // Rule-19 (Zod validation before consuming API responses) — NON-map sites.
 //
 // The map feed already validates via lib/schemas.js (ProducerSchema /
@@ -20,7 +21,7 @@ import { ProducerSchema } from "@/lib/schemas";
 export { ProducerSchema, ProducersResponseSchema } from "@/lib/schemas";
 
 // GET /categories → list[CategoryOut] = { id:int, name:str, emoji?:str|null }
-export const CategorySchema = z.object({
+const CategorySchema = z.object({
   id: z.union([z.number(), z.string()]),
   name: z.string(),
   emoji: z.string().nullable().optional(),
@@ -283,6 +284,9 @@ export const OwnerGroupBuySchema = z.object({
   price_per_unit_group: z.union([z.string(), z.number()]),
   min_participants: z.number(),
   commits_count: z.number(),
+  // MEH-3254 (D7): the units line. Declared, or z.object strips them (MEH-826).
+  unit: z.string().nullable().optional(),
+  units_total: z.number().int().nonnegative().nullable().optional(),
   deadline: z.string(),
   status: z.enum(["open", "funded", "cancelled", "fulfilled"]),
 });

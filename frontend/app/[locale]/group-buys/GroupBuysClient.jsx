@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -19,6 +20,7 @@ import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import HubAlertHint from "@/components/HubAlertHint";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
 // this page's own MEH-797 photo retired so a tab switch never swaps images.
@@ -33,8 +35,9 @@ function GroupBuyCard({ gb }) {
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
   const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
-  const deadline = new Date(gb.deadline);
-  const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
+  // MEH-3219 B13: naive UTC, parsed as UTC.
+  const deadline = parseNaiveUtc(gb.deadline) ?? new Date(NaN);
+  const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
   const imgSrc = gb.producer_image_url
@@ -274,7 +277,7 @@ export default function GroupBuysClient() {
           // MEH-2994: the shared empty state (was a hand-built copy of it,
           // MEH-862) — same icon and the same two strings.
           <div data-testid="group-buys-empty">
-            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} />
+            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} headingLevel={2} />
             {/* MEH-3117: the way out — the group-buy alert (MEH-2828). */}
             <HubAlertHint kind="group_buys" className="-mt-6 pb-12" />
           </div>

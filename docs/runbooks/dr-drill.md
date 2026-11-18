@@ -1,6 +1,6 @@
 # Runbook — תרגיל שחזור גיבוי (MEH-408 Phase 4)
 
-> **Audience:** Sapir, at her own terminal, with R2 credentials.
+> **Audience:** fallback only. The drill runs weekly by itself in `backup-restore-verify.yml` (MEH-1517), including `staging-drill` against the real staging DB; the release thread cites the last run. Use these steps only when that workflow is red and the cause is unclear (MEH-3151: no routine manual checks).
 > **Moved here from `docs/MANUAL_TESTING.md` on 2026-11-07 (MEH-2796).** Content unchanged. An automated replacement is tracked in MEH-1517.
 
 Disaster-recovery drill — proves that a backup file in R2 actually

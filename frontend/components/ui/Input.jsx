@@ -1,6 +1,7 @@
+// @ts-check
 "use client";
 
-import { useId } from "react";
+import { forwardRef, useId } from "react";
 import { Check } from "@phosphor-icons/react";
 import { fieldClasses, FieldShell } from "./field";
 
@@ -29,6 +30,9 @@ import { fieldClasses, FieldShell } from "./field";
  *          inside a row; the caller sets the width in className and gives it
  *          an aria-label (or a <label htmlFor> of its own).
  *
+ * invalid: mark the field red (+ aria-invalid) with no message of its own, for
+ *          a caller that renders the error text itself; `error` does both.
+ *
  * Types  : text | email | tel | search (any native type passes through)
  * States : default | focus | error | success | disabled
  * Slots  : label / helperText / error / successText / startAdornment
@@ -52,8 +56,22 @@ import { fieldClasses, FieldShell } from "./field";
  * @example
  * <Input type="email" label="אימייל" helperText="לא נשתף עם אף אחד" />
  * <Input type="text" label="שם" error="שדה חובה" />
+ *
+ * `ref` reaches the native <input> (MEH-3146), for a caller that focuses it.
+ *
+ * @type {import("react").ForwardRefExoticComponent<{
+ *   label?: import("react").ReactNode,
+ *   helperText?: import("react").ReactNode,
+ *   error?: import("react").ReactNode,
+ *   success?: boolean,
+ *   successText?: import("react").ReactNode,
+ *   startAdornment?: import("react").ReactNode,
+ *   size?: "md" | "sm" | "xs",
+ *   inline?: boolean,
+ *   invalid?: boolean,
+ * } & Omit<import("react").InputHTMLAttributes<HTMLInputElement>, "size"> & import("react").RefAttributes<HTMLInputElement>>}
  */
-export default function Input({
+const Input = forwardRef(function Input({
   type = "text",
   label,
   helperText,
@@ -71,20 +89,25 @@ export default function Input({
   // attribute below — byte-identical to what ...rest always did. An earlier
   // shape of this change intercepted it (marker + aria-required, no native
   // attr) and that was a measured regression: ContactClient and the
-  // group-buys form have no JS required-validation — the browser gate WAS
+  // group-buys form had no JS required-validation — the browser gate WAS
   // their empty-field gate, and intercepting the attribute deleted it.
+  // (MEH-3191: ContactClient now validates in JS with noValidate; the
+  // group-buys form still relies on the browser gate.)
   // Native required already announces "required" to AT, so no separate
   // aria-required is needed; the span is aria-hidden so readers do not
   // additionally hear "star".
   required = false,
   size = "md",
   inline = false,
+  invalid = false,
   ...rest
-}) {
+}, ref) {
   const autoId = useId();
   const inputId = id || autoId;
   const describedById = `${inputId}-desc`;
-  const hasError = !!error;
+  // MEH-3145: `invalid` marks the field (red border + aria-invalid) when the
+  // caller renders the message itself and wires it with aria-describedby.
+  const hasError = invalid || !!error;
   // MEH-1128 D1: error wins over success (a field can't be valid and invalid).
   const showSuccess = !hasError && !!success;
   const successMessage = showSuccess && successText;
@@ -97,6 +120,7 @@ export default function Input({
     const compactMessage = error || helperText;
     const compact = (
       <input
+        ref={ref}
         id={inputId}
         type={type}
         disabled={disabled}
@@ -117,6 +141,7 @@ export default function Input({
 
   const inputEl = (
     <input
+      ref={ref}
       id={inputId}
       type={type}
       disabled={disabled}
@@ -193,4 +218,6 @@ export default function Input({
         ))}
     </div>
   );
-}
+});
+
+export default Input;

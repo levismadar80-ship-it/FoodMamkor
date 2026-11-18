@@ -79,7 +79,7 @@ def report_producer_info(
 
     # MEH-1401: RTL HTML template so the mail renders right in Gmail. Message
     # is HTML-escaped (untrusted visitor input); newlines → <br>.
-    name_html = html_escape(producer.name or "")
+    name_html = html_escape(producer.name or "")  # type: ignore[arg-type]
     slug_html = html_escape(data.producer_slug)
     message_html = html_escape(data.message).replace("\n", "<br>")
     reply_html = (
@@ -91,21 +91,21 @@ def report_producer_info(
     html_body = f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
-            <td style="text-align:right;direction:rtl;">
+            <td style="text-align:right;direction:rtl;padding:32px 24px;">
               {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">דיווח על פרטים שגויים</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 8px;">בית עסק: <strong>{name_html}</strong></p>
-              <p style="color:#666;font-size:13px;line-height:1.7;margin:0 0 4px;">מזהה: {slug_html}</p>
-              <p style="color:#666;font-size:13px;line-height:1.7;margin:0 0 20px;">{reply_html}</p>
-              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0;">{message_html}</p>
+              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 8px;">בית עסק: <strong>{name_html}</strong></p>
+              <p style="color:#5C584F;font-size:13px;line-height:1.7;margin:0 0 4px;">מזהה: {slug_html}</p>
+              <p style="color:#5C584F;font-size:13px;line-height:1.7;margin:0 0 20px;">{reply_html}</p>
+              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
+              <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0;">{message_html}</p>
             </td>
           </tr>
         </table>

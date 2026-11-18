@@ -168,9 +168,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         2,
         "public list adds not_test_producer(); :361 is the owner's publish gate",
     ),
-    "backend/app/routers/admin.py": (3, "admin screens and state transitions"),
+    "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
+    "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
     "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
-    "backend/app/routers/producer_me.py": (2, "the owner's own dashboard"),
+    "backend/app/routers/producer_me.py": (1, "the owner's own dashboard"),
+    "backend/app/routers/producer_me_review.py": (1, "the owner's own dashboard"),
     "backend/app/routers/group_buys.py": (1, "the owner opening a group buy"),
     "backend/app/routers/producers.py": (
         1,
@@ -545,7 +547,7 @@ class TestNeverInAResponse:
             "class A(BaseModel):\n    x: bool = Field(serialization_alias='is_test')"
         )
         assert schema_fields_named_is_test(aliased) == [2]
-        real = (BACKEND / "app/schemas/schemas.py").read_text("utf-8")
+        real = (BACKEND / "app/schemas/producer_out.py").read_text("utf-8")
         assert "class ProducerDetailOut(" in real
         assert schema_fields_named_is_test(real) == []
 

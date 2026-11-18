@@ -14,12 +14,12 @@ tokenisation + variant rules live in the helper imported below, and all four
 sub-queries here share those semantics with /producers?q=.
 """
 
-import time
+from typing import Any
 
 import structlog
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import or_, text
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
@@ -32,9 +32,10 @@ from app.utils.sql import LIKE_ESCAPE
 
 logger = structlog.get_logger(__name__)
 
-# In-memory cache for trending queries — single entry, 1-hour TTL.
-_trending_cache: dict = {"data": None, "ts": 0.0}
-_TRENDING_TTL = 3600.0
+# MEH-3257 (Sapir 14/11): GET /search/trending and its in-memory cache
+# were removed — one IP could steer «חיפושים פופולריים». search_queries rows
+# are still written (producer_listing._log_search) for later analysis.
+# DO NOT bring back a public "popular searches" list without a per-source cap.
 
 router = APIRouter(tags=["search"])
 
@@ -62,7 +63,7 @@ def _empty() -> SearchOut:
 # module docstring).
 
 
-def _token_conditions(tokens: list[str], columns: list) -> list:
+def _token_conditions(tokens: list[str], columns: list[Any]) -> list[Any]:
     """One condition per token: OR over (variant x column). AND-ed by .filter().
 
     Every pattern is escape_like-escaped by token_patterns; escape=LIKE_ESCAPE
@@ -87,7 +88,7 @@ def smart_search(
     q: str = Query("", max_length=200),
     limit: int = Query(8, ge=1, le=20),
     db: Session = Depends(get_db),
-):
+) -> SearchOut:
     q_clean = (q or "").strip()
     if not q_clean:
         return _empty()
@@ -197,39 +198,3 @@ def smart_search(
         cities=cities,
         categories=categories,
     )
-
-
-@router.get("/search/trending", response_model=list[str])
-@limiter.limit("60/minute")
-def trending_searches(request: Request, db: Session = Depends(get_db)):
-    """Return top 5 queries that returned results, cached 1 hour."""
-    now = time.monotonic()
-    if (
-        _trending_cache["data"] is not None
-        and now - _trending_cache["ts"] < _TRENDING_TTL
-    ):
-        return _trending_cache["data"]
-
-    try:
-        rows = db.execute(
-            text(
-                """
-                SELECT query
-                FROM search_queries
-                WHERE results_count > 0
-                GROUP BY query
-                ORDER BY COUNT(*) DESC
-                LIMIT 5
-                """
-            )
-        ).fetchall()
-        result = [row[0] for row in rows]
-    except Exception:
-        logger.warning(
-            "[search] trending cache DB query failed — returning empty", exc_info=True
-        )
-        result = []
-
-    _trending_cache["data"] = result
-    _trending_cache["ts"] = now
-    return result

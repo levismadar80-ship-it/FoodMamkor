@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -255,10 +256,12 @@ export default function ProductSheet({
       if (!els.length) return;
       const first = els[0];
       const last = els[els.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the panel is pulled back in.
+      const outside = !dialogRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }
@@ -412,7 +415,7 @@ export default function ProductSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[1060] flex items-end justify-center bg-black/40 md:items-center"
+      className="fixed inset-0 z-product-sheet flex items-end justify-center bg-black/40 md:items-center"
       onClick={onClose}
       role="presentation"
       data-testid="product-sheet-backdrop"

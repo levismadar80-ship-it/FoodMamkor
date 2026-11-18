@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -52,11 +53,11 @@ const POSITION_CLASSES = {
  * @param {import("react").ReactNode} props.content — bubble content.
  * @param {import("react").ReactNode} props.children — the trigger.
  * @param {"top"|"bottom"|"bottom-start"|"right"|"left"} [props.position="top"]
- * @param {boolean} [props.overlay=false] — MEH-1593. Render the bubble in an
+ * @param {boolean} [props.overlay=false] - MEH-1593. Render the bubble in an
  *   overlay layer (portal → document.body, `position: fixed`) placed against
  *   the viewport instead of absolutely inside the wrapper. Use when the default
  *   bubble would overlap siblings or be clipped by an ancestor's overflow.
- * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] — overlay
+ * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] - overlay
  *   only. The bubble clears THIS element's box (above it, flipping below when
  *   there is no room). Defaults to the trigger, which clears only the trigger.
  */
@@ -126,6 +127,20 @@ export default function Tooltip({ content, children, position = "top", overlay =
     };
   }, [overlayActive, reposition]);
 
+  // MEH-3271 (WCAG 1.4.13): Escape dismisses the bubble without moving the
+  // pointer or focus. Capture phase + stopPropagation: inside a dialog, the
+  // first Escape closes only the bubble (the innermost layer), not the dialog.
+  useEffect(() => {
+    if (!visible) return undefined;
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setVisible(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [visible]);
+
   const bubble = visible && (
     <span
       ref={bubbleRef}
@@ -145,8 +160,8 @@ export default function Tooltip({ content, children, position = "top", overlay =
         overlayActive
           ? // Same visual as the anchored bubble; `fixed` + measured offsets
             // replace `absolute` + the placement classes.
-            "pointer-events-none fixed z-[9999] whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg"
-          : `pointer-events-none absolute z-[9999] whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`
+            "pointer-events-none fixed z-tooltip whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg"
+          : `pointer-events-none absolute z-tooltip whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`
       }
     >
       {content}

@@ -15,11 +15,13 @@ differ from home_products in that they ALWAYS require admin approval
 after the Claude verdict — the admin_experiences router handles that side.
 """
 
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload, object_session
+from sqlalchemy.orm import Query as OrmQuery
+from sqlalchemy.orm import joinedload, object_session, Session
 
 from app.limits import enforce_cap
 from app.auth import (
@@ -41,7 +43,16 @@ from app.schemas.schemas import (
     ExperienceValidateRequest,
     ExperienceValidateResult,
 )
+from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.services import indexnow  # MEH-2852
+from app.services.booking_cancellations import (  # MEH-3227
+    after_item_edit,
+    cancel_item_signups,
+    is_test_item,
+    item_state,
+)
+from app.services.date_rules import refuse_past_date  # MEH-3224
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import (
     host_test_cause,
@@ -60,24 +71,24 @@ def _compute_spots_left(ex: Experience, registered: int = 0) -> int | None:
     # MEH-2763: the host's own tally and the on-site sign-ups share the cap.
     if ex.max_participants is None:
         return None
-    return max(0, ex.max_participants - (ex.participants_count or 0) - registered)
+    return max(0, ex.max_participants - (ex.participants_count or 0) - registered)  # type: ignore[return-value]
 
 
 def _registered(ex: Experience) -> int:
     session = object_session(ex)
     if session is None:
         return 0
-    return registered_counts(session, experience_ids=[ex.id]).get(ex.id, 0)
+    return registered_counts(session, experience_ids=[ex.id]).get(ex.id, 0)  # type: ignore[call-overload,list-item,no-any-return]
 
 
-def _host_phone(db: Session, user_id) -> str | None:
+def _host_phone(db: Session, user_id: UUID) -> str | None:
     """The business phone a whatsapp / phone sign-up would reach."""
     user = db.get(User, user_id)
     producer = user.producer if user else None
     return producer.phone if producer else None
 
 
-def _serialize_host(host: User | None) -> dict | None:
+def _serialize_host(host: User | None) -> dict[str, Any] | None:
     """MEH-2476: the host + her business when that business is public
     (approved, kind='producer' — the same rule as is_business()). A pending
     business's page 404s for everyone else, so no link is built to it."""
@@ -95,7 +106,7 @@ def _serialize_host(host: User | None) -> dict | None:
     return out
 
 
-def _serialize_list(ex: Experience, registered: int | None = None) -> dict:
+def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, Any]:
     """Public shape — no private fields (address, moderation context).
     `registered` (MEH-2763) comes from one grouped query on list routes; a
     single-row caller leaves it None and it is counted here."""
@@ -128,7 +139,7 @@ def _serialize_list(ex: Experience, registered: int | None = None) -> dict:
     }
 
 
-def _serialize_detail(ex: Experience, registered: int | None = None) -> dict:
+def _serialize_detail(ex: Experience, registered: int | None = None) -> dict[str, Any]:
     """Detail shape — adds private + moderation fields. Only return
     this to the owner or to an admin."""
     return {
@@ -154,7 +165,7 @@ def _serialize_detail(ex: Experience, registered: int | None = None) -> dict:
 def validate_endpoint(
     request: Request,  # required by slowapi per app/rate_limit.py
     data: ExperienceValidateRequest,
-):
+) -> ExperienceValidateResult:
     """
     Hot-path moderation check used by the submission form while the
     user is still typing. No DB write, no auth — callers are rate-
@@ -167,7 +178,7 @@ def validate_endpoint(
 # ---------- Public visibility gate (MEH-1749) ----------
 
 
-def _publicly_visible_query(db: Session):
+def _publicly_visible_query(db: Session) -> OrmQuery[Experience]:
     """The ONE definition of "this experience is public". Both public read
     paths build on it — the listing below and the detail route's stranger
     branch.
@@ -194,8 +205,9 @@ def _publicly_visible_query(db: Session):
 
     Deliberately NOT included here, because both are route-specific and
     predate this gate:
-      * ``event_date >= today`` — the listing hides past experiences; the
-        detail route still serves them by direct link.
+      * ``event_date >= today`` — the listing hides past experiences (a
+        recurring one stays listed, MEH-3250); the detail route still serves
+        them by direct link.
       * ``is_active`` — MEH-1419 drops host-cancelled ones from the feed only.
     """
     return (
@@ -210,7 +222,7 @@ def _publicly_visible_query(db: Session):
     )
 
 
-def _public_listing_query(db: Session):
+def _public_listing_query(db: Session) -> OrmQuery[Experience]:
     """``_publicly_visible_query`` plus the two filters that define the public
     FEED specifically, as opposed to a directly-linked detail page.
 
@@ -228,7 +240,10 @@ def _public_listing_query(db: Session):
         # MEH-1883: Israel calendar day — same reasoning as events.py. A UTC
         # "today" drops an experience from the public feed at 21:00 the
         # evening before it happens.
-        Experience.event_date >= israel_today(),
+        # MEH-3219 B12: a recurring experience's event_date is its FIRST
+        # occasion, so it stays listed after it — the same rule the host cap
+        # below (create) already applies.
+        (Experience.event_date >= israel_today()) | Experience.is_recurring.is_(True),
         # MEH-1419: a host-cancelled experience drops from the public feed
         # (mirrors events.py:73). It stays visible on GET /experiences/mine.
         Experience.is_active.is_(True),
@@ -240,7 +255,7 @@ def _is_public(ex: Experience) -> bool:
     the detail page a search engine indexes. ``is_active`` and the date are
     listing-only filters (see that docstring), so they are not part of it."""
     host = ex.host
-    return ex.status == "approved" and indexnow.is_public_business(
+    return ex.status == "approved" and indexnow.is_public_business(  # type: ignore[return-value]
         host.producer if host else None
     )
 
@@ -260,10 +275,10 @@ def list_experiences(
     # MEH-2602: the business page lists that business's own experiences.
     producer_id: UUID | None = None,
     db: Session = Depends(get_db),
-):
-    """Only approved + upcoming (event_date >= today), and only from an
-    approved business (MEH-1749). Past experiences drop out of the public
-    feed automatically."""
+) -> list[ExperienceListOut] | list[dict[str, Any]]:
+    """Only approved + upcoming (event_date >= today, or recurring —
+    MEH-3250), and only from an approved business (MEH-1749). Past one-off
+    experiences drop out of the public feed automatically."""
     q = _public_listing_query(db)
     if producer_id:
         q = q.filter(Producer.id == producer_id)
@@ -278,8 +293,8 @@ def list_experiences(
     if city:
         q = q.filter(func.lower(Experience.city) == city.lower())
     rows = q.order_by(Experience.event_date.asc()).all()
-    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])
-    return [_serialize_list(ex, counts.get(ex.id, 0)) for ex in rows]
+    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])  # type: ignore[misc]
+    return [_serialize_list(ex, counts.get(ex.id, 0)) for ex in rows]  # type: ignore[call-overload]
 
 
 # ---------- Public count (MEH-1918) ----------
@@ -290,7 +305,9 @@ def list_experiences(
 # and arrive as an experience_id of "count", which then fails UUID parsing.
 @router.get("/count", response_model=ExperienceCountOut)
 @limiter.limit("60/minute")
-def count_experiences(request: Request, db: Session = Depends(get_db)):
+def count_experiences(
+    request: Request, db: Session = Depends(get_db)
+) -> ExperienceCountOut:
     """How many experiences the public feed would show right now.
 
     Exists so the nav can gate the "חוויות" link on real supply instead of
@@ -313,7 +330,7 @@ def count_experiences(request: Request, db: Session = Depends(get_db)):
 def list_my_experiences(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> Any:
     rows = (
         db.query(Experience)
         .options(joinedload(Experience.host).joinedload(User.producer))
@@ -322,8 +339,8 @@ def list_my_experiences(
         .all()
     )
     # Owner sees the full detail shape for their own submissions.
-    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])
-    return [_serialize_detail(ex, counts.get(ex.id, 0)) for ex in rows]
+    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])  # type: ignore[misc]
+    return [_serialize_detail(ex, counts.get(ex.id, 0)) for ex in rows]  # type: ignore[call-overload]
 
 
 # ---------- Detail ----------
@@ -336,7 +353,7 @@ def get_experience(
     experience_id: UUID,
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-):
+) -> ExperienceDetailOut | dict[str, Any]:
     ex = (
         db.query(Experience)
         .options(joinedload(Experience.host).joinedload(User.producer))
@@ -405,7 +422,7 @@ def submit_experience(
     # sit in the admin queue — the gate moves to the write side to match.
     user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
-):
+) -> ExperienceDetailOut | dict[str, Any]:
     """
     Submit a new experience. Flow:
       1. Normalize + hand off to Claude via validate_experience
@@ -415,14 +432,22 @@ def submit_experience(
     """
     if _min_above_max(data.min_participants, data.max_participants):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
+    refuse_past_date(data.event_date)  # MEH-3224 (D6)
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
-        phone=_host_phone(db, user.id),
+        phone=_host_phone(db, user.id),  # type: ignore[arg-type]
         registration_url=data.registration_url,
     )
     if problem:
         raise HTTPException(status_code=422, detail=problem)
+    # MEH-3180: a priced sign-up through the site's form is a paid tool.
+    capabilities.require_paid_signup(
+        db,
+        user.producer_id,
+        price=data.price_per_person,
+        method=data.registration_method,
+    )
 
     verdict = validate_experience(data.model_dump(mode="json"))
     if verdict["status"] == "REJECTED":
@@ -481,7 +506,7 @@ def submit_experience(
 
     # Reload with host relation so _serialize_detail can fill it in.
     ex = (
-        db.query(Experience)
+        db.query(Experience)  # type: ignore[assignment]
         .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == ex.id)
         .first()
@@ -490,9 +515,9 @@ def submit_experience(
     # Best-effort admin email. Never blocks the submission — the service
     # fails open on missing RESEND_API_KEY / send errors.
     notify_admin_new_submission(
-        title=ex.title,
-        host_name=user.name,
-        city=ex.city,
+        title=ex.title,  # type: ignore[arg-type]
+        host_name=user.name,  # type: ignore[arg-type]
+        city=ex.city,  # type: ignore[arg-type]
         moderation_status=verdict["status"],
         test_cause=host_test_cause(ex.host),  # MEH-2952
     )
@@ -518,7 +543,7 @@ def _min_above_max(min_p: int | None, max_p: int | None) -> bool:
     return min_p is not None and max_p is not None and min_p > max_p
 
 
-def _check_method_edit(db: Session, ex: Experience, payload: dict) -> None:
+def _check_method_edit(db: Session, ex: Experience, payload: dict[str, Any]) -> None:
     """MEH-2763: validate «איך נרשמים?» on an edit — only when the edit
     touches the method or its URL, so a stored pair that no longer holds
     (the business phone changed since) never blocks an unrelated edit.
@@ -534,8 +559,8 @@ def _check_method_edit(db: Session, ex: Experience, payload: dict) -> None:
     ):
         return
     problem = method_problem(
-        payload.get("registration_method") or ex.registration_method,
-        phone=_host_phone(db, ex.host_user_id),
+        payload.get("registration_method") or ex.registration_method,  # type: ignore[arg-type]
+        phone=_host_phone(db, ex.host_user_id),  # type: ignore[arg-type]
         registration_url=payload.get("registration_url", ex.registration_url),
     )
     if problem:
@@ -551,7 +576,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> ExperienceDetailOut | dict[str, Any]:
     ex = db.query(Experience).filter(Experience.id == experience_id).first()
     if not ex:
         raise HTTPException(status_code=404, detail="Experience not found")
@@ -565,6 +590,8 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     # experience to pending, which takes its public page down.
     was_public = _is_public(ex)
     payload = data.model_dump(exclude_unset=True)
+    # MEH-3224 (D6): same rule as events.update_event.
+    refuse_past_date(payload.get("event_date"), ex.event_date)  # type: ignore[arg-type]
     # Only an edit that touches min or max is checked, so a stored pair that
     # is somehow already inverted never blocks an unrelated edit.
     touches_range = "min_participants" in payload or "max_participants" in payload
@@ -573,8 +600,27 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     if touches_range and _min_above_max(new_min, new_max):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     _check_method_edit(db, ex, payload)
+    # MEH-3180: only an edit that MAKES it a paid site sign-up asks.
+    capabilities.require_paid_signup(
+        db,
+        user.producer_id,
+        price=payload.get("price_per_person", ex.price_per_person),
+        method=payload.get("registration_method", ex.registration_method),
+        running=capabilities.is_running(
+            payload.get("is_active", ex.is_active),
+            payload.get("event_date", ex.event_date),
+        ),
+        was_price=ex.price_per_person,
+        was_method=ex.registration_method,
+        was_running=capabilities.is_running(ex.is_active, ex.event_date),
+        date=payload.get("event_date", ex.event_date),
+        was_date=ex.event_date,
+    )
+    before = item_state(ex)
     for field, value in payload.items():
         setattr(ex, field, value)
+    # MEH-3227: cancelled → sign-ups cancelled; moved → registrants told.
+    after_item_edit(db, ex, before, background_tasks, is_test_item(ex))
 
     # MEH-2663: the sign-up tally is a counter, never NULL, and never above
     # the cap — the dashboard clamps, and a direct PUT is clamped the same way.
@@ -604,9 +650,9 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     # experience back to `pending` and clears the admin-written feedback so
     # the admin queue shows a fresh card. Claude re-runs on the new content.
     if content_changed and ex.status in ("changes_requested", "rejected", "approved"):
-        ex.status = "pending"
-        ex.admin_feedback = None
-        ex.rejection_reason = None
+        ex.status = "pending"  # type: ignore[assignment]
+        ex.admin_feedback = None  # type: ignore[assignment]
+        ex.rejection_reason = None  # type: ignore[assignment]
         verdict = validate_experience(
             {
                 "title": ex.title,
@@ -622,17 +668,18 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
             }
         )
         ex.moderation_status = verdict["status"]
-        ex.moderation_reason = verdict.get("reason")
-        ex.moderation_suggestion = verdict.get("suggestion")
+        ex.moderation_reason = verdict.get("reason")  # type: ignore[assignment]
+        ex.moderation_suggestion = verdict.get("suggestion")  # type: ignore[assignment]
 
     db.commit()
     db.refresh(ex)
 
-    ex = (
+    ex = cast(  # re-read of the row just committed
+        Experience,
         db.query(Experience)
         .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == ex.id)
-        .first()
+        .first(),
     )
     # MEH-2852: the public page changed (cancel/reactivate, a tally) or went
     # away (content edit → pending). A never-public draft is not announced.
@@ -644,7 +691,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
 # ---------- Delete ----------
 
 
-@router.delete("/{experience_id}")
+@router.delete("/{experience_id}", response_model=None)
 @limiter.limit("60/hour")  # MEH-3022
 def delete_experience(
     request: Request,  # required by slowapi (MEH-3022)
@@ -652,7 +699,7 @@ def delete_experience(
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     ex = db.query(Experience).filter(Experience.id == experience_id).first()
     if not ex:
         raise HTTPException(status_code=404, detail="Experience not found")
@@ -664,6 +711,10 @@ def delete_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
     # MEH-2852: only a page that was public has anything to take down.
     removed_urls = indexnow.experience_urls(ex.id) if _is_public(ex) else []
+    # MEH-3227: registrants are told before the cascade removes their rows.
+    cancel_item_signups(db, ex, background_tasks, is_test_item(ex))
+    # MEH-3179: sign-ups for an upcoming experience that is deleted never happen.
+    billing_ledger.void_item_registrations(db, ex, kind="experience_registration")
     db.delete(ex)
     db.commit()
     indexnow.schedule(background_tasks, removed_urls)

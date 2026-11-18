@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared SEO helpers for producer pages (both /producer/[id] and /[slug]).
  *
@@ -16,7 +17,7 @@
 // working unchanged.
 import { SITE_URL } from "./env";
 import {
-  BRAND_FOUNDER_NAME,
+  FOUNDERS,
   BRAND_NAME,
   BRAND_NAME_LATIN,
   BRAND_SAME_AS,
@@ -28,6 +29,8 @@ import en from "../messages/en.json";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
 import { instagramUrl } from "./social-links";
+// MEH-3160: the Israel calendar date has one owner (israel-clock-guard).
+import { israelToday } from "./israel-date";
 import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
@@ -114,6 +117,17 @@ export function buildTitle(producer, locale = "he") {
 }
 
 /**
+ * MEH-3177: buildTitle without the trailing « | brand» — for pages whose
+ * layout `title.template` adds the brand (MEH-2853: one title pattern).
+ * Keeps the category + city that local searches match on.
+ */
+export function buildTitleNoBrand(producer, locale = "he") {
+  const full = buildTitle(producer, locale);
+  const suffix = ` | ${brandFor(locale)}`;
+  return full.endsWith(suffix) ? full.slice(0, -suffix.length) : full;
+}
+
+/**
  * Build the meta description: «tagline — description» (either alone when the
  * other is empty), truncated to 160 chars — Google's rough display limit —
  * over a generated fallback.
@@ -141,6 +155,19 @@ export function ogImage(url) {
   if (!url || typeof url !== "string") return null;
   if (!url.includes("res.cloudinary.com")) return url;
   return url.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/");
+}
+
+/**
+ * MEH-3329: the branded link-preview card of a business page, or null when it
+ * has no slug (the route is keyed by slug). `v` = updated_at in epoch seconds,
+ * so an edited page gets a new URL and Facebook/WhatsApp caches cannot keep
+ * the old card.
+ */
+export function producerOgCardUrl(producer) {
+  if (!producer?.slug) return null;
+  const ts = Date.parse(producer.updated_at || "");
+  const v = Number.isFinite(ts) ? `?v=${Math.floor(ts / 1000)}` : "";
+  return `/og/business/${encodeURIComponent(producer.slug)}.png${v}`;
 }
 
 /**
@@ -335,6 +362,42 @@ function buildOfferCatalog(producer, locale = "he") {
   };
 }
 
+/** MEH-3348: where a delivering business delivers — "Israel" when nationwide,
+ *  else the distinct cities of its delivery_areas rows, else null. */
+function deliveryAreaServed(producer) {
+  if (producer.delivery_nationwide) return "Israel";
+  const cities = [
+    ...new Set((producer.delivery_areas || []).map((da) => da.city).filter(Boolean)),
+  ];
+  return cities.length > 0 ? cities : null;
+}
+
+/**
+ * MEH-3348: capacity facts for an Event from the two numbers the API already
+ * returns. `spots_left` null = no cap, so nothing is claimed. A cancelled
+ * event claims no availability either.
+ * @param {{ max_participants?: number | null, spots_left?: number | null, is_active?: boolean }} item
+ */
+function eventCapacity(item) {
+  const out = { availability: undefined, max: undefined, remaining: undefined };
+  const max = Number(item.max_participants);
+  if (Number.isInteger(max) && max > 0) out.max = max;
+  const left = item.spots_left;
+  if (typeof left === "number" && left >= 0 && item.is_active !== false) {
+    out.remaining = left;
+    out.availability = left === 0 ? "https://schema.org/SoldOut" : "https://schema.org/InStock";
+  }
+  return out;
+}
+
+/** Writes eventCapacity() onto an Event node and its Offer. */
+function applyEventCapacity(ev, item) {
+  const cap = eventCapacity(item);
+  if (cap.max !== undefined) ev.maximumAttendeeCapacity = cap.max;
+  if (cap.remaining !== undefined) ev.remainingAttendeeCapacity = cap.remaining;
+  if (cap.availability && ev.offers) ev.offers.availability = cap.availability;
+}
+
 export function buildJsonLd(producer, locale = "he") {
   if (!producer) return null;
 
@@ -375,6 +438,13 @@ export function buildJsonLd(producer, locale = "he") {
       (producer.delivery_areas || []).map((da) => da.city).filter(Boolean),
     )];
     if (deliveryCities.length > 0) business.areaServed = deliveryCities;
+  }
+  // MEH-3348: a business WITH a location that also delivers serves more than
+  // its own city. Same two sources as the delivery-only arm above; the address
+  // stays. Nothing is emitted when it does not deliver.
+  if (!isDeliveryOnly && producer.offers_delivery) {
+    const served = deliveryAreaServed(producer);
+    if (served) business.areaServed = served;
   }
 
   // MEH-1938 chunk 3: read through producerPoints() instead of Producer.lat/lng
@@ -547,7 +617,8 @@ export function buildOrganizationNode() {
     sameAs: BRAND_SAME_AS,
     // MEH-2192: a named founder is the E-E-A-T signal the card asked for —
     // the value is the /about signature, never a second spelling.
-    founder: { "@type": "Person", name: BRAND_FOUNDER_NAME },
+    // MEH-3323: two founders — schema.org `founder` takes an array.
+    founder: FOUNDERS.map(({ name }) => ({ "@type": "Person", name })),
   };
 }
 
@@ -615,7 +686,10 @@ export function buildProducerMetadata(producer, locale = "he") {
 
   const description = buildDescription(producer, locale);
   const pageUrl = buildPageUrl(producer);
-  const img = ogImage(producer.images?.[0]);
+  // MEH-3329: its own photo first; a business with no photo gets its branded
+  // card (name, type · city, brand pill — app/og/business/[file]/route.js)
+  // instead of the generic site image.
+  const img = ogImage(producer.images?.[0]) || producerOgCardUrl(producer);
 
   return {
     title: buildTitle(producer, locale),
@@ -664,6 +738,41 @@ function eventOwnerUrl(event) {
  * EventOut (backend/app/schemas/schemas.py:1742). All values are serialized
  * by the caller via JSON.stringify — no raw interpolation into HTML.
  */
+/**
+ * MEH-3177: the Israel UTC offset ("+02:00" / "+03:00") on a calendar date, so
+ * a local "2026-11-20T18:00" start becomes an unambiguous instant. Without an
+ * offset Google reads the time in the crawler's zone. Returns "" when the
+ * runtime cannot tell (the time then stays as it was — never a wrong offset).
+ */
+export function israelOffset(date, time = "12:00") {
+  // The wall time is local, so read the offset twice: once at the wall time
+  // taken as UTC, then again at the instant that offset gives. The second read
+  // is right on DST days too (01:30 on the spring-forward Friday is still +02).
+  const read = (d) => {
+    const name = new Intl.DateTimeFormat("en-US", {
+      // guard-ok: reads the UTC offset of a given event date, not today or the time now.
+      timeZone: "Asia/Jerusalem",
+      timeZoneName: "longOffset",
+    })
+      .formatToParts(d)
+      .find((p) => p.type === "timeZoneName")?.value;
+    const m = name && name.match(/GMT([+-])(\d{2}):?(\d{2})/);
+    if (!m) return null;
+    const mins = (Number(m[2]) * 60 + Number(m[3])) * (m[1] === "-" ? -1 : 1);
+    return { text: `${m[1]}${m[2]}:${m[3]}`, mins };
+  };
+  try {
+    const wall = new Date(`${date}T${time}:00Z`);
+    if (Number.isNaN(wall.getTime())) return "";
+    const first = read(wall);
+    if (!first) return "";
+    const second = read(new Date(wall.getTime() - first.mins * 60000));
+    return (second || first).text;
+  } catch {
+    return "";
+  }
+}
+
 export function buildEventJsonLd(event, locale = "he") {
   if (!event) return null;
   const eventUrl = `${SITE_URL}/events/${event.id}`;
@@ -671,14 +780,15 @@ export function buildEventJsonLd(event, locale = "he") {
   // startDate: event_date (required on EventOut) + optional event_time (HH:MM).
   let startDate = event.event_date || undefined;
   if (startDate && event.event_time) {
-    startDate = `${startDate}T${String(event.event_time).slice(0, 5)}`;
+    const t = String(event.event_time).slice(0, 5);
+    startDate = `${startDate}T${t}${israelOffset(event.event_date, t)}`;
   }
 
   // MEH-2469: endDate (Google "recommended") — same day, only with a start
   // time (the API rejects an end without a start).
   const endDate =
     event.event_date && event.event_time && event.end_time
-      ? `${event.event_date}T${String(event.end_time).slice(0, 5)}`
+      ? `${event.event_date}T${String(event.end_time).slice(0, 5)}${israelOffset(event.event_date, String(event.end_time).slice(0, 5))}`
       : undefined;
 
   const ev = {
@@ -686,7 +796,12 @@ export function buildEventJsonLd(event, locale = "he") {
     "@id": `${eventUrl}#event`,
     name: event.title,
     url: eventUrl,
-    eventStatus: "https://schema.org/EventScheduled",
+    // MEH-3177: a cancelled event stays reachable by link; say so (the
+    // experience builder below already did, MEH-1419).
+    eventStatus:
+      event.is_active === false
+        ? "https://schema.org/EventCancelled"
+        : "https://schema.org/EventScheduled",
   };
   if (startDate) ev.startDate = startDate;
   if (endDate) ev.endDate = endDate;
@@ -731,6 +846,7 @@ export function buildEventJsonLd(event, locale = "he") {
       url: event.registration_url || eventUrl,
     };
   }
+  applyEventCapacity(ev, event);
 
   // Breadcrumb: ישראל → בית העסק (when named) → האירוע.
   const crumbs = [
@@ -758,6 +874,22 @@ function toPrice(value) {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
 
+const MINUTES_PER_DAY = 1440;
+const MINUTES_PER_HOUR = 60;
+
+/** MEH-3348: "YYYY-MM-DDTHH:MM+offset" for a start + duration that ends the
+ *  same day; null otherwise (a workshop past midnight states no end). */
+function experienceEnd(date, time, durationMinutes) {
+  const duration = Number(durationMinutes);
+  if (!Number.isInteger(duration) || duration <= 0) return null;
+  const [h, m] = time.split(":").map(Number);
+  const total = h * MINUTES_PER_HOUR + m + duration;
+  if (total >= MINUTES_PER_DAY) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  const end = `${pad(Math.floor(total / MINUTES_PER_HOUR))}:${pad(total % MINUTES_PER_HOUR)}`;
+  return `${date}T${end}${israelOffset(date, end)}`;
+}
+
 /**
  * MEH-2478: schema.org/Event JSON-LD for /experiences/[id]. Google's event
  * docs ask for one Event per page with name + startDate + location, so this
@@ -774,9 +906,18 @@ export function buildExperienceJsonLd(experience, locale = "he") {
       ? experience.event_date.slice(0, 10)
       : null;
   const city = typeof experience.city === "string" ? experience.city.trim() : "";
-  if (!date || !city) return null;
-
   const url = `${SITE_URL}/experiences/${experience.id}`;
+  const breadcrumb = buildBreadcrumbList(
+    [
+      { name: countryLabel(locale), item: SITE_URL },
+      { name: experience.title, item: url },
+    ],
+    `${url}#breadcrumb`,
+  );
+  // MEH-3348: no date or no city → still no Event (Google's rule above), but
+  // the page keeps its BreadcrumbList instead of carrying no markup at all.
+  if (!date || !city) return { "@context": "https://schema.org", "@graph": [breadcrumb] };
+
   const time = /^\d{2}:\d{2}/.test(String(experience.event_time ?? ""))
     ? String(experience.event_time).slice(0, 5)
     : null;
@@ -795,7 +936,7 @@ export function buildExperienceJsonLd(experience, locale = "he") {
     "@id": `${url}#event`,
     name: experience.title,
     url,
-    startDate: time ? `${date}T${time}` : date,
+    startDate: time ? `${date}T${time}${israelOffset(date, time)}` : date,
     // MEH-1419: a host-cancelled experience stays reachable by link.
     eventStatus:
       experience.is_active === false
@@ -806,22 +947,67 @@ export function buildExperienceJsonLd(experience, locale = "he") {
   };
   if (experience.description) ev.description = experience.description;
   if (experience.image_url) ev.image = experience.image_url;
-  if (experience.host?.name) ev.organizer = { "@type": "Person", name: experience.host.name };
+  if (experience.host?.name) {
+    ev.organizer = { "@type": "Person", name: experience.host.name };
+    // MEH-3348: the host's public business page, when she has one.
+    const host = experience.host;
+    if (host.producer_slug) ev.organizer.url = `${SITE_URL}/${encodeURIComponent(host.producer_slug)}`;
+    else if (host.producer_id) ev.organizer.url = `${SITE_URL}/producer/${host.producer_id}`;
+  }
+  // MEH-3348: endDate = start + duration, only with a start time.
+  const end = time ? experienceEnd(date, time, experience.duration_minutes) : null;
+  if (end) ev.endDate = end;
   // price_per_person NULL means free (ExperienceCreate), so it is a real 0.
   ev.offers = {
     "@type": "Offer",
     price: toPrice(experience.price_per_person) ?? "0",
     priceCurrency: "ILS",
-    url,
+    url: experience.registration_url || url,
   };
+  applyEventCapacity(ev, experience);
 
+  return { "@context": "https://schema.org", "@graph": [ev, breadcrumb] };
+}
+
+/**
+ * MEH-3348: schema.org Organization + BreadcrumbList for /organizers/[slug],
+ * which carried no structured data. Only what the page shows: name, text,
+ * photos, city, founding year and public links. Its events are described on
+ * their own pages (a cross-page @id is not resolved by Google, so none here).
+ */
+export function buildOrganizerJsonLd(organizer, locale = "he") {
+  if (!organizer?.slug || !organizer.name) return null;
+  const url = `${SITE_URL}/organizers/${encodeURIComponent(organizer.slug)}`;
+  const org = { "@type": "Organization", "@id": `${url}#organizer`, name: organizer.name, url };
+  const description = organizer.short_description || organizer.description;
+  if (description) org.description = description;
+  const images = (organizer.images || []).map(absoluteUrl).filter(Boolean);
+  if (images.length) org.image = images;
+  if (organizer.city) {
+    org.address = {
+      "@type": "PostalAddress",
+      addressLocality: organizer.city,
+      addressCountry: "IL",
+    };
+  }
+  if (/^\d{4}$/.test(String(organizer.established_year ?? ""))) {
+    org.foundingDate = String(organizer.established_year);
+  }
+  const website = (organizer.website || "").trim();
+  const facebook = (organizer.facebook || "").trim();
+  const sameAs = [
+    website ? (/^https?:\/\//i.test(website) ? website : `https://${website}`) : null,
+    instagramUrl(organizer.instagram),
+    /^https?:\/\//i.test(facebook) ? facebook : null,
+  ].filter(Boolean);
+  if (sameAs.length) org.sameAs = [...new Set(sameAs)];
   const crumbs = [
     { name: countryLabel(locale), item: SITE_URL },
-    { name: experience.title, item: url },
+    { name: organizer.name, item: url },
   ];
   return {
     "@context": "https://schema.org",
-    "@graph": [ev, buildBreadcrumbList(crumbs, `${url}#breadcrumb`)],
+    "@graph": [org, buildBreadcrumbList(crumbs, `${url}#breadcrumb`)],
   };
 }
 
@@ -835,11 +1021,6 @@ export function isGroupBuyLive(groupBuy, now = new Date()) {
   if (groupBuy?.status !== "open" || !groupBuy.deadline) return false;
   const deadline = parseNaiveUtc(groupBuy.deadline);
   return deadline != null && deadline > now;
-}
-
-/** The Israel calendar date ("YYYY-MM-DD") of an instant. */
-function israelDate(d) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
 }
 
 /** Review #3726: commits at the cap — joining is refused, so it is not InStock. */
@@ -878,7 +1059,7 @@ export function buildGroupBuyJsonLd(groupBuy, locale = "he", now = new Date()) {
   // Review #3726: the deadline's ISRAEL date — a naive-UTC 22:30 on 1 Nov is
   // 2 Nov here, and slicing the string would state the day before.
   const deadline = parseNaiveUtc(groupBuy.deadline);
-  if (deadline) offer.priceValidUntil = israelDate(deadline);
+  if (deadline) offer.priceValidUntil = israelToday(deadline);
   if (groupBuy.producer_name) {
     offer.seller = { "@type": "Organization", name: groupBuy.producer_name };
     if (producerUrl) offer.seller.url = producerUrl;

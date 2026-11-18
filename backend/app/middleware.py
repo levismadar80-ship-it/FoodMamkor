@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 import time as _time
 
 import structlog
@@ -12,6 +13,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import settings
+from app.body_limit import BodySizeLimitMiddleware
 from app.db_bulkhead import DbBulkheadMiddleware
 from app.rate_limit import limiter, resolve_client_ip
 from app.services.analytics import record_request
@@ -21,9 +23,9 @@ from app.utils.pii import redact_url_tokens  # MEH-2974
 # tracked in MEH-376/379). Shim no-ops cleanly until the follow-up
 # ticket adds `sentry_sdk.init(...)`.
 try:  # pragma: no cover — exercised once sentry_sdk lands
-    import sentry_sdk as _sentry_sdk  # type: ignore[import-not-found]
+    import sentry_sdk as _sentry_sdk
 except ImportError:  # pragma: no cover
-    _sentry_sdk = None
+    _sentry_sdk = None  # type: ignore[assignment]
 
 log = structlog.get_logger("mehamakor.middleware")
 
@@ -76,7 +78,9 @@ def apply_security_headers(request: Request, response: Response) -> Response:
     return response
 
 
-async def add_security_headers(request: Request, call_next) -> Response:
+async def add_security_headers(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     response: Response = await call_next(request)
     return apply_security_headers(request, response)
 
@@ -96,7 +100,9 @@ async def server_error_with_headers(request: Request, exc: Exception) -> Respons
     )
 
 
-async def record_request_metrics(request: Request, call_next) -> Response:
+async def record_request_metrics(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     start = _time.monotonic()
     try:
         response: Response = await call_next(request)
@@ -257,6 +263,8 @@ def install_middlewares(app: FastAPI) -> None:
     inner on request-in)::
 
         GZipMiddleware               # innermost — MEH-1833, see note below
+        DbBulkheadMiddleware         # MEH-2955
+        BodySizeLimitMiddleware      # MEH-3374 — outside the bulkhead
         SlowAPIMiddleware
         SentryRequestScopeMiddleware # NEW — must run AFTER CorrelationId
         CorrelationIdMiddleware      # sets `request_id` contextvar
@@ -271,7 +279,8 @@ def install_middlewares(app: FastAPI) -> None:
     Request-in flow::
 
         record_metrics → security_headers → CORS → CorrelationId
-                       → SentryRequestScope → SlowAPI → GZip → handler
+                       → SentryRequestScope → SlowAPI → BodySizeLimit
+                       → DbBulkhead → GZip → handler
 
     Why this order:
     - CorrelationId must wrap SlowAPI so 429 responses carry
@@ -283,7 +292,10 @@ def install_middlewares(app: FastAPI) -> None:
       that mistake was caught in code review and locked here.
     """
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(
+        RateLimitExceeded,
+        _rate_limit_exceeded_handler,  # type: ignore[arg-type]  # slowapi types the handler for its own exception
+    )
     # MEH-2761: Starlette hands an `Exception` handler to ServerErrorMiddleware
     # (outermost), so this is the only way the 500 gets the security headers.
     app.add_exception_handler(Exception, server_error_with_headers)
@@ -320,9 +332,18 @@ def install_middlewares(app: FastAPI) -> None:
     # MEH-2955: cap requests in flight at min(DB pool, threadpool tokens) so a
     # burst cannot deadlock the process (db_bulkhead.py docstring). Directly
     # outside GZip (which must stay innermost) and INSIDE CORS, CorrelationId
-    # and the security headers, so a 503 still carries all of them.
-    # Pinned by tests/test_meh2955_db_bulkhead.py.
+    # and the security headers, so a 503 still carries all of them — as do the
+    # 408 / 413 it sends since MEH-3297, when it reads the request body before
+    # the slot. Pinned by tests/test_meh2955_db_bulkhead.py and
+    # tests/test_meh3297_bulkhead_slow_body.py.
     app.add_middleware(DbBulkheadMiddleware)
+
+    # MEH-3374: 413 above 6 MB, by Content-Length and by counting what arrives.
+    # Directly OUTSIDE the bulkhead, so a refused body never holds a DB slot
+    # (and a body the bulkhead reads itself is counted too), and INSIDE CORS,
+    # CorrelationId and the security headers, so the 413 carries all of them.
+    # Pinned by tests/test_meh3374_body_size_limit.py.
+    app.add_middleware(BodySizeLimitMiddleware)
 
     app.add_middleware(SlowAPIMiddleware)
     # SentryRequestScope must be added AFTER SlowAPI but BEFORE

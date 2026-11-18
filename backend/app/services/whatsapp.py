@@ -51,6 +51,7 @@ import httpx
 from sqlalchemy import and_, or_
 
 from app.config import settings
+from app.services.outbound_guard import phone_allowed
 from app.services.whatsapp_templates import WhatsAppTemplate
 from app.utils.pii import mask_phone
 
@@ -83,7 +84,7 @@ UNDELIVERED_WINDOW_DAYS = 7
 STUCK_ACCEPTED_AFTER = timedelta(days=1)
 
 
-def undelivered_predicate(model, now: datetime):
+def undelivered_predicate(model: Any, now: datetime) -> Any:
     """The one SQL filter for "did not reach the recipient", last 7 days:
     failed / window_expired, OR accepted for longer than STUCK_ACCEPTED_AFTER.
     Shared by the admin list (routers/admin_whatsapp.py) and the admin-home
@@ -131,6 +132,12 @@ def _graph_api_base() -> str:
 
 def _is_configured() -> bool:
     return bool(settings.whatsapp_phone_number_id and settings.whatsapp_access_token)
+
+
+def is_configured() -> bool:
+    """Public read of the same check, for callers that must tell "nothing could
+    be sent here" (dev / CI) from "the send failed" (MEH-2122 B)."""
+    return _is_configured()
 
 
 def _safe_json(response: Any) -> dict[str, Any] | None:
@@ -313,6 +320,20 @@ def _skip_test_cause(kind: str, to: str) -> bool:
     return False
 
 
+def _blocked_outside_production(kind: str, to: str) -> bool:
+    """MEH-3402: outside production only ADMIN_WHATSAPP_TO and the
+    OTP_TEST_NUMBERS harness numbers receive WhatsApp. Returns True when the
+    send must be dropped (logged, nothing persisted, no HTTP)."""
+    if phone_allowed(to):
+        return False
+    logger.info(
+        "[WHATSAPP] NOT SENT outside production: %s to=%s is not a staff number",
+        kind,
+        mask_phone(to),
+    )
+    return True
+
+
 def send_text(to: str, body: str, test_cause: bool = False) -> bool:
     """Send a free-form WhatsApp text message.
 
@@ -327,6 +348,8 @@ def send_text(to: str, body: str, test_cause: bool = False) -> bool:
         return _skip_test_cause("text", to)
     if not _is_configured():
         logger.debug("[WHATSAPP] Would send text to %s", mask_phone(to))
+        return False
+    if _blocked_outside_production("text", to):
         return False
     payload = {
         "messaging_product": "whatsapp",
@@ -357,6 +380,8 @@ def send_template(
         logger.debug(
             "[WHATSAPP] Would send template %s to %s", template.name, mask_phone(to)
         )
+        return False
+    if _blocked_outside_production(f"template[{template.name}]", to):
         return False
     payload = {
         "messaging_product": "whatsapp",

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { cloneElement } from "react";
@@ -88,6 +89,7 @@ export function resolveBadgeLabel(badge, producer, tKashrut) {
   return badge.key === "kosher" ? kosherLabel(producer, tKashrut, badge.label) : badge.label;
 }
 
+/** @param {{ producer: import("@/types/entities").ProducerSummary, limit?: number, surface?: string, hideKeys?: string[], avoidRef?: import("react").RefObject<HTMLElement>, nowrap?: boolean }} props */
 export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, avoidRef = null, nowrap = false }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");

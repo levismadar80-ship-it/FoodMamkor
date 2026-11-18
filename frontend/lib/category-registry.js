@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   category-registry
  * Purpose:  Single source of truth for every category's presentation data —
@@ -45,6 +46,7 @@ import { Plant, FlowerTulip, Leaf } from "@phosphor-icons/react";
 // surface is unchanged — `import { CATEGORY_ICONS } from "@/lib/category-registry"`
 // resolves exactly as before.
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { COLOR } from "./color-tokens";
 
 export { CATEGORY_ICONS };
 
@@ -78,9 +80,9 @@ export const CATEGORY_STYLES = {
   "דגים":                { color: "#c04040", icon: FishSimple,  iconName: "FishSimple" },
   // MEH-1453: stale combined key — no live DB category matches it, but the /map
   // legend still renders it (CATEGORY_LEGEND below). Kept verbatim.
-  "ירקות, פירות ומשקים": { color: "#2e6853", icon: Plant,       iconName: "Plant" },
+  "ירקות, פירות ומשקים": { color: COLOR.primary, icon: Plant,       iconName: "Plant" },
   "חלב וגבינות":         { color: "#4a90d9", textColor: "#3b72ad", icon: Cheese,      iconName: "Cheese" },
-  "לחמים ואפייה":        { color: "#896714", icon: Bread,       iconName: "Bread" }, // MEH-1065: accent token (retired stale gold)
+  "לחמים ואפייה":        { color: COLOR.accent, icon: Bread,       iconName: "Bread" }, // MEH-1065: accent token (retired stale gold)
   // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
   // dedicated identity — brand honey #C8821E + honeycomb glyph — distinct
   // from oils (#e8a020). MEH-683: Hexagon→Hive (Material), JarLabel→OliveOil.
@@ -96,13 +98,13 @@ export const CATEGORY_STYLES = {
   // #A8681A clears both (4.51:1 #fff / 3.97:1 cream). Serves the glyph tint AND
   // the MEH-1181-A ring. (The 3.15 vs 2.78 "discrepancy" was two backgrounds,
   // not a mistake: white vs cream — both correct.)
-  "דבש":                 { color: "#C8821E", textColor: "#A8681A", icon: Hive,        iconName: "Hive" },
+  "דבש":                 { color: COLOR.honey, textColor: "#A8681A", icon: Hive,        iconName: "Hive" },
   // MEH-1453: stale combined key (see "ירקות, פירות ומשקים" above). Legend-only.
   "טיפוח וסבונים":       { color: "#9b59b6", icon: FlowerTulip, iconName: "FlowerTulip" },
 };
 
 export const DEFAULT_CATEGORY_STYLE = {
-  color: "#2e6853",
+  color: COLOR.primary,
   // MEH-2163: was a second literal `Leaf`. Same component, one owner now —
   // lib/marker-glyph.js keys its memo on this module-level identity, which is
   // unchanged by the indirection.
@@ -152,7 +154,7 @@ export function categoryGlyphKey(category) {
  * bare index happened to return `undefined`.
  *
  * @param {string|{name?: string, slug?: string}|null|undefined} category
- * @returns {{glyph: Function, isFallback: boolean}}
+ * @returns {{glyph: import("react").ElementType, isFallback: boolean}}
  */
 export function resolveCategoryGlyph(category) {
   const key = categoryGlyphKey(category);
@@ -203,7 +205,7 @@ const SAFE_HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
  * @returns {string} `value` when it is a plain hex colour, else the primary
  *   token. Exported for the guard test; consumers get it via styleForProducer.
  */
-export function safeCategoryColor(value) {
+function safeCategoryColor(value) {
   const asString = String(value ?? "");
   return SAFE_HEX_COLOR.test(asString) ? asString : DEFAULT_CATEGORY_STYLE.color;
 }

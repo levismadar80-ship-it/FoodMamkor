@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -17,6 +18,7 @@ import {
   Users,
   Note,
   ChartLineUp,
+  Receipt,
   GearSix,
   Star,
   Megaphone,
@@ -26,6 +28,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
+import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { AdminDashboardProvider, useAdminDashboard } from "./dashboard-data";
 import { QUEUES, queueCount, visibleQueues } from "./queues";
 import BrandLoader from "@/components/BrandLoader";
@@ -74,6 +77,8 @@ const NAV_SECTIONS = [
       { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
       { href: "/admin/reviews", key: "reviews", Icon: Star },
       { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
+      // MEH-3182: read-only billing view (placement: Sapir's card, 14/11).
+      { href: "/admin/billing", key: "billing", Icon: Receipt },
       { href: "/admin/settings", key: "settings", Icon: GearSix },
       { href: "/admin/help", key: "help", Icon: Question },
     ],
@@ -103,7 +108,7 @@ function AdminShell({ children }) {
   const t = useTranslations("admin");
   const tDenied = useTranslations("errors.access_denied.admin");
   const tAccount = useTranslations("account.menu");
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, authUnreachable } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   // Per-queue counts for the sidebar badges + the queue filter. MEH-2359: the
@@ -124,7 +129,10 @@ function AdminShell({ children }) {
   // is redirected, and now with ?redirect= so she returns to her target.
   // `router` is next/navigation by MEH-731's explicit choice; `pathname` is
   // the locale-stripped one, which is exactly what ?redirect= wants.
-  const isUnauthenticated = !loading && !user;
+  // MEH-3172: a stored token whose /auth/me never answered is not "signed
+  // out" — that state renders a retry below instead of the /login push.
+  const isUnreachable = !loading && !user && authUnreachable;
+  const isUnauthenticated = !loading && !user && !authUnreachable;
   const isDenied = !loading && !!user && user.role !== "admin";
 
   useEffect(() => {
@@ -164,6 +172,8 @@ function AdminShell({ children }) {
       </div>
     );
   }
+
+  if (isUnreachable) return <AuthUnreachableState className="max-w-7xl mx-auto px-4" />;
 
   if (loading || !user) {
     // MEH-2599: brand mark instead of the bare «בטעינה...» line; same copy, sr-only.
