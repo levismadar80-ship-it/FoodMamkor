@@ -71,9 +71,14 @@ def test_production_admin_pending_is_sent(production, graph_spy):
 def test_only_link_free_templates_may_send_outside_production():
     # A new template is blocked outside production unless someone decides
     # otherwise here — naming its class is that decision.
+    def walk(cls):
+        for sub in cls.__subclasses__():
+            yield sub
+            yield from walk(sub)
+
     allowed = {
         cls.__name__
-        for cls in wt.WhatsAppTemplate.__subclasses__()
+        for cls in walk(wt.WhatsAppTemplate)
         if cls.sends_outside_production
     }
     assert allowed == {"OtpCodeV1"}
