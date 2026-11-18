@@ -511,7 +511,7 @@ export default function ProducerDashboardPage() {
         ) : (
           <WhatsNewCard />
         ))}
-      <OwnerAttentionCard attention={data?.attention} />
+      <OwnerAttentionCard attention={data?.attention} isOrganizer={isOrganizer} />
 
       {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
           requested_changes is set; the CTA routes to the edit tab. */}
