@@ -7380,5 +7380,29 @@
     "error_generic": "Something went wrong. Please try again.",
     "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
     "error_rate_limited": "Too many attempts. Please try again shortly."
+  },
+  "order_status": {
+    "title": "Your order",
+    "sent": "Request sent. {business_name} will confirm soon.",
+    "waiting": "We'll message you as soon as there's an answer. If there's no answer by {deadline}, the request is cancelled.",
+    "confirmed": "Order confirmed",
+    "when_pickup": "Pickup on {day}, {from}–{until} · {address}",
+    "when_pickup_no_address": "Pickup on {day}, {from}–{until}",
+    "when_delivery": "Delivery on {day}, {from}–{until}",
+    "proposal": "The business suggests a change",
+    "accept": "Works for me",
+    "cancel": "Cancel the order",
+    "ready": "Your order is ready for pickup",
+    "code": "Say this code at the counter",
+    "to_pay": "To pay the business: ₪{total}",
+    "declined": "The business can't fill this order.",
+    "cancelled": "Your order from {business_name} was cancelled.",
+    "expired": "The business didn't answer in time, so the request was cancelled. You were not charged.",
+    "handed": "Handed over. Enjoy.",
+    "cancel_confirm": "Cancel the order? The business will be notified.",
+    "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
+    "line": "{qty} × {name}",
+    "back": "Back",
+    "failed": "That didn't work. Please try again."
   }
 }
