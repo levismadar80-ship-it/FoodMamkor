@@ -123,8 +123,12 @@ def send_funded_notifications(  # noqa: PLR0913
     group_buy_id: str,
     producer_id: str,
     test_cause: bool = False,
+    late_joiner: bool = False,
 ) -> None:
     """BackgroundTasks entry point — dispatches both sides, never raises.
+
+    MEH-3289: ``late_joiner`` = one participant joined a group that was
+    already funded; only she is mailed, the business was told at funding.
 
     MEH-2952: `test_cause` — the business is a seeded test row; every mail
     this group buy causes (business and participants) is dropped and logged.
@@ -135,7 +139,7 @@ def send_funded_notifications(  # noqa: PLR0913
     loop itself are not — hence the explicit try/except + logger.exception at
     every level. One participant's failure must not cost the rest their email.
     """
-    if producer_email:
+    if producer_email and not late_joiner:
         try:
             notify_producer_funded(
                 producer_email,
