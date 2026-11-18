@@ -23,15 +23,20 @@ The opposing axes:
 
 This is the DNA. Every product decision passes through "does this push toward magazine or marketplace?" If the answer is marketplace, STOP and ask.
 
-## 1b · Site descriptor (locked — see ADR-043)
+## 1b · Which sentence goes where (locked — see ADR-043)
 
-> **במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.**
+Uniformity where a machine reads, variety where a person reads. Three approved sentences, one job each:
 
-The one sentence that says what the site is. It appears wherever the site is described in a line: the meta description, the shared-link card (og/twitter), the Organization JSON-LD `description`, the `llms.txt` summary, the PWA manifest `description`. Code owner: `SITE_DESCRIPTION` (`frontend/lib/constants.js`). Approved word for word by Sapir, 18/11/2026.
+| Sentence | Job | Where |
+|---|---|---|
+| **במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.** | What the site is (`SITE_DESCRIPTION`) | Google meta description, Organization JSON-LD `description`, `llms.txt`, PWA manifest |
+| **אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.** | The promise to someone looking for food (`CANONICAL_SENTENCE`) | Home hero subheading, the shared-link card (og/twitter), JSON-LD `slogan` |
+| **מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.** | The promise to a business owner (§2) | Footer; presenting the site to a business |
 
-- It leads with **finding** («מוצאים»), because the problem the site solves is not knowing where to find local food. "We check every business" is supporting copy on the business page, `/about` and `/about/process`, not part of this line.
+- The descriptor leads with **finding** («מוצאים»), because the problem the site solves is not knowing where to find local food. Approved word for word by Sapir, 18/11/2026.
 - **Do not** replace it with a category noun. «מדריך» was read as "a guide for businesses" (MEH-3424 research).
-- English has no approved version yet; `en.json` keeps its own description until it does.
+- A new surface picks its row by who reads it: a machine → the descriptor; a consumer → the brand sentence; a business → the tagline.
+- English has no approved descriptor yet; `en.json` keeps its own description until it does.
 
 ## 2 · Tagline (locked — see ADR-011)
 
@@ -46,7 +51,7 @@ Surfaces may use clause 1 alone where space forbids the full version. Clause 2 m
 
 ### Tagline vs hero subtitle — different decisions
 
-The **tagline** is specced for: footer brand line, `/about` narrative. **Not the OpenGraph card or the Hebrew meta description** since 2026-11-18: both carry the site descriptor (§1b, [ADR-043](./decisions/ADR-043-site-descriptor.md)). Before that, from 2026-11-12, the meta description carried the canonical sentence (`CANONICAL_SENTENCE`), because ChatGPT read the tagline there as the site's self-description ([ADR-041](./decisions/ADR-041-home-meta-description-canonical-sentence.md), MEH-2968). The footer renders it from `nav.footer.brand_tagline` (MEH-2364; pinned by `frontend/__tests__/adr011-tagline.test.js`). The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16; `עסקים` → `בתי עסק` per ADR-024): `"ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך."` (`he.json` `…subtitle`) — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
+The **tagline** is specced for: footer brand line, `/about` narrative. **Not the OpenGraph card or the Hebrew meta description** since 2026-11-18: the meta description carries the descriptor and the OpenGraph card the brand sentence (§1b, [ADR-043](./decisions/ADR-043-site-descriptor.md)). Before that, from 2026-11-12, the meta description carried the canonical sentence (`CANONICAL_SENTENCE`), because ChatGPT read the tagline there as the site's self-description ([ADR-041](./decisions/ADR-041-home-meta-description-canonical-sentence.md), MEH-2968). The footer renders it from `nav.footer.brand_tagline` (MEH-2364; pinned by `frontend/__tests__/adr011-tagline.test.js`). The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16; `עסקים` → `בתי עסק` per ADR-024): `"ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך."` (`he.json` `…subtitle`) — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
 
 ## 3 · Brand LOCKs (cannot change without formal discussion)
 

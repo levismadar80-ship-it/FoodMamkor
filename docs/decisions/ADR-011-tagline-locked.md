@@ -1,6 +1,6 @@
 # ADR-011: Tagline locked — 14-word canonical version
 
-**Status:** Accepted (surface list amended by [ADR-041](./ADR-041-home-meta-description-canonical-sentence.md) and [ADR-043](./ADR-043-site-descriptor.md): since 2026-11-18 the tagline appears only on the footer brand line; the meta description and the shared-link card carry `SITE_DESCRIPTION`; wording unchanged)
+**Status:** Accepted (surface list amended by [ADR-041](./ADR-041-home-meta-description-canonical-sentence.md) and [ADR-043](./ADR-043-site-descriptor.md): since 2026-11-18 the tagline appears on the footer brand line and is the sentence for presenting the site to businesses; the meta description carries `SITE_DESCRIPTION` and the shared-link card `CANONICAL_SENTENCE`; wording unchanged)
 **Date:** 2026-05-23
 **Deciders:** Sapir Levi
 **Source:** `Drive/03-Brand-Hub/02-מדריך-מותג.md` v1.1 (2026-05-16); Doc-Consolidation-Plan §B.8; MEH-686 Session 2

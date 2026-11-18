@@ -61,13 +61,14 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     expect(lines.find((line, i) => i > 0 && line)).toBe(SITE_DESCRIPTION);
   });
 
-  // MEH-3424: two more describing surfaces read the same line — the root
-  // layout's fallback metadata (through the constant, never a literal) and
-  // the PWA manifest.
-  it("layout.js feeds SITE_DESCRIPTION to description, og and twitter, and manifest.json carries it", () => {
+  // MEH-3424: the root layout's fallback metadata reads the constants, never a
+  // literal — the descriptor for the meta description, the brand sentence for
+  // a shared link (ADR-043) — and the PWA manifest carries the descriptor.
+  it("layout.js feeds the descriptor to description and the brand sentence to og/twitter; manifest.json carries the descriptor", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const layout = readFileSync(path.join(here, "..", "app", "[locale]", "layout.js"), "utf8");
-    expect(layout.match(/^\s+description: SITE_DESCRIPTION,$/gm)).toHaveLength(3);
+    expect(layout.match(/^\s+description: SITE_DESCRIPTION,$/gm)).toHaveLength(1);
+    expect(layout.match(/^\s+description: CANONICAL_SENTENCE,$/gm)).toHaveLength(2);
     const manifest = JSON.parse(
       readFileSync(path.join(here, "..", "public", "manifest.json"), "utf8"),
     );

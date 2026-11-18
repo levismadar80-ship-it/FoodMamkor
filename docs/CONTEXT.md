@@ -13,7 +13,7 @@ Mehamakor (`mehamakor.co.il` — the canonical production origin, MEH-1322; stag
 
 **Founder + developer:** Sapir Levi (solo).
 
-**Site descriptor (locked, see ADR-043)** — the one line that says what the site is, on every describing surface:
+**Site descriptor (locked, see ADR-043)** — what the site is, for search engines and AI (the shared-link card carries the brand sentence, the footer the tagline; table in BRAND.md §1b):
 > במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.
 
 **Tagline (locked, see ADR-011):**

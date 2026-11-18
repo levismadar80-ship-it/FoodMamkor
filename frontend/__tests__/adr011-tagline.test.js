@@ -28,12 +28,12 @@ describe("ADR-011 tagline", () => {
     expect(he.nav.footer.brand_tagline).toBe(locked);
   });
 
-  // MEH-3424 / ADR-043: every surface that describes the site in one line —
-  // the meta description, og/twitter description — carries SITE_DESCRIPTION,
-  // the descriptor Sapir approved word for word on 18/11/2026. Before it, the
-  // og/twitter keys showed the tagline (clause 1 speaks to business owners)
-  // and the meta description showed the canonical sentence (ADR-041), so a
-  // shared link and a search result said two different things.
+  // MEH-3424 / ADR-043: each sentence has one job. The meta description (read
+  // by search engines and AI) carries SITE_DESCRIPTION, the descriptor Sapir
+  // approved word for word on 18/11/2026. A shared link (og/twitter) is read
+  // by a person a friend sent it to, and carries the brand sentence. Before
+  // this the og/twitter keys showed the tagline, whose clause 1 speaks to
+  // business owners.
   it("SITE_DESCRIPTION is the approved descriptor, not the tagline or the brand sentence", () => {
     expect(SITE_DESCRIPTION).toBe("במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.");
     expect(SITE_DESCRIPTION).not.toBe(locked);
@@ -43,9 +43,15 @@ describe("ADR-011 tagline", () => {
   it.each([
     ["seo.home.description", he.seo.home.description],
     ["seo.site.description", he.seo.site.description],
-    ["seo.site.og_description", he.seo.site.og_description],
-    ["seo.site.twitter_description", he.seo.site.twitter_description],
   ])("he.json %s is SITE_DESCRIPTION (ADR-043)", (_key, value) => {
     expect(value).toBe(SITE_DESCRIPTION);
+  });
+
+  it.each([
+    ["seo.site.og_description", he.seo.site.og_description],
+    ["seo.site.twitter_description", he.seo.site.twitter_description],
+  ])("he.json %s is the brand sentence, not the tagline (ADR-043)", (_key, value) => {
+    expect(value).toBe(CANONICAL_SENTENCE);
+    expect(value).not.toBe(locked);
   });
 });
