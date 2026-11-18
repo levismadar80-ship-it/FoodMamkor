@@ -30,6 +30,25 @@ describe("upload size cap (MEH-3399)", () => {
     expect(err.response.data.detail).toBe(UPLOAD_TOO_LARGE_DETAIL);
   });
 
+  it("sends a file of exactly 4MB (the cap is inclusive)", async () => {
+    const adapter = vi.fn((config) =>
+      Promise.resolve({ status: 200, statusText: "OK", headers: {}, config, data: {} }),
+    );
+    await api.post("/upload/image", formWith(4 * MB), { adapter });
+    expect(adapter).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a 413 on a non-upload request alone", async () => {
+    const adapter = vi.fn((config) => {
+      const e = new Error("Request failed with status code 413");
+      e.config = config;
+      e.response = { status: 413, data: { detail: "הבקשה גדולה מדי." } };
+      return Promise.reject(e);
+    });
+    const err = await api.post("/producers/me", { a: 1 }, { adapter }).catch((e) => e);
+    expect(err.response.data.detail).toBe("הבקשה גדולה מדי.");
+  });
+
   it("sends a 3MB file", async () => {
     const adapter = vi.fn((config) =>
       Promise.resolve({ status: 200, statusText: "OK", headers: {}, config, data: { url: "x" } }),

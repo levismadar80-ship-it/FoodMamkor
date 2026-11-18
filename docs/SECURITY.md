@@ -258,6 +258,14 @@ DB slot, and inside CORS / X-Request-ID / the security headers. The 5 MB image
 cap below is a second, narrower check inside the upload route. The WhatsApp
 webhook keeps its own smaller cap.
 
+**Browser cap 4 MB (MEH-3399).** A browser upload goes through Vercel's `/api`
+proxy, which answers any body above ~4.5 MB with its own English plain-text 413
+(`FUNCTION_PAYLOAD_TOO_LARGE`, measured on staging 18/11) before the backend can
+answer. So `frontend/lib/api.js` refuses a FormData file above
+`MAX_UPLOAD_BYTES` (4 MB) before sending, and turns any 413 on a FormData
+request into «תמונה גדולה מדי (מקסימום 4MB)». The 6 MB and 5 MB caps above
+still guard the backend against a client that skips the browser.
+
 > **Slow bodies and buffered bytes (MEH-3297).** The cap above answers "how
 > big"; it deliberately does not answer "how slow" or "how many at once" —
 > `body_limit.py`'s own header says so and names `db_bulkhead.py` as the owner

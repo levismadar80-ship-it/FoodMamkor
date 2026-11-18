@@ -133,9 +133,14 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url ?? "";
 
-    // MEH-3399: a 413 from anywhere (Vercel's plain text, the backend's JSON)
-    // reaches the caller as the same Hebrew detail.
-    if (status === 413) {
+    // MEH-3399: a 413 on an upload (Vercel's plain text, the backend's JSON)
+    // reaches the caller as the same Hebrew detail. Only FormData bodies: a
+    // 413 on any other request keeps the backend's own generic line.
+    if (
+      status === 413 &&
+      typeof FormData !== "undefined" &&
+      error.config?.data instanceof FormData
+    ) {
       error.response.data = { detail: UPLOAD_TOO_LARGE_DETAIL };
       return Promise.reject(error);
     }
