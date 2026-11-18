@@ -4,6 +4,15 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-18 — «מה חדש» לבתי עסק: ‏#4561, ‏#4565 מוזגו
+
+**שורה אחת:** הערות גרסה לבתי עסק, כרטיס ברוכים הבאים, תווית «חדש» וכרטיסי רגע ראשון נמצאים ב-staging. הפירוט ב-CHANGELOG.
+
+**מה צריך לדעת לפני עבודה:**
+- **כל PR ל-main צריך רשומה ב-`frontend/lib/whats-new.js`.** `whats-new-release-guard.sh` נכשל בלעדיה. גרסה בלי שום דבר לבתי עסק מקבלת רשומה עם `items: 0`. את השורות מנסחים מ-PR-ים בשלב א׳/ב׳, וספיר מאשרת אותן מילה במילה (`docs/release/whats-new.md`).
+- **כלי חדש ב«כלים»:** מוסיפים `tools: ["/producer/dashboard/<הכלי>"]` לרשומה. טסט נכשל אם ל-href אין `<NewToolPill>` על הכרטיס שלו.
+- **v1.5.1 עדיין לא בפרודקשן.** הרשומה הראשונה (v1.5.1, 3 שורות) כבר כתובה ומאושרת.
+
 ## 2026-11-18 — הסשן של 17–18/11: ‏#4674, ‏#4761, ‏#4764, ‏#4763 מוזגו
 
 **שורה אחת:** ארבעה PR-ים מוזגו ל-staging, והפירוט ב-CHANGELOG. ‏#4762 של Dependabot נשאר פתוח.
