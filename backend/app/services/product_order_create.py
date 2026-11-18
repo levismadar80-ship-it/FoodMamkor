@@ -201,6 +201,7 @@ def _lines(
         .filter(
             Product.id.in_(list(wanted)),
             Product.producer_id == body.producer_id,
+            Product.is_draft.is_(False),  # MEH-2312: a draft cannot be ordered
             Product.is_orderable.is_(True),
             Product.in_stock.is_(True),
             Product.price_min.isnot(None),

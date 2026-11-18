@@ -330,8 +330,10 @@ function producer(
     // MEH-2131: `open_for_orders_now` is the OTHER runtime-gated axis — the sheet
     // withholds it below OPEN_NOW_CHIP_MIN (5) declared windows, and again when
     // no business is open at the current clock. An all-week 00:00-23:59 window on
-    // every row satisfies both, whatever time the suite runs at, so the sheet
-    // offers the full home axis set instead of a time-of-day-dependent subset.
+    // every row satisfies both for 1,439 minutes a day. NOT the last one: close
+    // is exclusive (orderWindow.js `minutes < r.closeMin`), so at 23:59 Israel
+    // every row reads closed and the chip leaves the DOM — the 21:59 UTC red on
+    // PR #4811. A test that asserts this chip freezes the clock (MEH-2767).
     // Day keys come from lib/orderWindow.js, not from literals.
     order_window: Object.fromEntries(
       (ORDER_DAY_KEYS as string[]).map((d) => [d, [{ open: "00:00", close: "23:59" }]]),
@@ -1210,6 +1212,9 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     // runner needs `gotoFixtureFeed` rather than a bare `gotoHome`. Without it
     // the backend's catalog gates `no_added_sugar` off and the loop below asks
     // for a toggle that was never rendered — the CI failure, verbatim.
+    // `open_for_orders_now` is clock-gated (see the fixture's order_window): freeze
+    // the clock inside the window, or the suite reds for one minute a day.
+    await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
     await gotoFixtureFeed(page, "/", PRODUCERS);
     await filtersButton(page).click();
     const panel = sheetPanel(page);

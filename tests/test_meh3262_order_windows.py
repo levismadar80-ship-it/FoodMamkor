@@ -289,8 +289,9 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
             headers=headers,
         ),
         client.get(f"/producers/{producer.id}/order-menu"),
+        client.get("/producers/me/products/ordering", headers=headers),
     ]
-    assert [a.status_code for a in answers] == [404, 404, 404, 404]
+    assert [a.status_code for a in answers] == [404, 404, 404, 404, 404]
     assert db.query(ProducerOrderWindow).count() == 0
 
 
@@ -509,6 +510,49 @@ def test_a_product_without_a_price_cannot_be_made_orderable(client, db, flag_on)
     assert "מחיר" in res.text
     db.refresh(product)
     assert product.is_orderable is False
+
+
+def test_owner_lists_only_her_own_products_with_their_ordering_fields(
+    client, db, flag_on
+):
+    """MEH-3216 gaps: the orders tab lists her products with two switches."""
+    owner, producer = _owner(db)
+    _, other = _owner(db)
+    db.add_all(
+        [
+            Product(
+                producer_id=producer.id, name="חלה", price_min=28, is_orderable=True
+            ),
+            Product(producer_id=producer.id, name="עוגה", in_stock=False),
+            Product(producer_id=other.id, name="של אחרת", price_min=5),
+        ]
+    )
+    db.commit()
+    res = client.get("/producers/me/products/ordering", headers=auth_header(owner))
+    assert res.status_code == 200
+    rows = {p["name"]: p for p in res.json()["products"]}
+    assert set(rows) == {"חלה", "עוגה"}
+    assert (rows["חלה"]["has_price"], rows["חלה"]["is_orderable"]) == (True, True)
+    assert (rows["עוגה"]["has_price"], rows["עוגה"]["in_stock"]) == (False, False)
+
+
+def test_the_product_list_refuses_anonymous_and_non_business_callers(
+    client, db, flag_on
+):
+    _, producer = _owner(db)
+    db.add(Product(producer_id=producer.id, name="לחם", price_min=20))
+    db.commit()
+    url = "/producers/me/products/ordering"
+    anon = client.get(url)
+    consumer = client.get(url, headers=auth_header(make_user(db)))
+    assert (anon.status_code, consumer.status_code) == (401, 403)
+    assert "לחם" not in anon.text + consumer.text
+
+
+def test_a_business_with_no_products_gets_an_empty_list(client, db, flag_on):
+    owner, _ = _owner(db)
+    res = client.get("/producers/me/products/ordering", headers=auth_header(owner))
+    assert res.json() == {"products": []}
 
 
 # --- the public order menu ----------------------------------------------------

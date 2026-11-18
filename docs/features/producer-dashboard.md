@@ -6,7 +6,7 @@
 * `frontend/app/[locale]/producer/dashboard/` — הבית.
 * `frontend/app/[locale]/producer/dashboard/edit/` · `frontend/app/[locale]/producer/dashboard/insights/` · `frontend/app/[locale]/producer/dashboard/tools/` — הלשוניות.
 * `frontend/app/[locale]/producer/dashboard/preview/` · `frontend/app/[locale]/producer/dashboard/whats-new/` · `frontend/app/[locale]/producer/dashboard/qr-card/`
-* `frontend/app/[locale]/producer/dashboard/orders/` — «הזמנות» (הזמנה באתר, MEH-3316): לשונית שנייה עם מונה, רק כשבשרת `PRODUCT_ORDERS_ENABLED` דולק. הרכיבים ב-`frontend/components/dashboard/orders/`, הקריאות ב-`frontend/lib/product-orders.js`, הטסט `frontend/__tests__/ProductOrdersDashboard.test.jsx`.
+* `frontend/app/[locale]/producer/dashboard/orders/` — «הזמנות» (הזמנה באתר, MEH-3316): לשונית שנייה עם מונה, רק כשבשרת `PRODUCT_ORDERS_ENABLED` דולק. הרכיבים ב-`frontend/components/dashboard/orders/`, הקריאות ב-`frontend/lib/product-orders.js`, הטסט `frontend/__tests__/ProductOrdersDashboard.test.jsx`. כשההזמנות דלוקות ויש לפחות חלון מסירה אחד, כרטיסי ההגדרות והשעות נפתחים מקופלים (`isSetUp`), כך שהלשונית נפתחת על ההזמנות. מתחת להזמנות כרטיס «מוצרים» עם שני מתגים לכל מוצר, «פתוח להזמנה באתר» ו«אזל כרגע» (`frontend/components/dashboard/orders/OrderProductsCard.jsx`, הקריאות ב-`frontend/lib/product-ordering.js`). בלשונית «היום» מופיעה «מה להכין», סיכום ההזמנות המאושרות לפי מוצר (`frontend/components/dashboard/orders/OrderPrepList.jsx`). בכל כרטיס הזמנה יש «וואטסאפ ללקוח». ההגדרה «עד כמה הזמנות בכל מועד (לא חובה)» חלה גם על אישור ידני. הטסט `frontend/__tests__/ProductOrderGaps.test.jsx`.
 
 **קבצים מרכזיים**
 * `frontend/lib/business-features.js` — הרישום שמכתיב מה קיים ואיפה זה יושב (`dashboard: { home, href }`).

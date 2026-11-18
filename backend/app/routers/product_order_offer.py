@@ -14,7 +14,8 @@ Related:  app/routers/product_orders.py (the flag gate and the settings
           routes), app/services/product_order_slots.py (the slots),
           app/schemas/product_order_offer.py (the shapes)
 History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3263 (the two
-          shared reads moved to services/product_order_menu.py)
+          shared reads moved to services/product_order_menu.py); MEH-3216
+          gaps (GET of the owner's products with their ordering fields)
 
 A file of its own because producer_me.py is on the file-size baseline and
 does not grow (code-execution.md §16).
@@ -38,6 +39,7 @@ from app.routers.product_orders import (
     require_product_orders_enabled,
 )
 from app.schemas.product_order_offer import (
+    MyProductsOrderingOut,
     OrderMenuOut,
     OrderWindowsIn,
     OrderWindowsOut,
@@ -107,6 +109,41 @@ def put_my_order_windows(
     return {"windows": windows(db, producer_id)}
 
 
+@me_router.get(
+    "/producers/me/products/ordering",
+    response_model=MyProductsOrderingOut,
+    dependencies=[Depends(require_product_orders_enabled)],
+)
+@limiter.limit("120/minute")
+def get_my_products_ordering(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> Any:
+    """The caller's own products with their ordering fields, in the order her
+    business page shows them. Bounded by the products cap (limits.py)."""
+    rows = (
+        db.query(Product)
+        .filter(Product.producer_id == _own_producer_id(user))
+        .order_by(Product.position.asc().nullslast(), Product.name)
+        .all()
+    )
+    return {
+        "products": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "has_price": p.price_min is not None,
+                "is_orderable": p.is_orderable,
+                "in_stock": p.in_stock,
+                "price_unit": p.price_unit,
+                "contains_alcohol": p.contains_alcohol,
+            }
+            for p in rows
+        ]
+    }
+
+
 @me_router.put(
     "/producers/me/products/{product_id}/ordering",
     response_model=ProductOrderingOut,
@@ -124,7 +161,11 @@ def put_product_ordering(
     own business, so another business's product is a 404, not a 403."""
     product = (
         db.query(Product)
-        .filter(Product.id == product_id, Product.producer_id == _own_producer_id(user))
+        .filter(
+            Product.id == product_id,
+            Product.producer_id == _own_producer_id(user),
+            Product.is_draft.is_(False),  # MEH-2312: the owner never sees drafts
+        )
         .first()
     )
     if product is None:
@@ -170,6 +211,7 @@ def _menu_products(
 ) -> list[dict[str, Any]]:
     query = db.query(Product).filter(
         Product.producer_id == producer_id,
+        Product.is_draft.is_(False),  # MEH-2312: an unapproved draft is not public
         Product.is_orderable.is_(True),
         Product.price_min.isnot(None),
     )

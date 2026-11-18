@@ -10,11 +10,13 @@
  *           the API refuses a partial body so an omitted field never clears).
  * Does NOT: show `alcohol_licensed` as editable (admin only), or the hand-over
  *           windows (OrderWindowsCard).
- * History:  MEH-3316 (creation; stage 4 of MEH-3216)
+ * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps (the
+ *           per-slot cap is always shown and holds for manual confirm too)
  */
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { CaretDown } from "@phosphor-icons/react";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -97,8 +99,12 @@ function TimingFields({ form, set }) {
   );
 }
 
-/** @param {{ settings: any, onSaved: (settings: any) => void }} props */
-export default function OrderSettingsCard({ settings, onSaved }) {
+/**
+ * @param {{ settings: any, onSaved: (settings: any) => void, collapsed?: boolean }} props
+ *   collapsed: start closed — the page closes it once ordering is set up,
+ *   so the tab opens on the orders and the one-time settings wait a tap away.
+ */
+export default function OrderSettingsCard({ settings, onSaved, collapsed = false }) {
   const t = useTranslations("dashboard.producer.orders.settings");
   const tActions = useTranslations("dashboard.producer.orders.actions");
   const [form, setForm] = useState(() => toForm(settings));
@@ -118,25 +124,40 @@ export default function OrderSettingsCard({ settings, onSaved }) {
   };
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 space-y-3" data-testid="order-settings">
-      <h2 className="font-bold text-lg text-text">{t("title")}</h2>
+    <details
+      open={!collapsed}
+      className="group rounded-lg border border-border bg-surface p-4 space-y-3"
+      data-testid="order-settings"
+    >
+      <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
+        <h2 className="font-bold text-lg text-text">{t("title")}</h2>
+        <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+      </summary>
       <p className="text-sm text-fg-muted">{t("lead")}</p>
       <SwitchRow id="orders-enabled" label={t("enabled")} checked={form.enabled} onChange={(on) => set("enabled", on)} />
       <SwitchRow
         id="orders-auto"
         label={t("auto_confirm", { count: form.cap || DEFAULT_CAP })}
         checked={form.auto_confirm}
-        onChange={(on) => setForm((old) => ({ ...old, auto_confirm: on, cap: old.cap || String(DEFAULT_CAP) }))}
+        onChange={(on) =>
+          setForm((old) =>
+            on
+              ? { ...old, auto_confirm: true, capBefore: old.cap, cap: old.cap || String(DEFAULT_CAP) }
+              : // Off again: give back the cap she had before, so the default
+                // filled in for auto-confirm never becomes a silent limit.
+                { ...old, auto_confirm: false, cap: old.capBefore ?? old.cap }
+          )
+        }
       />
-      {form.auto_confirm && (
-        <Input label={t("auto_cap")} inputMode="numeric" dir="ltr" value={form.cap} onChange={(e) => set("cap", e.target.value)} />
-      )}
+      {/* MEH-3216 gaps: one cap per slot, by hand or automatic — the server
+          stops offering a slot that holds this many open orders. */}
+      <Input label={t("slot_cap")} inputMode="numeric" dir="ltr" value={form.cap} onChange={(e) => set("cap", e.target.value)} data-testid="orders-slot-cap" />
       <SwitchRow id="orders-shabbat" label={t("shabbat")} checked={form.shabbat_observant} onChange={(on) => set("shabbat_observant", on)} />
       <Input label={t("min_order")} inputMode="decimal" dir="ltr" value={form.minimum} onChange={(e) => set("minimum", e.target.value)} />
       <TimingFields form={form} set={set} />
       {state.error && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {state.saved && <InlineMessage tone="success">{t("saved")}</InlineMessage>}
       <Button onClick={save} loading={state.busy} data-testid="orders-settings-save">{t("save")}</Button>
-    </section>
+    </details>
   );
 }

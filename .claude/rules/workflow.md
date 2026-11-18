@@ -543,7 +543,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
       Sapir picks (rule 37 for placement, rule 22 for copy).
     - **PR body:** `## Big sites` with the findings, or
       `Big sites: n/a — <reason>`. `scripts/checks/big-sites-guard.sh`
-      (Repo guards, warn-only) prints a WARNING for a PR touching
+      (Repo guards; warns, blocks from 22/11) flags a PR touching
       `frontend/app` or `frontend/components` (tests excluded) without either.
 38. **A PR that changes what users see: CC self-merges it to staging after the
     full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
@@ -564,7 +564,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
     ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
     replaces none of it. `scripts/checks/pr-evidence-guard.sh` checks the
-    evidence of rules 22, 23, 38 and 40 is in the PR (warns until 22/11).
+    evidence of rules 5a, 22, 23, 38, 40 + the security-review and Fable-reviewer lines is in the PR (warns until 22/11).
 39. **A red E2E gate blocks a merge to staging unless all three hold, and the
     PR body says so, one line each (Sapir 11/11, every PR from then on).**
     (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
@@ -612,7 +612,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     description, so a routine-looking task skips them. Before starting, read
     the table, invoke every row that fits (Skill tool), and write one line in
     the first reply and in the PR body: `Skills: <names>` or
-    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns on
+    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns, and from 22/11 fails, on
     a PR body without it. Re-check the table when a task turns into a new kind
     of work mid-way — a draft of Hebrew copy in a doc or a card counts as copy
     (18/11). From 22/11 (a warning until then), a PR that adds Hebrew to
