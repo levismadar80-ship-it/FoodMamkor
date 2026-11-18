@@ -4,6 +4,26 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-18 — הסשן של 17–18/11: ‏#4674, ‏#4761, ‏#4764, ‏#4763 מוזגו
+
+**שורה אחת:** ארבעה PR-ים מוזגו ל-staging, והפירוט ב-CHANGELOG. ‏#4762 של Dependabot נשאר פתוח.
+
+**מה צריך לדעת לפני עבודה:**
+- **סוכנת משנה יכולה להזיז את ה-checkout שלך.**
+  - מה קרה: סוכנת סקירה עברה ל-ref מרוחק והשאירה את הסשן ב-detached HEAD. ארבעה commits נכתבו מחוץ לענף, ודחיפה לפי שם הענף לא כללה אותם.
+  - איך זוהה: רק דרך reflog, והם שוחזרו ב-merge.
+  - מה לעשות: לבדוק את שם הענף הנוכחי לפני כל commit אחרי שסוכנת רצה.
+- **‏CI gate שנכשל אחרי מעבר מטיוטה ל-ready הוא ריצה כפולה שבה כל המשימות דולגו.** ה-ruleset בכל זאת סופר אותה. הפתרון: commit חדש, למשל מיזוג staging.
+- **‏Stop hook של pytest נכשל בסנדבוקס כשאין Postgres** (connection refused). זו בעיה של הסביבה ולא של הקוד, ו-pytest של CI הוא הבדיקה.
+- **טסט flaky ב-`46-hub-tab-switch.spec.ts:114`** במחשב (הטאב לא חוזר אחרי Back). הדוגמה נוספה לכרטיס הקיים MEH-3090.
+
+**מחכה לספיר:**
+- **מפתח Google Maps.**
+  - המצב: הוא בשימוש, להשלמת כתובת של בית עסק, ומוגדר ב-Vercel בפרודקשן וב-preview.
+  - הסיכון אם מוחקים: ההשלמה עוברת ל-Nominatim, ומדיניות OpenStreetMap אוסרת השלמה אוטומטית מולו.
+  - המלצה: להשאיר את המפתח ולהגביל אותו לפי referrer בקונסול. אם בכל זאת מוחקים, צריך להחליף את ההשלמה ל-Photon.
+- **‏#4762.** לפצל את Playwright 1.65 מהקבוצה, או לסגור את ה-PR.
+
 ## 2026-11-18 — סיום ההעברה: #4729, ‏#4726, ‏#4759, ‏#4739, ‏#4738 מוזגו
 
 **שורה אחת:** כל ה-PR-ים שחיכו לספיר מההעברה של 17/11 מוזגו ל-staging, ואחריהם תיקון ה-413 בהעלאות (#4759).
