@@ -30,6 +30,9 @@ class TestLayoutAlternative:
         assert layout_alternative("ok") is None
         assert layout_alternative("שנ") is None
 
+    def test_one_letter_token_is_not_converted(self):
+        assert layout_alternative("ab c") is None
+
     def test_mixed_scripts_are_not_converted(self):
         assert layout_alternative("sca תל") is None
 
@@ -41,14 +44,9 @@ class TestNormalise:
     def test_drops_niqqud(self):
         assert normalise("גְּבִינָה") == "גבינה"
 
-    def test_unifies_gershayim(self):
-        assert normalise("ש״ח צ׳יפס") == "ש\"ח צ'יפס"
-
-    def test_mid_word_final_letter(self):
-        assert normalise("שלוםית") == "שלומית"
-
-    def test_word_end_final_letter_kept(self):
-        assert normalise("שלום") == "שלום"
+    def test_geresh_and_mid_word_final_left_alone(self):
+        # a stored name may hold a real ׳ or a compound with a mid-word final
+        assert normalise("צ׳יפס אבןעזרא") == "צ׳יפס אבןעזרא"
 
     def test_final_form_is_a_variant_not_a_replacement(self):
         variants = token_variants("שלומ")
@@ -76,6 +74,23 @@ class TestSmartSearchLayoutFallback:
         assert body["producers"] == [] and body["categories"] == []
         assert body["corrected_query"] is None
 
+    def test_brand_name_on_english_keyboard(self, client, db):
+        make_producer(db, name="מהמקור לדוגמה", city="צפת")
+        body = client.get("/search?q=nvneur").json()
+        assert [p["name"] for p in body["producers"]] == ["מהמקור לדוגמה"]
+        assert body["corrected_query"] == "מהמקור"
+
+    def test_english_name_on_hebrew_keyboard(self, client, db):
+        make_producer(db, name="bread house", city="צפת")
+        body = client.get("/search", params={"q": "נרקשג"}).json()
+        assert [p["name"] for p in body["producers"]] == ["bread house"]
+        assert body["corrected_query"] == "bread"
+
+    def test_stored_geresh_still_matches(self, client, db):
+        make_producer(db, name="צ׳יפס הכפר", city="צפת")
+        body = client.get("/search", params={"q": "צ׳יפס"}).json()
+        assert [p["name"] for p in body["producers"]] == ["צ׳יפס הכפר"]
+
     def test_niqqud_query_matches(self, client, db):
         make_producer(db, name="גבינה מהכפר", city="צפת")
         body = client.get("/search", params={"q": "גְּבִינָה"}).json()
@@ -96,3 +111,16 @@ class TestProducersLayoutFallback:
         make_producer(db, name="דבש הגליל", city="צפת")
         names = [p["name"] for p in client.get("/producers?q=sca").json()]
         assert names == ["sca farm"]
+
+    def test_listing_no_results_either_way(self, client, db):
+        make_producer(db, name="דבש הגליל", city="צפת")
+        resp = client.get("/producers?q=zzzq")
+        assert resp.json() == []
+        assert resp.headers["X-Total-Count"] == "0"
+
+    def test_listing_niqqud(self, client, db):
+        make_producer(db, name="גבינה מהכפר", city="צפת")
+        names = [
+            p["name"] for p in client.get("/producers", params={"q": "גְּבִינָה"}).json()
+        ]
+        assert names == ["גבינה מהכפר"]

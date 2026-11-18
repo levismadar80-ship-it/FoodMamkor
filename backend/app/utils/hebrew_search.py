@@ -55,15 +55,13 @@ Query normalisation (MEH-3415, applied by tokenize before any rule)
 -------------------------------------------------------------------
 Niqqud and cantillation marks (U+0591–U+05C7, except maqaf U+05BE and sof
 pasuq U+05C3, which are punctuation) are dropped — stored names carry none, so
-"גְּבִינָה" must search as "גבינה". Hebrew geresh/gershayim (׳ ״) become ' and
-", the forms a keyboard types. A final letter in the MIDDLE of a token
-("שלוםית") becomes its regular form.
+"גְּבִינָה" must search as "גבינה". Nothing else is rewritten.
 
 Wrong keyboard layout (MEH-3415)
 --------------------------------
 layout_alternative() maps a query typed on the other layout of a standard
 Israeli keyboard (SI 1452): "sca" -> "דבש", "nvneur" -> "מהמקור", and back,
-"ברקשג" -> "bread". Callers run it ONLY when the query as typed found
+"נרקשג" -> "bread". Callers run it ONLY when the query as typed found
 nothing, so a real English word that has results is never rewritten; the
 database is the dictionary that decides whether the conversion was a word.
 """
@@ -96,8 +94,6 @@ _REGULAR_TO_FINAL = {v: k for k, v in _FINAL_TO_REGULAR.items()}
 # Niqqud + cantillation: U+0591..U+05C7 minus maqaf (U+05BE) and sof pasuq
 # (U+05C3), which are punctuation a user may mean.
 _NIQQUD = {cp: None for cp in range(0x0591, 0x05C8) if cp not in (0x05BE, 0x05C3)}
-_GERESH = {ord("׳"): "'", ord("״"): '"'}
-_NORMALISE_TABLE = {**_NIQQUD, **_GERESH}
 
 # MEH-3415 — SI 1452, the standard Israeli keyboard: Latin key -> Hebrew
 # character on the same key. Uppercase is folded to lowercase before lookup.
@@ -147,20 +143,13 @@ _MIN_LAYOUT_CHARS = 3
 
 
 def normalise(query: str) -> str:
-    """MEH-3415 — drop niqqud, unify geresh, de-final a mid-token final letter."""
-    text = (query or "").translate(_NORMALISE_TABLE)
-    out = []
-    for i, ch in enumerate(text):
-        nxt = text[i + 1] if i + 1 < len(text) else " "
-        if (
-            ch in _FINAL_TO_REGULAR
-            and not nxt.isspace()
-            and "\u05d0" <= nxt <= "\u05ea"
-        ):
-            out.append(_FINAL_TO_REGULAR[ch])
-        else:
-            out.append(ch)
-    return "".join(out)
+    """MEH-3415 — drop niqqud and cantillation marks; nothing else.
+
+    Geresh/gershayim and mid-word final letters are deliberately left alone:
+    a stored name may hold a real ׳ or a compound like "אבןעזרא", and
+    rewriting the query would stop it matching (fresh review, PR #4776).
+    """
+    return (query or "").translate(_NIQQUD)
 
 
 def tokenize(query: str) -> list[str]:
@@ -172,12 +161,18 @@ def layout_alternative(query: str) -> str | None:
     """MEH-3415 — the query re-read on the other keyboard layout, or None.
 
     None when the query mixes scripts, holds a character the other layout
-    cannot produce, or has fewer than _MIN_LAYOUT_CHARS non-space characters.
+    cannot produce, has fewer than _MIN_LAYOUT_CHARS non-space characters, or
+    has a one-character token.
     Latin -> Hebrew needs at least one Latin letter (a query of only ",./;"
     is not a slip); Hebrew -> Latin maps letters only.
     """
-    text = " ".join((query or "").split())
+    tokens = (query or "").split()
+    text = " ".join(tokens)
     if len(text.replace(" ", "")) < _MIN_LAYOUT_CHARS:
+        return None
+    # A converted 1-letter token is a bare "%ב%" that matches almost anything,
+    # so "ab c" would come back as a false correction (fresh review, #4776).
+    if any(len(token) < 2 for token in tokens):
         return None
     lowered = text.lower()
     if any(ch in _LATIN_LETTERS for ch in lowered) and all(

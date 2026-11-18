@@ -1855,11 +1855,11 @@ delivery-area cities (`producer_listing._token_search_filter`). Both use the sam
 per-token ilike patterns (`hebrew_search.token_patterns`, escaped).
 
 **Wrong keyboard layout, niqqud, final letters (MEH-3415).** The query is normalised
-first (`hebrew_search.normalise`: niqqud dropped, ׳/״ → '/", a mid-word final letter
-de-finalled; a trailing regular letter also tries its final form). When the query as
-typed returns nothing, both endpoints re-read it on the other SI 1452 layout
-(`hebrew_search.layout_alternative`: `sca` → `דבש`, `נרקשג` → `bread`; ≥ 3 characters,
-one script only) and run once more. `GET /search` then sets `corrected_query` to the
+first (`hebrew_search.normalise`: niqqud dropped, nothing else; a trailing regular
+letter also tries its final form). When the query as typed returns nothing, both
+endpoints re-read it on the other SI 1452 layout (`hebrew_search.layout_alternative`:
+`sca` → `דבש`, `נרקשג` → `bread`; ≥ 3 characters, no 1-character token, one script
+only) and run once more. `GET /search` then sets `corrected_query` to the
 word the results are for (`null` otherwise); `GET /producers?q=` serves the corrected
 results silently and logs the query as typed with the count served.
 
