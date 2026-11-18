@@ -1329,3 +1329,16 @@ The backend can run as `app_runtime`, a role that reads and writes rows and noth
 
 - **Until the variables change, nothing changes:** with `MIGRATION_DATABASE_URL` unset the app and the migrations share the owner URL, as before.
 - **Accepted:** `app_runtime` can still `DELETE` every row of a table it can write; that is the backups' job (daily `pg_dump` to R2, DEPLOYMENT.md), not the role's. `TRUNCATE` is refused.
+
+---
+
+## 21. On-site product orders — guest surface (MEH-3263) — dark behind `PRODUCT_ORDERS_ENABLED`
+
+Stage 2b of on-site ordering adds the first routes where a **guest** writes data that a business acts on. Every route answers 404 while the flag is off.
+
+- **Unauthenticated code sender:** `POST /product-orders/phone-code` messages a phone through WhatsApp. Bounds: only for a business that takes orders now; 5/hour per IP; 3 codes an hour per phone and 500 a day site-wide, both counted in `product_order_phone_codes` (not in memory). At the site-wide ceiling the route answers 503 and logs an error: it fails closed. **Accepted cost:** an attacker with several IPs can spend the ceiling and close ordering for the day, and can spend a victim phone's 3 codes an hour. Delay, not exposure. The route does not say whether a phone is blocked for no-shows.
+- **The code:** six digits, 10 minutes, newest only, single use. Stored as `HMAC-SHA256(server secret, phone:code)`. A wrong try is committed before the 422, so five wrong tries end the code even when every request fails.
+- **Guest status token:** `base64url(HMAC(server secret, "product-order-status:" + idempotency key))`; only its sha256 is stored. It travels in the POST **body**, never in a URL. The buyer view masks the phone, omits the street address, shows the pickup code only while it can be used, sends `Cache-Control: no-store`, and stops answering 30 days after the order closed.
+- **10-minute replay window:** a repeat of `POST /product-orders` with the same idempotency key, phone and business within 10 minutes returns the same order and token **without a new code** (a lost answer must not cost the buyer her order). For those 10 minutes the key is a credential. It is a client-made UUID that appears in no response, view or log. **The frontend must never put it in a URL or an analytics event.**
+- **What a business may do alone:** confirm at or below the total the buyer saw, and only before the slot starts. Anything else needs the buyer's acceptance. Two no-shows in 90 days block a phone, so a no-show can be reported only after the slot of an order that was confirmed in time.
+- **Ownership:** a business reaches only its own orders (404 otherwise); there is no admin path yet (stage 6).

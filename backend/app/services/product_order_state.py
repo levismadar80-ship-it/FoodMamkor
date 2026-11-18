@@ -11,7 +11,8 @@ Does NOT: send any message, check who owns the order, or create an order.
           a later stage of MEH-3216 and will hang off the event rows.
 Related:  app/models/product_orders.py (PRODUCT_ORDER_STATUSES, the tables),
           tests/test_meh3218_product_orders.py (the full transition matrix)
-History:  MEH-3218 (creation; stage 1 of MEH-3216)
+History:  MEH-3218 (creation; stage 1 of MEH-3216); MEH-3263 (the system may
+          cancel an open order: account deletion)
 """
 
 from dataclasses import dataclass
@@ -37,7 +38,10 @@ from app.utils.clock import utc_now
 #
 # `admin` may make any move a `business` may: the admin override of the house
 # ownership rule, applied to the state machine too. `system` is the scheduler
-# (auto-confirm, the 24-hour expiry) — it never acts for a person.
+# (auto-confirm, the 24-hour expiry) — it never acts for a person. MEH-3263:
+# it may also cancel any open order, for one reason: the buyer deleted her
+# account (services/product_order_privacy.py), which must not wait for a
+# business to release a packed order.
 _BUSINESS: Final = frozenset({"business", "admin"})
 _CUSTOMER: Final = frozenset({"customer"})
 _SYSTEM: Final = frozenset({"system"})
@@ -47,23 +51,23 @@ TRANSITIONS: Final[dict[str, dict[str, frozenset[str]]]] = {
         "confirmed": _BUSINESS | _SYSTEM,
         "change_proposed": _BUSINESS,
         "declined": _BUSINESS,
-        "cancelled": _CUSTOMER,
+        "cancelled": _CUSTOMER | _SYSTEM,
         "expired": _SYSTEM,
     },
     "change_proposed": {
         "confirmed": _CUSTOMER,
-        "cancelled": _CUSTOMER | _BUSINESS,
+        "cancelled": _CUSTOMER | _BUSINESS | _SYSTEM,
         "expired": _SYSTEM,
     },
     "confirmed": {
         "ready": _BUSINESS,
         "handed": _BUSINESS,
-        "cancelled": _CUSTOMER | _BUSINESS,
+        "cancelled": _CUSTOMER | _BUSINESS | _SYSTEM,
         "no_show": _BUSINESS,
     },
     "ready": {
         "handed": _BUSINESS,
-        "cancelled": _BUSINESS,
+        "cancelled": _BUSINESS | _SYSTEM,
         "no_show": _BUSINESS,
     },
     "handed": {},

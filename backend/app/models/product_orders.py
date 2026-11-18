@@ -16,7 +16,9 @@ Related:  app/models/models.py (Product.price_unit / is_orderable / in_stock /
           20261114_2130_d5a7c3e9f1b4_meh3218_product_orders.py (the CHECKs
           these tuples mirror), tests/test_meh3218_product_orders.py
 History:  MEH-3218 (creation; stage 1 of MEH-3216); MEH-3262 (stage 2a:
-          producer_order_windows, slot_minutes, lead_time_hours)
+          producer_order_windows, slot_minutes, lead_time_hours); MEH-3263
+          (stage 2b: product_order_phone_codes, status token, delivery city,
+          idempotency key, the proposed-change columns)
 
 Lives in its own module, not in models.py, because models.py is on the
 file-size baseline and does not grow (code-execution.md §16).
@@ -80,6 +82,11 @@ PRODUCT_ORDER_DEFAULT_LEAD_HOURS = 24
 # Four windows a day, seven days: more than any real week needs, and the
 # bound that keeps the table from growing without limit (MEH-3022).
 PRODUCT_ORDER_MAX_WINDOWS = 28
+# MEH-3263: an order someone is still waiting on. The partial unique index on
+# pickup codes (revision f7c1a5e9b3d2) covers the last two.
+PRODUCT_ORDER_OPEN_STATUSES = ("pending", "change_proposed", "confirmed", "ready")
+PRODUCT_ORDER_CODE_STATUSES = ("confirmed", "ready")
+PRODUCT_ORDER_MAX_LINES = 30
 
 
 def _check_in(column: str, values: tuple[str, ...]) -> str:
@@ -265,6 +272,28 @@ class ProductOrder(Base):
         Index("ix_product_orders_customer_phone", "customer_phone"),
         Index("ix_product_orders_expires_at", "expires_at"),
         Index("ix_product_orders_producer_slot", "producer_id", "slot_start"),
+        # MEH-3263: the business types four digits at the counter, so a code
+        # is unique among the orders it can still hand over — and free to be
+        # reused once an order is closed (10,000 codes would otherwise run out).
+        Index(
+            "uq_product_orders_open_pickup_code",
+            "producer_id",
+            "pickup_code",
+            unique=True,
+            postgresql_where=text("status IN ('confirmed', 'ready')"),
+        ),
+        Index(
+            "uq_product_orders_idempotency_key",
+            "idempotency_key",
+            unique=True,
+            postgresql_where=text("idempotency_key IS NOT NULL"),
+        ),
+        Index(
+            "uq_product_orders_status_token_hash",
+            "status_token_hash",
+            unique=True,
+            postgresql_where=text("status_token_hash IS NOT NULL"),
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -307,6 +336,19 @@ class ProductOrder(Base):
     confirmed_at = Column(DateTime, nullable=True)
     handed_at = Column(DateTime, nullable=True)
     closed_at = Column(DateTime, nullable=True)
+    # MEH-3263. `status_token_hash` is sha256 of the token the buyer got once
+    # at creation — a guest's only credential for her order, never stored in
+    # the clear. `idempotency_key` is chosen by the client per attempt, so a
+    # double tap or a retry after a lost answer creates one order.
+    status_token_hash = Column(CHAR(64), nullable=True)
+    idempotency_key = Column(String(64), nullable=True)
+    delivery_city = Column(String(100), nullable=True)
+    # What the business proposed while the order is `change_proposed`: a new
+    # slot, a new total, or both, with a note. Cleared when the buyer accepts.
+    proposed_slot_start = Column(DateTime, nullable=True)
+    proposed_slot_end = Column(DateTime, nullable=True)
+    proposed_total_agorot = Column(Integer, nullable=True)
+    proposal_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -420,3 +462,29 @@ class ProductOrderEvent(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     order = relationship("ProductOrder", back_populates="events")
+
+
+class ProductOrderPhoneCode(Base):
+    """A one-time code sent to a buyer's phone before she can order.
+
+    Six digits, ten minutes, five wrong tries, single use. Only an HMAC of the
+    code is stored (services/product_order_phone.py), so a database read does
+    not reveal a live code. `phone` is the canonical MSISDN ("9725...").
+
+    Rows are short-lived and bounded by the send limits: per phone and per day
+    overall, both counted here in the table.
+    """
+
+    __tablename__ = "product_order_phone_codes"
+    __table_args__ = (
+        Index("ix_product_order_phone_codes_phone_created", "phone", "created_at"),
+        Index("ix_product_order_phone_codes_created_at", "created_at"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    phone = Column(String(20), nullable=False)
+    code_hash = Column(CHAR(64), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False, server_default=text("0"))
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)

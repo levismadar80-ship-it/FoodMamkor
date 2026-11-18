@@ -43,6 +43,8 @@ from app.routers import (
     producer_recipes,
     billing,
     product_organize,
+    product_order_business,
+    product_order_buyer,
     product_order_offer,
     product_orders,
     rescue,
@@ -120,6 +122,10 @@ def _register_flagged_features(app: FastAPI) -> None:
     # fields, and the public order menu. Same flag, same 404 while off.
     app.include_router(product_order_offer.me_router)
     app.include_router(product_order_offer.public_router)
+    # MEH-3263: stage 2b — the order itself: the buyer sends and follows it,
+    # the business acts on it. Same flag, same 404 while off.
+    app.include_router(product_order_buyer.router)
+    app.include_router(product_order_business.router)
 
 
 def register_routers(app: FastAPI) -> None:

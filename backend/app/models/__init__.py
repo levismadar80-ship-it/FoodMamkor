@@ -60,6 +60,7 @@ from app.models.product_orders import (
     ProductOrder,
     ProductOrderEvent,
     ProductOrderItem,
+    ProductOrderPhoneCode,
 )
 
 # MEH-3179: its own module (models.py is at its size baseline). Imported here
@@ -138,6 +139,7 @@ __all__ = [
     "ProductOrder",
     "ProductOrderItem",
     "ProductOrderEvent",
+    "ProductOrderPhoneCode",
     "PRODUCT_ORDER_STATUSES",
     "PRODUCT_ORDER_FULFILMENTS",
     "PRODUCT_ORDER_PAYMENT_STATUSES",

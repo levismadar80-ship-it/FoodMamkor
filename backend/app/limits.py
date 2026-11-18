@@ -120,7 +120,7 @@ OWNED_TABLE_EXEMPT = {
     "users": "the owner's own account row(s)",
     "producer_order_settings": "one row per business (producer_id is the primary key; PUT replaces it)",
     "producer_order_windows": "written only as the whole-week list on PUT /producers/me/order-windows, capped at PRODUCT_ORDER_MAX_WINDOWS by OrderWindowsIn",
-    "product_orders": "written by no route yet (MEH-3218 ships the table only); the order route of MEH-3216 adds its per-phone and per-business caps before it writes here",
+    "product_orders": "open orders are capped at MAX_OPEN_ORDERS_PER_BUSINESS per business and three per phone (services/product_order_create.py); closed orders are the business's ledger and are not capped",
     "producer_reviews": "one review per user per business (upsert in reviews.py ~495), rate-limited",
     "favorites": "one row per user per business (existing-row check in favorites.py ~85), rate-limited",
     "favorite_alerts": "one row per favorite",

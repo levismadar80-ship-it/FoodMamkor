@@ -13,13 +13,14 @@ Does NOT: create or change an order (stage 2b of MEH-3216). Does NOT accept a
 Related:  app/routers/product_orders.py (the flag gate and the settings
           routes), app/services/product_order_slots.py (the slots),
           app/schemas/product_order_offer.py (the shapes)
-History:  MEH-3262 (creation; stage 2a of MEH-3216)
+History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3263 (the two
+          shared reads moved to services/product_order_menu.py)
 
 A file of its own because producer_me.py is on the file-size baseline and
 does not grow (code-execution.md §16).
 """
 
-from datetime import UTC, date
+from datetime import UTC
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -43,8 +44,7 @@ from app.schemas.product_order_offer import (
     ProductOrderingIn,
     ProductOrderingOut,
 )
-from app.services import indexnow
-from app.services.product_order_slots import ClosedDays, SlotRules, compute_slots
+from app.services.product_order_menu import offered_slots, takes_orders, windows
 from app.utils.clock import utc_now
 
 me_router = APIRouter(tags=["product-orders"])
@@ -66,19 +66,6 @@ def _own_producer_id(user: User) -> Any:
     return user.producer_id
 
 
-def _windows(db: Session, producer_id: Any) -> list[ProducerOrderWindow]:
-    return (
-        db.query(ProducerOrderWindow)
-        .filter(ProducerOrderWindow.producer_id == producer_id)
-        .order_by(
-            ProducerOrderWindow.weekday,
-            ProducerOrderWindow.start_time,
-            ProducerOrderWindow.fulfilment,
-        )
-        .all()
-    )
-
-
 @me_router.get(
     "/producers/me/order-windows",
     response_model=OrderWindowsOut,
@@ -90,7 +77,7 @@ def get_my_order_windows(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> Any:
-    return {"windows": _windows(db, _own_producer_id(user))}
+    return {"windows": windows(db, _own_producer_id(user))}
 
 
 @me_router.put(
@@ -117,7 +104,7 @@ def put_my_order_windows(
     for window in body.windows:
         db.add(ProducerOrderWindow(producer_id=producer_id, **window.model_dump()))
     db.commit()
-    return {"windows": _windows(db, producer_id)}
+    return {"windows": windows(db, producer_id)}
 
 
 @me_router.put(
@@ -154,25 +141,6 @@ def put_product_ordering(
     db.commit()
     db.refresh(product)
     return product
-
-
-def _closed_days(producer: Producer) -> ClosedDays:
-    """The owner's closed dates and vacation, read from where she already
-    keeps them (producers.special_hours / availability_state / vacation_until)."""
-    dates = set()
-    for key, entry in (producer.special_hours or {}).items():
-        if isinstance(entry, dict) and not entry.get("ranges"):
-            try:
-                dates.add(date.fromisoformat(key))
-            except ValueError:
-                continue
-    on_vacation = producer.availability_state == "on_vacation"
-    until = producer.vacation_until if on_vacation else None
-    return ClosedDays(
-        dates=frozenset(dates),
-        until=until,  # type: ignore[arg-type]
-        open_ended=bool(on_vacation and until is None),
-    )
 
 
 def _agorot(shekels: Decimal) -> int:
@@ -233,27 +201,12 @@ def get_order_menu(
         .filter(ProducerOrderSettings.producer_id == producer_id)
         .first()
     )
-    if (
-        producer is None
-        or producer.is_test
-        or not indexnow.is_public_business(producer)
-        or row is None
-        or not row.enabled
-    ):
+    if not takes_orders(producer, row):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND_DETAIL
         )
-    rules = SlotRules(
-        slot_minutes=int(row.slot_minutes),
-        lead_time_hours=int(row.lead_time_hours),
-        shabbat_observant=bool(row.shabbat_observant),
-    )
-    slots = compute_slots(
-        list(_windows(db, producer_id)),  # type: ignore[arg-type]
-        rules,
-        utc_now(),
-        _closed_days(producer),
-    )
+    assert producer is not None and row is not None  # takes_orders() said so
+    slots = offered_slots(db, producer, row, utc_now())
     return {
         "producer_id": producer_id,
         "min_order_agorot": row.min_order_agorot,
