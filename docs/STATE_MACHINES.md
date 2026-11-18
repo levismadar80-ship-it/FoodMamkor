@@ -162,7 +162,7 @@ funded on purpose: the owner fulfils or cancels it.
 |---|---|---|
 | Recipe | `published` × `moderation_status` | owner, admin (`routers/producer_recipes.py`, `routers/admin_recipes.py`) |
 | Review | visible · hidden, plus the business's rating aggregate; the owner reply carries its own AI verdict APPROVED · FLAGGED, cleared with the reply by `PUT /admin/reviews/{id}/clear-reply` (MEH-3259) | author, owner reply, admin (`routers/reviews.py`) |
-| WhatsApp message (`outbound_messages`) | accepted → sent → delivered / failed; a stuck `accepted` counts as undelivered | webhook (`routers/whatsapp_webhook.py`, `services/whatsapp.py`) |
+| WhatsApp message (`outbound_messages`) | accepted → sent → delivered / failed; a stuck `accepted` counts as undelivered; outside production a dropped send is born and stays `blocked_nonprod` (MEH-3402 follow-up, `services/whatsapp.py:_record_blocked`), never undelivered | webhook (`routers/whatsapp_webhook.py`, `services/whatsapp.py`) |
 | Newsletter | subscribed (row) · gone | form, signed unsubscribe link (`routers/marketing.py`) |
 | Weekly summary to owners | on · opted out (one way, by link) | `routers/marketing.py` |
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |

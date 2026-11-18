@@ -144,7 +144,7 @@ left in v1" vs "what's planned for v2".
 | `/admin/group-buys` | Group buys overview |
 | `/admin/reports` | User reports, flagged and hidden content |
 | `/admin/outreach` | Lead pipeline (incl. community suggestions) |
-| `/admin/whatsapp-failures` | Undelivered outbound WhatsApp messages |
+| `/admin/whatsapp-failures` | Undelivered outbound WhatsApp messages; outside production also the messages the guard blocked, with their content (MEH-3402) |
 | `/admin/users` | Users |
 | `/admin/content` | Static content pages |
 | `/admin/analytics` | Site analytics |
