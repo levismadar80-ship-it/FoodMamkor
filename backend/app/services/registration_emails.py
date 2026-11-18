@@ -290,3 +290,65 @@ def _send_lines(to: str, subject: str, lines: list[str], *, test_cause: bool) ->
     e = html_escape
     html = _shell(e(subject), "<br>\n".join(e(x) for x in lines))
     send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+# ---------- MEH-3314: the waitlist ----------
+
+
+def _rows(m: VisitorEmail | RegistrantEmail) -> list[tuple[str, str]]:
+    when = m.date_text + (f", {m.time_text}" if m.time_text else "")
+    rows = [("מתי", when), ("איפה", m.place), ("בית העסק", m.host_name)]
+    return [(k, v) for k, v in rows if v]
+
+
+def send_waitlist_confirmation(
+    to: str, m: VisitorEmail, test_cause: bool = False
+) -> None:
+    """She joined the waitlist of a full item. The link takes her off it."""
+    title = _one_line(m.title)
+    subject = f'נכנסתם לרשימת ההמתנה ל-"{title}"'
+    rows = _rows(m)
+    note = (
+        "כרגע אין מקומות. אם יתפנה מקום, נשלח אימייל לראשונים ברשימה עם קישור להרשמה."
+    )
+    body = (
+        f"{subject}\n\n"
+        + "\n".join(f"{k}: {v}" for k, v in rows)
+        + f"\n\n{note}\n\nלפרטים: {m.item_url}\n"
+        f"יציאה מרשימת ההמתנה: {m.cancel_url}\n\nצוות מהמקור"
+    )
+    e = html_escape
+    rows_html = "<br>\n".join(f"<b>{e(k)}:</b> {e(v)}" for k, v in rows)
+    rows_html += f"<br><br>\n{e(note)}"
+    html = _shell(e(subject), rows_html, _button(m.cancel_url, "יציאה מרשימת ההמתנה"))
+    send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+def send_waitlist_offer(
+    to: str, m: RegistrantEmail, item_url: str, test_cause: bool = False
+) -> None:
+    """A sign-up was cancelled and she is first on the waitlist. The spot is
+    not held: the page is open to everyone, so the email says so."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'התפנה מקום ב-"{title}"'
+    rows = [(k, v) for k, v in _rows(m) if k != "בית העסק"]
+    intro = f'התפנה מקום ב-"{title}" אצל {host}.'
+    note = "המקום פתוח לכל מי שנכנס לדף, ולכן כדאי להירשם בהקדם."
+    outro = "כבר לא מתאים? אפשר לצאת מרשימת ההמתנה:"
+    body = (
+        f"{subject}\n\n{intro}\n"
+        + "\n".join(f"{k}: {v}" for k, v in rows)
+        + f"\n\n{note}\nלהרשמה: {item_url}\n\n"
+        f"{outro}\n{m.cancel_url}\n\nצוות מהמקור"
+    )
+    e = html_escape
+    rows_html = f"{e(intro)}<br>\n" + "<br>\n".join(
+        f"<b>{e(k)}:</b> {e(v)}" for k, v in rows
+    )
+    rows_html += (
+        f"<br><br>\n{e(note)}<br><br>\n{e(outro)} "
+        f'<a href="{e(m.cancel_url)}" style="color:#2e6853;">יציאה מרשימת ההמתנה</a>'
+    )
+    html = _shell(e(subject), rows_html, _button(item_url, "להרשמה"))
+    send_email(to, subject, body, html=html, test_cause=test_cause)

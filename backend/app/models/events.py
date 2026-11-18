@@ -226,7 +226,8 @@ class Registration(Base):
             name="ck_registrations_one_item",
         ),
         CheckConstraint(
-            "status IN ('registered', 'cancelled')",
+            # MEH-3314: 'waitlisted' = a full item's waitlist, same form.
+            "status IN ('registered', 'cancelled', 'waitlisted')",
             name="ck_registrations_status",
         ),
         Index("ix_registrations_event_id", "event_id"),
@@ -254,6 +255,8 @@ class Registration(Base):
     )
     created_at = Column(DateTime, nullable=False, default=utc_now)
     cancelled_at = Column(DateTime, nullable=True)
+    # MEH-3314: when this waitlisted visitor was emailed a freed spot (once).
+    waitlist_offered_at = Column(DateTime, nullable=True)
     # MEH-3312: the evening-before reminder went out. NULL = not yet.
     reminder_sent_at = Column(DateTime, nullable=True)
 

@@ -442,8 +442,10 @@ registrations (
   experience_id FK experiences ON DELETE CASCADE,-- (CHECK ck_registrations_one_item)
   name varchar(100), phone varchar(20), email varchar(200),  -- what the visitor typed; no account
   cancel_token varchar(64) UNIQUE,               -- the visitor's only credential (cancel link in her email)
-  status: registered|cancelled,
-  created_at, cancelled_at
+  status: registered|cancelled|waitlisted,     -- waitlisted: MEH-3314
+  created_at, cancelled_at,
+  reminder_sent_at,                              -- MEH-3312
+  waitlist_offered_at                            -- MEH-3314: the one offer email went out
 )
 ```
 
@@ -1031,6 +1033,17 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > sends nothing. Recurring workshops are skipped until a sign-up carries its
 > occurrence date (MEH-3264). Service: `app/services/registration_reminders.py`.
 >
+> **MEH-3314 — the waitlist (2026-11-18).** Migration `c9f5a3b7d2e8` adds
+> `registrations.waitlist_offered_at` and `'waitlisted'` to
+> `ck_registrations_status`. A full item still answers a plain sign-up 409
+> `registration_full`; the same body with `waitlist: true` stores a
+> `waitlisted` row (201 `{status: "waitlisted"}`, max 50 per item, else 409
+> `waitlist_full`), emails the visitor her cancel link, and sends no owner
+> email and writes no ledger row. A cancel on an upcoming item emails the
+> first waitlisted visitor not yet offered, once, with the item link; the spot
+> is not held. Re-submitting the form with the same email promotes her row.
+> Service: `app/services/registration_waitlist.py`.
+>
 > **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
 > `max_participants` below the item's active on-site sign-ups → **422**
 > «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
@@ -1520,12 +1533,12 @@ CTA and «או שאלה למארחת». Experiences already carry it as `host.pr
 ### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
 
 ```
-POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
-POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item). Same email twice → same 201, nothing stored or sent.
-GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled.
+POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back); on a full event `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
+POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item), unless the body carries `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Same email twice → same 201, nothing stored or sent.
+GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled and waitlisted, oldest first.
 GET    /experiences/{id}/registrations    auth — host or admin; others 404.
-GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page.
-POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner.
+GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page (status may be waitlisted; the same link leaves the waitlist).
+POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner and, when the form would still take a sign-up (active, site_form, not started, below the cap), offers the place to the first waitlisted visitor not yet offered (MEH-3314). A waitlisted row leaves the list the same way.
 ```
 
 Emails (`services/registration_emails.py`, fail-open, queued after commit):

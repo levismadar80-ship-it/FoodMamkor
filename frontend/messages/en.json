@@ -6722,7 +6722,8 @@
       "empty": "No sign-ups on the site yet",
       "cancelled": "Cancelled",
       "offline_label": "Signed up outside the site",
-      "load_error": "Couldn't load the list."
+      "load_error": "Couldn't load the list.",
+      "waitlist": "Waitlist ({count})"
     },
     "cta": {
       "signup_experience": "Sign up for the workshop",
@@ -6733,7 +6734,8 @@
       "question": "Or ask the host",
       "full": "No spots left",
       "whatsapp_message": "Hi! I'd like to sign up for \"{title}\"",
-      "question_message": "Hi! I have a question about \"{title}\""
+      "question_message": "Hi! I have a question about \"{title}\"",
+      "waitlist_join": "Join the waitlist"
     },
     "signup": {
       "name": "Name",
@@ -6747,7 +6749,9 @@
       "name_short": "The name needs at least 2 letters",
       "email_invalid": "That email address isn't valid",
       "phone_invalid": "Invalid phone number",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "waitlist_submit": "Join the waitlist",
+      "waitlist_success": "You're on the waitlist. If a spot opens up, we'll email you a sign-up link."
     },
     "cancel": {
       "title": "Cancel sign-up for \"{title}\"",
@@ -6758,7 +6762,10 @@
       "generic": "Something went wrong. Try again.",
       "back_event": "To the event page",
       "back_experience": "To the workshop page",
-      "page_title": "Cancel sign-up"
+      "page_title": "Cancel sign-up",
+      "waitlisted": "You're on the waitlist. If a spot opens up, we'll email you.",
+      "confirm_waitlist": "Leave the waitlist",
+      "done_waitlist": "You've left the waitlist."
     }
   },
   "filter_axes": {

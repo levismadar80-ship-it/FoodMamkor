@@ -48,6 +48,9 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
       .catch(() => setFailed(true));
   };
 
+  const waiting = (rows ?? []).filter((r) => r.status === "waitlisted");
+  const signups = (rows ?? []).filter((r) => r.status !== "waitlisted");
+
   return (
     <details
       className="group mt-3 pt-3 border-t border-border text-sm"
@@ -70,33 +73,57 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
             {t("empty")}
           </p>
         ) : (
-          <ul className="divide-y divide-border">
-            {rows.map((r) => {
-              const cancelled = r.status === "cancelled";
-              return (
-                <li
-                  key={r.id}
-                  data-testid="registration-row"
-                  className={`py-2 flex flex-col gap-0.5 ${cancelled ? "text-fg-muted" : "text-text"}`}
-                >
-                  <span className="font-medium">
-                    <span className={cancelled ? "line-through" : undefined}>{r.name}</span>
-                    {cancelled && <span className="ms-2 text-xs">{t("cancelled")}</span>}
-                  </span>
-                  <span className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
-                    <a href={`tel:${r.phone}`} dir="ltr" className="underline underline-offset-2 numeric">
-                      {r.phone}
-                    </a>
-                    <a href={`mailto:${r.email}`} dir="ltr" className="underline underline-offset-2 break-all">
-                      {r.email}
-                    </a>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            {signups.length > 0 ? (
+              <RowList rows={signups} cancelledLabel={t("cancelled")} />
+            ) : (
+              <p className="text-fg-muted" data-testid="registrations-empty">
+                {t("empty")}
+              </p>
+            )}
+            {/* MEH-3314: the waitlist sits apart from the sign-ups, in the order
+                it is offered spots (the route sorts by created_at). */}
+            {waiting.length > 0 && (
+              <div className="mt-3" data-testid="registrations-waitlist">
+                <h4 className="font-medium text-text numeric">{t("waitlist", { count: waiting.length })}</h4>
+                <RowList rows={waiting} cancelledLabel={t("cancelled")} ordered />
+              </div>
+            )}
+          </>
         )}
       </div>
     </details>
+  );
+}
+
+/** One block of rows; `ordered` numbers them (the waitlist's queue order). */
+function RowList({ rows, cancelledLabel, ordered = false }) {
+  const List = ordered ? "ol" : "ul";
+  return (
+    <List className={`divide-y divide-border ${ordered ? "list-decimal list-inside" : ""}`}>
+      {rows.map((r) => {
+        const cancelled = r.status === "cancelled";
+        return (
+          <li
+            key={r.id}
+            data-testid={ordered ? "waitlist-row" : "registration-row"}
+            className={`py-2 ${ordered ? "" : "flex flex-col gap-0.5"} ${cancelled ? "text-fg-muted" : "text-text"}`}
+          >
+            <span className="font-medium">
+              <span className={cancelled ? "line-through" : undefined}>{r.name}</span>
+              {cancelled && <span className="ms-2 text-xs">{cancelledLabel}</span>}
+            </span>
+            <span className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+              <a href={`tel:${r.phone}`} dir="ltr" className="underline underline-offset-2 numeric">
+                {r.phone}
+              </a>
+              <a href={`mailto:${r.email}`} dir="ltr" className="underline underline-offset-2 break-all">
+                {r.email}
+              </a>
+            </span>
+          </li>
+        );
+      })}
+    </List>
   );
 }

@@ -26,6 +26,8 @@ export default function CancelRegistrationClient({ token }) {
   const [info, setInfo] = useState(null);
   const [state, setState] = useState("loading"); // loading | ready | missing | cancelling | error
   const [failed, setFailed] = useState(false);
+  // MEH-3314: what she cancelled — a waitlist place reads differently once gone.
+  const [leftWaitlist, setLeftWaitlist] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -47,6 +49,7 @@ export default function CancelRegistrationClient({ token }) {
     setState("cancelling");
     try {
       const r = await api.post(`/registrations/${encodeURIComponent(token)}/cancel`);
+      setLeftWaitlist(info?.status === "waitlisted");
       setInfo(r.data);
     } catch {
       setFailed(true);
@@ -74,10 +77,16 @@ export default function CancelRegistrationClient({ token }) {
           </p>
           {info.status === "cancelled" ? (
             <p role="status" className="font-semibold text-text" data-testid="registration-cancel-done">
-              {t("done")}
+              {leftWaitlist ? t("done_waitlist") : t("done")}
             </p>
           ) : (
             <>
+              {/* MEH-3314: the same link takes a waitlisted visitor off the list. */}
+              {info.status === "waitlisted" && (
+                <p className="text-text" data-testid="registration-cancel-waitlisted">
+                  {t("waitlisted")}
+                </p>
+              )}
               {failed && (
                 <InlineMessage>
                   {t("generic")}
@@ -90,7 +99,7 @@ export default function CancelRegistrationClient({ token }) {
                 className={BTN}
                 data-testid="registration-cancel-confirm"
               >
-                {state === "cancelling" ? t("cancelling") : t("confirm")}
+                {state === "cancelling" ? t("cancelling") : info.status === "waitlisted" ? t("confirm_waitlist") : t("confirm")}
               </button>
             </>
           )}

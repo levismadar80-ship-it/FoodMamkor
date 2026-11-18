@@ -1368,6 +1368,16 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_registration_reminder",
         "send_email",
     ): (1, CON, "wrapper param ← is_test_item(item) (MEH-3312)"),
+    (
+        "services/registration_emails.py",
+        "send_waitlist_confirmation",
+        "send_email",
+    ): (1, CON, "wrapper param ← producer.is_test / host_test_cause(host) (MEH-3314)"),
+    (
+        "services/registration_emails.py",
+        "send_waitlist_offer",
+        "send_email",
+    ): (1, CON, "wrapper param ← producer.is_test (MEH-3314)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",

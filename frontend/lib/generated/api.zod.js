@@ -3752,7 +3752,7 @@ export const ListEventRegistrationsEventsEventIdRegistrationsGetResponse = /*#__
 export const registerForEventEventsEventIdRegistrationsPostResponseStatusDefault = `registered`;
 
 export const RegisterForEventEventsEventIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
-  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForEventEventsEventIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['registered', 'waitlisted']), registerForEventEventsEventIdRegistrationsPostResponseStatusDefault)
 }).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 
@@ -4079,7 +4079,7 @@ export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetR
 export const registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault = `registered`;
 
 export const RegisterForExperienceExperiencesExperienceIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
-  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['registered', 'waitlisted']), registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault)
 }).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 

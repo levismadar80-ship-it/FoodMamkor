@@ -14145,6 +14145,11 @@
             "minLength": 1,
             "title": "Phone",
             "type": "string"
+          },
+          "waitlist": {
+            "default": false,
+            "title": "Waitlist",
+            "type": "boolean"
           }
         },
         "required": [
@@ -14159,8 +14164,11 @@
         "description": "What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.",
         "properties": {
           "status": {
-            "const": "registered",
             "default": "registered",
+            "enum": [
+              "registered",
+              "waitlisted"
+            ],
             "title": "Status",
             "type": "string"
           }

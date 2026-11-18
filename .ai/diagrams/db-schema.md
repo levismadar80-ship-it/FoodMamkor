@@ -379,10 +379,11 @@ erDiagram
         string phone
         string email
         string cancel_token UK "cancel link credential"
-        string status "registered|cancelled"
+        string status "registered|cancelled|waitlisted"
         timestamp created_at
         timestamp cancelled_at
         timestamp reminder_sent_at "MEH-3312 day-before reminder, one-way"
+        timestamp waitlist_offered_at "MEH-3314 the one offer email"
     }
 
     business_billing {
