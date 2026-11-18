@@ -1853,7 +1853,12 @@ class TestLoginTimingEqualization:
         }
         times: dict[str, list[float]] = {name: [] for name in branches}
         for i in range(WARMUP + N):
-            for name, (branch_id, email_for, password_for) in branches.items():
+            # Rotate which branch goes first each round, so a within-round
+            # order effect (a warm connection, a cache) cannot favour one
+            # branch every time.
+            order = list(branches.items())
+            order = order[i % 3 :] + order[: i % 3]
+            for name, (branch_id, email_for, password_for) in order:
                 payload = {"email": email_for(i), "password": password_for(i)}
                 headers = {
                     "X-Real-IP": (

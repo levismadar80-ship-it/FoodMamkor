@@ -737,9 +737,10 @@ away on enough samples.
 
 **Test invariant:**
 `tests/test_api.py::TestLoginTimingEqualization::test_login_timing_equivalence_across_failure_modes`
-asserts `max(p95) − min(p95) < 20ms` across the 3 `/login` failure
-branches. 5 warmup + 50 measured iterations per branch; p95 via
-`statistics.quantiles`. Decorated with `@pytest.mark.flaky(reruns=2,
+asserts `max(median) − min(median) < 20ms` across the 3 `/login` failure
+branches. 5 warmup + 50 measured iterations per branch, interleaved one
+request per branch per round with the order rotated (MEH-3031; it compared
+p95s of back-to-back blocks before, which read runner noise as a spread). Decorated with `@pytest.mark.flaky(reruns=2,
 reruns_delay=1)` (MEH-647) so bcrypt timing variance on contended CI
 runners doesn't cause spurious failures — 2 reruns absorb noise; a
 third failure is a real signal worth investigating.
