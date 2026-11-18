@@ -1,7 +1,7 @@
 # Mehamakor — Project Context
 
 **Single source of truth for AI assistants and human contributors.**
-**Last reviewed:** 2026-10-26 (MEH-2344 — re-checked against the repo after the move to the new Claude project) · **Format:** AGENTS.md / CONTEXT.md pattern (PrestaShop, March 2026)
+**Last reviewed:** 2026-11-18 (MEH-3407 — §2 checked against ADR-036…042; who-joins and licence lines brought in line with ADR-040 and the ADR-022 amendment) · **Format:** AGENTS.md / CONTEXT.md pattern (PrestaShop, March 2026)
 
 > Tool-specific files (`CLAUDE.md`, the Claude project instructions in [`PROJECT_INSTRUCTIONS.md`](./PROJECT_INSTRUCTIONS.md), IDE-specific configs) are thin pointers to this file. When they disagree with this file, this file wins (see Truth Hierarchy below).
 
@@ -23,9 +23,11 @@ These rules pass through every product decision. If a design choice violates one
 - **Magazine, not marketplace.** Every design decision passes through this test.
 - **Base page free; money never buys ranking.** Prices are published from day one, a business is billed only after a results threshold, and booking commissions are allowed; no checkout — customer money does not pass through the site. (See ADR-042 and docs/PRICING.md.)
 - **Manual approval for every business.** No auto-approve at any scale.
-- **Two-tier licensing (ADR-022).** מאומת (license verified, gold badge, free forever) / מוצהר (binding declaration, legally exempt categories only — never negatively labeled). Unlicensed food production where a license is legally required stays out. No home cooks — illegal in Israel.
+- **Who joins: making or growing what you sell is a preference, not an entry gate (ADR-040, BRAND.md §10).** Level 1 makes or grows what it sells; level 2 also sells others' products; level 3 sells only others' products (a shop, a deli, a restaurant) and joins case by case at Sapir's manual approval. Every level: no industrial brands, and never present others' products as the business's own. Never say or write "only producers / only businesses that make their own food" — a session did, 18/11 (MEH-3407).
+- **Two-tier licensing (ADR-022).** מאומת (license verified, gold badge, free forever) / מוצהר (binding declaration, legally exempt categories only — never negatively labeled). The license decides the badge, not entry: a business in a license-required category can be approved without a license number, one at a time, by Sapir (ADR-022 amendment 22/10, MEH-2299 — «אשרי בלי רישיון»); it shows without the מאומת badge. No home cooks — illegal in Israel.
 - **No "שכנות מבשלות מהבית" / "אוכל ביתי" / "מהמטבח של השכן"** in marketing copy. Ever.
 - **No "יצרן" / "יצרנית"** in UI — always "בית עסק" / "בעלת עסק".
+- **Reader address is gender-neutral on every surface (ADR-037).**
 
 ## 3 · Truth Hierarchy
 
