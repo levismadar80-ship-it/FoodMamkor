@@ -108,9 +108,12 @@ def pickup_address(db: Session, order: ProductOrder) -> str | None:
     )
     if loc is None:
         return None
-    if loc.location_precision != "exact" or not loc.address:
-        return loc.city or None
-    return ", ".join(part for part in (loc.address, loc.city) if part)
+    # Legacy untyped model: read the columns as plain values.
+    address: str | None = loc.address  # type: ignore[assignment]
+    city: str | None = loc.city  # type: ignore[assignment]
+    if loc.location_precision != "exact" or not address:
+        return city or None
+    return ", ".join(part for part in (address, city) if part)
 
 
 def buyer_view(db: Session, order: ProductOrder) -> dict[str, Any]:
