@@ -3,7 +3,7 @@
  * set under its own label (Google Business Profile «More hours»), one set when
  * the two are identical.
  *
- * Rendered through the REAL ProducerSections + OrderWindowStrip + OpeningHours
+ * Rendered through the REAL ProducerSections + OrderWindowStrip
  * under the real NextIntlClientProvider + he.json, so a missing key reds the
  * run (onError is collected, not swallowed) and the page text is the text a
  * visitor reads.
@@ -296,5 +296,37 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
       label_visit: "Open to visitors",
       label_both: "Orders and visits",
     });
+  });
+});
+
+// MEH-2810: moved from HoursTextFreeText.test.jsx, which rendered the deleted
+// components/OpeningHours.jsx. The free-text cases of MEH-2604 / MEH-2803 now
+// run against the card the page actually shows.
+describe("«פתוח למבקרים» — free-text store hours (MEH-2604, moved in MEH-2810)", () => {
+  const UNREADABLE = "בתיאום: א'–ה' 07:00–14:00, ו' 07:00–13:00";
+
+  it("unreadable text is shown as the owner typed it", () => {
+    renderPage({ opening_hours: UNREADABLE });
+    expect(within(sets()[0]).getByTestId("hours-raw").textContent).toContain(UNREADABLE);
+  });
+
+  it("each time range inside the typed text is isolated left-to-right", () => {
+    renderPage({ opening_hours: UNREADABLE });
+    const ltr = [...within(sets()[0]).getByTestId("hours-raw").querySelectorAll('[dir="ltr"]')].map(
+      (el) => el.textContent,
+    );
+    expect(ltr).toEqual(["07:00–14:00", "07:00–13:00"]);
+  });
+
+  it("Hebrew hours the parser reads become schedule rows, not raw text (MEH-2803)", () => {
+    renderPage({ opening_hours: "א'–ה' 07:00–14:00, ו' 07:00–13:00" });
+    const set = sets()[0];
+    expect(within(set).queryByTestId("hours-raw")).toBeNull();
+    expect(within(set).getAllByTestId("visit-hours-schedule-row").length).toBeGreaterThan(0);
+  });
+
+  it("a whitespace-only string renders no hours set", () => {
+    renderPage({ opening_hours: "   " });
+    expect(sets()).toHaveLength(0);
   });
 });

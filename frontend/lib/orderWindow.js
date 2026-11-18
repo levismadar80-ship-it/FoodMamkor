@@ -61,7 +61,7 @@ function toMinutes(hhmm) {
  * Uses Intl parts rather than getDay()/getHours() so the answer is correct
  * regardless of the viewer's own timezone — a producer's window is stated in
  * Israel time, and a customer abroad must see the same status a local sees.
- * REUSES: components/OpeningHours.jsx:25 (same Asia/Jerusalem idiom).
+ * REUSES: components/OpeningHours.jsx:25 (deleted in MEH-2810) (same Asia/Jerusalem idiom).
  */
 export function israelNowParts(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
