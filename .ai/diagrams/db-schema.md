@@ -269,6 +269,24 @@ erDiagram
         string ip "nullable — not returned by the list route"
         timestamptz created_at "NOT NULL DEFAULT now(), indexed — append-only"
     }
+    admin_passkeys {
+        uuid id PK
+        uuid user_id FK "users.id ON DELETE CASCADE, indexed (MEH-3305)"
+        bytea credential_id "UNIQUE — the authenticator's id"
+        bytea public_key "COSE key"
+        bigint sign_count "authenticator counter; going backwards = cloned key"
+        string transports "nullable"
+        string name "nullable, the admin's own label"
+        timestamptz created_at
+        timestamptz last_used_at "nullable"
+    }
+    admin_recovery_codes {
+        uuid id PK
+        uuid user_id FK "users.id ON DELETE CASCADE, indexed (MEH-3305)"
+        string code_hash "hash only — the code is shown once and never stored"
+        timestamptz used_at "nullable — set = spent"
+        timestamptz created_at
+    }
     admin_checklist_items {
         uuid id PK
         int position "indexed; written as index*10 by the router, never accepted from the client — a client-supplied position lets two items claim one slot"

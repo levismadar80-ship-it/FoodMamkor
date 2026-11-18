@@ -1246,3 +1246,6 @@ from app.models.rescue import (  # noqa: E402
 # free of a mid-file import; product_orders.py imports nothing from this file,
 # so there is no cycle either way.
 import app.models.product_orders  # noqa: E402,F401
+
+# MEH-3305: an admin's passkeys and recovery codes (own module, same reason).
+import app.models.admin_passkeys  # noqa: E402,F401
