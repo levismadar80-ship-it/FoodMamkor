@@ -115,6 +115,9 @@ UNMONITORED_SLUGS = frozenset(
         # separately, so the slug landed unclassified and pytest went red.
         # No Sentry monitor exists for it (plan limit, MEH-3332).
         "group-buy-expiry-daily",
+        # MEH-3312: the evening-before reminder. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "registration-reminder-daily",
     }
 )
 
