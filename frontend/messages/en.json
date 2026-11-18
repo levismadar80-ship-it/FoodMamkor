@@ -1602,7 +1602,8 @@
         "export": "Export",
         "new_producer": "+ New business",
         "review_due_label": "Picks due for review",
-        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed",
+        "freshness_stale_label": "Not checked in 60+ days"
       },
       "table": {
         "status_tooltip_draft": "draft = not yet submitted for review",
@@ -1711,7 +1712,8 @@
       },
       "edit": {
         "title": "Edit: {name}",
-        "not_found": "Business not found"
+        "not_found": "Business not found",
+        "last_confirmed": "Last checked: {date}"
       },
       "form": {
         "errors": {
@@ -7032,5 +7034,15 @@
   "account_deleted": {
     "heading": "Account deleted",
     "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
+  },
+  "page_freshness": {
+    "meta_title": "Page check",
+    "ask_title": "Is everything on your page still correct?",
+    "ask_body": "Hours, delivery, prices and contact details.",
+    "cta_yes": "Yes, all correct",
+    "cta_update": "I want to update",
+    "sending": "Saving…",
+    "done_title": "Thanks! We marked your page as checked today.",
+    "dead_title": "This link is no longer active. You can update your page from your dashboard."
   }
 }
