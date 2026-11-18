@@ -54,6 +54,12 @@ MAX_LISTED = 5             # one log screen; the count line carries the rest
 ARCHIVE_KEEP_DAYS = 7        # what `archive-handoff` keeps by default (CONTEXT §3 "rolling 7-day")
 DOC_WARN_DAYS = 120
 WATCHED_DOCS = ("docs/CONTEXT.md", "docs/BRAND.md", "docs/PROJECT_INSTRUCTIONS.md")
+# MEH-3407: CONTEXT.md is the apex doc every session reads first, and ADRs outrank
+# it. An ADR accepted after its last review is a decision CONTEXT may contradict —
+# ADR-040 (who joins) sat unmentioned for a week while CONTEXT still read "producers".
+ADR_DIR = "docs/decisions"
+ADR_DATE = re.compile(r"^(?:\*\*)?Date:(?:\*\*)?\s*(\d{4}-\d{2}-\d{2})", re.M)
+ADR_ACCEPTED = re.compile(r"^(?:\*\*)?Status:(?:\*\*)?\s*Accepted", re.M)
 
 
 def today_from(arg: str | None) -> dt.date:
@@ -131,6 +137,39 @@ def doc_findings(text: str | None, today: dt.date, path: str) -> list[str]:
              "a watched doc must carry one")]
 
 
+def adr_findings(ctx: str | None, adrs: list[tuple[str, str]], path: str = "docs/CONTEXT.md") -> list[str]:
+    """adrs = [(name, text)]. One WARNING listing every Accepted ADR dated after
+    CONTEXT's «Last reviewed». Bumping the date after reading them is the ack."""
+    if ctx is None:
+        return []
+    m = LAST_REVIEWED.search(ctx)
+    if not m:
+        return []  # doc_findings already reports the missing marker
+    reviewed = dt.date.fromisoformat(m.group(1))
+    newer = []
+    for name, text in adrs:
+        d = ADR_DATE.search(text)
+        if d and ADR_ACCEPTED.search(text) and dt.date.fromisoformat(d.group(1)) > reviewed:
+            newer.append(f"{name} ({d.group(1)})")
+    out = []
+    line = ctx[: m.start()].count("\n") + 1
+    if newer:
+        out.append(f"{path}:{line}: WARNING {len(newer)} ADR(s) accepted after Last reviewed {reviewed}: "
+                   f"{', '.join(sorted(newer))} — check §1–2 against them, then bump the date")
+    # A skipped ADR is the dangerous direction: silence reads as "nothing new".
+    # Name every Accepted ADR the date check could not see (MEH-3407 review).
+    undated = sorted(n for n, t in adrs if ADR_ACCEPTED.search(t) and not ADR_DATE.search(t))
+    if undated:
+        out.append(f"{ADR_DIR}: NOTICE {len(undated)} Accepted ADR(s) have no 'Date: YYYY-MM-DD' line and "
+                   f"were not compared: {', '.join(undated)}")
+    return out
+
+
+def read_adrs(root: Path) -> list[tuple[str, str]]:
+    return [("-".join(p.name.split("-", 2)[:2]), p.read_text(encoding="utf-8"))
+            for p in sorted((root / ADR_DIR).glob("ADR-*.md"))]
+
+
 # ------------------------------------------------------------------ archiver
 def archive_handoff(root: Path, today: dt.date, keep_days: int, dry_run: bool) -> list[str]:
     handoff = root / "HANDOFF.md"
@@ -194,6 +233,21 @@ def self_test() -> int:
     check("doc/fresh", doc_findings("**Last reviewed:** 2026-10-01", today, "d") == [])
     check("doc/missing-marker", "no '**Last reviewed:**" in "".join(doc_findings("# t\n", today, "d")))
 
+    ctx_old = "# C\n**Last reviewed:** 2026-10-26 · x\n"
+    adr_new = ("ADR-099", "# A\n\n**Status:** Accepted\n**Date:** 2026-11-11\n")
+    adr_old = ("ADR-098", "# A\n\n**Status:** Accepted\n**Date:** 2026-10-01\n")
+    adr_prop = ("ADR-097", "# A\n\n**Status:** Proposed\n**Date:** 2026-11-12\n")
+    fa = adr_findings(ctx_old, [adr_new, adr_old, adr_prop])
+    check("adr/newer-accepted-flagged", len(fa) == 1 and "ADR-099 (2026-11-11)" in fa[0] and ":2:" in fa[0], repr(fa))
+    check("adr/older-and-proposed-not-named", bool(fa) and "ADR-098" not in fa[0] and "ADR-097" not in fa[0], repr(fa))
+    check("adr/same-day-is-reviewed", adr_findings(ctx_old.replace("10-26", "11-11"), [adr_new]) == [])
+    plain = ("ADR-096", "# A\nStatus: Accepted\nDate: 2026-11-13\n")
+    check("adr/plain-header-counted", any("ADR-096" in x for x in adr_findings(ctx_old, [plain])),
+          repr(adr_findings(ctx_old, [plain])))
+    nodate = ("ADR-095", "# A\n\n**Status:** Accepted\n")
+    fn = adr_findings(ctx_old, [nodate])
+    check("adr/undated-is-named-not-silent", len(fn) == 1 and "NOTICE" in fn[0] and "ADR-095" in fn[0], repr(fn))
+
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         (root / "HANDOFF.md").write_text("# H\n> pre\n\n## 2026-10-25 — a\nA\n\n## Runbook\nR\n\n## 2026-09-07 — b\nB\n", encoding="utf-8")
@@ -213,6 +267,13 @@ def self_test() -> int:
     check("real/HANDOFF-has-dated-sections", n_dated > 0, f"parsed {n_dated}")
     ctx = (REPO_ROOT / "docs/CONTEXT.md").read_text(encoding="utf-8")
     check("real/CONTEXT-has-last-reviewed", LAST_REVIEWED.search(ctx) is not None)
+    real_adrs = read_adrs(REPO_ROOT)
+    n_dated_adr = sum(1 for _, t in real_adrs if ADR_DATE.search(t) and ADR_ACCEPTED.search(t))
+    check("real/ADR-024-plain-header-parses",
+          any(n == "ADR-024" and ADR_DATE.search(t) and ADR_ACCEPTED.search(t) for n, t in real_adrs))
+    check("real/ADR-040-parses-as-dated-accepted",
+          any(n == "ADR-040" and ADR_DATE.search(t) and ADR_ACCEPTED.search(t) for n, t in real_adrs),
+          f"{len(real_adrs)} ADR files, {n_dated_adr} dated+accepted")
 
     for line in failures:
         print(f"FAIL {line}")
@@ -242,6 +303,9 @@ def main(argv: list[str]) -> int:
         for rel in WATCHED_DOCS:
             p = REPO_ROOT / rel
             findings += doc_findings(p.read_text(encoding="utf-8") if p.exists() else None, today, rel)
+        ctx_p = REPO_ROOT / "docs/CONTEXT.md"
+        findings += adr_findings(ctx_p.read_text(encoding="utf-8") if ctx_p.exists() else None,
+                                 read_adrs(REPO_ROOT))
         fix = "fix: re-check the doc against the repo, then bump its '**Last reviewed:**' date"
     for line in findings:
         print(line)

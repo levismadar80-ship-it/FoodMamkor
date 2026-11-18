@@ -104,9 +104,11 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
         if (!els.length) return;
         const first = els[0];
         const last = els[els.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        // MEH-3271: focus that has left the dialog is pulled back in.
+        const outside = !dialogRef.current?.contains(document.activeElement);
+        if (e.shiftKey && (document.activeElement === first || outside)) {
           e.preventDefault(); last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (!e.shiftKey && (document.activeElement === last || outside)) {
           e.preventDefault(); first.focus();
         }
       }
