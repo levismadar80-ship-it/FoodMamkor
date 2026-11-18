@@ -14,6 +14,7 @@ from app.sentry import capture_background_exception
 from app.services.job_heartbeat import (
     ADMIN_PENDING_REMINDER_CRON,
     ANALYTICS_ROLLUP_CRON,
+    BILLING_START_SIGNAL_CRON,
     FOLLOWUP_CRON,
     GROUP_BUY_EXPIRY_CRON,
     RESCUE_DIGEST_INTERVAL_MINUTES,
@@ -368,6 +369,29 @@ def _run_admin_pending_reminder_job() -> None:
         db.close()
 
 
+# MEH-3413: monthly «הגיע הזמן» email (terms §11 enforcement audit).
+@heartbeat(
+    "billing-start-signal-monthly", cron_monitor_config(BILLING_START_SIGNAL_CRON)
+)
+def _run_billing_start_signal_job() -> None:
+    """MEH-3413: on the 1st, email the admin when the month that just ended
+    reached the billing-start signal. Fresh session; exceptions swallowed so
+    the scheduler thread never dies."""
+    from app.database import SessionLocal
+    from app.services.billing_start_signal import send_billing_start_signal
+
+    db = SessionLocal()
+    try:
+        sent = send_billing_start_signal(db)
+        log.info("[BILLING-SIGNAL] monthly run complete sent=%s", sent)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="billing_start_signal")
+        log.error("[BILLING-SIGNAL] monthly run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat("auto-reply-watchdog", interval_monitor_config(WATCHDOG_INTERVAL_MINUTES))
 def _run_watchdog_job() -> None:
@@ -635,6 +659,18 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3 * 3600,
+    )
+    # MEH-3413: billing-start signal on the 1st. No persistent jobstore, so a
+    # restart over the fire time loses the run; a 24h grace covers a pause,
+    # and /admin/billing shows the same numbers any day.
+    followup_scheduler.add_job(
+        _run_billing_start_signal_job,
+        CronTrigger.from_crontab(BILLING_START_SIGNAL_CRON, timezone="UTC"),
+        id="meh_3413_billing_start_signal_monthly",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=24 * 3600,
     )
     # MEH-509 PR2b: register the after-hours watchdog on the same
     # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-

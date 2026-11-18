@@ -512,6 +512,19 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
   newest first, each as it would have been billed (shadow billing; computed on
   read, nothing stored). Read by `/admin/billing` (MEH-3182).
 
+**Billing-start signal (MEH-3413, `services/billing_start_signal.py`).** On the
+1st of each month at 05:00 UTC the scheduler reads `overview()` for the month
+that just ended and emails `ADMIN_EMAIL` «הגיע הזמן» when
+`businesses_over_two_months >= start_billing_businesses`. Below that, nothing
+is sent; once `BILLING_PHASE` is `billing`, nothing is sent. Writes nothing.
+A run lost to a restart over the fire time is not retried; the same numbers
+are on `/admin/billing`.
+
+**Terms §11 → code (MEH-3413).** Every paragraph of «terms.sections.pricing»
+is classified in `tests/test_meh3413_terms11_enforcement.py`: kept by a named
+test, or listed in `pricing.SWITCH_ON_BLOCKERS`, which keeps billing off until
+it is built. Price list 1 is frozen by the same file.
+
 **Capabilities (MEH-3181, `services/capabilities.py`).** What a business may do is
 asked of this module, not read off `producers.plan`. Today it owns one rule, moved
 from `upload.py` unchanged: a business whose `plan` is exactly `free` may hold 3

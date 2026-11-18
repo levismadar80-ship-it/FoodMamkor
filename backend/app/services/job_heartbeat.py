@@ -52,6 +52,8 @@ RETENTION_PURGE_CRON = "30 2 * * *"  # MEH-2303
 # 08:00/09:00 Israel: an expired group is told in the morning, not at night.
 GROUP_BUY_EXPIRY_CRON = "0 6 * * *"  # MEH-3287
 ADMIN_PENDING_REMINDER_CRON = "0 5 * * *"  # 07:00/08:00 Israel (MEH-3147)
+# The 1st of the month, after the previous month closed on the Israel clock.
+BILLING_START_SIGNAL_CRON = "0 5 1 * *"  # MEH-3413
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
 # Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the
@@ -112,6 +114,8 @@ UNMONITORED_SLUGS = frozenset(
         # separately, so the slug landed unclassified and pytest went red.
         # No Sentry monitor exists for it (plan limit, MEH-3332).
         "group-buy-expiry-daily",
+        # MEH-3413: monthly billing-start signal. Same plan limit (MEH-3332).
+        "billing-start-signal-monthly",
     }
 )
 

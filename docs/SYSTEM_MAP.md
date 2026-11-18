@@ -31,7 +31,7 @@ This page links to those and does not repeat their numbers.
 | Frontend | Next.js App Router, JavaScript. Server-renders public pages, proxies `/api/*`. | Vercel · `frontend/` |
 | Backend | FastAPI. One process holds the API, the rate limiter's counters and the scheduler. | Railway · `backend/app/` |
 | Database | PostgreSQL. Schema changes only through Alembic. | Railway · `backend/alembic/versions/` |
-| Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled. | `backend/app/startup.py` |
+| Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email, the monthly billing-start signal (1st of the month, email to the admin, MEH-3413) and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled. | `backend/app/startup.py` |
 | CI | GitHub Actions: the two required gates, E2E, uptime probe, backup-restore check. | `.github/workflows/` |
 
 ## What talks to what

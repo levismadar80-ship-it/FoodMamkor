@@ -45,6 +45,7 @@ def _stub_services(monkeypatch):
         admin_pending_reminder,
         analytics_rollup,
         auto_reply_watchdog,
+        billing_start_signal,
         group_buy_expiry,
         onboarding_followup,
         pending_nudge,
@@ -56,6 +57,9 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(onboarding_followup, "send_due_followups", lambda db: {})
     monkeypatch.setattr(
         admin_pending_reminder, "send_admin_pending_reminder", lambda db: 0
+    )
+    monkeypatch.setattr(
+        billing_start_signal, "send_billing_start_signal", lambda db: False
     )
     monkeypatch.setattr(pending_nudge, "send_pending_nudges", lambda db: {})
     monkeypatch.setattr(auto_reply_watchdog, "run_watchdog", lambda db: {})
@@ -80,6 +84,12 @@ JOBS = [
         "admin-pending-reminder-daily",
         "crontab",
         job_heartbeat.ADMIN_PENDING_REMINDER_CRON,
+    ),
+    (
+        "_run_billing_start_signal_job",
+        "billing-start-signal-monthly",
+        "crontab",
+        job_heartbeat.BILLING_START_SIGNAL_CRON,
     ),
     (
         "_run_watchdog_job",
