@@ -100,7 +100,7 @@ export default function MenuReviewRow({ row, onChange, onRemove }) {
         </div>
         <div className="w-28">
           <CheckFlag flag={unsure("unit")} />
-          <Select inline aria-label={t("form.price_min_label")} value={row.price_unit}
+          <Select inline aria-label={tUnit(row.price_unit)} value={row.price_unit}
             onChange={(e) => set({ price_unit: e.target.value })}>
             {UNITS.map((u) => <option key={u} value={u}>{tUnit(u)}</option>)}
           </Select>
