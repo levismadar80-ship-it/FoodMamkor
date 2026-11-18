@@ -63,6 +63,23 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(producer_me_locations.router)
 
 
+def _include_owner_links(app: FastAPI) -> None:
+    """The routers a business owner reaches from a signed link in a message."""
+    # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
+    app.include_router(producer_claim.router)
+    # MEH-3377: read-only preview link for an ownerless draft, and the admin's
+    # «פרסום בהסכמה» for it.
+    app.include_router(producer_draft_preview.router)
+    # MEH-2974: two routers, one module — the admin half carries
+    # `require_admin`, the public half is reached with the invite token alone.
+    # Same split, same reason, as admin_outreach's `prefill_router` below.
+    app.include_router(producer_owner_invite.router)
+    app.include_router(producer_owner_invite.public_router)
+    app.include_router(producer_owner_invite_existing.router)  # MEH-3256
+    # Page freshness: the «כן, הכול נכון» link in the monthly owner email.
+    app.include_router(page_freshness.router)
+
+
 def _include_admin(app: FastAPI) -> None:
     """admin_decisions FIRST: its static GET /admin/producers/pending and
     /admin/producers/rejection-presets must match before admin.router's
@@ -109,17 +126,7 @@ def register_routers(app: FastAPI) -> None:
     _include_producer_me(app)
     app.include_router(product_organize.router)  # MEH-3055
     app.include_router(billing.router)  # MEH-3181
-    # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
-    app.include_router(producer_claim.router)
-    # MEH-3377: read-only preview link for an ownerless draft, and the admin's
-    # «פרסום בהסכמה» for it.
-    app.include_router(producer_draft_preview.router)
-    # MEH-2974: two routers, one module — the admin half carries
-    # `require_admin`, the public half is reached with the invite token alone.
-    # Same split, same reason, as admin_outreach's `prefill_router` below.
-    app.include_router(producer_owner_invite.router)
-    app.include_router(producer_owner_invite.public_router)
-    app.include_router(producer_owner_invite_existing.router)  # MEH-3256
+    _include_owner_links(app)
     app.include_router(producers.router)
     app.include_router(organizers.router)  # MEH-2461
     app.include_router(favorites.router)
@@ -165,8 +172,6 @@ def register_routers(app: FastAPI) -> None:
     # MEH-1443: email-only "report wrong info" (distinct from the DB-backed
     # abuse reports above — see routers/report_info.py "Does NOT").
     app.include_router(report_info.router)
-    # Page freshness: the «כן, הכול נכון» link in the monthly owner email.
-    app.include_router(page_freshness.router)
     app.include_router(upload.router)
     app.include_router(marketing.router)
     app.include_router(events.router)
