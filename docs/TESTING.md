@@ -490,6 +490,19 @@ npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
 
 ---
 
+## טסטים שעוברים מהסיבה הלא נכונה (MEH-3295)
+
+ארבע בדיקות אוטומטיות, הכללים ב-[.claude/rules/testing.md](../.claude/rules/testing.md) «Tests that pass for the wrong reason»:
+
+| מה | איפה | מתי |
+|---|---|---|
+| טסט vitest בלי `expect` נכשל | `frontend/vitest.config.js` (`expect.requireAssertions`) | כל ריצה |
+| טסט pytest חדש בלי בדיקה, skip/xfail בלי כרטיס, xfail לא strict, `.only` | `scripts/checks/test-honesty-guard.sh` | Repo guards, חוסם |
+| בדיקת מוטציות על קבצי הכסף וההרשאות | `bash scripts/mutation/run.sh` · `[tool.mutmut]` ב-`backend/pyproject.toml` · הסברים ב-`backend/mutation-survivors.txt` | PR שנוגע בקבצים (`mutation-guard.sh` מזהיר) + הסריקה השבועית (חמישי) |
+| טסטים מבוססי-תכונות (Hypothesis) לעמלות ולימי עסקים | `tests/test_meh3295_properties.py` | כל ריצה |
+
+תוצאות הריצה הראשונה: [docs/research/mutation-testing.md](./research/mutation-testing.md).
+
 ## Agent Teams — בדיקה מתקדמת (מהתמונות)
 
 שלחי ל-Claude Code:

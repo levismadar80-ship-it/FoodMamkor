@@ -37,6 +37,7 @@ dev = [
     "mutmut>=3.8.1",
     "mypy==2.4.1",
     "pip-audit>=2.10.1",
+    "hypothesis>=6.155.2",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pytest-rerunfailures>=16.7",
@@ -67,33 +68,55 @@ constraint-dependencies = ["starlette>=1.3.1"]
 package = false
 
 # ─────────────────────────────────────────────────────────────
-# MEH-558 — mutmut mutation testing pilot (SHIP-narrow)
-# Scope: auth.py + producer_me.py only. NOT full repo, NOT in CI.
-# Run: cd backend && uv run mutmut run
-# Results: docs/research/mutation-testing-pilot.md
-# Threshold for future CI gate: see pilot doc.
+# Mutation testing (mutmut). MEH-558 pilot → MEH-3295 standing set.
+# Run: bash scripts/mutation/run.sh (from the repo root; own test database).
+# NOT in CI (≈1 h). Run by: a PR that touches source_paths (mutation-guard.sh)
+# and the weekly repo-health scan. Docs: docs/research/mutation-testing.md.
 # ─────────────────────────────────────────────────────────────
 [tool.mutmut]
-# Linear spec MEH-558 listed auth.py + producer_me.py. Scoped down to auth.py
-# only per spec STOP-(b) "if runtime >30 min, scope down to auth.py only and
-# document". producer_me.py is 920 lines and its happy-path coverage lives in
-# tests/test_api.py (~81s) — full mutmut would exceed budget by ~5×.
-# producer_me.py pilot deferred to a follow-up ticket.
-paths_to_mutate = [
+# MEH-3295 — the money-and-permissions set. One list, read by three callers:
+# `bash scripts/mutation/run.sh` (local / a PR thread), the weekly repo-health
+# scan (MEH-3143, area 9) and docs/research/mutation-testing.md.
+# routers/auth.py joins after its split (MEH-3293) — mutating a 1,678-line
+# router through the whole auth suite is the slow half, and the split moves it.
+# MEH-558 history: the pilot mutated app/auth.py alone (90.6%).
+# The whole app/ tree is copied into mutants/ so app.services resolves to the
+# mutated copy: app/ has no __init__.py, and with only the listed files copied
+# the real backend/app/services package won and those mutants never ran
+# (first run 15/11: billing_* and capabilities all "no tests").
+source_paths = ["app"]
+only_mutate = [
     "app/auth.py",
+    "app/limits.py",
+    "app/pricing.py",
+    "app/services/capabilities.py",
+    "app/services/billing_summary.py",
+    "app/services/billing_ledger.py",
 ]
-# tests_dir is a list of pytest test selectors (paths) appended after `-x -q`.
-# mutmut runs from `backend/mutants/` cwd. The repo-root `tests/` lives
-# two levels up; pytest accepts the relative path because `--rootdir=.`
-# (set by mutmut) doesn't constrain test selection. The auth-targeted
-# subset (~64 tests, ~32s baseline) is much faster than full test_api.py.
-tests_dir = [
+# Test files appended to pytest's command line. mutmut runs from
+# `backend/mutants/`, so the repo-root tests/ is two levels up. mutmut 3 maps
+# each function to the tests that execute it and runs only those per mutant.
+pytest_add_cli_args_test_selection = [
     "../../tests/test_auth.py",
     "../../tests/test_password_policy.py",
     "../../tests/test_forgot_password.py",
     "../../tests/test_verify_email.py",
     "../../tests/test_oauth_unconfigured.py",
     "../../tests/test_auth_email_notify.py",
+    "../../tests/test_verified_email_enforcement.py",
+    "../../tests/test_expansion_auth_jwt.py",
+    "../../tests/test_expansion_admin_authz.py",
+    "../../tests/test_admin_role_orphan_source.py",
+    "../../tests/test_meh2900_admin_role_endpoint.py",
+    "../../tests/test_optional_auth_contract.py",
+    "../../tests/test_meh3022_resource_caps.py",
+    "../../tests/test_meh3179_billing_ledger.py",
+    "../../tests/test_meh3179_pricing_mirror.py",
+    "../../tests/test_meh3180_billing_state.py",
+    "../../tests/test_meh3181_billing_summary.py",
+    "../../tests/test_meh3208_ledger_outlives_business.py",
+    "../../tests/test_meh3295_properties.py",
+    "../../tests/test_meh3295_auth_tokens.py",
 ]
 # Mutmut v3 mutates operators/conditionals/numbers/strings by default.
 
