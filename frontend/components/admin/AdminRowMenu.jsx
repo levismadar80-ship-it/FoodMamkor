@@ -49,7 +49,7 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *   Menu entries. Empty array → the whole menu (kebab included) renders nothing.
  *   `disabled` mirrors an in-flight busy state — the item renders but can't fire.
  * @param {string} props.ariaLabel — accessible name for the kebab trigger.
- * @param {boolean} [props.touch] — MEH-3260: a 44px target and a 20px icon at
+ * @param {boolean} [props.touch] MEH-3260: a 44px target and a 20px icon at
  *   every width, for a public page (the review card's ⋮); admin tables keep
  *   their dense trigger.
  */
