@@ -5,6 +5,7 @@
 **Routes**
 * `frontend/app/[locale]/newsletter/unsubscribe/` · `frontend/app/[locale]/unsubscribe/weekly/`
 * `frontend/app/[locale]/delivery-waitlist/unsubscribe/` · `frontend/app/[locale]/delivery-waitlist/host-confirm/`
+* `frontend/app/[locale]/freshness/confirm/` — הבדיקה החודשית «הכול עדיין נכון?» ([page-freshness.md](./page-freshness.md))
 
 **קבצים מרכזיים**
 * `backend/app/services/email.py` — ‏`send_email()`. נכשל פתוח בלי `RESEND_API_KEY`.

@@ -123,6 +123,8 @@ erDiagram
         timestamp email_pending_nudge_sent_at "nullable — MEH-1818, tz-aware; day-1 pending-nudge stamp. NULL = not yet nudged. Stamped even when nothing was missing (no email sent), which is what holds the send to exactly once"
         boolean weekly_summary_opt_out "NOT NULL default false — MEH-3079; set by the signed unsubscribe link of the weekly summary email"
         timestamp weekly_summary_sent_at "nullable — MEH-3079, tz-aware; weekly summary idempotency stamp (skip if < 6 days old)"
+        timestamp last_confirmed_at "nullable — page freshness, tz-aware; owner pressed «כן, הכול נכון»"
+        timestamp freshness_email_sent_at "nullable — page freshness, tz-aware; monthly email idempotency stamp"
         timestamp submitted_for_review_at "nullable — MEH-2100, tz-aware; stamped when the owner submits for review (draft→pending). NULL = never submitted, and stays NULL for a draft. No backfill: readers use submitted_for_review_at or created_at; the admin SLA (MEH-2869) uses resubmitted_at or submitted_for_review_at or created_at"
     }
 

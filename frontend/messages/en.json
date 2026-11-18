@@ -1602,7 +1602,8 @@
         "export": "Export",
         "new_producer": "+ New business",
         "review_due_label": "Picks due for review",
-        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed",
+        "freshness_stale_label": "Not checked in 60+ days"
       },
       "table": {
         "status_tooltip_draft": "draft = not yet submitted for review",
@@ -1711,7 +1712,8 @@
       },
       "edit": {
         "title": "Edit: {name}",
-        "not_found": "Business not found"
+        "not_found": "Business not found",
+        "last_confirmed": "Last checked: {date}"
       },
       "form": {
         "errors": {
@@ -1784,7 +1786,7 @@
           "grass_fed": "Grass-fed",
           "reservist_owned": "One of the owners serves in the reserves",
           "verified": "Verified",
-          "recommended": "Recommended (editor's pick)",
+          "recommended": "Recommended (editors' pick)",
           "recommended_note": "Editor's reason",
           "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
           "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
@@ -3181,7 +3183,7 @@
         "body_2": "And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
       },
       "editors_pick": {
-        "heading": "Editor's Pick",
+        "heading": "Editors' Pick",
         "body_1": "Every so often we mark a business we especially loved — for the quality of its products, its freshness, or a story worth knowing. It's our personal choice, after getting to know the business.",
         "list_lead": "Two things worth knowing:",
         "item_1": "you can't pay for this tag — not with premium, not in any other way.",
@@ -5331,7 +5333,7 @@
         "approved_heading": "Your kosher badges",
         "select_label": "Kosher type",
         "select_placeholder": "Choose a kosher type",
-        "upload_label": "Certificate photo (JPG/PNG, up to 5MB)",
+        "upload_label": "Certificate photo (JPG/PNG, up to 4MB)",
         "upload_cta": "Upload photo",
         "upload_replace_cta": "Replace photo",
         "uploading": "Uploading…",
@@ -5610,7 +5612,7 @@
       "saved_msg": "Details saved",
       "save_error_fallback": "We couldn't save. Please try again.",
       "upload_type_error": "Only image files allowed: JPG, PNG, WEBP, GIF",
-      "upload_size_error": "File too large — 5MB maximum",
+      "upload_size_error": "File too large — 4MB maximum",
       "avatar_uploaded_msg": "Profile photo updated",
       "avatar_upload_error_fallback": "Upload error — please try again",
       "field_name_label": "Full name",
@@ -5632,7 +5634,7 @@
       "add_cta": "Add product",
       "errors": {
         "upload_type": "Only image files allowed: JPG, PNG, WEBP, GIF",
-        "upload_size": "File too large — 5MB maximum",
+        "upload_size": "File too large — 4MB maximum",
         "upload_failed_fallback": "Upload error — please try again",
         "name_required": "Product name is required",
         "price_required": "Please enter a price",
@@ -6023,8 +6025,8 @@
         "intro": "The business showed us a document and we checked it by hand. <link>How we check</link>"
       },
       "editorial": {
-        "heading": "Editor's pick",
-        "intro": "A badge the editor gives on personal judgement."
+        "heading": "Editors' pick",
+        "intro": "A badge the editors give on personal judgement."
       },
       "self-declared": {
         "heading": "Declared by the business",
@@ -6465,8 +6467,8 @@
       "tooltip": "The business showed a licence or an official exemption document that was checked by hand."
     },
     "recommended": {
-      "label": "Editor's pick",
-      "tooltip": "A personal pick by the Mehamakor editor — for quality, freshness or a special story. This badge cannot be bought."
+      "label": "Editors' pick",
+      "tooltip": "A personal pick by the Mehamakor editors — for quality, freshness or a special story. This badge cannot be bought."
     },
     "new": {
       "label": "New",
@@ -6869,8 +6871,8 @@
         "tile_line": "After the certificate has been checked"
       },
       "editor_pick": {
-        "label": "\"Editor's pick\", which is not for sale",
-        "tile_title": "Editor's pick",
+        "label": "\"Editors' pick\", which is not for sale",
+        "tile_title": "Editors' pick",
         "tile_line": "Not for sale"
       },
       "reservist_diet_tags": {
@@ -7032,5 +7034,15 @@
   "account_deleted": {
     "heading": "Account deleted",
     "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
+  },
+  "page_freshness": {
+    "meta_title": "Page check",
+    "ask_title": "Is everything on your page still correct?",
+    "ask_body": "Hours, delivery, prices and contact details.",
+    "cta_yes": "Yes, all correct",
+    "cta_update": "I want to update",
+    "sending": "Saving…",
+    "done_title": "Thanks! We marked your page as checked today.",
+    "dead_title": "This link is no longer active. You can update your page from your dashboard."
   }
 }

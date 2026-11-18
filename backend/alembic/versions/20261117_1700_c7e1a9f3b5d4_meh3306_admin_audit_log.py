@@ -1,7 +1,7 @@
 """meh3306_admin_audit_log
 
 Revision ID: c7e1a9f3b5d4
-Revises: 5808c77bee3a
+Revises: a8d41c2e7f90
 Create Date: 2026-11-17 17:00:00.000000+00:00
 
 MEH-3306 (rulings 17/11, part ב), EXPAND only: a new table, nothing existing
@@ -40,7 +40,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "c7e1a9f3b5d4"
-down_revision: Union[str, None] = "5808c77bee3a"
+down_revision: Union[str, None] = "a8d41c2e7f90"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

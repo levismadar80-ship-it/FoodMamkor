@@ -687,6 +687,12 @@ class Producer(Base):
     # which is what holds the send to EXACTLY ONE email.
     # See migration d3b7f1a92c64.
     email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # Page freshness: the monthly "is everything still correct?" email.
+    # last_confirmed_at is set when the owner presses "yes" in that email;
+    # freshness_email_sent_at is the idempotency stamp. Expand-only (ADR-007),
+    # migration a8d41c2e7f90. Sender: services/page_freshness.
+    last_confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    freshness_email_sent_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-3079: weekly summary email. opt_out is set by the signed unsubscribe
     # link; sent_at is the idempotency stamp (skip if < 6 days old). Expand-only
     # (ADR-007), migration 0cfa83f0f53e. Sender: services/weekly_owner_summary.

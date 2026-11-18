@@ -70,6 +70,7 @@ import os
 
 import structlog
 from fastapi import Request
+from limits import parse as parse_limit
 from pydantic import validate_email
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -246,3 +247,26 @@ def email_from_body(request: Request) -> str:
 
 
 limiter = Limiter(key_func=get_real_client_ip)
+
+
+# MEH-3372: failed logins per address. Kept on the limiter's own storage and
+# strategy, so it shares the in-process counters (and their reset) with every
+# decorator limit. The key goes through _canonical_email — the same address
+# the per-email decorators key on — so another spelling is not a fresh budget.
+LOGIN_FAILURE_LIMIT = parse_limit("10/15 minutes")
+_LOGIN_FAILURE_SCOPE = "login-failures"
+
+
+def login_failures_exceeded(email: str) -> bool:
+    """True when this address has used its failed-login budget."""
+    return not limiter.limiter.test(
+        LOGIN_FAILURE_LIMIT, _LOGIN_FAILURE_SCOPE, _canonical_email(email)
+    )
+
+
+def record_login_failure(email: str) -> None:
+    """Count one failed login for this address. A successful login is never
+    counted: the budget is for guesses."""
+    limiter.limiter.hit(
+        LOGIN_FAILURE_LIMIT, _LOGIN_FAILURE_SCOPE, _canonical_email(email)
+    )

@@ -183,6 +183,16 @@ def list_users(
     return out
 
 
+# Wording approved word for word (rulings 17/11 §א3) — do not edit here.
+_DEMOTE_LINKED_OWNER = (
+    "אי אפשר להוריד את ההרשאה כל עוד המשתמשת מקושרת לבית עסק. קודם מנתקים את הבעלות."
+)
+
+
+# NEW copy, waiting for Sapir's word-for-word OK (rule 22) — see the PR body.
+_PROMOTE_LINKED_OWNER = "אי אפשר לתת הרשאת אדמין למי שמקושרת לבית עסק."
+
+
 @router.put("/users/{user_id}/role", response_model=None)
 def update_user_role(
     user_id: UUID,
@@ -190,7 +200,17 @@ def update_user_role(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    target = db.query(User).filter(User.id == user_id).first()
+    # Row lock + fresh read (MEH-3376 review): a claim, a register-upgrade or
+    # an invite acceptance may link a business to this account between the
+    # read and the commit. Those flows lock and re-read the user, so with the
+    # lock here too the two cannot interleave into "admin with a business".
+    target = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .with_for_update()
+        .populate_existing()
+        .first()
+    )
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     # MEH-955: never assign role="producer" here. require_producer
@@ -211,6 +231,19 @@ def update_user_role(
         )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
+    # MEH-3376: a business must never be left linked to an account that cannot
+    # run it. Demoting to consumer keeps `producer_id`, so the business would
+    # stay live with no working owner. Refused, whatever the business status;
+    # the way out is «ניתוק בעלים» (detach), then this request passes.
+    # MEH-3376 (Sapir 17/11: «בעלת עסק לא יכולה להיות אדמינית»): this route was
+    # the one way an account with a business could become an admin —
+    # registration (auth.py) and claim (producer_claim.py) already refuse the
+    # other direction. An admin with a business loses her dashboard
+    # (require_producer gates on role) and cannot be detached later.
+    if data.role == "admin" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_PROMOTE_LINKED_OWNER)
+    if data.role == "consumer" and target.producer_id is not None:
+        raise HTTPException(status_code=409, detail=_DEMOTE_LINKED_OWNER)
     admin_audit.note(user, before={"role": target.role}, after={"role": data.role})
     target.role = data.role  # type: ignore[assignment]
     db.commit()

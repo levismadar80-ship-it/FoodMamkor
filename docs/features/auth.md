@@ -17,7 +17,7 @@
 **Flags.** אין. ‏OAuth מושבת בחן כשה-client id לא מוגדר (`tests/test_oauth_unconfigured.py`).
 
 **טסטים**
-* `tests/test_auth.py` · `tests/test_expansion_auth_jwt.py` · `tests/test_auth_email_notify.py`
+* `tests/test_meh3372_login_per_email_limit.py` · `tests/test_auth.py` · `tests/test_expansion_auth_jwt.py` · `tests/test_auth_email_notify.py`
 * `tests/test_producer_oauth.py` · `tests/test_oauth_verify_4xx.py` · `tests/test_meh2080_oauth_terms_consent.py`
 * `frontend/e2e/flows/30-login-journey-c.spec.ts` · `frontend/e2e/flows/manual/auth.spec.ts` · `frontend/e2e/flows/11-password-policy.spec.ts`
 * `frontend/e2e/flows/25-role-reachability.spec.ts`
