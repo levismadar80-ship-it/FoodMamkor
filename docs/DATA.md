@@ -1006,6 +1006,16 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > nothing. All mail is a BackgroundTask (fail-open, `test_cause` for a test
 > business).
 >
+> **MEH-3312 — the evening-before reminder (2026-11-15).** Migration
+> `b8e4f2a6c9d1` adds `registrations.reminder_sent_at` (TIMESTAMP NULL, naive
+> UTC). A daily job at 17:00 Israel (`REGISTRATION_REMINDER_CRON`, Sentry
+> heartbeat `registration-reminder-daily`) mails every `registered` sign-up to
+> an active event, or an approved, active, non-recurring experience, dated
+> tomorrow on the Israel clock: «תזכורת: "{title}" מחר», with time, place and
+> the cancel link. Rows are stamped and committed before sending, so a rerun
+> sends nothing. Recurring workshops are skipped until a sign-up carries its
+> occurrence date (MEH-3264). Service: `app/services/registration_reminders.py`.
+>
 > **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
 > `max_participants` below the item's active on-site sign-ups → **422**
 > «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
@@ -1481,7 +1491,8 @@ POST   /registrations/{token}/cancel      public — idempotent; first cancel em
 
 Emails (`services/registration_emails.py`, fail-open, queued after commit):
 visitor confirmation with the cancel link; owner «הרשמה חדשה» with name,
-phone, email and «נשארו N מקומות»; owner «ביטול הרשמה». A home experience's
+phone, email and «נשארו N מקומות»; owner «ביטול הרשמה»; visitor «תזכורת:
+"…" מחר» the evening before (MEH-3312, daily job). A home experience's
 address never goes in the visitor email (city only, MEH-1417).
 
 No per-event moderation. An **approved** producer publishes and it's live;

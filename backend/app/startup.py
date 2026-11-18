@@ -21,6 +21,8 @@ from app.services.job_heartbeat import (
     WATCHDOG_INTERVAL_MINUTES,
     WEEKLY_OWNER_SUMMARY_CRON,
     WEEKLY_OWNER_SUMMARY_TZ,
+    REGISTRATION_REMINDER_CRON,
+    REGISTRATION_REMINDER_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -368,6 +370,30 @@ def _run_admin_pending_reminder_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed evening raises an issue.
+@heartbeat(
+    "registration-reminder-daily",
+    cron_monitor_config(REGISTRATION_REMINDER_CRON, timezone=REGISTRATION_REMINDER_TZ),
+)
+def _run_registration_reminder_job() -> None:
+    """MEH-3312: the evening-before reminder to on-site registrants. Fresh
+    session per run; any exception is swallowed so the scheduler thread
+    never dies."""
+    from app.database import SessionLocal
+    from app.services.registration_reminders import send_registration_reminders
+
+    db = SessionLocal()
+    try:
+        sent = send_registration_reminders(db)
+        log.info("[REG-REMINDER] daily run complete sent=%s", sent)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="registration_reminder")
+        log.error("[REG-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat("auto-reply-watchdog", interval_monitor_config(WATCHDOG_INTERVAL_MINUTES))
 def _run_watchdog_job() -> None:
@@ -631,6 +657,20 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         _run_admin_pending_reminder_job,
         CronTrigger.from_crontab(ADMIN_PENDING_REMINDER_CRON, timezone="UTC"),
         id="meh_3147_admin_pending_reminder_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
+    )
+    # MEH-3312: evening-before reminder, 17:00 Israel (the zone travels with
+    # the schedule, so DST moves the UTC fire time). coalesce + a 3h grace: a
+    # deploy over 17:00 sends it a little late rather than skipping the day.
+    followup_scheduler.add_job(
+        _run_registration_reminder_job,
+        CronTrigger.from_crontab(
+            REGISTRATION_REMINDER_CRON, timezone=REGISTRATION_REMINDER_TZ
+        ),
+        id="meh_3312_registration_reminder_daily",
         replace_existing=True,
         max_instances=1,
         coalesce=True,

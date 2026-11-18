@@ -382,6 +382,7 @@ erDiagram
         string status "registered|cancelled"
         timestamp created_at
         timestamp cancelled_at
+        timestamp reminder_sent_at "MEH-3312 day-before reminder, one-way"
     }
 
     business_billing {

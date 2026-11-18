@@ -1313,6 +1313,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_below_goal_emails",
         "send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3311)"),
+    (
+        "services/registration_emails.py",
+        "send_registration_reminder",
+        "send_email",
+    ): (1, CON, "wrapper param ← is_test_item(item) (MEH-3312)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",
