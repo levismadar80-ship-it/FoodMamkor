@@ -298,8 +298,9 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
 #
 # UTILITY category, no buttons. Bodies are the approved copy table of 14/11
 # (/mnt/project-files/product-ordering/copy-table-he.md), one {{n}} per field
-# in field order. None is registered with Meta yet (a Chrome hands task);
-# until it is, a send answers 132001 and the outbox marks the row failed.
+# in field order. The exact bodies submitted to Meta (18/11) live in
+# whatsapp_template_bodies.py and are linted by tests/test_whatsapp_template_lint.py.
+# Until Meta approves one, a send answers 132001 and the outbox marks the row failed.
 # DO NOT put a newline or a tab in a parameter — Meta rejects the send
 # (132000). The outbox passes `wa_param()` output.
 
@@ -307,7 +308,7 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
 class ProductOrderNewV1(WhatsAppTemplate):
     """To the business.
 
-    הזמנה חדשה ממהמקור: {{1}}, {{2}} פריטים, {{3}} ₪, {{4}} ב{{5}} {{6}}–{{7}}. לאישור: {{8}}
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
     """
 
     name: ClassVar[str] = "product_order_new_v1"
@@ -324,7 +325,7 @@ class ProductOrderNewV1(WhatsAppTemplate):
 class ProductOrderWaitingV1(WhatsAppTemplate):
     """To the business, after 4 active hours with no answer.
 
-    הזמנה מחכה לתשובה כבר {{1}} שעות. אם לא תענו עד {{2}}, היא תתבטל. {{3}}
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
     """
 
     name: ClassVar[str] = "product_order_waiting_v1"
@@ -336,7 +337,7 @@ class ProductOrderWaitingV1(WhatsAppTemplate):
 class ProductOrderConfirmedV1(WhatsAppTemplate):
     """To the buyer.
 
-    ההזמנה שלכם מ{{1}} אושרה. {{2}} ב{{3}} {{4}}–{{5}}. לתשלום לבית העסק: {{6}} ₪. פרטים: {{7}}
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
     """
 
     name: ClassVar[str] = "product_order_confirmed_v1"
@@ -352,7 +353,7 @@ class ProductOrderConfirmedV1(WhatsAppTemplate):
 class ProductOrderChangeV1(WhatsAppTemplate):
     """To the buyer.
 
-    {{1}} מציעים שינוי בהזמנה. לצפייה ולאישור: {{2}}
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
     """
 
     name: ClassVar[str] = "product_order_change_v1"
@@ -363,7 +364,7 @@ class ProductOrderChangeV1(WhatsAppTemplate):
 class ProductOrderClosedV1(WhatsAppTemplate):
     """To the buyer: declined, cancelled by the business, or expired.
 
-    ההזמנה מ{{1}} בוטלה. פרטים: {{2}}
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
     """
 
     name: ClassVar[str] = "product_order_closed_v1"
@@ -374,7 +375,7 @@ class ProductOrderClosedV1(WhatsAppTemplate):
 class ProductOrderTomorrowV1(WhatsAppTemplate):
     """To the buyer, the day before.
 
-    תזכורת: מחר {{1}} מ{{2}}, {{3}}–{{4}}. לא מסתדר? אפשר לבטל כאן: {{5}}
+    Body as submitted to Meta: whatsapp_template_bodies.META_BODIES[name].
     """
 
     name: ClassVar[str] = "product_order_tomorrow_v1"
