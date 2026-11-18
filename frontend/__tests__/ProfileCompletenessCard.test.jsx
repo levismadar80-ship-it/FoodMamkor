@@ -8,15 +8,15 @@ import { render, screen, within } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars = {}) => {
     const flat = {
-      yellow_low_headline: "הפרופיל שלך {percent}% מוכן",
+      yellow_low_headline: "העמוד שלך {percent}% מוכן",
       yellow_high_headline: "כמעט שם — {percent}% מוכן",
-      green_headline: "הפרופיל מלא",
+      green_headline: "העמוד מלא",
       next_step_prefix: "השלב הבא:",
-      checklist_sub: "עוד כמה צעדים והפרופיל שלכם מוכן לקבל פניות",
-      cta: "השלימו פרופיל",
-      cta_aria: "השלימו את הפרופיל שלך",
-      ring_aria: "השלמת פרופיל: {percent}%",
-      checklist_aria: "התקדמות השלמת הפרופיל",
+      checklist_sub: "עוד כמה צעדים והעמוד שלכם מוכן לקבל פניות",
+      cta: "להשלמת העמוד",
+      cta_aria: "להשלמת העמוד שלך",
+      ring_aria: "השלמת העמוד: {percent}%",
+      checklist_aria: "התקדמות השלמת העמוד",
       checklist_done: "הושלם",
       checklist_todo: "עדיין חסר",
       "steps.image": "תמונה ראשית",
@@ -78,8 +78,8 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
 
   it("all steps done → collapses to a single confirmation line, no CTA/ring", () => {
     render(<ProfileCompletenessCard producer={base} />);
-    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
-    expect(screen.queryByText("השלימו פרופיל")).not.toBeInTheDocument();
+    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
+    expect(screen.queryByText("להשלמת העמוד")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
@@ -91,7 +91,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
         producer={{ ...base, short_description: null, description: null }}
       />,
     );
-    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
   });
 
   it("missing photo → 6/7 = 86% (yellow-high), 7-row checklist, deep-links to #profile-images", () => {
@@ -101,7 +101,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     expect(screen.getByText("כמעט שם — 86% מוכן")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
 
-    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(7);
     expect(within(list).getAllByText("הושלם")).toHaveLength(6);
     expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
@@ -109,7 +109,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     // Photo is the top-remaining step → echoed in the next-step box + CTA target.
     expect(screen.getByText("השלב הבא:")).toBeInTheDocument();
     expect(screen.getAllByText("תמונה ראשית").length).toBeGreaterThanOrEqual(2);
-    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
     expect(cta).toHaveAttribute("href", `${EDIT}#profile-images`);
   });
 
@@ -122,7 +122,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
         producer={{ ...base, images: [], phone: null, instagram: null, opening_hours: null }}
       />,
     );
-    expect(screen.getByText("הפרופיל שלך 57% מוכן")).toBeInTheDocument();
+    expect(screen.getByText("העמוד שלך 57% מוכן")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "57");
   });
 
@@ -131,7 +131,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     render(
       <ProfileCompletenessCard producer={{ ...base, products: [{ id: "p1" }] }} />,
     );
-    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
@@ -142,7 +142,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     // image/location/contact/phone_verified/hours done, products todo →
     // 6 of 7 → 86%.
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
     expect(cta).toHaveAttribute("href", `${EDIT}#profile-products`);
     // Every checklist row is a deep-link to an editor section.
     expect(hrefs(container)).toEqual(
@@ -175,14 +175,14 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     void products;
     render(<ProfileCompletenessCard producer={{ ...noArray, products_count: 5 }} />);
     // every step done → complete.
-    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
   });
 
   it("no products at all → products step todo (not complete)", () => {
     const { products, ...noArray } = base;
     void products;
     render(<ProfileCompletenessCard producer={noArray} />);
-    expect(screen.queryByText("הפרופיל מלא")).not.toBeInTheDocument();
+    expect(screen.queryByText("העמוד מלא")).not.toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
   });
 
@@ -190,7 +190,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     render(
       <ProfileCompletenessCard producer={{ ...base, phone: null, instagram: null }} />,
     );
-    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
     expect(cta).toHaveAttribute("href", `${EDIT}#profile-contact`);
   });
 
@@ -213,7 +213,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
       />,
     );
     // delivery satisfies location (no coords needed) → every step complete.
-    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
   });
 
   it("delivery-only without areas → location step todo", () => {
@@ -236,7 +236,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     );
     // location todo → 6/7 → 86%, and the location step is the top remaining.
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-    const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
+    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
     // MEH-1165 item 4 / MEH-2058: the location step's CTA lands on LocationsEditor.
     expect(cta).toHaveAttribute("href", `${EDIT}#locations`);
   });
@@ -255,14 +255,14 @@ describe("MEH-1895 — hours is the fifth step", () => {
   const noHours = { ...base, opening_hours: "" };
 
   it("missing ONLY hours → card mounts at 86% with the hours row unchecked", () => {
-    // Pre-MEH-1895 this producer rendered "הפרופיל מלא" — mounted, complete,
+    // Pre-MEH-1895 this producer rendered "העמוד מלא" — mounted, complete,
     // and silent about the field that mounted it.
     render(<ProfileCompletenessCard producer={noHours} />);
 
-    expect(screen.queryByText("הפרופיל מלא")).not.toBeInTheDocument();
+    expect(screen.queryByText("העמוד מלא")).not.toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
 
-    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(7);
     expect(within(list).getAllByText("הושלם")).toHaveLength(6);
     expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
@@ -273,7 +273,7 @@ describe("MEH-1895 — hours is the fifth step", () => {
     // business-level card, and a CTA pointing at a card that no longer exists
     // is the MEH-2058 failure repeated.
     expect(
-      screen.getByRole("link", { name: "השלימו את הפרופיל שלך" }),
+      screen.getByRole("link", { name: "להשלמת העמוד שלך" }),
     ).toHaveAttribute("href", `${EDIT}#locations`);
   });
 
@@ -284,7 +284,7 @@ describe("MEH-1895 — hours is the fifth step", () => {
 
   it("hours filled + another field missing → hours row is checked, not the other", () => {
     render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
-    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
     const rows = within(list).getAllByRole("listitem");
     const hoursRow = rows.find((r) => r.textContent.includes("שעות פתיחה"));
     const imageRow = rows.find((r) => r.textContent.includes("תמונה ראשית"));
@@ -295,7 +295,7 @@ describe("MEH-1895 — hours is the fifth step", () => {
 
   it("step order is stable — hours is last", () => {
     render(<ProfileCompletenessCard producer={noHours} />);
-    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
     const labels = within(list)
       .getAllByRole("listitem")
       // MEH-2100: the חובה/מומלץ chip is part of every row now, so it is
@@ -350,7 +350,7 @@ describe("MEH-1895 — hours is the fifth step", () => {
         producer={{ ...base, phone_verified: false }}
       />,
     );
-    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
     const rowFor = (label) =>
       within(list)
         .getAllByRole("listitem")
@@ -376,7 +376,7 @@ describe("MEH-1895 — hours is the fifth step", () => {
     // produced on this very change: 6 of 5 = 120%. Asserted on the complete
     // fixture, where the card collapses — a percent over 100 could not render.
     render(<ProfileCompletenessCard producer={base} />);
-    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 });
@@ -394,15 +394,15 @@ describe("MEH-3032 — owner photo is a recommended 7th step", () => {
     ["whitespace only", "   "],
   ])("owner_photo_url %s → card mounts, row unchecked", (_l, value) => {
     render(<ProfileCompletenessCard producer={{ ...base, owner_photo_url: value }} />);
-    expect(screen.queryByText("הפרופיל מלא")).toBeNull();
-    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    expect(screen.queryByText("העמוד מלא")).toBeNull();
+    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
     const row = within(list).getByText("תמונה שלך").closest("a");
     expect(row.textContent).toContain("עדיין חסר");
   });
 
   it("owner photo present → row checked and the card can collapse to complete", () => {
     render(<ProfileCompletenessCard producer={base} />);
-    expect(screen.getByText("הפרופיל מלא")).toBeTruthy();
+    expect(screen.getByText("העמוד מלא")).toBeTruthy();
   });
 
   it("is recommended, not required — the submit gate does not block on it", () => {
@@ -414,7 +414,7 @@ describe("MEH-3032 — owner photo is a recommended 7th step", () => {
 
   it("deep-links to the owner-story editor card", () => {
     render(<ProfileCompletenessCard producer={noOwnerPhoto} />);
-    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
     const row = within(list).getByText("תמונה שלך").closest("a");
     expect(row.getAttribute("href")).toBe(`${EDIT}#owner-story`);
   });

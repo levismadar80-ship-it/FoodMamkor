@@ -160,21 +160,20 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
 });
 
 describe("Dashboard 1D — availability-disable (MEH-964)", () => {
-  it("disables the availability pause switch + shows the hint until approved", async () => {
+  // MEH-3079: was «disabled switch + hint» (MEH-964 1D). A new business could
+  // not use or read a locked switch, so the card waits for approval.
+  it("hides the availability card until approved", async () => {
     setup({ status: "pending", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
-    expect(screen.getByTestId("availability-disabled-hint")).toBeInTheDocument();
-    const sw = screen.getByTestId("availability-pause-switch");
-    expect(sw).toBeDisabled();
-    expect(sw).toHaveAttribute("aria-describedby", "availability-disabled-hint");
+    expect(screen.getByTestId("share-locked-hint")).toBeInTheDocument();
+    expect(screen.queryByTestId("availability-pause-switch")).toBeNull();
   });
 
   it("enables the pause switch (no hint) once approved", async () => {
     setup({ status: "approved", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
-    expect(screen.queryByTestId("availability-disabled-hint")).not.toBeInTheDocument();
     expect(screen.getByTestId("availability-pause-switch")).not.toBeDisabled();
   });
 });
