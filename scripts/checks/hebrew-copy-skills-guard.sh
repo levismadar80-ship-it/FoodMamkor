@@ -48,41 +48,67 @@ print(pr.get("body") or "")
 ' "$ev" 2>/dev/null
 }
 
+# added_he_lines — prints the added lines of he.json. Returns 0 (lines may be
+# none), 1 (no base configured: not a PR diff), 2 (git could not produce the
+# diff: bad ref, shallow history). 2 must never read as "nothing changed".
 added_he_lines() {
   if [ -n "${HEBREW_COPY_ADDED+x}" ]; then printf '%s\n' "$HEBREW_COPY_ADDED"; return 0; fi
-  [ -n "${GITHUB_BASE_REF:-}" ] || return 1
-  git fetch --no-tags --quiet --depth=100 origin "$GITHUB_BASE_REF" 2>/dev/null || true
-  git fetch --no-tags --quiet --deepen=100 2>/dev/null || true
-  git diff --unified=0 "origin/$GITHUB_BASE_REF...HEAD" -- "$HE_FILE" 2>/dev/null \
-    | grep -E '^\+' | grep -vE '^\+\+\+'
+  local range diff
+  if [ -n "${HEBREW_COPY_RANGE:-}" ]; then
+    range="$HEBREW_COPY_RANGE"
+  else
+    [ -n "${GITHUB_BASE_REF:-}" ] || return 1
+    git fetch --no-tags --quiet --depth=100 origin "$GITHUB_BASE_REF" 2>/dev/null || true
+    git fetch --no-tags --quiet --deepen=100 2>/dev/null || true
+    range="origin/$GITHUB_BASE_REF...HEAD"
+  fi
+  diff="$(git diff --unified=0 "$range" -- "$HE_FILE" 2>/dev/null)" || return 2
+  printf '%s\n' "$diff" | { grep -E '^\+' || true; } | { grep -vE '^\+\+\+' || true; }
 }
 
 # has_hebrew — stdin has at least one Hebrew letter.
 has_hebrew() { python3 -c 'import re,sys; sys.exit(0 if re.search("[\u05d0-\u05ea]", sys.stdin.read()) else 1)'; }
 
-# skills_line — prints the body's Skills: line(s), lower-cased.
-skills_line() {
-  grep -iE '^[[:space:]]*([-*][[:space:]]+)?(\*\*)?skills:' | tr '[:upper:]' '[:lower:]'
+# skills_block — the body's Skills: line plus any list lines under it (up to a
+# blank line or a heading), lower-cased.
+skills_block() {
+  awk 'BEGIN{IGNORECASE=1}
+    /^[[:space:]]*([-*][[:space:]]+)?(\*\*)?[Ss][Kk][Ii][Ll][Ll][Ss]:/ {on=1; print; next}
+    on && (/^[[:space:]]*$/ || /^#/) {on=0}
+    on {print}' | tr '[:upper:]' '[:lower:]'
 }
+
+# names_skill BLOCK SKILL — the skill as a whole word (not inside another word).
+names_skill() { grep -qE "(^|[^a-z0-9-])$2([^a-z0-9-]|\$)" <<<"$1"; }
 
 # check — 0 clean or not applicable, 1 violation.
 check() {
-  local body added line missing="" s
+  local body added line missing="" s rc
   if ! body="$(pr_body)"; then
     echo "hebrew-copy-skills-guard: skipped — not a pull request (no PR body to read)"
     return 0
   fi
-  if ! added="$(added_he_lines)"; then
+  added="$(added_he_lines)"; rc=$?
+  if [ "$rc" -eq 1 ]; then
     echo "hebrew-copy-skills-guard: skipped — no base branch to diff against"
     return 0
+  fi
+  if [ "$rc" -eq 2 ]; then
+    if [[ "$(today_il)" < "$BLOCK_FROM" ]]; then
+      echo "::warning::hebrew-copy-skills-guard WARNING: could not read the $HE_FILE diff against the base"
+      return 0
+    fi
+    echo "$HE_FILE: could not read the diff against the base branch — the guard cannot tell whether Hebrew changed."
+    return 1
   fi
   if ! printf '%s\n' "$added" | has_hebrew; then
     echo "hebrew-copy-skills-guard: OK — no Hebrew text added or changed in $HE_FILE"
     return 0
   fi
-  line="$(printf '%s\n' "$body" | skills_line)"
+  line="$(printf '%s\n' "$body" | skills_block)"
+  if grep -qE 'skills:[*[:space:]]*none fit' <<<"$line"; then line=""; fi
   for s in $REQUIRED_SKILLS; do
-    grep -qF "$s" <<<"$line" || missing="$missing $s"
+    names_skill "$line" "$s" || missing="$missing $s"
   done
   if [ -z "$missing" ]; then
     echo "hebrew-copy-skills-guard: OK — Hebrew copy changed, Skills: line names both skills"
@@ -118,6 +144,9 @@ self_test() {
   run_case "Hebrew added, none fit"             FAIL $'Skills: none fit — rename\n' "$he"
   run_case "no Hebrew in added lines"           PASS $'no skills line\n' "$en_only"
   run_case "he.json untouched"                  PASS $'no skills line\n' ""
+  run_case "skills as a list under the line"   PASS $'Skills:\n- hebrew-content-writer\n- clarify\n\nCloses MEH-1\n' "$he"
+  run_case "none fit that names the skills"     FAIL $'Skills: none fit — did not run hebrew-content-writer or clarify\n' "$he"
+  run_case "skill name inside another word"     FAIL $'Skills: not-hebrew-content-writer, clarifying\n' "$he"
   CASE_TODAY="2026-11-21" run_case "day before BLOCK_FROM warns only" PASS $'Summary only\n' "$he"
   CASE_TODAY="$BLOCK_FROM" run_case "on BLOCK_FROM it blocks"          FAIL $'Summary only\n' "$he"
   # Anchored to the real file: a line taken from the current he.json must count as Hebrew.
@@ -127,6 +156,26 @@ for l in open(sys.argv[1], encoding="utf-8"):
     if re.search("[\u05d0-\u05ea]", l): print(l.rstrip("\n")); break' "$HE_FILE" 2>/dev/null)"
   if [ "$real" = "+" ]; then echo "  [XX] real-file anchor: no Hebrew line found in $HE_FILE"; status=1
   else run_case "real he.json line, no Skills line" FAIL $'Summary\n' "$real"; fi
+  # The real diff reader, against a throw-away repo (no override of the lines).
+  local tmp rc out
+  tmp="$(mktemp -d)"
+  (
+    cd "$tmp" && git init -q && mkdir -p frontend/messages &&
+    printf '{\n  "a": "x"\n}\n' > frontend/messages/he.json &&
+    git -c user.email=t@t -c user.name=t add . && git -c user.email=t@t -c user.name=t commit -qm base &&
+    printf '{\n  "a": "x",\n  "b": "שלום"\n}\n' > frontend/messages/he.json &&
+    git -c user.email=t@t -c user.name=t commit -qam change
+  ) >/dev/null 2>&1
+  out="$(cd "$tmp" && HEBREW_COPY_RANGE="HEAD~1...HEAD" added_he_lines)"; rc=$?
+  if [ "$rc" -eq 0 ] && printf '%s\n' "$out" | has_hebrew; then echo "  [ok] real git diff reader sees the added Hebrew line"
+  else echo "  [XX] real git diff reader: rc=$rc, Hebrew not seen"; status=1; fi
+  (cd "$tmp" && HEBREW_COPY_RANGE="nonexistent...HEAD" added_he_lines >/dev/null); rc=$?
+  if [ "$rc" -eq 2 ]; then echo "  [ok] unreadable diff reports an error, not 'no change'"
+  else echo "  [XX] unreadable diff returned rc=$rc, expected 2"; status=1; fi
+  out="$(cd "$tmp" && HEBREW_COPY_RANGE="nonexistent...HEAD" HEBREW_COPY_TODAY="$BLOCK_FROM" HEBREW_COPY_PR_BODY=x check)"; rc=$?
+  if [ "$rc" -eq 1 ]; then echo "  [ok] unreadable diff blocks from BLOCK_FROM"
+  else echo "  [XX] unreadable diff did not block (rc=$rc)"; status=1; fi
+  rm -rf "$tmp"
   return "$status"
 }
 

@@ -608,8 +608,8 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns on
     a PR body without it. Re-check the table when a task turns into a new kind
     of work mid-way — a draft of Hebrew copy in a doc or a card counts as copy
-    (18/11). A PR that adds Hebrew to `frontend/messages/he.json` fails (warns until 22/11)
-    `scripts/checks/hebrew-copy-skills-guard.sh` unless its `Skills:` line names
+    (18/11). From 22/11 (a warning until then), a PR that adds Hebrew to
+    `frontend/messages/he.json` fails `scripts/checks/hebrew-copy-skills-guard.sh` unless its `Skills:` line names
     `hebrew-content-writer` and `clarify`.
 
     | Task | Skills |
