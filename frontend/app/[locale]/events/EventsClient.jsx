@@ -185,18 +185,40 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // - On a history move the URL is the truth for the filters too: the entry
   //   may carry ?city= / ?category= that the reset never saw (Back to
   //   /events?city=X must filter by X, not show the city in the bar only).
+  // - MEH-3090: `pathname` alone is not enough. Next folds our pushState into
+  //   its router in a transition, so the hook can miss the move to the other
+  //   tab entirely; Back then changes no pathname it ever saw and the tab
+  //   stayed put (E2E 46-hub-tab-switch:114, 20 s on a loaded runner). A
+  //   popstate listener reads the URL at the event itself. `tabRef` holds the
+  //   tab this sync last applied, so the listener and the effect running for
+  //   the same move apply it once (one list fetch per Back, as MEH-2980 pins).
+  const tabRef = useRef(tab);
+  // Not assigned during render: an interrupted or transition render holding
+  // the old tab could reset the ref after the sync set it (reviewer, #4800).
   useEffect(() => {
+    tabRef.current = tab;
+  }, [tab]);
+  const syncFromUrlRef = useRef(null);
+  syncFromUrlRef.current = () => {
     const urlTab = tabFromPath(window.location.pathname);
     if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
-    if (!urlTab || urlTab === tab) return;
+    if (!urlTab || urlTab === tabRef.current) return;
+    tabRef.current = urlTab;
     const p = new URLSearchParams(window.location.search);
     setTab(urlTab);
     setView("list");
     setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
     setCity(p.get("city") || "");
     setCategories(categoriesFor(urlTab, p.getAll("category")));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  };
+  useEffect(() => {
+    syncFromUrlRef.current();
   }, [pathname]);
+  useEffect(() => {
+    const onPop = () => syncFromUrlRef.current();
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
   // {city, category}, so filters survive refresh/share and the switchTab
