@@ -243,6 +243,21 @@ def send_registrant_moved(
     send_email(to, subject, body, html=html, test_cause=test_cause)
 
 
+def send_registrant_method_changed(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """MEH-3310: the business stopped taking sign-ups on the site; hers stays."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'עדכון על ההרשמה ל"{title}"'
+    lines = [
+        f'ההרשמות ל"{title}" אצל {host} כבר לא נעשות דרך מהמקור.',
+        "ההרשמה שלכם נשארת בתוקף, ובית העסק רואה אותה ברשימת הנרשמים.",
+        f"לשאלות אפשר לפנות ישירות ל{host}. אם כבר לא מתאים לכם, אפשר לבטל כאן: {m.cancel_url}",
+    ]
+    _send_lines(to, subject, lines, test_cause=test_cause)
+
+
 def _send_lines(to: str, subject: str, lines: list[str], *, test_cause: bool) -> None:
     body = f"{subject}\n\n" + "\n".join(lines) + "\n\nצוות מהמקור"
     e = html_escape

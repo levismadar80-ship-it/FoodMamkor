@@ -21,7 +21,7 @@ Related:  services/group_buy_delist.py::cancel_live_group_buys (MEH-2498,
           the precedent) · routers/rescue.py::cancel_offer (the business's
           own bag cancel) · routers/registrations.py (the confirmation email
           these mirror).
-History:  MEH-3227 (creation)
+History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants)
 """
 
 from __future__ import annotations
@@ -51,6 +51,7 @@ from app.services.registration_emails import (
     RegistrantEmail,
     send_registrant_cancelled,
     send_registrant_delisted,
+    send_registrant_method_changed,
     send_registrant_moved,
 )
 from app.services.rescue_emails import send_delisted_cancel_email
@@ -395,11 +396,15 @@ def notify_item_moved(
     item: Event | Experience,
     background_tasks: BackgroundTasks,
     test_cause: bool,
+    sender: Any = None,
 ) -> int:
     """The business moved ``item``'s date or time (already applied): each
-    active registrant gets the new time and her cancel link. Sign-ups stay."""
+    active registrant gets the new time and her cancel link. Sign-ups stay.
+    MEH-3310: the same walk with ``send_registrant_method_changed`` when the
+    business stops taking sign-ups on the site."""
     if not _is_upcoming(item):
         return 0
+    sender = sender or send_registrant_moved  # resolved per call (tests patch it)
     host_name = _host_name_for(item)
     regs = (
         db.query(Registration)
@@ -409,7 +414,7 @@ def notify_item_moved(
     for reg in regs:
         if reg.email:
             background_tasks.add_task(
-                send_registrant_moved,
+                sender,
                 str(reg.email),
                 _message(reg, item, host_name),
                 test_cause=test_cause,
@@ -425,28 +430,44 @@ def is_test_item(item: Event | Experience) -> bool:
     return bool(business and business.is_test)
 
 
-def item_state(item: Event | Experience) -> tuple[Any, Any, Any]:
-    """What an edit is compared against: (is_active, date, time). Read it
-    before the route applies the edit."""
-    return (bool(item.is_active), item.event_date, item.event_time)
+def item_state(item: Event | Experience) -> tuple[Any, Any, Any, Any]:
+    """What an edit is compared against: (is_active, date, time, method).
+    Read it before the route applies the edit."""
+    return (
+        bool(item.is_active),
+        item.event_date,
+        item.event_time,
+        item.registration_method,
+    )
 
 
 def after_item_edit(
     db: Session,
     item: Event | Experience,
-    before: tuple[Any, Any, Any],
+    before: tuple[Any, Any, Any, Any],
     background_tasks: BackgroundTasks,
     test_cause: bool,
 ) -> int:
     """Call after the edit is applied, before the commit (MEH-3227 D1b):
     active → cancelled cancels the sign-ups; a new date or time on a live
-    item mails each registrant the new time. Anything else sends nothing."""
-    was_active, old_date, old_time = before
+    item mails each registrant the new time; MEH-3310: leaving «site_form»
+    tells each registrant her sign-up stands. Anything else sends nothing."""
+    was_active, old_date, old_time, old_method = before
     if was_active and not item.is_active:
         return cancel_item_signups(db, item, background_tasks, test_cause)
+    sent = 0
     moved = (item.event_date, item.event_time) != (old_date, old_time)
     # A past item moved forward: its registrants were for the old, past date.
     was_upcoming = bool(old_date and old_date >= israel_today())
     if item.is_active and moved and was_upcoming:
-        return notify_item_moved(db, item, background_tasks, test_cause)
-    return 0
+        sent += notify_item_moved(db, item, background_tasks, test_cause)
+    left_site_form = (
+        old_method == "site_form" and item.registration_method != "site_form"
+    )
+    # A move already mailed each registrant her kept sign-up and cancel link;
+    # one email per edit, not two.
+    if item.is_active and left_site_form and not sent:
+        sent += notify_item_moved(
+            db, item, background_tasks, test_cause, send_registrant_method_changed
+        )
+    return sent

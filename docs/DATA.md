@@ -998,6 +998,17 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > nothing. All mail is a BackgroundTask (fail-open, `test_cause` for a test
 > business).
 >
+> **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
+> `max_participants` below the item's active on-site sign-ups → **422**
+> «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
+> `services/registrations.refuse_too_few_places`), nothing written. Not checked
+> when the value equals the stored one, or when the same PUT cancels the item:
+> those sign-ups are cancelled with it, so nobody is left holding a place. Switching
+> `registration_method` away from `site_form` on an active item keeps every
+> sign-up and mails each registrant once («עדכון על ההרשמה ל"{title}"», with the
+> cancel link). A PUT that also moves the date sends only the «moved» email. Both dashboards keep showing the list while `registered_count`
+> > 0. No schema change.
+>
 > **MEH-2502 — the admin edit cannot change status.** `PUT
 > /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
 > סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status
