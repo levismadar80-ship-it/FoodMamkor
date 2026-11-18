@@ -28,8 +28,8 @@ import {
 import { COLOR } from "@/lib/color-tokens";
 import { priceLabel } from "@/lib/share-post";
 
-export const POST_W = 1080;
-export const POST_H = 1350;
+const POST_W = 1080;
+const POST_H = 1350;
 const PHOTO_H = 560;
 const FOOTER_H = 150;
 const SIDE = 80;
@@ -76,7 +76,7 @@ function photoSrc(url) {
  * @param {string} text
  * @param {{ max: number, min: number, weight: number, family: string, maxLines: number }} o
  */
-export function fitLines(ctx, text, o) {
+function fitLines(ctx, text, o) {
   for (let size = o.max; size >= o.min; size -= 4) {
     ctx.font = `${o.weight} ${size}px ${o.family}`;
     const lines = wrapText(ctx, text, TEXT_W);

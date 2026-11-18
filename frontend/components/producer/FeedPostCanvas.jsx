@@ -44,7 +44,6 @@ function useOwnerProducts() {
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
-    setFailed(false);
     api
       .get("/producers/me/products")
       .then((r) => live && setProducts(orderProducts(Array.isArray(r.data) ? r.data : [])))
@@ -53,7 +52,11 @@ function useOwnerProducts() {
       live = false;
     };
   }, [attempt]);
-  return { products, failed, retry: () => setAttempt((n) => n + 1) };
+  const retry = () => {
+    setFailed(false);
+    setAttempt((n) => n + 1);
+  };
+  return { products, failed, retry };
 }
 
 /**

@@ -22,7 +22,7 @@ export const WEEK_ITEMS_MAX = 3;
 
 /** The `from` value a shared link carries — must stay in the backend's
  *  _ALLOWED_REFERRERS (services/analytics.py), or the visit counts as direct. */
-export const SHARE_FROM = "share";
+const SHARE_FROM = "share";
 
 /**
  * @typedef {{ id?: string, name: string, description?: string|null,
