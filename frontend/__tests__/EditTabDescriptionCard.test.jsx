@@ -197,3 +197,11 @@ describe("DescriptionCard — AI-rejected text (MEH-3261)", () => {
     expect(screen.queryByText(D.error_save)).toBeNull();
   });
 });
+
+// MEH-3351: the visible «desc_label» names the hero textarea for a screen reader.
+describe("DescriptionCard — the description field has an accessible name", () => {
+  it("getByLabelText(desc_label) finds the textarea with the description placeholder", () => {
+    renderCard();
+    expect(screen.getByLabelText(D.desc_label)).toBe(screen.getByPlaceholderText(D.desc_placeholder));
+  });
+});
