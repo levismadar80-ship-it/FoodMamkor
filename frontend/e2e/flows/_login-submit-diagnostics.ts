@@ -23,6 +23,16 @@ import type { Page } from "@playwright/test";
 
 const LOGIN_API = /\/api\/auth\/login$/;
 const MAX_CONSOLE_LINES = 5;
+const SNAPSHOT_BUDGET_MS = 2_000;
+
+/** Path of a URL, or "" — a listener must never throw into the test. */
+function pathOf(url: string): string {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return "";
+  }
+}
 
 type FieldState = {
   count: number;
@@ -32,6 +42,20 @@ type FieldState = {
 };
 
 async function formState(page: Page): Promise<unknown> {
+  // Bounded: a snapshot taken mid-navigation can stall, and this helper must
+  // never add a wait the test did not already have.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<unknown>((resolve) => {
+    timer = setTimeout(() => resolve({ snapshotTimedOut: SNAPSHOT_BUDGET_MS }), SNAPSHOT_BUDGET_MS);
+  });
+  try {
+    return await Promise.race([timedOut, snapshot(page)]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function snapshot(page: Page): Promise<unknown> {
   try {
     return await page.evaluate(() => {
       const pick = (id: string): FieldState => {
@@ -67,19 +91,20 @@ export function watchLoginSubmit(page: Page) {
   const t0 = Date.now();
   const events: string[] = [];
   const log = (line: string) => events.push(`+${Date.now() - t0}ms ${line}`);
+  const isLogin = (url: string) => LOGIN_API.test(pathOf(url));
   let consoleLines = 0;
 
   page.on("request", (r) => {
-    if (LOGIN_API.test(new URL(r.url()).pathname)) log(`request ${r.method()} ${r.url()}`);
+    if (isLogin(r.url())) log(`request ${r.method()} ${pathOf(r.url())}`);
   });
   page.on("requestfailed", (r) => {
-    if (LOGIN_API.test(new URL(r.url()).pathname)) log(`requestfailed ${r.failure()?.errorText}`);
+    if (isLogin(r.url())) log(`requestfailed ${r.failure()?.errorText}`);
   });
   page.on("response", (r) => {
-    if (LOGIN_API.test(new URL(r.url()).pathname)) log(`response ${r.status()}`);
+    if (isLogin(r.url())) log(`response ${r.status()}`);
   });
   page.on("framenavigated", (f) => {
-    if (f === page.mainFrame()) log(`navigated ${new URL(f.url()).pathname}`);
+    if (f === page.mainFrame()) log(`navigated ${pathOf(f.url()) || f.url().slice(0, 40)}`);
   });
   page.on("pageerror", (e) => log(`pageerror ${e.message.slice(0, 200)}`));
   page.on("console", (m) => {
@@ -107,7 +132,11 @@ export function watchLoginSubmit(page: Page) {
           "\n\nlogin-submit diagnostics (MEH-3154 · MEH-3380):\n  " +
           (events.length ? events.join("\n  ") : "(no events recorded)");
         if (err instanceof Error) {
-          err.message += report;
+          // The stack embeds the message captured at construction; update
+          // both so whichever one the reporter prints carries the report.
+          const original = err.message;
+          err.message = original + report;
+          if (err.stack?.includes(original)) err.stack = err.stack.replace(original, err.message);
           throw err;
         }
         throw new Error(String(err) + report);
