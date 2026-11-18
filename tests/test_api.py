@@ -1698,6 +1698,7 @@ class TestLoginTimingEqualization:
 
         WARMUP = 5
         N = 50
+        from app.rate_limit import limiter
 
         def measure(branch_id: int, email_for, password_for) -> float:
             """Return p95 of N measured iterations after WARMUP warmups.
@@ -1712,6 +1713,11 @@ class TestLoginTimingEqualization:
                         f"10.{branch_id}.{(i >> 8) & 0xFF}.{i & 0xFF}"
                     )
                 }
+                # MEH-3372: branches 2 and 3 hit ONE address 60 times, and
+                # login now stops an address at 10 per 15 minutes. Clear the
+                # counters outside the timed region so every iteration
+                # measures the 401 path, which is this test's subject.
+                limiter._storage.reset()
                 start = time.perf_counter()
                 resp = client.post("/auth/login", json=payload, headers=headers)
                 elapsed = time.perf_counter() - start

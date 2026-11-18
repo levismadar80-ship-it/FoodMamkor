@@ -98,6 +98,7 @@ from app.schemas.rescue import (
     RescueTypicalItemsOut,
 )
 from app.sentry import capture_background_exception
+from app.services.rescue_business_emails import queue_business_reservation_email
 from app.services.rescue_emails import (
     ReservationEmail,
     israel_hhmm,
@@ -911,6 +912,7 @@ def create_order(
     # it into a 500: the buyer would read that as "not reserved" and retry.
     try:
         _queue_reservation_email(background_tasks, current_user, offer, order)
+        queue_business_reservation_email(background_tasks, db, offer, order)  # MEH-3313
     except Exception as exc:  # noqa: BLE001 — fail-open by design (MEH-2715)
         capture_background_exception(exc, task="rescue_reservation_email")
         logger.error("rescue reservation email not queued: %s", type(exc).__name__)
@@ -936,7 +938,7 @@ def _refuse_unless_reserved_for_handover(order: RescueOrder) -> None:
     if order.status == "handed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"הסל כבר נמסר ב-{order.handed_at:%H:%M}"
+            detail=f"הסל כבר נמסר ב-{israel_hhmm(order.handed_at)}"  # type: ignore[arg-type]
             if order.handed_at
             else "הסל כבר נמסר",
         )

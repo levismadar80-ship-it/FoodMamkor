@@ -210,6 +210,8 @@ class TestSourceConstants:
             ("ProducerRecipe", "image_url"),
             ("RescueReview", "photo_url"),
             ("KashrutBadgeRequest", "cert_url"),
+            # MEH-3377: the consent screenshot, an audit record.
+            ("Producer", "consent_screenshot_url"),
         ]
 
     def test_array_sources_is_two_specific_columns(self):
@@ -219,9 +221,9 @@ class TestSourceConstants:
             ("HomeProduct", "images"),
         ]
 
-    def test_total_source_count_is_twelve(self):
-        # MEH-3247: 10 scalar + 2 array = 12 referenced-set sources (was 8).
-        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 12
+    def test_total_source_count_is_thirteen(self):
+        # MEH-3247: 10 scalar + 2 array = 12 (was 8). MEH-3377: +1 scalar.
+        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 13
 
 
 class TestAddScalarUrls:

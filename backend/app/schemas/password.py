@@ -34,6 +34,10 @@ PasswordField = Annotated[
     Field(
         min_length=12,
         max_length=200,
+        # MEH-3271: bcrypt refuses a NUL byte (auth.hash_password raises), which
+        # was a 500 on signup and password change. No keyboard types one, so
+        # pydantic's own pattern message is enough.
+        pattern=r"^[^\x00]*$",
         description="Password — additional checks via password_policy service",
     ),
 ]

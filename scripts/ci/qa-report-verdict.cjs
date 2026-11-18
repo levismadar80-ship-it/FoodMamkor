@@ -9,8 +9,9 @@
  *           step outputs; the concurrency policy is untouched.
  * Related:  .github/workflows/e2e.yml (the caller, once the staged patch in
  *           docs/ci/meh-2196-qa-three-state.patch.md is applied),
- *           scripts/e2e-gate-selftest.sh (same shape: prove the discrimination
- *           in a committed script before the workflow edit is applied).
+ *           scripts/checks/e2e-gate-selftest.sh (same shape, one step further:
+ *           its workflow edit HAS landed (#4743), so it moved into
+ *           scripts/checks/ and now reds when the gate loses its strictness).
  * History:  MEH-2196 (creation, 2026-08-27).
  *
  * ---------------------------------------------------------------------------
