@@ -1,6 +1,32 @@
 import { test, expect } from "./_cloudinary-stub";
+import type { Page } from "./_cloudinary-stub";
 
 const TOGGLE = '[data-testid="language-toggle"]';
+
+// MEH-3392: resolves once a VISIBLE toggle carries React's props expando with
+// an onClick, i.e. a click on it will run onToggle. Throws a named error, so a
+// hydration that never happens is not read back as a slow navigation.
+async function waitForToggleHydrated(page: Page): Promise<void> {
+  try {
+    await page.waitForFunction(
+      (sel) =>
+        Array.from(document.querySelectorAll(sel)).some((el) => {
+          if (!(el instanceof HTMLElement) || el.offsetParent === null) return false;
+          const key = Object.keys(el).find((k) => k.startsWith("__reactProps"));
+          const props = key ? (el as unknown as Record<string, { onClick?: unknown }>)[key] : null;
+          return typeof props?.onClick === "function";
+        }),
+      TOGGLE,
+      { timeout: 15_000 },
+    );
+  } catch (err) {
+    throw new Error(
+      "waitForToggleHydrated: no visible React-owned language toggle with an onClick " +
+        "within 15 s, so a click would be swallowed (MEH-3392). " +
+        `Cause: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
 
 /**
  * MEH-475 LanguageToggle — a Globe button that flips HE ⇄ EN while preserving
@@ -104,13 +130,23 @@ test.describe("Language toggle", () => {
     await expect(toggle).toBeVisible({ timeout: 15_000 });
     await expect(toggle).toHaveAttribute("data-current-locale", "he");
 
+    // MEH-3392: both lines above are already true in the server HTML, before
+    // React hydrates, so a click there lands on a button with no handler and
+    // nothing navigates (22 s fail, 3 s pass on retry). Wait until React owns
+    // the visible toggle, the same `__react…$` expando check as
+    // _settled-field.ts (MEH-2323), with an explicit bound.
+    await waitForToggleHydrated(page);
+
     // HE → EN: `as-needed` prefix adds the /en segment.
     await toggle.click();
     await page.waitForURL(/\/en(\/|$|\?)/, { timeout: 20_000 });
     const enToggle = page.locator(`${TOGGLE}:visible`).first();
     await expect(enToggle).toHaveAttribute("data-current-locale", "en");
 
-    // EN → HE: the /en prefix is dropped (default locale).
+    // EN → HE: the /en prefix is dropped (default locale). The wait returns at
+    // once when the /en toggle is already React-owned (a client navigation),
+    // and covers the case where /en arrived as a full load with its own gap.
+    await waitForToggleHydrated(page);
     await enToggle.click();
     await page.waitForURL((url) => !/\/en(\/|$)/.test(url.pathname), { timeout: 20_000 });
     await expect(page.locator(`${TOGGLE}:visible`).first()).toHaveAttribute(
