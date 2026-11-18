@@ -742,7 +742,9 @@ def join_delivery_waitlist(
     producer_id: UUID,
     data: DeliveryWaitlistIn,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_lenient),
+    # MEH-1627: an ordinary form that can retry, so `_optional` (an expired
+    # token is a 401 and the client refreshes), never `_lenient`.
+    current_user: User | None = Depends(get_current_user_optional),
 ) -> DeliveryWaitlistOut:
     """«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
 
