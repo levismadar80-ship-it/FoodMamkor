@@ -32,7 +32,9 @@ function backendCities() {
   const out = [];
   for (const line of block[1].split("\n")) {
     const code = line.replace(/#.*$/, "");
-    for (const m of code.matchAll(/"([^"]+)"/g)) out.push(m[1]);
+    // Both quote styles: ruff single-quotes a name that holds a double quote
+    // (כרם מהר"ל), so a "…"-only parse silently dropped it.
+    for (const m of code.matchAll(/"([^"]+)"|'([^']+)'/g)) out.push(m[1] ?? m[2]);
   }
   expect(out.length, "parsed almost no cities").toBeGreaterThan(50);
   return out;
