@@ -51,18 +51,8 @@ export default function OrderStepper({ product, qty, onChange }) {
       className="flex items-center rounded-full bg-action-primary text-white"
       data-testid="order-stepper"
     >
-      <button
-        type="button"
-        className={ROUND}
-        aria-label={t("add_one", { name: product.name })}
-        onClick={() => onChange(product.id, qty + 1)}
-        data-testid="order-plus"
-      >
-        <Plus size={16} weight="bold" aria-hidden="true" />
-      </button>
-      <span className="min-w-[1.5rem] text-center font-medium" aria-live="polite" data-testid="order-qty">
-        {qty}
-      </span>
+      {/* «−» first: in RTL it lands on the right and «+» on the left, as in
+          placement A (Sapir 14/11). */}
       <button
         type="button"
         className={ROUND}
@@ -71,6 +61,18 @@ export default function OrderStepper({ product, qty, onChange }) {
         data-testid="order-minus"
       >
         <Minus size={16} weight="bold" aria-hidden="true" />
+      </button>
+      <span className="min-w-[1.5rem] text-center font-medium" aria-live="polite" data-testid="order-qty">
+        {qty}
+      </span>
+      <button
+        type="button"
+        className={ROUND}
+        aria-label={t("add_one", { name: product.name })}
+        onClick={() => onChange(product.id, qty + 1)}
+        data-testid="order-plus"
+      >
+        <Plus size={16} weight="bold" aria-hidden="true" />
       </button>
     </div>
   );
