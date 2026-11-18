@@ -23,7 +23,10 @@ from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
 )
-from app.services.booking_cancellations import delist_business  # MEH-2498, MEH-3227
+from app.services.booking_cancellations import (  # MEH-2498, MEH-3227
+    delist_business,
+    hide_business,  # MEH-2871
+)
 from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
     validate_transition,
@@ -822,7 +825,6 @@ def toggle_producer_status(
         # MEH-769's "no side-effects" rule is untouched: this adds a check, not
         # the approval email/WhatsApp.
         _assert_approvable(db, producer, ApprovalOverrides(), user.id)  # type: ignore[arg-type]
-    producer.status = "inactive" if was_approved else "approved"  # type: ignore[assignment]
     if was_approved:
         # MEH-2974: suspending a live page REVOKES any outstanding owner
         # invite on it.
@@ -846,17 +848,16 @@ def toggle_producer_status(
         #
         # An ACCEPTED invite is left alone: `owner_invite_accepted_at` is the
         # record that it happened, and the business has a real owner now.
-        if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
-            producer.owner_invite_token_hash = None  # type: ignore[assignment]
-            producer.owner_invite_code_hash = None  # type: ignore[assignment]
-            producer.owner_invite_code_expires_at = None  # type: ignore[assignment]
-            producer.owner_invite_code_attempts = None  # type: ignore[assignment]
         # MEH-2498: suspending takes the business off the site, so its live
         # group buys go with it — cancelled in the same commit, participants
         # mailed. Folded into the block above rather than left as a second
         # `if was_approved:` immediately after it: two consecutive identical
         # conditions read as though one of them guards something else.
-        delist_business(db, producer, background_tasks, "hidden")  # MEH-3227
+        # The status flip, the invite revoke and delist_business are one
+        # path, shared with blocking the owner (MEH-2871).
+        hide_business(db, producer, background_tasks)
+    else:
+        producer.status = "approved"  # type: ignore[assignment]
     db.commit()
     # MEH-2852: hidden or back on the site — either way the page changed.
     indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
