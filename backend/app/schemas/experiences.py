@@ -294,10 +294,14 @@ class ExperienceValidateRequest(BaseModel):
     """Real-time form validation. No auth, no persistence."""
 
     title: str = Field(..., min_length=1, max_length=300)
-    description: str | None = None
-    category: str | None = None
-    city: str | None = None
-    location_type: str | None = None
+    # MEH-3271: this body goes to the moderation model from a public route, so
+    # every string is bounded. The caps are the create form's own
+    # (ExperienceCreate: description 5000, city 100); category and location_type
+    # are short labels and get 200.
+    description: str | None = Field(None, max_length=5000)
+    category: str | None = Field(None, max_length=200)
+    city: str | None = Field(None, max_length=100)
+    location_type: str | None = Field(None, max_length=200)
     price_per_person: Decimal | None = None
     max_participants: int | None = None
 

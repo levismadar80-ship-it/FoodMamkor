@@ -71,7 +71,7 @@ component reviewed in English looks fine, because there `start-` is the empty
 left margin.
 
 **Reference implementation: `LocationModal.jsx` (MEH-2038)** — the close button at
-`end-4` (16→60px from the card edge) *and* `sm:pe-10` on the heading + subtitle (16 + 44 − 24 = 36px needed, 40px reserved).
+`end-4` (16→60px from the card edge) *and* `pe-10` on the heading + subtitle (on every width since MEH-3271) (16 + 44 − 24 = 36px needed, 40px reserved).
 The earlier reference, `OnboardingTip.jsx` (`top-0 end-0 w-11 h-11` + `pe-8`, MEH-1687: 0 + 44 − 16 = 28px needed, 32px reserved),
 left with the coach-mark tour in MEH-2394. `Lightbox.jsx:156` (`top-4 end-4`) is the
 position half.
@@ -332,13 +332,27 @@ near-me pill (and the search-this-area pill), NOT the FAB.
 ## RTL allowlist — single source of truth (MEH-365 / MEH-426)
 
 `.claude/hooks/rtl-allowlist.txt` is the **single source of truth** for RTL
-exceptions. Both enforcement tools read from it:
+exceptions. All three enforcement tools read from it:
 
 - `check-rtl.sh` (PreToolUse hook) — blocks edits to non-allowlisted files
   containing physical RTL classes unless every violation is annotated within
   ±1 line of an inline marker.
 - `verify-frontend` agent — static scan reports violations not covered by
   a path exception or an inline marker (±1 adjacency).
+- `scripts/checks/rtl-logical-props-guard.sh` (MEH-3351) — the CI gate, under
+  the required *Repo guards* job. It copies the hook's pattern and both
+  exception routes and reads this file, so it cannot disagree with the hook
+  about what counts or what is exempt. It is the only one of the three that
+  sees the **whole committed tree**: the hook sees one edit at a time and only
+  through Claude Code's Edit/Write, so a physical class from a commit made
+  outside Claude Code, a session with hooks off, a merge or a `git apply` used
+  to land with nothing red.
+  **Widening the pattern is a change to the hook, not to the guard** — the
+  guard follows it automatically.
+  It differs from the hook in one way only, and the difference is not a rule
+  change: comments are stripped across lines before matching, because
+  `\b(right-)[0-9a-z]` matches the English words "left-to-right" and
+  "right-aligned", and prose is not a class.
 
 ### Two sections in the allowlist
 

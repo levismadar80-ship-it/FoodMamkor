@@ -167,3 +167,69 @@ describe("ReportButton focus return + dialog semantics (MEH-158)", () => {
     expect(dialog).toHaveAttribute("aria-labelledby", "report-dialog-title");
   });
 });
+
+// ─── MEH-3271: unmount while open, and a Tab from outside the panel ──────────
+
+function UnmountingLogin() {
+  const [shown, setShown] = useState(false);
+  return (
+    <>
+      <button data-testid="trigger" onClick={() => setShown(true)}>Open</button>
+      <button data-testid="outside">Outside</button>
+      <button data-testid="remove" onClick={() => setShown(false)}>Remove</button>
+      {shown && <LoginPromptModal open onClose={() => {}} />}
+    </>
+  );
+}
+
+describe("modal focus — MEH-3271", () => {
+  afterEach(() => {
+    document.body.style.overflow = "";
+  });
+
+  it("LoginPromptModal unmounted while open still returns focus to the trigger", async () => {
+    render(<UnmountingLogin />);
+    const trigger = screen.getByTestId("trigger");
+    trigger.focus();
+    await act(async () => { fireEvent.click(trigger); });
+    // control: focus moved into the modal
+    expect(document.activeElement).not.toBe(trigger);
+
+    await act(async () => { fireEvent.click(screen.getByTestId("remove")); });
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("LoginPromptModal: Tab with focus outside the panel is pulled back inside", async () => {
+    render(<UnmountingLogin />);
+    await act(async () => { fireEvent.click(screen.getByTestId("trigger")); });
+    const dialog = screen.getByRole("dialog");
+    screen.getByTestId("outside").focus();
+
+    await act(async () => { fireEvent.keyDown(window, { key: "Tab" }); });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    screen.getByTestId("outside").focus();
+    await act(async () => { fireEvent.keyDown(window, { key: "Tab", shiftKey: true }); });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
+  it("LocationModal: Tab with focus outside the panel is pulled back inside", async () => {
+    function Wrapper() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button data-testid="trigger" onClick={() => setOpen(true)}>Open</button>
+          <button data-testid="outside">Outside</button>
+          <LocationModal open={open} onClose={() => setOpen(false)} onSelect={() => {}} />
+        </>
+      );
+    }
+    render(<Wrapper />);
+    await act(async () => { fireEvent.click(screen.getByTestId("trigger")); });
+    const dialog = screen.getByRole("dialog");
+    screen.getByTestId("outside").focus();
+
+    await act(async () => { fireEvent.keyDown(document, { key: "Tab" }); });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+});

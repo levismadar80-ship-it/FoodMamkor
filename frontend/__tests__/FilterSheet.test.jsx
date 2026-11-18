@@ -253,7 +253,8 @@ describe("FilterSheet (MEH-1075)", () => {
     const { props } = renderSheet();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(props.onClose).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByLabelText("filters.sheet.close_aria"));
+    // MEH-3271: the visible ✕ shares the label; the backdrop is first in DOM.
+    fireEvent.click(screen.getAllByLabelText("filters.sheet.close_aria")[0]);
     expect(props.onClose).toHaveBeenCalledTimes(2);
   });
 
@@ -340,5 +341,78 @@ describe("FilterSheet apply footer stickiness (MEH-1945)", () => {
     renderSheet();
     expect(panelOf().className).toMatch(/(^|\s)pb-0(\s|$)/);
     expect(footerOf().className).toMatch(/safe-area-inset-bottom/);
+  });
+});
+
+// MEH-3271: the Tab loop holds when focus has left the panel (a tap on the
+// scrim, an element that was removed).
+describe("FilterSheet — Tab from outside the panel (MEH-3271)", () => {
+  it("is pulled back to the first / last control", () => {
+    renderSheet();
+    const panel = document.getElementById("filter-sheet-panel");
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    try {
+      outside.focus();
+      expect(panel.contains(document.activeElement)).toBe(false); // control
+
+      fireEvent.keyDown(document, { key: "Tab" });
+      expect(panel.contains(document.activeElement)).toBe(true);
+
+      outside.focus();
+      fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+      expect(panel.contains(document.activeElement)).toBe(true);
+    } finally {
+      outside.remove();
+    }
+  });
+});
+
+// MEH-3271 (Sapir 18/11): the phone sheet has a visible ✕, not only the drag
+// handle and the scrim (WCAG 2.2 2.5.7). It sits at the reading end and the
+// title reserves its footprint.
+describe("FilterSheet visible close (MEH-3271)", () => {
+  it("a labelled ✕ closes the sheet", () => {
+    const { props } = renderSheet();
+    const close = screen.getByTestId("filter-sheet-close");
+    expect(close).toHaveAttribute("aria-label", "filters.sheet.close_aria");
+    expect(close.className).toContain("end-3");
+    expect(close.className).toContain("w-11 h-11");
+    fireEvent.click(close);
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("the title reserves the ✕ footprint on the phone only", () => {
+    renderSheet();
+    const title = document.getElementById("filter-sheet-title");
+    expect(title.className).toContain("pe-11");
+    expect(title.className).toContain("lg:pe-0");
+  });
+});
+
+describe("FilterSheet desktop focus skips the phone-only ✕ (MEH-3271)", () => {
+  it("on desktop the first focus lands on a chip, not the hidden ✕", () => {
+    const prev = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: query.includes("min-width: 1024px"),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    try {
+      renderSheet();
+      expect(document.activeElement).not.toBe(screen.getByTestId("filter-sheet-close"));
+      expect(document.getElementById("filter-sheet-panel").contains(document.activeElement)).toBe(true);
+    } finally {
+      window.matchMedia = prev;
+    }
+  });
+
+  it("on the phone the ✕ is part of the trap", () => {
+    renderSheet();
+    expect(document.activeElement).toBe(screen.getByTestId("filter-sheet-close"));
   });
 });

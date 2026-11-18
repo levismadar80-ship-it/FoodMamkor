@@ -232,6 +232,25 @@ def _reset_rate_limiter():
 
 
 @pytest.fixture(autouse=True)
+def _outbound_guard_as_production(monkeypatch, request):
+    """MEH-3402: the suite runs with ENV=development, where the outbound guard
+    redirects mail and drops WhatsApp/push/newsletter sends. Every existing
+    test of a sender asserts the PRODUCTION behaviour, so the guard reads
+    "production" here by default.
+
+    Skipped for tests/test_meh3402_outbound_guard.py, which tests the guard
+    itself in both environments and sets the environment per test.
+    """
+    if request.node.fspath.basename == "test_meh3402_outbound_guard.py":
+        yield
+        return
+    from app.services import outbound_guard
+
+    monkeypatch.setattr(outbound_guard, "is_production", lambda: True)
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _mock_hibp_clean(monkeypatch, request):
     """MEH-306: stub HIBP to "no match" by default for tests that exercise
     validate_password through the API surface (test_api.py + test_auth.py).

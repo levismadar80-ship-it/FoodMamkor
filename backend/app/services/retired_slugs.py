@@ -16,6 +16,9 @@ Who calls it:
     goes back to a slug it retired itself.
   - `is_gone`                       — GET /producers/by-slug (MEH-2534), to
     answer 410 instead of 404 for the URL of a deleted business.
+  - `moved_to`                      — GET /producers/by-slug (MEH-3336): a
+    renamed business's old slug → 404 {code: slug_moved, slug}, which the
+    middleware turns into a 301.
 
 A new writer of `producers.slug` MUST take its value from
 `_ensure_unique_slug`: that call is the only place a tombstone is honoured,
@@ -99,3 +102,25 @@ def is_gone(db: "Session", slug: str) -> bool:
 
     row = db.get(RetiredSlug, slug)
     return row is not None and row.producer_id is None
+
+
+def moved_to(db: "Session", slug: str) -> str | None:
+    """MEH-3336 — the current slug of the business that used to live at `slug`.
+
+    Only a "renamed" tombstone with an owner counts, and only while that owner
+    is still a public business with a slug: a link to a renamed page follows
+    it, a link to a deleted or hidden one does not. Renames chain for free —
+    every old slug points at the business, never at an intermediate slug.
+    """
+    from app.models.models import Producer, RetiredSlug
+    from app.services.producer_listing import is_business
+
+    row = db.get(RetiredSlug, slug)
+    if row is None or row.producer_id is None or row.reason != "renamed":
+        return None
+    producer = (
+        db.query(Producer).filter(Producer.id == row.producer_id, is_business()).first()
+    )
+    if producer is None or not producer.slug or producer.slug == slug:
+        return None
+    return str(producer.slug)

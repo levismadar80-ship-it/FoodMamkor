@@ -1168,6 +1168,20 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p.is_test or user.is_test",
     ),
+    ("services/page_freshness.py", "send_freshness_emails", "send_email"): (
+        1,
+        OWN,
+        "cand.test_business or owner.is_test",
+    ),
+    (
+        "services/page_freshness_digest.py",
+        "send_stale_digest",
+        "send_email",
+    ): (
+        1,
+        NONE,
+        "aggregate admin digest; test rows are filtered out by the query",
+    ),
     ("services/pending_nudge.py", "send_pending_nudges", "send_email"): (
         1,
         OWN,
@@ -1222,7 +1236,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "wrapper param ← producer.is_test (the business that replied)",
     ),
     # --- delivery waitlist ---
-    ("services/delivery_waitlist.py", "notify_cities", "send_email"): (
+    ("services/delivery_waitlist.py", "_notify_cities", "send_email"): (
         1,
         CON,
         "producer.is_test",
@@ -1284,6 +1298,36 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_participant_cancelled_delisted",
         "_send_email",
     ): (1, CON, "wrapper param ← producer.is_test"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_participant_expired",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3287)"),
+    (
+        "services/rescue_business_emails.py",
+        "send_business_reservation_email",
+        "send_email",
+    ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
+    (
+        "services/group_buy_goal_flap.py",
+        "send_below_goal_emails",
+        "send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3311)"),
+    (
+        "services/registration_emails.py",
+        "send_registration_reminder",
+        "send_email",
+    ): (1, CON, "wrapper param ← is_test_item(item) (MEH-3312)"),
+    (
+        "services/registration_emails.py",
+        "send_waitlist_confirmation",
+        "send_email",
+    ): (1, CON, "wrapper param ← producer.is_test / host_test_cause(host) (MEH-3314)"),
+    (
+        "services/registration_emails.py",
+        "send_waitlist_offer",
+        "send_email",
+    ): (1, CON, "wrapper param ← producer.is_test (MEH-3314)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",

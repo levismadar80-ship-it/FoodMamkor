@@ -287,7 +287,7 @@ for (const vp of [
       // MEH-2856: the strip shows as many pills as fit on one line with «+N».
       // The LAST popover pill is «מומלץ» at 1440 (the subject this spec has
       // always measured) and the seal at 375, the only pill that fits there.
-      const pill = card.locator("button[data-badge][aria-haspopup]").last();
+      const pill = card.locator("button[data-badge][aria-expanded]").last();
       await expect(pill).toBeVisible();
       const subjectKey = await pill.getAttribute("data-badge");
       await pill.click();

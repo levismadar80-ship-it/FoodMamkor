@@ -117,6 +117,24 @@ class Base(DeclarativeBase):
     pass
 
 
+def end_transaction(db: Session) -> None:
+    """MEH-2889: return a session's connection to the pool, keep its instances.
+
+    For a background task that was handed the request's session: by then
+    `_release_session` has closed it once, so the only open transaction is the
+    task's own, and its writes are already committed. `commit()` ends that
+    transaction (a no-op when none is open); `rollback()` is the fallback for
+    a session left in a failed state. Never raises: it runs in a `finally`.
+    """
+    try:
+        db.commit()
+    except Exception:  # noqa: BLE001 — a failed session must still let go
+        try:
+            db.rollback()
+        except Exception:  # noqa: BLE001
+            log.warning("end_transaction: rollback failed", exc_info=True)
+
+
 async def _release_session(db: Session) -> None:
     """MEH-2886: give the request's connection back to the pool.
 

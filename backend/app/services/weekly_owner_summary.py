@@ -195,9 +195,9 @@ def build_email(m: SummaryEmail) -> tuple[str, str, str]:
 
     e = html_escape
     rows_html = "".join(
-        '<tr><td style="padding:6px 0;border-bottom:1px solid #efeae0;'
+        '<tr><td style="padding:6px 0;border-bottom:1px solid #E5DFD3;'
         f'text-align:right;">{e(label)}</td>'
-        '<td style="padding:6px 0;border-bottom:1px solid #efeae0;'
+        '<td style="padding:6px 0;border-bottom:1px solid #E5DFD3;'
         f'text-align:left;font-weight:bold;">{value}</td></tr>'
         for label, value in rows
     )
@@ -222,9 +222,9 @@ def build_email(m: SummaryEmail) -> tuple[str, str, str]:
           <tr><td style="padding:16px 22px 24px;text-align:center;"><a href="{e(m.insights_url)}" style="display:inline-block;background:#ffffff;color:#2e6853;border:2px solid #2e6853;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לכל הנתונים</a></td></tr>
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;line-height:1.6;">
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;line-height:1.6;">
         {e(footer)}<br>
-        <a href="{e(m.unsubscribe_url)}" style="color:#8a8478;text-decoration:underline;">{e(stop)}</a><br>
+        <a href="{e(m.unsubscribe_url)}" style="color:#5C584F;text-decoration:underline;">{e(stop)}</a><br>
         צוות מהמקור
       </td></tr>
     </table>

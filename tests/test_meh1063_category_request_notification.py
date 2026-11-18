@@ -125,9 +125,8 @@ class TestNotifyAdminNewCategoryRequestService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        monkeypatch.setattr(
-            svc, "send_text", MagicMock(side_effect=RuntimeError("boom"))
-        )
+        wa_mock = MagicMock(side_effect=RuntimeError("boom"))
+        monkeypatch.setattr(svc, "send_text", wa_mock)
         # Mock the email channel too so a set admin_email never reaches the
         # real Resend client when RESEND_API_KEY is present in CI.
         monkeypatch.setattr(svc, "send_email", MagicMock())
@@ -136,6 +135,11 @@ class TestNotifyAdminNewCategoryRequestService:
 
         # Must not raise.
         svc.notify_admin_new_category_request("מותססים", "חוות הזית")
+
+        # MEH-0000: and the exploding channel must actually have been REACHED.
+        # Without this the test passed on a notifier that returned early and
+        # never sent anything — "fail-open" and "never ran" are the same green.
+        wa_mock.assert_called_once()
 
 
 # ---------- router wiring ----------

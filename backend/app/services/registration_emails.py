@@ -52,7 +52,7 @@ def _shell(heading: str, rows_html: str, button_html: str = "") -> str:
           {button_html}
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור</td></tr>
     </table>
   </td></tr>
 </table>
@@ -181,6 +181,12 @@ class RegistrantEmail:
     cancel_url: str  # used only by the «moved» email
 
 
+def _on(date_text: str, prefix: str) -> str:
+    """« ב-<date>» — or nothing for a recurring item, whose stored date is its
+    long-past first occasion (MEH-2871). Removes words, adds none."""
+    return f" {prefix}{date_text}" if date_text else ""
+
+
 def send_registrant_delisted(
     to: str, m: RegistrantEmail, test_cause: bool = False
 ) -> None:
@@ -190,7 +196,7 @@ def send_registrant_delisted(
     subject = f'ההרשמה ל-"{title}" בוטלה'
     lines = [
         f"בית העסק {host} כבר לא מופיע במהמקור, ולכן ההרשמה שלכם "
-        f'ל-"{title}" ב-{m.date_text} בוטלה.',
+        f'ל-"{title}"{_on(m.date_text, "ב-")} בוטלה.',
         "אם סיכמתם משהו ישירות מול בית העסק, אפשר להמשיך מולו כרגיל.",
     ]
     _send_lines(to, subject, lines, test_cause=test_cause)
@@ -204,7 +210,7 @@ def send_registrant_cancelled(
     host = _one_line(m.host_name)
     subject = f'"{title}" בוטל'
     lines = [
-        f'{host} ביטל את "{title}" שתוכנן ל-{m.date_text}, ולכן ההרשמה שלכם '
+        f'{host} ביטל את "{title}"{_on(m.date_text, "שתוכנן ל-")}, ולכן ההרשמה שלכם '
         "בוטלה. אין צורך להגיע.",
         f"לשאלות אפשר לפנות ישירות ל{host}.",
     ]
@@ -235,6 +241,48 @@ def send_registrant_moved(
     rows_html += f"<br><br>\n{e(outro)}"
     html = _shell(e(subject), rows_html, _button(m.cancel_url, "ביטול ההרשמה"))
     send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+def send_registration_reminder(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """MEH-3312: the evening before, a reminder with the time, the place and
+    the cancel link, so a place that will not be used can go to someone."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'תזכורת: "{title}" מחר'
+    when = m.date_text + (f", {m.time_text}" if m.time_text else "")
+    rows = [("מתי", when), ("איפה", m.place), ("בית העסק", host)]
+    rows = [(k, v) for k, v in rows if v]
+    intro = f'מחכים לכם מחר ב"{title}".'
+    outro = "לא תוכלו להגיע? כדאי לבטל, כדי שהמקום יתפנה למישהו אחר:"
+    body = (
+        f"{subject}\n\n{intro}\n"
+        + "\n".join(f"{k}: {v}" for k, v in rows)
+        + f"\n\n{outro}\nביטול ההרשמה: {m.cancel_url}\n\nצוות מהמקור"
+    )
+    e = html_escape
+    rows_html = f"{e(intro)}<br>\n" + "<br>\n".join(
+        f"<b>{e(k)}:</b> {e(v)}" for k, v in rows
+    )
+    rows_html += f"<br><br>\n{e(outro)}"
+    html = _shell(e(subject), rows_html, _button(m.cancel_url, "ביטול ההרשמה"))
+    send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+def send_registrant_method_changed(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """MEH-3310: the business stopped taking sign-ups on the site; hers stays."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'עדכון על ההרשמה ל"{title}"'
+    lines = [
+        f'ההרשמות ל"{title}" אצל {host} כבר לא נעשות דרך מהמקור.',
+        "ההרשמה שלכם נשארת בתוקף, ובית העסק רואה אותה ברשימת הנרשמים.",
+        f"לשאלות אפשר לפנות ישירות ל{host}. אם כבר לא מתאים לכם, אפשר לבטל כאן: {m.cancel_url}",
+    ]
+    _send_lines(to, subject, lines, test_cause=test_cause)
 
 
 def _send_lines(to: str, subject: str, lines: list[str], *, test_cause: bool) -> None:

@@ -22,7 +22,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 from app.database import Base
 from app.utils.clock import utc_now
@@ -426,4 +426,34 @@ class AlembicLineage(Base):
     revision = Column(String(64), primary_key=True)
     recorded_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AdminAuditLog(Base):
+    """MEH-3306 — one row per successful change an admin made.
+
+    Append-only: the app adds a row (services/admin_audit.py) and reads it
+    (GET /admin/audit-log). Nothing updates or deletes one —
+    tests/test_meh3306_admin_audit_log.py scans for it.
+
+    `actor_id` is NOT a foreign key, on purpose: a FK needs an ON DELETE rule,
+    and both rules are wrong here — CASCADE erases the record with the
+    account, SET NULL is an UPDATE on an append-only table and erases who.
+    `details` holds a reduced before/after (role, status, a flag) — never
+    names, phones, addresses or free text. `ip` is kept for an investigation
+    and is not returned by the list route.
+    """
+
+    __tablename__ = "admin_audit_log"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    actor_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    # "PUT /admin/users/{user_id}/role" — method + route TEMPLATE, never the URL.
+    action = Column(String(160), nullable=False)
+    target_type = Column(String(40), nullable=True)
+    target_id = Column(String(64), nullable=True)
+    details = Column(JSONB, nullable=True)
+    ip = Column(String(64), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )

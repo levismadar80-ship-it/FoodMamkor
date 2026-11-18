@@ -1,7 +1,7 @@
 """meh3314_registration_waitlist
 
 Revision ID: c9f5a3b7d2e8
-Revises: f6c2a8d4e1b7
+Revises: b8e4f2a6c9d1
 Create Date: 2026-11-15 10:00:00.000000+00:00
 
 MEH-3314: a full event or one-off workshop takes a waitlist through the same
@@ -32,7 +32,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c9f5a3b7d2e8"
-down_revision: Union[str, None] = "f6c2a8d4e1b7"
+down_revision: Union[str, None] = "b8e4f2a6c9d1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

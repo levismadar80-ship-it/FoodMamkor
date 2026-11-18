@@ -2,7 +2,7 @@
 description: Write session-state.md so the session survives /clear or /compact.
 ---
 
-Write `session-state.md` at the repo root with the current session's load-bearing state, so the next session (after `/clear` or `/compact`) can resume without losing the plan. This is the save-half of the context reset protocol (CLAUDE.md rule 13).
+Write `session-state.md` at the repo root with the current session's load-bearing state, so the next session (after `/clear` or `/compact`) can resume without losing the plan. This is the save-half of the context reset protocol (`.claude/rules/workflow.md` rule 14).
 
 Gather the following and write it to `session-state.md`:
 
