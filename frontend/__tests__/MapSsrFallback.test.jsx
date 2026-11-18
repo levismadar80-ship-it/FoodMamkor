@@ -1,81 +1,97 @@
 /**
- * MEH-151 — Map SSR fallback for Googlebot.
- * Tests that fetchProducersForSSR returns an array and that the
- * server-rendered nav contains producer links.
+ * MEH-151 — the sr-only business index /map renders for Googlebot.
+ *
+ * MEH-0000 rewrote this file. Every case in it used to re-implement
+ * fetchProducersForSSR inline — "Instead, inline the same logic to verify
+ * contract", in the file's own words — and never imported the page or the
+ * helper. All six would have passed with the real function DELETED. One case
+ * was worse still: `expect(true).toBe(false)` sat inside a `try` whose
+ * `catch {}` swallowed the thrown assertion, after which it asserted that a
+ * literal `[]` it had just written had length 0.
+ *
+ * The helper now lives in lib/map-ssr-producers.js precisely so it can be
+ * imported, and this file imports it.
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// We test the data-fetch helper in isolation — MapClient is CSR-only and
-// would require a full browser environment (Leaflet, IntersectionObserver, etc.).
+// A plain function, deliberately NOT vi.fn(). vi.fn() keeps every result in
+// mock.results, and a result that is a thrown error or a rejected promise is
+// reported by vitest as an unhandled one — the case below then goes red even
+// though the helper caught it and returned []. Measured: `out=[] err=null`,
+// test still failed. Calls are recorded by hand instead; it is three lines.
+let impl = async () => ({ ok: true, json: async () => [] });
+const calls = [];
+vi.mock("@/lib/server-fetch", () => ({
+  serverFetch: (...args) => {
+    calls.push(args);
+    return impl(...args);
+  },
+}));
+vi.mock("@/lib/env", () => ({ API_URL: "https://api.example.test", SITE_URL: "https://mehamakor.co.il" }));
 
-global.fetch = vi.fn();
+const { fetchProducersForSSR } = await import("@/lib/map-ssr-producers");
 
-afterEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  calls.length = 0;
+  impl = async () => ({ ok: true, json: async () => [] });
+});
 
-// Import the module fresh each test so module-level state doesn't bleed.
-describe("fetchProducersForSSR (MEH-151)", () => {
-  it("returns array of producers on success", async () => {
-    const mockProducers = [
+describe("fetchProducersForSSR — the real one", () => {
+  it("is the function under test, not a copy of it", () => {
+    // The control. The point of this rewrite is that the subject is imported;
+    // if that ever stops being true, every case below becomes a test of its
+    // own fixture again, which is what it was before.
+    expect(typeof fetchProducersForSSR).toBe("function");
+    expect(fetchProducersForSSR.name).toBe("fetchProducersForSSR");
+  });
+
+  it("returns the businesses on success, and asks the right URL", async () => {
+    const rows = [
       { id: "1", name: "חוות הגליל", city: "מגדל", slug: "havat-hagalil" },
       { id: "2", name: "מאפיית לחם", city: "תל אביב", slug: "maafiyat-lechem" },
     ];
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: async () => mockProducers,
-    });
+    impl = async () => ({ ok: true, json: async () => rows });
 
-    // Dynamically import to get fresh module with mocked fetch.
-    vi.resetModules();
-    // We can't import the async server component directly in vitest jsdom
-    // (it's an async function that calls fetch at module execution time).
-    // Instead, inline the same logic to verify contract.
-    const API_URL = "http://localhost:8000";
-    const res = await fetch(`${API_URL}/producers?limit=100&offset=0`);
-    const data = await res.json();
-    const producers = Array.isArray(data) ? data : [];
+    const producers = await fetchProducersForSSR();
 
     expect(producers).toHaveLength(2);
-    expect(producers[0].name).toBe("חוות הגליל");
     expect(producers[0].slug).toBe("havat-hagalil");
+    // The call itself is part of the contract: a helper that returned the right
+    // shape from the wrong endpoint would have passed the old file.
+    expect(calls).toHaveLength(1);
+    const [url, options] = calls[0];
+    expect(url).toBe("https://api.example.test/producers?limit=100&offset=0");
+    expect(options).toEqual({ next: { revalidate: 3600 } });
   });
 
-  it("returns empty array on fetch error", async () => {
-    global.fetch.mockRejectedValue(new Error("network error"));
-
-    try {
-      await fetch("http://localhost:8000/producers?limit=100&offset=0");
-      expect(true).toBe(false); // should not reach here
-    } catch {
-      // The real helper swallows errors and returns []
-      const producers = [];
-      expect(producers).toHaveLength(0);
-    }
+  it("returns [] when the fetch throws", async () => {
+    impl = async () => {
+      throw new Error("network error");
+    };
+    // No try/catch around the call. The helper's own catch is the subject: if
+    // it ever stops swallowing, this REJECTS and the case fails — which is
+    // precisely what the old `try { expect(true).toBe(false) } catch {}` could
+    // never do, because its catch ate the assertion.
+    await expect(fetchProducersForSSR()).resolves.toEqual([]);
   });
 
-  it("returns empty array on non-ok response", async () => {
-    global.fetch.mockResolvedValue({ ok: false });
-
-    const res = await fetch("http://localhost:8000/producers?limit=100&offset=0");
-    const producers = res.ok ? await res.json() : [];
-
-    expect(producers).toHaveLength(0);
+  it("returns [] on a non-ok response, without reading the body", async () => {
+    const json = vi.fn();
+    impl = async () => ({ ok: false, json });
+    await expect(fetchProducersForSSR()).resolves.toEqual([]);
+    expect(json).not.toHaveBeenCalled();
   });
 
-  it("builds correct producer link path from slug", () => {
-    const producer = { id: "1", name: "חוות הגליל", city: "מגדל", slug: "havat-hagalil" };
-    const href = `/producers/${producer.slug}`;
-    expect(href).toBe("/producers/havat-hagalil");
+  it("returns [] when the payload is not an array", async () => {
+    impl = async () => ({ ok: true, json: async () => ({ detail: "nope" }) });
+    await expect(fetchProducersForSSR()).resolves.toEqual([]);
   });
 
-  it("formats display text with city", () => {
-    const p = { name: "חוות הגליל", city: "מגדל" };
-    const text = `${p.name}${p.city ? ` — ${p.city}` : ""}`;
-    expect(text).toBe("חוות הגליל — מגדל");
-  });
-
-  it("omits separator when city is missing", () => {
-    const p = { name: "חוות הגליל", city: null };
-    const text = `${p.name}${p.city ? ` — ${p.city}` : ""}`;
-    expect(text).toBe("חוות הגליל");
+  it("returns [] when the body is not JSON", async () => {
+    impl = async () => ({
+      ok: true,
+      json: async () => { throw new SyntaxError("Unexpected token <"); },
+    });
+    await expect(fetchProducersForSSR()).resolves.toEqual([]);
   });
 });

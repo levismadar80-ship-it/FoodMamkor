@@ -150,7 +150,7 @@ The gate live today reads `PR_TITLE` / `PR_BODY`. On `merge_group` both are
 null → empty strings → `grep` matches nothing → the gate passes. **The current
 gate is queue-safe.**
 
-The gate that [`meh-1523-dnm-label-gate.patch.md`](./meh-1523-dnm-label-gate.patch.md)
+The gate that `meh-1523-dnm-label-gate.patch.md` (applied in `7a87a98c5`; the patch file was deleted in that same commit, which is why there is no link)
 installs is not:
 
 ```yaml
@@ -223,7 +223,7 @@ just stop measuring anything.
 +  merge_group:
 ```
 
-> If [`meh-1523-dnm-label-gate.patch.md`](./meh-1523-dnm-label-gate.patch.md) has
+> If `meh-1523-dnm-label-gate.patch.md` (applied in `7a87a98c5`; the patch file was deleted in that same commit, which is why there is no link) has
 > already been applied, line 27 reads
 > `types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]`.
 > That is expected and this hunk is unaffected — it appends a sibling key to
@@ -514,6 +514,6 @@ That is a separate card, not this one, and CC has not filed it (ORDERS §5).
 |---|---|
 | what Sapir clicks, in order | [`meh-1603-runbook.md`](./meh-1603-runbook.md) |
 | native auto-merge + the 25/03/2026 change | [`meh-1603-automerge.patch.md`](./meh-1603-automerge.patch.md) |
-| the label gate this must be applied after | [`meh-1523-dnm-label-gate.patch.md`](./meh-1523-dnm-label-gate.patch.md) |
+| the label gate this must be applied after | `meh-1523-dnm-label-gate.patch.md` (applied in `7a87a98c5`; the patch file was deleted in that same commit, which is why there is no link) |
 | why a skipped required leg is a FAIL, not a pass | `.claude/rules/testing.md` § *A green that has two possible causes* |
 | the E2E promotion this is coupled to | [`e2e-gate.patch.md`](./e2e-gate.patch.md) |

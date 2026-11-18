@@ -543,8 +543,12 @@ front matter for the normative token bindings.
     **city** (`accent` gold, 12px semibold) with the distance beside it; the
     category sits in the muted line under the name. No city → no place line.
   - **No photo (MEH-2440):** a typographic name plate — the business name in
-    Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
-    above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
+    Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned.
+  - **Badges off the photo (MEH-3321, Sapir 15/11/2026):** the badge row (max 2
+    + «+N», TrustBadge, delivery-only pill) sits in the card body under the
+    name / category line, never over the photo. A card with nothing to show
+    renders no row (no empty gap). The «+N» panel and badge tooltips avoid the
+    whole card body, so they open over the photo. Replaces the MEH-643 leaf glyph + wordmark on
     `green-50`, which read as a template when most cards had no photo.
     **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in a
     top corner) in `seedColorFor(producer.id)` — the business keeps "its"
@@ -577,6 +581,11 @@ front matter for the normative token bindings.
   pinned **top-start** (`start-3`) as a single shared overlay across both layouts.
   First image is eager (`priority`); the rest are lazy. Imageless state = the
   Tinted Masthead (MEH-815, unchanged). RTL logical props only.
+- **Organizer cover — all photos (`GalleryViewAllButton`, MEH-3341):** the
+  organizer page keeps `images[0]` as its cover; with **2+** photos the same gold
+  «כל התמונות (N)» pill sits in the cover's bottom inline-END corner (the avatar
+  holds the start corner) and opens the shared `Lightbox`. **0** = green band,
+  **1** = cover only — no pill in either.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single

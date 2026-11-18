@@ -371,6 +371,14 @@ body:has([data-meets-footer]) footer[data-site-footer] {
   body:has([data-map-shell]) {
     padding-bottom: var(--cookie-banner-h, 0px);
   }
+  /* MEH-3343: <main> is min-h-screen so the footer never starts inside the
+     first screen while a page streams (layout.js). /map has no footer and
+     sizes its own shell to calc(100dvh - header), so the minimum only added
+     the header's height as a scroll (measured 82px in E2E). The id selector
+     outranks the .min-h-screen utility. */
+  #main-content:has([data-map-shell]) {
+    min-height: 0;
+  }
 }
 
 /* Leaflet map fixes */

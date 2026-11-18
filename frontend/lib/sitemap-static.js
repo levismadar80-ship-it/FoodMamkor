@@ -14,6 +14,14 @@
 export const SITEMAP_STATIC_PAGES = Object.freeze([
   { path: "", priority: 1.0, changeFrequency: "daily" },
   { path: "/map", priority: 0.9, changeFrequency: "daily" },
+  // MEH-0000: /producers belongs here and not only in the paginated branch of
+  // app/sitemap.js. That branch emits it as page 1 — but only INSIDE the
+  // success arm of the producers fetch, so a backend that is slow or down at
+  // build time drops the entire business index from the sitemap, silently and
+  // with no error. Listing it statically costs one line and makes the page
+  // unconditional; the pagination branch keeps emitting pages 2..N and its
+  // page-1 entry is de-duplicated against this one.
+  { path: "/producers", priority: 0.8, changeFrequency: "daily" },
   { path: "/about", priority: 0.6, changeFrequency: "monthly" },
   // MEH-875: secondary indexable landing routes (all under app/[locale]/).
   { path: "/about/process", priority: 0.5, changeFrequency: "monthly" },

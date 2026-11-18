@@ -265,8 +265,9 @@ run adversarial even if the build fails.
 `protect-staging` (ruleset 15240090) requires exactly two aggregators:
 `CI gate` and `Deploy gate`. Named jobs skip on docs/config-only diffs and a
 skipped leg still aggregates to success — docs-only PRs merge with no override
-and **don't poll E2E**. `Playwright E2E` runs on a PR only once it carries the
-`run-e2e` label (MEH-2779; staging pushes always) and carries no vote until
+and **don't poll E2E**. `Playwright E2E` runs on a PR whose diff touches the
+frontend or backend paths, or that carries the `run-e2e` label (MEH-2956 —
+until then label-only, MEH-2779; staging pushes always), and carries no vote until
 Sapir applies `docs/ci/e2e-gate.patch.md` and adds the context to the ruleset
 (both are hers). So with auto-merge armed a PR lands on the two gates
 alone — an instruction like "wait for N green E2E runs" is enforced only by
@@ -314,7 +315,7 @@ Staging carries three QA users, and their passwords are in every session's env:
 
 Log in inside the same Playwright context (fill `/login`, or POST
 `/api/auth/login` as `frontend/e2e/global-setup.ts` does); a token fetched with
-curl fails the fingerprint check. `/auth/login` is 5/minute per IP — one login
+curl fails the fingerprint check. `/auth/login` is 5/minute per IP, plus 10 failed attempts per address in 15 minutes (MEH-3372) — one login
 per role per run. Never write "I could not see the dashboard / admin": check it
 on the demo account, or say which step failed. If a login is refused, that is a
 finding to report (the E2E run logs in with the same three on every staging
