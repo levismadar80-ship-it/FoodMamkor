@@ -1,5 +1,5 @@
 // @ts-check
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { MapPin, X } from "@phosphor-icons/react";
 
@@ -28,7 +28,10 @@ const GAP_PX = 8;
  *           `rideExtraPx`).
  * History:  MEH-1243 (extracted); MEH-1298 (scroll compensation, gone with the
  *           move out of the sheet); MEH-1412 (location label); MEH-3119 (floats
- *           over the map; X in its own row, off the photo).
+ *           over the map; X in its own row, off the photo); MEH-0000 (Escape
+ *           dismisses it — the one gap an audit of the X found; the X itself
+ *           was already a real 44x44 button with a Hebrew aria-label and a
+ *           focus ring, measured in map.spec.ts:1352).
  */
 export default function MobileSheetSelectedCard({
   selectedProducer,
@@ -38,6 +41,36 @@ export default function MobileSheetSelectedCard({
 }) {
   const t = useTranslations();
   const rootRef = useRef(null);
+
+  // MEH-0000: Escape closes the card. It lives HERE and not in MapClient
+  // because this component already owns `onClose` and is mounted exactly when
+  // the card is on screen — so there is no second piece of state to keep in
+  // step, and the central component is left alone.
+  //
+  // Scoped deliberately: a key that went to a text field, a select or anything
+  // inside a dialog belongs to that control (clearing a combobox, closing the
+  // filter sheet — e2e/flows/manual/map.spec.ts:894 covers the latter).
+  // `[role="dialog"]` rather than a list of component names, so a future modal
+  // is covered without editing this.
+  //
+  // docs/ACCESSIBILITY.md:50-53 requires Escape for a BLOCKING modal; this card
+  // is not one, so this is above that bar rather than a fix to reach it.
+  useEffect(() => {
+    if (!onClose) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')
+      ) {
+        return;
+      }
+      onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
 
   // MEH-3119: tell the host how much room the card takes above the sheet, so
   // the controls that ride the sheet edge (near-me, the «?» key, the

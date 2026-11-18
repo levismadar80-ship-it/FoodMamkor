@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 
 // Same module stubs as FooterNavGroups.test.jsx, so <Footer /> renders in
 // isolation; this file is only about the seed row (MEH-2833). Translation keys

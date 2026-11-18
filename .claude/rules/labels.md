@@ -54,7 +54,7 @@ not this rule.
 |---|---|---|
 | `self-declared` | The business owner asserted it; no external check. | every diet filter, `has_delivery`, `grass_fed`. |
 | `admin-verified` | An admin checked a document against an external registry. | `verified` (license vs Ministry of Health, ADR-022); `kosher` (kashrut_verified_at, MEH-986/1087). |
-| `editorial` | A named editor's opinion. Nobody asserted it and nothing was checked — and it **cannot be bought** (ADR-030). | `recommended` (בחירת העורכת, MEH-1492). |
+| `editorial` | A named editor's opinion. Nobody asserted it and nothing was checked — and it **cannot be bought** (ADR-030). | `recommended` (בחירת העורכות, MEH-1492; plural since MEH-3397). |
 | `system` | Derived by the system: not asserted by anyone, not verified against anything. | `new` (BADGE_CONFIG — computed from `days_since_created <= 30`). Also the intended home for a computed distance / availability. |
 
 > **All four values are now in active use.** `editorial` was added by MEH-1753,

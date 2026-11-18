@@ -33,6 +33,7 @@ import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
+import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -386,6 +387,10 @@ export default function GroupBuyDetailClient({ id }) {
           {tShare("trigger")}
         </button>
       </div>
+      {/* MEH-3398: the buyer commits to an order HERE, through the site's own
+          tools, so this is where «not a party to the transaction» has to be
+          read. Same locked legal line as the business page; no new copy. */}
+      <DirectoryDisclaimer className="mt-4" />
     </div>
   );
 

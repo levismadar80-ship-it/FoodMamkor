@@ -54,6 +54,7 @@ from app.services.producer_approval import (
     _persist_approval,
 )
 from app.services.producer_queries import attach_badge_fields
+from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
 from app.services.whatsapp import send_text
 
 logger = logging.getLogger(__name__)
@@ -144,6 +145,10 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     # MEH-1817: slug mint + commit, extracted so this handler stays under the
     # C901 ceiling. See _persist_approval for why the commit is retried.
     producer = _persist_approval(db, producer_id, producer, overrides, user.id)  # type: ignore[arg-type]
+    # MEH-3258: a consumer who upgraded at registration (auth.py upgrade path)
+    # may have reviewed competitors. The public list already drops those per
+    # read; this brings the stored rating in line once the business goes live.
+    recompute_after_categories_changed(db, producer.id)
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
     # attributes are safe here (no expire_on_commit configured on this
