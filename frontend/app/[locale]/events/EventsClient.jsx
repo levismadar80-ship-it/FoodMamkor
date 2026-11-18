@@ -185,18 +185,37 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // - On a history move the URL is the truth for the filters too: the entry
   //   may carry ?city= / ?category= that the reset never saw (Back to
   //   /events?city=X must filter by X, not show the city in the bar only).
-  useEffect(() => {
+  // - MEH-3090: ALSO on the native `popstate`, not only on the hook. Because
+  //   the hook lags our own pushState, a Back that lands before Next has
+  //   committed the switch sees the hook go events → events: it never moves,
+  //   this effect never runs, and the page stays on the tab it left while the
+  //   address bar is back on /events (CI run 44378115964, 20 s of
+  //   aria-selected="false"). The browser event fires on every history move
+  //   whatever Next has committed. Both paths run the same sync, which is a
+  //   no-op when the tab already matches, so a move seen twice costs nothing.
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const syncFromUrl = () => {
     const urlTab = tabFromPath(window.location.pathname);
     if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
-    if (!urlTab || urlTab === tab) return;
+    if (!urlTab || urlTab === tabRef.current) return;
+    tabRef.current = urlTab;
     const p = new URLSearchParams(window.location.search);
     setTab(urlTab);
     setView("list");
     setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
     setCity(p.get("city") || "");
     setCategories(categoriesFor(urlTab, p.getAll("category")));
+  };
+  useEffect(() => {
+    syncFromUrl();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+  useEffect(() => {
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
   // {city, category}, so filters survive refresh/share and the switchTab
