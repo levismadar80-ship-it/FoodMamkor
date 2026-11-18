@@ -46,6 +46,9 @@ const RESERVED = new Set([
   // which is the second registry this route needs — `lib/static-routes.json`
   // is the first.
   "owner-invite",
+  // MEH-3377: the read-only preview of an unpublished draft. Reserved for the
+  // same two reasons as the two above.
+  "draft-preview",
   // MEH-2461: public organizer pages (/organizers/{slug}).
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.

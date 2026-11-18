@@ -262,6 +262,20 @@ def _load_settings() -> Settings:
         )
         s.super_admin_email = ""
 
+    _frontend_url = s.frontend_url.strip()
+    if _is_production and (
+        not _frontend_url
+        or "localhost" in _frontend_url
+        or "127.0.0.1" in _frontend_url
+        or "staging" in _frontend_url.lower()
+    ):
+        raise RuntimeError(
+            "FRONTEND_URL must be the production site in production — it is "
+            f"{_frontend_url or '(empty)'!r}. Every link in every email is "
+            "built from it, so a localhost or staging value sends customers "
+            "there. Set it on the Railway production environment."
+        )
+
     return s
 
 

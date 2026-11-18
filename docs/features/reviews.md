@@ -9,6 +9,7 @@
 
 **קבצים מרכזיים**
 * `backend/app/routers/reviews.py`
+* `backend/app/services/review_conflicts.py` — ביקורת של מי שהיא עכשיו הבעלים של העסק, או של עסק מאותה קטגוריה, יורדת מהרשימה הציבורית ומהדירוג. מחושב בכל קריאה, לא נשמר.
 * `frontend/components/ReviewsSection.jsx`
 * `frontend/components/producer/RequestReviewCard.jsx` — בקשת ביקורת מלקוחה.
 * `frontend/components/ReviewCardCanvas.jsx` — כרטיס שיתוף של ביקורת.
@@ -20,5 +21,6 @@
 * `tests/test_meh2349_review_ai_flag.py` · `tests/test_meh2390_review_fail_open_rechecks.py`
 * `tests/test_meh2348_review_hide_sticky.py` · `tests/test_meh2381_review_edited_after_hidden.py` · `tests/test_meh2389_review_hide_not_found_code.py` · `tests/test_meh2409_deleted_review_edit_404.py`
 * `tests/test_meh3221_reviews_public_name.py` · `tests/test_meh3223_report_admin_email.py`
+* `tests/test_meh3258_review_conflicts.py` — ניגוד עניינים (בעלים / מתחרה) וכל הטריגרים לחישוב הדירוג מחדש.
 
 **מזהי רישום שזה מכסה.** `reviews_contacted`, `review_request`.

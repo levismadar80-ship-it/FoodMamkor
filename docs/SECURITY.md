@@ -864,6 +864,16 @@ the mismatch.
 
 ---
 
+## 17b. Draft-preview link (MEH-3377)
+
+A third signed link next to the claim link and the owner invite, and the weakest of the three on purpose.
+
+- **Scope.** HS256 JWT `{producer_id, scope: "producer_draft_preview"}`, `exp` essential, 14 days (`backend/app/services/draft_preview.py`). The claim decoder refuses it and its decoder refuses a claim token; `get_current_user` refuses both.
+- **What it grants.** Reading one ownerless draft as `ProducerDetailOut`, the same shape the live page serves. It cannot claim, edit or publish.
+- **Stateless.** No table and no revocation before `exp`. The row's state is the revocation: once the draft is published, claimed, rejected or deleted, every link to it answers the same 404 as a forged one.
+- **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only.
+- **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
+
 ## 18. Skills supply chain (MEH-397)
 
 Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
