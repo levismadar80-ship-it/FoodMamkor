@@ -296,6 +296,11 @@ skips per [docs/EMERGENCY_OVERRIDE.md](../../docs/EMERGENCY_OVERRIDE.md).
 6. **An anomaly seen during QA is explained or reported — never attributed to
    the harness and dropped.** Label an unverified diagnosis as unverified. A
    race that won't reproduce → inject the end state deterministically.
+7. **An error from an external service → web-search the exact error string
+   before building a workaround,** and cite the source in the PR (Sapir 18/11:
+   Vercel's `FUNCTION_PAYLOAD_TOO_LARGE` 413 on uploads, #4759, is a
+   documented 4.5MB function body limit, which a search would have found
+   before any measurement).
 
 **Pattern — free-text input without character-class validation (MEH-555):** a
 `String` field shown to admins/users gets a `field_validator` requiring ≥ 3

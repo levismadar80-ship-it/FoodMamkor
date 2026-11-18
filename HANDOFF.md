@@ -4,6 +4,21 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-18 — סיום ההעברה: #4729, ‏#4726, ‏#4759, ‏#4739, ‏#4738 מוזגו
+
+**שורה אחת:** כל ה-PR-ים שחיכו לספיר מההעברה של 17/11 מוזגו ל-staging, ואחריהם תיקון ה-413 בהעלאות (#4759).
+
+**מה צריך לדעת לפני עבודה:**
+- **שרשרת Alembic ב-staging:** `… → 5808c77bee3a → a8d41c2e7f90 → c7e1a9f3b5d4 → a3d9e5c1f7b2 (head)`. מיגרציה חדשה יושבת על `a3d9e5c1f7b2`.
+- **העלאות עוברות דרך ה-proxy של Vercel**, שעונה ב-413 משלו מעל כ-4.5MB. התקרה בדפדפן היא 4MB (`lib/api.js`), ולכן אין טעם להעלות את תקרת השרת.
+- **חשבון עם בית עסק מקושר** לא מקודם לאדמין ולא מורד לצרכן (409). קודם עושים «ניתוק בעלים».
+- **Knip:** כל route חדש מוסיף export אחד ל-`lib/generated/api.zod.js`. מעלים את השורה ב-`scripts/checks/lint-ratchet-baseline.tsv` ומסבירים ב-commit.
+
+**הבא בתור:**
+- PR המסך של MEH-2697: הקופי והשלוש החלטות מאושרים, והם כתובים בגוף #4738.
+- PR המסך של MEH-3306 (יומן פעולות אדמין).
+- **לספיר:** להוסיף את `"app/services/admin_audit.py",` ל-`[tool.mypy].files` ב-`backend/pyproject.toml`, ואחר כך להסיר את שורת ה-`guard-ok` בראש הקובץ.
+
 ## 2026-11-17 — סבב ניקוי כרטיסים ב-Linear
 
 **שורה אחת:** מוזגו #4711, ‏#4712, ‏#4713, ‏#4715 ו-#4716; ‏12 כרטיסים נסגרו, וספיר מחקה את רשימת המחיקה ב-18/11. הפירוט ב-CHANGELOG.
