@@ -17,6 +17,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
 import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 import InstallPrompt from "@/components/InstallPrompt";
+import { PREHYDRATION_CAPTURE_SCRIPT } from "@/lib/prehydration-capture-inline";
 import PrehydrationInputReplay from "@/components/PrehydrationInputReplay";
 import ClarityScript from "@/components/ClarityScript";
 import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
@@ -233,6 +234,10 @@ export default async function LocaleLayout({ children, params }) {
   return (
     <html lang={locale} dir={dir} className={FONT_VARIABLES}>
       <head>
+        {/* MEH-3164: records text typed before React hydrates, from the first
+            byte. Must run before any chunk, so it is inline and first in
+            <head>; PrehydrationInputReplay (end of <body>) replays it. */}
+        <script dangerouslySetInnerHTML={{ __html: PREHYDRATION_CAPTURE_SCRIPT }} />
         {/* MEH-1831: the fonts.googleapis/gstatic preconnects and the Google
             Fonts stylesheet that used to sit here are gone — next/font serves
             every family from our own origin, so there is nothing left to

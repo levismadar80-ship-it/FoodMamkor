@@ -16,7 +16,8 @@ import { hydrateRoot as hydrate18 } from "react-dom/client";
 import * as React19 from "next/dist/compiled/react";
 import { renderToString as render19 } from "next/dist/compiled/react-dom/server.browser";
 import { hydrateRoot as hydrate19 } from "next/dist/compiled/react-dom/client";
-import { replayPrehydrationInput, startPrehydrationCapture, stopPrehydrationCapture } from "@/lib/replay-prehydration-input";
+import { replayPrehydrationInput, startPrehydrationCapture, stopPrehydrationCapture, SETTLE_MS } from "@/lib/replay-prehydration-input";
+import { PREHYDRATION_CAPTURE_KEY, PREHYDRATION_CAPTURE_SCRIPT } from "@/lib/prehydration-capture-inline";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -179,5 +180,100 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
     expect(count).toBe(0);
     expect(seen.email).toBe("");
     React.act(() => root.unmount());
+  });
+  // MEH-3164: what the WebKit run showed. React holds the keystroke while the
+  // tree is dehydrated, hydration writes "" over the field, then React
+  // re-dispatches the held event as an UNTRUSTED clone on the emptied field.
+  // The old module dropped the capture on that clone, so every later pass saw
+  // DOM == state == "" and the text was gone.
+  it("keeps the capture through React's untrusted re-dispatch onto an emptied field (MEH-3164)", async () => {
+    const { container, root } = await hydrateAfterTyping({ email: "early@example.com" });
+    const el = container.querySelector("#email");
+    const setNative = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    await React.act(async () => {
+      setNative.call(el, ""); // hydration's write
+      el.dispatchEvent(new Event("input", { bubbles: true })); // the clone (isTrusted: false)
+    });
+    expect(el.value).toBe("");
+    let count;
+    await React.act(async () => {
+      count = replayPrehydrationInput(container);
+    });
+    expect(count).toBe(1);
+    expect(seen.email).toBe("early@example.com");
+    expect(el.value).toBe("early@example.com");
+    React.act(() => root.unmount());
+  });
+
+  it("puts the text back when a commit right after the replay empties it (MEH-3164)", async () => {
+    const { container, root } = await hydrateAfterTyping({ email: "early@example.com" });
+    const t0 = 1_000_000;
+    await React.act(async () => {
+      replayPrehydrationInput(container, { now: t0 });
+    });
+    expect(seen.email).toBe("early@example.com");
+    await React.act(async () => {
+      container.querySelector("#reset").click(); // a commit writes "" back, no input event
+    });
+    expect(seen.email).toBe("");
+    let count;
+    await React.act(async () => {
+      count = replayPrehydrationInput(container, { now: t0 + 50, capturedOnly: true });
+    });
+    expect(count).toBe(1);
+    expect(seen.email).toBe("early@example.com");
+    React.act(() => root.unmount());
+  });
+
+  it("lets the form own the field once the capture has settled", async () => {
+    const { container, root } = await hydrateAfterTyping({ email: "early@example.com" });
+    const t0 = 2_000_000;
+    await React.act(async () => {
+      replayPrehydrationInput(container, { now: t0 });
+    });
+    await React.act(async () => {
+      replayPrehydrationInput(container, { now: t0 + 50 }); // state matches: settle clock starts
+    });
+    await React.act(async () => {
+      replayPrehydrationInput(container, { now: t0 + 50 + SETTLE_MS }); // settled: consumed
+    });
+    await React.act(async () => {
+      container.querySelector("#reset").click(); // the form clears itself after sending
+    });
+    let count;
+    await React.act(async () => {
+      count = replayPrehydrationInput(container, { now: t0 + 5000 });
+    });
+    expect(count).toBe(0);
+    expect(seen.email).toBe("");
+    React.act(() => root.unmount());
+  });
+});
+
+describe("prehydration <head> capture script (MEH-3164)", () => {
+  it("records input on a field React does not own, into the map the module shares", () => {
+    const key = PREHYDRATION_CAPTURE_KEY;
+    expect(PREHYDRATION_CAPTURE_SCRIPT).toContain(JSON.stringify(key));
+    // The module adopted (or created) the shared map at import.
+    expect(window[key]).toBeInstanceOf(WeakMap);
+    const saved = window[key];
+    delete window[key];
+    const fresh = new Function(PREHYDRATION_CAPTURE_SCRIPT);
+    fresh();
+    const map = window[key];
+    expect(map).toBeInstanceOf(WeakMap);
+    expect(map).not.toBe(saved);
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.value = "לחם";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(map.get(input)).toBe("לחם");
+    // Untrusted event on an owned field (React's clone) keeps the capture.
+    input["__reactProps$test"] = { value: "" };
+    input.value = "";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(map.get(input)).toBe("לחם");
+    input.remove();
+    window[key] = saved;
   });
 });
