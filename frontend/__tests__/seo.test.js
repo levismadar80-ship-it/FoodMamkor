@@ -120,6 +120,19 @@ describe("ogImage", () => {
     expect(ogImage(url)).toBe(url);
   });
 
+  it("does not transform another host that only mentions res.cloudinary.com (MEH-3419)", () => {
+    const inPath = "https://evil.example/res.cloudinary.com/image/upload/x.jpg";
+    const inHost = "https://res.cloudinary.com.evil.example/image/upload/x.jpg";
+    const inQuery = "https://cdn.example/image/upload/x.jpg?from=res.cloudinary.com";
+    expect(ogImage(inPath)).toBe(inPath);
+    expect(ogImage(inHost)).toBe(inHost);
+    expect(ogImage(inQuery)).toBe(inQuery);
+  });
+
+  it("passes a relative or unparsable URL through untouched", () => {
+    expect(ogImage("/og/business/x.png")).toBe("/og/business/x.png");
+  });
+
   it("returns null for falsy input", () => {
     expect(ogImage(null)).toBe(null);
     expect(ogImage("")).toBe(null);

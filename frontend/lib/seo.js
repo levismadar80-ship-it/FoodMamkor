@@ -153,7 +153,14 @@ export function buildDescription(producer, locale = "he") {
  */
 export function ogImage(url) {
   if (!url || typeof url !== "string") return null;
-  if (!url.includes("res.cloudinary.com")) return url;
+  let host;
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return url;
+  }
+  // MEH-3419: the host itself, not a substring anywhere in the URL.
+  if (host !== "res.cloudinary.com") return url;
   return url.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/");
 }
 
