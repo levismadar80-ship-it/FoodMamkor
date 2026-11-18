@@ -57,7 +57,14 @@ const TEXT_W = POST_W - SIDE * 2;
  * @param {string} url
  */
 function photoSrc(url) {
-  return url.includes("cloudinary.com")
+  let host = "";
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return url;
+  }
+  // Host match, not a substring: CodeQL "incomplete URL substring sanitization".
+  return host === "res.cloudinary.com"
     ? url.replace("/upload/", `/upload/f_auto,q_auto,w_${POST_W},h_${PHOTO_H},c_fill,g_auto/`)
     : url;
 }
