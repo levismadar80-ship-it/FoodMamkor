@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Badge system (MEH-18). Pure functions — no React, no DOM.
  *
@@ -106,7 +107,7 @@ export const BADGE_CONFIG = {
     // status. scope is `business` — it is the whole business being chosen.
     scope: "business",
     evidence: "editorial",
-    // MEH-1492: renamed מומלץ → "בחירת העורכת" — the label now names who stands
+    // MEH-1492: renamed מומלץ → "בחירת העורכות" (MEH-3397: plural) — the label now names who stands
     // behind the opinion (an editor), and the popover links out to the /about
     // criteria + the ADR-030 "can't be bought" promise (aboutHref below).
     // MEH-1492: the badge popover links here (BadgeRow wraps the tooltip in a

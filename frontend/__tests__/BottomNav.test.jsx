@@ -32,6 +32,7 @@ vi.mock("next-intl", () => ({
       "nav.map": "מפה",
       "nav.about": "אודות",
       "nav.events": "אירועים",
+      "nav.opportunities": "הזדמנויות",
       "nav.account": "חשבון",
       "nav.mobile_label": "ניווט מובייל",
       "account.menu.aria": "תפריט חשבון",
@@ -53,11 +54,13 @@ vi.mock("@phosphor-icons/react", () => ({
   MapTrifold: (props) => <span data-testid="icon-map" {...props} />,
   Flower: (props) => <span data-testid="icon-flower" {...props} />,
   CalendarBlank: (props) => <span data-testid="icon-calendar" {...props} />,
+  Basket: (props) => <span data-testid="icon-basket" {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
 }));
 
-// MEH-2965: the third slot is «אירועים» → /events while ANY of the four
-// date-bound types has supply, and «אודות» otherwise. One ref per hook so a
+// MEH-2965: the third slot is «אירועים» → /events while events or
+// experiences have supply, and «אודות» otherwise. MEH-3125: group buys and
+// rescue bags open a separate «הזדמנויות» tab. One ref per hook so a
 // case can say WHICH type cleared the gate.
 const gates = { events: false, experiences: false, groupBuys: false, rescue: false };
 vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => gates.events }));
@@ -103,27 +106,47 @@ describe("BottomNav", () => {
     expect(hrefs).not.toContain("/favorites");
   });
 
-  // MEH-2965: each of the four hooks clears the gate on its own. A single
-  // "all on" case would pass with three of them wired to nothing.
-  // MEH-2975: the tab lands on the type that has the supply, so a visitor
-  // never opens an empty «אירועים» tab while the baskets are one tap away.
+  // MEH-2965 / MEH-3125: each hook clears ITS group's gate on its own. Events
+  // and experiences put «אירועים» in the third slot in place of «אודות»;
+  // group buys and rescue bags add «הזדמנויות» as a tab of its own and leave
+  // «אודות» where it is.
   it.each([
     ["events", "/events"],
     ["experiences", "/experiences"],
+  ])("%s alone puts «אירועים» → %s in the third slot, in place of «אודות»", (hub, href) => {
+    gates[hub] = true;
+    render(<BottomNav />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", href]);
+    expect(screen.getByTestId("icon-calendar")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-flower")).toBeNull();
+    expect(screen.queryByTestId("icon-basket")).toBeNull();
+  });
+
+  it.each([
     ["groupBuys", "/group-buys"],
     ["rescue", "/rescue"],
-  ])(
-    "%s alone puts «אירועים» → %s in the third slot, in place of «אודות»",
-    (hub, href) => {
-      gates[hub] = true;
-      render(<BottomNav />);
-      const links = screen.getAllByRole("link");
-      expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
-      expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", href]);
-      expect(screen.getByTestId("icon-calendar")).toBeInTheDocument();
-      expect(screen.queryByTestId("icon-flower")).toBeNull();
-    },
-  );
+  ])("%s alone adds «הזדמנויות» → %s and keeps «אודות»", (hub, href) => {
+    gates[hub] = true;
+    render(<BottomNav />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אודות", "הזדמנויות"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", "/about", href]);
+    expect(screen.getByTestId("icon-basket")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-calendar")).toBeNull();
+  });
+
+  it("both groups in supply: five tabs, גלו · מפה · אירועים · הזדמנויות · חשבון", () => {
+    gates.events = true;
+    gates.rescue = true;
+    render(<BottomNav />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים", "הזדמנויות"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", "/events", "/rescue"]);
+    // The fifth tab is the account control, a button.
+    expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
+  });
 
   // The gates start closed and open in an effect, so on a real page the slot
   // swaps AFTER mount. Same pathname, same slot index, different tenant.
@@ -135,54 +158,54 @@ describe("BottomNav", () => {
         .map((a) => a.getAttribute("href"));
     expect(current()).toEqual(["/about"]);
 
-    gates.groupBuys = true;
+    gates.experiences = true;
     rerender(<BottomNav />);
     expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
     // «אודות» left the pill, so on /about nothing is current any more.
     expect(current()).toEqual([]);
 
-    gates.groupBuys = false;
+    gates.experiences = false;
     rerender(<BottomNav />);
     expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["גלו", "מפה", "אודות"]);
     expect(current()).toEqual(["/about"]);
   });
 
-  // MEH-2975: tab order decides when several types have supply — the first
-  // one wins, whatever else is open.
+  // MEH-2975: within a group, tab order decides — the first one with supply
+  // wins. MEH-3125: and never across groups.
   it.each([
-    [["events", "rescue"], "/events"],
-    [["experiences", "groupBuys", "rescue"], "/experiences"],
-    [["groupBuys", "rescue"], "/group-buys"],
-  ])("with %j open the tab lands on %s", (open, href) => {
+    [["events", "rescue"], ["/", "/map", "/events", "/rescue"]],
+    [["experiences", "groupBuys", "rescue"], ["/", "/map", "/experiences", "/group-buys"]],
+    [["groupBuys", "rescue"], ["/", "/map", "/about", "/group-buys"]],
+  ])("with %j open the tabs land on %j", (open, hrefs) => {
     for (const hub of open) gates[hub] = true;
     render(<BottomNav />);
-    expect(screen.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/", "/map", href]);
+    expect(screen.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(hrefs);
   });
 
-  // MEH-2975: wherever the tab lands, it is still the current tab on every
-  // hub route — a visitor on /events with only baskets listed must not see
-  // the capsule leave the tab she just pressed.
-  it.each(["/events", "/experiences", "/group-buys", "/rescue/3"])(
-    "a tab that lands on /rescue is still current on %s",
+  // MEH-3125: each tab is current on its OWN group's routes only. Before, on
+  // /rescue the calendar tab «אירועים» lit up (MEH-3125's "why").
+  const currentHrefs = () =>
+    screen
+      .getAllByRole("link")
+      .filter((a) => a.getAttribute("aria-current") === "page")
+      .map((a) => a.getAttribute("href"));
+
+  it.each(["/events", "/events/12", "/experiences"])("«אירועים» is the current tab on %s", (path) => {
+    gates.events = true;
+    gates.groupBuys = true;
+    pathnameRef.current = path;
+    render(<BottomNav />);
+    expect(currentHrefs()).toEqual(["/events"]);
+  });
+
+  it.each(["/group-buys", "/group-buys/7", "/rescue", "/rescue/3"])(
+    "«הזדמנויות» — not «אירועים» — is the current tab on %s",
     (path) => {
+      gates.events = true;
       gates.rescue = true;
       pathnameRef.current = path;
       render(<BottomNav />);
-      const current = screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page");
-      expect(current.map((a) => a.getAttribute("href"))).toEqual(["/rescue"]);
-    },
-  );
-
-  // The hub is four routes under one tab row, so the tab is current on all of
-  // them — not only on the one its href names.
-  it.each(["/events", "/events/12", "/experiences", "/group-buys", "/group-buys/7", "/rescue"])(
-    "«אירועים» is the current tab on %s",
-    (path) => {
-      gates.events = true;
-      pathnameRef.current = path;
-      render(<BottomNav />);
-      const current = screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page");
-      expect(current.map((a) => a.getAttribute("href"))).toEqual(["/events"]);
+      expect(currentHrefs()).toEqual(["/rescue"]);
     },
   );
 

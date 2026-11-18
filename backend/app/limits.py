@@ -114,7 +114,7 @@ OWNED_TABLE_EXEMPT = {
     "rescue_typical_items": "one row per business (PUT replaces it)",
     "producer_offers": "history rows: each save deactivates the old offer and inserts one (producer_me.py ~190), so growth is bounded by the PUT /producers/me rate limit",
     "producer_name_change_requests": "409 while one is pending (producer_name_requests.py)",
-    "kashrut_badge_requests": "409 while one is pending per badge (producer_me.py)",
+    "kashrut_badge_requests": "409 while one is pending per badge (producer_me_review.py)",
     "producer_review_checks": "admin-only checklist rows, bounded by the checklist item count",
     "retired_slugs": "one row per rename; renames go through the pending name-change request",
     "users": "the owner's own account row(s)",
@@ -127,12 +127,14 @@ OWNED_TABLE_EXEMPT = {
     "category_requests": "rate-limited public form, admin-moderated",
     "reports": "rate-limited public form, admin-moderated",
     "delivery_waitlist": "one row per email per business, rate-limited public form",
-    "phone_otp_tokens": "rate-limited OTP send, short-lived rows",
+    "phone_otp_tokens": "rate-limited OTP send; deleted one day after expiry by the daily retention purge (MEH-3171)",
     "alert_log": "system-written fan-out log, capped per send by MEH-1338",
     "producer_analytics_daily": "one row per business per day, system-written",
     "producer_page_views": "system-written analytics, rate-limited beacon",
     "producer_contact_clicks": "system-written analytics, rate-limited beacon",
     "producer_whatsapp_clicks": "system-written analytics, rate-limited beacon",
+    "business_billing": "at most one row per business by construction: producer_id is the primary key (MEH-3180)",
+    "billable_events": "system-written ledger: one row per registration / group-buy order / rescue order (unique on kind + source_id), each of which is itself capped or rate-limited (MEH-3179)",
 }
 
 # Write routes allowed to run without a per-route rate limit, with the reason.

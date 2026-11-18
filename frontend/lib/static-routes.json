@@ -3,16 +3,19 @@
   "routes": [
     "about",
     "accessibility",
+    "account-deleted",
     "admin",
     "business-gone",
     "claim",
     "contact",
     "delivery-waitlist",
     "dev",
+    "draft-preview",
     "events",
     "experiences",
     "favorites",
     "forgot-password",
+    "freshness",
     "group-buys",
     "home",
     "join",
@@ -34,6 +37,7 @@
     "settings",
     "share",
     "terms",
+    "unsubscribe",
     "verify-email"
   ]
 }

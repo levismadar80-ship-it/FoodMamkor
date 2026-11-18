@@ -15,7 +15,7 @@ from app.models import Producer, RetiredSlug, User
 from app.routers.admin import _ensure_unique_slug
 from tests.conftest import auth_header, make_producer, make_user
 
-SLUG = "מאפיית-הגליל"
+SLUG = "maafiyat-hagalil"  # MEH-3336: slugs are Latin
 
 
 def _admin(db):
@@ -66,7 +66,14 @@ def test_admin_delete_keeps_the_slug_from_the_next_business(client, db):
 def test_owner_account_delete_keeps_the_slug_from_the_next_business(client, db):
     producer = _business(db)
     owner = _owner_of(db, producer)
-    assert client.delete("/auth/me", headers=auth_header(owner)).status_code == 200
+    assert (
+        client.post(
+            "/auth/me/delete",
+            json={"password": "Zx7Yp9Mq2Lr4"},
+            headers=auth_header(owner),
+        ).status_code
+        == 200
+    )
 
     assert _ensure_unique_slug(db, SLUG) == f"{SLUG}-2"
 
@@ -105,7 +112,8 @@ def test_admin_typed_retired_slug_is_suffixed_on_update(client, db):
         f"/admin/producers/{taker.id}", json={"slug": SLUG}, headers=auth_header(admin)
     )
     assert resp.status_code == 200, resp.text
-    assert resp.json()["slug"] == f"{SLUG}-2"
+    # MEH-3336: a collision appends the business's town, not "-2".
+    assert resp.json()["slug"] == f"{SLUG}-tl-abib-ypv"  # taker.city → canonical «תל אביב-יפו»
 
 
 # ---------- rename ----------
@@ -113,9 +121,9 @@ def test_admin_typed_retired_slug_is_suffixed_on_update(client, db):
 
 def test_renamed_slug_is_kept_from_another_business(client, db):
     producer = _business(db)
-    resp = _put_slug(client, db, producer, "מאפייה-חדשה")
+    resp = _put_slug(client, db, producer, "new-bakery")
     assert resp.status_code == 200, resp.text
-    assert resp.json()["slug"] == "מאפייה-חדשה"
+    assert resp.json()["slug"] == "new-bakery"
 
     other = make_producer(db, name="עסק אחר")
     assert _ensure_unique_slug(db, SLUG, exclude_id=other.id) == f"{SLUG}-2"
@@ -125,14 +133,14 @@ def test_renamed_slug_is_kept_from_another_business(client, db):
 
 def test_business_can_take_back_its_own_retired_slug(client, db):
     producer = _business(db)
-    _put_slug(client, db, producer, "מאפייה-חדשה")
+    _put_slug(client, db, producer, "new-bakery")
 
     resp = _put_slug(client, db, producer, SLUG)
     assert resp.status_code == 200, resp.text
     assert resp.json()["slug"] == SLUG
     # The tombstone it left is released; the slug it just gave up is retired.
     assert db.get(RetiredSlug, SLUG) is None
-    assert db.get(RetiredSlug, "מאפייה-חדשה").producer_id == producer.id
+    assert db.get(RetiredSlug, "new-bakery").producer_id == producer.id
 
 
 def test_unchanged_slug_in_payload_retires_nothing(client, db):
@@ -145,7 +153,7 @@ def test_unchanged_slug_in_payload_retires_nothing(client, db):
 def test_deleting_a_renamed_business_keeps_its_old_slug_reserved(client, db):
     """ON DELETE SET NULL turns the rename tombstone into a deleted one."""
     producer = _business(db)
-    _put_slug(client, db, producer, "מאפייה-חדשה")
+    _put_slug(client, db, producer, "new-bakery")
     pid = producer.id
     client.delete(f"/admin/producers/{pid}", headers=auth_header(_admin(db)))
     db.expire_all()
@@ -153,7 +161,7 @@ def test_deleting_a_renamed_business_keeps_its_old_slug_reserved(client, db):
     assert db.get(Producer, pid) is None
     assert db.get(RetiredSlug, SLUG).producer_id is None
     assert _ensure_unique_slug(db, SLUG) == f"{SLUG}-2"
-    assert _ensure_unique_slug(db, "מאפייה-חדשה") == "מאפייה-חדשה-2"
+    assert _ensure_unique_slug(db, "new-bakery") == "new-bakery-2"
 
 
 def test_a_deleted_tombstone_is_not_exempt_for_any_business(client, db):
@@ -189,9 +197,13 @@ def test_by_slug_answers_404_for_a_slug_that_never_existed(client, db):
 
 
 def test_by_slug_answers_404_for_a_renamed_slug_whose_business_lives(client, db):
-    """A rename moved the business; it is not gone (a redirect is separate)."""
+    """A rename moved the business; it is not gone. MEH-3336: the 404 carries
+    the new slug, and the page edge 301s to it (MiddlewareSlugMoved.test.js)."""
     producer = _business(db)
-    assert _put_slug(client, db, producer, "מאפייה-חדשה").status_code == 200
+    assert _put_slug(client, db, producer, "new-bakery").status_code == 200
 
-    assert client.get(f"/producers/by-slug/{SLUG}").status_code == 404
-    assert client.get("/producers/by-slug/מאפייה-חדשה").status_code == 200
+    old = client.get(f"/producers/by-slug/{SLUG}")
+    assert old.status_code == 404
+    assert old.json()["detail"]["code"] == "slug_moved"
+    assert old.json()["detail"]["slug"] == "new-bakery"
+    assert client.get("/producers/by-slug/new-bakery").status_code == 200

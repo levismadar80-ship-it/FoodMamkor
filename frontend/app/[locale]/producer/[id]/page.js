@@ -1,3 +1,4 @@
+// @ts-check
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import ProducerDetail from "./ProducerDetail";
@@ -54,6 +55,7 @@ async function getProducer(id) {
       level: "error",
       extra: { route: ROUTE, id, status: res.status },
     });
+    /** @type {Error & { status?: number, entityId?: string }} */
     const err = new Error(
       `producer lookup failed: ${res.status} ${res.statusText} (id=${id})`
     );

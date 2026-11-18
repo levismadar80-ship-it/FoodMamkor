@@ -1,3 +1,4 @@
+// @ts-check
 // Producer status — render-only labels and color tokens.
 // DB emits raw codes (draft / pending / approved / rejected / inactive — see
 // backend/app/models/models.py). A sixth code, pending_whatsapp, was removed

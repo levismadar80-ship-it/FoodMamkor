@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -9,6 +10,7 @@ import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { copyOrThrow } from "@/lib/clipboard";
+import Input from "@/components/ui/Input";
 
 /**
  * Module:   OwnerInvitePanel
@@ -302,14 +304,14 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
             {t("url_label")}
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input
+            <Input inline size="sm"
               id="owner-invite-url"
               data-testid="owner-invite-url"
               readOnly
               dir="ltr"
               value={minted.invite_url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
+              className="flex-1 min-w-0"
             />
             <Button type="button" data-testid="owner-invite-copy" onClick={copy} variant="primary" size="sm">
               {copied ? t("copied") : t("copy")}
@@ -456,13 +458,14 @@ function firstName(full) {
   return parts[0] || "";
 }
 
+/** @param {{ id: string, label: string, value: string, onChange: (v: string) => void, type?: string, dir?: string, placeholder?: string }} props */
 function Field({ id, label, value, onChange, type = "text", dir, placeholder }) {
   return (
     <div>
       <label className="block text-sm text-muted mb-1" htmlFor={id}>
         {label}
       </label>
-      <input
+      <Input inline size="sm"
         id={id}
         data-testid={id}
         type={type}
@@ -470,7 +473,7 @@ function Field({ id, label, value, onChange, type = "text", dir, placeholder }) 
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full min-h-touch border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
+        className="w-full min-h-touch"
       />
     </div>
   );

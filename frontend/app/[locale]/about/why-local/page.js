@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   about-why-local
  * Purpose:  /about/why-local — static editorial page making the reader-facing

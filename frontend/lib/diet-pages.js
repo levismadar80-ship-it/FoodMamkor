@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   diet-pages
  * Purpose:  Single owner of the six indexable diet landing pages (MEH-1935) —

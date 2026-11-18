@@ -2,7 +2,7 @@
 description: Read session-state.md and restore the plan after /clear.
 ---
 
-Read `session-state.md` from the repo root and restore the prior session's plan. This is the resume-half of the context reset protocol (CLAUDE.md rule 13), paired with `/session-save`.
+Read `session-state.md` from the repo root and restore the prior session's plan. This is the resume-half of the context reset protocol (`.claude/rules/workflow.md` rule 14), paired with `/session-save`.
 
 Steps:
 

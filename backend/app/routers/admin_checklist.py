@@ -8,7 +8,7 @@ Touches:  DB tables `admin_checklist_items` and `producer_review_checks`. No
           writes those two tables.
 Does NOT: gate approval. The soft confirm dialog stays entirely client-side
           (use-review-checklist.js), and the HARD approve gates (photo 422 /
-          licence 422) live in routers/admin.py::approve_producer, untouched
+          licence 422) live in routers/admin_decisions.py::approve_producer, untouched
           here. A tick is a record that a human looked, never a permission.
 Related:  frontend/lib/admin-review-checklist.js (the Phase 1 constant this
           supersedes, now the migration's seed), migration d4a9c31e6f82,

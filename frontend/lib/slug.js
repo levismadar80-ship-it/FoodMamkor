@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   slug
  * Purpose:  Cheap slug-shape guard for the root catch-all route — reject bot
@@ -45,6 +46,9 @@ const RESERVED = new Set([
   // which is the second registry this route needs — `lib/static-routes.json`
   // is the first.
   "owner-invite",
+  // MEH-3377: the read-only preview of an unpublished draft. Reserved for the
+  // same two reasons as the two above.
+  "draft-preview",
   // MEH-2461: public organizer pages (/organizers/{slug}).
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.
@@ -65,6 +69,12 @@ const RESERVED = new Set([
   "rescue",
   // MEH-2768: the sign-up cancel link (/registration/{token}).
   "registration",
+  // MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
+  "unsubscribe",
+  // MEH-3248: the confirmation after an account deletion.
+  "account-deleted",
+  // MEH-3393: the monthly page-freshness confirm page (/freshness/confirm).
+  "freshness",
 ]);
 
 // Real slugs are produced by backend _slugify

@@ -16,13 +16,12 @@ enough, because the interesting failures are minting the WRONG one (a reserved
 route, a duplicate) or overwriting one that already existed.
 """
 
-
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Producer, User
-from app.routers import admin as admin_module
+from app.services import producer_approval as admin_module
 
 # MEH-2020 — imported from the owner. This used to read `from app.routers.admin`,
 # which worked only because admin.py happened to re-export it; the set has always
@@ -74,7 +73,7 @@ def test_approving_a_slugless_producer_mints_one(client, db):
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.status == "approved"
-    assert producer.slug == "חוות-הדגן"
+    assert producer.slug == "choot-hdgn"  # MEH-3336: Latin
 
 
 # ---------- (b) the over-reach guard ----------
@@ -111,8 +110,9 @@ def test_two_producers_with_the_same_name_get_distinct_slugs(client, db):
 
     db.refresh(first)
     db.refresh(second)
-    assert first.slug == "חוות-התאומים"
-    assert second.slug == "חוות-התאומים-2"
+    # MEH-3336: Latin, and a collision appends the town rather than "-2".
+    assert first.slug == "choot-htomim"
+    assert second.slug == "choot-htomim-tl-abib-ypv"
     assert first.slug != second.slug
 
 
@@ -193,7 +193,7 @@ def test_approving_leaves_no_approved_producer_without_a_slug(client, db):
         "approving a slug-less producer must not grow the approved-NULL-slug "
         f"population; it went from {before} to {_approved_null_slug_count(db)}"
     )
-    assert producer.slug == "חוות-ללא-סלאג"
+    assert producer.slug == "choot-ll-slg"  # MEH-3336
 
 
 # ---------- (e) the collision retry ----------
@@ -230,7 +230,7 @@ def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
     # API — `_pending` is just the row factory here, despite its name. This row
     # only has to exist holding the slug; how it got there is not under test.
     winner = _pending(db, name="חוות התאומים", status="approved")
-    winner.slug = "חוות-התאומים"
+    winner.slug = "choot-htomim"  # MEH-3336: the Latin slug the loser will also derive
     db.commit()
 
     loser = _pending(db, name="חוות התאומים")
@@ -242,13 +242,13 @@ def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
     real_ensure = admin_module._ensure_unique_slug
     calls = {"n": 0}
 
-    def racing_ensure(session, base_slug):
+    def racing_ensure(session, base_slug, **kwargs):  # MEH-3336: city=
         """First call hands back the slug the winner already committed —
         i.e. the candidate looked free when this admin read it."""
         calls["n"] += 1
         if calls["n"] == 1:
-            return "חוות-התאומים"
-        return real_ensure(session, base_slug)
+            return "choot-htomim"
+        return real_ensure(session, base_slug, **kwargs)
 
     monkeypatch.setattr(admin_module, "_ensure_unique_slug", racing_ensure)
 
@@ -265,7 +265,7 @@ def test_a_slug_collision_retries_and_still_applies_the_full_approval_state(
     assert reread.status == "approved"
     assert reread.requested_changes is None
     assert reread.changes_requested_at is None
-    assert reread.slug == "חוות-התאומים-2"
+    assert reread.slug == "choot-htomim-tl-abib-ypv"
     assert reread.slug != winner.slug
 
 

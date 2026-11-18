@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -198,8 +199,13 @@ export function AuthProvider({ children }) {
     return afterLogin(me.data);
   };
 
-  const deleteAccount = async () => {
-    await api.delete("/auth/me");
+  // MEH-3248: `body` is { password } or { id_token } — the server re-checks
+  // who asks (D15) and refuses admins (B7). On success the browser leaves for
+  // the public /account-deleted page BEFORE auth state is cleared: clearing it
+  // first made /settings redirect to /login and the confirmation never showed
+  // (B3). A full navigation, so no stale in-memory user survives either.
+  const deleteAccount = async (body = {}) => {
+    await api.post("/auth/me/delete", body);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     // MEH-2915: same reasoning as logout below, and more plainly so — an
@@ -208,9 +214,9 @@ export function AuthProvider({ children }) {
     try { localStorage.removeItem(DRAFT_KEY); } catch {}
     resetFavoritesCache();
     resetSavedCache();
-    setUser(null);
-    setAuthUnreachable(false);
-    api.post("/auth/logout").catch(() => {});
+    await api.post("/auth/logout").catch(() => {});
+    const onEnglish = /^\/en(\/|$)/.test(window.location.pathname);
+    window.location.replace(`${onEnglish ? "/en" : ""}/account-deleted`);
   };
 
   const logout = () => {

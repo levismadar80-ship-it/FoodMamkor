@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-530: client-side mirror of backend/app/constants.py
  * LICENSE_REQUIRED_CATEGORIES. The values are Hebrew category NAMES so the

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import Dialog from "@/components/ui/Dialog";
@@ -10,6 +11,7 @@ import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -157,6 +159,11 @@ export default function AdminReviewsPage() {
   // the backend's message instead of the generic error.
   // `hide` is explicit, not !is_hidden: MEH-2381's "keep hidden" sends a
   // hide for a row that is already hidden, with `seen` = the edit it showed.
+  /**
+   * @param {{ id: number | string }} review
+   * @param {{ hide: boolean, seen?: string | null }} change
+   * @returns {Promise<boolean>} whether the toggle went through
+   */
   const setHidden = async (review, { hide, seen }) => {
     // MEH-2389: the button is aria-disabled, not disabled, while in flight —
     // a disabled button drops keyboard focus to <body>. So the guard is here.
@@ -206,7 +213,8 @@ export default function AdminReviewsPage() {
   // (cf. MEH-2389).
   const keepHidden = async (review) => {
     if (!(await setHidden(review, { hide: true, seen: review.edited_after_hidden_at }))) return;
-    document.querySelector(`[data-toggle-for="${review.id}"]`)?.focus();
+    const toggle = /** @type {HTMLElement | null} */ (document.querySelector(`[data-toggle-for="${review.id}"]`));
+    toggle?.focus();
   };
 
   const filtered = reviews.filter((r) => {
@@ -240,11 +248,11 @@ export default function AdminReviewsPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
-        <input
+        <Input inline size="md"
           placeholder={t("reviews.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
+          className="flex-1"
         />
         <select
           value={starFilter}
@@ -344,6 +352,16 @@ export default function AdminReviewsPage() {
                           className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-accent/10 border border-accent/30 text-gold-deep"
                         >
                           {t("reviews.edited_after_hidden")}
+                        </span>
+                      )}
+                      {/* MEH-3258: a conflict review is left out of the public
+                          list and the rating; the admin still sees why. */}
+                      {r.conflict && (
+                        <span
+                          data-testid="review-conflict-tag"
+                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-surface border border-border text-fg-muted"
+                        >
+                          {t(r.conflict === "owner" ? "reviews.conflict_owner" : "reviews.conflict_competitor")}
                         </span>
                       )}
                       {r.ai_moderation_status === "FLAGGED" && (

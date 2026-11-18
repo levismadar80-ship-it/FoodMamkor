@@ -2,11 +2,13 @@ from fastapi import FastAPI
 
 from app.routers import (
     admin,
+    admin_decisions,
     admin_experiences,
     admin_checklist,
     admin_extra,
     admin_kashrut,
     admin_outreach,
+    admin_producer_locations,
     admin_recipes,
     admin_whatsapp,
     alerts,
@@ -25,11 +27,17 @@ from app.routers import (
     marketing,
     organizers,
     producer_claim,
+    producer_draft_preview,
     producer_me,
+    producer_me_analytics,
+    producer_me_locations,
+    producer_me_review,
     producer_name_check,
     producer_name_requests,
     producer_owner_invite,
+    producer_owner_invite_existing,
     producer_recipes,
+    billing,
     product_organize,
     product_order_business,
     product_order_buyer,
@@ -38,6 +46,7 @@ from app.routers import (
     rescue,
     producers,
     registrations,
+    page_freshness,
     report_info,
     reports,
     reviews,
@@ -48,6 +57,39 @@ from app.routers import (
     users_me,
     whatsapp_webhook,
 )
+
+
+def _include_producer_me(app: FastAPI) -> None:
+    """One /producers/me prefix, four files by area so each can be read whole."""
+    app.include_router(producer_me.router)
+    app.include_router(producer_me_analytics.router)
+    app.include_router(producer_me_review.router)
+    app.include_router(producer_me_locations.router)
+
+
+def _include_owner_links(app: FastAPI) -> None:
+    """The routers a business owner reaches from a signed link in a message."""
+    # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
+    app.include_router(producer_claim.router)
+    # MEH-3377: read-only preview link for an ownerless draft, and the admin's
+    # «פרסום בהסכמה» for it.
+    app.include_router(producer_draft_preview.router)
+    # MEH-2974: two routers, one module — the admin half carries
+    # `require_admin`, the public half is reached with the invite token alone.
+    # Same split, same reason, as admin_outreach's `prefill_router` below.
+    app.include_router(producer_owner_invite.router)
+    app.include_router(producer_owner_invite.public_router)
+    app.include_router(producer_owner_invite_existing.router)  # MEH-3256
+    # Page freshness: the «כן, הכול נכון» link in the monthly owner email.
+    app.include_router(page_freshness.router)
+
+
+def _include_admin(app: FastAPI) -> None:
+    """admin_decisions FIRST: its static GET /admin/producers/pending and
+    /admin/producers/rejection-presets must match before admin.router's
+    GET /admin/producers/{producer_id} (the order they had in one file)."""
+    app.include_router(admin_decisions.router)
+    app.include_router(admin.router)
 
 
 def _register_flagged_features(app: FastAPI) -> None:
@@ -93,20 +135,15 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth.router)
     app.include_router(cities.router)
     app.include_router(producer_name_check.router)  # MEH-3086
-    app.include_router(producer_me.router)
+    _include_producer_me(app)
     app.include_router(product_organize.router)  # MEH-3055
-    # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
-    app.include_router(producer_claim.router)
-    # MEH-2974: two routers, one module — the admin half carries
-    # `require_admin`, the public half is reached with the invite token alone.
-    # Same split, same reason, as admin_outreach's `prefill_router` below.
-    app.include_router(producer_owner_invite.router)
-    app.include_router(producer_owner_invite.public_router)
+    app.include_router(billing.router)  # MEH-3181
+    _include_owner_links(app)
     app.include_router(producers.router)
     app.include_router(organizers.router)  # MEH-2461
     app.include_router(favorites.router)
     app.include_router(saved_items.router)  # MEH-2557
-    app.include_router(admin.router)
+    _include_admin(app)
     app.include_router(admin_extra.router)
     # MEH-1406: home_products.router disabled per brand LOCK (licensed
     # businesses only — the consumer home-cook / "from-the-neighbor's-kitchen"
@@ -157,6 +194,8 @@ def register_routers(app: FastAPI) -> None:
     # MEH-589: producer recipes chunk 2/4
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
+    # MEH-3333: admin CRUD for a business's locations (pickup points).
+    app.include_router(admin_producer_locations.router)
     app.include_router(reviews.router)
     # MEH-1490: live-fetch Google-rating trust line (read-only proxy; no
     # persistence). Registered near reviews — it's the external counterpart to

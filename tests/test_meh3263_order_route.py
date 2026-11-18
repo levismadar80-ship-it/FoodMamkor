@@ -1165,7 +1165,9 @@ def test_deleting_an_account_cancels_her_open_orders_and_removes_her_from_all(
     stored_order(db, shop, "handed", **private)
     someone_else = stored_order(db, shop, "pending", customer_phone="972500000000")
 
-    res = client.delete("/auth/me", headers=buyer_headers)
+    res = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=buyer_headers
+    )
     assert res.status_code == 200, res.text
     # The link she was given stops opening the order.
     assert (

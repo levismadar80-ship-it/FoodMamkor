@@ -18,7 +18,7 @@ Does NOT: decide APPROVABILITY. That is a different question with a different
           the product wants open. Opening hours are likewise absent: MEH-1895
           counts them toward completeness, but they are RECOMMENDED, not
           required (Google precedent, Sapir 16/08).
-Related:  backend/app/routers/producer_me.py (POST /producers/me/submit-for-review),
+Related:  backend/app/routers/producer_me_review.py (POST /producers/me/submit-for-review),
           backend/app/services/pending_nudge.py (maps these codes to email copy),
           frontend/lib/producer-completeness.js:48 (the frontend mirror this
           deliberately parallels — see "Why this is not that" below).
@@ -198,7 +198,7 @@ def submission_missing_items(producer: Producer) -> list[str]:
     # registration (it was removed outright in MEH-2124), so keying on it would
     # have reported every draft as phone-verified and opened the gate for
     # nobody's benefit. The column is written by
-    # producer_me.py:confirm_phone_otp independently of status, which is what
+    # producer_me_review.py:confirm_phone_otp independently of status, which is what
     # makes it correct for a draft.
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)

@@ -39,7 +39,8 @@
  * ─── Why this exists at all: the rate limit ────────────────────────────────
  *
  * `/auth/login` carries `@limiter.limit("5/minute")` with slowapi's DEFAULT
- * key_func — per client IP, no email component (backend/app/auth.py:999). One
+ * key_func — per client IP (backend/app/routers/auth.py, `login`; since MEH-3372
+ * the handler also stops an address after 10 FAILED attempts in 15 minutes). One
  * GitHub Actions runner is one IP, so the whole suite shares a 5-permit window.
  * Specs 19, 20 and 22 each logged in as the SAME account, spending three
  * permits on one identity before any assertion ran. The overflow never
@@ -54,7 +55,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { isStale } from "./token-freshness";
 
-export const AUTH_DIR = path.join(__dirname, ".auth");
+const AUTH_DIR = path.join(__dirname, ".auth");
 
 export const fixturePath = (role: string): string =>
   path.join(AUTH_DIR, `${role}.json`);
@@ -63,7 +64,7 @@ export const fixtureExists = (role: string): boolean =>
   fs.existsSync(fixturePath(role));
 
 /** The JWT global-setup injected into localStorage["token"] for this role. */
-export function tokenFromFixture(role: string): string {
+function tokenFromFixture(role: string): string {
   const file = fixturePath(role);
   if (!fs.existsSync(file)) {
     throw new Error(

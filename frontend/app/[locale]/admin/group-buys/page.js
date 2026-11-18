@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,6 +13,7 @@ import { formatPrice } from "@/lib/utils";
 import { SkeletonList } from "@/components/Skeleton";
 import { ADMIN_NEXT_STATUSES } from "@/lib/group-buy-transitions";
 import BackLink from "@/components/ui/BackLink";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
@@ -144,7 +146,7 @@ export default function AdminGroupBuysPage() {
                   </span>
                   <span className="text-fg-muted">|</span>
                   <span className="text-fg-muted text-xs">
-                    {t("group_buys.until", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
+                    {t("group_buys.until", { date: formatEventDate(parseNaiveUtc(gb.deadline), locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                 </div>
 

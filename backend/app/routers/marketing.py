@@ -18,6 +18,9 @@ from app.config import settings
 from app.services.email_branding import email_logo_html
 from app.services.email import send_email
 from app.services.newsletter_sync import sync_subscribe, sync_unsubscribe
+from app.services.weekly_owner_summary import (
+    decode_unsubscribe_token as decode_weekly_unsubscribe_token,
+)
 from app.services.producer_listing import (
     catalog_default_availability_condition,
     is_business,  # MEH-2459
@@ -38,6 +41,7 @@ from app.schemas.schemas import (
     ContactIn,
     NewsletterIn,
     NewsletterUnsubscribeIn,
+    WeeklySummaryUnsubscribeIn,
     StatsOut,
 )
 
@@ -162,26 +166,26 @@ def _send_newsletter_welcome(email: str) -> None:
 <html dir="rtl" lang="he">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="40" cellspacing="0"
+        <table width="100%" cellpadding="0" cellspacing="0"
                style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
-            <td style="text-align:right;direction:rtl;">
+            <td style="text-align:right;direction:rtl;padding:32px 24px;">
               {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכים הבאים למהמקור</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
+              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
+              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
                 נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
               </p>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
+              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
                 <span style="font-weight:bold;">ספיר ✨</span>
               </p>
-              <hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">
-              <p style="color:#888;font-size:12px;line-height:1.6;margin:0;">
+              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
+              <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
                 מהמקור — בתי עסק מקומיים, כולם במקום אחד.<br>
-                <a href="{unsubscribe_url}" style="color:#888;text-decoration:underline;">לבטל הרשמה</a>
+                <a href="{unsubscribe_url}" style="color:#5C584F;text-decoration:underline;">לבטל הרשמה</a>
               </p>
             </td>
           </tr>
@@ -229,6 +233,36 @@ def unsubscribe_newsletter(
     db.commit()
     background_tasks.add_task(sync_unsubscribe, email.lower().strip())
     return {"detail": "הוסרת מרשימת התפוצה. 🌿"}
+
+
+# ============================================================
+# WEEKLY OWNER SUMMARY UNSUBSCRIBE (MEH-3079)
+# ============================================================
+
+
+@router.post("/weekly-summary/unsubscribe", status_code=200)
+@limiter.limit("20/hour")
+def unsubscribe_weekly_summary(
+    request: Request,
+    data: WeeklySummaryUnsubscribeIn,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    """Stop the weekly summary email for the business named in the token.
+
+    The token is the authorization (subject = producer id, scope
+    `weekly_summary_unsubscribe`), so the link works from the email without
+    logging in and can only opt out its own business. Idempotent.
+    """
+    # REUSES: unsubscribe_newsletter above — signed token, idempotent 200,
+    # gentle Hebrew 400, never reveals whether the business exists.
+    producer_id = decode_weekly_unsubscribe_token(data.token)
+    if producer_id is None:
+        raise HTTPException(status_code=400, detail="הקישור אינו תקין או שפג תוקפו.")
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is not None and not producer.weekly_summary_opt_out:
+        producer.weekly_summary_opt_out = True  # type: ignore[assignment]
+        db.commit()
+    return {"detail": "הסיכום השבועי לא יישלח עוד."}
 
 
 # MEH-1349: the duplicate GET /cities that lived here (producer ∪ delivery-area

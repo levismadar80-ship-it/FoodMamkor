@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Barrel export for the atomic UI layer (MEH-602).
  *

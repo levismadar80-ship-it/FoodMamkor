@@ -118,6 +118,13 @@ TERMS_VERSION: str = "2026-09-v2"
 #        grew the produce, and MEH-2923 owns its server-side ENFORCEMENT.
 FARMER_DECLARATION_CATEGORIES: tuple[str, ...] = ("ירקות", "פירות")
 
+# MEH-2923: the grower declaration's OWN version, stamped into
+# producers.farmer_declaration_version beside farmer_declared_at. Kept apart
+# from DECLARATION_VERSION on purpose: that one says which licensing wording
+# was agreed to, and a grower line the server never checked must not ride on
+# it. New grower wording = new version string here.
+FARMER_DECLARATION_VERSION: str = "2026-11-v1"
+
 # MEH-1471: allowed keys for producers.referral_source ("מאיפה שמעת עלינו?" —
 # self-reported attribution captured at the final registration step). English
 # keys are stored in the DB; the Hebrew labels are rendered from i18n

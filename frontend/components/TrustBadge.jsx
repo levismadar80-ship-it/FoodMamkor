@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -17,7 +18,7 @@ import Tooltip from "@/components/ui/Tooltip";
 // "מאומת" seal duplicated the same signal in two styles (MEH-602 debt), and
 // "מספר מאומת" read as business verification (ADR-022 gate 1).
 // MEH-2509: tier 5 ("שגרירת מהמקור", ambassador) is retired — it duplicated
-// «בחירת העורכת». The backend no longer computes it. Only tier 4 renders:
+// «בחירת העורכות». The backend no longer computes it. Only tier 4 renders:
 // a stale 5 (or any unknown tier) renders nothing, because the tier-4 label
 // claims "10+ reviews" and must never land on a business that didn't earn it.
 const TIER_CLASSNAME = {

@@ -75,7 +75,8 @@ import re
 import pytest
 
 from app.config import settings
-from app.routers import admin, marketing
+from app.routers import marketing
+from app.routers import admin_decisions as admin
 from app.services import auth_emails, experience_notifications
 from app.services import group_buy_notifications as gb
 from app.services import pending_nudge
@@ -128,7 +129,7 @@ _CORPUS = [
 
     # MEH-2027 — the three admin -> producer bodies. They reach the corpus via
     # `admin._send_notification_email`, which calls the `send_email` symbol
-    # imported into `app.routers.admin`, so the same patch-the-caller rule
+    # imported into `app.routers.admin_decisions`, so the same patch-the-caller rule
     # above applies unchanged.
     #
     # The SUBJECT passed here is scaffolding, not the shipped subject line: the

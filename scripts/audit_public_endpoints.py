@@ -258,7 +258,7 @@ def self_test() -> int:
     # 1. Authed — the case the first script got wrong for 29 routes.
     expect("GET", "/producers/me", public=False)
     # 2. Public and limited by this ticket.
-    expect("GET", "/search/trending", public=True, limited=True)
+    expect("GET", "/categories", public=True, limited=True)
     # 3. Public and deliberately UNLIMITED — the production-outage guard.
     expect("GET", "/health", public=True, limited=False)
     # 4. The phantom class: present in the router file, absent from the app.

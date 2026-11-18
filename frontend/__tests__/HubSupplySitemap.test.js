@@ -106,3 +106,41 @@ describe("listing-supply rules", () => {
     expect(hubRobots(12)).toBeUndefined();
   });
 });
+
+// MEH-3265: /rescue joins the sitemap on the same supply rule, and only while
+// the pilot flag is on. On the old HUBS (no rescue key) the "flag on, 1 bag"
+// case is red; the two other cases keep it from passing by always listing it.
+describe("sitemap — /rescue follows the flag and supply (MEH-3265)", () => {
+  const stubRescue = (bags) => {
+    global.fetch = vi.fn(async (url) => {
+      const u = String(url);
+      if (u.endsWith("/rescue/offers")) return { ok: true, json: async () => bags };
+      if (u.endsWith("/experiences/count")) return { ok: true, json: async () => ({ count: 0 }) };
+      return { ok: true, headers: { get: () => "0" }, json: async () => [] };
+    });
+  };
+  beforeEach(() => vi.unstubAllEnvs());
+
+  it("flag on + 1 bag → listed in both locales", async () => {
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");
+    stubRescue([{ id: "r1" }]);
+    const list = await urls();
+    expect(list).toContain(`${BASE}/rescue`);
+    expect(list).toContain(`${BASE}/en/rescue`);
+  });
+
+  it("flag on + 0 bags → not listed", async () => {
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");
+    stubRescue([]);
+    expect(await urls()).not.toContain(`${BASE}/rescue`);
+  });
+
+  it("flag off → not listed, and the API is not even asked", async () => {
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");
+    stubRescue([{ id: "r1" }]);
+    const list = await urls();
+    expect(list).not.toContain(`${BASE}/rescue`);
+    expect(global.fetch.mock.calls.some(([u]) => String(u).endsWith("/rescue/offers"))).toBe(false);
+    expect(list).toContain(`${BASE}/map`);
+  });
+});

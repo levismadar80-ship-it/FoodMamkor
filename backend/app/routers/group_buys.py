@@ -20,6 +20,8 @@ from app.auth import (
 from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.schemas.schemas import (
     GroupBuyCommitRequest,
     GroupBuyCreate,
@@ -29,6 +31,7 @@ from app.schemas.schemas import (
     GroupBuyStatusUpdate,
 )
 from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
+from app.services.group_buy_goal_flap import notify_back_at_goal, notify_below_goal
 from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
@@ -128,7 +131,23 @@ def list_group_buys(
     q = _status_tab_query(db, status, city)
     if producer_id:
         q = q.filter(GroupBuy.producer_id == producer_id)
-    items = q.order_by(GroupBuy.deadline.asc()).all()
+    # MEH-0000: _enrich reads len(gb.commits) and gb.producer.{name,images} for
+    # EVERY row (:50, :54, :58), and both are lazy="select". Without these two
+    # options the list cost 1 + N queries. The .join(Producer) in
+    # _public_group_buys does NOT populate gb.producer — it filters; only
+    # contains_eager or selectinload populates.
+    #
+    # The owner route (:185) has carried exactly these two options since it was
+    # written. The public list never did. That asymmetry is the whole bug.
+    #
+    # Deliberately here and NOT inside _status_tab_query: the /counts route
+    # shares that query and only counts rows, so loading commits there would be
+    # waste in the other direction.
+    items = (
+        q.options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        .order_by(GroupBuy.deadline.asc())
+        .all()
+    )
     return [_enrich(gb) for gb in items]
 
 
@@ -137,10 +156,11 @@ def _status_tab_query(db: Session, status: str, city: str | None) -> OrmQuery[Gr
     counts, so a tab's count and its list can never disagree (MEH-3128)."""
     q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
     if status == "open":
-        # MEH-2540: nothing closes an open group buy past its deadline (see
-        # OWNER_TRANSITIONS), so the «פתוחות» tab listed it next to a join
-        # button the commit route then refuses. The list only — its page still
-        # resolves for a shared link and says the deadline passed.
+        # MEH-2540: an open group buy past its deadline stays open until the
+        # daily expiry job closes it (MEH-3287, services/group_buy_expiry.py),
+        # so between the deadline and that run the «פתוחות» tab would list it
+        # next to a join button the commit route refuses. The list only — its
+        # page still resolves for a shared link and says the deadline passed.
         q = q.filter(GroupBuy.deadline >= utc_now())
     if city:
         q = q.filter(GroupBuy.city == city)
@@ -185,7 +205,12 @@ def list_my_group_buys(
         .order_by(GroupBuy.created_at.desc())
         .all()
     )
-    return [_enrich(gb) for gb in items]
+    # MEH-3254 (D7): the business learns how many units to prepare — a sum,
+    # never who asked for them (MEH-1651). Owner-only: this route, not _enrich.
+    return [
+        {**_enrich(gb), "units_total": sum(c.quantity or 0 for c in gb.commits)}
+        for gb in items
+    ]
 
 
 @router.get("/{group_buy_id}", response_model=GroupBuyDetail)
@@ -228,6 +253,8 @@ def _maybe_notify_funded(
     never touch `db`, which is closed once the response is sent.
     """
     if gb.funded_notified_at is not None:
+        # MEH-3311: back at the goal after a drop → everyone hears it once.
+        notify_back_at_goal(db, gb, background_tasks)
         return
 
     # Requires the caller to have flushed the new commit, or the participant
@@ -265,6 +292,28 @@ def _maybe_notify_funded(
     )
 
 
+def _notify_late_joiner(
+    gb: GroupBuy, user: User, background_tasks: BackgroundTasks
+) -> None:
+    """MEH-3289: a join to an already-funded group gets the existing funded
+    email, to her alone. The group-wide send is latched (funded_notified_at,
+    MEH-1651) and never fires again, so without this she would never get the
+    «how to arrange your order» email the others got."""
+    if not user.email:
+        return
+    background_tasks.add_task(
+        send_funded_notifications,
+        None,
+        [str(user.email)],
+        str(gb.title),
+        gb.producer.name if gb.producer else "",
+        str(gb.id),
+        str(gb.producer_id),
+        test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+        late_joiner=True,
+    )
+
+
 @router.post("/{group_buy_id}/commit", status_code=201, response_model=None)
 @limiter.limit("20/minute")  # MEH-3022
 def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
@@ -284,7 +333,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
     # MEH-2484: a group buy whose page is 404 cannot be joined via a held link.
     if not gb or not _is_public(db, gb.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
-    if gb.status != "open":
+    # MEH-3289: a funded group keeps taking joins until full or past deadline.
+    was_funded = gb.status == "funded"
+    if gb.status not in ("open", "funded"):
         raise HTTPException(status_code=400, detail="קבוצת הרכישה אינה פתוחה להצטרפות")
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
@@ -327,7 +378,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
     # Auto-fund when min_participants reached
     new_count = current_count + 1
-    if new_count >= gb.min_participants:
+    if was_funded:
+        _notify_late_joiner(gb, current_user, background_tasks)
+    elif new_count >= gb.min_participants:
         gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
 
@@ -338,9 +391,10 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
 @router.delete("/{group_buy_id}/commit", status_code=200, response_model=None)
 @limiter.limit("20/minute")  # MEH-3022
-def cancel_commit(
+def cancel_commit(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3311 added background_tasks
     request: Request,  # required by slowapi (MEH-3022)
     group_buy_id: UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -380,6 +434,8 @@ def cancel_commit(
         #        allowed to flap, the notification is not. Clearing it re-arms
         #        the send, so re-crossing the threshold would re-spam every
         #        participant. The latch is deliberately one-way.
+        # MEH-3311: those who stayed are told once (its own one-way stamp).
+        notify_below_goal(db, gb, background_tasks, current_user.id)
     db.commit()
     return {"detail": "ההצטרפות בוטלה"}
 
@@ -410,6 +466,8 @@ def create_group_buy(
         raise HTTPException(
             status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכישה"
         )
+    # MEH-3180: a paid tool. Open to everyone while billing is off.
+    capabilities.require_paid_tool(db, producer.id, "group_buy")
 
     # MEH-3022: cap on group buys still running (open or funded).
     enforce_cap(
@@ -488,8 +546,8 @@ def format_price(amount: Decimal | float | int) -> str:
 # is a 409 — cancelled and fulfilled are final. Since MEH-2866 they are final
 # for an admin too: PATCH /admin/group-buys/{id}/status uses this same table.
 # "open → cancelled" covers both "cancel" before the deadline and "close" after
-# it: the row looks the same either way. Nothing closes an open group buy past
-# its deadline automatically.
+# it: the row looks the same either way. An open group buy past its deadline
+# is closed by the daily job in services/group_buy_expiry.py (MEH-3287).
 OWNER_TRANSITIONS = frozenset(
     {
         ("open", "cancelled"),
@@ -588,6 +646,8 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = data.status  # type: ignore[assignment]
+    if data.status == "fulfilled":  # MEH-3179: each participant's order counts
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     # MEH-2852: cancelled / fulfilled — the public page changed.
     if is_public:
@@ -611,7 +671,12 @@ def admin_list_group_buys(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> list[GroupBuyDetail] | list[dict[str, Any]]:
-    q = db.query(GroupBuy)
+    # MEH-0000: same per-row lazy loads as the public list above, and this one
+    # is unbounded — the admin sees every group buy, not one business's open
+    # ones.
+    q = db.query(GroupBuy).options(
+        selectinload(GroupBuy.commits), selectinload(GroupBuy.producer)
+    )
     if status:
         q = q.filter(GroupBuy.status == status)
     items = q.order_by(GroupBuy.created_at.desc()).all()
@@ -652,6 +717,8 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = status  # type: ignore[assignment]
+    if status == "fulfilled":  # MEH-3179
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     if is_public:
         indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))

@@ -21,7 +21,7 @@ is the guard that this stayed a copy change: MEH-1421's rule is untouched.
 
 import pytest
 
-from app.routers.producer_me import (
+from app.routers.producer_me_locations import (
     SAME_CITY_NEEDS_LABEL_CODE,
     _same_city_label_error_detail,
 )

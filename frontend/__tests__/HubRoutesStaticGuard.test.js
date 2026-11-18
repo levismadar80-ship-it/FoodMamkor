@@ -73,7 +73,8 @@ function serverFiles(page) {
       : path.resolve(path.dirname(page), spec);
     const file = ["", ".js", ".jsx"].map((e) => base + e).find((f) => fs.existsSync(f) && fs.statSync(f).isFile());
     if (!file || !file.includes(`${path.sep}app${path.sep}`)) continue;
-    if (/^\s*["']use client["']/.test(fs.readFileSync(file, "utf8"))) continue;
+    // `m`: the directive may follow a leading `// @ts-check` line (MEH-3167).
+    if (/^\s*["']use client["']/m.test(fs.readFileSync(file, "utf8"))) continue;
     files.push(file);
   }
   return files;

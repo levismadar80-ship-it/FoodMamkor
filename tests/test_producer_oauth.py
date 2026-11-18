@@ -125,6 +125,51 @@ class TestProducerOAuthSignup:
         assert resp.status_code == 409
         assert "סיסמה" in resp.json()["detail"]
 
+    def test_email_collision_with_different_google_identity_returns_409(
+        self, client, db, google_verified
+    ):
+        """MEH-3272: an account linked to a DIFFERENT Google sub must not be
+        signed in just because the email matches (the /auth/google guard was
+        fixed in MEH-3104; this third copy still read `not user.google_id`)."""
+        db.add(
+            User(
+                email=EMAIL,
+                name="חשבון של מישהו אחר",
+                google_id="google-sub-OTHER",
+                role="consumer",
+            )
+        )
+        db.commit()
+
+        resp = client.post(
+            "/auth/register/producer/oauth",
+            json={"provider": "google", "id_token": "ignored"},
+        )
+        assert resp.status_code == 409
+        assert "access_token" not in resp.json()
+        user = db.query(User).filter(User.email == EMAIL).one()
+        assert user.google_id == "google-sub-OTHER"
+
+    def test_email_collision_with_different_apple_identity_returns_409(
+        self, client, db, apple_verified
+    ):
+        db.add(
+            User(
+                email=EMAIL,
+                name="חשבון של מישהו אחר",
+                apple_id="apple-sub-OTHER",
+                role="consumer",
+            )
+        )
+        db.commit()
+
+        resp = client.post(
+            "/auth/register/producer/oauth",
+            json={"provider": "apple", "id_token": "ignored"},
+        )
+        assert resp.status_code == 409
+        assert "access_token" not in resp.json()
+
     # Already a producer -------------------------------------------------
 
     def test_existing_producer_returns_409(self, client, db, google_verified):

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * savedItems — the non-React half of /favorites' recipes / events /
  * experiences (MEH-2560, chunk 5/5 of MEH-2555): load and parse the

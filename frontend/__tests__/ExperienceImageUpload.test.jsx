@@ -194,7 +194,7 @@ describe("MEH-2012 — the image field is an upload, not a URL box", () => {
   });
 
   it("surfaces the endpoint's own Hebrew detail when it sends one", async () => {
-    // upload.py:105 returns a real sentence for the free-plan 3-image cap.
+    // The backend sends real sentences (e.g. the MEH-1008 3-photo cap copy).
     // Replacing it with our generic string would hide the only actionable part.
     const detail = "אפשר להעלות עד 3 תמונות לבית עסק.";
     api.post.mockRejectedValueOnce({ response: { data: { detail } } });

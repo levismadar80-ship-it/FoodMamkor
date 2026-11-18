@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -34,7 +35,7 @@ const LIGHTBOX_MAX_WIDTH = 1920;
  *
  *   bg-white/10 (prior)  -> rgb(38,38,37)    = 1.29:1  FAILS WCAG 1.4.11 (3:1)
  *   bg-white/40 (now)    -> rgb(110,110,110) = 3.84:1  passes on the fill
- *   ring-white/70 @1px   -> rgb(182,182,182) = 9.65:1  passes again on the border
+ *   ring-white/70 at 1px -> rgb(182,182,182) = 9.65:1  passes again on the border
  *   focus-visible        -> 1px white/70 becomes 2px opaque white
  *
  * Sizes (w-11/w-12 = 44/48px) are unchanged — the hit area was never the bug.
@@ -103,9 +104,11 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
         if (!els.length) return;
         const first = els[0];
         const last = els[els.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        // MEH-3271: focus that has left the dialog is pulled back in.
+        const outside = !dialogRef.current?.contains(document.activeElement);
+        if (e.shiftKey && (document.activeElement === first || outside)) {
           e.preventDefault(); last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (!e.shiftKey && (document.activeElement === last || outside)) {
           e.preventDefault(); first.focus();
         }
       }

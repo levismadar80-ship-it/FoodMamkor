@@ -48,7 +48,7 @@ from app.services.producer_queries import (
 )
 from app.services.verification_status import verified_current_condition
 from app.utils.clock import israel_now, israel_today, utc_now
-from app.utils.hebrew_search import token_patterns, tokenize
+from app.utils.hebrew_search import layout_alternative, token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = structlog.get_logger(__name__)
@@ -88,8 +88,23 @@ def catalog_default_availability_condition() -> ColumnElement[bool]:
     owns that literal for every write path, and its own docstring already says
     it does not decide listing exclusion — which is this function's job. One
     owner for the value, one owner for the decision.
+
+    MEH-3219 B5: a vacation whose ``vacation_until`` has passed (Israel
+    calendar day, the same ``<`` the response schema uses — schemas.py
+    ``_compute_trust_tier``, MEH-155 / MEH-1883) no longer hides the business.
+    Nothing clears the column on the return date, so without the date half the
+    business stayed off every browse surface forever while its own page
+    already said «מקבל הזמנות». A NULL ``vacation_until`` keeps hiding: the
+    write path requires a date for ``on_vacation``, so NULL is legacy data and
+    hiding is the conservative reading.
     """
-    return Producer.availability_state != ON_VACATION
+    return or_(
+        Producer.availability_state != ON_VACATION,
+        and_(
+            Producer.vacation_until.isnot(None),
+            Producer.vacation_until < israel_today(),
+        ),
+    )
 
 
 def not_test_producer() -> ColumnElement[bool]:
@@ -1218,10 +1233,10 @@ def _apply_search_filter(
 
 
 def _log_search(db: Session, search_q: str | None, total_count: int) -> None:
-    """MEH-99 — log every search (zero AND non-zero) so trending has signal.
+    """MEH-99 — log every search (zero AND non-zero).
 
-    Zero-result rows are used for discovery; non-zero rows drive
-    /search/trending. MEH-267: ORM insert (not raw SQL) so id +
+    Zero-result rows are used for discovery. (Non-zero rows fed
+    /search/trending until MEH-3257 removed it.) MEH-267: ORM insert (not raw SQL) so id +
     searched_at come from Python-side model defaults — alembic baseline
     has no server_default on these columns.
 
@@ -1336,25 +1351,39 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     geo_search = geo is not None
     sort_origin = _distance_sort_origin(sort, lat, lng, geo_search=geo_search)
 
-    q, count_q = _build_base_queries(
-        db,
-        geo=geo,
-        sort=sort,
-        require_physical=require_physical,
-        sort_origin=sort_origin,
-        near_city=(filters.get("near_city") or "").strip() or None,
-    )
-    q, count_q = _apply_scalar_filters(q, count_q, **filters)
-    q, count_q = _apply_search_filter(db, q, count_q, search_q, geo_search=geo_search)
+    def _queries(text: str | None) -> tuple["Query[Any]", "Query[Any]"]:
+        q, count_q = _build_base_queries(
+            db,
+            geo=geo,
+            sort=sort,
+            require_physical=require_physical,
+            sort_origin=sort_origin,
+            near_city=(filters.get("near_city") or "").strip() or None,
+        )
+        q, count_q = _apply_scalar_filters(q, count_q, **filters)
+        q, count_q = _apply_search_filter(db, q, count_q, text, geo_search=geo_search)
 
-    # MEH-102 — exclude a specific producer (used by similar-producers widget).
-    if exclude is not None:
-        q = q.filter(Producer.id != exclude)
-        count_q = count_q.filter(Producer.id != exclude)
+        # MEH-102 — exclude a specific producer (used by similar-producers widget).
+        if exclude is not None:
+            q = q.filter(Producer.id != exclude)
+            count_q = count_q.filter(Producer.id != exclude)
+        return q, count_q
 
+    q, count_q = _queries(search_q)
     # MEH-23 — total BEFORE applying limit/offset so the frontend can render
     # "X מתוך Y" and numbered pagination.
     total_count = count_q.scalar() or 0
+    # MEH-3415 — nothing for the query as typed: re-read it on the other
+    # keyboard layout ("sca" -> "דבש") and try once, with every other filter
+    # unchanged. Only on a miss, so a real word with results is never rewritten.
+    if total_count == 0 and search_q:
+        alternative = layout_alternative(search_q.strip())
+        if alternative:
+            alt_q, alt_count_q = _queries(alternative)
+            alt_total = alt_count_q.scalar() or 0
+            if alt_total:
+                q, count_q, total_count = alt_q, alt_count_q, alt_total
+    # Logged as typed, with the count actually served.
     _log_search(db, search_q, total_count)
     results = _finalize_results(
         q,
