@@ -57,7 +57,7 @@ describe("BadgeRow", () => {
       />,
     );
     expect(screen.getByText("מאומת")).toBeInTheDocument();
-    expect(screen.getByText("בחירת העורכת")).toBeInTheDocument(); // MEH-1492 rename
+    expect(screen.getByText("בחירת העורכות")).toBeInTheDocument(); // MEH-1492 rename
     expect(screen.getByText("חדש")).toBeInTheDocument();
   });
 
@@ -76,9 +76,9 @@ describe("BadgeRow", () => {
     );
     // This fixture earns no license badge (has_producer_license unset — the
     // "license" here is the verification DOC TYPE), so the top-2 stay
-    // verified + recommended ("בחירת העורכת" after the MEH-1492 rename).
+    // verified + recommended ("בחירת העורכות" after the MEH-1492 rename).
     expect(screen.getByText("מאומת")).toBeInTheDocument();
-    expect(screen.getByText("בחירת העורכת")).toBeInTheDocument();
+    expect(screen.getByText("בחירת העורכות")).toBeInTheDocument();
     expect(screen.queryByText("חדש")).not.toBeInTheDocument();
     expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
   });
@@ -299,7 +299,7 @@ describe("BadgeRow", () => {
       );
       expect(screen.queryByText("מאומת")).not.toBeInTheDocument();
       expect(screen.queryByText("מוצהר")).not.toBeInTheDocument();
-      expect(screen.getByText("בחירת העורכת")).toBeInTheDocument(); // MEH-1492 rename
+      expect(screen.getByText("בחירת העורכות")).toBeInTheDocument(); // MEH-1492 rename
     });
 
     // MEH-1492: the recommended badge popover links to the /about criteria +
@@ -309,7 +309,7 @@ describe("BadgeRow", () => {
         <BadgeRow producer={{ verification_tier: null, is_recommended: true }} />,
       );
       // open the popover by clicking the chip trigger
-      fireEvent.click(screen.getByText("בחירת העורכת"));
+      fireEvent.click(screen.getByText("בחירת העורכות"));
       const link = container.querySelector('a[href="/about#editors-pick"]');
       expect(link).not.toBeNull();
     });

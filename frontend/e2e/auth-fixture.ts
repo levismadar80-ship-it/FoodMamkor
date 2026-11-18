@@ -39,7 +39,8 @@
  * ─── Why this exists at all: the rate limit ────────────────────────────────
  *
  * `/auth/login` carries `@limiter.limit("5/minute")` with slowapi's DEFAULT
- * key_func — per client IP, no email component (backend/app/auth.py:999). One
+ * key_func — per client IP (backend/app/routers/auth.py, `login`; since MEH-3372
+ * the handler also stops an address after 10 FAILED attempts in 15 minutes). One
  * GitHub Actions runner is one IP, so the whole suite shares a 5-permit window.
  * Specs 19, 20 and 22 each logged in as the SAME account, spending three
  * permits on one identity before any assertion ran. The overflow never

@@ -46,6 +46,9 @@ SCALAR_URL_SOURCES: tuple[Any, ...] = (
     ProducerRecipe.image_url,
     RescueReview.photo_url,
     KashrutBadgeRequest.cert_url,
+    # MEH-3377: the screenshot of a business's written consent — the audit
+    # record. Registered so neither a destroy nor the orphan sweep removes it.
+    Producer.consent_screenshot_url,
 )
 ARRAY_URL_SOURCES: tuple[Any, ...] = (
     Producer.images,

@@ -135,13 +135,10 @@ No other files touched.
 Behavior preserved.
 </scope>
 
-<thinking_guidance>
-Before patching:
-1. Identify the smell — quote the code.
-2. Sketch the after-shape.
-3. List risks (what could break).
-4. Output plan, wait for "go".
-</thinking_guidance>
+<plan_gate>
+Output a short plan first, wait for "go". The plan names the smell (quote the
+code), the after-shape, and what could break.
+</plan_gate>
 
 <acceptance_criteria>
 - Existing tests pass (run pytest, paste output)

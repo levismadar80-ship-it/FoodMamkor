@@ -577,7 +577,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     expect(screen.getByRole("button", { name: /מאומת/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /בחירת העורכת/ })).toBeInTheDocument(); // MEH-1492
+    expect(screen.getByRole("button", { name: /בחירת העורכות/ })).toBeInTheDocument(); // MEH-1492
     expect(screen.queryByRole("button", { name: /^חדש/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
@@ -867,8 +867,9 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
     const chipClasses = chip.className.split(/\s+/);
     expect(chipClasses).toContain("min-h-touch");
     expect(chipClasses).toContain("min-w-touch");
-    const strip = chip.closest("div.absolute");
-    expect(strip, "the +N must sit in the absolutely-positioned badge strip").not.toBeNull();
+    // MEH-3321: the strip left the photo (no longer `absolute`); find it by id.
+    const strip = chip.closest('[data-testid="card-badge-strip"]');
+    expect(strip, "the +N must sit in the badge strip").not.toBeNull();
     const stripClasses = strip.className.split(/\s+/);
     expect(stripClasses, "the strip wraps, which is the case this guards").toContain("flex-wrap");
     const units = (re, classes) => {

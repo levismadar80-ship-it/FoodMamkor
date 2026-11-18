@@ -74,7 +74,8 @@ const PLACEMENT_CLASSES = {
  * @param {object} props
  * @param {import("react").ReactElement} props.trigger — a single native
  *   element (or forwardRef component); receives onClick toggle,
- *   aria-haspopup, aria-expanded, and an id (kept if it already has one).
+ *   aria-expanded, aria-haspopup="dialog" (dialog role or sheetOnMobile only),
+ *   and an id (kept if it already has one).
  *   Its own onClick, if any, still runs first.
  * @param {import("react").ReactNode} props.children — rich content.
  * @param {"top"|"bottom"} [props.placement="bottom"]
@@ -251,8 +252,9 @@ export default function Popover({
       // anchored popover stays a non-modal disclosure). Same Tab-loop idiom
       // as LoginPromptModal.
       if (!sheetActive || e.key !== "Tab") return;
+      // MEH-3271: a disabled control cannot take focus, so it is not a stop.
       const focusables = panelRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       if (!focusables?.length) {
         e.preventDefault();
@@ -260,10 +262,12 @@ export default function Popover({
       }
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
+      // MEH-3271: focus outside the sheet is pulled back in, both directions.
+      const outside = !panelRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }
@@ -309,7 +313,13 @@ export default function Popover({
       }
       setOpen(next);
     },
-    "aria-haspopup": role === "dialog" ? "dialog" : "true",
+    // aria-haspopup="true" means "menu" to assistive tech, so a tooltip-kind
+    // panel announced itself as a menu that arrow keys could not walk. A
+    // dialog (or a panel that becomes the mobile dialog sheet) says "dialog";
+    // a plain toggletip carries aria-expanded only — the WAI-ARIA disclosure
+    // pattern.
+    "aria-haspopup":
+      role === "dialog" || sheetOnMobile ? "dialog" : undefined,
     "aria-expanded": open,
   });
 
@@ -368,6 +378,9 @@ export default function Popover({
       onClick={(e) => {
         e.stopPropagation();
         setOpen(false);
+        // MEH-3271: the sheet took focus on open; closing it by the backdrop
+        // used to leave focus on a node that is gone.
+        triggerRef.current?.focus();
       }}
       className="fixed inset-0 z-popover-sheet-scrim bg-black/40 select-none [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]"
     />
