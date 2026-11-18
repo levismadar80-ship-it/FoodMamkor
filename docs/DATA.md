@@ -1944,7 +1944,8 @@ GET  /admin/outreach/metrics/summary
 ### Search (`app/routers/search.py` — MEH-99)
 
 ```
-GET  /search            public — q (max 100 chars), limit (1–20, default 8)
+GET  /search            public — q (max 100 chars), limit (1–20, default 8),
+                                 as_typed (bool, default false — skip the keyboard-layout re-read)
                                  returns { producers, products, cities, categories, corrected_query }
                                  rate-limited 60/minute per IP
 ```
@@ -1961,7 +1962,8 @@ letter also tries its final form). When the query as typed returns nothing, both
 endpoints re-read it on the other SI 1452 layout (`hebrew_search.layout_alternative`:
 `sca` → `דבש`, `נרקשג` → `bread`; ≥ 3 characters, no 1-character token, one script
 only) and run once more. `GET /search` then sets `corrected_query` to the
-word the results are for (`null` otherwise); `GET /producers?q=` serves the corrected
+word the results are for (`null` otherwise; `as_typed=true` skips the re-read — the hero
+dropdown's «לחפש בכל זאת», `frontend/components/SearchCorrectionNote.jsx`); `GET /producers?q=` serves the corrected
 results silently and logs the query as typed with the count served.
 
 ### Chat widget (`app/routers/chat.py`)
