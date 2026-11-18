@@ -44,6 +44,11 @@ import re  # noqa: E402 — kept beside the only block that uses it
 _URL_TOKEN_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     # /claim/<compact JWT> — three base64url segments, header always "eyJ".
     (re.compile(r"/claim/eyJ[\w-]*\.[\w-]+\.[\w-]+"), "/claim/[token]"),
+    # /producer-preview/<compact JWT> — the admin's 14-day draft-preview link.
+    (
+        re.compile(r"/producer-preview/eyJ[\w-]*\.[\w-]+\.[\w-]+"),
+        "/producer-preview/[token]",
+    ),
     # /owner-invite/<token_urlsafe(32)> — the page, and /auth/owner-invite/…,
     # which this matches as a substring.
     (re.compile(r"/owner-invite/[\w-]{40,}"), "/owner-invite/[token]"),
