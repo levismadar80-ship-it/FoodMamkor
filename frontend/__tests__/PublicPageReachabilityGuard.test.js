@@ -108,6 +108,7 @@ const ROUTES = {
   "/delivery-waitlist/unsubscribe": { kind: "noindex" },
   "/favorites": { kind: "noindex" },
   "/forgot-password": { kind: "noindex" },
+  "/freshness/confirm": { kind: "noindex" },
   "/login": { kind: "noindex" },
   "/messages": { kind: "noindex" },
   "/newsletter/unsubscribe": { kind: "noindex" },
