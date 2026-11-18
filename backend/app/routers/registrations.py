@@ -488,12 +488,21 @@ def set_registration_attendance(
     A note for the business only: nothing reads it to block a visitor
     (card MEH-3315). 403 for anyone else, as the card asks; 404 for an id
     that does not exist. Only an active sign-up is marked (409 otherwise)."""
-    reg = db.query(Registration).filter(Registration.id == registration_id).with_for_update().first()
+    reg = (
+        db.query(Registration)
+        .filter(Registration.id == registration_id)
+        .with_for_update()
+        .first()
+    )
     if reg is None:
         raise HTTPException(status_code=404, detail="ההרשמה לא נמצאה")
     if reg.event_id is not None:
         event = db.get(Event, reg.event_id)
-        owns = event is not None and user.producer_id is not None and user.producer_id == event.producer_id
+        owns = (
+            event is not None
+            and user.producer_id is not None
+            and user.producer_id == event.producer_id
+        )
     else:
         ex = db.get(Experience, reg.experience_id)
         owns = ex is not None and ex.host_user_id == user.id
@@ -575,7 +584,11 @@ def cancel_registration(
     )
     # MEH-3314: the freed spot goes to the first one waiting (stamped here,
     # mailed after the commit).
-    offers = waitlist.offer_places(db, item, _places_to_offer(db, item)) if was_active else []
+    offers = (
+        waitlist.offer_places(db, item, _places_to_offer(db, item))
+        if was_active
+        else []
+    )
     db.commit()
     for to, message, url, test_offer in offers:
         background_tasks.add_task(

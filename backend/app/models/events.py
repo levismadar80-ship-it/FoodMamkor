@@ -270,7 +270,9 @@ class Registration(Base):
     reminder_sent_at = Column(DateTime, nullable=True)
     # MEH-3315: places this sign-up takes (capacity sums it), and whether the
     # party came — the owner's note only, it blocks nothing.
-    party_size = Column(SmallInteger, nullable=False, server_default=text("1"), default=1)
+    party_size = Column(
+        SmallInteger, nullable=False, server_default=text("1"), default=1
+    )
     attendance = Column(String(10), nullable=True)
 
     event = relationship("Event")

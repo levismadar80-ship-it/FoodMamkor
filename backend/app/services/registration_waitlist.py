@@ -75,7 +75,9 @@ def item_url(item: Event | Experience) -> str:
 Offer = tuple[str, RegistrantEmail, str, bool]
 
 
-def offer_places(db: Session, item: Event | Experience, places: int | None) -> list[Offer]:
+def offer_places(
+    db: Session, item: Event | Experience, places: int | None
+) -> list[Offer]:
     """MEH-3315: offer the freed places, in list order, to every party that
     fits — a party of 4 first in line is skipped while only 1 place is free,
     and a cancelled party of 4 can be offered to more than one visitor.
