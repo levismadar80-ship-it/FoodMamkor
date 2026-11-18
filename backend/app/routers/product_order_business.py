@@ -186,32 +186,56 @@ def report_no_show(
     return _done(db, response, actions.business_no_show(db, own, _actor(user)))
 
 
-def _simple(to_status: str) -> Any:
-    def route(  # noqa: PLR0913
-        request: Request,
-        response: Response,
-        order_id: UUID,
-        body: NoteIn,
-        user: User = Depends(require_producer),
-        db: Session = Depends(get_db),
-    ) -> Any:
-        own = _own_order_id(db, order_id, user)
-        order = actions.business_simple_move(
-            db, own, _actor(user), to_status, body.note
-        )
-        return _done(db, response, order)
-
-    return route
+def _simple_move(  # noqa: PLR0913
+    response: Response,
+    order_id: UUID,
+    body: NoteIn,
+    user: User,
+    db: Session,
+    to_status: str,
+) -> Any:
+    own = _own_order_id(db, order_id, user)
+    order = actions.business_simple_move(db, own, _actor(user), to_status, body.note)
+    return _done(db, response, order)
 
 
-# decline, ready, cancel: one shape — a move with an optional note.
-for _path, _to in (
-    ("decline", "declined"),
-    ("ready", "ready"),
-    ("cancel", "cancelled"),
-):
-    _handler = _simple(_to)
-    _handler.__name__ = f"{_path}_order"
-    router.post(f"/{{order_id}}/{_path}", response_model=BusinessOrderOut)(
-        limiter.limit(_ACTION_LIMIT)(_handler)
-    )
+# decline, ready, cancel: one shape — a move with an optional note. Written as
+# three decorated routes, not a loop, so scripts/check_api_contract.py can see
+# them (it reads decorators; MEH-3316 call site frontend/lib/product-orders.js).
+@router.post("/{order_id}/decline", response_model=BusinessOrderOut)
+@limiter.limit(_ACTION_LIMIT)
+def decline_order(  # noqa: PLR0913
+    request: Request,
+    response: Response,
+    order_id: UUID,
+    body: NoteIn,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> Any:
+    return _simple_move(response, order_id, body, user, db, "declined")
+
+
+@router.post("/{order_id}/ready", response_model=BusinessOrderOut)
+@limiter.limit(_ACTION_LIMIT)
+def ready_order(  # noqa: PLR0913
+    request: Request,
+    response: Response,
+    order_id: UUID,
+    body: NoteIn,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> Any:
+    return _simple_move(response, order_id, body, user, db, "ready")
+
+
+@router.post("/{order_id}/cancel", response_model=BusinessOrderOut)
+@limiter.limit(_ACTION_LIMIT)
+def cancel_order(  # noqa: PLR0913
+    request: Request,
+    response: Response,
+    order_id: UUID,
+    body: NoteIn,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> Any:
+    return _simple_move(response, order_id, body, user, db, "cancelled")

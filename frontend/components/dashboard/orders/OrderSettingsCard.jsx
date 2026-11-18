@@ -134,7 +134,7 @@ export default function OrderSettingsCard({ settings, onSaved }) {
       <SwitchRow id="orders-shabbat" label={t("shabbat")} checked={form.shabbat_observant} onChange={(on) => set("shabbat_observant", on)} />
       <Input label={t("min_order")} inputMode="decimal" dir="ltr" value={form.minimum} onChange={(e) => set("minimum", e.target.value)} />
       <TimingFields form={form} set={set} />
-      {state.error && <InlineMessage tone="error" role="alert">{state.error}</InlineMessage>}
+      {state.error && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {state.saved && <InlineMessage tone="success">{t("saved")}</InlineMessage>}
       <Button onClick={save} loading={state.busy} data-testid="orders-settings-save">{t("save")}</Button>
     </section>

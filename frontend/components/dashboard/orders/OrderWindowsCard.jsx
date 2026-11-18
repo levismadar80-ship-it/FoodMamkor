@@ -114,7 +114,7 @@ export default function OrderWindowsCard({ windows, orderWindow }) {
         )}
         <Button size="sm" onClick={save} loading={state.busy} data-testid="order-windows-save">{tHours("save_cta")}</Button>
       </div>
-      {state.error && <InlineMessage tone="error" role="alert">{state.error}</InlineMessage>}
+      {state.error && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {state.saved && <InlineMessage tone="success">{t("saved")}</InlineMessage>}
     </section>
   );

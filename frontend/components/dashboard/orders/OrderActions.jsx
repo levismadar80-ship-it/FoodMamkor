@@ -127,7 +127,7 @@ export default function OrderActions({ order, onChanged }) {
           </Button>
         ))}
       </div>
-      {error && <InlineMessage tone="error" role="alert">{error}</InlineMessage>}
+      {error && <InlineMessage tone="error">{error}</InlineMessage>}
       <OpenDialog open={open} order={order} slots={slots} close={() => setOpen(null)} done={done} />
     </div>
   );

@@ -199,18 +199,22 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     tabRef.current = tab;
   }, [tab]);
   const syncFromUrlRef = useRef(null);
-  syncFromUrlRef.current = () => {
-    const urlTab = tabFromPath(window.location.pathname);
-    if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
-    if (!urlTab || urlTab === tabRef.current) return;
-    tabRef.current = urlTab;
-    const p = new URLSearchParams(window.location.search);
-    setTab(urlTab);
-    setView("list");
-    setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
-    setCity(p.get("city") || "");
-    setCategories(categoriesFor(urlTab, p.getAll("category")));
-  };
+  // Set in an effect, not during render (react-hooks/refs); it runs before
+  // the effects below that call it, in declaration order.
+  useEffect(() => {
+    syncFromUrlRef.current = () => {
+      const urlTab = tabFromPath(window.location.pathname);
+      if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
+      if (!urlTab || urlTab === tabRef.current) return;
+      tabRef.current = urlTab;
+      const p = new URLSearchParams(window.location.search);
+      setTab(urlTab);
+      setView("list");
+      setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
+      setCity(p.get("city") || "");
+      setCategories(categoriesFor(urlTab, p.getAll("category")));
+    };
+  });
   useEffect(() => {
     syncFromUrlRef.current();
   }, [pathname]);

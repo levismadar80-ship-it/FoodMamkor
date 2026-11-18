@@ -78,7 +78,7 @@ export default function OrdersPage() {
       <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
       {failed && (
         <div className="space-y-2">
-          <InlineMessage tone="error" role="alert">{t("load_error")}</InlineMessage>
+          <InlineMessage tone="error">{t("load_error")}</InlineMessage>
           <Button variant="outlined" size="sm" onClick={retry}>{t("retry")}</Button>
         </div>
       )}

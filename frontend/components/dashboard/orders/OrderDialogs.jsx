@@ -62,7 +62,7 @@ function FormDialog({ id, title, busy, error, onClose, onSubmit, children }) {
       <div className="p-5 space-y-4">
         <h2 id={id} className="font-bold text-lg text-text">{title}</h2>
         {children}
-        {error && <InlineMessage tone="error" role="alert">{error}</InlineMessage>}
+        {error && <InlineMessage tone="error">{error}</InlineMessage>}
         <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="ghost" type="button" onClick={onClose} data-autofocus>{t("back")}</Button>
           <Button type="submit" loading={busy}>{t("send")}</Button>
