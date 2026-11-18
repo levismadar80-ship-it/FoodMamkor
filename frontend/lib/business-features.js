@@ -147,6 +147,9 @@ export const DASHBOARD_FRAME_PAGES = {
   "/producer/dashboard/edit": "tab: edit",
   "/producer/dashboard/insights": "tab: insights",
   "/producer/dashboard/tools": "tab: tools",
+  // MEH-3316: «הזמנות», a fifth tab (ORDERS_TAB), shown only while the server
+  // has on-site ordering on. Approved placement 14/11 (option B, with a counter).
+  "/producer/dashboard/orders": "tab: orders",
   // MEH-2884: redirect stub to insights, kept for old links.
   "/producer/dashboard/followers": "redirect → insights",
 };

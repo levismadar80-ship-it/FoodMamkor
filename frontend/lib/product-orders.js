@@ -34,7 +34,7 @@ const NOT_FOUND = 404;
 // The four lists of the tab (approved copy: מחכות לטיפול / מאושרות / היום /
 // הסתיימו). `today` is a time filter over the open statuses, not a status.
 export const LIST_KEYS = /** @type {const} */ (["waiting", "confirmed", "today", "done"]);
-export const OPEN_STATUSES = ["pending", "change_proposed", "confirmed", "ready"];
+const OPEN_STATUSES = ["pending", "change_proposed", "confirmed", "ready"];
 const GROUP_OF = {
   pending: "waiting",
   change_proposed: "waiting",
