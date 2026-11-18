@@ -439,7 +439,7 @@ export default function ProducerSections({
                 {signatureImg ? (
                   <Image
                     src={signatureImg}
-                    alt={producer.top_product_name || ""}
+                    alt="" // MEH-3271: inside a button whose visible text already names it
                     fill
                     className="object-cover"
                     sizes="(min-width: 768px) 144px, 112px"
@@ -527,9 +527,10 @@ export default function ProducerSections({
                   // MEH-1901: the row is the trigger for the product sheet, so
                   // it is a real <button> (keyboard + AT reachable), not a div
                   // with a click handler. min-h-[96px] already clears the 44px
-                  // tap-target floor. Its accessible name comes from its visible
-                  // content (no aria-label: axe 4.14 label-content-name-mismatch,
-                  // WCAG 2.5.3 — a label must contain the visible text).
+                  // tap-target floor. MEH-3271: no aria-label — its accessible
+                  // name is its visible text (name, price, description), so a
+                  // voice-control user can say what they see (WCAG 2.5.3;
+                  // «פרטים על X» replaced all of it, axe 4.14 label-content-name-mismatch).
                   <button
                     key={product.id}
                     type="button"
@@ -541,7 +542,7 @@ export default function ProducerSections({
                       {img ? (
                         <Image
                           src={img}
-                          alt={product.name}
+                          alt="" // MEH-3271: the row's visible text already names it
                           fill
                           className="object-cover"
                           sizes="80px"
