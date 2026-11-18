@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import Popover from "@/components/ui/Popover";
 
 // MEH-800: contract tests for the click-popover primitive. The dismissal
@@ -65,7 +65,8 @@ describe("ui/Popover", () => {
   it("wires aria: haspopup + expanded on the trigger, labelledby on the content", () => {
     renderPopover();
     const btn = screen.getByText("פתחי");
-    expect(btn).toHaveAttribute("aria-haspopup", "true");
+    // A toggletip is a disclosure, not a menu: no aria-haspopup ("true" = menu).
+    expect(btn).not.toHaveAttribute("aria-haspopup");
     expect(btn).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(btn);
     expect(btn).toHaveAttribute("aria-expanded", "true");
@@ -73,6 +74,22 @@ describe("ui/Popover", () => {
     expect(content).toHaveAttribute("role", "tooltip");
     expect(content).toHaveAttribute("aria-labelledby", btn.id);
     expect(btn.id).not.toBe("");
+  });
+
+  it("announces a dialog only when the panel is one (role=dialog or the mobile sheet)", () => {
+    const { unmount } = render(
+      <Popover trigger={<button type="button">דיאלוג</button>} role="dialog">
+        תוכן
+      </Popover>,
+    );
+    expect(screen.getByText("דיאלוג")).toHaveAttribute("aria-haspopup", "dialog");
+    unmount();
+    render(
+      <Popover trigger={<button type="button">גיליון</button>} sheetOnMobile>
+        תוכן
+      </Popover>,
+    );
+    expect(screen.getByText("גיליון")).toHaveAttribute("aria-haspopup", "dialog");
   });
 
   it("still runs the trigger's own onClick before toggling", () => {
@@ -128,6 +145,38 @@ describe("ui/Popover", () => {
       } finally {
         restore();
       }
+    });
+
+    // MEH-3271 (Sapir 18/11): a visible ✕ on the sheet when the caller names it.
+    it("the sheet shows a labelled ✕ that closes it and returns focus", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
+        const trigger = screen.getByText("פתחי");
+        fireEvent.click(trigger);
+        const close = screen.getByTestId("close-pop-content");
+        expect(close).toHaveAttribute("aria-label", "סגור");
+        fireEvent.click(close);
+        expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+        expect(document.activeElement).toBe(trigger);
+      } finally {
+        restore();
+      }
+    });
+
+    it("no ✕ without a label, and never on the anchored desktop panel", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true });
+        fireEvent.click(screen.getByText("פתחי"));
+        expect(screen.queryByTestId("close-pop-content")).not.toBeInTheDocument();
+      } finally {
+        restore();
+      }
+      cleanup();
+      renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
+      fireEvent.click(screen.getByText("פתחי"));
+      expect(screen.queryByTestId("close-pop-content")).not.toBeInTheDocument();
     });
 
     it("backdrop click closes the sheet; Esc still returns focus to trigger", () => {
@@ -384,5 +433,75 @@ describe("ui/Popover", () => {
       fireEvent.click(screen.getByText("פתחי"));
       expect(screen.getByTestId("pop-content")).toBeInTheDocument();
     });
+  });
+});
+
+// MEH-3271: the mobile sheet takes focus when it opens, so every way of
+// closing it has to give focus back, and its Tab loop has to hold.
+describe("ui/Popover sheet — focus (MEH-3271)", () => {
+  const asMobile = () => {
+    const prev = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    return () => {
+      window.matchMedia = prev;
+    };
+  };
+
+  it("closing by the backdrop returns focus to the trigger", () => {
+    const restore = asMobile();
+    try {
+      renderPopover({ sheetOnMobile: true });
+      const trigger = screen.getByText("פתחי");
+      fireEvent.click(trigger);
+      // control: the sheet really took focus away from the trigger
+      expect(document.activeElement).toBe(screen.getByTestId("pop-content"));
+
+      fireEvent.click(screen.getByTestId("pop-content-backdrop"));
+      expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(trigger);
+    } finally {
+      restore();
+    }
+  });
+
+  it("Tab from outside the sheet lands on its first control, skipping a disabled one", () => {
+    const restore = asMobile();
+    try {
+      render(
+        <>
+          <button type="button">בחוץ</button>
+          <Popover
+            trigger={<button type="button">פתחי</button>}
+            contentTestId="pop-content"
+            sheetOnMobile
+          >
+            <button type="button" disabled>
+              כבוי
+            </button>
+            <button type="button">ראשון</button>
+            <button type="button">אחרון</button>
+          </Popover>
+        </>,
+      );
+      fireEvent.click(screen.getByText("פתחי"));
+      screen.getByText("בחוץ").focus();
+
+      fireEvent.keyDown(window, { key: "Tab" });
+      expect(document.activeElement).toBe(screen.getByText("ראשון"));
+
+      screen.getByText("בחוץ").focus();
+      fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+      expect(document.activeElement).toBe(screen.getByText("אחרון"));
+    } finally {
+      restore();
+    }
   });
 });

@@ -28,7 +28,10 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 // MEH-2475: OwnerCard (shared with the business page) reads next-intl's hook.
 // MEH-2547: the event rows are EventEntryRow, which reads useLocale.
-vi.mock("next-intl", () => ({
+vi.mock("next-intl", async (importOriginal) => ({
+  // MEH-3348: the page now builds JSON-LD through lib/seo, which needs the
+  // real createTranslator.
+  ...(await importOriginal()),
   useTranslations: (namespace) => (k) => `${namespace}.${k}`,
   useLocale: () => "he",
 }));
@@ -44,7 +47,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-import OrganizerPage from "@/app/[locale]/organizers/[slug]/page";
+import OrganizerPage, { generateMetadata } from "@/app/[locale]/organizers/[slug]/page";
 
 // MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
@@ -88,6 +91,21 @@ async function renderPage(slug = "gelem") {
 beforeEach(() => vi.clearAllMocks());
 
 describe("MEH-2461 organizer page", () => {
+  it("MEH-3348: one JSON-LD script (Organization + BreadcrumbList), outside <main>", async () => {
+    respond(200, ORG);
+    const ui = await OrganizerPage({ params: Promise.resolve({ slug: "gelem", locale: "he" }) });
+    const { container } = render(ui);
+    const scripts = container.querySelectorAll('script[type="application/ld+json"]');
+    expect(scripts).toHaveLength(1);
+    const types = JSON.parse(scripts[0].textContent)["@graph"].map((n) => n["@type"]);
+    expect(types).toEqual(["Organization", "BreadcrumbList"]);
+    // The script must not sit inside <main>: its space-y-8 rule would push
+    // the masthead down by one gap.
+    const main = screen.getByTestId("organizer-page");
+    expect(main.querySelector("script")).toBeNull();
+    expect(main.firstElementChild.tagName).toBe("HEADER");
+  });
+
   it("0 events: profile + the approved empty copy, no event list", async () => {
     respond(200, ORG);
     await renderPage();
@@ -227,6 +245,24 @@ describe("MEH-2461 organizer page", () => {
     respond(200, { ...ORG, name: "  " });
     await renderPage();
     expect(screen.queryByTestId("organizer-avatar")).toBeNull();
+  });
+
+  it("MEH-3340: a percent-encoded Hebrew slug (as Next hands it over) loads the page, not a 404", async () => {
+    const hebrew = "פרדס-בית-הראשונים-קטיף-עצמי";
+    respond(200, { ...ORG, slug: hebrew, images: ["https://res.cloudinary.com/x/image/upload/v1/a.jpg"] });
+    await renderPage(encodeURIComponent(hebrew));
+    expect(notFoundMock).not.toHaveBeenCalled();
+    // the backend gets the slug encoded once, not twice (%25D7…)
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://api.test/organizers/${encodeURIComponent(hebrew)}`);
+    expect(screen.getByTestId("organizer-cover")).toBeTruthy();
+  });
+
+  it("MEH-3340: metadata for a percent-encoded Hebrew slug — no 404, canonical stays encoded like the business page", async () => {
+    const hebrew = "פרדס-בית-הראשונים-קטיף-עצמי";
+    respond(200, { ...ORG, slug: hebrew, name: "פרדס" });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: encodeURIComponent(hebrew), locale: "he" }) });
+    expect(notFoundMock).not.toHaveBeenCalled();
+    expect(meta.alternates.canonical).toContain(`/organizers/${encodeURIComponent(hebrew)}`);
   });
 
   it("a scanner-shaped slug never reaches the API", async () => {
@@ -419,5 +455,67 @@ describe("MEH-2461 organizer page", () => {
       expect(he.share.modal_title_organizer).toBe("שתפו את דף המארגן");
       expect(en.share.modal_title_organizer).toBe("Share this organizer page");
     });
+  });
+
+  // MEH-3341 — 5-state matrix: (0 / 1 / many photos) × (lightbox closed / open).
+  describe("MEH-3341 all photos through the shared Lightbox", () => {
+    const IMG = (n) => `https://res.cloudinary.com/x/image/upload/p${n}.jpg`;
+    it("0 photos: green band, no «all photos» pill, no lightbox", async () => {
+      respond(200, ORG);
+      await renderPage();
+      expect(screen.getByTestId("organizer-cover-band")).toBeTruthy();
+      expect(screen.queryByTestId("gallery-view-all")).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    it("1 photo: cover only — no pill, nothing can open a lightbox", async () => {
+      respond(200, { ...ORG, images: [IMG(1)] });
+      await renderPage();
+      expect(screen.getByTestId("organizer-cover")).toBeTruthy();
+      expect(screen.queryByTestId("gallery-view-all")).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    it("3 photos: the pill names the count, sits in the cover block, closed until tapped", async () => {
+      respond(200, { ...ORG, images: [IMG(1), IMG(2), IMG(3)] });
+      await renderPage();
+      const pill = screen.getByTestId("gallery-view-all");
+      expect(pill.textContent).toContain("view_all");
+      expect(pill.getAttribute("aria-haspopup")).toBe("dialog");
+      expect(screen.getByTestId("organizer-cover").parentElement.contains(pill)).toBe(true);
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    it("2 photos (the boundary): the pill appears, and the Lightbox reaches photo 2", async () => {
+      respond(200, { ...ORG, images: [IMG(1), IMG(2)] });
+      await renderPage();
+      fireEvent.click(screen.getByTestId("gallery-view-all"));
+      expect(screen.getByTestId("lightbox-counter").textContent).toContain("2");
+      fireEvent.click(screen.getByTestId("lightbox-next"));
+      expect(screen.getByRole("dialog").querySelector("img").getAttribute("src")).toContain("p2.jpg");
+    });
+    it("3 photos: tapping opens the Lightbox on photo 1, close returns focus to the pill", async () => {
+      respond(200, { ...ORG, images: [IMG(1), IMG(2), IMG(3)] });
+      await renderPage();
+      const pill = screen.getByTestId("gallery-view-all");
+      fireEvent.click(pill);
+      const dialog = screen.getByRole("dialog");
+      expect(dialog.querySelector("img").getAttribute("src")).toContain("p1.jpg");
+      fireEvent.keyDown(document, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(document.activeElement).toBe(pill);
+    });
+  });
+
+  // ── MEH-3381 (rulings 17/11 §א3): an organizer with no description still gets its own meta description ──
+
+  it("MEH-3381: no short_description and no description → the fallback line, not the layout's default", async () => {
+    respond(200, { ...ORG, short_description: null, description: null });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: "gelem", locale: "he" }) });
+    expect(meta.description).toBe("organizers.page.meta_description_fallback");
+    expect(meta.openGraph.description).toBe("organizers.page.meta_description_fallback");
+  });
+
+  it("MEH-3381: a description, when there is one, still wins over the fallback", async () => {
+    respond(200, { ...ORG, short_description: null, description: "שוק יצרנים נודד" });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: "gelem", locale: "he" }) });
+    expect(meta.description).toBe("שוק יצרנים נודד");
   });
 });

@@ -15,6 +15,7 @@ import {
 import ReviewInviteCard, { takeDraftStars } from "@/components/ReviewInviteCard";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
+import ReviewReportMenu from "@/components/ReviewReportMenu";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
@@ -637,6 +638,14 @@ export default function ReviewsSection({
                         ariaLabel={t("star_aria", { value: review.stars })}
                       />
                     </div>
+                  </div>
+                  {/* MEH-3260: ⋮ «דיווח על הביקורת» at the card's top-end. */}
+                  <div className="ms-auto -mt-2 -me-2 shrink-0">
+                    <ReviewReportMenu
+                      review={review}
+                      producerId={producerId}
+                      authorName={formatName(review.user_name, anonymousFallback)}
+                    />
                   </div>
                 </div>
                 {review.body && (

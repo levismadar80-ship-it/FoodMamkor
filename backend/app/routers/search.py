@@ -14,13 +14,12 @@ tokenisation + variant rules live in the helper imported below, and all four
 sub-queries here share those semantics with /producers?q=.
 """
 
-from typing import Any, cast
-import time
+from typing import Any
 
 import structlog
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import or_, text
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
@@ -28,14 +27,15 @@ from app.services.producer_listing import is_business  # MEH-2459
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
 from app.schemas.schemas import CategoryHit, ProducerHit, ProductHit, SearchOut
-from app.utils.hebrew_search import token_patterns, tokenize
+from app.utils.hebrew_search import layout_alternative, token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE
 
 logger = structlog.get_logger(__name__)
 
-# In-memory cache for trending queries — single entry, 1-hour TTL.
-_trending_cache: dict[str, Any] = {"data": None, "ts": 0.0}
-_TRENDING_TTL = 3600.0
+# MEH-3257 (Sapir 14/11): GET /search/trending and its in-memory cache
+# were removed — one IP could steer «חיפושים פופולריים». search_queries rows
+# are still written (producer_listing._log_search) for later analysis.
+# DO NOT bring back a public "popular searches" list without a per-source cap.
 
 router = APIRouter(tags=["search"])
 
@@ -92,6 +92,29 @@ def smart_search(
     q_clean = (q or "").strip()
     if not q_clean:
         return _empty()
+    result = _search_once(db, q_clean, limit)
+    if _is_empty(result):
+        # MEH-3415 — nothing for the query as typed: re-read it on the other
+        # keyboard layout ("sca" -> "דבש") and try once more. Only on a miss,
+        # so a real word with results is never rewritten; corrected_query tells
+        # the client which word the results are for.
+        alternative = layout_alternative(q_clean)
+        if alternative:
+            corrected = _search_once(db, alternative, limit)
+            if not _is_empty(corrected):
+                corrected.corrected_query = alternative
+                return corrected
+    return result
+
+
+def _is_empty(result: SearchOut) -> bool:
+    return not (
+        result.producers or result.products or result.cities or result.categories
+    )
+
+
+def _search_once(db: Session, q_clean: str, limit: int) -> SearchOut:
+    """The four grouped sub-queries for one cleaned query string."""
     # MEH-1664 — tokenise once; every sub-query below AND-s the same per-token
     # conditions over its own column set. q_clean stays the raw cleaned query
     # so the relevance boosts keep comparing against what the user typed.
@@ -134,6 +157,7 @@ def smart_search(
         .options(joinedload(Product.producer))
         .join(Producer, Producer.id == Product.producer_id)
         .filter(is_business())  # MEH-2459
+        .filter(Product.is_draft.is_(False))  # MEH-2312: drafts are not public
         .filter(*_token_conditions(tokens, [Product.name, Product.description]))
         .order_by((Product.name != q_clean), Product.name.asc())
         .limit(limit)
@@ -198,39 +222,3 @@ def smart_search(
         cities=cities,
         categories=categories,
     )
-
-
-@router.get("/search/trending", response_model=list[str])
-@limiter.limit("60/minute")
-def trending_searches(request: Request, db: Session = Depends(get_db)) -> list[str]:
-    """Return top 5 queries that returned results, cached 1 hour."""
-    now = time.monotonic()
-    if (
-        _trending_cache["data"] is not None
-        and now - _trending_cache["ts"] < _TRENDING_TTL
-    ):
-        return cast(list[str], _trending_cache["data"])
-
-    try:
-        rows = db.execute(
-            text(
-                """
-                SELECT query
-                FROM search_queries
-                WHERE results_count > 0
-                GROUP BY query
-                ORDER BY COUNT(*) DESC
-                LIMIT 5
-                """
-            )
-        ).fetchall()
-        result = [row[0] for row in rows]
-    except Exception:
-        logger.warning(
-            "[search] trending cache DB query failed — returning empty", exc_info=True
-        )
-        result = []
-
-    _trending_cache["data"] = result
-    _trending_cache["ts"] = now
-    return result

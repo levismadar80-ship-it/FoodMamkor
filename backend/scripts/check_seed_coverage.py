@@ -296,6 +296,7 @@ EXEMPT_TABLES = {
     # Infrastructure / runtime-only tables: nothing to seed by design.
     "admin_settings": "runtime config, written by the admin panel",
     "alert_log": "runtime log",
+    "admin_audit_log": "MEH-3306 admin audit trail — one row per admin action, written at runtime; seeding one would fabricate an action that never happened",
     "contact_messages": "inbound form submissions — runtime only",
     "inbound_messages": "messaging runtime",
     "outbound_messages": "messaging runtime",

@@ -350,3 +350,35 @@ describe("MEH-2790 — region landing pages in the sitemap", () => {
     expect(urls).toContain(`${BASE}/map`);
   });
 });
+
+describe("MEH-0000: /producers survives a backend that is down at build time", () => {
+  // The whole producer block in app/sitemap.js sits INSIDE the success arm of
+  // fetchAllProducers. Before this fix, /producers was emitted only there as
+  // "page 1", so a slow or failing backend at build time dropped the business
+  // index from the sitemap — silently, with no error and no red.
+  it("lists /producers in both locales even when every fetch fails", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error("backend down"));
+    const urls = (await sitemap()).map((e) => e.url);
+    // The control: a sitemap that came back empty would satisfy any
+    // "does not contain" assertion, and would make this one vacuous too if it
+    // were phrased as a negative. Assert it is populated first.
+    expect(urls.length).toBeGreaterThan(10);
+    expect(urls).toContain(`${BASE}/producers`);
+    expect(urls).toContain(`${BASE}/en/producers`);
+  });
+
+  it("does not list /producers twice when the backend is up", async () => {
+    // Page 1 is the static entry; the paginated branch now starts at 2. With
+    // 30 businesses (PER_PAGE 24) there are two pages, so this would catch a
+    // regression that re-emitted page 1.
+    const many = Array.from({ length: 30 }, (_, i) => ({ id: `id-${i}`, slug: `biz-${i}` }));
+    let call = 0;
+    global.fetch = vi.fn().mockImplementation(async () => ({
+      ok: true,
+      json: async () => (call++ === 0 ? many : []),
+    }));
+    const urls = (await sitemap()).map((e) => e.url);
+    const exact = urls.filter((u) => u === `${BASE}/producers`);
+    expect(exact).toHaveLength(1);
+  });
+});

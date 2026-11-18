@@ -23,12 +23,17 @@ from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
 )
-from app.services.booking_cancellations import delist_business  # MEH-2498, MEH-3227
+from app.services.booking_cancellations import (  # MEH-2498, MEH-3227
+    delist_business,
+    hide_business,  # MEH-2871
+)
 from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
     validate_transition,
 )
 from app.services.producer_listing import is_business  # MEH-2459
+from app.services.page_freshness import stale_clause
+from app.routers.producer_me import reconcile_secondary_phone  # MEH-3339
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
@@ -63,6 +68,11 @@ from app.services.producer_queries import (
     create_primary_branch_location,
     upsert_primary_branch_location,
 )
+from app.services.review_conflicts import (  # MEH-3258
+    recompute_after_categories_changed,
+    recompute_after_owner_unlinked,
+    reviewed_by_owners_of,
+)
 
 # MEH-2020 — `_slugify` used to be a full copy of `slug_utils.slugify` here,
 # and a third copy lived in `producer_import.py`. Three generators of a public
@@ -70,6 +80,7 @@ from app.services.producer_queries import (
 # describing all three wrongly. The name stays so every call site and the
 # MEH-2021 corpus keep working; only the body is gone.
 from app.slug_utils import slugify as _slugify
+from app.slug_utils import latin_slug  # MEH-3336
 from app.utils.sql import LIKE_ESCAPE, escape_like
 from app.services.producer_approval import (
     ApprovalOverrides,
@@ -215,7 +226,7 @@ def _recommended_review_due_clause() -> ColumnElement[bool]:
 
 
 @router.get("/producers", response_model=list[ProducerAdminOut])
-def list_producers(
+def list_producers(  # noqa: PLR0913 — FastAPI query params + Depends, one per filter
     status: str | None = Query(
         None,
         pattern="^(draft|pending|approved|rejected|inactive|all)$",
@@ -224,6 +235,8 @@ def list_producers(
     # MEH-1494 chunk B: the annual-review view. Default False so every existing
     # caller — the admin toolbar included — sees exactly the list it saw before.
     recommended_review_due: bool = Query(False),
+    # Page freshness: live pages the owner has not confirmed for 60 days.
+    freshness_stale: bool = Query(False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> list[ProducerAdminOut] | list[Producer]:
@@ -271,6 +284,8 @@ def list_producers(
         )
     if recommended_review_due:
         q = q.filter(_recommended_review_due_clause())
+    if freshness_stale:
+        q = q.filter(stale_clause())
     # MEH-2110: the review queue is worked oldest-first, because the "עד 3 ימי
     # עסקים" promise starts at submission and a business that has waited longest
     # is the one closest to breaking it. Newest-first (the old default) let an
@@ -320,11 +335,19 @@ def admin_create_producer(
 ) -> ProducerAdminOut | Producer:
     """Admin-created producers are auto-approved — unless `as_draft`, which
     prepares an ownerless draft for the owner-claim link (MEH-2322)."""
-    slug = data.slug or _slugify(data.name)
-    # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
+    # MEH-3336: the suggestion is Latin (Instagram handle, else the name
+    # transliterated); a typed slug must be Latin too (_guard_supplied_slug).
     if data.slug:
         _guard_supplied_slug(data.slug)
-    slug = _ensure_unique_slug(db, slug)
+    slug = (
+        _slugify(data.slug)
+        if data.slug
+        else latin_slug(data.name, instagram=data.instagram)
+    )
+    # Collision → the town is appended (never a bare "-2", MEH-3336).
+    # `or None`: an all-Arabic name with no handle transliterates to "", and ""
+    # must never be stored — NULL keeps the /producer/{id} fallback (MEH-1817).
+    stored_slug: str | None = _ensure_unique_slug(db, slug, city=data.city) or None
 
     # MEH-530: same conditional-required guard as the public endpoints —
     # admin form can still persist non-regex license values verbatim
@@ -347,6 +370,9 @@ def admin_create_producer(
         contact_name=data.contact_name,
         description=data.description,
         short_description=data.short_description,
+        owner_bio=data.owner_bio,  # MEH-3338
+        secondary_phone=data.secondary_phone,  # MEH-3339
+        secondary_phone_label=data.secondary_phone_label,
         city=data.city,
         lat=data.lat,
         lng=data.lng,
@@ -360,7 +386,7 @@ def admin_create_producer(
         # MEH-296 3d: admin-create parity for the new channels.
         facebook=data.facebook,
         external_order_form=data.external_order_form,
-        slug=slug,
+        slug=stored_slug,
         top_product_name=data.top_product_name,
         price_range=data.price_range,
         grass_fed=data.grass_fed,
@@ -686,10 +712,18 @@ def admin_update_producer(
     enforce_license_gate_on_update(db, producer, payload, category_ids)
 
     # Keep slug unique if changed; reject reserved slugs.
-    if "slug" in payload and payload["slug"]:
+    # MEH-3336: only a CHANGED slug is validated. The admin form resends the
+    # stored slug on every save, so a business still on a legacy Hebrew slug
+    # must stay editable — the Latin rule applies when the slug is replaced.
+    if "slug" in payload and payload["slug"] and payload["slug"] != producer.slug:
         _guard_supplied_slug(payload["slug"])
         candidate = _slugify(payload["slug"])
-        payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)  # type: ignore[arg-type]
+        payload["slug"] = _ensure_unique_slug(
+            db,
+            candidate,
+            exclude_id=producer.id,  # type: ignore[arg-type]
+            city=payload.get("city") or producer.city,  # type: ignore[arg-type]
+        )
 
     # MEH-2528: read before the setattr loop below overwrites `producer.slug`.
     _retire_replaced_slug(db, producer, payload)
@@ -711,6 +745,7 @@ def admin_update_producer(
     _guard_availability_change(producer, payload)  # MEH-2758
     old_phone: str | None = producer.phone  # type: ignore[assignment]  # grill B8
 
+    reconcile_secondary_phone(producer, payload)  # MEH-3339
     for field, value in payload.items():
         setattr(producer, field, value)
 
@@ -740,6 +775,8 @@ def admin_update_producer(
 
     db.commit()
     db.refresh(producer)
+    # MEH-3258: a category write can move competitor conflicts (no-op on None).
+    recompute_after_categories_changed(db, producer.id, category_ids)
 
     # MEH-375: post-commit cleanup. Helper handles set diff + dedup +
     # fail-open per-URL destroy.
@@ -808,7 +845,6 @@ def toggle_producer_status(
         # MEH-769's "no side-effects" rule is untouched: this adds a check, not
         # the approval email/WhatsApp.
         _assert_approvable(db, producer, ApprovalOverrides(), user.id)  # type: ignore[arg-type]
-    producer.status = "inactive" if was_approved else "approved"  # type: ignore[assignment]
     if was_approved:
         # MEH-2974: suspending a live page REVOKES any outstanding owner
         # invite on it.
@@ -832,17 +868,16 @@ def toggle_producer_status(
         #
         # An ACCEPTED invite is left alone: `owner_invite_accepted_at` is the
         # record that it happened, and the business has a real owner now.
-        if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
-            producer.owner_invite_token_hash = None  # type: ignore[assignment]
-            producer.owner_invite_code_hash = None  # type: ignore[assignment]
-            producer.owner_invite_code_expires_at = None  # type: ignore[assignment]
-            producer.owner_invite_code_attempts = None  # type: ignore[assignment]
         # MEH-2498: suspending takes the business off the site, so its live
         # group buys go with it — cancelled in the same commit, participants
         # mailed. Folded into the block above rather than left as a second
         # `if was_approved:` immediately after it: two consecutive identical
         # conditions read as though one of them guards something else.
-        delist_business(db, producer, background_tasks, "hidden")  # MEH-3227
+        # The status flip, the invite revoke and delist_business are one
+        # path, shared with blocking the owner (MEH-2871).
+        hide_business(db, producer, background_tasks)
+    else:
+        producer.status = "approved"  # type: ignore[assignment]
     db.commit()
     # MEH-2852: hidden or back on the site — either way the page changed.
     indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
@@ -905,6 +940,9 @@ def admin_delete_producer(
     # Resetting role keeps the (role, producer_id) pair consistent — mirrors
     # the atomic set in the register flow (auth.py:511-514).
     # Admin-created producers have no linked user → update is a no-op.
+    # MEH-3258: her reviews on other businesses stop being in conflict once
+    # she is unlinked — read which ones now, recompute them after the commit.
+    owner_reviewed = reviewed_by_owners_of(db, producer.id)
     db.query(User).filter(User.producer_id == producer.id).update(
         {"producer_id": None, "is_producer": False, "role": "consumer"},
         synchronize_session=False,
@@ -922,6 +960,7 @@ def admin_delete_producer(
     # already pre-empts the NotNullViolation the old MEH-755 bulk-delete guarded.
     db.delete(producer)
     db.commit()
+    recompute_after_owner_unlinked(db, owner_reviewed)  # MEH-3258
     indexnow.schedule(background_tasks, removed_urls)  # MEH-2852
 
     # Post-commit orphan cleanup, fail-open per destroy_image contract.

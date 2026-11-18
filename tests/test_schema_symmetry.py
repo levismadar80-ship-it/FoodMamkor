@@ -219,4 +219,5 @@ def test_domain_type_migration_backlog_is_recorded():
     backlog = sum(len(classify(m)[1]) for _, m in input_schemas())
     typed = sum(len(classify(m)[0]) for _, m in input_schemas())
     print(f"\ndomain-typed family fields: {typed} · decorator-only: {backlog}")
-    assert backlog >= 0
+    # MEH-3386: no assertion — a count is never < 0, so `assert backlog >= 0`
+    # could not fail. This test is a report, as its docstring says.

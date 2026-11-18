@@ -1,7 +1,7 @@
 """meh3301_user_phone_verification
 
 Revision ID: c7d3e1a9f4b2
-Revises: f6c2a8d4e1b7
+Revises: f2c7a9d4b1e6
 Create Date: 2026-11-15 09:00:00.000000+00:00
 
 MEH-3301 (D14 of the 14/11 grill retro, part א): WhatsApp alerts must go only
@@ -42,7 +42,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "c7d3e1a9f4b2"
-down_revision: Union[str, None] = "f6c2a8d4e1b7"
+down_revision: Union[str, None] = "f2c7a9d4b1e6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
