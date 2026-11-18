@@ -29,7 +29,8 @@ import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phos
 // exactly as it renders in FilterSheet.
 import { chipIcon } from "@/lib/chip-icons";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
-import api, { MAX_UPLOAD_BYTES } from "@/lib/api";
+import api from "@/lib/api";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.

@@ -27,8 +27,8 @@ export const UPLOAD_TIMEOUT_MS = 120000;
 // measured on staging 18/11) before the backend's Hebrew 413 (#4725) can be
 // sent. So the cap is enforced here, below Vercel's: a file above 4MB never
 // leaves the browser, and any 413 that does come back carries one Hebrew line.
-export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
-export const UPLOAD_TOO_LARGE_DETAIL = "תמונה גדולה מדי (מקסימום 4MB)";
+import { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL } from "./upload-limits";
+export { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL };
 
 /** @param {unknown} data */
 function oversizedUpload(data) {

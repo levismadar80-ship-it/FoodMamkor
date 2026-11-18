@@ -12,7 +12,8 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
-import api, { MAX_UPLOAD_BYTES } from "@/lib/api";
+import api from "@/lib/api";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { detailToMessage } from "@/lib/errors";
 import { useUserCity } from "@/lib/use-user-city";
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
