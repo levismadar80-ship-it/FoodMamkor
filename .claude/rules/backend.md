@@ -37,7 +37,7 @@ ships. Re-check from Sapir's terminal, not from here.)_
 ## Anthropic client init
 
 **Always pass `http_client=httpx.Client()`.** *(The instruction is unchanged and
-still binding — see the dated note below before quoting its rationale.)*
+still binding — see the dated note below before quoting its rationale. Enforced by `tests/test_anthropic_http_client.py`, 18/11.)*
 Historically: the anthropic **0.39** SDK called `httpx.Client(proxies=...)`
 internally, which raises `TypeError` against httpx **0.28+** (kwarg renamed from
 `proxies=` to `proxy=`).
