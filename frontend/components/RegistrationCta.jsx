@@ -244,7 +244,7 @@ function ActionLink({ action, label, testId, onClick }) {
  * side card, under a heading with ×.
  */
 export default function RegistrationCta(props) {
-  const { kind, itemId, title, isFull, waitlistLabel, onWaitlistClick, barNote } = props;
+  const { kind, itemId, title, waitlistLabel, onWaitlistClick, barNote } = props;
   const t = useTranslations("registration.cta");
   const tSignup = useTranslations("registration.signup");
   const tCommon = useTranslations("common.aria");

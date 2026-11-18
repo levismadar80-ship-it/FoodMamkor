@@ -1,0 +1,6 @@
+# Mehamakor vulnerability disclosure (RFC 9116). Policy: see the Policy link.
+Contact: mailto:contact@mehamakor.co.il
+Expires: 2027-10-31T21:00:00.000Z
+Preferred-Languages: he, en
+Canonical: https://mehamakor.co.il/.well-known/security.txt
+Policy: https://github.com/levismadar80-ship-it/FoodMamkor/blob/staging/SECURITY.md

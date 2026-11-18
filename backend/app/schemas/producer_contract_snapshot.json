@@ -13,6 +13,7 @@
   "ProducerListOut": [
     "active_offer",
     "ambassador",
+    "availability_confirmed_at",
     "availability_state",
     "avg_rating",
     "categories",
@@ -87,6 +88,7 @@
   "ProducerDetailOut": [
     "active_offer",
     "ambassador",
+    "availability_confirmed_at",
     "availability_state",
     "avg_rating",
     "categories",

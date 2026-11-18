@@ -45,6 +45,7 @@ def _stub_services(monkeypatch):
         admin_pending_reminder,
         analytics_rollup,
         auto_reply_watchdog,
+        group_buy_expiry,
         onboarding_followup,
         pending_nudge,
         rescue_digest,
@@ -60,6 +61,7 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(auto_reply_watchdog, "run_watchdog", lambda db: {})
     monkeypatch.setattr(analytics_rollup, "run_rollup", lambda db: {})
     monkeypatch.setattr(retention_purge, "run_purge", lambda db: {})
+    monkeypatch.setattr(group_buy_expiry, "expire_unfunded_group_buys", lambda db: 0)
     monkeypatch.setattr(rescue_digest, "send_rescue_digests", lambda db: {})
     monkeypatch.setattr(
         weekly_owner_summary, "send_weekly_summaries", lambda db, now=None: {}
@@ -96,6 +98,12 @@ JOBS = [
         "retention-purge-daily",
         "crontab",
         job_heartbeat.RETENTION_PURGE_CRON,
+    ),
+    (
+        "_run_group_buy_expiry_job",
+        "group-buy-expiry-daily",
+        "crontab",
+        job_heartbeat.GROUP_BUY_EXPIRY_CRON,
     ),
     (
         "_run_rescue_digest_job",

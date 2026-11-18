@@ -3,7 +3,7 @@
  * Verifies: renders when open, submits POST, shows toast, closes.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 
 // MEH-475 PR-C4a chunk 3: mock next-intl per PR-A1/B precedent.
 vi.mock("next-intl", () => ({
