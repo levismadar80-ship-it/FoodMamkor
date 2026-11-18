@@ -8,7 +8,7 @@
  *           The summary carries the active count straight from the list
  *           payload (registered_count), so nothing is fetched until she opens
  *           it; opening loads GET /{kind}/{id}/registrations once.
- * States:   closed: summary «הרשמות באתר (N)» — 0 / 1 / many alike.
+ * States:   closed: summary «נרשמו באתר (N)», N = people (MEH-3315) — 0 / 1 / many alike.
  *           open:   loading → skeleton line; error → one line;
  *                   0 rows → «עוד אין הרשמות באתר»; 1 / many → one row each,
  *                   cancelled rows kept (struck name + «בוטלה») so she can see

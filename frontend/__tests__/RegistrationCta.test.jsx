@@ -115,6 +115,24 @@ describe("MEH-3315 — «כמה אנשים»", () => {
     fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
     fireEvent.click(screen.getByTestId("registration-submit"));
     await waitFor(() => expect(screen.getByText("נשארו רק 2 מקומות")).toBeInTheDocument());
+    // the same filled form can still join the waitlist
+    api.post.mockReset();
+    api.post.mockResolvedValue({ data: { status: "waitlisted" } });
+    fireEvent.click(screen.getByTestId("registration-join-waitlist"));
+    await waitFor(() => expect(screen.getByTestId("registration-success").textContent).toBe(S.waitlist_success));
+    expect(api.post.mock.calls[0][1].waitlist).toBe(true);
+  });
+
+  it("any other 409 offers no waitlist button", async () => {
+    api.post.mockRejectedValue({ response: { status: 409, data: { detail: { code: "registration_closed", message: "ההרשמה נסגרה" } } } });
+    cta({ method: "site_form" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByText("ההרשמה נסגרה")).toBeInTheDocument());
+    expect(screen.queryByTestId("registration-join-waitlist")).toBeNull();
   });
 });
 

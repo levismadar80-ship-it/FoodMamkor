@@ -78,6 +78,9 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
   const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [banner, setBanner] = useState("");
   const [sending, setSending] = useState(false);
+  // MEH-3315: places are left, but fewer than her party — the waitlist is
+  // still a way in, from the same filled form.
+  const [canWait, setCanWait] = useState(false);
 
   // The button that opened the form is gone; focus lands on the first field.
   useEffect(() => {
@@ -100,9 +103,10 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
     return errs;
   };
 
-  const submit = async (e) => {
+  const submit = async (e, asWaitlist = waitlist) => {
     e.preventDefault();
     setBanner("");
+    setCanWait(false);
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
@@ -119,7 +123,7 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
         email: form.email.trim(),
         party_size: Number(form.party),
         // MEH-3314: a full item takes the same fields onto its waitlist.
-        ...(waitlist ? { waitlist: true } : {}),
+        ...(asWaitlist ? { waitlist: true } : {}),
       });
       // The server decides: a place may have freed since the page loaded.
       onDone(res?.data?.status === "waitlisted");
@@ -129,6 +133,7 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
       const own = { name: "name_short", phone: "phone_invalid", email: "email_invalid" };
       if (fields.length) setErrors(Object.fromEntries(fields.map((f) => [f, t(own[f])])));
       else setBanner((detail && typeof detail === "object" && !Array.isArray(detail) && detail.message) || t("generic"));
+      if (detail?.code === "registration_not_enough") setCanWait(true);
     } finally {
       setSending(false);
     }
@@ -140,6 +145,17 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
         <InlineMessage variant="box" className="rounded-md p-3">
           {banner}
         </InlineMessage>
+      )}
+      {canWait && (
+        <button
+          type="button"
+          disabled={sending}
+          onClick={(e) => submit(e, true)}
+          className="block w-full text-center text-sm text-primary underline underline-offset-2 min-h-touch"
+          data-testid="registration-join-waitlist"
+        >
+          {t("waitlist_submit")}
+        </button>
       )}
       <Input id="signup-name" label={t("name")} required autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} />
       <Input

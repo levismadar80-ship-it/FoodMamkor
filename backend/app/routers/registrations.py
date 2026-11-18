@@ -83,24 +83,25 @@ def _has_started(day: date, at: time | None) -> bool:
     return at is not None and israel_now().time() >= at
 
 
-def _offer_open(db: Session, item: Event | Experience) -> bool:
+def _places_to_offer(db: Session, item: Event | Experience) -> int | None:
     """MEH-3314: a freed place is offered only where the form would take it —
     active, on-site form, not started (a recurring workshop never closes by
     its first date), and below the cap after this cancel (a workshop's own
-    tally of off-site sign-ups shares it). Mirrors the sign-up gates above."""
+    tally of off-site sign-ups shares it). Mirrors the sign-up gates above.
+    MEH-3315: how many places are free (0 = offer nothing, None = no cap)."""
     if not item.is_active or item.registration_method != "site_form":
-        return False
+        return 0
     recurring = bool(getattr(item, "is_recurring", False))
     if _has_started(item.event_date, item.event_time) and not recurring:  # type: ignore[arg-type]
-        return False
+        return 0
     if item.max_participants is None:
-        return True
+        return None
     if isinstance(item, Event):
         taken = registered_counts(db, event_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
     else:
         taken = registered_counts(db, experience_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
         taken += item.participants_count or 0
-    return bool(taken < item.max_participants)
+    return max(int(item.max_participants) - int(taken), 0)
 
 
 def _event_for_signup(db: Session, event_id: UUID) -> Event:
@@ -237,12 +238,10 @@ def _gate(data: RegistrationCreate, *, full: bool, left: int | None) -> None:
     for, says how many are left instead of «אין יותר מקומות»."""
     if full and not data.waitlist:
         if left:
+            message = "נשאר רק מקום אחד" if left == 1 else f"נשארו רק {left} מקומות"
             raise HTTPException(
                 status_code=409,
-                detail={
-                    "code": "registration_not_enough",
-                    "message": f"נשארו רק {left} מקומות",
-                },
+                detail={"code": "registration_not_enough", "message": message},
             )
         raise HTTPException(status_code=409, detail=_FULL)
 
@@ -319,6 +318,7 @@ def register_for_event(
                 phone=reg.phone,  # type: ignore[arg-type]
                 email=reg.email,  # type: ignore[arg-type]
                 spots_left=spots,
+                party_size=int(reg.party_size or 1),  # MEH-3315
                 # MEH-2884 (placement audit item 10): straight to the tool that lists
                 # the registrations, not the dashboard home (one tap saved).
                 manage_url=f"{settings.frontend_url}/producer/dashboard/events",
@@ -405,6 +405,7 @@ def register_for_experience(
                 phone=reg.phone,  # type: ignore[arg-type]
                 email=reg.email,  # type: ignore[arg-type]
                 spots_left=spots,
+                party_size=int(reg.party_size or 1),  # MEH-3315
                 # MEH-2884: experiences tab, where the host sees this registration.
                 manage_url=f"{settings.frontend_url}/producer/dashboard/experiences",
             ),
@@ -574,10 +575,9 @@ def cancel_registration(
     )
     # MEH-3314: the freed spot goes to the first one waiting (stamped here,
     # mailed after the commit).
-    offer = waitlist.offer_next(db, item) if was_active and _offer_open(db, item) else None
+    offers = waitlist.offer_places(db, item, _places_to_offer(db, item)) if was_active else []
     db.commit()
-    if offer:
-        to, message, url, test_offer = offer
+    for to, message, url, test_offer in offers:
         background_tasks.add_task(
             send_waitlist_offer, to, message, url, test_cause=test_offer
         )

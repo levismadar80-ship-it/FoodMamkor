@@ -50,7 +50,7 @@ graph LR
     App --> AdminLocations[admin_producer_locations.router<br/>/admin/producers/:producer_id/locations (MEH-3333, invariants imported from producer_me_locations)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
-    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel]
+    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel,<br/>MEH-3315: PATCH /registrations/id/attendance owner/admin]
     App --> Health[health.router<br/>/health, /health/liveness, /health/readiness, /health/places]
 ```
 

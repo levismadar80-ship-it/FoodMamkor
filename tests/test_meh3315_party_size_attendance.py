@@ -146,3 +146,53 @@ def test_a_no_show_blocks_nothing(client, db):
     )
     other = _event(db, owner, max_participants=10, title="אירוע שני")
     assert _post(client, other, "a@example.com", 1).status_code == 201
+
+
+@pytest.fixture
+def offers(monkeypatch):
+    sent = []
+    monkeypatch.setattr(r, "send_waitlist_offer", lambda to, *a, **k: sent.append(to))
+    return sent
+
+
+def test_one_place_left_is_said_in_the_singular(client, db):
+    ev = _event(db, _owner(db), max_participants=3)
+    _post(client, ev, "a@example.com", 2)
+    res = _post(client, ev, "b@example.com", 2)
+    assert res.json()["detail"]["message"] == "נשאר רק מקום אחד"
+
+
+def test_a_freed_place_skips_a_party_that_does_not_fit(client, db, offers):
+    """Review finding: a party of 4 first in line used up the one offer."""
+    ev = _event(db, _owner(db), max_participants=4)
+    _post(client, ev, "a@example.com", 3)
+    _post(client, ev, "b@example.com", 1)
+    _post(client, ev, "big@example.com", 4, waitlist=True)
+    _post(client, ev, "one@example.com", 1, waitlist=True)
+    b = _row(db, "b@example.com")
+    client.post(f"/registrations/{b.cancel_token}/cancel")
+    assert offers == ["one@example.com"]
+    db.expire_all()
+    assert _row(db, "big@example.com").waitlist_offered_at is None
+
+
+def test_a_cancelled_party_is_offered_to_as_many_as_fit(client, db, offers):
+    ev = _event(db, _owner(db), max_participants=4)
+    _post(client, ev, "a@example.com", 4)
+    for email in ("w1@example.com", "w2@example.com", "w3@example.com"):
+        _post(client, ev, email, 2, waitlist=True)
+    a = _row(db, "a@example.com")
+    client.post(f"/registrations/{a.cancel_token}/cancel")
+    assert offers == ["w1@example.com", "w2@example.com"]
+
+
+def test_the_owner_email_says_how_many_people(monkeypatch):
+    from app.services import registration_emails as em
+
+    sent = []
+    monkeypatch.setattr(em, "send_email", lambda to, subject, body, **k: sent.append(body))
+    base = dict(title="סדנה", name="דנה", phone="050", email="d@example.com", spots_left=3, manage_url="https://x")
+    em.send_owner_new_registration("o@example.com", em.OwnerNewEmail(**base, party_size=4))
+    em.send_owner_new_registration("o@example.com", em.OwnerNewEmail(**base))
+    assert "כמה אנשים: 4" in sent[0]
+    assert "כמה אנשים" not in sent[1]

@@ -1030,7 +1030,10 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > `registered_counts`), so `spots_left`, the cap check and «נשארו N מקומות»
 > count people. A party that no longer fits gets 409 `registration_not_enough`
 > «נשארו רק N מקומות» (or the waitlist, with `waitlist: true`). The owner or an
-> admin marks attendance; nothing reads it to block a visitor.
+> admin marks attendance; nothing reads it to block a visitor. A cancel offers
+> the freed places, in list order, to every waiting party that fits
+> (`registration_waitlist.offer_places`): a party too big for what is free is
+> skipped, not spent. The owner's «הרשמה חדשה» email adds «כמה אנשים» above 1.
 >
 > **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
 > `max_participants` below the item's active on-site sign-ups → **422**

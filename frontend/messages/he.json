@@ -6555,7 +6555,7 @@
       "invalid_url": "הכתובת אינה תקינה — התחילו ב-https://"
     },
     "list": {
-      "summary": "הרשמות באתר ({count})",
+      "summary": "נרשמו באתר ({count})",
       "empty": "עוד אין הרשמות באתר",
       "cancelled": "בוטלה",
       "offline_label": "נרשמו מחוץ לאתר",
