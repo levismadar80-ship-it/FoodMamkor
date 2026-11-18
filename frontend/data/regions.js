@@ -25,6 +25,15 @@
  * duplicated mapping. City names in REGIONS are canonical ISRAEL_CITIES
  * members and the delivery_city value comes from the canonical CitySearch,
  * so an exact match is correct.
+ *
+ * MEH-3334: a city MAY now appear in two regions, and this returns the FIRST
+ * in file order. «עתלית» is the only one — it belongs to מועצה אזורית חוף
+ * הכרמל and was already listed under `haifa`, so it is in both; `haifa`
+ * precedes `carmel_coast` below, which keeps the pre-existing answer
+ * (`haifa`) for it. Moving a region above another therefore changes what this
+ * returns for a shared city, not just the chip order. The quick-add chips are
+ * unaffected: CitiesAutocomplete unions and removes by membership in the
+ * clicked region's own list (MEH-1346), not by a city's single owner.
  */
 export function findRegionForCity(city) {
   if (!city) return null;
@@ -75,6 +84,29 @@ export const REGIONS = [
     ],
   },
   {
+    key: "carmel_coast",
+    name: "חוף הכרמל",
+    cities: [
+      "עתלית",
+      "החותרים",
+      "כפר גלים",
+      "ניר עציון",
+      "עין הוד",
+      "עין כרמל",
+      "כרם מהר\"ל",
+      "גבע כרמל",
+      "עופר",
+      "עין איילה",
+      "צרופה",
+      "מגדים",
+      "דור",
+      "נחשולים",
+      "הבונים",
+      "נווה ים",
+      "שדות ים",
+    ],
+  },
+  {
     key: "sharon",
     name: "השרון",
     cities: [
@@ -92,6 +124,25 @@ export const REGIONS = [
       "טייבה",
       "טירה",
       "קלנסווה",
+    ],
+  },
+  {
+    key: "hefer_valley",
+    name: "עמק חפר",
+    cities: [
+      "בית יצחק-שער חפר",
+      "כפר ידידיה",
+      "כפר ויתקין",
+      "כפר חיים",
+      "כפר הס",
+      "העוגן",
+      "מעברות",
+      "משמר השרון",
+      "נורדיה",
+      "צור משה",
+      "הדר עם",
+      "בית חירות",
+      "חופית",
     ],
   },
   {
