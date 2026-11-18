@@ -142,6 +142,7 @@ Phrasings that survived to production once and must be caught in review:
 - `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024). **חריג (MEH-1264, Option A):** `"יצרן"` אסור בממשק ובשיווק, למעט כחלק משם רישיון רשמי (`"רישיון יצרן"`, `"מספר רישיון יצרן"`) — דיוק משפטי, lawyer brief §5.3. הצ'יפ הצרכני `"רישיון יצרן"` נשאר AS-IS (שם הרישיון הרשמי של משרד הבריאות).
 - `"marketplace"` / `"פלטפורמת מסחר"` — DNA violation.
 - `"שוק"` as a discovery/sort/nav label (e.g. the old `"חדש בשוק"` sort option) — frames Mehamakor as a trade venue, DNA violation (MEH-1218). The sort label is now `"הצטרפו לאחרונה"`. **Not** forbidden: the named `"שוק שישי"` feature (MEH-50) and the event-type category `"שוק"` (a kind of listed event), which describe a real-world market, not the platform.
+- Slash gender forms (`"מסכים/ה"`, `"לקוח/ה"`, `"ראה/תה"`) — use a neutral plural or rewrite the sentence (ADR-037). Checked by `scripts/checks/brand-lexicon-guard.sh` (rule `slash-gender`, 18/11/2026); the strings written before the rule are in its baseline until Sapir approves their rewrites.
 - `"ISSUE 01"` / `"SPRING 2026"` / time-stamped editorial framing — Mehamakor isn't a periodical.
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.
 - Phosphor duotone weight — too playful for editorial; regular weight only.
