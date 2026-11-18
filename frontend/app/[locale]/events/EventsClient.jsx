@@ -193,7 +193,11 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   //   tab this sync last applied, so the listener and the effect running for
   //   the same move apply it once (one list fetch per Back, as MEH-2980 pins).
   const tabRef = useRef(tab);
-  tabRef.current = tab;
+  // Not assigned during render: an interrupted or transition render holding
+  // the old tab could reset the ref after the sync set it (reviewer, #4800).
+  useEffect(() => {
+    tabRef.current = tab;
+  }, [tab]);
   const syncFromUrlRef = useRef(null);
   syncFromUrlRef.current = () => {
     const urlTab = tabFromPath(window.location.pathname);

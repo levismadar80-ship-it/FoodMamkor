@@ -17,8 +17,9 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
-  // Frozen: the lagging hook this test is about.
-  usePathname: () => "/events",
+  // Frozen on "/events" by default: the lagging hook this test is about. The
+  // last case moves it too, to pin one fetch per Back when both paths fire.
+  usePathname: () => mockPath,
   Link: ({ children, href, ...props }) => (
     <a href={typeof href === "string" ? href : "#"} {...props}>
       {children}
@@ -45,10 +46,12 @@ vi.mock("@/components/CitySearch", () => ({
   ),
 }));
 
+let mockPath = "/events";
 const setUrl = (url) => window.history.replaceState(null, "", url);
 const tab = (value) => document.querySelector(`[data-tab-value="${value}"]`);
 
 beforeEach(() => {
+  mockPath = "/events";
   apiGet.mockClear();
   setUrl("/events?city=%D7%97%D7%99%D7%A4%D7%94");
 });
@@ -79,17 +82,26 @@ describe("EventsClient follows Back even when usePathname never moved (MEH-3090)
     await waitFor(() => expect(screen.getByTestId("city-input")).toHaveValue("חיפה"));
   });
 
-  it("a popstate that lands on the tab already shown fetches nothing more", async () => {
-    render(<EventsClient initialTab="events" />);
-    await waitFor(() => expect(apiGet).toHaveBeenCalled());
+  it("Back with both the listener and an updated hook fetches the list once", async () => {
+    const { rerender } = render(<EventsClient initialTab="events" />);
+    await waitFor(() => expect(screen.getByTestId("city-input")).toHaveValue("חיפה"));
+
+    fireEvent.click(tab("experiences"));
+    mockPath = "/experiences"; // this time the hook catches up
+    rerender(<EventsClient initialTab="events" />);
+    await waitFor(() => expect(tab("experiences")).toHaveAttribute("aria-selected", "true"));
+    await act(async () => {});
     const before = apiGet.mock.calls.length;
 
+    // Back: popstate AND the hook moving back — the two paths MEH-3090 added.
+    setUrl("/events?city=%D7%97%D7%99%D7%A4%D7%94");
     act(() => {
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
-    // Let any effect the event scheduled run.
+    mockPath = "/events";
+    rerender(<EventsClient initialTab="events" />);
+    await waitFor(() => expect(tab("events")).toHaveAttribute("aria-selected", "true"));
     await act(async () => {});
-    expect(apiGet.mock.calls.length).toBe(before);
-    expect(tab("events")).toHaveAttribute("aria-selected", "true");
+    expect(apiGet.mock.calls.length - before).toBe(1);
   });
 });
