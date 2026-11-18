@@ -2,7 +2,7 @@
 cannot be ordered or configured, until the admin approves it.
 
 Found by a retroactive security review (18/11): `_menu_products`,
-`product_order_create._lines` and `put_product_ordering` queried `Product`
+`product_order_create.order_lines` and `put_product_ordering` queried `Product`
 directly, so the `is_draft` gate on `Producer.products` did not apply.
 """
 

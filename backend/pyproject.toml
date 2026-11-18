@@ -347,6 +347,7 @@ files = [
     "app/services/product_order_delivery.py",
     "app/services/product_order_guards.py",
     "app/services/product_order_menu.py",
+    "app/services/product_order_quote.py",
     "app/services/product_order_outbox.py",
     "app/services/product_order_phone.py",
     "app/services/product_order_privacy.py",

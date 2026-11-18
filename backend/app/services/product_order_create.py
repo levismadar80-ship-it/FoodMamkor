@@ -42,7 +42,7 @@ from app.models.product_orders import (
     ProductOrder,
     ProductOrderItem,
 )
-from app.schemas.product_order_buy import OrderCreateIn
+from app.schemas.product_order_buy import OrderCreateIn, OrderQuoteIn
 from app.schemas.product_orders import MAX_MIN_ORDER_AGOROT
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
@@ -186,8 +186,8 @@ def _agorot(shekels: Decimal) -> int:
     return int((shekels * _AGOROT_PER_SHEKEL).to_integral_value())
 
 
-def _lines(
-    db: Session, body: OrderCreateIn, alcohol_licensed: bool
+def order_lines(
+    db: Session, body: OrderCreateIn | OrderQuoteIn, alcohol_licensed: bool
 ) -> list[ProductOrderItem]:
     """One order line per requested product, priced from the DB.
 
@@ -322,7 +322,7 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
     _check_business_room(db, producer.id)
 
     slot = _slot(offered_slots(db, producer, row, now), body)
-    lines = _lines(db, body, bool(row.alcohol_licensed))
+    lines = order_lines(db, body, bool(row.alcohol_licensed))
     has_alcohol = any(line.contains_alcohol for line in lines)
     if has_alcohol and not body.age_declared:
         raise HTTPException(

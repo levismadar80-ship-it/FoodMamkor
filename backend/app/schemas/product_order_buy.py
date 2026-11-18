@@ -32,6 +32,7 @@ TOO_MANY_LINES_DETAIL = f"אפשר להזמין עד {PRODUCT_ORDER_MAX_LINES} �
 DUPLICATE_PRODUCT_DETAIL = "אותו מוצר מופיע פעמיים בהזמנה"
 NAME_DETAIL = "צריך למלא שם"
 DELIVERY_NEEDS_ADDRESS_DETAIL = "למשלוח צריך למלא עיר וכתובת"
+DELIVERY_NEEDS_CITY_DETAIL = "למשלוח צריך לבחור עיר"
 PROPOSAL_EMPTY_DETAIL = "צריך להציע מועד אחר או סכום אחר"
 NOTE_DETAIL = "צריך לכתוב הסבר קצר"
 
@@ -122,6 +123,45 @@ class OrderCreateIn(BaseModel):
         ):
             raise ValueError(DELIVERY_NEEDS_ADDRESS_DETAIL)
         return self
+
+
+class OrderQuoteIn(BaseModel):
+    """What the order sheet asks before it sends (MEH-3216 stage 5c): the
+    picks, how she gets them, and her city for a delivery. No price."""
+
+    model_config = ConfigDict(extra="forbid")
+    producer_id: UUID
+    items: list[OrderLineIn] = Field(
+        ..., min_length=1, max_length=PRODUCT_ORDER_MAX_LINES
+    )
+    fulfilment: Fulfilment
+    delivery_city: str | None = Field(default=None, max_length=100)
+
+    @field_validator("items", mode="before")
+    @classmethod
+    def _cap_in_hebrew(cls, value: Any) -> Any:
+        return cap_list(value, PRODUCT_ORDER_MAX_LINES, TOO_MANY_LINES_DETAIL)
+
+    @field_validator("delivery_city")
+    @classmethod
+    def _collapse(cls, value: str | None) -> str | None:
+        return _clean(value)
+
+    @model_validator(mode="after")
+    def _whole_quote(self) -> "OrderQuoteIn":
+        ids = [line.product_id for line in self.items]
+        if len(set(ids)) != len(ids):
+            raise ValueError(DUPLICATE_PRODUCT_DETAIL)
+        if self.fulfilment == "delivery" and not self.delivery_city:
+            raise ValueError(DELIVERY_NEEDS_CITY_DETAIL)
+        return self
+
+
+class OrderQuoteOut(BaseModel):
+    subtotal_agorot: int
+    delivery_fee_agorot: int
+    total_agorot: int
+    has_estimate: bool
 
 
 class BuyerRefIn(BaseModel):

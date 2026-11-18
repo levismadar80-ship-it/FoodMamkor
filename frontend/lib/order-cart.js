@@ -70,7 +70,7 @@ export function pickedCount(picks) {
 
 /**
  * The sum the bar shows, in agorot. A price range counts at its HIGH end, the
- * same price the order route stores (services/product_order_create.py::_lines:
+ * same price the order route stores (services/product_order_create.py::order_lines:
  * the buyer is told the most she might pay), and a pick whose product left
  * the menu or sold out counts as nothing.
  * @param {Picks} picks

@@ -202,6 +202,14 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
             "/product-orders",
             json=valid_order_payload(shop, "2026-11-20T10:00:00Z", "123456"),
         ),
+        client.post(
+            "/product-orders/quote",
+            json={
+                "producer_id": shop.id,
+                "items": [{"product_id": str(shop.bread.id), "qty": 1}],
+                "fulfilment": "pickup",
+            },
+        ),
         client.post("/product-orders/status", json=ref),
         client.post("/product-orders/status/cancel", json=ref),
         client.post("/product-orders/status/accept-change", json=ref),

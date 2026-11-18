@@ -7591,6 +7591,19 @@ export const SendOrderPhoneCodeProductOrdersPhoneCodePostResponse = /*#__PURE__*
 
 
 /**
+ * MEH-3216 stage 5c: the goods, the delivery fee and the total before
+ * the buyer sends. Writes nothing; refuses as the order route would.
+ * @summary Quote Order Route
+ */
+export const QuoteOrderRouteProductOrdersQuotePostResponse = /*#__PURE__*/ zod.object({
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "subtotal_agorot": /*#__PURE__*/ zod.int(),
+  "total_agorot": /*#__PURE__*/ zod.int()
+})
+
+
+/**
  * A read, sent as POST so the token stays out of the URL.
  * @summary Read Order Status
  */
