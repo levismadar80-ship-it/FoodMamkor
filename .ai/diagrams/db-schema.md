@@ -71,6 +71,7 @@ erDiagram
         string availability_status "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
         string availability_state "accepting_orders|on_vacation (MEH-2758 pause-only writes; MEH-2782 removed available_today|full_this_week)"
         date vacation_until "nullable — required when availability_state=on_vacation"
+        timestamptz availability_confirmed_at "nullable — MEH-2697: when the OWNER last said her availability is still true; NULL = never"
         timestamp recommended_at "nullable — MEH-1494 chunk A, revision e2a7c9d4b6f1; when the current editorial pick was made. No backfill: NULL = picked before the clock existed, due for review"
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
         date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
@@ -258,6 +259,16 @@ erDiagram
         timestamp reviewed_at "nullable until decided"
     }
 
+    admin_audit_log {
+        uuid id PK
+        uuid actor_id "NOT NULL, indexed — deliberately not a FK (MEH-3306)"
+        string action "method + route template"
+        string target_type "nullable"
+        string target_id "nullable"
+        jsonb details "nullable — reduced before/after, no PII"
+        string ip "nullable — not returned by the list route"
+        timestamptz created_at "NOT NULL DEFAULT now(), indexed — append-only"
+    }
     admin_checklist_items {
         uuid id PK
         int position "indexed; written as index*10 by the router, never accepted from the client — a client-supplied position lets two items claim one slot"

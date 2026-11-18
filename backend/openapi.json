@@ -6048,6 +6048,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -8176,6 +8188,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -9026,6 +9050,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -10495,6 +10531,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -16376,6 +16424,72 @@
           }
         ],
         "summary": "Get Analytics",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
+    "/admin/audit-log": {
+      "get": {
+        "description": "MEH-3306: the admin audit log, newest first. `before` pages back by\n`created_at`. The stored IP is not returned: it is kept for an\ninvestigation, not for a list.",
+        "operationId": "list_audit_log_admin_audit_log_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Audit Log",
         "tags": [
           "admin-extra"
         ]
@@ -24601,6 +24715,31 @@
           }
         ],
         "summary": "Producer Analytics",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/availability-confirm": {
+      "post": {
+        "description": "MEH-2697 «עדיין נכון»: the owner says her availability is still true.\n\nChanges nothing but the stamp — the state and the vacation date stay.\nREUSES: set_availability_state above — same owner gate and rate limit.",
+        "operationId": "confirm_availability_producers_me_availability_confirm_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm Availability",
         "tags": [
           "producer-management"
         ]
