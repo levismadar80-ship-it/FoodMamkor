@@ -646,7 +646,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             // the panel, and the popover anchors start-0 from the chip — which
             // sits ~141px into a 294px xl:grid-cols-4 card, so a 160px panel
             // lost 7px off its inline-end (measured in self-QA). Content-sized
-            // + nowrap keeps the widest label ("בחירת העורכת") inside the card.
+            // + nowrap keeps the widest label ("בחירת העורכות") inside the card.
             <Popover
               contentTestId="badge-overflow-popover"
               contentClassName="w-max whitespace-nowrap"

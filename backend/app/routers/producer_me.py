@@ -47,6 +47,7 @@ from app.services import indexnow  # MEH-2852
 from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.gallery_cap import assert_free_gallery_cap  # MEH-3220
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
+from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
 from app.services.submission_gate import (
     attach_upcoming_events_count,
 )
@@ -960,6 +961,8 @@ def update_my_producer(
 
     db.commit()
     db.refresh(producer)
+    # MEH-3258: a category write can move competitor conflicts (no-op on None).
+    recompute_after_categories_changed(db, producer.id, category_ids)
 
     # MEH-375: best-effort destroy of Cloudinary assets the producer
     # dropped from the gallery, AFTER db.commit so a constraint failure

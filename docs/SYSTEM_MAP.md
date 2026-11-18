@@ -31,7 +31,7 @@ This page links to those and does not repeat their numbers.
 | Frontend | Next.js App Router, JavaScript. Server-renders public pages, proxies `/api/*`. | Vercel · `frontend/` |
 | Backend | FastAPI. One process holds the API, the rate limiter's counters and the scheduler. | Railway · `backend/app/` |
 | Database | PostgreSQL. Schema changes only through Alembic. | Railway · `backend/alembic/versions/` |
-| Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, watchdog and rescue digest when enabled. | `backend/app/startup.py` |
+| Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled. | `backend/app/startup.py` |
 | CI | GitHub Actions: the two required gates, E2E, uptime probe, backup-restore check. | `.github/workflows/` |
 
 ## What talks to what
@@ -47,7 +47,7 @@ This page links to those and does not repeat their numbers.
 | Browser | PostHog, Clarity, Sentry | analytics and errors, after consent | nothing visible |
 | Backend | Postgres | everything | 5xx |
 | Backend | Anthropic | moderation of reviews, recipes, workshops, owner replies; chat | **fails open**: content publishes unchecked, chat answers offline |
-| Backend | Resend | every email | verification and reset emails stop |
+| Backend | Resend | every email, including the monthly page-freshness email (`services/page_freshness.py`) and its Sunday admin digest (`services/page_freshness_digest.py`), off until `PAGE_FRESHNESS_ENABLED`) | verification and reset emails stop |
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
 | Backend | Google Places | a business's Google rating | the rating line disappears |
@@ -61,7 +61,9 @@ This page links to those and does not repeat their numbers.
 | Passwords | Postgres, bcrypt hash | never logged |
 | Access token (15 minutes) | browser `localStorage` | sent as a Bearer header |
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
+| An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
 | Images | Cloudinary | Postgres holds the URL only |
+| Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
 | Rate-limit counters | backend process memory | reset on every deploy, not shared between processes |
 | Scheduler state | backend process memory | a job that was due during a restart does not run late |
 | Secrets | Railway and Vercel environment variables | none in the repo ([SECURITY.md](./SECURITY.md)) |

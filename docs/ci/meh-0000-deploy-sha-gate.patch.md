@@ -1,5 +1,7 @@
 # Patch — post-deploy: fail when the live backend is NOT this commit (deploy-sha gate)
 
+> **APPLIED 18/11/2026 (MEH-3358, PR #4747)** — committed through the GitHub web editor; the branch file was `cmp`-identical to this patch applied to staging. Kept as the record of what changed and why.
+
 **For Sapir.** `.github/workflows/**` is CC-deny, so CC prepared and verified this patch and you commit it (GitHub web editor, or `git apply`). Everything it calls is already in the repo: `scripts/checks/wait_for_deploy.py` after this PR.
 
 Verified by CC before writing this file:

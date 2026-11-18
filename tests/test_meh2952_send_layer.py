@@ -1168,6 +1168,20 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p.is_test or user.is_test",
     ),
+    ("services/page_freshness.py", "send_freshness_emails", "send_email"): (
+        1,
+        OWN,
+        "cand.test_business or owner.is_test",
+    ),
+    (
+        "services/page_freshness_digest.py",
+        "send_stale_digest",
+        "send_email",
+    ): (
+        1,
+        NONE,
+        "aggregate admin digest; test rows are filtered out by the query",
+    ),
     ("services/pending_nudge.py", "send_pending_nudges", "send_email"): (
         1,
         OWN,
@@ -1294,6 +1308,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_business_reservation_email",
         "send_email",
     ): (1, OWN, "wrapper param ← producer.is_test (MEH-3313)"),
+    (
+        "services/group_buy_goal_flap.py",
+        "send_below_goal_emails",
+        "send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3311)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",
