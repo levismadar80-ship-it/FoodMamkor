@@ -32,6 +32,10 @@ import { getVerifiedPopoverBody } from "./BadgeRow";
 export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited, updatesButton = null }) {
   const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations("gallery");
+  // MEH-3395: alt names the business («סנדרה…, תמונה 1») so search, AI answers
+  // and screen readers know whose photo it is; no name → the numbered alt.
+  const imageAlt = (n) =>
+    producerName ? t("image_alt_named", { name: producerName, current: n }) : t("image_alt", { current: n });
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
   // its h1), so the seal is rendered beside it here rather than floating alone
@@ -301,7 +305,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               (~45vw mobile / ~60vw desktop) — accepted art-direction cost. */}
           <ImageWithFallback
             src={images[0]}
-            alt={t("image_alt", { current: 1 })}
+            alt={imageAlt(1)}
             fill
             priority
             className="object-cover"
@@ -327,7 +331,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             >
               <ImageWithFallback
                 src={src}
-                alt={t("image_alt", { current: idx + 1 })}
+                alt={imageAlt(idx + 1)}
                 fill
                 className="object-cover"
                 sizes="(min-width: 1024px) 25vw, 30vw"
@@ -364,7 +368,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
       >
         <ImageWithFallback
           src={images[current]}
-          alt={t("image_alt", { current: current + 1 })}
+          alt={imageAlt(current + 1)}
           fill
           priority={current === 0}
           className="object-cover"

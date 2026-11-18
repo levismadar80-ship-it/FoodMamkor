@@ -1,0 +1,44 @@
+// CLS sweep against a base URL. Control first: a forced shift must register.
+const { chromium, devices } = require("playwright");
+const BASE = process.argv[2] || "https://staging.mehamakor.online";
+const ROUTES = (process.argv[3] || "/he,/he/map,/he/about,/he/events,/he/experiences,/he/producers,/he/join,/he/login,/he/register,/he/producer/b331574f-e90e-48fa-be3b-c1ab1d1ec0fd,/he/organizers/golden-organizer,/he/events/1b54c6a7-0c10-4209-8c0a-eeaf429fe3dd,/he/group-buys,/he/rescue,/he/contact,/he/favorites").split(",");
+const RUNS = Number(process.argv[4] || 2);
+const init = () => {
+  window.__cls = { v: 0, n: 0, src: [], installed: false };
+  try {
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) { if (e.hadRecentInput) continue; window.__cls.v += e.value; window.__cls.n++;
+      for (const s of e.sources || []) { const n = s.node; let d = "?"; if (n && n.nodeType === 1) { d = n.tagName.toLowerCase() + (n.dataset?.testid ? `[${n.dataset.testid}]` : "") + (n.className && typeof n.className === "string" ? "." + n.className.split(" ").slice(0,3).join(".") : ""); } else if (n) d = "#text:" + (n.textContent||"").slice(0,20);
+        window.__cls.src.push(`${e.value.toFixed(4)} ${d} ${s.previousRect.y}->${s.currentRect.y} h${s.previousRect.height}->${s.currentRect.height}`); } } }).observe({ type: "layout-shift", buffered: true });
+    window.__cls.installed = true;
+  } catch (e) {}
+};
+(async () => {
+  const b = await chromium.launch({ args: BASE.startsWith("https://") ? ["--ssl-version-max=tls1.2"] : [] });
+  const headers = BASE.startsWith("https://") ? { "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET, "x-vercel-set-bypass-cookie": "true" } : {};
+  const profiles = { mobile: { ...devices["iPhone 13"], defaultBrowserType: undefined, isMobile: true }, desktop: { viewport: { width: 1440, height: 900 } } };
+  delete profiles.mobile.defaultBrowserType;
+  // control
+  { const c = await b.newContext({ extraHTTPHeaders: headers }); await c.addInitScript(init); const p = await c.newPage();
+    await p.goto(BASE + "/he/contact", { waitUntil: "load", timeout: 60000 }); await p.waitForTimeout(4000);
+    const before = await p.evaluate(() => window.__cls.v);
+    await p.evaluate(() => { const d = document.createElement("div"); d.style.height = "400px"; document.querySelector("main").prepend(d); }); await p.waitForTimeout(800);
+    const r = await p.evaluate(() => window.__cls); if (!r.installed || r.v <= before) { console.log("CONTROL FAILED — every number void", r); process.exit(2); } console.log("control ok", r.v.toFixed(4)); await c.close(); }
+  for (const [name, prof] of Object.entries(profiles)) {
+    for (const route of ROUTES) {
+      const vals = []; let src = [];
+      for (let i = 0; i < RUNS; i++) {
+        const c = await b.newContext({ ...prof, extraHTTPHeaders: headers });
+        await c.addCookies([{ name: "cookie_consent", value: "all", url: BASE }]).catch(()=>{});
+        await c.addInitScript(init); const p = await c.newPage();
+        try { await p.goto(BASE + route, { waitUntil: "load", timeout: 60000 }); } catch (e) { vals.push("ERR"); await c.close(); continue; }
+        await p.waitForTimeout(6000);
+        const r = await p.evaluate(() => window.__cls);
+        vals.push(r.installed ? r.v : "NOINIT"); if (r.src.length > src.length) src = r.src;
+        await c.close();
+      }
+      console.log(`${name.padEnd(7)} ${route.padEnd(60)} ${vals.map(v => typeof v === "number" ? v.toFixed(4) : v).join(" ")}`);
+      for (const s of src.slice(0, 6)) console.log("     ", s);
+    }
+  }
+  await b.close();
+})();

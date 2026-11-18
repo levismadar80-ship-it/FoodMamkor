@@ -16,10 +16,10 @@ import Button from "@/components/ui/Button";
 import { CROSS_STEP_REQUIRED, FULFILMENT_OPTIONS, STEP } from "../registerProducerShared";
 
 /** @param {Record<string, any>} props */
-export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfilment, fulfilmentError, handleCityKnownChange, isOrganizer, isUpgrade, phoneErrorMessage, runRequiredGate, set, setAndSave, setError, setFulfilmentError, setStep, setStepError, t }) {
+export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfilment, fulfilmentError, handleCityKnownChange, isOrganizer, isUpgrade, numberedTitle, phoneErrorMessage, runRequiredGate, set, setAndSave, setError, setFulfilmentError, setStep, setStepError, t }) {
   return (
     <div className="space-y-4" data-testid="register-frame-details">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.business.title"), STEP.DETAILS)}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>

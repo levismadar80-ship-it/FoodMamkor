@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CheckCircle, Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { renumberTitle, stepNumberOf } from "@/lib/wizard-step-numbers";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
@@ -217,6 +218,34 @@ function RegisterProducerPageBody({ routeKind }) {
   // the selected category IDs against the categories list fetched at mount.
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const isOrganizer = form.kind === "organizer"; // MEH-2460
+
+  // MEH-0000: every number a user SEES comes from a position in this array.
+  //
+  // The STEP enum stays the state machine — it is the single source for the
+  // 3→5 re-index (MEH-847) and every comparison still uses it. What it is not
+  // is a display value. Two steps are conditionally absent, and the enum cannot
+  // know that:
+  //   · an organizer never visits CATEGORY (MEH-2460), so /register/organizer
+  //     showed «01 02 04» in the stepper and jumped «2.» → «4.» in the headings;
+  //   · an upgrade (already signed in) starts past ACCOUNT, so its headings
+  //     began at «2.».
+  // Deriving from the visible position fixes both, and leaves the ordinary
+  // business path byte-identical (1, 2, 3, 4).
+  const visibleSteps = useMemo(
+    () =>
+      [STEP.ACCOUNT, STEP.DETAILS, STEP.CATEGORY, STEP.STORY].filter(
+        (s) =>
+          !(isOrganizer && s === STEP.CATEGORY) &&
+          !(isUpgrade && s === STEP.ACCOUNT),
+      ),
+    [isOrganizer, isUpgrade],
+  );
+
+  // Both helpers are pure and live in lib/wizard-step-numbers.js, so the digit
+  // swap can be tested against the REAL approved Hebrew — this file's test mock
+  // makes t(key) return the key path, which carries no number to swap.
+  const stepNumber = (s) => stepNumberOf(visibleSteps, s);
+  const numberedTitle = (title, s) => renumberTitle(title, stepNumber(s));
   // MEH-2640: the stored answer; the payload's booleans come from it.
   const fulfilment = form.fulfilment;
   const licenseRequired =
@@ -882,7 +911,10 @@ function RegisterProducerPageBody({ routeKind }) {
                 className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted"}`}
               >
                 <span dir="ltr" className="font-english italic text-2xl leading-none">
-                  {String(s).padStart(2, "0")}
+                  {/* MEH-0000: the VISIBLE position, not the enum value. The
+                      `s <= step` and `aria-current` comparisons above stay on
+                      the enum — only the printed digit is derived. */}
+                  {String(stepNumber(s)).padStart(2, "0")}
                 </span>
                 <span className="text-xs font-medium leading-none">{caption}</span>
               </div>
@@ -933,6 +965,7 @@ function RegisterProducerPageBody({ routeKind }) {
         {step === STEP.ACCOUNT && (
           <AccountStep
             form={form}
+            numberedTitle={numberedTitle}
             refreshUser={refreshUser}
             requestFocus={requestFocus}
             routePath={routePath}
@@ -956,6 +989,7 @@ function RegisterProducerPageBody({ routeKind }) {
             handleCityKnownChange={handleCityKnownChange}
             isOrganizer={isOrganizer}
             isUpgrade={isUpgrade}
+            numberedTitle={numberedTitle}
             phoneErrorMessage={phoneErrorMessage}
             runRequiredGate={runRequiredGate}
             set={set}
@@ -980,6 +1014,7 @@ function RegisterProducerPageBody({ routeKind }) {
             licenseRequiredError={licenseRequiredError}
             licenseWarning={licenseWarning}
             loadCategories={loadCategories}
+            numberedTitle={numberedTitle}
             requestFocus={requestFocus}
             runRequiredGate={runRequiredGate}
             set={set}
@@ -1011,6 +1046,7 @@ function RegisterProducerPageBody({ routeKind }) {
             handleSubmit={handleSubmit}
             isOrganizer={isOrganizer}
             loading={loading}
+            numberedTitle={numberedTitle}
             runRequiredGate={runRequiredGate}
             set={set}
             setAgreedToTerms={setAgreedToTerms}

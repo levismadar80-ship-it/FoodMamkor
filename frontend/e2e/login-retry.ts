@@ -7,8 +7,9 @@
  *           the injected `sleep`, so a unit test can exercise it without a
  *           browser, a backend or a real clock.
  * Related:  e2e/global-setup.ts (the only caller) ·
- *           backend/app/routers/auth.py (`/auth/login`, 5/minute) ·
- *           backend/app/rate_limit.py (key = client IP, no email component)
+ *           backend/app/routers/auth.py (`/auth/login`, 5/minute per IP + 10 failed attempts per address in 15 minutes, MEH-3372) ·
+ *           backend/app/rate_limit.py (the decorator limit keys on the client IP; the
+ *           failed-attempt ceiling keys on the address)
  * History:  MEH-2895 (creation).
  *
  * ─── Why this exists ───────────────────────────────────────────────────────
@@ -118,6 +119,6 @@ export function loginFailureMessage(
     `[global-setup] login failed for ${role} (${email}) at ${baseURL}: ` +
     `HTTP ${status} after ${attempts} attempt(s).`;
   return status === 429
-    ? `${head} Still rate-limited (5/minute per IP) — another suite is logging in from the same IP.`
+    ? `${head} Still rate-limited (5/minute per IP, or 10 failed attempts on this address in 15 minutes — MEH-3372) — another suite is logging in from the same IP, or this account had wrong-password attempts.`
     : `${head} Did the staging --sync-users run succeed?`;
 }

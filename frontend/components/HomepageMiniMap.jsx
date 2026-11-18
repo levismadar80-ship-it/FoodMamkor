@@ -262,9 +262,11 @@ export default function HomepageMiniMap() {
               zoomControl={false}
               attributionControl={true}
             >
+              {/* MEH-3077: per-tile referrerPolicy — OSM 403s a tile with no Referer. */}
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                referrerPolicy="strict-origin-when-cross-origin"
               />
               <DisableNonClickZoom />
               <CanvasClickToFullMap />

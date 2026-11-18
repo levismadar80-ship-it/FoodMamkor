@@ -15,10 +15,10 @@ import EmailTypoHint from "@/components/EmailTypoHint";
 import { STEP } from "../registerProducerShared";
 
 /** @param {Record<string, any>} props */
-export default function AccountStep({ form, refreshUser, requestFocus, routePath, router, set, setStep, setStepError, stepError, t }) {
+export default function AccountStep({ form, numberedTitle, refreshUser, requestFocus, routePath, router, set, setStep, setStepError, stepError, t }) {
   return (
     <div className="space-y-4" data-testid="register-frame-account">
-      <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
+      <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.account.title"), STEP.ACCOUNT)}</h2>
       {/* MEH-2183: step-top expectation line — names the time cost and
           that the draft survives leaving (setAndSave already persists it). */}
       <p data-testid="register-account-duration-hint" className="text-xs text-fg-muted text-start">

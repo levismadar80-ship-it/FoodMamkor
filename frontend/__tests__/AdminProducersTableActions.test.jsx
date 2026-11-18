@@ -109,7 +109,7 @@ const MENU_ARIA_KEY = "admin.producers.table.actions.menu_aria";
 const SUSPEND_KEY = "admin.producers.table.actions.suspend";
 const ACTIVATE_KEY = "admin.producers.table.actions.activate";
 // MEH-2509: the ambassador item is gone from the kebab (it duplicated
-// «בחירת העורכת»). Its two action keys are named here only to assert absence.
+// «בחירת העורכות»). Its two action keys are named here only to assert absence.
 const AMBASSADOR_OFF_KEY = "admin.producers.table.actions.set_ambassador_title";
 const AMBASSADOR_ON_KEY = "admin.producers.table.actions.remove_ambassador_title";
 const STORY_KEY = "admin.producers.table.actions.story_card";

@@ -16,10 +16,10 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import { CROSS_STEP_REQUIRED, DESCRIPTION_PENDING_KEY, REFERRAL_SOURCE_KEYS, STEP, fulfilmentBooleans } from "../registerProducerShared";
 
 /** @param {Record<string, any>} props */
-export default function StoryStep({ agreedToTerms, categories, declarationConfirmed, descriptionBeforeDisableRef, descriptionDisabled, descriptionPlaceholder, error, farmerConfirmed, farmerDeclarationRequired, form, handleSubmit, isOrganizer, loading, runRequiredGate, set, setAgreedToTerms, setAndSave, setDeclarationConfirmed, setDescriptionDisabled, setError, setFarmerConfirmed, setStep, setStepError, t }) {
+export default function StoryStep({ agreedToTerms, categories, declarationConfirmed, descriptionBeforeDisableRef, descriptionDisabled, descriptionPlaceholder, error, farmerConfirmed, farmerDeclarationRequired, form, handleSubmit, isOrganizer, loading, numberedTitle, runRequiredGate, set, setAgreedToTerms, setAndSave, setDeclarationConfirmed, setDescriptionDisabled, setError, setFarmerConfirmed, setStep, setStepError, t }) {
   return (
     <div className="space-y-4" data-testid="register-frame-story">
-      <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.story.title")}</h2>
+      <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.story.title"), STEP.STORY)}</h2>
       {/* MEH-2185: the step-top expectation line (photo_next_hint, added by
           MEH-2183) is GONE, and deliberately not replaced. It overlapped in
           substance with photo_disclosure further down this same step, which

@@ -13,10 +13,10 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import { CROSS_STEP_REQUIRED, STEP } from "../registerProducerShared";
 
 /** @param {Record<string, any>} props */
-export default function CategoryStep({ categories, categoriesFailed, fieldErrors, form, licenseOptionalExpanded, licensePending, licenseRequired, licenseRequiredError, licenseWarning, loadCategories, requestFocus, runRequiredGate, set, setAndSave, setError, setLicenseOptionalExpanded, setLicensePending, setLicenseRequiredError, setShowCategoryModal, setStep, setStepError, t, toggleCategory }) {
+export default function CategoryStep({ categories, categoriesFailed, fieldErrors, form, licenseOptionalExpanded, licensePending, licenseRequired, licenseRequiredError, licenseWarning, loadCategories, numberedTitle, requestFocus, runRequiredGate, set, setAndSave, setError, setLicenseOptionalExpanded, setLicensePending, setLicenseRequiredError, setShowCategoryModal, setStep, setStepError, t, toggleCategory }) {
   return (
     <div className="space-y-4" data-testid="register-frame-category">
-      <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
+      <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.category.title"), STEP.CATEGORY)}</h2>
       {/* MEH-1807: the selector is a card grid, not a form control, so it
           has no id to focus and nothing to hang aria-describedby on. A
           labelled group wrapper gives the required-gate both — tabIndex

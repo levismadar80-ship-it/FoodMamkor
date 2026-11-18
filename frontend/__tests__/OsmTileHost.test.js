@@ -51,6 +51,14 @@ describe("OSM tile host (MEH-3077)", () => {
     expect(read(f)).not.toMatch(SHARD);
   });
 
+  // OSM answers 403 «Access blocked» to a tile request with no Referer. The
+  // site header already says strict-origin-when-cross-origin, but anything
+  // that rewrites the page policy (a proxy, a metadata `referrer`) silently
+  // strips it. Set per tile image, the policy wins over the page's.
+  it.each(TILE_LAYER_FILES)("%s sets the tile referrerPolicy so OSM gets a Referer", (f) => {
+    expect(code(f)).toMatch(/referrerPolicy[=:]\s*["']strict-origin-when-cross-origin["']/);
+  });
+
   it("scan: every file with an OSM tile URL template is a known tile layer", () => {
     const withTiles = SOURCE_FILES.filter((f) => /openstreetmap\.org\/\{z\}/.test(code(f)));
     expect(withTiles.sort()).toEqual([...TILE_LAYER_FILES].sort());
@@ -61,10 +69,20 @@ describe("OSM tile host (MEH-3077)", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("the layout preconnects to the single host, not the shards", () => {
+  // MEH-2861: the layout used to preconnect to the tile host on EVERY page for
+  // a home mini-map that is now far below the fold and loads on scroll
+  // (MEH-2747, MEH-2850). The handshake expired unused on most visits.
+  it("the layout does not preconnect to any OSM tile host", () => {
     const layout = read("app/[locale]/layout.js");
-    expect(layout).toContain('href="https://tile.openstreetmap.org"');
-    expect(layout).not.toMatch(/href="https:\/\/[abc]\.tile\.openstreetmap\.org"/);
+    // Control: the file is the one with the <head> links, so "no OSM link"
+    // cannot be true only because the wrong file was read.
+    expect(layout).toContain('<link rel="preconnect" href="https://res.cloudinary.com"');
+    // Comments are stripped first: the note that explains the removal may
+    // name the host; no CODE in the layout may (a <link>, or a preconnect() call).
+    // Only JSX block comments are stripped. NOT `//` line comments: that
+    // pattern also eats everything after "https:" and blinds the check.
+    const layoutCode = layout.replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+    expect(layoutCode).not.toContain("openstreetmap.org");
   });
 
   it("CSP img-src admits the bare tile host", () => {
