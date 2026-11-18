@@ -22,6 +22,7 @@ import {
   BRAND_NAME_LATIN,
   BRAND_SAME_AS,
   CANONICAL_SENTENCE,
+  SITE_DESCRIPTION,
 } from "./constants";
 import { createTranslator } from "next-intl";
 import he from "../messages/he.json";
@@ -602,10 +603,10 @@ export function buildJsonLd(producer, locale = "he") {
  * carries address/geo/openingHours semantics that would be false here — the
  * producers each have their own FoodEstablishment node (see buildJsonLd).
  *
- * `description` is CANONICAL_SENTENCE (lib/constants.js) — the same sentence
- * public/llms.txt carries, so every machine-identity surface says one thing.
- * MEH-2192 AC; it previously read SITE_DESCRIPTION (the per-page meta
- * description), which left two brand sentences broadcasting side by side.
+ * `description` is SITE_DESCRIPTION (lib/constants.js) — the same sentence
+ * public/llms.txt and every meta description carry, so every surface that
+ * describes the site says one thing (MEH-3424 / ADR-043). CANONICAL_SENTENCE,
+ * which held this field from MEH-2192 until then, is the `slogan`.
  */
 export function buildOrganizationNode() {
   return {
@@ -616,7 +617,9 @@ export function buildOrganizationNode() {
     // on; same constant the sitemap/share surfaces already use (MEH-476).
     alternateName: BRAND_NAME_LATIN,
     url: SITE_URL,
-    description: CANONICAL_SENTENCE,
+    description: SITE_DESCRIPTION,
+    // MEH-3424 / ADR-043: the brand sentence moved here from `description`.
+    slogan: CANONICAL_SENTENCE,
     logo: {
       "@type": "ImageObject",
       url: `${SITE_URL}/logo.png`,

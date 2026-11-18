@@ -12,6 +12,7 @@
 
 ## Product Overview
 **One-liner:** A Hebrew-RTL editorial directory for licensed Israeli local food businesses.
+**Public one-liner (Hebrew, ADR-043, approved 18/11/2026):** «במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.» Use it wherever the site is described in one line; do not invent a new one.
 **What it does:** Helps readers discover and trust licensed local food businesses near them, and gives each business its own editorial page. Every business is reviewed and approved by hand. Contact is direct — WhatsApp, phone, or Instagram — with no checkout, no cart, and no middleman.
 **Product category:** Local food directory (magazine-style discovery), positioned against the marketplace category that dominates Israeli food discovery.
 **Product type:** Editorial directory — a magazine, not a marketplace. Every product decision passes the "magazine or marketplace?" test.

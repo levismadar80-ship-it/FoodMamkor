@@ -60,6 +60,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [039](./ADR-039-display-numerals.md) | The event price token is Frank Ruhl upright bold; Cormorant italic stays for times and inline Latin (narrows MEH-2488; band fact row rejected 07/11) | Accepted (amended) | 2026-11-07 | MEH-2804 |
 | [040](./ADR-040-who-joins-preference-not-gate.md) | Making or growing what you sell is a preference, not an entry gate — three levels, level 3 case by case at manual approval (licensing unchanged, ADR-022) | Accepted | 2026-11-11 | MEH-2953 |
 | [041](./ADR-041-home-meta-description-canonical-sentence.md) | The Hebrew meta description carries the canonical sentence, not the tagline (amends ADR-011's surface list) | Accepted | 2026-11-12 | MEH-2968 |
+| [043](./ADR-043-site-descriptor.md) | One sentence describes the site on every surface that describes it: meta description, shared-link card, Organization JSON-LD, llms.txt (amends ADR-011 and ADR-041 surface lists) | Accepted | 2026-11-18 | MEH-3424 |
 | [042](./ADR-042-revenue-model-v3.md) | Revenue model v3 — base page free, prices published from day one, billing per business after a results threshold, booking commissions allowed; money never buys ranking (supersedes parts of ADR-010/027/030) | Accepted | 2026-11-14 | MEH-3163 |
 
 ## Related

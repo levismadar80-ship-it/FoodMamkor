@@ -24,27 +24,28 @@ describe("ADR-011 tagline", () => {
     expect(locked).toBe("מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.");
   });
 
-  it("SITE_DESCRIPTION is the locked line", () => {
-    expect(SITE_DESCRIPTION).toBe(locked);
+  it("the footer still shows the locked line — its one remaining surface", () => {
+    expect(he.nav.footer.brand_tagline).toBe(locked);
   });
 
-  it.each([
-    ["nav.footer.brand_tagline", he.nav.footer.brand_tagline],
-    ["seo.site.og_description", he.seo.site.og_description],
-    ["seo.site.twitter_description", he.seo.site.twitter_description],
-  ])("he.json %s is the locked line", (_key, value) => {
-    expect(value).toBe(locked);
+  // MEH-3424 / ADR-043: every surface that describes the site in one line —
+  // the meta description, og/twitter description — carries SITE_DESCRIPTION,
+  // the descriptor Sapir approved word for word on 18/11/2026. Before it, the
+  // og/twitter keys showed the tagline (clause 1 speaks to business owners)
+  // and the meta description showed the canonical sentence (ADR-041), so a
+  // shared link and a search result said two different things.
+  it("SITE_DESCRIPTION is the approved descriptor, not the tagline or the brand sentence", () => {
+    expect(SITE_DESCRIPTION).toBe("במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.");
+    expect(SITE_DESCRIPTION).not.toBe(locked);
+    expect(SITE_DESCRIPTION).not.toBe(CANONICAL_SENTENCE);
   });
 
-  // MEH-2968 / ADR-041: the meta description tells search engines and AI
-  // assistants what the site IS, so it carries the canonical sentence. The
-  // tagline's clause 1 speaks to business owners and was read by ChatGPT as
-  // the site's self-description (12/11/2026).
   it.each([
     ["seo.home.description", he.seo.home.description],
     ["seo.site.description", he.seo.site.description],
-  ])("he.json %s is the canonical sentence, not the tagline (ADR-041)", (_key, value) => {
-    expect(value).toBe(CANONICAL_SENTENCE);
-    expect(value).not.toBe(locked);
+    ["seo.site.og_description", he.seo.site.og_description],
+    ["seo.site.twitter_description", he.seo.site.twitter_description],
+  ])("he.json %s is SITE_DESCRIPTION (ADR-043)", (_key, value) => {
+    expect(value).toBe(SITE_DESCRIPTION);
   });
 });

@@ -1,6 +1,6 @@
 # ADR-041: The Hebrew meta description carries the canonical sentence, not the tagline
 
-**Status:** Accepted (amends the surface list of ADR-011; the tagline itself is unchanged)
+**Status:** Superseded in its surface list by [ADR-043](./ADR-043-site-descriptor.md) (2026-11-18): the meta description now carries `SITE_DESCRIPTION`, and the canonical sentence is the JSON-LD `slogan` and the hero subheading. The reasoning below, that the meta description must describe the site to someone looking for food, still holds and is what ADR-043 builds on.
 **Date:** 2026-11-12
 **Deciders:** Sapir Levi
 **Source:** MEH-2968; the ChatGPT check of 12/11/2026 in the project thread «לגרום ל-ChatGPT למצוא את האתר»
