@@ -15,7 +15,7 @@
  * History:  MEH-3216 stage 5a (creation)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { notFound } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -146,14 +146,16 @@ export function OrderStatusView({ order, onChange, refOf }) {
 /** @param {{ orderId: string }} props */
 export default function OrderStatusClient({ orderId }) {
   const t = useTranslations("order_status");
-  const [ref, setRef] = useState(/** @type {object | null} */ (null));
+  // A ref, not state: the body is read from the hash once, in the effect, and
+  // nothing renders from it (react-hooks/set-state-in-effect).
+  const ref = useRef(/** @type {object | null} */ (null));
   const [order, setOrder] = useState(/** @type {any} */ (null));
   const [missing, setMissing] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const body = buyerRef(orderId, tokenFromHash(window.location.hash));
-    setRef(body);
+    ref.current = body;
     let live = true;
     readStatus(body)
       .then((read) => live && setOrder(read))
@@ -175,7 +177,7 @@ export default function OrderStatusClient({ orderId }) {
       <h1 className="font-headline-md text-xl font-black text-text">{t("title")}</h1>
       {failed && <InlineMessage tone="error">{t("failed")}</InlineMessage>}
       {!order && !failed && <Skeleton count={2} testId="order-status-loading" />}
-      {order && ref && <OrderStatusView order={order} onChange={setOrder} refOf={() => ref} />}
+      {order && <OrderStatusView order={order} onChange={setOrder} refOf={() => /** @type {object} */ (ref.current)} />}
     </div>
   );
 }
