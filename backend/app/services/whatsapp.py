@@ -491,7 +491,7 @@ OUTCOME_SKIPPED_TEST = "skipped_test"
 OUTCOME_UNCONFIGURED = "unconfigured"
 # MEH-3402 on the outcome path: outside production, a recipient who is not
 # staff is dropped here too (the order outbox sends only through this twin).
-OUTCOME_BLOCKED_NON_PROD = "blocked_nonprod"
+# OUTCOME_BLOCKED_NON_PROD is defined once, above (same value, MEH-3402).
 
 
 def send_template_result(
