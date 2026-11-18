@@ -999,11 +999,11 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > business).
 >
 > **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
-> `max_participants` below the item's active on-site sign-ups (unless the same
-> PUT cancels the item) → **409**
-> `{code: "max_below_registrations", message: «כבר נרשמו N דרך האתר, ולכן מספר
-> המקומות לא יכול להיות קטן מ-N», params: {registered: N}}`, nothing written
-> (`services/registrations.refuse_cap_below_signups`). Switching
+> `max_participants` below the item's active on-site sign-ups → **422**
+> «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
+> `services/registrations.refuse_too_few_places`), nothing written. Not checked
+> when the value equals the stored one, or when the same PUT cancels the item:
+> those sign-ups are cancelled with it, so nobody is left holding a place. Switching
 > `registration_method` away from `site_form` on an active item keeps every
 > sign-up and mails each registrant once («עדכון על ההרשמה ל"{title}"», with the
 > cancel link). A PUT that also moves the date sends only the «moved» email. Both dashboards keep showing the list while `registered_count`
@@ -1626,7 +1626,7 @@ PUT    /admin/users/{id}/role                  admin. role=consumer **or role=ad
 GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at>. Newest first.
                                                { items: [{ id, actor_id, action, target_type, target_id, details, created_at }] }.
                                                The stored IP is not returned.
-POST   /admin/users/{id}/block                 admin
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 

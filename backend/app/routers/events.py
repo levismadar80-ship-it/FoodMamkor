@@ -48,8 +48,8 @@ from app.services.producer_listing import (  # MEH-2952
     not_test_producer,
 )
 from app.services.registrations import (
+    refuse_too_few_places,  # MEH-2871
     method_problem,
-    refuse_cap_below_signups,
     registered_counts,
 )
 from app.utils.clock import israel_today, utc_now
@@ -457,7 +457,12 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         )
         if method_issue:
             raise HTTPException(status_code=422, detail=method_issue)
-    refuse_cap_below_signups(db, changes, event_id=event.id)  # type: ignore[arg-type]  # MEH-3310
+    refuse_too_few_places(  # MEH-2871
+        db,
+        changes,
+        event_id=event.id,  # type: ignore[arg-type]
+        stored_max=event.max_participants,
+    )
     _cap_event_returning_to_upcoming(db, event, changes)  # MEH-3022
     # MEH-3180: an edit that MAKES the event a paid site sign-up asks, and so
     # does a later date or a higher price; the rest stays editable.

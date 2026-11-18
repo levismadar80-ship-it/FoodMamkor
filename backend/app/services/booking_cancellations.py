@@ -30,6 +30,7 @@ from datetime import date, time
 from typing import Any
 
 from fastapi import BackgroundTasks
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -86,10 +87,13 @@ def _message(
     reg: Registration, item: Event | Experience, host_name: str
 ) -> RegistrantEmail:
     place = _event_place(item) if isinstance(item, Event) else _experience_place(item)
+    past_first = _is_recurring(item) and not _is_upcoming(item)
     return RegistrantEmail(
         title=item.title or "",  # type: ignore[arg-type]
-        date_text=_date_text(item.event_date),  # type: ignore[arg-type]
-        time_text=_time_text(item.event_time),  # type: ignore[arg-type]
+        # MEH-2871: a recurring experience's event_date is its FIRST occasion;
+        # once that is past the email names no date rather than a past one.
+        date_text="" if past_first else _date_text(item.event_date),  # type: ignore[arg-type]
+        time_text="" if past_first else _time_text(item.event_time),  # type: ignore[arg-type]
         place=place,
         host_name=host_name,
         cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
@@ -191,7 +195,7 @@ def _cancel_upcoming_signups(
 ) -> int:
     """Sign-ups to this business's events, and to experiences its owner
     hosts, from today on → cancelled, one email each. A recurring experience
-    is dated too: sign-up closes once its date passes (registrations.py)."""
+    counts whatever its first date (MEH-2871)."""
     today = israel_today()
     events = (
         db.query(Event)
@@ -202,7 +206,8 @@ def _cancel_upcoming_signups(
         db.query(Experience)
         .join(User, Experience.host_user_id == User.id)
         .filter(User.producer_id == producer.id)
-        .filter(Experience.event_date >= today)
+        # MEH-2871: a recurring experience is live past its first date.
+        .filter(or_(Experience.event_date >= today, Experience.is_recurring.is_(True)))
         .all()
     )
     by_event = {e.id: e for e in events}
@@ -317,6 +322,22 @@ def delist_business(
     return count
 
 
+def hide_business(
+    db: Session, producer: Producer, background_tasks: BackgroundTasks
+) -> int:
+    """approved → inactive for cause (admin pause, or its owner blocked —
+    MEH-2871). Revokes an outstanding owner invite (MEH-2974: accepting it
+    would otherwise put the page back up) and runs ``delist_business``.
+    The caller commits."""
+    producer.status = "inactive"  # type: ignore[assignment]
+    if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
+        producer.owner_invite_token_hash = None  # type: ignore[assignment]
+        producer.owner_invite_code_hash = None  # type: ignore[assignment]
+        producer.owner_invite_code_expires_at = None  # type: ignore[assignment]
+        producer.owner_invite_code_attempts = None  # type: ignore[assignment]
+    return delist_business(db, producer, background_tasks, "hidden")
+
+
 # ---------- 2. the business changes one event or experience ----------
 
 
@@ -332,8 +353,21 @@ def _column_for(item: Event | Experience) -> Any:
     )
 
 
+def _is_recurring(item: Event | Experience) -> bool:
+    return bool(getattr(item, "is_recurring", False))
+
+
 def _is_upcoming(item: Event | Experience) -> bool:
     return bool(item.event_date and item.event_date >= israel_today())
+
+
+def _signups_live(item: Event | Experience) -> bool:
+    """MEH-2871: sign-up to a recurring experience stays open after its first
+    date (registrations.py), so its sign-ups are live after it too. Used for
+    CANCELLING only: a "moved" email for a recurring item past its first date
+    would have no date to give, so ``notify_item_moved`` keeps
+    ``_is_upcoming``."""
+    return _is_recurring(item) or _is_upcoming(item)
 
 
 def cancel_item_signups(
@@ -345,7 +379,7 @@ def cancel_item_signups(
     """The business cancelled or is deleting ``item``: cancel its active
     sign-ups and mail each registrant. Before a delete — the cascade removes
     the rows. A past item is left alone (nobody is waiting on it)."""
-    if not _is_upcoming(item):
+    if not _signups_live(item):
         return 0
     host_name = _host_name_for(item)
     regs = [

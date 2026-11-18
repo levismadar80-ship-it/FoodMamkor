@@ -59,11 +59,12 @@ class TestPlacesBelowSignups:
         r = client.put(
             f"/events/{ev.id}", json={"max_participants": 1}, headers=auth_header(owner)
         )
-        assert r.status_code == 409, r.text
-        detail = r.json()["detail"]
-        assert detail["code"] == "max_below_registrations"
-        assert detail["params"] == {"registered": 2}
-        assert "כבר נרשמו 2 דרך האתר" in detail["message"]
+        # MEH-2871 owns the rule (422, Sapir's wording 18/11).
+        assert r.status_code == 422, r.text
+        assert (
+            r.json()["detail"]
+            == "כבר נרשמו 2, ולכן אי אפשר להגדיר פחות מקומות מזה."
+        )
         db.refresh(ev)
         assert ev.max_participants == 10
         assert sent == []
@@ -101,8 +102,8 @@ class TestPlacesBelowSignups:
             json={"max_participants": 1},
             headers=auth_header(owner),
         )
-        assert r.status_code == 409, r.text
-        assert r.json()["detail"]["code"] == "max_below_registrations"
+        assert r.status_code == 422, r.text
+        assert r.json()["detail"].startswith("כבר נרשמו 2,")
         db.refresh(ex)
         assert ex.max_participants == 8
 

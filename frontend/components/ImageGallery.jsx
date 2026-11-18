@@ -41,6 +41,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
   // its h1), so the seal is rendered beside it here rather than floating alone
   // in the header badge row below. Label reuses the badge namespace.
   const tBadge = useTranslations("producer.badge");
+  const tCommon = useTranslations("common.aria"); // MEH-3271: sheet ✕
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const touchStartX = useRef(null);
@@ -168,6 +169,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               <Popover
                 role="dialog"
                 sheetOnMobile
+                closeLabel={tCommon("close")} // MEH-3271: sheet ✕
                 // MEH-1593 (surface 5): the masthead's own wrapper is
                 // `relative … overflow-hidden`, and it IS this panel's
                 // containing block — measured 27/07, 86.75px of the panel was

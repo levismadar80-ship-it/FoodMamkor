@@ -14,10 +14,13 @@ line below is house policy and not Anthropic's recommendation, it says so.
 | Opus at `xhigh` still fails | **Fable** (`fable`), for that problem only, then back to Opus | `high` |
 | A subagent that searches files, reads logs or CI output, lists routes, collects call sites | **Haiku** (`haiku`) | default |
 | A subagent that has to judge what it reads: the rule-5a reviewer, a multi-file audit | **Sonnet** (`sonnet`) | default |
+| The rule-5a reviewer on a RED-tier PR (ADR-016) | **Fable** (`fable`); Opus if Fable is refused or out of usage, and the PR says so | default |
 
 - **Never `max`.** House policy. Anthropic's wording is "reserve for frontier
   problems"; nothing in this repo is one.
-- **Fable is an escalation, never a starting point.** House policy, stricter
+- **Fable is an escalation, never a starting point** — with one exception, the
+  RED-tier reviewer row above (Sapir 15/11, MEH-3271; reconciled in
+  `docs/decisions/rulings-2026-11-17.md` §א8). House policy, stricter
   than Anthropic's (move up when results at `xhigh` still fall short). Say in
   the PR body when a problem was escalated and why.
 - **Two failed attempts is the trigger** (CONTEXT.md §7). Raise the effort or
