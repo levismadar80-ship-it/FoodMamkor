@@ -593,6 +593,9 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     skips does not clear an earlier failure — it leaves the question open, and
     an open question is not a green.
     A run whose jobs can't be read is unverified, never assumed green.
+    `scripts/ci/staging_health.py decide` answers it this way (18/11); it posts
+    a required `Staging health` status once Sapir applies
+    [docs/ci/staging-health.patch.md](../../docs/ci/staging-health.patch.md).
 42. **A probe or scratch test is never written inside a test glob (Sapir
     12/11).** Not `frontend/__tests__/**`, not `frontend/e2e/**`, not
     `tests/**`. One-off probes, DOM dumps and throwaway harnesses go in a
