@@ -1169,6 +1169,15 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "aggregate admin digest; test rows are filtered out by the query (MEH-3147)",
     ),
+    (
+        "services/billing_start_signal.py",
+        "send_billing_start_signal",
+        "send_email",
+    ): (
+        1,
+        NONE,
+        "aggregate admin email; billing_summary excludes test businesses (MEH-3413)",
+    ),
     ("services/auto_reply_watchdog.py", "run_watchdog", "send_template"): (
         1,
         NONE,
