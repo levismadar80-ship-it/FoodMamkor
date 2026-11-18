@@ -1612,7 +1612,7 @@ DELETE /admin/home-products/{id}               admin
 # Users
 GET    /admin/users                            admin — search · rows carry rescue_active_no_shows + rescue_blocked (MEH-3226)
 PUT    /admin/users/{id}/role                  admin. role=consumer **or role=admin** on an account with a linked business (producer_id set) → 409 (MEH-3376): an owner is never an admin, and is not demoted while the business is linked; detach the owner first.
-GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at>. Newest first.
+GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at>. Newest first. Item: id, actor_id, actor_email (None when the account is gone), action, target_type, target_id, details, created_at — never ip.
                                                { items: [{ id, actor_id, action, target_type, target_id, details, created_at }] }.
                                                The stored IP is not returned.
 POST   /admin/users/{id}/block                 admin

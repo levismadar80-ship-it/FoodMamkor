@@ -373,9 +373,12 @@ def test_the_log_is_readable_by_admins_only_newest_first(client, db):
     items = resp.json()["items"]
     assert [i["target_id"] for i in items] == [str(b.id), str(a.id)]
     assert items[0]["actor_id"] == str(admin.id)
+    # The screen says WHO; an id alone answers nothing (MEH-3306 screen).
+    assert items[0]["actor_email"] == admin.email
     assert set(items[0]) == {
         "id",
         "actor_id",
+        "actor_email",
         "action",
         "target_type",
         "target_id",
@@ -393,3 +396,14 @@ def test_the_log_is_readable_by_admins_only_newest_first(client, db):
         ).status_code
         == 422
     )
+
+
+def test_a_row_outlives_its_actor_and_shows_no_email_for_her(client, db):
+    """actor_id is deliberately not a FK (models/admin_ops.py). A row whose
+    admin account is gone stays, and its email reads None, not an error."""
+    admin = make_user(db, role="admin")
+    db.add(AdminAuditLog(actor_id=uuid.uuid4(), action="DELETE /admin/users/{user_id}"))
+    db.commit()
+    items = client.get("/admin/audit-log", headers=auth_header(admin)).json()["items"]
+    assert len(items) == 1
+    assert items[0]["actor_email"] is None

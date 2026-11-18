@@ -276,7 +276,9 @@ def list_audit_log(
 ) -> dict[str, Any]:
     """MEH-3306: the admin audit log, newest first. `before` pages back by
     `created_at`. The stored IP is not returned: it is kept for an
-    investigation, not for a list."""
+    investigation, not for a list. `actor_email` is looked up in one query
+    for the page, and is None when that account no longer exists (actor_id
+    is not a FK, on purpose — models/admin_ops.py)."""
     query = db.query(AdminAuditLog)
     if before is not None:
         query = query.filter(AdminAuditLog.created_at < before)
@@ -285,11 +287,18 @@ def list_audit_log(
         .limit(limit)
         .all()
     )
+    actor_ids = {r.actor_id for r in rows}
+    emails = (
+        dict(db.query(User.id, User.email).filter(User.id.in_(actor_ids)).all())
+        if actor_ids
+        else {}
+    )
     return {
         "items": [
             {
                 "id": str(r.id),
                 "actor_id": str(r.actor_id),
+                "actor_email": emails.get(r.actor_id),
                 "action": r.action,
                 "target_type": r.target_type,
                 "target_id": r.target_id,
