@@ -283,6 +283,8 @@ _MAY_MENTION = {
     "backend/app/models/models.py",  # re-export
     "backend/app/services/admin_audit.py",  # the one writer (INSERT)
     "backend/app/routers/admin_extra.py",  # the one reader
+    # Names the table only, in EXEMPT_TABLES (no seed row); still scanned below.
+    "backend/scripts/check_seed_coverage.py",
 }
 
 
