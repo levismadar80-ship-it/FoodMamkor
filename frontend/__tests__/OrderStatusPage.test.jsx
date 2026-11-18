@@ -10,10 +10,14 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
-vi.mock("next/navigation", () => ({ notFound: vi.fn(() => { throw new Error("NEXT_NOT_FOUND"); }) }));
+vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
+vi.mock("next-intl/server", () => ({ getTranslations: async () => (key) => `order_status.${key}` }));
 
+import { notFound } from "next/navigation";
 import api from "@/lib/api";
-import { OrderStatusView } from "@/app/[locale]/order/[id]/OrderStatusClient";
+import OrderStatusClient, { OrderStatusView } from "@/app/[locale]/order/[id]/OrderStatusClient";
+import { generateMetadata } from "@/app/[locale]/order/[id]/page";
+import { redactClaimPath } from "@/lib/claim-token";
 import { buyerRef, statusView, tokenFromHash } from "@/lib/order-status";
 
 const ID = "0a000000-0000-4000-8000-00000000000a";
@@ -139,7 +143,7 @@ describe("acting on the order", () => {
     expect(screen.getByText("לבטל את ההזמנה? בית העסק יקבל על כך הודעה.")).toBeTruthy();
     expect(api.post).not.toHaveBeenCalled();
     await act(async () => fireEvent.click(screen.getByTestId("order-cancel-confirm")));
-    expect(api.post).toHaveBeenCalledWith("/product-orders/status/cancel", { token: TOKEN });
+    expect(api.post).toHaveBeenCalledWith("/product-orders/status/cancel", { token: TOKEN }, { _noAuth: true });
     expect(onChange.mock.calls[0][0].status).toBe("cancelled");
   });
 
@@ -153,7 +157,7 @@ describe("acting on the order", () => {
     expect(screen.getAllByText(/^לתשלום לבית העסק/).map((n) => n.textContent)).toEqual(["לתשלום לבית העסק: 50 ₪"]);
     expect(screen.queryByTestId("order-cancel")).toBeNull(); // the proposal carries its own
     await act(async () => fireEvent.click(screen.getByTestId("order-accept")));
-    expect(api.post).toHaveBeenCalledWith("/product-orders/status/accept-change", { token: TOKEN });
+    expect(api.post).toHaveBeenCalledWith("/product-orders/status/accept-change", { token: TOKEN }, { _noAuth: true });
     expect(onChange).toHaveBeenCalled();
   });
 
@@ -164,5 +168,55 @@ describe("acting on the order", () => {
     fireEvent.click(screen.getByTestId("order-cancel"));
     await act(async () => fireEvent.click(screen.getByTestId("order-cancel-confirm")));
     expect(screen.getByText(detail)).toBeTruthy();
+  });
+});
+
+describe("the page around it", () => {
+  const mount = (hash) => {
+    window.location.hash = hash;
+    return render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderStatusClient orderId={ID} />
+      </NextIntlClientProvider>,
+    );
+  };
+
+  it("reads the link's token and asks without the saved login (a stale one would 401 a good link)", async () => {
+    api.post.mockResolvedValue({ data: order() });
+    await act(async () => mount(`#t=${TOKEN}`));
+    expect(api.post).toHaveBeenCalledWith("/product-orders/status", { token: TOKEN }, { _noAuth: true });
+    expect(screen.getByTestId("order-headline")).toBeTruthy();
+  });
+
+  it("with no token it asks by id, with the login", async () => {
+    api.post.mockResolvedValue({ data: order() });
+    await act(async () => mount(""));
+    expect(api.post).toHaveBeenCalledWith("/product-orders/status", { order_id: ID }, undefined);
+  });
+
+  it.each([401, 404, 422])("a %s (wrong link, expired, ordering off) is the site's 404", async (status) => {
+    api.post.mockRejectedValue({ response: { status } });
+    await act(async () => mount(`#t=${TOKEN}`));
+    expect(notFound).toHaveBeenCalled();
+  });
+
+  it.each([429, 500])("a %s is a failure to try again, not a 404", async (status) => {
+    api.post.mockRejectedValue({ response: { status } });
+    await act(async () => mount(`#t=${TOKEN}`));
+    expect(notFound).not.toHaveBeenCalled();
+    expect(screen.getByText(he.order_status.failed)).toBeTruthy();
+  });
+
+  it("is never indexed, never followed, and sends no Referer", async () => {
+    const meta = await generateMetadata({ params: Promise.resolve({ locale: "he" }) });
+    expect(meta.robots).toEqual({ index: false, follow: false });
+    expect(meta.referrer).toBe("no-referrer");
+  });
+
+  it("the token never reaches telemetry: the shared redactor strips it from a URL", () => {
+    expect(redactClaimPath(`https://mehamakor.co.il/he/order/${ID}#t=${TOKEN}`)).toBe(
+      `https://mehamakor.co.il/he/order/${ID}#t=[token]`,
+    );
+    expect(redactClaimPath(`%2Fhe%2Forder%2F${ID}%23t%3D${TOKEN}`)).toBe(`%2Fhe%2Forder%2F${ID}%23t%3D[token]`);
   });
 });

@@ -803,6 +803,23 @@ def test_no_address_before_confirmation_or_for_a_delivery(
     assert views.pickup_address(db, order) is None
 
 
+def test_the_status_page_carries_the_address_once_confirmed(client, db, flag_on):
+    shop = Shop(db)
+    _primary(db, shop, address="הרצל 12", city="רחובות", location_precision="exact")
+    token = "a" * 43
+    order = stored_order(
+        db, shop, "pending", status_token_hash=create_module.token_hash(token)
+    )
+    before = client.post("/product-orders/status", json={"token": token}).json()
+    order.status, order.pickup_code = "confirmed", "4821"
+    db.commit()
+    after = client.post("/product-orders/status", json={"token": token}).json()
+    assert (before["pickup_address"], after["pickup_address"]) == (
+        None,
+        "הרצל 12, רחובות",
+    )
+
+
 # --- the buyer follows her order ----------------------------------------------
 
 

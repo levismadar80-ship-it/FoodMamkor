@@ -102,6 +102,8 @@ def pickup_address(db: Session, order: ProductOrder) -> str | None:
             ProducerLocation.producer_id == order.producer_id,
             ProducerLocation.is_primary.is_(True),
         )
+        # Deterministic if a business ever ends up with two primary rows.
+        .order_by(ProducerLocation.created_at, ProducerLocation.id)
         .first()
     )
     if loc is None:

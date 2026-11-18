@@ -44,21 +44,27 @@ export function buyerRef(orderId, token) {
   return token ? { token } : { order_id: orderId };
 }
 
+// A link that carries its token needs no login, so the request goes without
+// the browser's saved one: a stale saved login answers 401 even when the link
+// is good, and the page would read that as a wrong link (`_noAuth`, lib/api.js).
+/** @param {{ token?: string }} ref */
+const authFor = (ref) => (ref.token ? /** @type {any} */ ({ _noAuth: true }) : undefined);
+
 /** @param {object} ref */
 export async function readStatus(ref) {
-  const { data } = await api.post("/product-orders/status", ref);
+  const { data } = await api.post("/product-orders/status", ref, authFor(ref));
   return ReadOrderStatusProductOrdersStatusPostResponse.parse(data);
 }
 
 /** @param {object} ref */
 export async function cancelOrder(ref) {
-  const { data } = await api.post("/product-orders/status/cancel", ref);
+  const { data } = await api.post("/product-orders/status/cancel", ref, authFor(ref));
   return CancelOwnOrderProductOrdersStatusCancelPostResponse.parse(data);
 }
 
 /** @param {object} ref */
 export async function acceptChange(ref) {
-  const { data } = await api.post("/product-orders/status/accept-change", ref);
+  const { data } = await api.post("/product-orders/status/accept-change", ref, authFor(ref));
   return AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse.parse(data);
 }
 
