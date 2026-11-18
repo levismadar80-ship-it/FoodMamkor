@@ -3733,6 +3733,7 @@
   "gallery": {
     "open_aria": "הגדלו תמונה {current}",
     "image_alt": "תמונה {current}",
+    "image_alt_named": "{name}, תמונה {current}",
     "prev_aria": "תמונה קודמת",
     "next_aria": "תמונה הבאה",
     "thumb_aria": "עבור לתמונה {n}",

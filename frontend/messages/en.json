@@ -3737,6 +3737,7 @@
   "gallery": {
     "open_aria": "Enlarge image {current}",
     "image_alt": "Image {current}",
+    "image_alt_named": "{name}, photo {current}",
     "prev_aria": "Previous image",
     "next_aria": "Next image",
     "thumb_aria": "Go to image {n}",
