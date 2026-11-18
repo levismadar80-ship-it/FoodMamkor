@@ -120,6 +120,12 @@ def _full_slot_starts(
     # gaps PR it is the business's one cap per slot, whether she confirms by
     # hand or automatically — «עד כמה הזמנות בכל מועד (לא חובה)». A full slot
     # is simply not offered, so the order route answers SLOT_GONE_DETAIL.
+
+    Matched on the exact start: after she changes `slot_minutes`, orders on
+    the old grid no longer line up with the new starts and are not counted
+    until they pass. An order in `change_proposed` counts at its current
+    start; the buyer accepting moves it to the time the business chose,
+    even into a full slot — her choice, like her own proposal.
     """
     rows = (
         db.query(ProductOrder.slot_start, func.count(ProductOrder.id))
