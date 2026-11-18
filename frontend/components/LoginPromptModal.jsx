@@ -87,10 +87,13 @@ export default function LoginPromptModal({
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
 
-      if (e.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the panel (a click on the scrim, a
+      // removed element) is pulled back in, not allowed to walk the page.
+      const outside = !modalRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }

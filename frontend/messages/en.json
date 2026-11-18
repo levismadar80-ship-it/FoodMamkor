@@ -421,7 +421,7 @@
           "next": "Completing these in your dashboard unlocks sending for review: a photo of your business, a first product in the catalogue, and verifying your WhatsApp number.",
           "cta": "To my dashboard",
           "heading": "We've got your details",
-          "signature": "Warmly, Sapir",
+          "signature": "Warmly, Sapir and Topaz",
           "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and sometimes a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
           "next_heading": "What's next?",
@@ -631,9 +631,9 @@
     },
     "about": {
       "title": "About Mehamakor — our vision and values",
-      "description": "Mehamakor was born from a real need — to find real food, straight from the source. The story of Sapir, our founder, our values, and how we vet the businesses we feature.",
+      "description": "Mehamakor was born from a real need — to find real food, straight from the source. The story of Sapir and Topaz, our founders, our values, and how we vet the businesses we feature.",
       "og_title": "About Mehamakor — our vision and values",
-      "og_description": "The story of Sapir, our values, and how we vet the businesses we feature."
+      "og_description": "The story of Sapir and Topaz, our values, and how we vet the businesses we feature."
     },
     "login": {
       "title": "Sign in to Mehamakor",
@@ -754,6 +754,10 @@
       "not_found": "Business not found | {brand}",
       "country": "Israel",
       "offer_catalog_name": "Products"
+    },
+    "draft_preview": {
+      "title": "Page preview",
+      "description": "The page we prepared for you on Mehamakor"
     },
     "owner_invite": {
       "title": "Set a password for your business page",
@@ -1598,7 +1602,8 @@
         "export": "Export",
         "new_producer": "+ New business",
         "review_due_label": "Picks due for review",
-        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
+        "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed",
+        "freshness_stale_label": "Not checked in 60+ days"
       },
       "table": {
         "status_tooltip_draft": "draft = not yet submitted for review",
@@ -1707,7 +1712,8 @@
       },
       "edit": {
         "title": "Edit: {name}",
-        "not_found": "Business not found"
+        "not_found": "Business not found",
+        "last_confirmed": "Last checked: {date}"
       },
       "form": {
         "errors": {
@@ -1719,6 +1725,10 @@
         "uploading": "Uploading...",
         "category_cap_hint": "Your first pick shows on the business card · up to 3 categories",
         "primary_badge": "Primary",
+        "photos": {
+          "main_label": "Main photo",
+          "make_main": "Make main photo"
+        },
         "sections": {
           "basic": "Basic details",
           "categories_tags": "Categories and tags",
@@ -1776,7 +1786,7 @@
           "grass_fed": "Grass-fed",
           "reservist_owned": "One of the owners serves in the reserves",
           "verified": "Verified",
-          "recommended": "Recommended (editor's pick)",
+          "recommended": "Recommended (editors' pick)",
           "recommended_note": "Editor's reason",
           "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
           "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
@@ -1854,6 +1864,36 @@
         "copy_failed": "Copying failed. You can select the link and copy it manually.",
         "expires": "Valid until {date}",
         "error": "Could not create the link"
+      },
+      "draft_preview": {
+        "title": "Preview link",
+        "intro": "A view-only link to this page, before it goes live. You can send it to the business. Valid for 14 days, and it stops working once the page is published or deleted.",
+        "create": "Create preview link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
+      },
+      "consent_publish": {
+        "title": "Publish with consent",
+        "intro": "Did the business confirm in writing that the page can go live? Write what was approved, where and when, and the page goes on the site.",
+        "note_label": "Record of consent",
+        "note_placeholder": "For example: confirmed on WhatsApp, 17.11",
+        "consent": "I hold explicit written approval from the business",
+        "without_license": "Publish without a licence number (without the “verified” badge)",
+        "submit": "Publish the page",
+        "publishing": "Publishing…",
+        "published": "The page is live",
+        "error": "Could not publish the page",
+        "screenshot_label": "Screenshot of the approval (optional)",
+        "screenshot_uploading": "Uploading the screenshot…",
+        "screenshot_attached": "Screenshot attached. View",
+        "screenshot_remove": "Remove",
+        "screenshot_error": "Could not upload the screenshot",
+        "screenshot_view": "Screenshot of the approval"
       },
       "draft_products": {
         "title": "Products in this draft",
@@ -2212,7 +2252,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again."
       },
-      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir, who is building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir reviews and approves every business herself within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
+      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
       "badge_community": "Community pick",
       "thank_suggester": "Send thanks",
       "thank_disabled": {
@@ -2353,6 +2393,8 @@
       "edited_after_hidden": "Edited after hidden",
       "keep_hidden": "Keep hidden",
       "ai_flagged_only": "Only flagged reviews",
+      "conflict_owner": "Not shown: the author owns this business",
+      "conflict_competitor": "Not shown: the author owns another business on the site",
       "hidden": "Hidden",
       "hide": "Hide",
       "unhide": "Unhide",
@@ -3048,8 +3090,8 @@
       "duo_rear_alt": "A glass bottle of olive oil with olives"
     },
     "signature": {
-      "name": "Sapir Schnapp",
-      "role": "Founder, Mehamakor"
+      "name": "Sapir Schnapp and Topaz Schnapp",
+      "role": "Founders, Mehamakor"
     },
     "chapter": {
       "1": {
@@ -3089,16 +3131,16 @@
         "cta_map": "Discover businesses near you"
       },
       "story": {
-        "image_aria": "Photo of Sapir, founder of Mehamakor",
-        "image_alt": "Sapir, founder of Mehamakor",
-        "greeting": "Why I started Mehamakor",
-        "p1": "It was always important to me to know where my food comes from. I wanted to buy better — healthier, more local.",
-        "p2": "But I quickly discovered that it isn't accessible. To find truly good food, I had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
-        "p3": "And then it hit me: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
+        "image_aria": "Photo of Sapir, co-founder of Mehamakor",
+        "image_alt": "Sapir, co-founder of Mehamakor",
+        "greeting": "Why we started Mehamakor",
+        "p1": "It was always important to us to know where our food comes from. We wanted to buy better — healthier, more local.",
+        "p2": "But we quickly discovered that it isn't accessible. To find truly good food, we had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
+        "p3": "And then it hit us: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
         "p4": "There are farmers selling fresh vegetables minutes from home. There's someone baking sourdough bread in the next neighborhood. There are small businesses with amazing products — that most people have never even heard of. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
         "p5": "And that's how Mehamakor was born. One place that gathers real, local, healthy food for you — close to home. Without searching for hours.",
-        "caption1": "Founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
-        "caption3": "The criteria — I write them from what I myself look for in food."
+        "caption1": "Co-founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
+        "caption3": "The criteria — we write them from what we ourselves look for in food."
       },
       "parallax": {
         "quote": "Good food — not something we keep to ourselves"
@@ -3150,11 +3192,11 @@
         "body_2": "And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
       },
       "editors_pick": {
-        "heading": "Editor's Pick",
-        "body_1": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business.",
+        "heading": "Editors' Pick",
+        "body_1": "Every so often we mark a business we especially loved — for the quality of its products, its freshness, or a story worth knowing. It's our personal choice, after getting to know the business.",
         "list_lead": "Two things worth knowing:",
         "item_1": "you can't pay for this tag — not with premium, not in any other way.",
-        "item_2": "And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
+        "item_2": "And it isn't a score — a business without it is no less good; we simply haven't gotten to it yet, or the moment hasn't come."
       },
       "community_leader": {
         "heading": "Community leader",
@@ -3593,7 +3635,6 @@
       "section_categories": "Categories",
       "section_cities": "Cities",
       "recent_heading": "Recent searches",
-      "trending_heading": "Trending searches",
       "remove_recent_aria": "Remove {q} from recent searches"
     },
     "smart": {
@@ -3707,6 +3748,7 @@
   "gallery": {
     "open_aria": "Enlarge image {current}",
     "image_alt": "Image {current}",
+    "image_alt_named": "{name}, photo {current}",
     "prev_aria": "Previous image",
     "next_aria": "Next image",
     "thumb_aria": "Go to image {n}",
@@ -3953,7 +3995,7 @@
       },
       "revenue_model": {
         "q": "If everything is free — how does Mehamakor make money?",
-        "a": "Right now it doesn't. Mehamakor is a young project, and I'm building it because I believe real, local food deserves a home. Later, income will come from a subscription and a small commission on bookings, and only from a business the site already brings results to. Not from selling a spot at the top of the list. That way the site earns only if it works for you."
+        "a": "Right now it doesn't. Mehamakor is a young project, and we're building it because we believe real, local food deserves a home. Later, income will come from a subscription and a small commission on bookings, and only from a business the site already brings results to. Not from selling a spot at the top of the list. That way the site earns only if it works for you."
       },
       "customer_ownership": {
         "q": "Who gets the customers — you or me?",
@@ -3985,7 +4027,7 @@
       },
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
-        "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
+        "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No algorithm deciding who sees you. And behind the site are us, Sapir and Topaz — we read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
       },
       "organizers": {
         "q": "Organizing a market, an event or a group buy?",
@@ -4275,7 +4317,7 @@
       "og_description": "Three short guides for businesses on Mehamakor — story, photography, messages.",
       "eyebrow": "Guides for business owners",
       "heading": "Three guides for your first month",
-      "intro": "Joined recently? These are the three guides I send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
+      "intro": "Joined recently? These are the three guides we send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
       "minutes_label": "About {minutes} min read",
       "cta": "Read the guide →",
       "footer_prefix": "Have a question the guides didn't answer? <link>Write to us</link>",
@@ -4287,8 +4329,8 @@
     },
     "article": {
       "eyebrow": "A guide for business owners · {minutes} min read",
-      "founder_name": "Sapir Schnapp",
-      "founder_role": "Founder · {brand}",
+      "founder_name": "Sapir Schnapp and Topaz Schnapp",
+      "founder_role": "Founders · {brand}",
       "back": "Back to guides"
     },
     "business_story": {
@@ -4367,7 +4409,7 @@
           "i4": "**Don't:** No emojis in the text. For emphasis use a heading, bold, or italics — not emojis."
         },
         "b51": "Help if you're stuck",
-        "b52": "If you're sitting in front of the field and can't get started — write to me. I'll read the story, point out where it's strong and where it's weak, and help edit. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b52": "If you're sitting in front of the field and can't get started — write to us. We'll read the story, point out where it's strong and where it's weak, and help edit. **Free, personal, but it takes us a few days — we go through every business ourselves.**",
         "b53": "This isn't an offer for everyone. It's an option for new business owners who don't yet know what it looks like. After you've written it once — you'll always know."
       }
     },
@@ -4485,7 +4527,7 @@
           "i2": "**Hire a local photographer** — sometimes worth the investment. A local photographer can give you many quality photos in half a day. Prices vary — ask for 2-3 quotes before deciding. If you're in for the year — it's a worthwhile investment."
         },
         "b63": "Help if you're stuck",
-        "b64": "Send me 2-3 photos you've taken. I'll look and explain which one works, which doesn't, and why. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b64": "Send us 2-3 photos you've taken. We'll look and explain which one works, which doesn't, and why. **Free, personal, but it takes us a few days — we go through every business ourselves.**",
         "b65": "It's not a regular service — it's an option for new business owners still learning what works."
       }
     },
@@ -4573,7 +4615,7 @@
           "i4": "**Don't:** Don't send 5 separate messages (\"Hi\" → \"I saw\" → \"Give me a minute\" → \"I'm at work\" → \"I'll get back later\"). Send one complete message."
         },
         "b66": "Help if you're stuck",
-        "b67": "Have a message you don't know how to reply to? **Send me a screenshot** (without the customer's identifying details — blur the name and phone). I'll reply with how I'd write it. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b67": "Have a message you don't know how to reply to? **Send us a screenshot** (without the customer's identifying details — blur the name and phone). We'll reply with how we'd write it. **Free, personal, but it takes us a few days — we go through every business ourselves.**",
         "b68": "It's not a regular service — it's an option for new business owners still learning the rhythm."
       }
     }
@@ -4633,8 +4675,8 @@
       },
       "welcome_card": {
         "title": "Welcome to Mehamakor",
-        "body": "I'm Sapir. I started Mehamakor so people can find businesses like yours. I approve every page personally, and everything you need to make your page work for you is here.",
-        "whatsapp": "Questions? I answer on WhatsApp.",
+        "body": "We're Sapir and Topaz, sisters. We started Mehamakor so people can find businesses like yours. We approve every page personally, and everything you need to make your page work for you is here.",
+        "whatsapp": "Questions? We answer on WhatsApp.",
         "cta": "Complete your page",
         "close": "Close"
       },
@@ -5300,7 +5342,7 @@
         "approved_heading": "Your kosher badges",
         "select_label": "Kosher type",
         "select_placeholder": "Choose a kosher type",
-        "upload_label": "Certificate photo (JPG/PNG, up to 5MB)",
+        "upload_label": "Certificate photo (JPG/PNG, up to 4MB)",
         "upload_cta": "Upload photo",
         "upload_replace_cta": "Replace photo",
         "uploading": "Uploading…",
@@ -5579,7 +5621,7 @@
       "saved_msg": "Details saved",
       "save_error_fallback": "We couldn't save. Please try again.",
       "upload_type_error": "Only image files allowed: JPG, PNG, WEBP, GIF",
-      "upload_size_error": "File too large — 5MB maximum",
+      "upload_size_error": "File too large — 4MB maximum",
       "avatar_uploaded_msg": "Profile photo updated",
       "avatar_upload_error_fallback": "Upload error — please try again",
       "field_name_label": "Full name",
@@ -5601,7 +5643,7 @@
       "add_cta": "Add product",
       "errors": {
         "upload_type": "Only image files allowed: JPG, PNG, WEBP, GIF",
-        "upload_size": "File too large — 5MB maximum",
+        "upload_size": "File too large — 4MB maximum",
         "upload_failed_fallback": "Upload error — please try again",
         "name_required": "Product name is required",
         "price_required": "Please enter a price",
@@ -5952,8 +5994,8 @@
     },
     "closing": {
       "em_mark": "Mehamakor",
-      "quote": "I want to know who I'm buying from. I built a place where you know too.",
-      "attrib": "— Sapir"
+      "quote": "We want to know who we're buying from. We built a place where you know too.",
+      "attrib": "— Sapir and Topaz"
     },
     "cta": {
       "h2": "Have a business that deserves a home?",
@@ -5992,8 +6034,8 @@
         "intro": "The business showed us a document and we checked it by hand. <link>How we check</link>"
       },
       "editorial": {
-        "heading": "Editor's pick",
-        "intro": "A badge the editor gives on personal judgement."
+        "heading": "Editors' pick",
+        "intro": "A badge the editors give on personal judgement."
       },
       "self-declared": {
         "heading": "Declared by the business",
@@ -6139,6 +6181,14 @@
           }
         ]
       }
+    }
+  },
+  "draft_preview": {
+    "banner": "This is a preview of the page we prepared for you on Mehamakor. It is not on the site yet, and only people with this link can see it.",
+    "invalid": {
+      "title": "This link is no longer active",
+      "body": "It may have expired, or the page may already be live. Write to us and we will send a new link.",
+      "contact": "Contact us"
     }
   },
   "claim": {
@@ -6426,8 +6476,8 @@
       "tooltip": "The business showed a licence or an official exemption document that was checked by hand."
     },
     "recommended": {
-      "label": "Editor's pick",
-      "tooltip": "A personal pick by the Mehamakor editor — for quality, freshness or a special story. This badge cannot be bought."
+      "label": "Editors' pick",
+      "tooltip": "A personal pick by the Mehamakor editors — for quality, freshness or a special story. This badge cannot be bought."
     },
     "new": {
       "label": "New",
@@ -6830,8 +6880,8 @@
         "tile_line": "After the certificate has been checked"
       },
       "editor_pick": {
-        "label": "\"Editor's pick\", which is not for sale",
-        "tile_title": "Editor's pick",
+        "label": "\"Editors' pick\", which is not for sale",
+        "tile_title": "Editors' pick",
         "tile_line": "Not for sale"
       },
       "reservist_diet_tags": {
@@ -6993,5 +7043,15 @@
   "account_deleted": {
     "heading": "Account deleted",
     "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
+  },
+  "page_freshness": {
+    "meta_title": "Page check",
+    "ask_title": "Is everything on your page still correct?",
+    "ask_body": "Hours, delivery, prices and contact details.",
+    "cta_yes": "Yes, all correct",
+    "cta_update": "I want to update",
+    "sending": "Saving…",
+    "done_title": "Thanks! We marked your page as checked today.",
+    "dead_title": "This link is no longer active. You can update your page from your dashboard."
   }
 }

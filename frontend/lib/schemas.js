@@ -222,7 +222,7 @@ export const ProducerListSchema = z.object({
   // from admin-stamped `kashrut_verified_at`. Neither is read by executable
   // code, so neither is a badge input.
   has_producer_license: z.boolean().nullable().optional(),   // → license
-  is_recommended: z.boolean().nullable().optional(),         // → recommended (בחירת העורכת)
+  is_recommended: z.boolean().nullable().optional(),         // → recommended (בחירת העורכות)
   days_since_created: z.number().nullable().optional(),      // → new (חדש)
   grass_fed: z.boolean().nullable().optional(),              // → grass_fed
   reservist_owned: z.boolean().nullable().optional(),        // → reservist_owned («עסק של מילואימניקים»)
@@ -294,6 +294,10 @@ export const ProducerListSchema = z.object({
   // is_available_today / availability_status pair from the API (chunks 1–2)
   // and from here (chunk 3); LegacyAvailabilityFieldsGone.test.js pins it.
   availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:64
+  // MEH-2697: when the OWNER last confirmed her availability (ISO, tz-aware
+  // UTC); null = never. Declared now so z.object does not strip it before the
+  // «אושר ע״י בית העסק» tag that reads it ships.
+  availability_confirmed_at: z.string().nullable().optional(),
   has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   // NOT read by ProducerCard today, so the card-derived guard below cannot

@@ -505,6 +505,28 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(row.getByText("צרכן")).toHaveCount(0);
   });
 
+  // MEH-3376 — an account with a linked business is never offered «העלי לאדמין»
+  //   (Sapir 17/11: an owner must not become an admin; the server answers 409).
+  //   Two rows of one fixture, so the control cannot drift: the same page, the
+  //   same menu, and only `producer_id` differs between them.
+  test("a row with a linked business has no «העלי לאדמין»; the row without one still has it", async ({ page }) => {
+    const users: User[] = [
+      { ...user(1), id: ADMIN.id, email: ADMIN.email, name: ADMIN.name, role: "admin" },
+      user(4, { name: "בעלת עסק", role: "producer", producer_id: uuid(900) }),
+      user(5, { name: "צרכנית", role: "consumer", producer_id: null }),
+    ];
+    await stubAdmin(page, { users });
+    await openUsers(page);
+
+    await openKebab(userRow(page, "צרכנית"));
+    await expect(menu(page).getByRole("menuitem")).toHaveText(["העלי לאדמין", "מחיקה"]);
+    await page.keyboard.press("Escape");
+    await expect(menu(page)).toHaveCount(0);
+
+    await openKebab(userRow(page, "בעלת עסק"));
+    await expect(menu(page).getByRole("menuitem")).toHaveText(["מחיקה"]);
+  });
+
   // MT:MEH-530:47 — demote on a regular admin: a red item → confirm → PUT role=consumer.
   test("«הסירי הרשאות» is red, confirms, and PUTs role=consumer", async ({ page }) => {
     const writes: Rec[] = [];
@@ -594,7 +616,23 @@ test.describe("/admin/users — the role kebab", () => {
     const row = userRow(page, "משתמשת 4");
     const btn = kebab(row);
     await btn.scrollIntoViewIfNeeded();
-    await btn.focus();
+    // MEH-3129 — the THIRD site of the MEH-2323 mechanism, and the one the
+    // earlier sweep missed: `openKebab` settles the scroll and the :633 test
+    // was given the same settle, but this one opened straight after a focus().
+    // AdminRowMenu closes on ANY scroll (capture, AdminRowMenu.jsx:164-168) —
+    // which is why the component focuses its own first item with
+    // `preventScroll: true` and calls that "load-bearing, not hygiene".
+    // Playwright's `locator.focus()` passes no such option. Measured on the
+    // Pixel 5 profile against a seeded stack: `focus()` moved scrollY from 0 to
+    // 901, and ONE `scroll` event dispatched while the menu was open closed it
+    // (visible before the event, gone after — the control). A/B of the two
+    // sequences, 5 runs each: the old one delivered a scroll event AFTER the
+    // Enter in 3 of 5 and the menu was shut each time; this one in 0 of 5. That
+    // is exactly the CI shape — `aria-expanded` observed true, then no
+    // `role=menu` for 20 s.
+    // So: focus without scrolling, and let anything already in flight land.
+    await btn.evaluate((el: HTMLElement) => el.focus({ preventScroll: true }));
+    await settleScroll(page);
     await expect(btn).toHaveAttribute("aria-expanded", "false");
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
@@ -636,7 +674,11 @@ test.describe("/admin/users — the role kebab", () => {
     const row = userRow(page, "משתמשת 4");
     const btn = kebab(row);
     await btn.scrollIntoViewIfNeeded();
-    await btn.focus();
+    // MEH-3129: `preventScroll` here for the same reason as the test above —
+    // `settleScroll` below waits out the scroll that is already in flight, but
+    // a plain `focus()` starts a NEW one (measured: scrollY 0 -> 901) whose
+    // event can then land after the open.
+    await btn.evaluate((el: HTMLElement) => el.focus({ preventScroll: true }));
     // MEH-2323 (:611 flake): AdminRowMenu closes on ANY scroll (capture). The
     // other tests open through `openKebab`, which lets the scroll settle for
     // two frames first; this one skipped it, so a scroll event still in flight

@@ -89,10 +89,29 @@ jobs:
           node-version: "22"
 
       - name: Wait for the new build to be live
+        id: deploy
         if: github.event_name == 'push' && steps.touched.outputs.touched == 'true'
+        # continue-on-error + the Verdict step: the same shape every other check
+        # in this workflow already uses. A red here must not stop the checks
+        # below from running, but it must still fail the job.
+        continue-on-error: true
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: python scripts/checks/wait_for_deploy.py --base-url "$BASE_URL" --sha "${{ github.sha }}" || echo "::warning title=Deploy not detected::the checks below may describe the previous build"
+        run: |
+          set +e
+          python scripts/checks/wait_for_deploy.py --base-url "$BASE_URL" --sha "${{ github.sha }}"
+          rc=$?
+          set -e
+          # 2 = the live backend runs DIFFERENT backend code from this commit,
+          # or that could not be established. Everything below would then
+          # measure the old backend, so this is the one case that reds the job.
+          # 1 = timed out: a warning, exactly as before. The timeout signal is
+          # neither weakened nor strengthened; only the stale case is new.
+          case "$rc" in
+            0) echo "the live build is this commit" ;;
+            2) exit 1 ;;
+            *) echo "::warning title=Deploy not detected::the checks below may describe the previous build" ;;
+          esac
 
       - name: Production smoke
         id: smoke
@@ -156,13 +175,14 @@ jobs:
       - name: Verdict
         if: always()
         env:
+          R_DEPLOY: ${{ steps.deploy.outcome }}
           R_SMOKE: ${{ steps.smoke.outcome }}
           R_LINKS: ${{ steps.links.outcome }}
           R_HEADERS: ${{ steps.headers.outcome }}
           R_LH: ${{ steps.lighthouse.outcome }}
         run: |
           fail=0
-          for pair in "Production smoke:$R_SMOKE" "Broken links:$R_LINKS" "Security headers:$R_HEADERS" "Lighthouse budget:$R_LH"; do
+          for pair in "Deploy is this commit:$R_DEPLOY" "Production smoke:$R_SMOKE" "Broken links:$R_LINKS" "Security headers:$R_HEADERS" "Lighthouse budget:$R_LH"; do
             name="${pair%%:*}"; res="${pair##*:}"
             case "$res" in
               success|skipped) echo "  OK   $name: $res" ;;

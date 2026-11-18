@@ -170,6 +170,21 @@
             ],
             "title": "Body"
           },
+          "conflict": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "competitor"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflict"
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"
@@ -1299,6 +1314,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -1458,6 +1474,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -1522,6 +1539,88 @@
           "token"
         ],
         "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
+      "DraftConsentPublishIn": {
+        "properties": {
+          "consent_confirmed": {
+            "title": "Consent Confirmed",
+            "type": "boolean"
+          },
+          "consent_note": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Consent Note",
+            "type": "string"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
+          }
+        },
+        "required": [
+          "consent_confirmed",
+          "consent_note"
+        ],
+        "title": "DraftConsentPublishIn",
+        "type": "object"
+      },
+      "DraftConsentPublishOut": {
+        "properties": {
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "status"
+        ],
+        "title": "DraftConsentPublishOut",
+        "type": "object"
+      },
+      "DraftPreviewLinkOut": {
+        "description": "MEH-3377. Its own shape, not ProducerClaimLinkOut: the two links grant\ndifferent things, and the claim-link inventory test pins that schema to the\none route that mints a claim link.",
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "DraftPreviewLinkOut",
         "type": "object"
       },
       "EventCreate": {
@@ -3188,6 +3287,7 @@
           "category": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -3199,6 +3299,7 @@
           "city": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -3210,6 +3311,7 @@
           "description": {
             "anyOf": [
               {
+                "maxLength": 5000,
                 "type": "string"
               },
               {
@@ -3221,6 +3323,7 @@
           "location_type": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -3330,6 +3433,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -4444,6 +4548,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -4523,6 +4628,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -5321,6 +5427,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -5375,6 +5482,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -5444,6 +5552,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -5559,6 +5668,40 @@
         "title": "OwnerInvitePublicOut",
         "type": "object"
       },
+      "PageFreshnessConfirmIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "PageFreshnessConfirmIn",
+        "type": "object"
+      },
+      "PageFreshnessConfirmOut": {
+        "properties": {
+          "business_name": {
+            "title": "Business Name",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "format": "date-time",
+            "title": "Confirmed At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "business_name",
+          "confirmed_at"
+        ],
+        "title": "PageFreshnessConfirmOut",
+        "type": "object"
+      },
       "PasswordChange": {
         "properties": {
           "current_password": {
@@ -5623,6 +5766,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -5925,6 +6069,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -5982,6 +6138,17 @@
               }
             ],
             "title": "Claim Link Sent At"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
           },
           "contact_email": {
             "anyOf": [
@@ -6369,6 +6536,18 @@
             "default": "unknown",
             "title": "Lactose Free Facility",
             "type": "string"
+          },
+          "last_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Confirmed At"
           },
           "lat": {
             "anyOf": [
@@ -7052,6 +7231,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -8029,6 +8209,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -8879,6 +9071,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -10349,6 +10553,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -11635,6 +11851,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -11684,6 +11901,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -12052,6 +12270,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -13356,6 +13575,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -16018,6 +16238,7 @@
           "city": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -16028,6 +16249,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -16235,6 +16457,72 @@
           }
         ],
         "summary": "Get Analytics",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
+    "/admin/audit-log": {
+      "get": {
+        "description": "MEH-3306: the admin audit log, newest first. `before` pages back by\n`created_at`. The stored IP is not returned: it is kept for an\ninvestigation, not for a list.",
+        "operationId": "list_audit_log_admin_audit_log_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Audit Log",
         "tags": [
           "admin-extra"
         ]
@@ -17946,6 +18234,16 @@
               "title": "Recommended Review Due",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "freshness_stale",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Freshness Stale",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -18802,6 +19100,55 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/preview-link": {
+      "post": {
+        "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
+        "operationId": "create_preview_link_admin_producers__producer_id__preview_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Preview Link",
+        "tags": [
+          "producer-draft-preview"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/products": {
       "post": {
         "operationId": "admin_create_draft_product_admin_producers__producer_id__products_post",
@@ -18908,6 +19255,74 @@
         "summary": "Admin Delete Draft Product",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/publish-with-consent": {
+      "post": {
+        "operationId": "publish_draft_with_consent_admin_producers__producer_id__publish_with_consent_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "allow_without_license",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Allow Without License",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftConsentPublishIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftConsentPublishOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Publish Draft With Consent",
+        "tags": [
+          "producer-draft-preview"
         ]
       }
     },
@@ -23329,6 +23744,47 @@
         ]
       }
     },
+    "/page-freshness/confirm": {
+      "post": {
+        "operationId": "confirm_page_freshness_page_freshness_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFreshnessConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFreshnessConfirmOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Page Freshness",
+        "tags": [
+          "page-freshness"
+        ]
+      }
+    },
     "/producer-claim": {
       "post": {
         "operationId": "claim_producer_producer_claim_post",
@@ -23499,6 +23955,49 @@
         "summary": "Producer Name Check",
         "tags": [
           "producers"
+        ]
+      }
+    },
+    "/producer-preview/{token}": {
+      "get": {
+        "description": "The draft's page payload, for whoever holds the link.\n\nThe same `ProducerDetailOut` the public page serves once the business is\nlive, so the holder sees nothing the page will not show everyone after she\nsays yes. Refused with one 404 unless the row is still an ownerless draft.",
+        "operationId": "read_draft_preview_producer_preview__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Draft Preview",
+        "tags": [
+          "producer-draft-preview"
         ]
       }
     },
@@ -24305,6 +24804,31 @@
           }
         ],
         "summary": "Producer Analytics",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/availability-confirm": {
+      "post": {
+        "description": "MEH-2697 «עדיין נכון»: the owner says her availability is still true.\n\nChanges nothing but the stamp — the state and the vacation date stay.\nREUSES: set_availability_state above — same owner gate and rate limit.",
+        "operationId": "confirm_availability_producers_me_availability_confirm_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm Availability",
         "tags": [
           "producer-management"
         ]
@@ -27348,32 +27872,6 @@
           }
         },
         "summary": "Smart Search",
-        "tags": [
-          "search"
-        ]
-      }
-    },
-    "/search/trending": {
-      "get": {
-        "description": "Return top 5 queries that returned results, cached 1 hour.",
-        "operationId": "trending_searches_search_trending_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "title": "Response Trending Searches Search Trending Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Trending Searches",
         "tags": [
           "search"
         ]
