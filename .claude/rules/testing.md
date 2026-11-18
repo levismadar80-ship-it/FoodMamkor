@@ -207,7 +207,7 @@ mechanical checks, then one rule for the threads:
   only_mutate` in `backend/pyproject.toml`. A PR that changes one of those
   files runs `bash scripts/mutation/run.sh` (≈1 h, one child, its own
   `mehamakor_mutation` database) and pastes its table under `## Mutation`
-  (`mutation-guard.sh` warns without it). Every `NEW SURVIVOR` is killed by a
+  (`mutation-guard.sh` warns, and fails from 22/11, without it). Every `NEW SURVIVOR` is killed by a
   new test, or explained in `backend/mutation-survivors.txt` with a reason.
   The weekly repo-health scan (MEH-3143) re-runs the whole set and opens a
   card per new survivor. Google runs it the same way: changed code only, at
