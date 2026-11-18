@@ -3630,12 +3630,16 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
 /**
  * @summary List Event Registrations
  */
+export const listEventRegistrationsEventsEventIdRegistrationsGetResponsePartySizeDefault = 1;
+
 export const ListEventRegistrationsEventsEventIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "attendance": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['attended', 'no_show']),/*#__PURE__*/ zod.null()])),
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "email": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
   "name": /*#__PURE__*/ zod.string(),
+  "party_size": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listEventRegistrationsEventsEventIdRegistrationsGetResponsePartySizeDefault),
   "phone": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner \/ admin only).'))
@@ -3957,12 +3961,16 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
 /**
  * @summary List Experience Registrations
  */
+export const listExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponsePartySizeDefault = 1;
+
 export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "attendance": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['attended', 'no_show']),/*#__PURE__*/ zod.null()])),
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "email": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
   "name": /*#__PURE__*/ zod.string(),
+  "party_size": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponsePartySizeDefault),
   "phone": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner \/ admin only).'))
@@ -6878,6 +6886,29 @@ export const GetPrefillRegisterProducerPrefillTokenGetResponse = /*#__PURE__*/ z
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('Public response from \/register\/producer\/prefill\/{token} —\nintentionally narrow: only what the registration form needs to\npre-fill. Notes + status are NOT exposed.'))
+
+
+/**
+ * «הגיעו» / «לא הגיעו» on one sign-up — the item's owner or an admin.
+ *
+ * A note for the business only: nothing reads it to block a visitor
+ * (card MEH-3315). 403 for anyone else, as the card asks; 404 for an id
+ * that does not exist. Only an active sign-up is marked (409 otherwise).
+ * @summary Set Registration Attendance
+ */
+export const setRegistrationAttendanceRegistrationsRegistrationIdAttendancePatchResponsePartySizeDefault = 1;
+
+export const SetRegistrationAttendanceRegistrationsRegistrationIdAttendancePatchResponse = /*#__PURE__*/ zod.object({
+  "attendance": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['attended', 'no_show']),/*#__PURE__*/ zod.null()])),
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "party_size": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), setRegistrationAttendanceRegistrationsRegistrationIdAttendancePatchResponsePartySizeDefault),
+  "phone": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner \/ admin only).'))
 
 
 /**
