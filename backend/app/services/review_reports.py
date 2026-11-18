@@ -105,7 +105,7 @@ def build_email(m: ReviewReportMail) -> tuple[str, str, str]:
         f"לטיפול: {m.admin_url}"
     )
 
-    def p(content: str, size: int = 15, color: str = "#3a3a3a") -> str:
+    def p(content: str, size: int = 15, color: str = "#1c1a17") -> str:
         return (
             f'<p style="color:{color};font-size:{size}px;line-height:1.7;'
             f'margin:0 0 8px;">{content}</p>'
@@ -122,7 +122,7 @@ def build_email(m: ReviewReportMail) -> tuple[str, str, str]:
     html = f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
     <tr>
@@ -138,7 +138,7 @@ def build_email(m: ReviewReportMail) -> tuple[str, str, str]:
               {p(f"מי דיווחה: {html_escape(reporter_label)}", 13, "#666")}
               {p(reply_html, 13, "#666")}
               {p(f"פרטים: {details_html}")}
-              <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+              <hr style="border:none;border-top:1px solid #e5dfd3;margin:16px 0;">
               {p(f"הביקורת ({m.review_stars}★, {html_escape(m.review_author)}):", 13, "#666")}
               {p(body_html)}
               {p(f"מזהה ביקורת: {html_escape(m.review_id or '—')}", 12, "#888")}
