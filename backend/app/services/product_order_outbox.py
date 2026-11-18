@@ -206,6 +206,7 @@ def _wa(to: str, template: wt.WhatsAppTemplate, test: bool) -> Callable[[], str]
         if result.outcome in (
             whatsapp.OUTCOME_SKIPPED_TEST,
             whatsapp.OUTCOME_UNCONFIGURED,
+            whatsapp.OUTCOME_BLOCKED_NON_PROD,
         ):
             return result.outcome
         # A 4xx from Meta (unknown template, bad number) will not get better.

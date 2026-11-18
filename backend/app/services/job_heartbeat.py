@@ -54,6 +54,7 @@ GROUP_BUY_EXPIRY_CRON = "0 6 * * *"  # MEH-3287
 ADMIN_PENDING_REMINDER_CRON = "0 5 * * *"  # 07:00/08:00 Israel (MEH-3147)
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
+PRODUCT_ORDERS_INTERVAL_MINUTES = 2  # MEH-3296: order expiry + outbox tick
 # Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the
 # schedule so DST moves the UTC fire time, in the trigger and the monitor alike.
 WEEKLY_OWNER_SUMMARY_CRON = "0 8 * * sun"
@@ -112,6 +113,8 @@ UNMONITORED_SLUGS = frozenset(
         # separately, so the slug landed unclassified and pytest went red.
         # No Sentry monitor exists for it (plan limit, MEH-3332).
         "group-buy-expiry-daily",
+        # MEH-3296: on-site orders tick; flag-gated, no Sentry monitor (plan limit).
+        "product-orders-tick",
     }
 )
 
