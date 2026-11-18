@@ -1029,6 +1029,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
 
+> **MEH-3311 — a funded group buy that drops below its goal (2026-11-15).** Migration `a7d3e9c1b5f2` adds two nullable naive-UTC columns to `group_buys`: `below_goal_notified_at`, `refunded_notified_at`. When `DELETE /group-buys/{id}/commit` reverts `funded → open` on a group whose funded email went out (`funded_notified_at` set), everyone who stayed gets one email «מהמקור — הקבוצה "{title}" ירדה מתחת ליעד» and `below_goal_notified_at` is stamped. When a later join re-crosses the minimum, every participant gets the funded email again (not the business) and `refunded_notified_at` is stamped. Each stamp is set once, so a flapping group mails a participant at most three times in all; `funded_notified_at` stays one-way (MEH-1651). The account-deletion revert (`group_buy_delist.withdraw_user_commits`) sends nothing. Service: `app/services/group_buy_goal_flap.py`.
+
 ### Auth (`app/routers/auth.py`)
 
 ```
@@ -1070,6 +1072,30 @@ POST   /admin/producers/{id}/products      admin  — 60/hour. MEH-2326 (chunk D
 DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 rule; a product of another business → 404. Image destroyed after commit. 204.
                                                      Once she owns the page the products are hers, edited from /producers/me/products only.
 ```
+
+### Draft preview link + publish with recorded consent (`app/routers/producer_draft_preview.py`) — MEH-3377
+
+For a business that has not registered: an admin builds its page as an ownerless DRAFT, shows it to the business before anything is public, and publishes it once the business has agreed in writing. The preview token is read-only and is a different scope from the claim token, so a forwarded preview link cannot take the page over, and a claim link cannot be used to read it here.
+
+The public page is `frontend/app/[locale]/draft-preview/[token]/` (noindex, `referrer: no-referrer`, `force-dynamic`). It renders the regular business page under `PreviewModeProvider` with a banner that says the page is not on the site yet. `middleware.js` lists `/draft-preview/:path*` because the token has dots.
+
+```
+POST   /admin/producers/{id}/preview-link          admin  — 30/hour. Ownerless draft only (409 «אפשר רק לטיוטה שעוד אין לה בעלים»), 404 if missing.
+                                                     → {url: {frontend_url}/draft-preview/<token>, expires_at}. Token = HS256 JWT {producer_id, scope:"producer_draft_preview"},
+                                                     14-day TTL, exp essential (services/draft_preview.py). Stateless — no table, no revocation before exp;
+                                                     it stops working the moment the draft is claimed, published, rejected or deleted.
+GET    /producer-preview/{token}                   public — 60/min. → ProducerDetailOut of the draft, hydrated like GET /producers/{id}.
+                                                     Bad signature, expired, wrong scope, no longer an ownerless draft → the same 404 «הקישור לא תקף או שפג תוקפו».
+POST   /admin/producers/{id}/publish-with-consent  admin  — 30/hour. Body {consent_confirmed: true, consent_note (1–500, non-blank), consent_screenshot_url? (https res.cloudinary.com image URL, else 422)}; query allow_without_license.
+                                                     Ownerless draft only (409). Row FOR UPDATE. Runs the same gates as an approval (`_assert_approvable`:
+                                                     photo; licence unless allow_without_license, which also withholds the verified badge), with the
+                                                     phone-verified gate overridden — there is no owner to verify it yet. Sets status "approved", stores the
+                                                     note in producers.owner_invite_consent_note and the optional screenshot URL in producers.consent_screenshot_url
+                                                     (migration `c3e7a1f9d5b2`, VARCHAR(500) NULL, Expand-only; on ProducerAdminOut only), pings IndexNow. Sends NOTHING to the business.
+                                                     → {producer_id, status, slug}. The owner gets her account afterwards through the owner invite (below).
+```
+
+`POST /admin/producers/{id}/approve` still answers 409 on a draft (MEH-2121). This route is the one exit from `draft` that skips `pending`, and it exists only for an ownerless draft with a recorded consent.
 
 ### Owner invite (`app/routers/producer_owner_invite.py`) — MEH-2974
 
@@ -1665,7 +1691,8 @@ GET    /producers/{id}/reviews   public (optional auth) — MEH-3221: items carr
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row from the last 90 days (older WhatsApp rows are purged and older contact rows lose `user_id`, MEH-3244) OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
-GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null, MEH-3258 `conflict` "owner" | "competitor" | null)
+                                 MEH-3258: a review whose author NOW owns the business, or owns one sharing a category (the MEH-2076 intersection), is left out of both public GETs, `total`, `rating_counts` and the stored avg_rating/reviews_count. Computed per read (services/review_conflicts.py), never stored; is_hidden untouched. Rating recomputed on claim, registration upgrade, owner/admin category save, approval, and admin delete of the author's business (each fail-open, logged). Applies to any linked account, admin included, and to a business in any status (draft counts: the conflict is the ownership, not the listing). The owner's unreplied-reviews badge (services/owner_attention.py) uses the same filter
 PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, edited_after_hidden_at=NULL, recompute aggregates (on a hidden row = "keep hidden", MEH-2381; optional ?seen=<the ISO value the page showed> → 409 {code: "review_changed"} when a newer edit landed)
 PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, edited_after_hidden_at=NULL, recompute aggregates (MEH-2348)
 ```

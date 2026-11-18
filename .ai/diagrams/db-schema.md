@@ -107,6 +107,7 @@ erDiagram
         timestamp owner_invite_sent_at "nullable — MEH-2974, tz-aware; latest invite sent"
         timestamp owner_invite_accepted_at "nullable — MEH-2974, tz-aware; set once. Also the onboarding-sequence clock: COALESCE(this, created_at)"
         text owner_invite_consent_note "nullable — MEH-2974; the admin's record of the written consent. Kept on cancel — it is the audit trail"
+        string consent_screenshot_url "nullable — MEH-3377, VARCHAR(500); optional Cloudinary image of that written consent. ProducerAdminOut only"
         string owner_invite_created_by "nullable — MEH-2974, UUID FK users.id ON DELETE SET NULL, named + use_alter (users<->producers cycle)"
         string owner_invite_code_hash "nullable — MEH-2974 v3, VARCHAR(64); sha256 HEX of the 6-digit email code. NEVER the code; on no response schema"
         timestamp owner_invite_code_expires_at "nullable — MEH-2974 v3, tz-aware; send + 10 minutes"
@@ -718,5 +719,5 @@ erDiagram
 
 - **No PostGIS.** Coordinates are plain `FLOAT`. Distance queries use Haversine in raw SQL over `producer_locations.lat/lng` — `backend/app/services/producer_queries.py::haversine_min_km`, the nearest row per business, with NO fallback to the legacy `producers.lat/lng` mirror since MEH-1938 chunk 5a. Reverting this breaks Railway deploy.
 - **IPs are always hashed.** `producer_page_views.viewer_ip_hash` is SHA-256 of `ip + settings.secret_key[:32]` — never raw IP, per Privacy Law amendment 13 (2025) and `docs/SECURITY.md` §8a.
-- **Cached rating aggregates.** `producers.avg_rating` + `producers.reviews_count` are cached from `producer_reviews` to avoid a JOIN on every producer detail request. Update them transactionally when writing/deleting a review.
+- **Cached rating aggregates.** `producers.avg_rating` + `producers.reviews_count` are cached from `producer_reviews` to avoid a JOIN on every producer detail request. Update them transactionally when writing/deleting a review. MEH-3258: they also exclude conflict-of-interest reviews, so they are recomputed when an author starts or stops owning a business (claim, registration upgrade, admin delete) and when a business's categories change or it is approved — `services/review_conflicts.py`.
 - **Experience vs Event moderation are different flows.** Events: direct admin approval. Experiences: Claude Haiku pre-check → admin queue → approval. Don't conflate them (see `docs/MODERATION.md`).

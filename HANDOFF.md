@@ -4,6 +4,14 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-17 — סבב ניקוי כרטיסים ב-Linear
+
+**שורה אחת:** מוזגו #4711, ‏#4712, ‏#4713, ‏#4715 ו-#4716; ‏12 כרטיסים נסגרו, וספיר מחקה את רשימת המחיקה ב-18/11. הפירוט ב-CHANGELOG.
+
+**מה צריך לדעת לפני עבודה:**
+- **`fire_alerts` / `notify_cities` מסיימים בטרנזקציה סגורה, לא ב-`close()`.** טסטים קיימים קוראים אובייקטי ORM אחרי הקריאה; `close()` היה מנתק אותם (`DetachedInstanceError`).
+- **כרטיסים שמוזג להם PR אבל חלק מהדרישות פתוח** (3024, 3356, 2888, 3077, 3079 ועוד, הרשימה המלאה בשיחת הסבב): צריך החלטה אם לסגור או לפצל.
+
 ## 2026-11-17 — אצוות RED ו-Alembic מההכרעות של 17/11
 
 **שורה אחת:** מוזגו #4724 (תקרה לפי נמען בהרשמה לאירוע + תיקון מפתח ההגבלה לפי אימייל), ‏#4725 (‏413 מעל 6MB) ו-#4727 (הסרת ה-preconnect ל-OSM). כל השאר מחכה לספיר או נעצר לפני קוד. הפירוט ב-CHANGELOG.

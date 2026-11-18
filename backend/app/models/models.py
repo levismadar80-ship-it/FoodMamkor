@@ -621,6 +621,10 @@ class Producer(Base):
     # «אישור בוואטסאפ, 12/11». Required (non-blank) on every invite — this
     # column plus `owner_invite_created_by` IS the audit trail.
     owner_invite_consent_note = Column(Text, nullable=True)
+    # MEH-3377: an optional screenshot of that written consent (the WhatsApp
+    # «כן»), attached on «פרסום בהסכמה». A Cloudinary URL. Admin-only: it shows
+    # a private person's chat, so it is on ProducerAdminOut and no other shape.
+    consent_screenshot_url = Column(String(500), nullable=True)
     # `use_alter` + an explicit name, exactly as `top_product_id` above does,
     # and for the same reason: `users.producer_id` already points HERE, so this
     # reference closes a producers ↔ users cycle. Without the pair, SQLAlchemy
