@@ -543,7 +543,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
       Sapir picks (rule 37 for placement, rule 22 for copy).
     - **PR body:** `## Big sites` with the findings, or
       `Big sites: n/a — <reason>`. `scripts/checks/big-sites-guard.sh`
-      (Repo guards, warn-only) prints a WARNING for a PR touching
+      (Repo guards; warns, blocks from 22/11) flags a PR touching
       `frontend/app` or `frontend/components` (tests excluded) without either.
 38. **A PR that changes what users see: CC self-merges it to staging after the
     full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
@@ -612,7 +612,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     description, so a routine-looking task skips them. Before starting, read
     the table, invoke every row that fits (Skill tool), and write one line in
     the first reply and in the PR body: `Skills: <names>` or
-    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns on
+    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns, and from 22/11 fails, on
     a PR body without it. Re-check the table when a task turns into a new kind
     of work mid-way — a draft of Hebrew copy in a doc or a card counts as copy
     (18/11). From 22/11 (a warning until then), a PR that adds Hebrew to
