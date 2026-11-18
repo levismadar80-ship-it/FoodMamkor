@@ -55,6 +55,7 @@ from app.auth import _jwt_key
 from app.config import settings
 from app.models import User
 from app.models.admin_passkeys import AdminPasskey, AdminRecoveryCode
+from app.rate_limit import LOGIN_FAILURE_LIMIT, limiter
 from app.utils.clock import utc_now
 
 TICKET_SCOPE = "passkey_ticket"
@@ -148,8 +149,11 @@ def _prune_spent(now: float) -> None:
         del _spent_tickets[jti]
 
 
-def open_ticket(db: Session, token: str, purpose: str) -> tuple[User, bytes]:
-    """Check a ticket, spend it, and return its account and challenge.
+def open_ticket(
+    db: Session, token: str, purpose: str, *, spend: bool = True
+) -> tuple[User, bytes, str]:
+    """Check a ticket, spend it (unless `spend=False`), and return its account,
+    challenge and jti. A caller that defers the spend calls `spend_ticket`.
 
     Raises PasskeyError on a bad signature, an expired or spent ticket, the
     wrong purpose, a missing or blocked account, or a token_version that moved
@@ -176,8 +180,27 @@ def open_ticket(db: Session, token: str, purpose: str) -> tuple[User, bytes]:
     user = db.query(User).filter(User.id == user_id).first()
     if user is None or user.is_blocked or claims.get("tv") != user.token_version:
         raise PasskeyError("ticket account")
-    _spent_tickets[jti] = float(claims.get("exp") or now)
-    return user, challenge
+    if spend:
+        _spent_tickets[jti] = float(claims.get("exp") or now)
+    return user, challenge, jti
+
+
+def spend_ticket(jti: str) -> None:
+    _spent_tickets[jti] = time.time() + TICKET_MINUTES * 60
+
+
+# Wrong recovery codes have their OWN budget, apart from the MEH-3372
+# password-failure one: someone who knows only the password must not be able
+# to use up the budget of the recovery path (and the reverse).
+_RECOVERY_SCOPE = "passkey-recovery-failures"
+
+
+def recovery_failures_exceeded(user: User) -> bool:
+    return not limiter.limiter.test(LOGIN_FAILURE_LIMIT, _RECOVERY_SCOPE, str(user.id))
+
+
+def record_recovery_failure(user: User) -> None:
+    limiter.limiter.hit(LOGIN_FAILURE_LIMIT, _RECOVERY_SCOPE, str(user.id))
 
 
 # --- WebAuthn ceremonies ------------------------------------------------------
@@ -352,11 +375,13 @@ def spend_recovery_code(db: Session, user: User, code: str) -> bool:
     not say which one matched.
     """
     match: AdminRecoveryCode | None = None
+    # Row lock: two requests at once cannot both spend the same code.
     rows = (
         db.query(AdminRecoveryCode)
         .filter(
             AdminRecoveryCode.user_id == user.id, AdminRecoveryCode.used_at.is_(None)
         )
+        .with_for_update()
         .all()
     )
     for row in rows:

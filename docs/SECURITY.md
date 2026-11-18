@@ -751,7 +751,17 @@ logger.warning(f"Rate limit exceeded for IP: {ip}")
 
 ## 🟢 כדאי — תוסיפי בהדרגה
 
-### 15. 2FA / אימות דו-שלבי לאדמין
+### ✅ 15. 2FA / אימות דו-שלבי לאדמין — SHIPPED as a passkey (MEH-3305)
+
+**What runs:** a passkey (WebAuthn, `py_webauthn`), not TOTP — phishing-resistant, nothing to type. An admin account that enrolled one gets no session from `/auth/login`, `/auth/google` or `/auth/apple`: it gets a 5-minute single-use ticket (JWT scope `passkey_ticket`, refused by `get_current_user` and by `/auth/refresh`, bound to purpose + account + `token_version`), and the session is issued by `/auth/passkey/login/verify` (user verification required, RP id + origin from `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN`) or `/auth/passkey/login/recovery`.
+- **Recovery:** 10 one-time codes (50 bits each), stored as salted SHA-256, compared over every unused row with `compare_digest`, spent under a row lock. Wrong codes have their own budget (10 / 15 minutes per account), apart from the MEH-3372 password budget. A wrong code does not burn the ticket; the first right one does.
+- **Step-up before a change** (add / remove a passkey, new codes): a passkey or a recovery code once one exists — the password alone is no longer enough — else the password, else (a Google / Apple account with neither) the session.
+- **Off** where the two env vars are unset (local, vercel.app previews); the staging `demo-admin` never enrolls, so E2E is unchanged.
+- **Accepted:** spent tickets are remembered in process memory (one uvicorn process); after a restart a ticket can be tried again within its 5 minutes, still needing the passkey or a code. Existing sessions continue through `/auth/refresh` — the gate is at sign-in, as at the big providers.
+- Tests: `tests/test_meh3305_admin_passkeys_routes.py` (a software authenticator, real verification).
+
+The TOTP sketch below is kept as the alternative that was not chosen.
+
 
 ```python
 # pip install pyotp qrcode

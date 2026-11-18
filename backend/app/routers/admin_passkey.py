@@ -18,6 +18,7 @@ History:   MEH-3305 (creation).
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -30,7 +31,7 @@ from app.auth import (
 from app.database import get_db
 from app.models import User
 from app.models.admin_passkeys import AdminPasskey
-from app.rate_limit import limiter, login_failures_exceeded, record_login_failure
+from app.rate_limit import limiter
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.admin_passkey import (
     CeremonyOptions,
@@ -89,16 +90,16 @@ def _check_step_up(db: Session, user: User, proof: StepUp) -> None:
     """Raise 403 unless `proof` is the strongest one this account can give."""
     if pk.passkeys_of(db, user):
         if proof.recovery_code:
-            if login_failures_exceeded(str(user.email)):
+            if pk.recovery_failures_exceeded(user):
                 raise HTTPException(status_code=429, detail=_TOO_MANY)
             if pk.spend_recovery_code(db, user, proof.recovery_code):
                 return
-            record_login_failure(str(user.email))
+            pk.record_recovery_failure(user)
             raise HTTPException(status_code=403, detail=_STEP_UP)
         if not proof.ticket or proof.credential is None:
             raise HTTPException(status_code=403, detail=_STEP_UP)
         try:
-            ticket_user, challenge = pk.open_ticket(db, proof.ticket, "step_up")
+            ticket_user, challenge, _jti = pk.open_ticket(db, proof.ticket, "step_up")
             if ticket_user.id != user.id:
                 raise pk.PasskeyError("other account")
             pk.authenticate(db, user, challenge, proof.credential)
@@ -171,7 +172,7 @@ def register_verify(
 ) -> Registered:
     _require_enabled()
     try:
-        ticket_user, challenge = pk.open_ticket(db, data.ticket, "register")
+        ticket_user, challenge, _jti = pk.open_ticket(db, data.ticket, "register")
         if ticket_user.id != user.id:
             raise pk.PasskeyError("other account")
         first = not pk.passkeys_of(db, user)
@@ -181,7 +182,12 @@ def register_verify(
         detail = _CAP if str(exc) == "cap" else _FAILED
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
     codes = pk.new_recovery_codes(db, user) if first else None
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two registrations of one credential at once: the unique index wins.
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_FAILED)
     db.refresh(row)
     return Registered(passkey=_out(row), recovery_codes=codes)
 
@@ -232,10 +238,12 @@ def regenerate_codes(
 # that the password / Google / Apple step passed) ------------------------------
 
 
-def _open_login_ticket(db: Session, ticket: str) -> tuple[User, bytes]:
+def _open_login_ticket(
+    db: Session, ticket: str, *, spend: bool = True
+) -> tuple[User, bytes, str]:
     _require_enabled()
     try:
-        return pk.open_ticket(db, ticket, "login")
+        return pk.open_ticket(db, ticket, "login", spend=spend)
     except pk.PasskeyError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_EXPIRED)
 
@@ -248,7 +256,7 @@ def login_verify(
     data: LoginVerify,
     db: Session = Depends(get_db),
 ) -> Token:
-    user, challenge = _open_login_ticket(db, data.ticket)
+    user, challenge, _jti = _open_login_ticket(db, data.ticket)
     try:
         pk.authenticate(db, user, challenge, data.credential)
     except pk.PasskeyError:
@@ -266,11 +274,16 @@ def login_recovery(
     data: LoginRecovery,
     db: Session = Depends(get_db),
 ) -> Token:
-    user, _challenge = _open_login_ticket(db, data.ticket)
-    if login_failures_exceeded(str(user.email)):
+    # A wrong code does not burn the ticket (a typo should not send her back
+    # to the password); the ticket is spent with the first RIGHT code, and
+    # wrong codes count against their own budget.
+    user, _challenge, jti = _open_login_ticket(db, data.ticket, spend=False)
+    if pk.recovery_failures_exceeded(user):
         raise HTTPException(status_code=429, detail=_TOO_MANY)
     if not pk.spend_recovery_code(db, user, data.code):
-        record_login_failure(str(user.email))
+        db.rollback()
+        pk.record_recovery_failure(user)
         raise HTTPException(status_code=401, detail=_CODE_WRONG)
+    pk.spend_ticket(jti)
     db.commit()
     return _issue_session(response, user)

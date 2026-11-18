@@ -441,7 +441,7 @@
     },
     "passkey": {
       "title": "One more step",
-      "body": "The passkey did not confirm the sign-in. You can go back and try again, or enter one of your saved recovery codes.",
+      "body": "The passkey did not confirm the sign-in. You can sign in again and retry, or enter one of your saved recovery codes.",
       "code_label": "Recovery code",
       "code_hint": "Ten characters, e.g. 7KQ2M-X9FHT",
       "submit": "Sign in with code",

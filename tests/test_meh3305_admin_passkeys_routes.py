@@ -470,3 +470,67 @@ def test_at_most_ten_passkeys(client, db, passkeys_on):
         headers=monkeypatch_h,
     )
     assert r.status_code == 409
+
+
+def test_a_wrong_code_does_not_burn_the_ticket(client, db, passkeys_on):
+    admin = make_user(db, role="admin")
+    _device, _x, codes = _enroll(client, admin)
+    _r, body = _second_step(client, admin)
+    bad = client.post(
+        "/auth/passkey/login/recovery",
+        json={"ticket": body["ticket"], "code": "AAAAA-AAAAA"},
+    )
+    assert bad.status_code == 401
+    assert bad.json()["detail"] == "קוד השחזור לא נכון או שכבר השתמשת בו"
+    ok = client.post(
+        "/auth/passkey/login/recovery",
+        json={"ticket": body["ticket"], "code": codes[0]},
+    )
+    assert ok.status_code == 200, ok.text
+    # ...and once a RIGHT code used it, the ticket is spent.
+    again = client.post(
+        "/auth/passkey/login/recovery",
+        json={"ticket": body["ticket"], "code": codes[1]},
+    )
+    assert again.status_code == 401
+
+
+def test_wrong_codes_have_their_own_budget(client, db, passkeys_on):
+    admin = make_user(db, role="admin")
+    _device, _x, codes = _enroll(client, admin)
+    _r, body = _second_step(client, admin)
+    from app.services import admin_passkey as svc
+
+    user = db.query(User).filter_by(id=admin.id).one()
+    for _ in range(10):
+        svc.record_recovery_failure(user)
+    r = client.post(
+        "/auth/passkey/login/recovery",
+        json={"ticket": body["ticket"], "code": codes[0]},
+    )
+    assert r.status_code == 429
+    # The password budget is untouched: the first step still answers.
+    assert _token(client, admin).json().get("passkey_required") is True
+
+
+def test_a_code_used_as_step_up_is_spent(client, db, passkeys_on):
+    admin = make_user(db, role="admin")
+    _device, _x, codes = _enroll(client, admin)
+    _r, body = _second_step(client, admin)
+    h = _h(
+        client.post(
+            "/auth/passkey/login/recovery",
+            json={"ticket": body["ticket"], "code": codes[0]},
+        ).json()["access_token"]
+    )
+    r = client.post(
+        "/auth/passkey/recovery-codes", json={"recovery_code": codes[1]}, headers=h
+    )
+    assert r.status_code == 200
+    new = r.json()["recovery_codes"]
+    assert len(new) == 10 and not set(new) & set(codes)
+    # The old codes are gone with the renewal, the one used as proof included.
+    r = client.post(
+        "/auth/passkey/recovery-codes", json={"recovery_code": codes[2]}, headers=h
+    )
+    assert r.status_code == 403
