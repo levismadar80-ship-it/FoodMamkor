@@ -1,7 +1,7 @@
 """meh3312_registration_reminder_stamp
 
 Revision ID: b8e4f2a6c9d1
-Revises: a3d9e5c1f7b2
+Revises: b1d19ee0e8c1
 Create Date: 2026-11-15 09:30:00.000000+00:00
 
 MEH-3312 (a reminder email the evening before an event or workshop): adds
@@ -25,7 +25,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "b8e4f2a6c9d1"
-down_revision: Union[str, None] = "a3d9e5c1f7b2"
+down_revision: Union[str, None] = "b1d19ee0e8c1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

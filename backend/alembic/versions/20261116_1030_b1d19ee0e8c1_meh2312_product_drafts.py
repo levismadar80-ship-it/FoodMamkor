@@ -1,7 +1,7 @@
 """meh2312_product_drafts
 
 Revision ID: b1d19ee0e8c1
-Revises: f6c2a8d4e1b7
+Revises: c3e8a1f05d72
 Create Date: 2026-11-16 10:30:00.000000+00:00
 
 MEH-2312: admin imports a business's catalog from its existing store
@@ -36,7 +36,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b1d19ee0e8c1"
-down_revision: Union[str, None] = "f6c2a8d4e1b7"
+down_revision: Union[str, None] = "c3e8a1f05d72"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
