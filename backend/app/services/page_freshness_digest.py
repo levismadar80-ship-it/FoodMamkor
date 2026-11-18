@@ -88,7 +88,8 @@ def find_stale(db: Session, now: datetime) -> list[StalePage]:
 def _line(p: StalePage) -> str:
     when = "לא נבדק אף פעם" if p.days is None else f"נבדק לפני {p.days} ימים"
     who = "" if p.has_owner_email else " · אין מייל של בעלים"
-    return f"- {p.name} ({p.city or 'לא צוין'}) — {when}{who}"
+    where = f" ({p.city})" if p.city else ""
+    return f"- {p.name}{where} — {when}{who}"
 
 
 def build_email(pages: list[StalePage]) -> tuple[str, str]:

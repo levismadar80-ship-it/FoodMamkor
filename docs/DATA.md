@@ -1741,9 +1741,12 @@ POST /newsletter                 public — { email } → newsletter_subscribers
 POST /newsletter/unsubscribe     public — { token } → deletes the row
                                  + deletes the Resend contact (MEH-2611); a Broadcast-footer opt-out stays sticky
 POST /weekly-summary/unsubscribe public — { token } → producers.weekly_summary_opt_out = true (MEH-3079)
-POST /page-freshness/confirm public — { token } → producers.last_confirmed_at = now; one 404 body for every dead link (page freshness)
                                  rate-limited 20/hour per IP; token scope `weekly_summary_unsubscribe`,
                                  sub = producer id; 400 «הקישור אינו תקין או שפג תוקפו.»; idempotent 200
+POST /page-freshness/confirm     public — { token } → producers.last_confirmed_at = now (page freshness)
+                                 rate-limited 20/hour per IP; token scope `page_freshness_confirm`,
+                                 sub = producer id, exp 21 days; one 404 body for every dead link
+                                 (expired, other scope, garbage, business no longer live)
 POST /contact                    public — { name, email, message, topic? } → contact_messages row
                                  + SMTP email to CONTACT_EMAIL (falls back to
                                  ADMIN_EMAIL). Fail-open: if SMTP is unconfigured

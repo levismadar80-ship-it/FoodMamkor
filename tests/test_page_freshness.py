@@ -112,6 +112,28 @@ class TestSend:
             db.refresh(producer)
             assert producer.freshness_email_sent_at is None
 
+    def test_test_owner_send_is_marked_test_cause(self, db, sent, enabled):
+        # The send layer drops a test_cause send (MEH-2952); this pins that
+        # the flag is passed, so a demo owner never gets a real email.
+        _, owner = _business(db)
+        owner.is_test = True
+        db.commit()
+        pf.send_freshness_emails(db)
+        assert len(sent) == 1
+        assert sent[0]["test_cause"] is True
+
+    def test_real_owner_send_is_not_test_cause(self, db, sent, enabled):
+        _business(db)
+        pf.send_freshness_emails(db)
+        assert sent[0]["test_cause"] is False
+
+    def test_test_business_is_skipped(self, db, sent, enabled):
+        producer, _ = _business(db)
+        producer.is_test = True
+        db.commit()
+        assert pf.send_freshness_emails(db)["sent"] == 0
+        assert sent == []
+
     def test_old_confirmation_is_due_again(self, db, sent, enabled):
         producer, _ = _business(db)
         producer.last_confirmed_at = israel_days_ago(45)
@@ -231,6 +253,10 @@ class TestStaleDigest:
         test_row, test_owner = _business(db, name="עסק בדיקה")
         test_row.created_at = _naive(old)
         test_owner.is_test = True
+        # And a business that is itself a test row.
+        test_biz, _ = _business(db, name="עסק דמו")
+        test_biz.created_at = _naive(old)
+        test_biz.is_test = True
         db.commit()
 
     def test_sunday_lists_only_stale_live_pages(self, db, monkeypatch, admin_mail):
@@ -247,7 +273,7 @@ class TestStaleDigest:
         assert "לא נבדק אף פעם" in lines[0] and "אין מייל של בעלים" in lines[0]
         assert lines[1].startswith("- ישן") and "נבדק לפני 75 ימים" in lines[1]
         assert "אין מייל" not in lines[1]
-        assert "אושר" not in body and "עסק בדיקה" not in body
+        assert "אושר" not in body and "עסק בדיקה" not in body and "עסק דמו" not in body
 
     def test_other_days_and_flag_off_send_nothing(self, db, monkeypatch, admin_mail):
         dg, calls = admin_mail
