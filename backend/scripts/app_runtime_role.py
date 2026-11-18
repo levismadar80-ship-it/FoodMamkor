@@ -37,7 +37,8 @@ def role_sql(password: str, role: str = ROLE) -> list[str]:
     pw = _literal(password)
     return [
         # LOGIN, and nothing else: no superuser, no CREATEDB, no CREATEROLE.
-        f"""DO $$
+        # $role$ and not $$: a password with "$$" in it cannot end the block.
+        f"""DO $role$
 BEGIN
     CREATE ROLE {role} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION
         PASSWORD {pw};
@@ -45,7 +46,7 @@ EXCEPTION WHEN duplicate_object THEN
     ALTER ROLE {role} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION
         PASSWORD {pw};
 END
-$$""",
+$role$""",
         # Postgres 15+ already denies this; older servers grant it to PUBLIC,
         # which would let the app's role create tables in public.
         "REVOKE CREATE ON SCHEMA public FROM PUBLIC",

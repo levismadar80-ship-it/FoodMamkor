@@ -1868,6 +1868,7 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
 | | |
 |---|---|
 | Login | none (`NOLOGIN`; assumed via `SET LOCAL ROLE` inside a READ ONLY transaction) |
+| Members | the app's login role: the schema owner, or `app_runtime` once DEPLOYMENT.md §1.3 is applied (MEH-3307 grants `mcp_reader` to it) |
 | SELECT (column-level) | `producers` (id, name, city, slug, status, kind) · `categories` (id, name, slug) · `producer_categories` (producer_id, category_id) · `producer_locations` (producer_id, kind, city) · `events` (producer_id, title, event_date, event_time, city, location, category, is_active) |
 | Everything else | denied — including `producers.phone/contact_email/contact_name/address/whatsapp_group`, `users`, `home_products`, `reports` and all writes |
 | statement_timeout | 5000 ms, per transaction |

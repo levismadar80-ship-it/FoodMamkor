@@ -158,6 +158,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | Variable | How to set on staging |
    |---|---|
    | `DATABASE_URL` | Auto-injected from the staging Postgres service via Add Reference — don't override. |
+   | `MIGRATION_DATABASE_URL` | **Optional (MEH-3307).** The schema owner's URL for the boot migration step only, when the app URL logs in as `app_runtime`. Unset = migrations use the app URL. Order: §1.3. |
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
@@ -1268,19 +1269,26 @@ runs that same SQL on a database migrated to head and checks that the role
 writes rows and that every kind of DDL is refused.
 
 **Order, per environment (staging first, then production).** Each step can be
-undone by restoring the previous variable value in Railway.
+undone by restoring the previous variable value in Railway. `<db>` below is the
+Postgres service's name as Railway shows it in that environment (§1.1 names it
+`mehamakor-db`); a wrong name in a `${{…}}` reference resolves to nothing, so
+copy it from the service.
 
 1. The code is deployed with no variable changed. Nothing changes.
 2. On the backend service, add `MIGRATION_DATABASE_URL` as a reference to the
-   owner URL the service uses today (`${{Postgres.DATABASE_URL}}`). Redeploy;
-   the boot log still shows `running \`alembic upgrade head\``.
+   owner URL the service uses today (`${{<db>.DATABASE_URL}}`). Redeploy, and
+   do not go on until the boot log shows `running \`alembic upgrade head\``
+   (or `database at <head>`) and the app is up: that is the proof the new
+   variable connects.
 3. On the Postgres service, add `APP_RUNTIME_PASSWORD` with Railway's
    generator (`${{secret(40)}}`). In the Postgres service's query tab, run the
    printed SQL with that value in place of the placeholder. The value is never
-   pasted anywhere else.
+   pasted anywhere else. Run it as the same role `MIGRATION_DATABASE_URL`
+   logs in as (Railway's `postgres`, which is what the query tab uses): the
+   default privileges below cover only tables that role creates later.
 4. On the backend service, change the app URL variable (the one it has set:
    `DATABASE_URL_STAGING` / `DATABASE_URL_PRODUCTION`, else `DATABASE_URL`) to
-   `postgresql://app_runtime:${{Postgres.APP_RUNTIME_PASSWORD}}@${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}`.
+   `postgresql://app_runtime:${{<db>.APP_RUNTIME_PASSWORD}}@${{<db>.PGHOST}}:${{<db>.PGPORT}}/${{<db>.PGDATABASE}}`.
    Redeploy.
 5. Check: `/health` 200, a sign-in, one write (a favourite). A
    `permission denied` in the backend log is the role missing a grant: put
@@ -1294,8 +1302,10 @@ production is recorded on MEH-3307.
 
 **A new migration needs nothing extra:** the grants include
 `ALTER DEFAULT PRIVILEGES`, so a table or sequence the owner creates later is
-readable and writable by `app_runtime` at once. A migration that creates a
-table as some other role would need its own `GRANT`.
+readable and writable by `app_runtime` at once, as long as the migrations log
+in as the role that ran the SQL (step 3). A migration that creates a table as
+some other role would need its own `GRANT`. Staging and production are
+separate Postgres services, so each has its own `app_runtime` and password.
 
 ---
 

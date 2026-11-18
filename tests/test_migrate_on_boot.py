@@ -42,7 +42,12 @@ pytestmark = pytest.mark.serial
 
 def _run(url: str, *args: str) -> subprocess.CompletedProcess:
     env = {**os.environ, "DATABASE_URL": url, "ENV": "test", "PYTHONPATH": str(BACKEND)}
-    for key in ("DATABASE_URL_STAGING", "DATABASE_URL_PRODUCTION"):
+    # MEH-3307: MIGRATION_DATABASE_URL would send the migration elsewhere.
+    for key in (
+        "DATABASE_URL_STAGING",
+        "DATABASE_URL_PRODUCTION",
+        "MIGRATION_DATABASE_URL",
+    ):
         env.pop(key, None)
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
