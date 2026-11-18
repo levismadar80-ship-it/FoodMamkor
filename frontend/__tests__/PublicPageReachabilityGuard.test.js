@@ -103,6 +103,7 @@ const ROUTES = {
   "/claim": { kind: "noindex" },
   "/claim/[token]": { kind: "noindex" },
   "/contact": { kind: "noindex" },
+  "/draft-preview/[token]": { kind: "noindex" },
   "/delivery-waitlist/host-confirm": { kind: "noindex" },
   "/delivery-waitlist/unsubscribe": { kind: "noindex" },
   "/favorites": { kind: "noindex" },
