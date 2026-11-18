@@ -16,7 +16,7 @@
  * History:  MEH-3331 (creation).
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Copy } from "@phosphor-icons/react";
 import { copyText } from "@/lib/clipboard";
@@ -90,8 +90,9 @@ function PlaceRow({ place, slug, done, onToggle }) {
 export default function LinkEverywhere({ producer }) {
   const t = useTranslations("story.canvas.owner.links");
   const id = String(producer.id || producer.slug || "");
-  const [done, setDone] = useState(/** @type {string[]} */ ([]));
-  useEffect(() => setDone(readDone(id)), [id]);
+  // Lazy init, not an effect: the card mounts only after the owner's profile
+  // has loaded on the client, so there is no server render to mismatch.
+  const [done, setDone] = useState(() => (typeof window === "undefined" ? [] : readDone(id)));
 
   if (!producer.slug) return null;
   /** @param {string} place */
