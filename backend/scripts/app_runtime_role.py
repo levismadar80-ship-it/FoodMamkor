@@ -20,7 +20,11 @@ the database console and never written down):
 from __future__ import annotations
 
 ROLE = "app_runtime"
-PASSWORD_PLACEHOLDER = "REPLACE_WITH_THE_RAILWAY_GENERATED_PASSWORD"
+# The SQL never carries a real secret: this token stands where the quoted
+# password goes, and is replaced in the database console (or, in the test, by
+# `with_secret`). Keeping the secret out of role_sql() is also why main() can
+# print it.
+SECRET_SLOT = "'REPLACE_WITH_THE_RAILWAY_GENERATED_PASSWORD'"
 
 # The chat tools switch to this role inside a READ ONLY transaction
 # (app/services/chat_db_tools.py), so the app's role must be a member of it.
@@ -31,10 +35,15 @@ def _literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
-def role_sql(password: str, role: str = ROLE) -> list[str]:
+def with_secret(statement: str, secret: str) -> str:
+    """The statement with SECRET_SLOT replaced by the quoted secret."""
+    return statement.replace(SECRET_SLOT, _literal(secret))
+
+
+def role_sql(role: str = ROLE) -> list[str]:
     """Statements, in order, to run as the schema owner. Idempotent: running
-    them again only resets the password and re-applies the same grants."""
-    pw = _literal(password)
+    them again only resets the login secret and re-applies the same grants."""
+    pw = SECRET_SLOT
     return [
         # LOGIN, and nothing else: no superuser, no CREATEDB, no CREATEROLE.
         # $role$ and not $$: a password with "$$" in it cannot end the block.
@@ -64,7 +73,7 @@ $role$""",
 
 
 def main() -> int:
-    for statement in role_sql(PASSWORD_PLACEHOLDER):
+    for statement in role_sql():
         print(statement + ";\n")
     return 0
 
