@@ -114,6 +114,7 @@ from app.services.rescue_no_show import (  # MEH-3226
     queue_no_show_email,
 )
 from app.utils.clock import israel_today, utc_now
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.utils.pii import round_coord
 
 logger = logging.getLogger(__name__)
@@ -493,8 +494,7 @@ def list_offers(
     Sold-out and cancelled offers are omitted rather than greyed out: the list
     is "what you can still get tonight", and chunk 4 has no empty-stock state.
     """
-    # MEH-3219 (B17): never use a visitor's exact point — ~1 km is enough.
-    lat, lng = round_coord(lat), round_coord(lng)
+    lat, lng = round_coord(lat), round_coord(lng)  # MEH-3219: ~1 km, never exact
     today = israel_today()
     q = (
         db.query(RescueOffer)
@@ -1124,9 +1124,7 @@ def create_review(
             detail="אפשר לדרג רק אחרי שקיבלתם את הסל",
         )
 
-    from app.services.image_ownership import assert_own_new_images  # MEH-3247
-
-    assert_own_new_images(current_user, body.photo_url)
+    assert_own_new_images(current_user, body.photo_url)  # MEH-3247
     review = RescueReview(
         order_id=order.id,
         rating=body.rating,

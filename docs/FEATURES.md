@@ -67,6 +67,7 @@ left in v1" vs "what's planned for v2".
 | `/messages` | Messages between visitors and businesses |
 | `/settings` | Profile, security, notifications, delete account |
 | `/registration/[token]` | Cancel an event registration from the confirmation email (noindex) |
+| `/newsletter/confirm` | Newsletter double opt-in: the link in the confirm email lands here (MEH-3300, #4636) |
 | `/newsletter/unsubscribe` | Newsletter unsubscribe |
 | `/delivery-waitlist/unsubscribe` | Leave a delivery-area waitlist |
 | `/unsubscribe/weekly` | Stop the weekly owner summary email (MEH-3079) |

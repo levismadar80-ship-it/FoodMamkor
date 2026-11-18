@@ -149,14 +149,17 @@ def test_the_runtime_role_reads_and_writes_rows(runtime_role):
     _, as_role = runtime_role
     with as_role.connect() as conn:
         conn.execute(text("SELECT count(*) FROM producers")).scalar_one()
-        conn.execute(
+        inserted = conn.execute(
             text(
                 "INSERT INTO newsletter_subscribers (id, email) VALUES (gen_random_uuid(), :e)"
             ),
             {"e": f"{uuid.uuid4().hex[:8]}@example.com"},
         )
-        conn.execute(text("UPDATE newsletter_subscribers SET email = email"))
-        conn.execute(text("DELETE FROM newsletter_subscribers"))
+        assert inserted.rowcount == 1
+        updated = conn.execute(text("UPDATE newsletter_subscribers SET email = email"))
+        assert updated.rowcount >= 1
+        deleted = conn.execute(text("DELETE FROM newsletter_subscribers"))
+        assert deleted.rowcount >= 1
 
 
 def test_the_runtime_role_can_switch_to_the_chat_reader(runtime_role):
