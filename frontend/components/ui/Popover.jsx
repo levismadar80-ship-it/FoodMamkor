@@ -370,7 +370,9 @@ export default function Popover({
           <button
             type="button"
             aria-label={closeLabel}
-            data-testid={contentTestId ? `${contentTestId}-close` : undefined}
+            // Prefix, not suffix: E2E counts panels with
+            // [data-testid^="badge-tooltip-"], which a suffix would match.
+            data-testid={contentTestId ? `close-${contentTestId}` : undefined}
             onClick={() => {
               setOpen(false);
               triggerRef.current?.focus();

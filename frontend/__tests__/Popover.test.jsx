@@ -137,7 +137,7 @@ describe("ui/Popover", () => {
         renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
         const trigger = screen.getByText("פתחי");
         fireEvent.click(trigger);
-        const close = screen.getByTestId("pop-content-close");
+        const close = screen.getByTestId("close-pop-content");
         expect(close).toHaveAttribute("aria-label", "סגור");
         fireEvent.click(close);
         expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
@@ -152,14 +152,14 @@ describe("ui/Popover", () => {
       try {
         renderPopover({ sheetOnMobile: true });
         fireEvent.click(screen.getByText("פתחי"));
-        expect(screen.queryByTestId("pop-content-close")).not.toBeInTheDocument();
+        expect(screen.queryByTestId("close-pop-content")).not.toBeInTheDocument();
       } finally {
         restore();
       }
       cleanup();
       renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
       fireEvent.click(screen.getByText("פתחי"));
-      expect(screen.queryByTestId("pop-content-close")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("close-pop-content")).not.toBeInTheDocument();
     });
 
     it("backdrop click closes the sheet; Esc still returns focus to trigger", () => {
