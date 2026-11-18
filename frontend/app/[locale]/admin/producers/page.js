@@ -140,6 +140,8 @@ function ProducersAdminPage() {
         incompleteCount={h.incompleteCount}
         reviewDueOnly={h.reviewDueOnly}
         setReviewDueOnly={h.setReviewDueOnly}
+        staleOnly={h.staleOnly}
+        setStaleOnly={h.setStaleOnly}
         onSearch={h.loadAllProducers}
         onExport={h.exportExcel}
       />
