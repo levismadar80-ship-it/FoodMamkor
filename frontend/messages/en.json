@@ -3563,6 +3563,20 @@
     }
   },
   "reviews": {
+    "report": {
+      "menu_aria": "Options for {user}'s review",
+      "report_link": "Report this review",
+      "dialog_title": "Report a review",
+      "dialog_intro": "What's wrong with this review? We'll check it and decide whether to remove it.",
+      "reason_fake": "Looks fake or not based on a real experience",
+      "reason_abusive": "Offensive or abusive language",
+      "reason_personal": "Reveals personal details",
+      "reason_irrelevant": "Not about this business, or spam",
+      "reason_other": "Something else",
+      "details_label": "More details (optional)",
+      "details_required": "Tell us briefly what's wrong",
+      "success_toast": "Thanks, we got your report and will check it soon."
+    },
     "section_heading": "What customers say",
     "anonymous_fallback": "Customer",
     "star_aria": "{value, plural, one {1 star} other {{value} stars}}",

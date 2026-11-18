@@ -181,6 +181,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer detail — vacation banner + sidebar dim + sticky bar vacation state | `producer/[id]/ProducerDetail.jsx` |
 | ✅ | v1 | ImageGallery compact placeholder (emoji+initials, h-120px) | `frontend/components/ImageGallery.jsx` |
 | ✅ | v1 | Producer reviews + star ratings (1 review per user, upsert) | `frontend/components/ProducerReviews.jsx` |
+| ✅ | v1.5.1 | Report a review — ⋮ on each review card (public page + owner dashboard), reason list, email to admin, no automatic action (MEH-3260) | `frontend/components/ReviewReportMenu.jsx` |
 | ✅ | v1 | Image gallery with keyboard nav + 44px touch targets | `frontend/components/ImageGallery.jsx` |
 | ✅ | v1 | Slug-based producer URLs (`/cow-farm-name`) | `frontend/app/[slug]/page.js` |
 | ✅ | v1 | "מהמטבח של השכן" — dedicated `/neighbor` page | `frontend/app/neighbor/NeighborClient.jsx` |

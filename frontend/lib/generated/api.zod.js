@@ -7000,6 +7000,17 @@ export const ReportProducerInfoReportsProducerInfoPostResponse = /*#__PURE__*/ z
 
 
 /**
+ * MEH-3260: email the admin about one review. 204, no automatic action.
+ *
+ * 404 «ביקורת לא נמצאה» when the review is not a visible review of this
+ * business (wrong business, hidden, deleted). A repeat of the same report
+ * from the same IP within 24 h answers 204 and sends nothing.
+ * @summary Report Review
+ */
+export const ReportReviewReportsReviewPostResponse = /*#__PURE__*/ zod.void()
+
+
+/**
  * Today's bags that still have stock. Public — no auth.
  *
  * Sold-out and cancelled offers are omitted rather than greyed out: the list

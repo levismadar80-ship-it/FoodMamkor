@@ -83,6 +83,7 @@ graph TD
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated · JWT optional · MEH-3221<br/>no user_id · server-shortened user_name · is_mine]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited<br/>MEH-3223: emails admin_email (open count)]
     GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
+    GProducer --> ReportReview[POST /reports/review<br/>🌐 rate-limited 5/day<br/>MEH-3260 email-only, repeat collapsed]
 ```
 
 ## 3. Auth + account self-service

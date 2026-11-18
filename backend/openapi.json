@@ -15583,6 +15583,64 @@
         "title": "ReviewReplyUpdate",
         "type": "object"
       },
+      "ReviewReportCreate": {
+        "description": "MEH-3260: «דיווח על ביקורת» — emailed to the admin, no DB row, no\nautomatic action. `details` is optional except for reason \"other\".",
+        "properties": {
+          "details": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "producer_slug": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Producer Slug",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "fake",
+              "abusive",
+              "personal",
+              "irrelevant",
+              "other"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "reporter_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reporter Email"
+          },
+          "review_id": {
+            "format": "uuid",
+            "title": "Review Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_slug",
+          "review_id",
+          "reason"
+        ],
+        "title": "ReviewReportCreate",
+        "type": "object"
+      },
       "ReviewsPage": {
         "properties": {
           "page": {
@@ -28066,6 +28124,46 @@
           }
         },
         "summary": "Report Producer Info",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/reports/review": {
+      "post": {
+        "description": "MEH-3260: email the admin about one review. 204, no automatic action.\n\n404 «ביקורת לא נמצאה» when the review is not a visible review of this\nbusiness (wrong business, hidden, deleted). A repeat of the same report\nfrom the same IP within 24 h answers 204 and sends nothing.",
+        "operationId": "report_review_reports_review_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewReportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Report Review",
         "tags": [
           "reports"
         ]

@@ -9,8 +9,10 @@ Does NOT: persist reports — that is the DB-backed abuse-report flow in
 Related:  routers/reports.py:24 (abuse report, DB-persisted, auth'd),
           services/auth_emails.py:40-73 (RTL email skeleton mirrored here),
           schemas/schemas.py ProducerInfoReportCreate.
-History:  MEH-1443 (creation). v1.1 (MEH-1426) will add type=review on the
-          same endpoint once the reviews gate lands.
+History:  MEH-1443 (creation). MEH-3260: POST /reports/review — a visitor
+          reports one review; same email-only shape, its own route (the
+          wrong-info body requires a free-text message, a review report a
+          reason), email built in services/review_reports.py.
 """
 
 from html import escape as html_escape
@@ -19,11 +21,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user_optional
 from app.config import settings
 from app.database import get_db
-from app.models import Producer
-from app.rate_limit import limiter
-from app.schemas.schemas import ProducerInfoReportCreate
+from app.models import Producer, ProducerReview, User
+from app.rate_limit import get_real_client_ip, limiter
+from app.schemas.schemas import ProducerInfoReportCreate, ReviewReportCreate
+from app.services import review_reports
 from app.services.email import send_email
 from app.services.email_branding import email_logo_html
 
@@ -118,6 +122,70 @@ def report_producer_info(
     # MEH-2952: a report about a seeded test business is not mailed.
     send_email(
         recipient,
+        subject,
+        text_body,
+        html=html_body,
+        test_cause=bool(producer.is_test),
+    )
+    return Response(status_code=204)
+
+
+@router.post("/reports/review", status_code=204)
+@limiter.limit("5/day")  # MEH-3260: same budget as the wrong-info report
+def report_review(
+    request: Request,  # first param — slowapi reads it via introspection
+    data: ReviewReportCreate,
+    user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+) -> Response:
+    """MEH-3260: email the admin about one review. 204, no automatic action.
+
+    404 «ביקורת לא נמצאה» when the review is not a visible review of this
+    business (wrong business, hidden, deleted). A repeat of the same report
+    from the same IP within 24 h answers 204 and sends nothing."""
+    producer = _resolve_producer(db, data.producer_slug)
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    review = (
+        db.query(ProducerReview)
+        .filter(
+            ProducerReview.id == data.review_id,
+            ProducerReview.producer_id == producer.id,
+            ProducerReview.is_hidden.is_(False),
+        )
+        .first()
+    )
+    if not review:
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+
+    if review_reports.is_repeat(get_real_client_ip(request), str(review.id)):
+        return Response(status_code=204)
+
+    if user is None:
+        reporter = "guest"
+    elif user.producer_id is not None and str(user.producer_id) == str(producer.id):
+        reporter = "owner"
+    else:
+        reporter = "user"
+
+    author = db.query(User).filter(User.id == review.user_id).first()
+    subject, text_body, html_body = review_reports.build_email(
+        review_reports.ReviewReportMail(
+            business=producer.name or "",  # type: ignore[arg-type]
+            slug=data.producer_slug,
+            reason=data.reason,
+            reporter=reporter,
+            reporter_email=data.reporter_email,
+            details=data.details,
+            review_author=(author.name if author and author.name else "—"),  # type: ignore[arg-type]
+            review_stars=int(review.stars),
+            review_body=review.body or "",  # type: ignore[arg-type]
+            admin_url=f"{settings.frontend_url.rstrip('/')}/admin/reviews",
+            review_id=str(review.id),
+        )
+    )
+    send_email(
+        settings.contact_email or settings.admin_email,
         subject,
         text_body,
         html=html_body,

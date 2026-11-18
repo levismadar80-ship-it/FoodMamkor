@@ -915,7 +915,7 @@ def admin_list_reviews(
             conflict="owner" if is_owner else ("competitor" if is_competitor else None),
             # MEH-3259: the owner reply + its verdict.
             reply=r.reply,
-            reply_at=_iso_or_none(r.reply_at),  # type: ignore[arg-type]
+            reply_at=_iso_or_none(r.reply_at),
             reply_ai_moderation_status=r.reply_ai_moderation_status,
         )
         for r, is_owner, is_competitor in rows

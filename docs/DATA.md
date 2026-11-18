@@ -1798,6 +1798,15 @@ POST /reports/producer-info    🌐 public, rate-limited 5/day/IP — visitor re
                                Body {producer_slug, message(1..1000), reporter_email?}. Resolves producer by slug
                                OR uuid id (else 404). Emails admin (RTL HTML, message escaped); NO DB persist. 204.
                                MEH-1443. Distinct from the DB-backed abuse reports above.
+POST /reports/review           🌐 public (optional auth), rate-limited 5/day/IP — MEH-3260 «דיווח על ביקורת».
+                               Body {producer_slug, review_id, reason: fake|abusive|personal|irrelevant|other,
+                               details?(≤1000, required for other), reporter_email?}. 404 «ביקורת לא נמצאה» unless
+                               the review is a visible review of that business. Emails admin: subject
+                               «מהמקור - דיווח על ביקורת: {business}», reason, «מי דיווחה: אורחת / משתמשת רשומה /
+                               בעלת העסק», the review text, the review id, a link to /admin/reviews. Same IP + same
+                               review within 24 h → 204, no second email; the first report wins even if the reason
+                               changed (in-memory, capped at 5,000 keys). NO DB row, no
+                               automatic action. 204.
 ```
 
 ### Marketing (`app/routers/marketing.py`)
