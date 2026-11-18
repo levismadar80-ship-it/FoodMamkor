@@ -856,7 +856,6 @@
             "lactose_free": "Lactose-free",
             "no_added_sugar": "No added sugar"
           },
-          "sheet_open_aria": "Details about {name}",
           "facts": {
             "ingredients_heading": "Ingredients",
             "allergens_heading": "Allergens",

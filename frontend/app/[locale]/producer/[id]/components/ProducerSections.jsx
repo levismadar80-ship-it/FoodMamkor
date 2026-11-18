@@ -99,7 +99,7 @@ const PRODUCTS_PREVIEW_DESKTOP = 8;
 const SIGNATURE_SHELL_CLASS =
   "mb-5 flex items-center gap-4 bg-surface-card border border-accent/40 rounded-2xl p-3.5 shadow-sm";
 
-function SignatureShell({ product, onOpen, ariaLabel, children }) {
+function SignatureShell({ product, onOpen, children }) {
   if (!product) {
     return <div className={SIGNATURE_SHELL_CLASS}>{children}</div>;
   }
@@ -107,7 +107,6 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
     <button
       type="button"
       onClick={() => onOpen(product)}
-      aria-label={ariaLabel}
       data-testid="signature-product-trigger"
       className={`${SIGNATURE_SHELL_CLASS} w-full text-start transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40`}
     >
@@ -435,9 +434,6 @@ export default function ProducerSections({
             <SignatureShell
               product={signatureProduct}
               onOpen={openSheetFor}
-              ariaLabel={t("producer.detail.sections.products.sheet_open_aria", {
-                name: producer.top_product_name || "",
-              })}
             >
               <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0 rounded-xl overflow-hidden bg-background">
                 {signatureImg ? (
@@ -531,15 +527,14 @@ export default function ProducerSections({
                   // MEH-1901: the row is the trigger for the product sheet, so
                   // it is a real <button> (keyboard + AT reachable), not a div
                   // with a click handler. min-h-[96px] already clears the 44px
-                  // tap-target floor. Its accessible name is the product name;
-                  // the visible children stay exactly as they were.
+                  // tap-target floor. MEH-3271: no aria-label — its accessible
+                  // name is its visible text (name, price, description), so a
+                  // voice-control user can say what they see (WCAG 2.5.3;
+                  // «פרטים על X» replaced all of it, axe 4.14 label-content-name-mismatch).
                   <button
                     key={product.id}
                     type="button"
                     onClick={() => openSheetFor(product)}
-                    aria-label={t("producer.detail.sections.products.sheet_open_aria", {
-                      name: product.name,
-                    })}
                     data-testid="product-row"
                     className={`${desktopOnly ? "hidden md:flex" : "flex"} w-full text-start items-center gap-3 py-2 min-h-[96px] border-b border-border transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40`}
                   >
