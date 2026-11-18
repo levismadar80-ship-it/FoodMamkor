@@ -198,7 +198,7 @@ function fitName(ctx, text, maxWidth) {
   return { size: min, lines };
 }
 
-export function roundRect(ctx, x, y, w, h, r) {
+function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
