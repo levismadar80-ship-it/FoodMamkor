@@ -636,8 +636,9 @@ class TestCommitLifecycle:
         assert resp.status_code == 404
 
     def test_commit_rejected_when_closed(self, client, db):
+        # MEH-3289: funded is joinable now; fulfilled / cancelled are closed.
         producer, _ = _producer_user(db)
-        gb = _make_group_buy(db, producer, status="funded")
+        gb = _make_group_buy(db, producer, status="fulfilled")
         user = make_user(db, email="buyer2@test.com")
         resp = client.post(
             f"/group-buys/{gb.id}/commit",

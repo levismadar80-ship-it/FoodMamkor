@@ -4,6 +4,9 @@ on-site sign-ups it stores.
 
 Purpose:  - registered_counts(): active on-site sign-ups per item, in ONE query
             for a whole list (the list routes would otherwise go N+1);
+          - refuse_too_few_places(): MEH-2871 — the places cannot drop
+            below the people already signed up on the site (MEH-3310: a
+            cancelling edit is exempt);
           - method_problem(): the prerequisite each method needs before an
             owner may pick it — a mobile for whatsapp (a landline opens wa.me
             with no recipient, the bug that started this), a phone for phone,
@@ -12,7 +15,7 @@ Does NOT: decide visibility or capacity (routers/registrations.py does), or
           send anything.
 Related:  app/routers/registrations.py, app/routers/events.py,
           app/routers/experiences.py
-History:  MEH-2763 (creation)
+History:  MEH-2763 (creation); MEH-3310 + MEH-2871 (one cap rule, 422)
 """
 
 from __future__ import annotations
@@ -66,6 +69,10 @@ def refuse_too_few_places(
     and a row cut below its sign-ups before this rule must stay editable."""
     new_max = changes.get("max_participants")
     if new_max is None or new_max == stored_max:
+        return
+    # MEH-3310: an edit that also cancels the item cancels every sign-up with
+    # it (MEH-3227), so its places no longer have anyone to strand.
+    if changes.get("is_active") is False:
         return
     item_id = event_id or experience_id
     counts = registered_counts(

@@ -201,6 +201,12 @@ producers (
   -- guessed at. Readers fall back to top_product_name, which is unchanged and
   -- still the only writer until the switch step. Revision f4b1c8e0a297.
   top_product_id uuid nullable references products(id) on delete set null,
+  -- MEH-3339: optional second phone + label (migration c3e8a1f05d72, expand-only).
+  -- Public on ProducerDetailOut as one text line «{label}: {number}» («טלפון נוסף»
+  -- when unlabelled). Every CTA, phone verification and WhatsApp notification
+  -- stays on `phone`. Owner PUT /producers/me + admin PUT; label without number → 422.
+  secondary_phone       VARCHAR(20) NULL,
+  secondary_phone_label VARCHAR(30) NULL,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
@@ -287,6 +293,8 @@ products       (id, producer_id FK, name, description,
                 is_low_carb Boolean NOT NULL DEFAULT FALSE,
                 ingredients Text NULL,                           -- MEH-2662: owner-declared free-text ingredient list; NULL = not filled
                 price_unit String(8) NOT NULL DEFAULT 'unit',    -- MEH-3218: unit | kg | 100g (CHECK products_price_unit_check). The price itself stays price_min/price_max; min == max is an exact price
+                is_draft Boolean NOT NULL DEFAULT false,         -- MEH-2312 (b1d19ee0e8c1): an admin-imported product waiting for approval. Invisible to every public read: the Producer.products relationship filters it (page, list, ?q=, diet/pickup .any(), favorites) and search.py / producer_listing.py has_product filter it too; the owner's own list / edit / reorder / featured / recipe-link skip it
+                source_image_url Text NULL,                      -- MEH-2312: the source store's image URL, stored only (MEH-1184 pending); never on a public schema, never uploaded
                 is_orderable Boolean NOT NULL DEFAULT FALSE,     -- MEH-3218: the owner opts each product into on-site ordering
                 in_stock Boolean NOT NULL DEFAULT TRUE,          -- MEH-3218
                 contains_alcohol Boolean NOT NULL DEFAULT FALSE, -- MEH-3218
@@ -350,6 +358,7 @@ producer_reviews (
   created_at,
   source varchar(20) NOT NULL DEFAULT 'click' CHECK (source IN ('click','invite_link')),  -- MEH-1428: how the contact gate was passed — 'click' (a contact/WA click row) | 'invite_link' (signed "request a review" token). Revision 3f9a7c2e5d18 (ck_producer_reviews_source)
   ai_moderation_status varchar(16) NULL CHECK (ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-2349: AI verdict on the body at the last write. NULL = no verdict: rows that predate the column, or a fail-open (MEH-2390 — it was stored as APPROVED and so never re-checked on an unchanged re-save; the review still publishes, its signal is the Sentry report). REJECTED is never stored (422). Informational — a FLAGGED review still publishes. Revision c4e81a2f9b6d
+  reply_ai_moderation_status varchar(16) NULL CHECK (reply_ai_moderation_status IN ('APPROVED','FLAGGED')),  -- MEH-3259: AI verdict on the owner `reply` at its last write; same NULL rules as ai_moderation_status (no reply, fail-open, or predates the column). REJECTED is a 422 and never stored. An unchanged reply keeps its verdict. Revision f2c7a9d4b1e6
   edited_after_hidden_at timestamp NULL,  -- MEH-2381: the author's last change to body or stars while is_hidden. NULL = not edited since the admin last hid/unhid it; PUT /hide (also on an already-hidden row) and /unhide clear it. Admin-only (AdminReviewOut). Revision d7a3f5c1e2b8
   UNIQUE(producer_id, user_id)   -- one review per user per producer
 )
@@ -850,7 +859,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > (declared or received). 408 / 413 close the connection.
 
 > **MEH-3022 — per-business caps.** Creates answer **409** with a Hebrew
-> `detail` once a business holds the maximum: products 100, recipes 50,
+> `detail` once a business holds the maximum: products 100 (MEH-2312: drafts count), recipes 50,
 > locations 20, upcoming events 30, upcoming/recurring experiences 30, open or
 > funded group buys 30. `PUT /producers/me` refuses more than 20 `images` or
 > 300 delivery cities/areas with a Hebrew 422. All numbers live in
@@ -998,6 +1007,27 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > nothing. All mail is a BackgroundTask (fail-open, `test_cause` for a test
 > business).
 >
+> **MEH-3312 — the evening-before reminder (2026-11-15).** Migration
+> `b8e4f2a6c9d1` adds `registrations.reminder_sent_at` (TIMESTAMP NULL, naive
+> UTC). A daily job at 17:00 Israel (`REGISTRATION_REMINDER_CRON`, Sentry
+> heartbeat `registration-reminder-daily`) mails every `registered` sign-up to
+> an active event, or an approved, active, non-recurring experience, dated
+> tomorrow on the Israel clock: «תזכורת: "{title}" מחר», with time, place and
+> the cancel link. Rows are stamped and committed before sending, so a rerun
+> sends nothing. Recurring workshops are skipped until a sign-up carries its
+> occurrence date (MEH-3264). Service: `app/services/registration_reminders.py`.
+>
+> **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
+> `max_participants` below the item's active on-site sign-ups → **422**
+> «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
+> `services/registrations.refuse_too_few_places`), nothing written. Not checked
+> when the value equals the stored one, or when the same PUT cancels the item:
+> those sign-ups are cancelled with it, so nobody is left holding a place. Switching
+> `registration_method` away from `site_form` on an active item keeps every
+> sign-up and mails each registrant once («עדכון על ההרשמה ל"{title}"», with the
+> cancel link). A PUT that also moves the date sends only the «moved» email. Both dashboards keep showing the list while `registered_count`
+> > 0. No schema change.
+>
 > **MEH-2502 — the admin edit cannot change status.** `PUT
 > /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
 > סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status
@@ -1033,6 +1063,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
 
+> **MEH-3289 — joining continues after the minimum (2026-11-15):** `POST /group-buys/{id}/commit` accepts status `open` **or** `funded` (was `open` only), still refused past the deadline (400) and at `max_participants` (400 «קבוצת הרכישה מלאה»). A join into a `funded` group leaves it `funded` and emails **only the joiner** the funded email (`send_funded_notifications(..., late_joiner=True)`: no business email, no re-send to earlier participants). Before this, `max_participants` could never be reached, because the first commit at the minimum closed joining. `DELETE /group-buys/{id}/commit` already allowed `funded`. No schema change.
+
 > **MEH-3311 — a funded group buy that drops below its goal (2026-11-15).** Migration `a7d3e9c1b5f2` adds two nullable naive-UTC columns to `group_buys`: `below_goal_notified_at`, `refunded_notified_at`. When `DELETE /group-buys/{id}/commit` reverts `funded → open` on a group whose funded email went out (`funded_notified_at` set), everyone who stayed gets one email «מהמקור — הקבוצה "{title}" ירדה מתחת ליעד» and `below_goal_notified_at` is stamped. When a later join re-crosses the minimum, every participant gets the funded email again (not the business) and `refunded_notified_at` is stamped. Each stamp is set once, so a flapping group mails a participant at most three times in all; `funded_notified_at` stays one-way (MEH-1651). The account-deletion revert (`group_buy_delist.withdraw_user_commits`) sends nothing. Service: `app/services/group_buy_goal_flap.py`.
 
 ### Auth (`app/routers/auth.py`)
@@ -1049,7 +1081,7 @@ POST   /auth/check-password      public  — MEH-306 stateless policy preview (3
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
-PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED)
+PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); after the commit the OLD address gets a notice that the address changed (no name in the greeting; new address shown as `n***@d***.tld`; link to /contact)
 ```
 
 ### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)
@@ -1220,6 +1252,17 @@ GET    /producers/by-slug/{slug}                  public
                                                or renamed-away slug → 404. Middleware rewrites (no status — a 410 rewrite shows Vercel's
                                                own GONE page) to /[locale]/business-gone → ProducerGone, 200 + noindex.
                                                Not via [slug]: its Data Cache keeps the last 200 after a delete (MEH-2576).
+                                               MEH-3336: a slug RENAMED away from a business that is still public →
+                                               404 {detail: {code: "slug_moved", message, slug: <current>}}; the
+                                               middleware answers the browser 301 → /<current> (locale prefix kept,
+                                               query kept, only a-z0-9- slugs followed). Every old slug points at the
+                                               business, so renames chain. A renamed business that is no longer
+                                               public → plain 404. Slugs are minted Latin (a-z0-9-, ≤40): Instagram
+                                               handle, else the name transliterated; collision → town appended
+                                               (`-2` only as the last resort); a typed slug must be Latin (422
+                                               `slug_not_latin`), checked only when the slug CHANGES so a legacy
+                                               Hebrew slug stays editable. A name that transliterates to nothing
+                                               (all-Arabic, no handle) → NULL slug, /producer/{id}.
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
@@ -1251,6 +1294,14 @@ PUT    /producers/me                              producer — MEH-999: license 
                                                   and edit vegan_scope the next day unobserved. Fail-open at the task boundary
                                                   (_sensitive_edit_task), because the notifier's preamble sits outside its own
                                                   per-channel try blocks and a raising BackgroundTask would break the owner's 200.
+                                                  MEH-3261 (D11): for an APPROVED business, a changed description / short_description /
+                                                  owner_bio (compared after strip) goes through the AI check first
+                                                  (services/approved_edit_moderation.py) — REJECTED → 422 «הטקסט אינו עומד בהנחיות
+                                                  הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב.» and nothing in the PUT is saved; fail-open
+                                                  saves. One admin ping «📝 עסק מאושר עדכן תוכן» per save that changed any of those
+                                                  three or the `images` set (a reorder alone does not ping), « — טקסט סומן ע״י AI» when FLAGGED.
+                                                  Product POST/PUT of an approved business get the same check on name/description/
+                                                  ingredients (422 on REJECTED; ping only when FLAGGED). AI call: 10 s timeout, 1 retry.
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min); MEH-2122 B: 503 «לא הצלחנו לשלוח את הקוד בוואטסאפ כרגע…» when WhatsApp is configured and the send failed (test rows and unconfigured envs stay 200)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min). MEH-3245: the code must have been sent to the CURRENT number (a code for an earlier number → 400)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
@@ -1313,6 +1364,14 @@ DELETE /producers/me/locations/{id}               producer  — delete. Cross-ow
                                                               automatically — that had no kind filter, so deleting the primary
                                                               could make a pickup point the business's navigation target.
                                                               Deleting the last row is allowed.
+GET    /admin/producers/{producer_id}/locations   admin     — MEH-3333: the same CRUD for any business, mounted on
+POST   /admin/producers/{producer_id}/locations   admin       the admin edit page (LocationsEditor basePath). Same
+PUT    /admin/producers/{producer_id}/locations/{location_id}  admin  invariants, imported from producer_me_locations.py
+DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city label, branch-only primary — also on a
+                                                              kind edit of the primary row —, single primary, city
+                                                              sync). A location of ANOTHER business under the path →
+                                                              404 (not 403); unknown business → 404. 120/hr on writes.
+                                                              No admin "sensitive edit" ping — the actor is the admin.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
@@ -1441,7 +1500,8 @@ POST   /registrations/{token}/cancel      public — idempotent; first cancel em
 
 Emails (`services/registration_emails.py`, fail-open, queued after commit):
 visitor confirmation with the cancel link; owner «הרשמה חדשה» with name,
-phone, email and «נשארו N מקומות»; owner «ביטול הרשמה». A home experience's
+phone, email and «נשארו N מקומות»; owner «ביטול הרשמה»; visitor «תזכורת:
+"…" מחר» the evening before (MEH-3312, daily job). A home experience's
 address never goes in the visitor email (city only, MEH-1417).
 
 No per-event moderation. An **approved** producer publishes and it's live;
@@ -1612,8 +1672,8 @@ DELETE /admin/home-products/{id}               admin
 # Users
 GET    /admin/users                            admin — search · rows carry rescue_active_no_shows + rescue_blocked (MEH-3226)
 PUT    /admin/users/{id}/role                  admin. role=consumer **or role=admin** on an account with a linked business (producer_id set) → 409 (MEH-3376): an owner is never an admin, and is not demoted while the business is linked; detach the owner first.
-GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at>. Newest first.
-                                               { items: [{ id, actor_id, action, target_type, target_id, details, created_at }] }.
+GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at> [&before_id=<uuid>]. Newest first. With both, a keyset cursor on (created_at, id), so a tie on created_at at a page edge is not skipped.
+                                               { items: [{ id, actor_id, actor_email, action, target_type, target_id, details, created_at }] }. actor_email is None when the account is gone.
                                                The stored IP is not returned.
 POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
@@ -1684,6 +1744,14 @@ GET    /producers/{slug}/recipes            public    — published+approved onl
 GET    /producers/{slug}/recipes/{id}       public    — 404 if not published+approved
 
 # Admin (require_admin)
+POST   /admin/producers/{producer_id}/product-import          admin — MEH-2312: rows [{name, description, price, unit, source_image_url}] (≤100) →
+                                                               DRAFT products. Each row validated through ProductCreate (name, price 1..10000);
+                                                               bad rows → `invalid[]`, an existing name (draft or published, case/space-folded)
+                                                               or a repeat in the batch → `skipped_duplicates[]`. The cap counts drafts (409).
+GET    /admin/producers/{producer_id}/product-drafts          admin — the business's drafts (incl. source_image_url, admin-only)
+POST   /admin/producers/{producer_id}/product-drafts/approve  admin — {product_ids?} → publish those drafts, or all; filtered on producer_id
+                                                               AND is_draft, so another business's ids match nothing. No "new product" alerts.
+DELETE /admin/producers/{producer_id}/product-drafts/{product_id}  admin — a draft only (a published product → 404)
 GET    /admin/recipes?moderation_status=…   admin     — filter or all
 GET    /admin/recipes/pending               admin     — queue (oldest first)
 POST   /admin/recipes/{id}/approve          admin     — sets published=true
@@ -1698,13 +1766,14 @@ GET    /producers/{id}/reviews   public (optional auth) — MEH-3221: items carr
 POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row from the last 90 days (older WhatsApp rows are purged and older contact rows lose `user_id`, MEH-3244) OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
-GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null, MEH-3258 `conflict` "owner" | "competitor" | null)
+GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null, MEH-3259 `reply` / `reply_at` / `reply_ai_moderation_status`, MEH-3258 `conflict` "owner" | "competitor" | null)
                                  MEH-3258: a review whose author NOW owns the business, or owns one sharing a category (the MEH-2076 intersection), is left out of both public GETs, `total`, `rating_counts` and the stored avg_rating/reviews_count. Computed per read (services/review_conflicts.py), never stored; is_hidden untouched. Rating recomputed on claim, registration upgrade, owner/admin category save, approval, and admin delete of the author's business (each fail-open, logged). Applies to any linked account, admin included, and to a business in any status (draft counts: the conflict is the ownership, not the listing). The owner's unreplied-reviews badge (services/owner_attention.py) uses the same filter
 PUT    /admin/reviews/{id}/hide  admin — is_hidden=true, edited_after_hidden_at=NULL, recompute aggregates (on a hidden row = "keep hidden", MEH-2381; optional ?seen=<the ISO value the page showed> → 409 {code: "review_changed"} when a newer edit landed)
 PUT    /admin/reviews/{id}/unhide admin — is_hidden=false, edited_after_hidden_at=NULL, recompute aggregates (MEH-2348)
+PUT    /admin/reviews/{id}/clear-reply admin — MEH-3259: reply, reply_at, reply_ai_moderation_status = NULL; the review itself is untouched; the business may reply again. No notification to the business (v1 gap)
 ```
 
-Unknown id on hide/unhide → **404 `{code: "review_not_found", message: "ביקורת לא נמצאה"}`**
+Unknown id on hide/unhide/clear-reply → **404 `{code: "review_not_found", message: "ביקורת לא נמצאה"}`**
 (MEH-2389). `/admin/reviews` reads `code` to drop a row deleted elsewhere.
 
 **MEH-2348 (sticky hide):** only the admin endpoints write `is_hidden`, so a
@@ -1737,6 +1806,15 @@ POST /reports/producer-info    🌐 public, rate-limited 5/day/IP — visitor re
                                Body {producer_slug, message(1..1000), reporter_email?}. Resolves producer by slug
                                OR uuid id (else 404). Emails admin (RTL HTML, message escaped); NO DB persist. 204.
                                MEH-1443. Distinct from the DB-backed abuse reports above.
+POST /reports/review           🌐 public (optional auth), rate-limited 5/day/IP — MEH-3260 «דיווח על ביקורת».
+                               Body {producer_slug, review_id, reason: fake|abusive|personal|irrelevant|other,
+                               details?(≤1000, required for other), reporter_email?}. 404 «ביקורת לא נמצאה» unless
+                               the review is a visible review of that business. Emails admin: subject
+                               «מהמקור - דיווח על ביקורת: {business}», reason, «מי דיווחה: אורחת / משתמשת רשומה /
+                               בעלת העסק», the review text, the review id, a link to /admin/reviews. Same IP + same
+                               review within 24 h → 204, no second email; the first report wins even if the reason
+                               changed (in-memory, capped at 5,000 keys). NO DB row, no
+                               automatic action. 204.
 ```
 
 ### Marketing (`app/routers/marketing.py`)
@@ -1844,7 +1922,7 @@ GET  /admin/outreach/metrics/summary
 
 ```
 GET  /search            public — q (max 100 chars), limit (1–20, default 8)
-                                 returns { producers, products, cities, categories }
+                                 returns { producers, products, cities, categories, corrected_query }
                                  rate-limited 60/minute per IP
 ```
 
@@ -1853,6 +1931,15 @@ GET  /search            public — q (max 100 chars), limit (1–20, default 8)
 matches the same three plus `city`, category names, product names + descriptions and
 delivery-area cities (`producer_listing._token_search_filter`). Both use the same
 per-token ilike patterns (`hebrew_search.token_patterns`, escaped).
+
+**Wrong keyboard layout, niqqud, final letters (MEH-3415).** The query is normalised
+first (`hebrew_search.normalise`: niqqud dropped, nothing else; a trailing regular
+letter also tries its final form). When the query as typed returns nothing, both
+endpoints re-read it on the other SI 1452 layout (`hebrew_search.layout_alternative`:
+`sca` → `דבש`, `נרקשג` → `bread`; ≥ 3 characters, no 1-character token, one script
+only) and run once more. `GET /search` then sets `corrected_query` to the
+word the results are for (`null` otherwise); `GET /producers?q=` serves the corrected
+results silently and logs the query as typed with the count served.
 
 ### Chat widget (`app/routers/chat.py`)
 
@@ -1882,6 +1969,11 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically
+POST /upload/owner-photo/{producer_id}  admin — MEH-3338: the same upload for the business in the PATH
+                                 (admin builds the page on the owner's behalf). Shared helper
+                                 `_store_owner_photo`: same size cap, magic-byte sniff, fixed slot.
+                                 Owner → 403 (she has the route above); unknown business → 404. 30/hr.
+                                 `ProducerAdminCreate` also accepts `owner_bio` (sanitized, ≤300).
 ```
 
 > **Destroying an old photo (MEH-3247).** Every post-commit cleanup
@@ -2009,7 +2101,7 @@ design). No env var, no retry, no Google.
 Critical:
 - `DATABASE_URL` — Railway Postgres reference
 - `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
-- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`admin_extra.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
+- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`services/account_guards.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
 - `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
 - `ENV` — `development|staging|production`
 - `CORS_ORIGINS` — comma-separated, production MUST set explicitly

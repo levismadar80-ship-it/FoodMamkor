@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import AdminProductImport from "@/components/admin/AdminProductImport";
 import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
@@ -163,6 +164,9 @@ export default function EditProducerPage() {
           </a>
         </p>
       )}
+      {/* MEH-2312: catalog import from the business's existing store → drafts
+          the admin approves. Any status: Sandra's page is approved and live. */}
+      <AdminProductImport producerId={String(id)} />
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );

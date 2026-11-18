@@ -161,7 +161,7 @@ funded on purpose: the owner fulfils or cancels it.
 | Thing | States | Written by |
 |---|---|---|
 | Recipe | `published` × `moderation_status` | owner, admin (`routers/producer_recipes.py`, `routers/admin_recipes.py`) |
-| Review | visible · hidden, plus the business's rating aggregate | author, owner reply, admin (`routers/reviews.py`) |
+| Review | visible · hidden, plus the business's rating aggregate; the owner reply carries its own AI verdict APPROVED · FLAGGED, cleared with the reply by `PUT /admin/reviews/{id}/clear-reply` (MEH-3259) | author, owner reply, admin (`routers/reviews.py`) |
 | WhatsApp message (`outbound_messages`) | accepted → sent → delivered / failed; a stuck `accepted` counts as undelivered | webhook (`routers/whatsapp_webhook.py`, `services/whatsapp.py`) |
 | Newsletter | subscribed (row) · gone | form, signed unsubscribe link (`routers/marketing.py`) |
 | Weekly summary to owners | on · opted out (one way, by link) | `routers/marketing.py` |
@@ -187,6 +187,7 @@ section above when it has transitions worth drawing.
 | `group_buys.status` | 5 |
 | `producer_recipes.moderation_status` | 6 |
 | `producer_reviews.ai_moderation_status` | 6 |
+| `producer_reviews.reply_ai_moderation_status` | 6 |
 | `outbound_messages.status` | 6 |
 | `billable_events.status` | 6 |
 | `business_billing.state` | "What does not exist" (no writer) |

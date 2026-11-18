@@ -86,6 +86,14 @@ class Producer(Base):
     lat = Column(Float)
     lng = Column(Float)
     phone = Column(String(20))
+    # MEH-3339: an optional second number, shown as one quiet text line
+    # ("{label}: {number}") on the public page. Every CTA (call, WhatsApp,
+    # sticky bar), phone verification and WhatsApp notifications stay on
+    # `phone` above. Same validation as `phone` (schemas). Paired migration:
+    # c3e8a1f05d72.
+    # DO NOT wire a CTA or a notification to secondary_phone — MEH-3339.
+    secondary_phone = Column(String(20), nullable=True)
+    secondary_phone_label = Column(String(30), nullable=True)
     instagram = Column(String(100))
     website = Column(String(200))
     whatsapp_group = Column(String(300), nullable=True)  # invite link
@@ -722,11 +730,19 @@ class Producer(Base):
     # broke 4 tests before the argument was added). The catalogue joins on the
     # child's owner column; the featured-product FK points the other way and
     # is a scalar, never a collection.
+    # MEH-2312: the relationship is the PUBLISHED catalog — an imported draft
+    # (`Product.is_draft`) is invisible to every reader that goes through
+    # `producer.products` (page, list, filters' `.any()`, counts, favorites).
+    # Drafts are reached only by explicit `query(Product)` in the admin import
+    # router. Deleting a business still removes its drafts: the FK is
+    # ON DELETE CASCADE.
+    # DO NOT drop the is_draft clause — it is the one gate in front of ~15 readers.
     products = relationship(
         "Product",
         back_populates="producer",
         cascade="all, delete-orphan",
         foreign_keys="Product.producer_id",
+        primaryjoin="and_(Producer.id == Product.producer_id, Product.is_draft.is_(False))",
     )
     delivery_areas = relationship(
         "DeliveryArea", back_populates="producer", cascade="all, delete-orphan"

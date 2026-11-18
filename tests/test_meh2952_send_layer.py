@@ -961,6 +961,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "producer.is_test — admin mail about a business page",
     ),
+    ("routers/report_info.py", "report_review", "send_email"): (
+        1,
+        BUS,
+        "producer.is_test — admin mail about a reported review (MEH-3260)",
+    ),
     ("routers/whatsapp_webhook.py", "_maybe_process_optout", "send_text"): (
         1,
         NONE,
@@ -1015,6 +1020,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         AUTH,
         "wrapper param ← user.is_test captured before delete",
+    ),
+    # MEH-3104: the notice to the OLD address after an email change.
+    ("services/auth_emails.py", "send_email_changed_notice", "send_email"): (
+        1,
+        AUTH,
+        "wrapper param ← user.is_test (users_me._queue_email_change_mails)",
     ),
     # MEH-2974: the invite itself. There is no `users` row yet — the whole
     # point of the flow — so the only is_test signal available is the
@@ -1168,6 +1179,16 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p.is_test or user.is_test",
     ),
+    (
+        "services/approved_edit_moderation.py",
+        "notify_admin_content_edit",
+        "send_text",
+    ): (1, OWN, "wrapper param ← _test_cause(producer, user) (MEH-3261)"),
+    (
+        "services/approved_edit_moderation.py",
+        "notify_admin_content_edit",
+        "send_email",
+    ): (1, OWN, "same"),
     ("services/page_freshness.py", "send_freshness_emails", "send_email"): (
         1,
         OWN,
@@ -1313,6 +1334,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "send_below_goal_emails",
         "send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3311)"),
+    (
+        "services/registration_emails.py",
+        "send_registration_reminder",
+        "send_email",
+    ): (1, CON, "wrapper param ← is_test_item(item) (MEH-3312)"),
     # --- registrations / rescue / submission ---
     (
         "services/registration_emails.py",
