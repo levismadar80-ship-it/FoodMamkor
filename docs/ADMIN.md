@@ -229,7 +229,8 @@ endpoints: `/admin/users`, `/admin/categories`, `/admin/pages/{slug}`,
 מודלים:
 - `AdminSetting(key, value)`
 - `StaticPage(slug, title, body)`
-- שדה `users.is_blocked` — login דוחה עם 403
+- שדה `users.is_blocked` — login דוחה עם 403. חסימה של הבעלים היחידה של בית עסק פעיל מורידה את העסק מהאתר (inactive, כמו השהיה), וביטול החסימה לא מחזיר אותו (MEH-2871)
+- שינוי תפקיד למשתמשת שמקושר אליה בית עסק נחסם ב-409 (MEH-2871)
 
 ## בדיקות אוטומטיות
 ```

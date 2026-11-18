@@ -603,7 +603,9 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     new_max = payload.get("max_participants", ex.max_participants)
     if touches_range and _min_above_max(new_min, new_max):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
-    refuse_too_few_places(db, payload, experience_id=ex.id)  # MEH-2871
+    refuse_too_few_places(  # MEH-2871
+        db, payload, experience_id=ex.id, stored_max=ex.max_participants
+    )
     _check_method_edit(db, ex, payload)
     # MEH-3180: only an edit that MAKES it a paid site sign-up asks.
     capabilities.require_paid_signup(

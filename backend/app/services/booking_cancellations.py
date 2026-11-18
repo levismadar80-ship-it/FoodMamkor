@@ -86,12 +86,13 @@ def _message(
     reg: Registration, item: Event | Experience, host_name: str
 ) -> RegistrantEmail:
     place = _event_place(item) if isinstance(item, Event) else _experience_place(item)
+    past_first = _is_recurring(item) and not _is_upcoming(item)
     return RegistrantEmail(
         title=item.title or "",  # type: ignore[arg-type]
-        # MEH-2871: a recurring experience's event_date is its FIRST occasion,
-        # often long past — the email names no date rather than a past one.
-        date_text="" if _is_recurring(item) else _date_text(item.event_date),  # type: ignore[arg-type]
-        time_text="" if _is_recurring(item) else _time_text(item.event_time),  # type: ignore[arg-type]
+        # MEH-2871: a recurring experience's event_date is its FIRST occasion;
+        # once that is past the email names no date rather than a past one.
+        date_text="" if past_first else _date_text(item.event_date),  # type: ignore[arg-type]
+        time_text="" if past_first else _time_text(item.event_time),  # type: ignore[arg-type]
         place=place,
         host_name=host_name,
         cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
@@ -356,11 +357,16 @@ def _is_recurring(item: Event | Experience) -> bool:
 
 
 def _is_upcoming(item: Event | Experience) -> bool:
-    # MEH-2871: sign-up to a recurring experience stays open after its first
-    # date (registrations.py), so its sign-ups are live after it too.
-    if _is_recurring(item):
-        return True
     return bool(item.event_date and item.event_date >= israel_today())
+
+
+def _signups_live(item: Event | Experience) -> bool:
+    """MEH-2871: sign-up to a recurring experience stays open after its first
+    date (registrations.py), so its sign-ups are live after it too. Used for
+    CANCELLING only: a "moved" email for a recurring item past its first date
+    would have no date to give, so ``notify_item_moved`` keeps
+    ``_is_upcoming``."""
+    return _is_recurring(item) or _is_upcoming(item)
 
 
 def cancel_item_signups(
@@ -372,7 +378,7 @@ def cancel_item_signups(
     """The business cancelled or is deleting ``item``: cancel its active
     sign-ups and mail each registrant. Before a delete — the cascade removes
     the rows. A past item is left alone (nobody is waiting on it)."""
-    if not _is_upcoming(item):
+    if not _signups_live(item):
         return 0
     host_name = _host_name_for(item)
     regs = [

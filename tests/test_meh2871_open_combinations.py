@@ -73,6 +73,20 @@ class TestBlockingTheOwner:
         assert _status(db, Producer, producer.id) == "approved"
         assert sent == []
 
+    def test_a_blocked_co_owner_does_not_keep_it_up(self, client, db, sent):
+        producer, owner = _business(db)
+        co = make_user(db, role="producer", email="co-owner@example.com")
+        co.producer_id = producer.id
+        co.is_blocked = True
+        db.commit()
+
+        r = client.post(
+            f"/admin/users/{owner.id}/block", headers=auth_header(_admin(db))
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["business_hidden"] is True
+        assert _status(db, Producer, producer.id) == "inactive"
+
     def test_unblocking_does_not_put_it_back(self, client, db, sent):
         producer, owner = _business(db)
         admin = _admin(db)
@@ -151,6 +165,22 @@ class TestFewerPlacesThanSignUps:
         assert r.status_code == 200, r.text
         assert r.json()["max_participants"] == 2
 
+    def test_an_unchanged_max_already_below_the_sign_ups_still_saves(self, client, db):
+        """The forms re-send max_participants on every save. A row cut below
+        its sign-ups before this rule must stay editable (reviewer finding)."""
+        producer, owner = _business(db)
+        ev = _event(db, producer, max_participants=1)
+        _signup(db, ev, "a@example.com")
+        _signup(db, ev, "b@example.com")
+
+        r = client.put(
+            f"/events/{ev.id}",
+            json={"title": "יום פתוח מחודש", "max_participants": 1},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["title"] == "יום פתוח מחודש"
+
     def test_workshop_below_the_sign_ups_is_refused(self, client, db):
         _producer, owner = _business(db)
         ex = _experience(db, owner, max_participants=6)
@@ -185,7 +215,9 @@ class TestRecurringWorkshopPastItsFirstDate:
         reg = _signup(db, ex, "regular@example.com")
 
         r = client.put(
-            f"/experiences/{ex.id}", json={"is_active": False}, headers=auth_header(owner)
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(owner),
         )
         assert r.status_code == 200, r.text
         assert _status(db, Registration, reg.id) == "cancelled"
@@ -209,13 +241,31 @@ class TestRecurringWorkshopPastItsFirstDate:
         assert r.status_code == 200, r.text
         assert _status(db, Registration, reg.id) == "cancelled"
 
+    def test_a_time_change_sends_no_dateless_moved_email(self, client, db, sent):
+        """Past its first date a recurring workshop has no date to announce,
+        so the "moved" email is not sent (reviewer finding)."""
+        _producer, owner = _business(db)
+        ex = self._recurring(db, owner)
+        reg = _signup(db, ex, "regular@example.com")
+
+        r = client.put(
+            f"/experiences/{ex.id}",
+            json={"event_time": "18:30"},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 200, r.text
+        assert _status(db, Registration, reg.id) == "registered"
+        assert [name for name, *_ in sent] == []
+
     def test_a_past_one_off_workshop_is_still_left_alone(self, client, db, sent):
         _producer, owner = _business(db)
         ex = _experience(db, owner, days=-10)
         reg = _signup(db, ex, "past@example.com")
 
         client.put(
-            f"/experiences/{ex.id}", json={"is_active": False}, headers=auth_header(owner)
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(owner),
         )
         assert _status(db, Registration, reg.id) == "registered"
         assert sent == []
@@ -249,12 +299,16 @@ class TestEmailWithoutADate:
         assert 'ביטל את "סדנת לחם" שתוכנן ל-יום שישי 20/11, ולכן' in line
 
     def test_cancelled_drops_the_clause_without_one(self, monkeypatch):
-        line = self._lines(monkeypatch, registration_emails.send_registrant_cancelled, "")
+        line = self._lines(
+            monkeypatch, registration_emails.send_registrant_cancelled, ""
+        )
         assert 'ביטל את "סדנת לחם", ולכן ההרשמה שלכם בוטלה.' in line
         assert "שתוכנן" not in line
 
     def test_delisted_drops_the_clause_without_one(self, monkeypatch):
-        line = self._lines(monkeypatch, registration_emails.send_registrant_delisted, "")
+        line = self._lines(
+            monkeypatch, registration_emails.send_registrant_delisted, ""
+        )
         assert 'ההרשמה שלכם ל-"סדנת לחם" בוטלה.' in line
         assert " ב-" not in line.split("ההרשמה שלכם")[1]
 
