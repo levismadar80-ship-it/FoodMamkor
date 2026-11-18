@@ -3629,7 +3629,7 @@
       "remove_recent_aria": "הסר {q} מהחיפושים האחרונים",
       "corrected_showing": "מציגים תוצאות עבור <strong>{word}</strong>",
       "corrected_typed": "הקלדתם <bdi>{original}</bdi> — אולי המקלדת הייתה באנגלית.",
-      "corrected_search_as_typed": "לחפש בכל זאת «{original}»"
+      "corrected_search_as_typed": "לחפש בכל זאת «<bdi>{original}</bdi>»"
     },
     "smart": {
       "loading": "טעינת תוצאות...",

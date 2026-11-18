@@ -204,7 +204,10 @@ export default function HeroSearch({
             : { q, limit: MAX_PER_SECTION },
           signal: controller.signal,
         })
-        .then((r) => setResults(r.data || EMPTY_RESULT))
+        // MEH-3415: remember which query these results answer, so the
+        // correction note never pairs one query's correction with another's
+        // text during the debounce.
+        .then((r) => setResults({ ...(r.data || EMPTY_RESULT), forQuery: q }))
         .catch(() => setResults(EMPTY_RESULT))
         .finally(() => setLoading(false));
     }, DEBOUNCE_MS);
@@ -426,11 +429,14 @@ export default function HeroSearch({
           className="absolute z-hero-suggestions top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl max-h-[70vh] overflow-auto text-start"
           dir="rtl"
         >
-          {!loading && results.corrected_query && (
+          {!loading && !asTyped && results.corrected_query && results.forQuery === trimmed && (
             <SearchCorrectionNote
               corrected={results.corrected_query}
               original={trimmed}
-              onSearchAsTyped={() => setAsTyped(true)}
+              onSearchAsTyped={() => {
+                setAsTyped(true);
+                setLoading(true);
+              }}
             />
           )}
           {loading && !hasAutoResults && (

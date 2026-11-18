@@ -115,6 +115,16 @@ describe("MEH-3415 — hero search explains a keyboard-layout correction", () =>
     expect(get.mock.calls.at(-1)[1].params.as_typed).toBeUndefined();
   });
 
+  it("hides the note as soon as the text changes, before the next answer", async () => {
+    const input = await typeQuery("sca");
+    expect(screen.getByTestId("hero-search-correction")).toBeTruthy();
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "scad" } });
+    });
+    // no flush: still inside the debounce, results are the old query's
+    expect(screen.queryByTestId("hero-search-correction")).toBeNull();
+  });
+
   it("skips the English-keyboard line when what was typed is Hebrew", async () => {
     get.mockImplementation(() =>
       Promise.resolve({ data: { ...HONEY, corrected_query: "bread" } }),

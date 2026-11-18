@@ -3629,7 +3629,7 @@
       "remove_recent_aria": "Remove {q} from recent searches",
       "corrected_showing": "Showing results for <strong>{word}</strong>",
       "corrected_typed": "You typed <bdi>{original}</bdi> — maybe the keyboard was set to English.",
-      "corrected_search_as_typed": "Search for “{original}” instead"
+      "corrected_search_as_typed": "Search for “<bdi>{original}</bdi>” instead"
     },
     "smart": {
       "loading": "Loading results...",
