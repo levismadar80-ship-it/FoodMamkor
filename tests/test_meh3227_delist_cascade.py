@@ -522,9 +522,14 @@ class TestReviewCells:
             "c@example.com",
         ]
 
-    def test_a_recurring_experience_with_a_past_date_is_left(self, client, db, sent):
-        # Sign-up closes once event_date passes, even for a recurring item
-        # (registrations.py), so a sign-up there was for a date gone by.
+    def test_a_recurring_experience_with_a_past_date_is_cancelled(
+        self, client, db, sent
+    ):
+        # MEH-2871 (Sapir 18/11): sign-up to a recurring workshop stays open
+        # after its first date (MEH-3219 B12), so its sign-ups are live and a
+        # take-off cancels and mails them like any upcoming item. This cell
+        # used to read "left registered, no mail" — the gap STATE_MACHINES
+        # listed as open.
         producer, owner = _business(db)
         ex = _experience(db, owner, days=-10, is_recurring=True)
         reg = _signup(db, ex, "weekly@example.com")
@@ -532,8 +537,11 @@ class TestReviewCells:
             f"/admin/producers/{producer.id}/toggle-status",
             headers=auth_header(_admin(db)),
         )
-        assert _statuses(db, Registration, [reg.id]) == [("registered",)]
-        assert _kinds(sent) == [("send_owner_delisted", owner.email)]
+        assert _statuses(db, Registration, [reg.id]) == [("cancelled",)]
+        assert _kinds(sent) == [
+            ("send_owner_delisted", owner.email),
+            ("send_registrant_delisted", "weekly@example.com"),
+        ]
 
     def test_a_test_business_marks_every_mail_as_test(self, client, db, sent):
         producer, owner = _business(db)

@@ -53,6 +53,10 @@ const DETAIL_ONLY = [
   // MEH-3055: detail-only — the producer page's group chips; the snapshot
   // lists it on ProducerDetailOut and not on ProducerListOut.
   "product_groups",
+  // MEH-3339: detail-only — the second phone + its label, shown as one text
+  // line in the contact card; on ProducerDetailOut, not ProducerListOut.
+  "secondary_phone",
+  "secondary_phone_label",
 ];
 
 const listKeys = () => Object.keys(ProducerListSchema.shape);

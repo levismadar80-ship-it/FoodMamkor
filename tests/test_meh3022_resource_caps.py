@@ -246,7 +246,7 @@ def test_product_cap_refuses_the_next_product_in_hebrew(client, db):
         "/producers/me/products", json=payload, headers=auth_header(user)
     )
     assert over.status_code == 409
-    assert over.json()["detail"].startswith("אפשר להוסיף עד 100 מוצרים")
+    assert over.json()["detail"].startswith(f"אפשר להוסיף עד {limits.MAX_PRODUCTS} מוצרים")
 
 
 def test_event_cap_counts_upcoming_only(client, db):

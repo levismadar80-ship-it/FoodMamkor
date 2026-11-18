@@ -116,6 +116,8 @@ erDiagram
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
         string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
+        string secondary_phone "nullable — MEH-3339, VARCHAR(20); optional second number, same format as phone; one text line, no CTA reads it"
+        string secondary_phone_label "nullable — MEH-3339, VARCHAR(30); its label (e.g. להזמנות); requires secondary_phone"
         integer established_year "nullable — MEH-1541, self-reported founding year; app-validated 1800..current year; public 'מאז {שנה}' masthead line (NULL = absent from DOM)"
         integer delivery_fee "nullable — MEH-1577, whole shekels; 0 is a VALUE (משלוח חינם), NULL = not stated; INTEGER to match delivery_areas.min_order, app-validated >= 0, no DB CHECK"
         integer free_delivery_above "nullable — MEH-1577, whole shekels; app-validated > 0 (0 rejected — unlike delivery_fee); independent of delivery_fee, renders alone"
@@ -147,6 +149,8 @@ erDiagram
         string image_url
         decimal price_min "MEH-295: NUMERIC(10,2) NULL"
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
+        boolean is_draft "MEH-2312: admin-imported, waiting for approval; hidden from every public read"
+        text source_image_url "MEH-2312: source store image URL, stored only (MEH-1184)"
         boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
         boolean is_vegan "MEH-293/MEH-479: single source of truth"
         boolean is_vegetarian "MEH-1438: 4th dietary axis; ?vegetarian matches is_vegetarian OR is_vegan"
@@ -378,6 +382,7 @@ erDiagram
         string status "registered|cancelled"
         timestamp created_at
         timestamp cancelled_at
+        timestamp reminder_sent_at "MEH-3312 day-before reminder, one-way"
     }
 
     business_billing {
@@ -456,6 +461,7 @@ erDiagram
         timestamp created_at
         string source "MEH-1428: click | invite_link — NOT NULL default 'click' (rev 3f9a7c2e5d18)"
         string ai_moderation_status "MEH-2349: APPROVED | FLAGGED | NULL (no verdict: predates column or fail-open, MEH-2390) — AI verdict on the body at the last write; CHECK ck_producer_reviews_ai_moderation_status (rev c4e81a2f9b6d)"
+        string reply_ai_moderation_status "MEH-3259: APPROVED | FLAGGED | NULL — AI verdict on the owner reply; CHECK ck_producer_reviews_reply_ai_moderation_status (rev f2c7a9d4b1e6)"
         timestamp edited_after_hidden_at "MEH-2381: author changed body/stars while hidden; NULL after hide/unhide (rev d7a3f5c1e2b8)"
     }
 ```

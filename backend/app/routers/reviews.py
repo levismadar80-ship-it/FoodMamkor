@@ -138,6 +138,22 @@ def _ai_status_for_write(
     return _checked_ai_status(body)
 
 
+def _reply_ai_status(reply: str, review: ProducerReview) -> str | None:
+    """MEH-3259: the verdict to store for an owner reply. Same rules as the
+    review body (`_ai_status_for_write`): an unchanged reply with a stored
+    verdict keeps it, so re-saving a FLAGGED reply cannot clear the flag;
+    anything else is checked afresh. REJECTED raises the 422 here."""
+    if review.reply == reply and review.reply_ai_moderation_status is not None:
+        return review.reply_ai_moderation_status  # type: ignore[return-value]
+    verdict = _moderate_reply_text(reply)
+    if verdict == "REJECTED":
+        raise HTTPException(
+            status_code=422,
+            detail="תוכן התגובה אינו עומד בהנחיות הקהילה שלנו. אפשר לנסח מחדש ולשלוח שוב.",
+        )
+    return verdict
+
+
 def _moderate_review_body(body: str | None) -> str | None:
     """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' |
     'REJECTED' | None. Fail-open: any error returns None — no verdict. The
@@ -145,27 +161,61 @@ def _moderate_review_body(body: str | None) -> str | None:
     LOCK); None only keeps the stored status NULL so an unchanged re-save
     is checked again (MEH-2390).
     """
+    return _moderate_text(body, "review")
+
+
+def _moderate_reply_text(text: str | None) -> str | None:
+    """MEH-3259: the same check on a business owner's public reply to a
+    review — same verdicts, same fail-open. Only the prompt's subject and
+    rules differ: a reply answers a customer, so the business's own contact
+    details and an invitation to come back are allowed, while insulting the
+    reviewer or exposing HER details is REJECTED."""
+    return _moderate_text(text, "review_reply")
+
+
+# MEH-3259: the per-kind half of the moderation prompt —
+# (who, task, rules). The review rules are byte-identical to the pre-3259
+# prompt. A reply gets its own rules: the business's own phone / site and
+# "come try the new batch" are a normal answer, not advertising.
+_MODERATION_SUBJECTS: dict[str, tuple[str, str, str]] = {
+    "review": (
+        "אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.",
+        "בדוק את טקסט הביקורת המוגשת ותחזיר JSON בלבד.",
+        """APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק
+FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
+REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית""",
+    ),
+    "review_reply": (
+        "אתה מודרטור לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.",
+        "בדוק את התגובה הפומבית שבעלת בית עסק כתבה לביקורת של לקוחה, ותחזיר JSON בלבד.",
+        """APPROVED אם: תשובה עניינית או מנומסת ללקוחה, גם כשהיא חולקת על הביקורת. מותר לבית העסק לציין את פרטי הקשר שלו עצמו (טלפון, אתר) ולהזמין את הלקוחה לחזור או לנסות מוצר
+FLAGGED אם: טון עוקצני או מתגונן, תוכן לא ברור, פרסום שאינו קשור לביקורת
+REJECTED אם: עלבון או השפלה של הלקוחה, איום, חשיפת פרטים אישיים של הלקוחה (שם מלא, טלפון, כתובת), לשון גסה, גזענות""",
+    ),
+}
+
+
+def _moderate_text(body: str | None, kind: str) -> str | None:
     if not body:
         return "APPROVED"
     client = _get_ai_client()
     if client is None:
         log.info("[reviews] no AI client — skipping moderation (fail-open)")
-        report_fail_open("review", "no_client")
+        report_fail_open(kind, "no_client")
         return None
+    who, task, rules = _MODERATION_SUBJECTS[kind]
     # MEH-2350: the review text is tagged data in the user turn, never
     # part of the instructions.
-    data_rule, user_content = wrap_submission("review", {"טקסט": body})
-    system = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
-בדוק את טקסט הביקורת המוגשת ותחזיר JSON בלבד.
+    data_rule, user_content = wrap_submission(kind, {"טקסט": body})
+    system = f"""{who}
+{task}
 
 {data_rule}
 
 החזר JSON בלבד (ללא ```json):
 {{"status": "APPROVED" | "FLAGGED" | "REJECTED", "reason": "..."}}
 
-APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק
-FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
-REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית"""
+{rules}"""
     truncated = False
     try:
         msg = client.messages.create(
@@ -200,11 +250,11 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         status = str(data.get("status", "")).upper() if isinstance(data, dict) else ""
         if status in {"APPROVED", "FLAGGED", "REJECTED"}:
             return status
-        report_fail_open("review", "truncated" if truncated else "bad_status")
+        report_fail_open(kind, "truncated" if truncated else "bad_status")
         return None
     except Exception as exc:
         log.warning("[reviews] moderation call failed: %s — fail-open", exc)
-        report_fail_open("review", classify_failure(exc, truncated=truncated))
+        report_fail_open(kind, classify_failure(exc, truncated=truncated))
         return None
 
 
@@ -689,11 +739,15 @@ def set_review_reply(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-30
 
     first_reply = bool(data.reply) and not review.reply
     if data.reply:
+        # MEH-3259: AI check before any write — REJECTED is a 422 and the
+        # stored reply stays as it was.
+        review.reply_ai_moderation_status = _reply_ai_status(data.reply, review)  # type: ignore[assignment]
         review.reply = data.reply  # type: ignore[assignment]
         review.reply_at = utc_now()  # type: ignore[assignment]
     else:
         review.reply = None  # type: ignore[assignment]  # empty/blank → clear
         review.reply_at = None  # type: ignore[assignment]
+        review.reply_ai_moderation_status = None  # type: ignore[assignment]
     db.commit()
 
     # MEH-2602: the reviewer hears about the first answer, not each edit of it.
@@ -798,6 +852,30 @@ def unhide_review(
     return {"detail": "Review unhidden", "id": str(review_id)}
 
 
+@router.put("/admin/reviews/{review_id}/clear-reply", response_model=None)
+def clear_review_reply(
+    review_id: UUID,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3259: remove the business owner's reply to a review. The review
+    itself is untouched; the business can write a new reply, which is checked
+    by the AI again. No notification to the business in v1 (known gap)."""
+    review = (
+        db.query(ProducerReview)
+        .filter(ProducerReview.id == review_id)
+        .with_for_update()
+        .first()
+    )
+    if not review:
+        raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
+    review.reply = None  # type: ignore[assignment]
+    review.reply_at = None  # type: ignore[assignment]
+    review.reply_ai_moderation_status = None  # type: ignore[assignment]
+    db.commit()
+    return {"detail": "Reply removed", "id": str(review_id)}
+
+
 @router.get("/admin/reviews", response_model=list[AdminReviewOut])
 def admin_list_reviews(
     _: User = Depends(require_admin),
@@ -835,6 +913,10 @@ def admin_list_reviews(
             # MEH-3258: "owner" | "competitor" | None — why a review that is
             # not hidden still stays off the public page and the rating.
             conflict="owner" if is_owner else ("competitor" if is_competitor else None),
+            # MEH-3259: the owner reply + its verdict.
+            reply=r.reply,
+            reply_at=_iso_or_none(r.reply_at),
+            reply_ai_moderation_status=r.reply_ai_moderation_status,
         )
         for r, is_owner, is_competitor in rows
     ]

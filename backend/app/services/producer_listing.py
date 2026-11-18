@@ -48,7 +48,7 @@ from app.services.producer_queries import (
 )
 from app.services.verification_status import verified_current_condition
 from app.utils.clock import israel_now, israel_today, utc_now
-from app.utils.hebrew_search import token_patterns, tokenize
+from app.utils.hebrew_search import layout_alternative, token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = structlog.get_logger(__name__)
@@ -1154,6 +1154,7 @@ def _token_search_filter(db: Session, token: str) -> ColumnElement[bool]:
         db.query(Product)
         .filter(
             Product.producer_id == Producer.id,
+            Product.is_draft.is_(False),  # MEH-2312: drafts are not searchable
             _any(Product.name, Product.description),
         )
         .exists()
@@ -1351,25 +1352,39 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     geo_search = geo is not None
     sort_origin = _distance_sort_origin(sort, lat, lng, geo_search=geo_search)
 
-    q, count_q = _build_base_queries(
-        db,
-        geo=geo,
-        sort=sort,
-        require_physical=require_physical,
-        sort_origin=sort_origin,
-        near_city=(filters.get("near_city") or "").strip() or None,
-    )
-    q, count_q = _apply_scalar_filters(q, count_q, **filters)
-    q, count_q = _apply_search_filter(db, q, count_q, search_q, geo_search=geo_search)
+    def _queries(text: str | None) -> tuple["Query[Any]", "Query[Any]"]:
+        q, count_q = _build_base_queries(
+            db,
+            geo=geo,
+            sort=sort,
+            require_physical=require_physical,
+            sort_origin=sort_origin,
+            near_city=(filters.get("near_city") or "").strip() or None,
+        )
+        q, count_q = _apply_scalar_filters(q, count_q, **filters)
+        q, count_q = _apply_search_filter(db, q, count_q, text, geo_search=geo_search)
 
-    # MEH-102 — exclude a specific producer (used by similar-producers widget).
-    if exclude is not None:
-        q = q.filter(Producer.id != exclude)
-        count_q = count_q.filter(Producer.id != exclude)
+        # MEH-102 — exclude a specific producer (used by similar-producers widget).
+        if exclude is not None:
+            q = q.filter(Producer.id != exclude)
+            count_q = count_q.filter(Producer.id != exclude)
+        return q, count_q
 
+    q, count_q = _queries(search_q)
     # MEH-23 — total BEFORE applying limit/offset so the frontend can render
     # "X מתוך Y" and numbered pagination.
     total_count = count_q.scalar() or 0
+    # MEH-3415 — nothing for the query as typed: re-read it on the other
+    # keyboard layout ("sca" -> "דבש") and try once, with every other filter
+    # unchanged. Only on a miss, so a real word with results is never rewritten.
+    if total_count == 0 and search_q:
+        alternative = layout_alternative(search_q.strip())
+        if alternative:
+            alt_q, alt_count_q = _queries(alternative)
+            alt_total = alt_count_q.scalar() or 0
+            if alt_total:
+                q, count_q, total_count = alt_q, alt_count_q, alt_total
+    # Logged as typed, with the count actually served.
     _log_search(db, search_q, total_count)
     results = _finalize_results(
         q,

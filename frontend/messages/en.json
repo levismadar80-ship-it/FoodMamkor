@@ -856,7 +856,6 @@
             "lactose_free": "Lactose-free",
             "no_added_sugar": "No added sugar"
           },
-          "sheet_open_aria": "Details about {name}",
           "facts": {
             "ingredients_heading": "Ingredients",
             "allergens_heading": "Allergens",
@@ -939,7 +938,8 @@
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
         "reveal_phone": "Show phone number",
-        "report_info_link": "Wrong info? Let us know"
+        "report_info_link": "Wrong info? Let us know",
+        "secondary_phone_default_label": "Second phone"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message"
@@ -1153,7 +1153,7 @@
       "status_funded": "Reached the goal",
       "status_fulfilled": "Fulfilled",
       "status_hint_open": "Join now without paying. Once the minimum is reached, the group price unlocks.",
-      "status_hint_funded": "These groups reached the minimum. Joining is closed, and participants contact the business to arrange their order.",
+      "status_hint_funded": "These groups reached the minimum, and the group price is unlocked. You can still join until the group is full or the deadline passes. Participants contact the business to arrange their order.",
       "status_hint_fulfilled": "The orders were delivered to the participants.",
       "empty_title": "No active group-buys yet",
       "empty_subtitle": "When businesses open group-buys, you'll find them here"
@@ -1164,6 +1164,7 @@
       "unit_prefix": "/ {unit}",
       "min_hint": "Group price when {min} participants commit",
       "progress_label": "{commits} of {min} participants",
+      "progress_joined": "{commits} participants",
       "days_left": "{days} days left",
       "expired": "Expired",
       "cta_funded_details": "Details",
@@ -1182,6 +1183,7 @@
       "unit_suffix": "/ {unit}",
       "discount_hint": "Save {discount}% at the group price",
       "progress_label": "{commits} of {min} participants",
+      "progress_joined": "{commits} participants",
       "remaining_to_open": "{n} more participants to unlock the price",
       "deadline_prefix": "Deadline: {date}",
       "fulfillment_title": "Pickup & delivery",
@@ -1202,6 +1204,7 @@
       "cancel_confirm": "Cancel your commitment?",
       "cancel_dismiss": "No, keep it",
       "deadline_passed": "The deadline has passed — joining is no longer possible",
+      "full": "The group is full — joining is no longer possible",
       "share_wa": "Share with friends",
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "Israel",
@@ -1557,6 +1560,7 @@
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
         "billing": "Billing",
+        "audit_log": "Audit log",
         "settings": "Settings",
         "help": "Help",
         "name_change_requests": "Name changes"
@@ -1740,7 +1744,8 @@
           "availability": "Availability",
           "admin_notes": "Internal notes (not visible to users)",
           "availability_tooltip": "Mark the business owner as on vacation. Shows a 'vacation' badge on their page and hides the WhatsApp button until the return date.",
-          "availability_tooltip_label": "Vacation mode info"
+          "availability_tooltip_label": "Vacation mode info",
+          "owner_story": "Behind the business"
         },
         "fields": {
           "name": "Business name",
@@ -1828,7 +1833,12 @@
           "avail_vacation": "On break",
           "vacation_until": "Return date (optional)",
           "as_draft": "Draft the owner will receive by invite link",
-          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner."
+          "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner.",
+          "owner_bio": "Behind the business — a line from the owner",
+          "owner_photo": "Owner photo",
+          "owner_photo_remove": "Remove photo",
+          "secondary_phone": "Second phone (optional)",
+          "secondary_phone_label": "What is this number for? (e.g. orders)"
         }
       },
       "toast_approved": "Business approved",
@@ -1992,6 +2002,30 @@
           "reverse_search_alt": "Reverse image search",
           "kashrut": "Kashrut",
           "certificate": "Certificate: {code}"
+        }
+      },
+      "product_import": {
+        "title": "Import products from an existing store",
+        "intro": "Products are saved as drafts and are not on the site until approved. A name the business already has is skipped; images are not imported.",
+        "paste_label": "Product list (JSON)",
+        "paste_help": "An array of products with the fields name, description, price, unit. For a mypips store: scripts/import/mypips-extract.mjs",
+        "import_cta": "Import as drafts",
+        "result": "{created} drafts added · {skipped} duplicates skipped · {invalid} invalid rows",
+        "invalid_row": "Row {n} ({name}): {reason}",
+        "approved": "{count} products approved and published",
+        "drafts_title": "Drafts ({count})",
+        "drafts_empty": "No drafts waiting for approval.",
+        "approve_all_cta": "Approve all drafts ({count})",
+        "delete_cta": "Delete",
+        "error": "That didn't work — please try again.",
+        "error_json": "The text is not valid JSON.",
+        "error_shape": "Expected an array of products, or an object with rows.",
+        "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
+        "load_failed": "Couldn't load the drafts. Try refreshing.",
+        "unit": {
+          "unit": "per unit",
+          "kg": "per kg",
+          "100g": "per 100 g"
         }
       }
     },
@@ -2386,6 +2420,11 @@
       "ai_flagged_only": "Only flagged reviews",
       "conflict_owner": "Not shown: the author owns this business",
       "conflict_competitor": "Not shown: the author owns another business on the site",
+      "reply_label": "Business reply",
+      "remove_reply": "Remove reply",
+      "remove_reply_aria": "Remove the business's reply to {user}'s review",
+      "confirm_remove_reply": "Remove {producer}'s reply? It will disappear from the site, and the business can write a new one.",
+      "reply_removed_toast": "Reply removed",
       "hidden": "Hidden",
       "hide": "Hide",
       "unhide": "Unhide",
@@ -2554,6 +2593,28 @@
         "accepted": "No delivery confirmation"
       },
       "stuck_hint": "Messages Meta accepted more than a day ago that still have no delivery confirmation. If there are many, delivery confirmations may not be reaching us."
+    },
+    "audit_log": {
+      "title": "Admin audit log",
+      "subtitle": "Every change made from an admin account: when, who, what and on what. Rows cannot be edited or deleted.",
+      "empty": "No actions recorded yet.",
+      "load_error": "Could not load the log",
+      "load_more": "Show earlier actions",
+      "deleted_actor": "Deleted account",
+      "columns": {
+        "when": "When",
+        "actor": "Who",
+        "action": "Action",
+        "target": "On what",
+        "change": "What changed"
+      },
+      "method": {
+        "POST": "Action",
+        "PUT": "Update",
+        "PATCH": "Update",
+        "DELETE": "Delete",
+        "OTHER": "Action"
+      }
     },
     "group_buys": {
       "title": "Group buys",
@@ -2780,6 +2841,14 @@
             "Before calling: “Call script”.",
             "After each step update the status: new → contacted → replied → registered or declined.",
             "“WhatsApp” prepares a message with a profile link. Send only after she agreed on the phone."
+          ]
+        },
+        "audit_log": {
+          "q": "How do I check who changed something in the admin, and when?",
+          "steps": [
+            "On the «Audit log» screen: one row for every change made from an admin account, newest first.",
+            "Each row shows when, which account, which action, on what, and what changed (for example a role or a status).",
+            "Names, phone numbers and free text are not stored in the log, and its rows cannot be edited or deleted."
           ]
         },
         "settings": {
@@ -3411,7 +3480,8 @@
         "spices": "Spice blends, cooking herbs",
         "chocolate": "Pralines, handmade sweets",
         "honey": "Hive honey, pollen, honeycomb",
-        "fish": "Fresh and smoked fish"
+        "fish": "Fresh and smoked fish",
+        "kph": "Coffee beans"
       },
       "section_results": "Results",
       "section_popular": "Popular",
@@ -3492,6 +3562,20 @@
     }
   },
   "reviews": {
+    "report": {
+      "menu_aria": "Options for {user}'s review",
+      "report_link": "Report this review",
+      "dialog_title": "Report a review",
+      "dialog_intro": "What's wrong with this review? We'll check it and decide whether to remove it.",
+      "reason_fake": "Looks fake or not based on a real experience",
+      "reason_abusive": "Offensive or abusive language",
+      "reason_personal": "Reveals personal details",
+      "reason_irrelevant": "Not about this business, or spam",
+      "reason_other": "Something else",
+      "details_label": "More details (optional)",
+      "details_required": "Tell us briefly what's wrong",
+      "success_toast": "Thanks, we got your report and will check it soon."
+    },
     "section_heading": "What customers say",
     "anonymous_fallback": "Customer",
     "star_aria": "{value, plural, one {1 star} other {{value} stars}}",
@@ -5038,7 +5122,11 @@
         "save_cta": "Save contact channels",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "field_secondary_phone": "Second phone (optional)",
+        "field_secondary_phone_label": "What is this number for? (e.g. orders)",
+        "secondary_phone_placeholder": "050-1234567",
+        "secondary_phone_where": "Shown on your business page"
       },
       "categories": {
         "heading": "Categories",
@@ -6232,6 +6320,7 @@
       "instagram": "Instagram",
       "website": "Website",
       "facebook": "Facebook",
+      "meta_description_fallback": "{name} on Mehamakor: food markets and events.",
       "owner_heading": "Behind the events",
       "since_prefix": "Active since",
       "phone": "Call",
@@ -6669,7 +6758,9 @@
     "regions": {
       "north": "the North",
       "haifa": "Haifa & the Krayot",
+      "carmel_coast": "the Carmel Coast",
       "sharon": "the Sharon",
+      "hefer_valley": "the Hefer Valley",
       "gush_dan": "Gush Dan",
       "shfela": "the Shfela",
       "jerusalem": "the Jerusalem area",
@@ -7014,7 +7105,7 @@
       "back_link": "Back to the join page",
       "or": "or",
       "sub_fit": "A fit for a business with many paid bookings.",
-      "sub_example": "After a few bookings a month the subscription pays for itself: once commissions reach ₪{breakEvenFees}.",
+      "sub_example": "The subscription pays off in any month your commissions without it would reach ₪{breakEvenFees} or more.",
       "fee_fit": "A fit for a business that is starting out or has few bookings.",
       "fee_note": "You pay only for a month in which paid bookings reached ₪{threshold}.",
       "fee_example": "For example: on a ₪{examplePrice} booking, the fee is ₪{exampleFee} and you keep ₪{exampleKeep}.",

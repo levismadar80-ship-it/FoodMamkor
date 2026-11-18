@@ -95,7 +95,12 @@ def set_my_product_order(
 ) -> list[Product]:
     """`product_ids` must be exactly the business's products, each once —
     a partial list would leave two products sharing a position."""
-    products = db.query(Product).filter(Product.producer_id == user.producer_id).all()
+    # MEH-2312: the owner orders her PUBLISHED catalog; drafts are not hers yet.
+    products = (
+        db.query(Product)
+        .filter(Product.producer_id == user.producer_id, Product.is_draft.is_(False))
+        .all()
+    )
     by_id = {p.id: p for p in products}
     ids = body.product_ids
     if len(ids) != len(set(ids)) or set(ids) != set(by_id):
@@ -120,7 +125,11 @@ def set_my_product_group(
 ) -> Product:
     product = (
         db.query(Product)
-        .filter(Product.id == product_id, Product.producer_id == user.producer_id)
+        .filter(
+            Product.id == product_id,
+            Product.producer_id == user.producer_id,
+            Product.is_draft.is_(False),  # MEH-2312
+        )
         .first()
     )
     if product is None:

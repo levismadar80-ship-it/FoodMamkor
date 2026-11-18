@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
-from sqlalchemy import func
+from sqlalchemy import func, tuple_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -61,6 +61,8 @@ from app.services.account_guards import (  # MEH-3248: moved here, re-exported
     is_super_admin,
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
+from app.services import indexnow  # MEH-2871
+from app.services.booking_cancellations import hide_business  # MEH-2871
 from app.services.category_slug import resolve_unique_slug
 from app.services.rescue_no_show import (
     NO_SHOW_BLOCK_AT,
@@ -250,9 +252,30 @@ def update_user_role(
     return {"detail": "Role updated", "role": target.role}
 
 
+def _business_left_ownerless(db: Session, target: User) -> Producer | None:
+    """The live business ``target`` owns, if blocking her leaves it with no
+    owner who can still sign in (MEH-2871). A co-owner keeps it up."""
+    if target.producer_id is None:
+        return None
+    producer = db.query(Producer).filter(Producer.id == target.producer_id).first()
+    if producer is None or producer.status != "approved":
+        return None
+    other_owner = (
+        db.query(User.id)
+        .filter(
+            User.producer_id == producer.id,
+            User.id != target.id,
+            User.is_blocked.is_not(True),
+        )
+        .first()
+    )
+    return None if other_owner else producer
+
+
 @router.post("/users/{user_id}/block", response_model=None)
 def block_user(
     user_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -263,33 +286,65 @@ def block_user(
         raise HTTPException(status_code=400, detail="Cannot block yourself")
     target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
     admin_audit.note(user, after={"is_blocked": bool(target.is_blocked)})
+    # MEH-2871 (Sapir 18/11): blocking the only owner of a live business takes
+    # the business off the site, the way an admin pause does — otherwise it
+    # stayed live with nobody able to hand over a bag or answer a booking.
+    # Airbnb and Etsy hide a suspended account's listings the same way.
+    # Unblocking does not put it back: an admin un-pauses it, through the
+    # approval gates (admin.py toggle).
+    hidden = None
+    if target.is_blocked:
+        hidden = _business_left_ownerless(db, target)
+        if hidden is not None:
+            hide_business(db, hidden, background_tasks)
     db.commit()
-    return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
+    if hidden is not None:
+        indexnow.schedule(background_tasks, indexnow.producer_urls(hidden))
+    return {
+        "detail": "Blocked toggled",
+        "is_blocked": target.is_blocked,
+        "business_hidden": hidden is not None,
+    }
 
 
 @router.get("/audit-log", response_model=None)
 def list_audit_log(
     limit: int = Query(50, ge=1, le=200),
     before: datetime | None = None,
+    before_id: UUID | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """MEH-3306: the admin audit log, newest first. `before` pages back by
-    `created_at`. The stored IP is not returned: it is kept for an
-    investigation, not for a list."""
+    `created_at`; with `before_id` too (the last row's id) it is a keyset
+    cursor on (created_at, id), so two rows sharing one created_at at a page
+    boundary are not skipped. The stored IP is not returned: it is kept for an
+    investigation, not for a list. `actor_email` is looked up in one query
+    for the page, and is None when that account no longer exists (actor_id
+    is not a FK, on purpose — models/admin_ops.py)."""
     query = db.query(AdminAuditLog)
-    if before is not None:
+    if before is not None and before_id is not None:
+        query = query.filter(
+            tuple_(AdminAuditLog.created_at, AdminAuditLog.id) < (before, before_id)
+        )
+    elif before is not None:
         query = query.filter(AdminAuditLog.created_at < before)
     rows = (
         query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())
         .limit(limit)
         .all()
     )
+    actor_ids = {r.actor_id for r in rows}
+    emails: dict[Any, str | None] = {}
+    if actor_ids:
+        rows_found = db.query(User.id, User.email).filter(User.id.in_(actor_ids)).all()
+        emails = {row_id: email for row_id, email in rows_found}
     return {
         "items": [
             {
                 "id": str(r.id),
                 "actor_id": str(r.actor_id),
+                "actor_email": emails.get(r.actor_id),
                 "action": r.action,
                 "target_type": r.target_type,
                 "target_id": r.target_id,

@@ -503,4 +503,19 @@ describe("MEH-2461 organizer page", () => {
       expect(document.activeElement).toBe(pill);
     });
   });
+
+  // ── MEH-3381 (rulings 17/11 §א3): an organizer with no description still gets its own meta description ──
+
+  it("MEH-3381: no short_description and no description → the fallback line, not the layout's default", async () => {
+    respond(200, { ...ORG, short_description: null, description: null });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: "gelem", locale: "he" }) });
+    expect(meta.description).toBe("organizers.page.meta_description_fallback");
+    expect(meta.openGraph.description).toBe("organizers.page.meta_description_fallback");
+  });
+
+  it("MEH-3381: a description, when there is one, still wins over the fallback", async () => {
+    respond(200, { ...ORG, short_description: null, description: "שוק יצרנים נודד" });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: "gelem", locale: "he" }) });
+    expect(meta.description).toBe("שוק יצרנים נודד");
+  });
 });

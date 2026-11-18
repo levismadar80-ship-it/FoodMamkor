@@ -1,4 +1,3 @@
-# guard-ok: backend/pyproject.toml is deny-listed for CC, so this file is not in [tool.mypy].files yet; it passes mypy --strict (PR body). Sapir adds the line.
 """
 Module:   admin_audit
 Purpose:  One append-only row for every successful change an admin makes:

@@ -76,7 +76,7 @@ export const CATEGORY_CHIPS = [
   // `iconSlug` is resolved to the glyph's name key from the loaded DB categories
   // (withResolvedIcons) instead of a frontend slug→name table; the tint comes
   // from that category's CATEGORY_STYLES row (no new palette colour).
-  { key: "pantry", matches: [], slugs: ["honey", "oil", "spices", "ferments", "prepared", "drinks", "chocolate"], iconSlug: "honey" },
+  { key: "pantry", matches: [], slugs: ["honey", "oil", "spices", "ferments", "prepared", "drinks", "chocolate", "kph"], iconSlug: "honey" },
   { key: "care", matches: [], slugs: ["care", "cosmetics", "herbs", "candles"], iconSlug: "care" },
 ];
 
