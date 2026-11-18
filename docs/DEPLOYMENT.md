@@ -211,6 +211,8 @@ Steps:
    | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. |
    | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Production Clarity ID | Empty (don't pollute heatmaps). |
 
+   With a DSN set, `next.config.js` wraps the build with `withSentryConfig` from `@sentry/nextjs/config`, which is the v11 path. From the 11 upgrade until #4827 the old import returned `undefined`, so the wrap was skipped silently: no tunnel route, no debug stripping. With no `SENTRY_AUTH_TOKEN` set, the wrap skips source-map upload and the build continues.
+
    Mark each variable as **Production** or **Preview** in the Vercel UI. Don't
    mark anything as **Development** unless you also use `vercel dev` locally.
 

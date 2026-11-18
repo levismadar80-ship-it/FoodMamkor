@@ -19,6 +19,12 @@ export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
  * @returns {Promise<string>}
  */
 export async function uploadTooLargeDetail() {
-  const { default: he } = await import("../messages/he.json");
-  return he.settings.products.errors.upload_size;
+  try {
+    const { default: he } = await import("../messages/he.json");
+    return he.settings.products.errors.upload_size;
+  } catch {
+    // The chunk failed to load (offline). The caller still gets the 413
+    // shape and falls back to its own generic error line.
+    return undefined;
+  }
 }
