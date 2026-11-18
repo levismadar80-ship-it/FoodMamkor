@@ -5458,6 +5458,27 @@
         "title": "OutreachPrefillResponse",
         "type": "object"
       },
+      "OwnerDetachIn": {
+        "properties": {
+          "confirm_name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Confirm Name",
+            "type": "string"
+          },
+          "expected_owner_user_id": {
+            "format": "uuid",
+            "title": "Expected Owner User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm_name",
+          "expected_owner_user_id"
+        ],
+        "title": "OwnerDetachIn",
+        "type": "object"
+      },
       "OwnerInviteAccept": {
         "properties": {
           "code": {
@@ -11568,6 +11589,18 @@
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "name": {
             "title": "Name",
@@ -19161,6 +19194,62 @@
         "summary": "Create Claim Link",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/detach-owner": {
+      "post": {
+        "operationId": "detach_owner_admin_producers__producer_id__detach_owner_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerDetachIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Detach Owner",
+        "tags": [
+          "admin"
         ]
       }
     },

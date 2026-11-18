@@ -787,6 +787,9 @@ class ProducerOwnerSummary(BaseModel):
     MEH-2541 removed from `GET /admin/producers`.
     """
 
+    # MEH-3256 (D9): the owner the admin is looking at, sent back by
+    # «ניתוק בעלים» as `expected_owner_user_id`. Admin-only like the rest.
+    id: UUID | None = None
     name: str
     email: EmailStr
 

@@ -1168,6 +1168,13 @@ POST   /admin/producers/{id}/owner-invite/resend   admin — 10/hour. No body: r
 DELETE /admin/producers/{id}/owner-invite          admin — 30/hour. Withdraws an unaccepted invite and clears the invitee's email + name with the token (PII of a
                                                      non-user, MEH-2208's תיקון 13 class). Keeps owner_invite_created_by + the consent note — the record that an invite WAS sent.
                                                      404 when there is nothing to cancel, 409 once accepted. v3: a resend and a cancel each clear the three code columns too.
+POST   /admin/producers/{id}/detach-owner          admin — 10/hour (MEH-3256 D9, «ניתוק בעלים»). Body {confirm_name, expected_owner_user_id}. The owner's account stays:
+                                                     role → consumer, producer_id → NULL, is_producer → false, token_version += 1 (every session retired). The business keeps
+                                                     its data and status; `owner_invite_accepted_at` → NULL, so the row is invitable again. 404 no business / no owner,
+                                                     409 the owner is not `expected_owner_user_id` (changed since the page loaded), 409 two accounts are linked to the business,
+                                                     409 the owner hosts a live experience (`experiences.host_user_id`, active, not rejected, dated today or later or
+                                                     recurring: the experience belongs to her account, not the business, so it must be cancelled or end first),
+                                                     422 the typed name differs (spaces around it ignored), 403 the owner is an admin or the SUPER_ADMIN_EMAIL account. Mails the former owner (`services/owner_detach.send_owner_detached_email`). → {ok: true}.
 GET    /auth/owner-invite/{token}                  public — 30/hour. → {producer_name, email, requires_farmer_declaration, will_publish, preview} and nothing else.
                                                      v3: `email` is null when the invite carries none (the page renders an empty, editable field); `will_publish` is true while the
                                                      business is hidden, which is what the submit button's copy branches on; `preview` is the same five public fields the claim

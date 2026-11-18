@@ -37,6 +37,7 @@ from app.routers import (
     producer_name_requests,
     producer_owner_invite,
     producer_owner_invite_existing,
+    producer_owner_detach,
     producer_recipes,
     billing,
     product_organize,
@@ -78,6 +79,7 @@ def _include_owner_links(app: FastAPI) -> None:
     app.include_router(producer_owner_invite.router)
     app.include_router(producer_owner_invite.public_router)
     app.include_router(producer_owner_invite_existing.router)  # MEH-3256
+    app.include_router(producer_owner_detach.router)  # MEH-3256 (D9)
     # Page freshness: the «כן, הכול נכון» link in the monthly owner email.
     app.include_router(page_freshness.router)
 

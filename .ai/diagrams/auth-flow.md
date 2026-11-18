@@ -163,3 +163,8 @@ sequenceDiagram
         BE-->>C: Original response (transparent to user)
     end
 ```
+
+**`token_version` (tv) is the kill switch.** Every access and refresh token carries the user's
+`token_version`; a mismatch is the «tv drift» 401 above. Bumping it retires every session the
+account holds at once. Writers: `POST /auth/logout-all-devices`, owner-invite accept on an existing account
+(MEH-3256 D8), and admin «ניתוק בעלים» (`POST /admin/producers/{id}/detach-owner`, MEH-3256 D9).
