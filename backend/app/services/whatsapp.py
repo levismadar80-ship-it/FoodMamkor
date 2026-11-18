@@ -51,6 +51,7 @@ import httpx
 from sqlalchemy import and_, or_
 
 from app.config import settings
+from app.services import outbound_guard
 from app.services.outbound_guard import phone_allowed
 from app.services.whatsapp_templates import WhatsAppTemplate
 from app.utils.pii import mask_phone
@@ -334,6 +335,22 @@ def _blocked_outside_production(kind: str, to: str) -> bool:
     return True
 
 
+def _links_to_production(template: WhatsAppTemplate, to: str) -> bool:
+    """MEH-3414: outside production, drop a template whose Meta-registered
+    text links to mehamakor.co.il (every template not marked
+    `sends_outside_production`). Returns True when the send must be dropped."""
+    # Module attribute, not a bare import: one switch for the whole guard.
+    if outbound_guard.is_production() or template.sends_outside_production:
+        return False
+    logger.info(
+        "[WHATSAPP] NOT SENT outside production: template[%s] to=%s links to "
+        "production (its Meta text is fixed); the email carries this environment's link",
+        template.name,
+        mask_phone(to),
+    )
+    return True
+
+
 def send_text(to: str, body: str, test_cause: bool = False) -> bool:
     """Send a free-form WhatsApp text message.
 
@@ -382,6 +399,8 @@ def send_template(
         )
         return False
     if _blocked_outside_production(f"template[{template.name}]", to):
+        return False
+    if _links_to_production(template, to):
         return False
     payload = {
         "messaging_product": "whatsapp",
