@@ -356,49 +356,62 @@ test.describe("manual › /join (MEH-995)", () => {
   }
 
   // Zero video bytes before the features are seen; then only the selected clip.
-  test("video requests: none on load, then only the selected clip once the section is in view", async ({ page, browserName }) => {
-    const videoUrls: string[] = [];
-    const bodyBytes = new Map<string, number>();
-    page.on("request", (req) => {
-      if (/\.mp4(?:$|\?)/.test(req.url())) videoUrls.push(new URL(req.url()).pathname);
+  // Runs with motion on. The suite default is reducedMotion: "reduce", and under
+  // it the clip is paused on purpose (JoinFeatures.jsx, `if (reducedMotion)
+  // setClipPaused(true)`), so play() is never called and a preload="none" clip
+  // is never fetched. That is the intended product: reduced motion shows the
+  // poster and spends no video bytes. The row passed under "reduce" on the
+  // Chromium of Playwright 1.62 (why is not measured: that build is not
+  // downloadable from the sandbox) and fails on 1.65's (#4762) and on Chromium
+  // 153 (measured: 0 requests after the scroll). The row is about the motion
+  // path, where play() is what starts the download.
+  test.describe("video, with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("video requests: none on load, then only the selected clip once the section is in view", async ({ page, browserName }) => {
+      const videoUrls: string[] = [];
+      const bodyBytes = new Map<string, number>();
+      page.on("request", (req) => {
+        if (/\.mp4(?:$|\?)/.test(req.url())) videoUrls.push(new URL(req.url()).pathname);
+      });
+      page.on("requestfinished", async (req) => {
+        if (!/\.mp4(?:$|\?)/.test(req.url())) return;
+        // sizes() rejects if the page closes mid-call; a lost sample must not
+        // surface as an unhandled rejection after the test ended.
+        const responseBodySize = await req.sizes().then((s) => s.responseBodySize, () => 0);
+        const path = new URL(req.url()).pathname;
+        bodyBytes.set(path, (bodyBytes.get(path) ?? 0) + responseBodySize);
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      // Gate on a real readiness signal: the features section is hydrated (its
+      // selected card exists) before the "nothing yet" read is trusted.
+      await expect(scope(page).locator('[data-testid="join-group-card"][data-selected="true"]')).toHaveCount(1);
+      if (browserName === "chromium") {
+        expect(videoUrls, "a video was requested before any interaction").toEqual([]);
+      } else {
+        // MEH-3153: Playwright's WebKit opens a request for every preload="none"
+        // <video src> at parse time, even with JavaScript off, and reads no body
+        // (measured: responseBodySize 0 for both /join videos). The promise of
+        // this row is zero video BYTES before interaction, so on WebKit each early
+        // request must finish having transferred nothing.
+        const early = [...new Set(videoUrls)];
+        await expect.poll(() => early.filter((u) => !bodyBytes.has(u)), { timeout: 10_000 }).toEqual([]);
+        expect(early.filter((u) => (bodyBytes.get(u) ?? 0) > 0), "video bytes arrived before any interaction").toEqual([]);
+        videoUrls.length = 0;
+      }
+      await scope(page).getByTestId("join-clip").scrollIntoViewIfNeeded();
+      await expect.poll(() => videoUrls.length, { timeout: 10_000 }).toBeGreaterThan(0);
+      expect([...new Set(videoUrls)]).toEqual(["/images/join/clip-page.mp4"]);
+      if (browserName !== "chromium") {
+        // Positive control for the zero-bytes read above: once the clip is in
+        // view, this engine must report bytes for it — otherwise a "0" before
+        // interaction would be the instrument, not the page.
+        await expect
+          .poll(() => bodyBytes.get("/images/join/clip-page.mp4") ?? 0, { timeout: 15_000 })
+          .toBeGreaterThan(0);
+      }
     });
-    page.on("requestfinished", async (req) => {
-      if (!/\.mp4(?:$|\?)/.test(req.url())) return;
-      // sizes() rejects if the page closes mid-call; a lost sample must not
-      // surface as an unhandled rejection after the test ended.
-      const responseBodySize = await req.sizes().then((s) => s.responseBodySize, () => 0);
-      const path = new URL(req.url()).pathname;
-      bodyBytes.set(path, (bodyBytes.get(path) ?? 0) + responseBodySize);
-    });
-    await page.setViewportSize({ width: 390, height: 844 });
-    await gotoJoin(page);
-    // Gate on a real readiness signal: the features section is hydrated (its
-    // selected card exists) before the "nothing yet" read is trusted.
-    await expect(scope(page).locator('[data-testid="join-group-card"][data-selected="true"]')).toHaveCount(1);
-    if (browserName === "chromium") {
-      expect(videoUrls, "a video was requested before any interaction").toEqual([]);
-    } else {
-      // MEH-3153: Playwright's WebKit opens a request for every preload="none"
-      // <video src> at parse time, even with JavaScript off, and reads no body
-      // (measured: responseBodySize 0 for both /join videos). The promise of
-      // this row is zero video BYTES before interaction, so on WebKit each early
-      // request must finish having transferred nothing.
-      const early = [...new Set(videoUrls)];
-      await expect.poll(() => early.filter((u) => !bodyBytes.has(u)), { timeout: 10_000 }).toEqual([]);
-      expect(early.filter((u) => (bodyBytes.get(u) ?? 0) > 0), "video bytes arrived before any interaction").toEqual([]);
-      videoUrls.length = 0;
-    }
-    await scope(page).getByTestId("join-clip").scrollIntoViewIfNeeded();
-    await expect.poll(() => videoUrls.length, { timeout: 10_000 }).toBeGreaterThan(0);
-    expect([...new Set(videoUrls)]).toEqual(["/images/join/clip-page.mp4"]);
-    if (browserName !== "chromium") {
-      // Positive control for the zero-bytes read above: once the clip is in
-      // view, this engine must report bytes for it — otherwise a "0" before
-      // interaction would be the instrument, not the page.
-      await expect
-        .poll(() => bodyBytes.get("/images/join/clip-page.mp4") ?? 0, { timeout: 15_000 })
-        .toBeGreaterThan(0);
-    }
   });
 
   // Phone shelf: a tapped card ends centred. Taps go through dispatchEvent, not
