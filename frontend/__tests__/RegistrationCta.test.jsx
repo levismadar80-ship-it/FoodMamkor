@@ -89,6 +89,35 @@ describe("RegistrationCta — by method", () => {
   });
 });
 
+describe("MEH-3315 — «כמה אנשים»", () => {
+  it("the form offers 1–10, defaults to 1, and posts the chosen party", async () => {
+    api.post.mockResolvedValue({ data: { status: "registered" } });
+    cta({ method: "site_form" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    const party = screen.getByLabelText(S.party_size, { exact: false });
+    expect(party.value).toBe("1");
+    expect([...party.querySelectorAll("option")].map((o) => o.value)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.change(party, { target: { value: "4" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    expect(api.post.mock.calls[0][1].party_size).toBe(4);
+  });
+
+  it("not enough places → the server's «נשארו רק 2 מקומות» in the banner", async () => {
+    api.post.mockRejectedValue({ response: { status: 409, data: { detail: { code: "registration_not_enough", message: "נשארו רק 2 מקומות" } } } });
+    cta({ method: "site_form" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByText("נשארו רק 2 מקומות")).toBeInTheDocument());
+  });
+});
+
 describe("MEH-3314 — a full on-site form is the waitlist", () => {
   const fullForm = (props = {}) => cta({ method: "site_form", isFull: true, ...props });
 
@@ -119,6 +148,7 @@ describe("MEH-3314 — a full on-site form is the waitlist", () => {
       name: "נועה כהן",
       phone: "050-1112233",
       email: "noa@example.com",
+      party_size: 1,
       waitlist: true,
     });
   });
@@ -226,6 +256,7 @@ describe("RegistrationCta — the on-site form", () => {
       name: "נועה כהן",
       phone: "050-1112233",
       email: "noa@example.com",
+      party_size: 1,
     });
   });
 

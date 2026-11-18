@@ -50,6 +50,7 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
 
   const waiting = (rows ?? []).filter((r) => r.status === "waitlisted");
   const signups = (rows ?? []).filter((r) => r.status !== "waitlisted");
+  const replaceRow = (row) => setRows((all) => (all ?? []).map((r) => (r.id === row.id ? row : r)));
 
   return (
     <details
@@ -75,7 +76,7 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
         ) : (
           <>
             {signups.length > 0 ? (
-              <RowList rows={signups} cancelledLabel={t("cancelled")} />
+              <RowList rows={signups} cancelledLabel={t("cancelled")} onMarked={replaceRow} />
             ) : (
               <p className="text-fg-muted" data-testid="registrations-empty">
                 {t("empty")}
@@ -97,7 +98,8 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
 }
 
 /** One block of rows; `ordered` numbers them (the waitlist's queue order). */
-function RowList({ rows, cancelledLabel, ordered = false }) {
+function RowList({ rows, cancelledLabel, ordered = false, onMarked = undefined }) {
+  const t = useTranslations("registration.list");
   const List = ordered ? "ol" : "ul";
   return (
     <List className={`divide-y divide-border ${ordered ? "list-decimal list-inside" : ""}`}>
@@ -112,6 +114,12 @@ function RowList({ rows, cancelledLabel, ordered = false }) {
             <span className="font-medium">
               <span className={cancelled ? "line-through" : undefined}>{r.name}</span>
               {cancelled && <span className="ms-2 text-xs">{cancelledLabel}</span>}
+              {/* MEH-3315: a party says how many places it took. */}
+              {(r.party_size ?? 1) > 1 && (
+                <span className="ms-2 text-xs text-fg-muted numeric" data-testid="registration-party">
+                  {t("party", { count: r.party_size })}
+                </span>
+              )}
             </span>
             <span className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
               <a href={`tel:${r.phone}`} dir="ltr" className="underline underline-offset-2 numeric">
@@ -121,9 +129,50 @@ function RowList({ rows, cancelledLabel, ordered = false }) {
                 {r.email}
               </a>
             </span>
+            {onMarked && r.status === "registered" && <Attendance row={r} onMarked={onMarked} />}
           </li>
         );
       })}
     </List>
+  );
+}
+
+const CHIP = "min-h-touch px-3 rounded-full border text-xs font-medium focus-ring transition disabled:opacity-50";
+
+/** MEH-3315: «הגיעו» / «לא הגיעו» — the owner's own note; a second tap on
+ * the chosen one clears it. Nothing reads it to block anyone. */
+function Attendance({ row, onMarked }) {
+  const t = useTranslations("registration.list");
+  const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const mark = (value) => {
+    setSaving(true);
+    setFailed(false);
+    api
+      .patch(`/registrations/${row.id}/attendance`, { attendance: row.attendance === value ? null : value })
+      .then((r) => onMarked(r.data))
+      .catch(() => setFailed(true))
+      .finally(() => setSaving(false));
+  };
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2" role="group" aria-label={t("attendance")} data-testid="registration-attendance">
+      {["attended", "no_show"].map((value) => {
+        const on = row.attendance === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            disabled={saving}
+            aria-pressed={on}
+            onClick={() => mark(value)}
+            className={`${CHIP} ${on ? "bg-primary text-white border-primary" : "bg-surface-card text-text border-border"}`}
+            data-testid={`attendance-${value}`}
+          >
+            {t(value)}
+          </button>
+        );
+      })}
+      {failed && <InlineMessage size="inherit">{t("attendance_error")}</InlineMessage>}
+    </div>
   );
 }

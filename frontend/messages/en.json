@@ -6564,7 +6564,12 @@
       "cancelled": "Cancelled",
       "offline_label": "Signed up outside the site",
       "load_error": "Couldn't load the list.",
-      "waitlist": "Waitlist ({count})"
+      "waitlist": "Waitlist ({count})",
+      "party": "{count} people",
+      "attendance": "Did they come",
+      "attended": "Came",
+      "no_show": "Didn't come",
+      "attendance_error": "Couldn't save. Try again."
     },
     "cta": {
       "signup_experience": "Sign up for the workshop",
@@ -6592,7 +6597,8 @@
       "phone_invalid": "Invalid phone number",
       "generic": "Something went wrong. Try again.",
       "waitlist_submit": "Join the waitlist",
-      "waitlist_success": "You're on the waitlist. If a spot opens up, we'll email you a sign-up link."
+      "waitlist_success": "You're on the waitlist. If a spot opens up, we'll email you a sign-up link.",
+      "party_size": "How many people"
     },
     "cancel": {
       "title": "Cancel sign-up for \"{title}\"",

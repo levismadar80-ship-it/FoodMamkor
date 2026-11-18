@@ -6560,7 +6560,12 @@
       "cancelled": "בוטלה",
       "offline_label": "נרשמו מחוץ לאתר",
       "load_error": "לא הצלחנו לטעון את הרשימה.",
-      "waitlist": "רשימת המתנה ({count})"
+      "waitlist": "רשימת המתנה ({count})",
+      "party": "{count} אנשים",
+      "attendance": "האם הגיעו",
+      "attended": "הגיעו",
+      "no_show": "לא הגיעו",
+      "attendance_error": "לא הצלחנו לשמור. נסו שוב."
     },
     "cta": {
       "signup_experience": "הרשמה לסדנה",
@@ -6588,7 +6593,8 @@
       "phone_invalid": "מספר טלפון לא תקין",
       "generic": "משהו נתקע. נסו שוב.",
       "waitlist_submit": "הצטרפות לרשימת ההמתנה",
-      "waitlist_success": "נכנסתם לרשימת ההמתנה. אם יתפנה מקום, נשלח אימייל עם קישור להרשמה."
+      "waitlist_success": "נכנסתם לרשימת ההמתנה. אם יתפנה מקום, נשלח אימייל עם קישור להרשמה.",
+      "party_size": "כמה אנשים"
     },
     "cancel": {
       "title": "ביטול הרשמה ל-\"{title}\"",
