@@ -83,7 +83,7 @@ export const BUSINESS_FEATURES = [
   { id: "vanity_link", group: "found", status: "live", tile: { icon: "LinkSimple" }, codeRef: ["frontend/app/[locale]/producer/dashboard/page.js"] },
   { id: "discovery", group: "found", status: "live", tile: { icon: "MapPin" }, codeRef: ["frontend/app/[locale]/producers/diet/[dietSlug]/page.js", "frontend/app/sitemap.js"] },
   { id: "similar_businesses", group: "found", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx"] },
-  { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx"] },
+  { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx", "frontend/components/producer/LinkEverywhere.jsx"] },
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
   // #4104), so this is live — see the PR body.
   { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },

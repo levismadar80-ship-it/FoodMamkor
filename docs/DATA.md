@@ -644,7 +644,7 @@ producer_page_views (
   producer_id FK producers.id ON DELETE CASCADE (indexed),
   viewer_ip_hash varchar(64) NULL,       -- SHA-256 hex
   city varchar(100) NULL,                -- from authed user.city, else NULL
-  referrer varchar(30) NULL,             -- search|map|category|home|favorites|follow|NULL
+  referrer varchar(30) NULL,             -- search|map|category|home|favorites|follow|producers-index|similar|nearby|share|NULL (allowlist: services/analytics.py _ALLOWED_REFERRERS; share = MEH-3331)
   created_at timestamp (indexed)
 )
 
@@ -1326,7 +1326,11 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               last 30 days, from producer_whatsapp_clicks rows whose
                                                               city IS NOT NULL — i.e. «לא מגיעים ל{עיר}?» clicks only);
                                                               pickup_hosts (MEH-2673: [{email, city}], this business's
-                                                              delivery_waitlist rows with wants_to_host, newest first, max 50)
+                                                              delivery_waitlist rows with wants_to_host, newest first, max 50);
+                                                              share_visits (MEH-3331: {last_7d, last_30d, total}, page
+                                                              views with referrer='share' — links the owner shared from
+                                                              the share kit — visitors per Israel day; no roll-up
+                                                              column, the dashboard reads last_30d only)
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row

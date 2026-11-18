@@ -163,6 +163,17 @@ def _metric_specs() -> dict[str, tuple[Any, Any, dict[str, Any]]]:
                 "rollup_col": ProducerAnalyticsDaily.views_search_unique,
             },
         ),
+        # MEH-3331: visits through a link the owner shared (?from=share).
+        # No roll-up column: the `total` arm stays raw, which is fine — the
+        # dashboard reads only last_30d (the raw window, Sapir 06/09).
+        "share_visits": (
+            ProducerPageView,
+            ProducerPageView.created_at,
+            {
+                "extra_filter": (ProducerPageView.referrer == "share"),
+                "distinct_col": ProducerPageView.viewer_ip_hash,
+            },
+        ),
         "whatsapp_clicks": (
             ProducerWhatsAppClick,
             ProducerWhatsAppClick.clicked_at,

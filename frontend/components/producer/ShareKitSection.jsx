@@ -3,6 +3,7 @@
 
 import { useTranslations } from "next-intl";
 import FeedPostCanvas from "@/components/producer/FeedPostCanvas";
+import LinkEverywhere from "@/components/producer/LinkEverywhere";
 import ReviewCardCanvas from "@/components/ReviewCardCanvas";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 
@@ -20,7 +21,8 @@ import StoryCardCanvas from "@/components/StoryCardCanvas";
  *           card announces a live listing; the review endpoint has nothing to
  *           serve a business with no public page) and never for an organizer
  *           (ADR-036 — reviews.py filters kind == "producer").
- * History:  MEH-3330 (the 4:5 feed post, FeedPostCanvas, above the story card);
+ * History:  MEH-3331 (LinkEverywhere, after the cards: set once, so last);
+ *           MEH-3330 (the 4:5 feed post, FeedPostCanvas, above the story card);
  *           MEH-1428 (creation, inside dashboard/page.js); MEH-2880 / MEH-2882
  *           (moved out of the dashboard home into «כלים» → «שיתוף»: a
  *           one-time / occasional job, placement audit 2026-11).
@@ -43,6 +45,7 @@ export default function ShareKitSection({ profile }) {
       <FeedPostCanvas producer={profile} />
       <StoryCardCanvas producer={profile} mode="owner" />
       <ReviewCardCanvas producer={profile} />
+      <LinkEverywhere producer={profile} />
     </section>
   );
 }

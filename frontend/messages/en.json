@@ -3862,6 +3862,29 @@
           "caption_new": "New: {item}. All the details at the link:",
           "caption_holiday": "For {holiday}: {items}. All the details at the link:",
           "image_alt": "Preview of the post"
+        },
+        "links": {
+          "title": "Your link, everywhere",
+          "subtitle": "Once, and everyone looking for you reaches your page.",
+          "instagram": {
+            "label": "Instagram bio",
+            "how": "In Edit profile: Links → Add external link."
+          },
+          "facebook": {
+            "label": "Facebook page button",
+            "how": "On your business page: Add button → paste the link."
+          },
+          "google": {
+            "label": "Your Google profile",
+            "how": "In your Google business profile: Edit → Website."
+          },
+          "whatsapp": {
+            "label": "WhatsApp Business profile",
+            "how": "In business settings: Profile → Website."
+          },
+          "copy": "Copy the link",
+          "copied": "Copied",
+          "done": "Done"
         }
       },
       "caption_from": "{name} from {city}"
@@ -4938,7 +4961,8 @@
         "pickup_hosts": {
           "title": "Willing to host a pickup point",
           "sub": "People who ticked “happy to host” when they signed up for updates. You can reach them by email."
-        }
+        },
+        "share_visits": "{count, plural, one {1 visit} other {# visits}} from your shares in the last 30 days"
       },
       "completeness": {
         "red_headline": "A few key details left before you're live",
