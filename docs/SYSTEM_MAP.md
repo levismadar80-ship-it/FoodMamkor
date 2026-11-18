@@ -52,6 +52,7 @@ This page links to those and does not repeat their numbers.
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
 | Backend | Google Places | a business's Google rating | the rating line disappears |
 | Meta | Backend | WhatsApp webhook (HMAC-checked) | delivery status stays "accepted" |
+| GitHub Actions (`.github/workflows/staging-health.yml`) | GitHub commit statuses | `Staging health` on every open PR into staging, rule 41 (`scripts/ci/staging_health.py`) | posts failure («could not read staging runs»); a PR labeled `fixes-staging-red` gets green |
 
 ## Where each kind of data lives
 
