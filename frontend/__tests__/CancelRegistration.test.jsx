@@ -53,6 +53,24 @@ describe("cancel page", () => {
     expect(screen.getByText(X.back_event).getAttribute("href")).toBe("/events/x1");
   });
 
+  it("MEH-3314 waitlisted → says so, and the button leaves the waitlist", async () => {
+    api.get.mockResolvedValue({ data: { ...INFO, status: "waitlisted" } });
+    api.post.mockResolvedValue({ data: { ...INFO, status: "cancelled" } });
+    page();
+    await waitFor(() => expect(screen.getByTestId("registration-cancel-waitlisted").textContent).toBe(X.waitlisted));
+    expect(screen.getByTestId("registration-cancel-confirm").textContent).toBe(X.confirm_waitlist);
+    fireEvent.click(screen.getByTestId("registration-cancel-confirm"));
+    await waitFor(() => expect(screen.getByTestId("registration-cancel-done")).toBeInTheDocument());
+    expect(screen.queryByTestId("registration-cancel-waitlisted")).toBeNull();
+  });
+
+  it("registered → no waitlist line", async () => {
+    api.get.mockResolvedValue({ data: INFO });
+    page();
+    await waitFor(() => expect(screen.getByTestId("registration-cancel-confirm").textContent).toBe(X.confirm));
+    expect(screen.queryByTestId("registration-cancel-waitlisted")).toBeNull();
+  });
+
   it("unknown token → the not-found line", async () => {
     api.get.mockRejectedValue({ response: { status: 404 } });
     page();

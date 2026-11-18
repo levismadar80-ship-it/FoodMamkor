@@ -78,13 +78,49 @@ describe("RegistrationCta — by method", () => {
     expect(screen.queryByTestId("registration-question")).toBeNull();
   });
 
-  it("full → the waitlist link when given, else «אין יותר מקומות»", () => {
-    const { unmount } = cta({ method: "site_form", isFull: true, waitlistHref: "https://wa.me/972501234567?text=x", waitlistLabel: "ww" });
+  it("full, off-site method → the waitlist link when given, else «אין יותר מקומות»", () => {
+    const { unmount } = cta({ method: "whatsapp", phone: "050-1234567", isFull: true, waitlistHref: "https://wa.me/972501234567?text=x", waitlistLabel: "ww" });
     expect(screen.getByTestId("registration-waitlist").textContent).toBe("ww");
     expect(screen.queryByTestId("registration-open")).toBeNull();
     unmount();
-    cta({ method: "site_form", isFull: true });
+    cta({ method: "phone", phone: "050-1234567", isFull: true });
     expect(screen.getByTestId("registration-full").textContent).toBe(C.full);
+    expect(screen.queryByTestId("registration-open")).toBeNull();
+  });
+});
+
+describe("MEH-3314 — a full on-site form is the waitlist", () => {
+  const fullForm = (props = {}) => cta({ method: "site_form", isFull: true, ...props });
+
+  it("full site_form → «אין יותר מקומות» and «להצטרף לרשימת ההמתנה», even with a WhatsApp waitlist link", () => {
+    fullForm({ waitlistHref: "https://wa.me/972501234567?text=x", waitlistLabel: "ww" });
+    expect(screen.getByTestId("registration-full").textContent).toBe(C.full);
+    expect(screen.getByTestId("registration-open").textContent).toBe(C.waitlist_join);
+    expect(screen.queryByTestId("registration-waitlist")).toBeNull();
+  });
+
+  it("not full → the plain sign-up, no waitlist wording", () => {
+    cta({ method: "site_form" });
+    expect(screen.getByTestId("registration-open").textContent).toBe(C.signup_experience);
+    expect(screen.queryByTestId("registration-full")).toBeNull();
+  });
+
+  it("submit posts waitlist: true and shows the waitlist confirmation", async () => {
+    api.post.mockResolvedValue({ data: { status: "waitlisted" } });
+    fullForm();
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(screen.getByTestId("registration-submit").textContent).toBe(S.waitlist_submit);
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByTestId("registration-success").textContent).toBe(S.waitlist_success));
+    expect(api.post).toHaveBeenCalledWith("/experiences/x1/registrations", {
+      name: "נועה כהן",
+      phone: "050-1112233",
+      email: "noa@example.com",
+      waitlist: true,
+    });
   });
 });
 
@@ -344,8 +380,14 @@ describe("MEH-3043 — sticky phone bar", () => {
     );
   });
 
+  it("MEH-3314 full site_form → the bar offers the waitlist", () => {
+    cta({ method: "site_form", phone: null, isFull: true });
+    fire(false);
+    expect(screen.getByTestId("registration-bar-action").textContent).toBe(C.waitlist_join);
+  });
+
   it("full with no waitlist, or no channel at all → no bar", () => {
-    const { unmount } = cta({ method: "site_form", phone: null, isFull: true });
+    const { unmount } = cta({ method: "phone", phone: "050-1234567", isFull: true });
     fire(false);
     expect(screen.queryByTestId("registration-bar")).toBeNull();
     unmount();

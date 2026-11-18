@@ -108,14 +108,21 @@ an approved workshop sends it back to pending. Public = approved, active, host
 business live, and a future date (a recurring workshop stays open after its
 first date).
 
-**Sign-up** (`registrations`): registered · cancelled. No waitlist, no
-no-show. A host cannot set fewer places than the active sign-ups (422,
+**Sign-up** (`registrations`): registered · cancelled · waitlisted
+(MEH-3314; the CHECK `ck_registrations_status` holds the three). No no-show.
+A waitlist row is an offer queue, not a held spot: a cancel emails the first
+waitlisted visitor not yet offered (`waitlist_offered_at` stamped), and whoever
+submits the form first takes the place. At most 50 waiting per item
+(`services/registration_waitlist.py` `WAITLIST_MAX`, 409 `waitlist_full`). A host cannot set fewer places than the active sign-ups (422,
 `services/registrations.py` `refuse_too_few_places`, MEH-2871).
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
 | → registered | anyone (no account) | `routers/registrations.py` | item row locked; owner live; item active and not past; capacity; a repeat email is a silent success |
-| registered → cancelled | the holder of the emailed link | `routers/registrations.py` `cancel_registration` | row lock; ledger voided when the item is still upcoming |
+| → waitlisted | anyone, on a full item, with `waitlist: true` | `routers/registrations.py` `_signup_row` | item row locked; full; fewer than 50 waiting; no owner email, no ledger row |
+| waitlisted → registered | the same email re-submits once a place is free | `routers/registrations.py` `_signup_row` | capacity; her row is promoted, not duplicated |
+| waitlisted → cancelled | the holder of the emailed link; host cancels the item; business delisted | `cancel_registration` · `services/booking_cancellations.py` | as the registered rows below |
+| registered → cancelled | the holder of the emailed link | `routers/registrations.py` `cancel_registration` | row lock; ledger voided when the item is still upcoming; an upcoming item emails the next waitlisted visitor (`registration_waitlist.offer_next`) |
 | registered → cancelled | host cancels or deletes the item | `services/booking_cancellations.py` `cancel_item_signups` | items dated today or later, and every recurring workshop (MEH-2871); ledger voided |
 | registered → cancelled | the business leaves the live state | `services/booking_cancellations.py` `delist_business` | same |
 | purged | scheduler | `services/retention_purge.py` | 30 days after the date |

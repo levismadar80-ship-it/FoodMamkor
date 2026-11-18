@@ -19,7 +19,9 @@
  *           re-checks everything (routers/registrations.py).
  * Related:  app/[locale]/experiences/[id]/ExperienceDetailClient.jsx,
  *           app/[locale]/events/[id]/EventDetailClient.jsx
- * History:  MEH-2768 (creation). Copy approved by Sapir 6/11 (items 5–9).
+ * History:  MEH-3314 (18/11): a full site_form item offers the same form as
+ *           «להצטרף לרשימת ההמתנה» (POST with waitlist: true).
+ *           MEH-2768 (creation). Copy approved by Sapir 6/11 (items 5–9).
  *           MEH-3043 (13/11): the open form can be closed again (× in the
  *           card on desktop, a full-screen sheet with × on a phone) and a
  *           sticky phone bar keeps the action in reach — RegistrationOverlays.
@@ -61,7 +63,7 @@ function fieldsFrom(detail) {
   return [...new Set(fields.filter((f) => ["name", "phone", "email"].includes(f)))];
 }
 
-function SignupForm({ kind, itemId, onDone }) {
+function SignupForm({ kind, itemId, waitlist = false, onDone }) {
   const t = useTranslations("registration.signup");
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
@@ -110,6 +112,8 @@ function SignupForm({ kind, itemId, onDone }) {
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
+        // MEH-3314: a full item takes the same fields onto its waitlist.
+        ...(waitlist ? { waitlist: true } : {}),
       });
       onDone();
     } catch (err) {
@@ -172,7 +176,7 @@ function SignupForm({ kind, itemId, onDone }) {
         testId="registration-collection-notice"
       />
       <button type="submit" disabled={sending} className={BTN} data-testid="registration-submit">
-        {sending ? t("submitting") : t("submit")}
+        {sending ? t("submitting") : waitlist ? t("waitlist_submit") : t("submit")}
       </button>
     </form>
   );
@@ -188,7 +192,10 @@ function SignupForm({ kind, itemId, onDone }) {
 function resolveAction({ method, phone, url, isFull, waitlistHref, title, t }) {
   const mobile = normalizePhone(phone);
   const anyPhone = phone && String(phone).replace(/\D/g, "").length >= 9 ? phone : null;
-  if (isFull) return waitlistHref ? { kind: "waitlist", href: waitlistHref } : { kind: "full" };
+  const offSite = method === "external_url" || method === "whatsapp" || method === "phone";
+  // MEH-3314: a full on-site form becomes the waitlist form; the other
+  // methods keep the owner's WhatsApp waitlist link, or «full».
+  if (isFull && offSite) return waitlistHref ? { kind: "waitlist", href: waitlistHref } : { kind: "full" };
   if (method === "external_url") return url ? { kind: "external", href: url } : null;
   if (method === "whatsapp" || method === "phone") {
     if (method === "whatsapp" && mobile) {
@@ -204,7 +211,7 @@ function resolveAction({ method, phone, url, isFull, waitlistHref, title, t }) {
     : anyPhone
       ? telHref(anyPhone)
       : null;
-  return { kind: "form", questionHref, questionExternal: Boolean(mobile) };
+  return { kind: "form", waitlist: Boolean(isFull), questionHref, questionExternal: Boolean(mobile) };
 }
 
 /** The action as a link — every kind except the on-site form and «full». */
@@ -255,7 +262,9 @@ export default function RegistrationCta(props) {
   const inlineRef = useRef(null);
   const action = resolveAction({ ...props, t });
   const inlineVisible = useInView(inlineRef, Boolean(action));
-  const signupLabel = kind === "events" ? t("signup_event") : t("signup_experience");
+  const onWaitlist = Boolean(action?.waitlist);
+  const signupLabel = onWaitlist ? t("waitlist_join") : kind === "events" ? t("signup_event") : t("signup_experience");
+  const successText = onWaitlist ? tSignup("waitlist_success") : tSignup("success");
 
   const openForm = () => setOpen(isDesktop() ? "inline" : "sheet");
   const closeForm = useCallback(() => {
@@ -282,7 +291,7 @@ export default function RegistrationCta(props) {
   const formAction = action.kind === "form";
   const showBar = action.kind !== "full" && !done && !open && inlineVisible === false;
 
-  const form = <SignupForm kind={kind} itemId={itemId} onDone={() => setDone(true)} />;
+  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} onDone={() => setDone(true)} />;
   const question = formAction && action.questionHref && (
     <a
       href={action.questionHref}
@@ -313,7 +322,7 @@ export default function RegistrationCta(props) {
           openBtnRef={openBtnRef}
           onWaitlistClick={onWaitlistClick}
           fullText={t("full")}
-          successText={tSignup("success")}
+          successText={successText}
         />
       </div>
       {showBar && (
@@ -330,7 +339,7 @@ export default function RegistrationCta(props) {
       {open === "sheet" && (
         <RegistrationSheet title={`${signupLabel} · ${title}`} closeLabel={tCommon("close")} onClose={closeForm}>
           {done ? (
-            <DoneBlock kind={kind} title={title} successText={tSignup("success")} />
+            <DoneBlock kind={kind} title={title} successText={successText} />
           ) : (
             <>
               <div id="registration-form-panel">{form}</div>
@@ -362,6 +371,12 @@ function InlineBlock({ action, label, done, open, kind, title, form, question, s
 
   return (
     <div className="space-y-3" data-testid="registration-site-form">
+      {/* MEH-3314: on a full item the form is the waitlist — say why first. */}
+      {action.waitlist && (
+        <p className="text-center font-semibold text-text" data-testid="registration-full">
+          {fullText}
+        </p>
+      )}
       {open === "inline" ? (
         <div id="registration-form-panel">
           {/* MEH-3043: the heading names what is open, × closes it. RTL: the

@@ -76,6 +76,31 @@ describe("RegistrationsList", () => {
     expect(screen.getByText("נרשמת 2").className).toContain("line-through");
   });
 
+  it("MEH-3314 open × waitlist: waitlisted rows sit in their own numbered section", async () => {
+    api.get.mockResolvedValue({ data: [row(1), row(2, "waitlisted"), row(3, "waitlisted")] });
+    open(renderList(1));
+    await waitFor(() => expect(screen.getAllByTestId("waitlist-row")).toHaveLength(2));
+    expect(screen.getAllByTestId("registration-row")).toHaveLength(1);
+    const section = screen.getByTestId("registrations-waitlist");
+    expect(section.textContent).toContain(L.waitlist.replace("{count}", "2"));
+    expect(section.querySelector("ol")).not.toBeNull();
+  });
+
+  it("MEH-3314 open × waitlist only: the empty line for sign-ups, then the waitlist", async () => {
+    api.get.mockResolvedValue({ data: [row(1, "waitlisted")] });
+    open(renderList(0));
+    await waitFor(() => expect(screen.getAllByTestId("waitlist-row")).toHaveLength(1));
+    expect(screen.getByText(L.empty)).toBeInTheDocument();
+    expect(screen.queryAllByTestId("registration-row")).toHaveLength(0);
+  });
+
+  it("open × no waitlist: no waitlist section", async () => {
+    api.get.mockResolvedValue({ data: [row(1)] });
+    open(renderList(1));
+    await waitFor(() => expect(screen.getAllByTestId("registration-row")).toHaveLength(1));
+    expect(screen.queryByTestId("registrations-waitlist")).toBeNull();
+  });
+
   it("open × failed: one error line, no empty line", async () => {
     api.get.mockRejectedValue(new Error("500"));
     open(renderList(1));

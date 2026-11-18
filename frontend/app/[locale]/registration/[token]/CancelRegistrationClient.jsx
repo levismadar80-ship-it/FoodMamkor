@@ -78,6 +78,12 @@ export default function CancelRegistrationClient({ token }) {
             </p>
           ) : (
             <>
+              {/* MEH-3314: the same link takes a waitlisted visitor off the list. */}
+              {info.status === "waitlisted" && (
+                <p className="text-text" data-testid="registration-cancel-waitlisted">
+                  {t("waitlisted")}
+                </p>
+              )}
               {failed && (
                 <InlineMessage>
                   {t("generic")}
@@ -90,7 +96,7 @@ export default function CancelRegistrationClient({ token }) {
                 className={BTN}
                 data-testid="registration-cancel-confirm"
               >
-                {state === "cancelling" ? t("cancelling") : t("confirm")}
+                {state === "cancelling" ? t("cancelling") : info.status === "waitlisted" ? t("confirm_waitlist") : t("confirm")}
               </button>
             </>
           )}
