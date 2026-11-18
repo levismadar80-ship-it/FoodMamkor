@@ -230,6 +230,7 @@ function getVerifiedTooltip(producer, t) {
  * hero surface (cards drop to icon-only so the name stays the hero).
  */
 function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
+  const tCommon = useTranslations("common.aria"); // MEH-3271: sheet ✕
   const tooltip = getVerifiedTooltip(producer, t);
   const ariaLabel = tooltip ? t("aria_verified", { tooltip }) : t("aria_verified_plain");
   const iconOnly = surface === "card";
@@ -295,6 +296,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
           trigger={chip}
           role="dialog"
           sheetOnMobile
+          closeLabel={tCommon("close")} // MEH-3271
           contentTestId="badge-tooltip-verified"
           contentClassName="w-64 flex flex-col gap-1.5"
           sheetContentClassName="flex flex-col gap-2"

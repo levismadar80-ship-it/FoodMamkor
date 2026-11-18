@@ -4,6 +4,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
+import { X } from "@phosphor-icons/react";
 
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
 import { chipIcon } from "@/lib/chip-icons";
@@ -307,7 +308,21 @@ export default function FilterSheet({
           <div className="w-11 h-[5px] rounded-full bg-[#D4C5A9]" />
         </div>
 
-        <h2 id="filter-sheet-title" className="font-headline-md text-lg font-bold text-text m-0">
+        {/* MEH-3271 (Sapir 18/11): a visible close on the phone sheet — the
+            drag handle and the scrim are not discoverable, and WCAG 2.2 2.5.7
+            wants a non-drag way out. end-3 mirrors the X to the reading end
+            (rtl.md MEH-2038); the title reserves 12 + 44 − 16 = 40px → pe-11. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("filters.sheet.close_aria")}
+          data-testid="filter-sheet-close"
+          className="absolute top-3 end-3 w-11 h-11 rounded-full flex items-center justify-center text-text hover:bg-green-50 transition-colors lg:hidden"
+        >
+          <X size={18} weight="regular" aria-hidden="true" />
+        </button>
+
+        <h2 id="filter-sheet-title" className="font-headline-md text-lg font-bold text-text m-0 pe-11 lg:pe-0">
           {t("filters.sheet.title")}
         </h2>
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import Popover from "@/components/ui/Popover";
 
 // MEH-800: contract tests for the click-popover primitive. The dismissal
@@ -128,6 +128,38 @@ describe("ui/Popover", () => {
       } finally {
         restore();
       }
+    });
+
+    // MEH-3271 (Sapir 18/11): a visible ✕ on the sheet when the caller names it.
+    it("the sheet shows a labelled ✕ that closes it and returns focus", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
+        const trigger = screen.getByText("פתחי");
+        fireEvent.click(trigger);
+        const close = screen.getByTestId("pop-content-close");
+        expect(close).toHaveAttribute("aria-label", "סגור");
+        fireEvent.click(close);
+        expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+        expect(document.activeElement).toBe(trigger);
+      } finally {
+        restore();
+      }
+    });
+
+    it("no ✕ without a label, and never on the anchored desktop panel", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true });
+        fireEvent.click(screen.getByText("פתחי"));
+        expect(screen.queryByTestId("pop-content-close")).not.toBeInTheDocument();
+      } finally {
+        restore();
+      }
+      cleanup();
+      renderPopover({ sheetOnMobile: true, closeLabel: "סגור" });
+      fireEvent.click(screen.getByText("פתחי"));
+      expect(screen.queryByTestId("pop-content-close")).not.toBeInTheDocument();
     });
 
     it("backdrop click closes the sheet; Esc still returns focus to trigger", () => {

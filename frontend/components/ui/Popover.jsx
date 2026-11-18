@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { X } from "@phosphor-icons/react";
 import { clamp } from "@/lib/panel-position";
 
 /**
@@ -97,6 +98,11 @@ const PLACEMENT_CLASSES = {
  *   (above it, flipping below when there is no room). Defaults to the trigger,
  *   which only clears the trigger itself — pass the row/container when the
  *   siblings inside it must be cleared too.
+ * @param {string} [props.closeLabel] - MEH-3271. Accessible name of the
+ *   visible ✕ the mobile SHEET shows at its top end (WCAG 2.2 2.5.7: a
+ *   non-drag, discoverable way out). No label → no ✕ (this primitive has no
+ *   translations of its own; callers pass `common.aria.close`). The anchored
+ *   and overlay panels never show it.
  */
 export default function Popover({
   trigger,
@@ -109,6 +115,7 @@ export default function Popover({
   contentTestId,
   overlay = false,
   avoidRef = null,
+  closeLabel = "",
 }) {
   const [open, setOpen] = useState(false);
   // Sheet presentation is decided ONCE per open (matchMedia at tap time) so
@@ -356,6 +363,24 @@ export default function Popover({
             : `absolute ${PLACEMENT_CLASSES[placement] ?? PLACEMENT_CLASSES.bottom} z-popover bg-surface border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
       }
     >
+      {sheetActive && closeLabel ? (
+        // MEH-3271 (Sapir 18/11): a row of its own above the content, so the
+        // ✕ never covers a caller's first line whatever it renders.
+        <span className="flex justify-end -mt-2 -me-2 mb-1">
+          <button
+            type="button"
+            aria-label={closeLabel}
+            data-testid={contentTestId ? `${contentTestId}-close` : undefined}
+            onClick={() => {
+              setOpen(false);
+              triggerRef.current?.focus();
+            }}
+            className="w-11 h-11 inline-flex items-center justify-center rounded-full text-text hover:bg-green-50 transition-colors"
+          >
+            <X size={18} weight="regular" aria-hidden="true" />
+          </button>
+        </span>
+      ) : null}
       {children}
     </span>
   );
