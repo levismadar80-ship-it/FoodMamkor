@@ -1755,8 +1755,10 @@ class TestLoginTimingEqualization:
         - 5 warmup iterations (discarded) + 50 measured iterations per
           branch. Warmup absorbs first-call passlib/bcrypt module-init
           variance.
-        - p95 latency computed per branch via statistics.quantiles.
-        - Assertion: max(p95) - min(p95) < 20ms across the 3 branches.
+        - The three branches are interleaved, one request each per round
+          (MEH-3031), so runner noise lands on all of them alike.
+        - Median latency per branch (MEH-3031; was p95).
+        - Assertion: max(median) - min(median) < 20ms across the 3 branches.
 
     Flakiness mitigation (MEH-647):
         On slow or contended CI runners, bcrypt timing variance may
@@ -1815,13 +1817,43 @@ class TestLoginTimingEqualization:
         N = 50
         from app.rate_limit import limiter
 
-        def measure(branch_id: int, email_for, password_for) -> float:
-            """Return p95 of N measured iterations after WARMUP warmups.
-
-            email_for(i) and password_for(i) build per-iteration payloads.
-            """
-            times = []
-            for i in range(WARMUP + N):
+        # MEH-3031: the three branches are measured INTERLEAVED, one
+        # request of each per round, not as three back-to-back blocks. In
+        # blocks, a slow patch of a shared CI runner (a neighbour job, a
+        # GC, a thermal dip) lands on whichever branch runs during it and
+        # shows up as a spread between branches — measured on staging:
+        # 27.8ms with all three p95s within 205-232ms. Interleaved, that
+        # noise is spread over all three branches alike, so the spread
+        # measures the code again. The 20ms threshold is unchanged; it
+        # still goes red when a branch skips its bcrypt (shown failing on
+        # the PR by removing the sentinel verify from the wrong-email
+        # branch).
+        branches = {
+            # Branch 1 — wrong-email. Each iteration uses a unique
+            # nonexistent address so no DB-cache effects.
+            "wrong_email": (
+                1,
+                lambda i: f"nx-{uuid.uuid4().hex[:8]}@example.com",
+                lambda i: "anyPassword123!",
+            ),
+            # Branch 2 — OAuth-only (same row each iter, password ignored
+            # at the OAuth-only short-circuit).
+            "oauth_only": (
+                2,
+                lambda i: "oauth-only-victim@example.com",
+                lambda i: "anyPassword123!",
+            ),
+            # Branch 3 — wrong-password (same row, fresh wrong password
+            # per iter to avoid any caching).
+            "wrong_password": (
+                3,
+                lambda i: "wrong-pw-victim@example.com",
+                lambda i: f"wrongPw-{i}-Zz!",
+            ),
+        }
+        times: dict[str, list[float]] = {name: [] for name in branches}
+        for i in range(WARMUP + N):
+            for name, (branch_id, email_for, password_for) in branches.items():
                 payload = {"email": email_for(i), "password": password_for(i)}
                 headers = {
                     "X-Real-IP": (
@@ -1841,45 +1873,34 @@ class TestLoginTimingEqualization:
                     f"expected 401, got {resp.status_code}"
                 )
                 if i >= WARMUP:
-                    times.append(elapsed)
-            return statistics.quantiles(times, n=100)[94]
+                    times[name].append(elapsed)
+        assert {len(t) for t in times.values()} == {N}
 
-        # Branch 1 — wrong-email. Each iteration uses a unique
-        # nonexistent address so no DB-cache effects.
-        p95_wrong_email = measure(
-            branch_id=1,
-            email_for=lambda i: f"nx-{uuid.uuid4().hex[:8]}@example.com",
-            password_for=lambda i: "anyPassword123!",
-        )
+        # MEH-3031: compare MEDIANS, not p95s. With N=50 the p95 is the
+        # third-slowest sample, so two scheduler stalls on one branch move
+        # it by tens of ms. A timing attacker averages many requests, so
+        # the median is the statistic the attack actually exploits — and a
+        # skipped bcrypt moves every sample, so it moves the median by the
+        # full hash cost (~200ms here), ten times the threshold.
+        def median(name: str) -> float:
+            return statistics.median(times[name])
 
-        # Branch 2 — OAuth-only (same row each iter, password ignored
-        # at the OAuth-only short-circuit).
-        p95_oauth_only = measure(
-            branch_id=2,
-            email_for=lambda i: "oauth-only-victim@example.com",
-            password_for=lambda i: "anyPassword123!",
-        )
+        median_wrong_email = median("wrong_email")
+        median_oauth_only = median("oauth_only")
+        median_wrong_password = median("wrong_password")
 
-        # Branch 3 — wrong-password (same row, fresh wrong password
-        # per iter to avoid any caching).
-        p95_wrong_password = measure(
-            branch_id=3,
-            email_for=lambda i: "wrong-pw-victim@example.com",
-            password_for=lambda i: f"wrongPw-{i}-Zz!",
-        )
-
-        p95s = {
-            "wrong_email": p95_wrong_email,
-            "oauth_only": p95_oauth_only,
-            "wrong_password": p95_wrong_password,
+        medians = {
+            "wrong_email": median_wrong_email,
+            "oauth_only": median_oauth_only,
+            "wrong_password": median_wrong_password,
         }
-        spread = max(p95s.values()) - min(p95s.values())
+        spread = max(medians.values()) - min(medians.values())
         assert spread < 0.020, (
-            f"p95 spread {spread * 1000:.1f}ms exceeds 20ms threshold. "
-            f"per-branch p95 (ms): "
-            f"wrong_email={p95_wrong_email * 1000:.1f}, "
-            f"oauth_only={p95_oauth_only * 1000:.1f}, "
-            f"wrong_password={p95_wrong_password * 1000:.1f}"
+            f"median spread {spread * 1000:.1f}ms exceeds 20ms threshold. "
+            f"per-branch median (ms): "
+            f"wrong_email={median_wrong_email * 1000:.1f}, "
+            f"oauth_only={median_oauth_only * 1000:.1f}, "
+            f"wrong_password={median_wrong_password * 1000:.1f}"
         )
 
 
