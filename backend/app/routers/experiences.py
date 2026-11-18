@@ -366,7 +366,7 @@ def get_experience(
         .first()
     )
     if not ex:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
 
     is_owner = user and user.id == ex.host_user_id
     is_admin = user and user.role == "admin"
@@ -388,7 +388,7 @@ def get_experience(
             _publicly_visible_query(db).filter(Experience.id == experience_id).first()
         )
         if visible is None:
-            raise HTTPException(status_code=404, detail="Experience not found")
+            raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
 
     payload = _serialize_detail(ex)
 
@@ -585,12 +585,12 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
 ) -> ExperienceDetailOut | dict[str, Any]:
     ex = db.query(Experience).filter(Experience.id == experience_id).first()
     if not ex:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     if ex.host_user_id != user.id:
         # MEH-1001: 404 (not 403) on cross-owner access so a stranger can't
         # confirm another host's experience exists. Stays owner-only.
         # REUSES events.py update_event (producer_recipes.py:203-206).
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
 
     # MEH-2852: read BEFORE the edit — a content edit resets an approved
     # experience to pending, which takes its public page down.
@@ -715,13 +715,13 @@ def delete_experience(
 ) -> dict[str, Any]:
     ex = db.query(Experience).filter(Experience.id == experience_id).first()
     if not ex:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     is_owner = ex.host_user_id == user.id
     is_admin = getattr(user, "role", None) == "admin"
     # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
     # experience's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     # MEH-2852: only a page that was public has anything to take down.
     removed_urls = indexnow.experience_urls(ex.id) if _is_public(ex) else []
     # MEH-3227: registrants are told before the cascade removes their rows.

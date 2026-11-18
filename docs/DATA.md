@@ -1629,7 +1629,7 @@ the enum is enforced on **write** (`events.py` `VALID_CATEGORIES`, POST + PUT),
 not by a DB constraint, and no backfill was run.
 
 **MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
-"Event not found"**, not 403 — a foreign producer can't confirm an
+"האירוע לא נמצא"**, not 403 — a foreign producer can't confirm an
 event id exists (matches `producer_recipes.py:203-206`). DELETE keeps
 its admin-override, so an admin still deletes (→ 200).
 
@@ -1649,7 +1649,7 @@ DELETE /experiences/{id}               auth    — owner or admin (stranger → 
 ```
 
 **MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
-"Experience not found"**, not 403 — a stranger can't confirm an experience
+"החוויה לא נמצאה"**, not 403 — a stranger can't confirm an experience
 id exists (matches `producer_recipes.py:203-206` + events). DELETE keeps
 its admin-override (admin → 200).
 

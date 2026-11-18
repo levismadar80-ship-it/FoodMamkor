@@ -59,7 +59,7 @@ class TestUpdateEventCrossOwner:
             headers=auth_header(user_b),
         )
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Event not found"
+        assert resp.json()["detail"] == "האירוע לא נמצא"
 
     def test_owner_put_gets_200(self, client, db):
         producer, user = _make_producer_user(db, email="owner@example.com")
@@ -88,7 +88,7 @@ class TestDeleteEventCrossOwner:
             headers=auth_header(user_b),
         )
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Event not found"
+        assert resp.json()["detail"] == "האירוע לא נמצא"
         # Existence preserved — the stranger's 404 must not have deleted it.
         assert db.query(Event).filter(Event.id == event.id).first() is not None
 
