@@ -75,10 +75,10 @@ describe("PasskeySettings", () => {
       return { data: { passkey: row(1), recovery_codes: ["AAAAA-BBBBB", "CCCCC-DDDDD"] } };
     });
     render(<PasskeySettings />);
-    fireEvent.change(await screen.findByLabelText("הסיסמה של החשבון"), { target: { value: "pw-123456789" } });
+    fireEvent.change(await screen.findByLabelText("הסיסמה של החשבון"), { target: { value: "example-pw-123456789" } });
     fireEvent.click(screen.getByTestId("passkey-add"));
     expect(await screen.findByTestId("passkey-codes")).toHaveTextContent("AAAAA-BBBBB");
-    expect(api.post).toHaveBeenCalledWith("/auth/passkey/register/options", { password: "pw-123456789" });
+    expect(api.post).toHaveBeenCalledWith("/auth/passkey/register/options", { password: "example-pw-123456789" });
     expect(createPasskey).toHaveBeenCalled();
     fireEvent.click(screen.getByText("שמרתי"));
     await waitFor(() => expect(screen.queryByTestId("passkey-codes")).toBeNull());

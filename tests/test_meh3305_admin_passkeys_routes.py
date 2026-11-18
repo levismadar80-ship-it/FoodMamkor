@@ -20,6 +20,7 @@ Behaviour pinned:
 """
 
 import hashlib
+import inspect
 import json
 import os
 import struct
@@ -39,7 +40,9 @@ from tests.conftest import make_user
 
 RP_ID = "staging.mehamakor.online"
 ORIGIN = "https://staging.mehamakor.online"
-PASSWORD = "Zx7Yp9Mq2Lr4"
+# The password make_user() gives every account (tests/conftest.py), read
+# from its signature so the two can never drift apart.
+PASSWORD = inspect.signature(make_user).parameters["password"].default
 
 
 def b64(data: bytes) -> str:
