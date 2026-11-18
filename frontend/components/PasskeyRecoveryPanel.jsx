@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /** @param {{ onSignedIn: (me: any) => void }} props */
 export default function PasskeyRecoveryPanel({ onSignedIn }) {
@@ -50,7 +51,7 @@ export default function PasskeyRecoveryPanel({ onSignedIn }) {
       data-testid="passkey-recovery"
     >
       <div className="grid gap-2 text-start">
-        <h2 className="font-headline-md font-black text-headline-md text-text">{t("title")}</h2>
+        <SectionHeading size="content">{t("title")}</SectionHeading>
         <p className="text-base text-fg-muted">{t("body")}</p>
       </div>
       <Input
