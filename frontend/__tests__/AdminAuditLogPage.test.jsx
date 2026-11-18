@@ -16,15 +16,18 @@ import he from "../messages/he.json";
 import Page from "@/app/[locale]/admin/audit-log/page";
 
 const apiMock = vi.hoisted(() => ({ pages: [], get: vi.fn() }));
+const toastMock = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@/lib/api", () => ({
   default: {
     get: (...a) => {
       apiMock.get(...a);
-      return Promise.resolve({ data: { items: apiMock.pages.shift() || [] } });
+      const next = apiMock.pages.shift();
+      if (next instanceof Error) return Promise.reject(next);
+      return Promise.resolve({ data: { items: next || [] } });
     },
   },
 }));
-vi.mock("@/lib/toast", () => ({ showToast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock("@/lib/toast", () => ({ showToast: toastMock }));
 
 let n = 0;
 const row = (over = {}) => {
@@ -51,6 +54,7 @@ const renderPage = () =>
 
 beforeEach(() => {
   apiMock.get.mockClear();
+  toastMock.error.mockClear();
   apiMock.pages = [];
 });
 
@@ -91,9 +95,26 @@ describe("admin audit log screen", () => {
     fireEvent.click(more);
     expect(await screen.findByText("older@example.com")).toBeTruthy();
     expect(apiMock.get).toHaveBeenLastCalledWith("/admin/audit-log", {
-      params: { limit: 50, before: first[49].created_at },
+      params: { limit: 50, before: first[49].created_at, before_id: first[49].id },
     });
     expect(screen.getAllByRole("row")).toHaveLength(52);
     await waitFor(() => expect(screen.queryByTestId("audit-log-more")).toBeNull());
+  });
+
+  it("the time reads in Israel time, 24h, whatever the browser's zone", async () => {
+    // 21:30 UTC on 18/11 is 23:30 in Israel (UTC+2 in November).
+    apiMock.pages = [[row({ created_at: "2026-11-18T21:30:00+00:00" })]];
+    renderPage();
+    expect(await screen.findByText(/18\.11\.2026.*23:30/)).toBeTruthy();
+  });
+
+  it("a failed 'earlier' fetch toasts, keeps the rows and keeps the button", async () => {
+    const first = Array.from({ length: 50 }, () => row());
+    apiMock.pages = [first, new Error("boom")];
+    renderPage();
+    fireEvent.click(await screen.findByTestId("audit-log-more"));
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith(he.admin.audit_log.load_error));
+    expect(screen.getAllByRole("row")).toHaveLength(51);
+    expect(screen.getByTestId("audit-log-more")).toBeTruthy();
   });
 });

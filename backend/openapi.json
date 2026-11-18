@@ -16431,7 +16431,7 @@
     },
     "/admin/audit-log": {
       "get": {
-        "description": "MEH-3306: the admin audit log, newest first. `before` pages back by\n`created_at`. The stored IP is not returned: it is kept for an\ninvestigation, not for a list.",
+        "description": "MEH-3306: the admin audit log, newest first. `before` pages back by\n`created_at`; with `before_id` too (the last row's id) it is a keyset\ncursor on (created_at, id), so two rows sharing one created_at at a page\nboundary are not skipped. The stored IP is not returned: it is kept for an\ninvestigation, not for a list. `actor_email` is looked up in one query\nfor the page, and is None when that account no longer exists (actor_id\nis not a FK, on purpose — models/admin_ops.py).",
         "operationId": "list_audit_log_admin_audit_log_get",
         "parameters": [
           {
@@ -16461,6 +16461,23 @@
                 }
               ],
               "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Id"
             }
           }
         ],

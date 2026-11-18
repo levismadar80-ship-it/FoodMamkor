@@ -21,8 +21,12 @@ export const GetAnalyticsAdminAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()
 
 /**
  * MEH-3306: the admin audit log, newest first. `before` pages back by
- * `created_at`. The stored IP is not returned: it is kept for an
- * investigation, not for a list.
+ * `created_at`; with `before_id` too (the last row's id) it is a keyset
+ * cursor on (created_at, id), so two rows sharing one created_at at a page
+ * boundary are not skipped. The stored IP is not returned: it is kept for an
+ * investigation, not for a list. `actor_email` is looked up in one query
+ * for the page, and is None when that account no longer exists (actor_id
+ * is not a FK, on purpose — models/admin_ops.py).
  * @summary List Audit Log
  */
 export const ListAuditLogAdminAuditLogGetResponse = /*#__PURE__*/ zod.unknown()

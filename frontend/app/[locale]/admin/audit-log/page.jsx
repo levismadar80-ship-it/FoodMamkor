@@ -16,21 +16,13 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { formatEventDate } from "@/lib/format-date";
+import { formatDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 
 const PAGE_SIZE = 50;
-/** @type {Intl.DateTimeFormatOptions} */
-const DATE_OPTS = {
-  day: "numeric",
-  month: "numeric",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-};
 
 /** "PUT /admin/users/{user_id}/role" → ["PUT", "/admin/users/{user_id}/role"] */
 function splitAction(action) {
@@ -58,9 +50,10 @@ function AuditRow({ row, t, locale }) {
   const [method, path] = splitAction(row.action);
   const methodKey = ["POST", "PUT", "PATCH", "DELETE"].includes(method) ? method : "OTHER";
   return (
-    <tr className="border-t border-border hover:bg-gray-50/50">
-      <td className="px-5 py-3 text-xs text-fg-muted">
-        {formatEventDate(row.created_at, locale, DATE_OPTS)}
+    <tr className="border-t border-border hover:bg-background-alt/50">
+      {/* MEH-3060: Israel time for every admin, whatever her browser's zone. */}
+      <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("audit_log.columns.when")}>
+        {formatDate(row.created_at, locale, "dateTime")}
       </td>
       <td className="px-5 py-3 text-xs" data-label={t("audit_log.columns.actor")}>
         {row.actor_email || <span className="text-fg-muted">{t("audit_log.deleted_actor")}</span>}
@@ -89,12 +82,17 @@ export default function AdminAuditLogPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
 
-  const fetchPage = (before) =>
+  // Keyset cursor (created_at, id): a tie on created_at at a page edge is not skipped.
+  const fetchPage = (last) =>
     api
-      .get("/admin/audit-log", { params: before ? { limit: PAGE_SIZE, before } : { limit: PAGE_SIZE } })
+      .get("/admin/audit-log", {
+        params: last
+          ? { limit: PAGE_SIZE, before: last.created_at, before_id: last.id }
+          : { limit: PAGE_SIZE },
+      })
       .then((res) => {
         const items = res.data?.items || [];
-        setRows((prev) => (before ? [...prev, ...items] : items));
+        setRows((prev) => (last ? [...prev, ...items] : items));
         setHasMore(items.length === PAGE_SIZE);
       })
       .catch(() => showToast.error(t("audit_log.load_error")));
@@ -106,7 +104,7 @@ export default function AdminAuditLogPage() {
 
   const loadMore = () => {
     setLoadingMore(true);
-    fetchPage(rows.at(-1).created_at).finally(() => setLoadingMore(false));
+    fetchPage(rows.at(-1)).finally(() => setLoadingMore(false));
   };
 
   if (loading) return <SkeletonList count={3} label={t("common.loading")} />;
@@ -127,7 +125,7 @@ export default function AdminAuditLogPage() {
         <div className="bg-surface border border-border rounded-md overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-fg-muted text-xs">
+              <tr className="bg-background-alt text-fg-muted text-xs">
                 <th className="px-5 py-2 text-start font-medium">{t("audit_log.columns.when")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("audit_log.columns.actor")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("audit_log.columns.action")}</th>

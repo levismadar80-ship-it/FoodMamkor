@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
-from sqlalchemy import func
+from sqlalchemy import func, tuple_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -271,16 +271,23 @@ def block_user(
 def list_audit_log(
     limit: int = Query(50, ge=1, le=200),
     before: datetime | None = None,
+    before_id: UUID | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """MEH-3306: the admin audit log, newest first. `before` pages back by
-    `created_at`. The stored IP is not returned: it is kept for an
+    `created_at`; with `before_id` too (the last row's id) it is a keyset
+    cursor on (created_at, id), so two rows sharing one created_at at a page
+    boundary are not skipped. The stored IP is not returned: it is kept for an
     investigation, not for a list. `actor_email` is looked up in one query
     for the page, and is None when that account no longer exists (actor_id
     is not a FK, on purpose — models/admin_ops.py)."""
     query = db.query(AdminAuditLog)
-    if before is not None:
+    if before is not None and before_id is not None:
+        query = query.filter(
+            tuple_(AdminAuditLog.created_at, AdminAuditLog.id) < (before, before_id)
+        )
+    elif before is not None:
         query = query.filter(AdminAuditLog.created_at < before)
     rows = (
         query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())

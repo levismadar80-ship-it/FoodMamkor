@@ -13,6 +13,7 @@
 * `backend/app/routers/admin.py`
 * `backend/app/services/admin_audit.py` — יומן הפעולות (MEH-3306): שורה לכל שינוי מוצלח של חשבון אדמין, נכתבת מתוך `backend/app/auth.py`. קריאה: `GET /admin/audit-log` ב-`backend/app/routers/admin_extra.py`.
 * `frontend/components/admin/AdminRowMenu.jsx`
+* `frontend/app/[locale]/admin/audit-log/page.jsx` — מסך יומן הפעולות: 50 שורות, «הצגת פעולות קודמות» לפי (created_at, id).
 * `backend/app/services/producer_risk.py` — דירוג סיכון לפני אישור.
 
 **Flags.** אין. ‏`SUPER_ADMIN_EMAIL` הוא הגדרת סביבה, לא flag.
