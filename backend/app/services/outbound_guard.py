@@ -27,7 +27,10 @@ logger = logging.getLogger(__name__)
 
 # MEH-3402: prefix of the subject of a redirected email, so the inbox shows at
 # a glance which mail came from staging and who it was really for.
+# The subject carries the MASKED recipient (it reaches logs and Sentry); the
+# full original address is the first line of the body, which is never logged.
 REDIRECT_SUBJECT_PREFIX = "[STAGING → {to}] "
+REDIRECT_BODY_PREFIX = "[STAGING] נשלח במקור אל: {to}\n\n"
 
 
 def is_production() -> bool:
@@ -65,8 +68,16 @@ def _allowed_emails() -> frozenset[str]:
     return frozenset(_norm_email(a) for a in configured if a and "@" in a)
 
 
+# A single plain address only: a list ("a@x,b@y"), a display name or any
+# whitespace is never "allowed", so it cannot smuggle a second recipient past
+# the plus-alias check (fresh reviewer, MEH-3402).
+_NOT_A_SINGLE_ADDRESS = re.compile(r"[,;<>\s\"']")
+
+
 def email_allowed_outside_production(to: str) -> bool:
     """A staff address from settings, or a plus-alias of one."""
+    if _NOT_A_SINGLE_ADDRESS.search(to.strip()) or to.count("@") != 1:
+        return False
     allowed = _allowed_emails()
     return _norm_email(to) in allowed or _base_email(to) in allowed
 
@@ -79,6 +90,11 @@ class EmailRoute:
     subject: str
     reply_to: str | None
     redirected: bool
+    original_to: str = ""
+
+
+def _mask(to: str) -> str:
+    return f"***@{to.rpartition('@')[2]}" if "@" in to else "***"
 
 
 def route_email(to: str, subject: str, reply_to: str | None) -> EmailRoute:
@@ -90,12 +106,15 @@ def route_email(to: str, subject: str, reply_to: str | None) -> EmailRoute:
         return EmailRoute(to=to, subject=subject, reply_to=reply_to, redirected=False)
     target = settings.admin_email.strip()
     if not target or "@" not in target:
-        return EmailRoute(to="", subject=subject, reply_to=None, redirected=True)
+        return EmailRoute(
+            to="", subject=subject, reply_to=None, redirected=True, original_to=to
+        )
     return EmailRoute(
         to=target,
-        subject=REDIRECT_SUBJECT_PREFIX.format(to=to) + subject,
+        subject=REDIRECT_SUBJECT_PREFIX.format(to=_mask(to)) + subject,
         reply_to=None,
         redirected=True,
+        original_to=to,
     )
 
 

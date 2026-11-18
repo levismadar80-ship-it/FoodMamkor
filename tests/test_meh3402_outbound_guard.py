@@ -59,6 +59,8 @@ def resend_spy(monkeypatch):
         ("staging", "staging", False),
         ("development", "", False),
         ("", "pr-123", False),
+        ("  PRODUCTION\n", "", True),
+        ("prod", "prod", False),
     ],
 )
 def test_is_production(monkeypatch, env, railway, expected):
@@ -75,9 +77,58 @@ def test_staging_mail_to_real_owner_goes_to_admin_not_owner(staging, resend_spy)
     assert len(resend_spy) == 1
     params = resend_spy[0]
     assert params["to"] == ADMIN
-    assert REAL_OWNER in params["subject"]
-    assert params["subject"].endswith("העסק שלך אושר")
+    assert params["subject"] == "[STAGING → ***@realfarm.co.il] העסק שלך אושר"
+    assert REAL_OWNER not in params["subject"]  # subject reaches logs/Sentry
+    assert params["text"].startswith(f"[STAGING] נשלח במקור אל: {REAL_OWNER}")
+    assert params["text"].endswith("גוף")
     assert "reply_to" not in params
+
+
+def test_redirected_html_carries_escaped_original_recipient(staging, resend_spy):
+    email_mod.send_email(REAL_OWNER, "נושא", "גוף", html="<b>גוף</b>")
+    html = resend_spy[0]["html"]
+    assert REAL_OWNER in html
+    assert html.endswith("<b>גוף</b>")
+
+
+@pytest.mark.parametrize("field", ["contact_email", "super_admin_email"])
+def test_staging_mail_to_other_staff_addresses_is_delivered(
+    staging, resend_spy, monkeypatch, field
+):
+    monkeypatch.setattr(settings, field, "team@mehamakor.co.il")
+    email_mod.send_email("Team+qa@mehamakor.co.il", "נושא", "גוף")
+    assert resend_spy[0]["to"] == "Team+qa@mehamakor.co.il"
+
+
+@pytest.mark.parametrize(
+    "to",
+    [
+        "sapir.admin+x@gmail.com,victim@gmail.com",
+        "sapir.admin+x@gmail.com;victim@gmail.com",
+        "victim@gmail.com, sapir.admin@gmail.com",
+        "Sapir <sapir.admin@gmail.com>",
+    ],
+)
+def test_staging_multi_recipient_string_is_never_allowed(staging, resend_spy, to):
+    email_mod.send_email(to, "נושא", "גוף")
+    assert resend_spy[0]["to"] == ADMIN
+
+
+def test_staging_malformed_admin_email_means_not_sent(staging, resend_spy, monkeypatch):
+    monkeypatch.setattr(settings, "admin_email", "not-an-address")
+    email_mod.send_email(REAL_OWNER, "נושא", "גוף")
+    assert resend_spy == []
+
+
+def test_guard_failure_fails_closed_and_does_not_raise(
+    staging, resend_spy, monkeypatch
+):
+    def boom(*_a, **_k):
+        raise RuntimeError("guard broke")
+
+    monkeypatch.setattr(email_mod, "route_email", boom)
+    email_mod.send_email(REAL_OWNER, "נושא", "גוף")  # must not raise
+    assert resend_spy == []
 
 
 def test_staging_mail_to_admin_plus_alias_is_delivered_directly(staging, resend_spy):
@@ -121,6 +172,30 @@ def graph_spy(monkeypatch):
 
     monkeypatch.setattr(whatsapp, "_post", fake_post)
     return calls
+
+
+def test_staging_dropped_whatsapp_makes_no_http_and_persists_nothing(
+    staging, monkeypatch
+):
+    monkeypatch.setattr(settings, "whatsapp_phone_number_id", "pid")
+    monkeypatch.setattr(settings, "whatsapp_access_token", "tok")
+    http = MagicMock()
+    persist = MagicMock()
+    monkeypatch.setattr(whatsapp.httpx, "post", http)
+    monkeypatch.setattr(whatsapp, "_persist_outbound", persist)
+    assert whatsapp.send_text("+972541112233", "שלום") is False
+    assert not http.called
+    assert not persist.called
+
+
+def test_staging_whatsapp_with_no_staff_numbers_sends_nothing(
+    staging, graph_spy, monkeypatch
+):
+    monkeypatch.setattr(settings, "admin_whatsapp_to", "")
+    monkeypatch.setattr(settings, "otp_test_numbers", "")
+    assert whatsapp.send_text("0501234567", "שלום") is False
+    assert whatsapp.send_text("", "שלום") is False
+    assert graph_spy == []
 
 
 def test_staging_whatsapp_to_real_number_is_dropped(staging, graph_spy):
