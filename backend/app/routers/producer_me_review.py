@@ -319,6 +319,9 @@ def request_kashrut_badge(
     if existing:
         raise HTTPException(status_code=409, detail="בקשה לbadge זה כבר ממתינה לאישור")
 
+    from app.services.image_ownership import assert_own_new_images  # MEH-3247
+
+    assert_own_new_images(user, body.cert_url)
     req = KashrutBadgeRequest(
         producer_id=producer.id,
         badge_code=body.badge_code,
