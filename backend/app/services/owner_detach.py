@@ -34,25 +34,25 @@ def send_owner_detached_email(
     ]
     body = f"{greeting}\n\n" + "\n\n".join(lines) + "\n\nספיר שנפ\nמייסדת | מהמקור"
     paragraphs = "".join(
-        f'<p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 12px;">'
+        f'<p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">'
         f"{html_escape(line)}</p>"
         for line in lines
     )
     html_body = f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
-            <td style="text-align:right;direction:rtl;">
+            <td style="text-align:right;direction:rtl;padding:32px 24px;">
               {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">{html_escape(greeting)}</h1>
               {paragraphs}
-              <p style="color:#3a3a3a;font-size:14px;line-height:1.6;margin:12px 0 0;">ספיר שנפ<br>מייסדת | מהמקור</p>
+              <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:12px 0 0;">ספיר שנפ<br>מייסדת | מהמקור</p>
             </td>
           </tr>
         </table>
