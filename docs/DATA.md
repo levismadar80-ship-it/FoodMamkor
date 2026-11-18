@@ -1329,8 +1329,10 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               delivery_waitlist rows with wants_to_host, newest first, max 50);
                                                               share_visits (MEH-3331: {last_7d, last_30d, total}, page
                                                               views with referrer='share' — links the owner shared from
-                                                              the share kit — visitors per Israel day; no roll-up
-                                                              column, the dashboard reads last_30d only)
+                                                              the share kit — visitors per Israel day. No roll-up
+                                                              column, so `total` is raw-only and shrinks once raw
+                                                              page views are purged (MEH-2283 chunk C); read
+                                                              last_7d / last_30d. The dashboard reads last_30d only)
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row

@@ -164,8 +164,9 @@ def _metric_specs() -> dict[str, tuple[Any, Any, dict[str, Any]]]:
             },
         ),
         # MEH-3331: visits through a link the owner shared (?from=share).
-        # No roll-up column: the `total` arm stays raw, which is fine — the
-        # dashboard reads only last_30d (the raw window, Sapir 06/09).
+        # No roll-up column: `total` is raw-only and shrinks once raw views
+        # are purged (MEH-2283 chunk C) — documented in docs/DATA.md. The
+        # dashboard reads only last_30d.
         "share_visits": (
             ProducerPageView,
             ProducerPageView.created_at,
