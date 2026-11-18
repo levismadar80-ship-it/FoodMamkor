@@ -217,7 +217,7 @@ def update_user_role(
     # the same way: ownership is moved, never dropped.
     if target.producer_id is not None:
         raise HTTPException(status_code=409, detail=ROLE_CHANGE_LINKED_BUSINESS_HE)
-    target.role = data.role  # type: ignore[assignment]
+    target.role = data.role
     db.commit()
     return {"detail": "Role updated", "role": target.role}
 
