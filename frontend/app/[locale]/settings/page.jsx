@@ -12,7 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
-import api from "@/lib/api";
+import api, { MAX_UPLOAD_BYTES } from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { useUserCity } from "@/lib/use-user-city";
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
@@ -290,7 +290,7 @@ export function ProfileTab() {
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(t("upload_size_error"));
       e.target.value = "";
       return;
