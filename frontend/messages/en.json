@@ -755,6 +755,10 @@
       "country": "Israel",
       "offer_catalog_name": "Products"
     },
+    "draft_preview": {
+      "title": "Page preview",
+      "description": "The page we prepared for you on Mehamakor"
+    },
     "owner_invite": {
       "title": "Set a password for your business page",
       "description": "Your page on Mehamakor is ready"
@@ -1858,6 +1862,36 @@
         "copy_failed": "Copying failed. You can select the link and copy it manually.",
         "expires": "Valid until {date}",
         "error": "Could not create the link"
+      },
+      "draft_preview": {
+        "title": "Preview link",
+        "intro": "A view-only link to this page, before it goes live. You can send it to the business. Valid for 14 days, and it stops working once the page is published or deleted.",
+        "create": "Create preview link",
+        "creating": "Creating link…",
+        "url_label": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "expires": "Valid until {date}",
+        "error": "Could not create the link"
+      },
+      "consent_publish": {
+        "title": "Publish with consent",
+        "intro": "Did the business confirm in writing that the page can go live? Write what was approved, where and when, and the page goes on the site.",
+        "note_label": "Record of consent",
+        "note_placeholder": "For example: confirmed on WhatsApp, 17.11",
+        "consent": "I hold explicit written approval from the business",
+        "without_license": "Publish without a licence number (without the “verified” badge)",
+        "submit": "Publish the page",
+        "publishing": "Publishing…",
+        "published": "The page is live",
+        "error": "Could not publish the page",
+        "screenshot_label": "Screenshot of the approval (optional)",
+        "screenshot_uploading": "Uploading the screenshot…",
+        "screenshot_attached": "Screenshot attached. View",
+        "screenshot_remove": "Remove",
+        "screenshot_error": "Could not upload the screenshot",
+        "screenshot_view": "Screenshot of the approval"
       },
       "draft_products": {
         "title": "Products in this draft",
@@ -6135,6 +6169,14 @@
           }
         ]
       }
+    }
+  },
+  "draft_preview": {
+    "banner": "This is a preview of the page we prepared for you on Mehamakor. It is not on the site yet, and only people with this link can see it.",
+    "invalid": {
+      "title": "This link is no longer active",
+      "body": "It may have expired, or the page may already be live. Write to us and we will send a new link.",
+      "contact": "Contact us"
     }
   },
   "claim": {

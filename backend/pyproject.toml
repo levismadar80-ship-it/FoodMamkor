@@ -197,6 +197,8 @@ files = [
     "app/routers/marketing.py",
     "app/routers/organizers.py",
     "app/routers/producer_claim.py",
+    "app/routers/producer_draft_preview.py",
+    "app/services/draft_preview.py",
     "app/routers/producer_me.py",
     "app/routers/producer_me_analytics.py",
     "app/routers/producer_me_locations.py",
