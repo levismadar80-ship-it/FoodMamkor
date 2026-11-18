@@ -1059,7 +1059,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
         producer,
         approved_edit.changed_content(content_before, producer),
         content_ai == "FLAGGED",
-        _test_cause(producer, user),
+        test_cause=_test_cause(producer, user),
     )
     # MEH-2475 (review #3728): an approved organizer moving her city is the same
     # admin-visible event as a business moving its primary location (the

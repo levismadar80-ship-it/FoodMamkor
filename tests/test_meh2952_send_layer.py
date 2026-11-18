@@ -961,6 +961,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "producer.is_test — admin mail about a business page",
     ),
+    ("routers/report_info.py", "report_review", "send_email"): (
+        1,
+        BUS,
+        "producer.is_test — admin mail about a reported review (MEH-3260)",
+    ),
     ("routers/whatsapp_webhook.py", "_maybe_process_optout", "send_text"): (
         1,
         NONE,
@@ -1174,6 +1179,16 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p.is_test or user.is_test",
     ),
+    (
+        "services/approved_edit_moderation.py",
+        "notify_admin_content_edit",
+        "send_text",
+    ): (1, OWN, "wrapper param ← _test_cause(producer, user) (MEH-3261)"),
+    (
+        "services/approved_edit_moderation.py",
+        "notify_admin_content_edit",
+        "send_email",
+    ): (1, OWN, "same"),
     ("services/page_freshness.py", "send_freshness_emails", "send_email"): (
         1,
         OWN,

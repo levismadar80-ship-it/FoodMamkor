@@ -211,7 +211,7 @@ def fire_content_edit(
     if producer.status != "approved" or not changed:
         return
     background_tasks.add_task(
-        _content_edit_task, str(producer.name), changed, flagged, test_cause
+        _content_edit_task, str(producer.name), changed, flagged, test_cause=test_cause
     )
 
 
