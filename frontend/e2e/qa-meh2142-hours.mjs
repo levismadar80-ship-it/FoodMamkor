@@ -1,3 +1,6 @@
+// MEH-2810: components/OpeningHours.jsx is deleted; the hours-toggle / hours-week
+// selectors below belong to it. Kept as a record of the MEH-2142 probe, not run
+// by CI; the live hours card is covered by __tests__/ProducerHoursSection.test.jsx.
 /**
  * MEH-2142 self-QA — store hours move to the primary location (batch B3).
  *
