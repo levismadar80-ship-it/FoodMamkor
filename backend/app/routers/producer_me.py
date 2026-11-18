@@ -489,6 +489,15 @@ LAST_PHOTO_REMOVAL_MESSAGE = (
 LAST_PHOTO_GUARDED_STATUSES = frozenset({"approved", "inactive"})
 
 
+def _assert_gallery_rules(
+    producer: Producer, payload: dict[str, Any], old_images: list[Any]
+) -> None:
+    """MEH-3247: both gallery-write rules in one call (PLR0915 budget)."""
+    _assert_keeps_a_photo(producer, payload, old_images)
+    # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
+    assert_free_gallery_cap(producer, payload, old_images)
+
+
 def _assert_keeps_a_photo(
     producer: Producer, payload: dict[str, Any], old_images: list[Any]
 ) -> None:
@@ -926,11 +935,9 @@ def update_my_producer(
         and _apply_organizer_city(producer, payload["city"])
     )
 
-    # MEH-2911: raised BEFORE the setattr loop, so the whole PUT is refused
-    # rather than half-applied. See the helper for the ruling it enforces.
-    _assert_keeps_a_photo(producer, payload, old_images)
-    # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
-    assert_free_gallery_cap(producer, payload, old_images)
+    # MEH-2911 + MEH-3220: raised BEFORE the setattr loop, so the whole PUT is
+    # refused rather than half-applied (keeps a photo; free-plan 3-photo cap).
+    _assert_gallery_rules(producer, payload, old_images)
     # MEH-3247: a business stores only photos she uploaded herself.
     assert_own_new_images(
         user,
