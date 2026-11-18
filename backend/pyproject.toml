@@ -7,7 +7,7 @@ dependencies = [
     "uvicorn[standard]==0.54.0",
     # Held at 2.0: SQLAlchemy 2.1 resolves postgresql:// to psycopg v3, and this
     # backend ships psycopg2 only (Dependabot #3956 broke conftest import).
-    "sqlalchemy==2.1.8",
+    "sqlalchemy==2.0.55",
     "psycopg2-binary==2.9.13",
     "alembic==1.20.1",
     "joserfc==1.8.0",
