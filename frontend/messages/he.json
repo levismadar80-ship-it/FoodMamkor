@@ -2004,6 +2004,30 @@
           "kashrut": "כשרות",
           "certificate": "תעודה: {code}"
         }
+      },
+      "product_import": {
+        "title": "ייבוא מוצרים מחנות קיימת",
+        "intro": "המוצרים נשמרים כטיוטות ולא מופיעים באתר עד שמאשרים אותם. שם שכבר קיים לבית העסק מדולג, ותמונות לא מיובאות.",
+        "paste_label": "רשימת המוצרים (JSON)",
+        "paste_help": "מערך של מוצרים עם השדות name, description, price, unit. לחנות mypips: scripts/import/mypips-extract.mjs",
+        "import_cta": "ייבוא כטיוטות",
+        "result": "נוספו {created} טיוטות · {skipped} כפולים דולגו · {invalid} שורות לא תקינות",
+        "invalid_row": "שורה {n} ({name}): {reason}",
+        "approved": "{count} מוצרים אושרו ועלו לאתר",
+        "drafts_title": "טיוטות ({count})",
+        "drafts_empty": "אין טיוטות שממתינות לאישור.",
+        "approve_all_cta": "אישור כל הטיוטות ({count})",
+        "delete_cta": "מחיקה",
+        "error": "הפעולה לא הצליחה — נסו שוב.",
+        "error_json": "הטקסט אינו JSON תקין.",
+        "error_shape": "צריך מערך של מוצרים, או אובייקט עם rows.",
+        "unknown_units": "יחידות שלא זוהו ונשמרו כ«ליחידה» — כדאי לבדוק לפני האישור: {units}",
+        "load_failed": "לא הצלחנו לטעון את הטיוטות. נסו לרענן.",
+        "unit": {
+          "unit": "ליחידה",
+          "kg": "לק״ג",
+          "100g": "ל-100 גרם"
+        }
       }
     },
     "users": {

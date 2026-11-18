@@ -9,6 +9,7 @@ from app.routers import (
     admin_kashrut,
     admin_outreach,
     admin_producer_locations,
+    admin_product_import,
     admin_recipes,
     admin_whatsapp,
     alerts,
@@ -185,6 +186,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_recipes.router)
     # MEH-3333: admin CRUD for a business's locations (pickup points).
     app.include_router(admin_producer_locations.router)
+    # MEH-2312: admin catalog import → drafts → approve.
+    app.include_router(admin_product_import.router)
     app.include_router(reviews.router)
     # MEH-1490: live-fetch Google-rating trust line (read-only proxy; no
     # persistence). Registered near reviews — it's the external counterpart to
