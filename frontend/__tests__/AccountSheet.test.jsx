@@ -165,9 +165,24 @@ describe("AccountSheet", () => {
   it("scrim click closes the sheet", () => {
     const onClose = vi.fn();
     render(<AccountSheet {...baseProps()} onClose={onClose} />);
+    // MEH-3271: the visible ✕ carries the same label; the scrim is the
+    // first of the two in DOM order.
     fireEvent.click(
-      screen.getByRole("button", { name: "nav.menu_close" }),
+      screen.getAllByRole("button", { name: "nav.menu_close" })[0],
     );
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+// MEH-3271 (Sapir 18/11): a visible ✕ — the scrim alone is not discoverable.
+describe("AccountSheet visible close (MEH-3271)", () => {
+  it("a labelled ✕ at the reading end closes the sheet", () => {
+    const props = baseProps();
+    render(<AccountSheet {...props} />);
+    const close = screen.getByTestId("account-sheet-close");
+    expect(close).toHaveAttribute("aria-label", "nav.menu_close");
+    expect(close.className).toContain("end-3");
+    fireEvent.click(close);
+    expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 });
