@@ -256,12 +256,12 @@ def _send_newsletter_confirm(email: str) -> None:
             <td style="text-align:right;direction:rtl;">
               {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">{subject}</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">{body}</p>
+              <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">{body}</p>
               <p style="margin:0 0 24px;">
                 <a href="{confirm_url}" style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:999px;">אישור הרשמה</a>
               </p>
-              <hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">
-              <p style="color:#888;font-size:12px;line-height:1.6;margin:0;">
+              <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
+              <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
                 מהמקור — בתי עסק מקומיים, כולם במקום אחד.
               </p>
             </td>
