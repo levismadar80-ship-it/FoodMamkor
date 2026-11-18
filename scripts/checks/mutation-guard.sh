@@ -46,7 +46,7 @@ changed_files() {
   [ -n "${GITHUB_BASE_REF:-}" ] || return 1
   git fetch --no-tags --quiet --depth=100 origin "$GITHUB_BASE_REF" 2>/dev/null || true
   git fetch --no-tags --quiet --deepen=100 2>/dev/null || true
-  git diff --name-only "origin/$GITHUB_BASE_REF...HEAD" 2>/dev/null
+  git diff --name-only "origin/$GITHUB_BASE_REF...HEAD" 2>/dev/null || return 2
 }
 
 if ! crit="$(critical_files)" || [ -z "$crit" ]; then
@@ -57,8 +57,12 @@ if ! body="$(pr_body)"; then
   echo "mutation-guard: skipped — not a pull request (no PR body to read)"
   exit 0
 fi
-if ! files="$(changed_files)"; then
+files="$(changed_files)"; rc=$?
+if [ "$rc" -eq 1 ]; then
   echo "mutation-guard: skipped — no base branch to diff against"
+  exit 0
+elif [ "$rc" -ne 0 ]; then
+  echo "mutation-guard: WARNING — could not diff against origin/$GITHUB_BASE_REF; nothing was checked"
   exit 0
 fi
 hit=""

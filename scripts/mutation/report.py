@@ -94,7 +94,7 @@ def load_explained(path: Path) -> dict[str, str]:
 
 def collect(mutants_dir: Path) -> tuple[dict[str, Counter[str]], list[str]]:
     per_file: dict[str, Counter[str]] = {}
-    survivors: list[str] = []
+    survivors: list[tuple[str, str]] = []
     for meta in sorted(mutants_dir.rglob("*.py.meta")):
         rel = meta.relative_to(mutants_dir).as_posix()[: -len(".meta")]
         data = json.loads(meta.read_text(encoding="utf-8"))
@@ -109,10 +109,12 @@ def collect(mutants_dir: Path) -> tuple[dict[str, Counter[str]], list[str]]:
                 c["killed"] += 1
             elif code in SURVIVED:
                 c["survived"] += 1
-                survivors.append(fingerprint(rel, key, funcs))
+                survivors.append((fingerprint(rel, key, funcs), ""))
             elif code in NO_TESTS:
                 c["no tests"] += 1
-                survivors.append(fingerprint(rel, key, funcs) + "  [no test runs this]")
+                survivors.append(
+                    (fingerprint(rel, key, funcs), "  [no test runs this]")
+                )
             elif code in TIMEOUT:
                 c["timeout"] += 1
             elif code is None:
@@ -120,7 +122,14 @@ def collect(mutants_dir: Path) -> tuple[dict[str, Counter[str]], list[str]]:
             else:
                 c["suspicious"] += 1
         per_file[rel] = c
-    return per_file, survivors
+    # Two mutants in one function can change the same first line the same
+    # way; number the repeats so one explanation line cannot hide a second.
+    seen: Counter[str] = Counter()
+    numbered: list[str] = []
+    for fp, suffix in survivors:
+        seen[fp] += 1
+        numbered.append((fp if seen[fp] == 1 else f"{fp} #{seen[fp]}") + suffix)
+    return per_file, numbered
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -135,6 +144,12 @@ def main(argv: list[str] | None = None) -> int:
     if total == 0 or killed == 0:
         print(
             f"MUTATION VOID: {total} mutants, {killed} killed — the runner did not run; every number here is meaningless."
+        )
+        return 2
+    unchecked = sum(c["not checked"] + c["suspicious"] for c in per_file.values())
+    if unchecked:
+        print(
+            f"MUTATION INCOMPLETE: {unchecked} mutants were not checked or ended with an unknown exit code — the run was interrupted or crashed; re-run it."
         )
         return 2
 

@@ -99,6 +99,84 @@ def test_vitest_only_and_uncarded_skip_are_flagged(tmp_path):
     ]
 
 
+def test_class_skip_module_skip_and_imperative_skip_are_flagged(tmp_path):
+    src = """
+    import pytest
+    pytestmark = [pytest.mark.skip(reason="later")]
+    @pytest.mark.skip(reason="later")
+    class TestA:
+        def test_x(self):
+            assert 1
+    class TestB:
+        def test_x(self):
+            f()
+    def test_s():
+        pytest.skip("not here")
+        assert 1
+    def test_t():
+        pytest.skip("MEH-9 not here")
+        assert 1
+    """
+    assert sorted(_scan(tmp_path, src)) == [
+        "no-verify tests/test_x.py::TestB.test_x",
+        "skip-no-card tests/test_x.py::TestA",
+        "skip-no-card tests/test_x.py::pytestmark",
+        "skip-no-card tests/test_x.py::test_s",
+    ]
+
+
+def test_a_product_call_named_like_a_check_does_not_count(tmp_path):
+    src = """
+    import pytest
+    def test_a(c):
+        c.get("/x")
+        checkpoint()
+        verify_token_cached()
+        check_ok(c)
+        pytest.approx(1)
+    def test_b(m):
+        m.assertEqual(1, 1)
+    def test_c(m):
+        expect_ok(m)
+    """
+    assert _scan(tmp_path, src) == ["no-verify tests/test_x.py::test_a"]
+
+
+def test_vitest_skipif_each_and_wrapped_titles_are_flagged(tmp_path):
+    p = tmp_path / "x.test.js"
+    p.write_text(
+        "it.only.each([1])('a %s', () => {});\n"
+        "it.skipIf(cond)('b', () => {});\n"
+        "it.skip(\n  'c',\n  () => {},\n);\n"
+        "// it.skip('d') in a comment is not a skip\n",
+        encoding="utf-8",
+    )
+    assert [k for k, _ in th.scan_js(p, "x.test.js")] == [
+        "only x.test.js:1",
+        "skip-no-card x.test.js::b",
+        "skip-no-card x.test.js::c",
+    ]
+
+
+def test_main_fails_on_a_new_finding_and_on_a_grown_baseline(tmp_path, capsys):
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests/test_x.py").write_text(
+        "def test_a():\n    f()\n", encoding="utf-8"
+    )
+    key = "no-verify tests/test_x.py::test_a"
+    bl = tmp_path / "bl.txt"
+    bl.write_text("# header\n", encoding="utf-8")
+    assert th.main(["x", str(tmp_path), str(bl)]) == 1
+    bl.write_text(f"# header\n{key}\n", encoding="utf-8")
+    assert th.main(["x", str(tmp_path), str(bl)]) == 0
+    base = tmp_path / "base.txt"
+    base.write_text("# header\n", encoding="utf-8")
+    assert th.main(["x", str(tmp_path), str(bl), str(base)]) == 1
+    assert "baseline grew" in capsys.readouterr().out
+    base.write_text(f"{key}\n", encoding="utf-8")
+    assert th.main(["x", str(tmp_path), str(bl), str(base)]) == 0
+
+
 # ── anchored to real repo files ────────────────────────────────────────────
 
 
@@ -106,13 +184,16 @@ def _real(rel):
     return {k for k, _ in th.scan_python(ROOT / rel, rel)}
 
 
-def test_real_file_strict_xfails_that_name_a_card_pass():
-    # Their reasons named FINDING-1/2 and no card until MEH-3317/3318 were
-    # added (15/11); the scanner flagged both before that edit.
-    keys = _real("tests/test_outreach_prefill_edge_cases.py")
-    assert not any(k.startswith(("skip-no-card", "xfail-not-strict")) for k in keys), (
-        keys
+def test_real_file_module_and_imperative_skips_are_seen():
+    # pytestmark = pytest.mark.skipif(not RUN_FUZZ) and a pytest.skip() in a
+    # class method: both real, both without a card (in the baseline).
+    assert "skip-no-card tests/test_fuzz_schemathesis.py::pytestmark" in _real(
+        "tests/test_fuzz_schemathesis.py"
     )
+    assert (
+        "skip-no-card tests/test_analytics_chokepoint.py::TestChokePointIsEnforced."
+        "test_no_analytics_write_outside_the_choke_point"
+    ) in _real("tests/test_analytics_chokepoint.py")
 
 
 def test_real_file_helper_assert_is_followed():

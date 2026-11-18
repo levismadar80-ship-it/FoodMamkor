@@ -138,3 +138,13 @@ def test_a_naive_timestamp_is_read_as_utc(since, now):
     assert business_days_waiting(
         since.replace(tzinfo=None), now=now
     ) == business_days_waiting(since, now=now)
+
+
+def test_the_current_billing_month_is_the_israel_month(monkeypatch):
+    # Mutation run 18/11: Month.current had no test at all (5 "no tests"
+    # mutants). The clock is frozen at the consumer module, per testing.md.
+    from app.services import billing_summary
+
+    monkeypatch.setattr(billing_summary, "israel_today", lambda: date(2026, 12, 1))
+    m = billing_summary.Month.current()
+    assert (m.year, m.month) == (2026, 12)

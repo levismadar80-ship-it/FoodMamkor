@@ -27,4 +27,21 @@ if [[ ! -d tests || ! -f tests/conftest.py ]]; then
   echo "test-honesty-guard: tests/conftest.py not found — the scan would see nothing; failing instead of passing."
   exit 1
 fi
-python3 -I scripts/checks/lib/test_honesty.py "$REPO_ROOT" scripts/checks/test-honesty-baseline.txt
+BL=scripts/checks/test-honesty-baseline.txt
+# The baseline only shrinks: compare it with the base branch's copy. A PR that
+# changes the scanner itself may add lines (a new detector finds old tests);
+# any other PR that adds one fails. No base copy (first PR, no fetch) → no
+# comparison, and the guard says so.
+BASE_REF="origin/${GITHUB_BASE_REF:-staging}"
+BASE_BL="$(mktemp)"; trap 'rm -f "$BASE_BL"' EXIT
+EXTRA=()
+if git show "$BASE_REF:$BL" > "$BASE_BL" 2>/dev/null; then
+  if git diff --quiet "$BASE_REF" -- scripts/checks/lib/test_honesty.py 2>/dev/null; then
+    EXTRA=("$BASE_BL")
+  else
+    echo "test-honesty-guard: the scanner changed in this branch — baseline growth allowed for this PR."
+  fi
+else
+  echo "test-honesty-guard: no $BL on $BASE_REF — baseline growth not checked."
+fi
+python3 -I scripts/checks/lib/test_honesty.py "$REPO_ROOT" "$BL" "${EXTRA[@]}"

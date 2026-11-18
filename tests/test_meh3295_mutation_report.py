@@ -75,3 +75,32 @@ def test_a_run_that_killed_nothing_is_void_not_perfect(tmp_path, capsys):
         == 2
     )
     assert "MUTATION VOID" in capsys.readouterr().out
+
+
+def test_an_interrupted_run_is_incomplete_not_green(tmp_path, capsys):
+    # One mutant killed, one never checked: no survivor, but not a pass.
+    root = _tree(tmp_path, {KEY + "1": 1, KEY + "2": None})
+    expl = tmp_path / "survivors.txt"
+    expl.write_text("# header\n", encoding="utf-8")
+    assert rep.main(["--mutants", str(root), "--survivors", str(expl)]) == 2
+    assert "MUTATION INCOMPLETE" in capsys.readouterr().out
+
+
+def test_one_explanation_line_cannot_hide_a_second_identical_survivor(tmp_path, capsys):
+    root = _tree(tmp_path, {KEY + "1": 1, KEY + "2": 0, KEY + "3": 0})
+    # Mutant 3 makes the same change as mutant 2 (same fingerprint).
+    src = (root / "app/pricing.py").read_text(encoding="utf-8")
+    start = src.index("def x_rescue_bag_fee_agorot__mutmut_2")
+    end = src.find("\ndef ", start + 1)
+    body2 = src[start:] if end == -1 else src[start:end]
+    (root / "app/pricing.py").write_text(
+        src + "\n" + body2.replace("__mutmut_2", "__mutmut_3") + "\n",
+        encoding="utf-8",
+    )
+    survivors = rep.collect(root)[1]
+    assert len(survivors) == 2
+    assert survivors[1] == survivors[0] + " #2"
+    expl = tmp_path / "survivors.txt"
+    expl.write_text(f"{survivors[0]}  ## equivalent: test\n", encoding="utf-8")
+    assert rep.main(["--mutants", str(root), "--survivors", str(expl)]) == 1
+    assert f"NEW SURVIVOR: {survivors[0]} #2" in capsys.readouterr().out
