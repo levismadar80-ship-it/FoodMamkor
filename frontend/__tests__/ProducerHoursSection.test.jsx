@@ -3,7 +3,7 @@
  * set under its own label (Google Business Profile «More hours»), one set when
  * the two are identical.
  *
- * Rendered through the REAL ProducerSections + OrderWindowStrip + OpeningHours
+ * Rendered through the REAL ProducerSections + OrderWindowStrip
  * under the real NextIntlClientProvider + he.json, so a missing key reds the
  * run (onError is collected, not swallowed) and the page text is the text a
  * visitor reads.
