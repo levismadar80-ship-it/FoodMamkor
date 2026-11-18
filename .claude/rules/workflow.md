@@ -571,9 +571,9 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     label before it merges, and the PR body quotes the E2E result (Sapir
     11/11).** Quote it — each shard's `N passed` / `N failed` / `N flaky`, or
     the `✘` lines — never "E2E gate: success". **A gate that aggregated a
-    SKIPPED run is not evidence**: `Playwright E2E` does not run on a feature
-    PR without that label (MEH-2779), and `E2E gate` reports `success` either
-    way. Read per-JOB conclusions, not the run's (a cancelled shadow job makes
+    SKIPPED run is not evidence**: `Playwright E2E` skips on a feature PR whose
+    paths it does not cover and that lacks the label (MEH-2956), and an
+    `E2E gate` run that predates MEH-2956 reports `success` either way. Read per-JOB conclusions, not the run's (a cancelled shadow job makes
     the run read `cancelled`). Rule 39 = when a red may be passed; this = there
     must be a run at all.
 41. **Nothing merges to staging while staging is red — any session, any PR

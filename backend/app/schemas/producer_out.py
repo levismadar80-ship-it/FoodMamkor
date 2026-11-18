@@ -501,6 +501,8 @@ class ProducerAdminOut(ProducerDetailOut):
     # and for every draft; the admin table renders the tooltip from
     # created_at in that case rather than showing an empty timestamp.
     submitted_for_review_at: datetime | None = None
+    # Page freshness: when the owner last pressed «כן, הכול נכון». Admin-only.
+    last_confirmed_at: datetime | None = None
     # Computed server-side (routers/admin.py) rather than derived per client,
     # so the badge and the queue ordering can never disagree about age.
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
@@ -591,6 +593,9 @@ class ProducerAdminOut(ProducerDetailOut):
     owner_invite_expires_at: datetime | None = None
     owner_invite_accepted_at: datetime | None = None
     owner_invite_consent_note: str | None = None
+    # MEH-3377: the optional screenshot of the written consent. Same class as
+    # the note above — admin-only, never on the public or owner shapes.
+    consent_screenshot_url: str | None = None
     # Derived, never stored — hydrated per response beside `has_owner` by
     # routers/admin.py `_attach_has_owner`, in that one batched query. None
     # means "this route did not hydrate it", exactly as for `has_owner`: a

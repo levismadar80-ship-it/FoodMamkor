@@ -299,6 +299,11 @@ class GroupBuy(Base):
     # DO NOT clear this on the funded->open revert path — that re-arms the
     #        notification, which is the exact failure the column prevents.
     funded_notified_at = Column(DateTime, nullable=True)
+    # MEH-3311: one-way stamps for the funded→open→funded flap. Each is set at
+    # most once, so a flapping group mails each participant at most three
+    # times in all (funded, below goal, back at goal).
+    below_goal_notified_at = Column(DateTime, nullable=True)
+    refunded_notified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     # MEH-2503: passive_deletes defers to the DB ON DELETE CASCADE. Without it

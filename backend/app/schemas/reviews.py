@@ -103,6 +103,10 @@ class AdminReviewOut(BaseModel):
     # MEH-2381: ISO time of the author's last edit while hidden; None = not
     # edited since the admin last hid or unhid it. Admin-only, like `source`.
     edited_after_hidden_at: str | None = None
+    # MEH-3258: "owner" | "competitor" | None. Not hidden, yet not public: the
+    # author now owns this business, or one sharing a category. Computed per
+    # read (services/review_conflicts.py), never stored. Admin-only.
+    conflict: Literal["owner", "competitor"] | None = None
 
     model_config = {"from_attributes": True}
 

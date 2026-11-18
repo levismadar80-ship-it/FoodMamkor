@@ -35,6 +35,9 @@ def _boot(monkeypatch, *, env, super_admin_email="", railway=""):
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", railway)
     monkeypatch.setenv("SECRET_KEY", "x" * 64)
     monkeypatch.setenv("SUPER_ADMIN_EMAIL", super_admin_email)
+    # MEH-3388: production also requires a production FRONTEND_URL; set one so
+    # these tests keep measuring SUPER_ADMIN_EMAIL alone.
+    monkeypatch.setenv("FRONTEND_URL", "https://mehamakor.co.il")
     return config._load_settings()
 
 

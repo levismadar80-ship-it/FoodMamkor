@@ -1,4 +1,3 @@
-# guard-ok: backend/pyproject.toml is deny-listed for CC, so this file is not in [tool.mypy].files yet; it passes mypy --strict (PR body). Sapir adds the line.
 """
 Module:   body_limit
 Purpose:  No request body above MAX_BODY_BYTES enters the app. A declared

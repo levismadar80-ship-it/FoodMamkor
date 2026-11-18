@@ -393,6 +393,10 @@ export const config = {
     // The locale-prefixed form is matched too, so it gets next-intl's locale.
     "/claim/:path*",
     "/:locale(he|en)/claim/:path*",
+    // MEH-3377: the draft preview link /draft-preview/<token> — a JWT too, so
+    // the same two entries for the same reason.
+    "/draft-preview/:path*",
+    "/:locale(he|en)/draft-preview/:path*",
     // MEH-2298: API calls, for the visitor-IP stamp only (apiPassThrough).
     "/api/:path*",
   ],
