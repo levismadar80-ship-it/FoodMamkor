@@ -1048,6 +1048,21 @@ POST   /auth/google              public  — Google OAuth ID token exchange
 POST   /auth/apple               public  — Apple Sign In ID token (App Store)
 POST   /auth/me/delete           auth    — account deletion (App Store). MEH-3248: 403 for admins / super-admin (account_guards.assert_deletable); body {password} or, for an account without one, {id_token} — a Google/Apple token for THIS account, issued ≤5 min ago (either linked provider when both are; fails closed when the provider's client id is not configured); 5/hour. Replaces the bodyless DELETE /auth/me (removed) services/user_deletion.py; MEH-3252: also erases the email/phone-keyed rows (newsletter incl. Resend Contacts, contact_messages, delivery_waitlist, WhatsApp inbound/outbound incl. her business phone) and clears outreach_leads suggester fields
 POST   /auth/check-password      public  — MEH-306 stateless policy preview (30/min/IP), no DB write
+```
+
+### Admin passkeys (`app/routers/admin_passkey.py`, MEH-3305)
+
+Off where `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` are unset (local, vercel.app previews): the routes answer 404 and every sign-in works as before. On, an **admin account with ≥1 passkey** gets `PasskeyRequired {passkey_required: true, ticket, options}` from `/auth/login`, `/auth/google` and `/auth/apple` instead of a token — no session cookie is set until the second step. `ticket` = a 5-minute single-use JWT (scope `passkey_ticket`, bound to its purpose, the account and its `token_version`).
+
+```
+GET    /auth/passkey                    admin   — {enabled, passkeys[{id,name,synced,created_at,last_used_at}], recovery_codes_left, has_password}
+POST   /auth/passkey/step-up/options    admin   — {ticket, options} for a device check before a change (10/min)
+POST   /auth/passkey/register/options   admin   — body StepUp → {ticket, options}. Proof: a passkey (ticket+credential) or a recovery code once one exists, else the password, else (Google/Apple account) the session. 409 at 10 passkeys (10/min)
+POST   /auth/passkey/register/verify    admin   — {ticket, credential, name?} → {passkey, recovery_codes} — 10 codes on the FIRST passkey only, shown once (10/min)
+POST   /auth/passkey/{id}/delete        admin   — body StepUp → 204. Own passkeys only (another admin's = 404). The last one takes the recovery codes with it (10/min)
+POST   /auth/passkey/recovery-codes     admin   — body StepUp → {recovery_codes}: replaces all 10 (5/min)
+POST   /auth/passkey/login/verify       public  — {ticket, credential} → Token + the same cookies as /auth/login (10/min)
+POST   /auth/passkey/login/recovery     public  — {ticket, code} → Token; a code works once; wrong codes count toward the MEH-3372 per-address failure ceiling (5/min)
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204

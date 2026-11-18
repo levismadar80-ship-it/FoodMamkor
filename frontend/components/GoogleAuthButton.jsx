@@ -4,7 +4,7 @@
 
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/lib/auth-context";
+import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
 import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
@@ -25,6 +25,8 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
       await loginWithGoogle(response.credential, { termsAccepted: termsRef.current });
       onSuccess?.();
     } catch (err) {
+      // MEH-3305: the login page takes over with the recovery-code form.
+      if (err instanceof PasskeyStepRequired) return;
       onError?.(detailToMessage(err.response?.data?.detail) || t("google_error"));
     }
   };

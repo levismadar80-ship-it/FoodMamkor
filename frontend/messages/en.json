@@ -438,6 +438,15 @@
           "back_home": "Back to home"
         }
       }
+    },
+    "passkey": {
+      "title": "One more step",
+      "body": "The passkey did not confirm the sign-in. You can go back and try again, or enter one of your saved recovery codes.",
+      "code_label": "Recovery code",
+      "code_hint": "Ten characters, e.g. 7KQ2M-X9FHT",
+      "submit": "Sign in with code",
+      "back": "Back to sign in",
+      "error": "The code was not accepted"
     }
   },
   "account": {
@@ -2830,6 +2839,37 @@
       "update_error": "Failed to update the request",
       "approved_toast": "Name approved and updated",
       "rejected_toast": "Request rejected"
+    },
+    "passkeys": {
+      "title": "Passkey",
+      "subtitle": "A passkey on your phone or computer (fingerprint, face or device PIN) protects the admin account. Once one is added, every sign-in to this account asks for it after the password or Google.",
+      "off": "Passkeys are not available in this environment.",
+      "unsupported": "This browser does not support passkeys.",
+      "empty": "No passkey added yet.",
+      "unnamed": "Passkey",
+      "synced": "Synced",
+      "added": "Added {date}",
+      "last_used": "Last used {date}",
+      "never_used": "Not used yet",
+      "remove": "Remove",
+      "name_label": "Passkey name",
+      "name_placeholder": "e.g. My phone",
+      "password_label": "Account password",
+      "password_hint": "To confirm before adding",
+      "add": "Add a passkey",
+      "codes_title": "Recovery codes",
+      "codes_body": "Each code works once, if the device is lost. Keep them somewhere safe: they will not be shown again.",
+      "codes_left": "{count} recovery codes left",
+      "codes_new": "New recovery codes",
+      "codes_copy": "Copy",
+      "codes_done": "I saved them",
+      "recovery_label": "Recovery code (if the device is not available)",
+      "recovery_hint": "Confirms instead of the device, once",
+      "error": "That did not work. Please try again.",
+      "added_toast": "Passkey added",
+      "removed_toast": "Passkey removed",
+      "eye_show": "Show password",
+      "eye_hide": "Hide password"
     }
   },
   "events": {

@@ -1226,6 +1226,25 @@
         "title": "CategoryRequestUpdate",
         "type": "object"
       },
+      "CeremonyOptions": {
+        "properties": {
+          "options": {
+            "additionalProperties": true,
+            "title": "Options",
+            "type": "object"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "options"
+        ],
+        "title": "CeremonyOptions",
+        "type": "object"
+      },
       "ChatMessage": {
         "properties": {
           "content": {
@@ -4544,6 +4563,27 @@
         "title": "LicenseExpiryReminderRow",
         "type": "object"
       },
+      "LoginRecovery": {
+        "properties": {
+          "code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "ticket": {
+            "maxLength": 2048,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "code"
+        ],
+        "title": "LoginRecovery",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -4562,6 +4602,26 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "LoginVerify": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          },
+          "ticket": {
+            "maxLength": 2048,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "credential"
+        ],
+        "title": "LoginVerify",
         "type": "object"
       },
       "NameCheckOut": {
@@ -5679,6 +5739,113 @@
           "confirmed_at"
         ],
         "title": "PageFreshnessConfirmOut",
+        "type": "object"
+      },
+      "PasskeyList": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "has_password": {
+            "title": "Has Password",
+            "type": "boolean"
+          },
+          "passkeys": {
+            "items": {
+              "$ref": "#/components/schemas/PasskeyOut"
+            },
+            "title": "Passkeys",
+            "type": "array"
+          },
+          "recovery_codes_left": {
+            "title": "Recovery Codes Left",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "passkeys",
+          "recovery_codes_left",
+          "has_password"
+        ],
+        "title": "PasskeyList",
+        "type": "object"
+      },
+      "PasskeyOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "synced": {
+            "title": "Synced",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "synced",
+          "created_at",
+          "last_used_at"
+        ],
+        "title": "PasskeyOut",
+        "type": "object"
+      },
+      "PasskeyRequired": {
+        "description": "Returned by /auth/login, /auth/google and /auth/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n/auth/passkey/login/verify (or /login/recovery) with this ticket.",
+        "properties": {
+          "options": {
+            "additionalProperties": true,
+            "title": "Options",
+            "type": "object"
+          },
+          "passkey_required": {
+            "const": true,
+            "default": true,
+            "title": "Passkey Required",
+            "type": "boolean"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "options"
+        ],
+        "title": "PasskeyRequired",
         "type": "object"
       },
       "PasswordChange": {
@@ -13580,6 +13747,22 @@
         "title": "ProfileUpdate",
         "type": "object"
       },
+      "RecoveryCodes": {
+        "properties": {
+          "recovery_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recovery Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "recovery_codes"
+        ],
+        "title": "RecoveryCodes",
+        "type": "object"
+      },
       "RegisterAck": {
         "properties": {
           "detail": {
@@ -13591,6 +13774,65 @@
           "detail"
         ],
         "title": "RegisterAck",
+        "type": "object"
+      },
+      "RegisterVerify": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "ticket": {
+            "maxLength": 2048,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "credential"
+        ],
+        "title": "RegisterVerify",
+        "type": "object"
+      },
+      "Registered": {
+        "properties": {
+          "passkey": {
+            "$ref": "#/components/schemas/PasskeyOut"
+          },
+          "recovery_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Codes"
+          }
+        },
+        "required": [
+          "passkey",
+          "recovery_codes"
+        ],
+        "title": "Registered",
         "type": "object"
       },
       "RegistrationCancelInfoOut": {
@@ -15919,6 +16161,61 @@
           "categories_count"
         ],
         "title": "StatsOut",
+        "type": "object"
+      },
+      "StepUp": {
+        "description": "Proof that the person at the keyboard is the account holder, asked\nbefore a passkey is added or removed. Which proof counts depends on the\naccount: one of its passkeys if it has any (ticket + credential from\n/auth/passkey/step-up/options), or one of its recovery codes; otherwise its\npassword; an account with no password and no passkey has only its session.",
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "recovery_code": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Code"
+          },
+          "ticket": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket"
+          }
+        },
+        "title": "StepUp",
         "type": "object"
       },
       "StoryCardUploadRequest": {
@@ -20887,7 +21184,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppleAuthResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AppleAuthResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasskeyRequired"
+                    }
+                  ],
+                  "title": "Response Apple Auth Auth Apple Post"
                 }
               }
             },
@@ -21015,7 +21320,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GoogleAuthResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/GoogleAuthResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasskeyRequired"
+                    }
+                  ],
+                  "title": "Response Google Auth Auth Google Post"
                 }
               }
             },
@@ -21062,7 +21375,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Token"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Token"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasskeyRequired"
+                    }
+                  ],
+                  "title": "Response Login Auth Login Post"
                 }
               }
             },
@@ -21410,6 +21731,329 @@
           }
         },
         "summary": "Get Owner Invite",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey": {
+      "get": {
+        "operationId": "list_passkeys_auth_passkey_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Passkeys",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/login/recovery": {
+      "post": {
+        "operationId": "login_recovery_auth_passkey_login_recovery_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRecovery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login Recovery",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/login/verify": {
+      "post": {
+        "operationId": "login_verify_auth_passkey_login_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login Verify",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/recovery-codes": {
+      "post": {
+        "operationId": "regenerate_codes_auth_passkey_recovery_codes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Regenerate Codes",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/register/options": {
+      "post": {
+        "operationId": "register_options_auth_passkey_register_options_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CeremonyOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Register Options",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/register/verify": {
+      "post": {
+        "operationId": "register_verify_auth_passkey_register_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Registered"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Register Verify",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/step-up/options": {
+      "post": {
+        "operationId": "step_up_options_auth_passkey_step_up_options_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CeremonyOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Step Up Options",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/{passkey_id}/delete": {
+      "post": {
+        "operationId": "delete_passkey_auth_passkey__passkey_id__delete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Passkey",
         "tags": [
           "auth"
         ]

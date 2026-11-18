@@ -48,6 +48,8 @@ from app.services.account_guards import (  # MEH-3248
 )
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services import resend_verify_cap  # MEH-2906
+from app.services import admin_passkey as admin_passkey_service  # MEH-3305
+from app.schemas.admin_passkey import PasskeyRequired  # MEH-3305
 from app.services.verify_session import (  # MEH-3087
     set_signup_marker,
     verify_email_session,
@@ -986,7 +988,7 @@ async def register_producer(
 
 @router.post(
     "/google",
-    response_model=GoogleAuthResponse,
+    response_model=GoogleAuthResponse | PasskeyRequired,
     # MEH-780: document the deliberate non-2xx statuses so the OpenAPI spec
     # matches reality (kills schemathesis UndefinedStatusCode noise). No
     # behavior change — 401 = invalid id_token, 503 = provider not configured.
@@ -1002,7 +1004,7 @@ def google_auth(
     data: GoogleAuthRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-) -> GoogleAuthResponse:
+) -> GoogleAuthResponse | PasskeyRequired:
     """Authenticate with Google ID token."""
     # MEH-253 — distinguish "Google OAuth isn't configured on this server"
     # (503) from "the token you sent is invalid" (401). Before this check,
@@ -1081,6 +1083,11 @@ def google_auth(
             test_cause=bool(user.is_test),  # MEH-2952
         )
     email_expected = bool(is_new and settings.resend_api_key)
+    # MEH-3305: an admin with a passkey finishes signing in at
+    # /auth/passkey/login/verify; no session is issued here.
+    step = admin_passkey_service.login_step(db, user)
+    if step is not None:
+        return PasskeyRequired(**step)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
@@ -1293,7 +1300,7 @@ def register_producer_oauth(
 _LOGIN_RATE_LIMITED = "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות."
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token | PasskeyRequired)
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
 # MEH-3372: next to the per-IP limit, a soft ceiling on FAILED attempts per
 # address (10 in 15 minutes) — a password guessed for ONE account from many
@@ -1309,7 +1316,7 @@ def login(
     response: Response,
     data: LoginRequest,
     db: Session = Depends(get_db),
-) -> Token:
+) -> Token | PasskeyRequired:
     # Checked before any lookup or bcrypt, and for every address alike —
     # existing or not — so the 429 says nothing about whether an account exists.
     if login_failures_exceeded(data.email):
@@ -1344,6 +1351,11 @@ def login(
         )
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
+    # MEH-3305: an admin with a passkey finishes signing in at
+    # /auth/passkey/login/verify; no session is issued here.
+    step = admin_passkey_service.login_step(db, user)
+    if step is not None:
+        return PasskeyRequired(**step)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
@@ -1409,7 +1421,7 @@ def logout_all_devices(
 
 @router.post(
     "/apple",
-    response_model=AppleAuthResponse,
+    response_model=AppleAuthResponse | PasskeyRequired,
     # MEH-780: document the deliberate non-2xx statuses (see /auth/google).
     responses={
         401: {"description": "Invalid OAuth id_token"},
@@ -1423,7 +1435,7 @@ def apple_auth(
     data: AppleAuthRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-) -> AppleAuthResponse:
+) -> AppleAuthResponse | PasskeyRequired:
     """Authenticate with Apple ID token."""
     # MEH-253 — 503 when the provider isn't configured (see google_auth).
     if not settings.apple_client_id:
@@ -1480,6 +1492,11 @@ def apple_auth(
             test_cause=bool(user.is_test),  # MEH-2952
         )
     email_expected = bool(is_new and settings.resend_api_key)
+    # MEH-3305: an admin with a passkey finishes signing in at
+    # /auth/passkey/login/verify; no session is issued here.
+    step = admin_passkey_service.login_step(db, user)
+    if step is not None:
+        return PasskeyRequired(**step)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)

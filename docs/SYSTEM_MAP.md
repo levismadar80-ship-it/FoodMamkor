@@ -66,6 +66,7 @@ This page links to those and does not repeat their numbers.
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
 | Images | Cloudinary | Postgres holds the URL only |
 | Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
+| Spent passkey sign-in tickets (MEH-3305) | backend process memory | a ticket is single-use for its 5 minutes; a restart forgets the set, so a ticket issued just before a deploy could be used once more within those minutes. The ticket itself, while the login page waits for a recovery code, lives in React state only (no browser storage) |
 | Rate-limit counters | backend process memory | reset on every deploy, not shared between processes |
 | Scheduler state | backend process memory | a job that was due during a restart does not run late |
 | Secrets | Railway and Vercel environment variables | none in the repo ([SECURITY.md](./SECURITY.md)) |

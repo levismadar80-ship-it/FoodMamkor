@@ -83,6 +83,27 @@ sequenceDiagram
     end
 ```
 
+### 2b. Admin with a passkey — the second step (MEH-3305)
+
+```mermaid
+sequenceDiagram
+    actor A as Admin
+    participant FE as Frontend (auth-context finishSignIn)
+    participant BE as Backend
+    A->>FE: password, or Google / Apple
+    FE->>BE: POST /auth/login (or /auth/google, /auth/apple)
+    BE-->>FE: {passkey_required, ticket, options} — no token, no cookies
+    FE->>A: navigator.credentials.get (fingerprint / face / PIN)
+    alt device answered
+        FE->>BE: POST /auth/passkey/login/verify {ticket, credential}
+        BE-->>FE: Token + refresh_token + __Secure-Fgp
+    else cancelled or device lost
+        FE->>A: recovery-code form on /login
+        FE->>BE: POST /auth/passkey/login/recovery {ticket, code}
+        BE-->>FE: Token + cookies (the code is spent)
+    end
+```
+
 ## 3. JWT verification + role gates on every authenticated request
 
 ```mermaid

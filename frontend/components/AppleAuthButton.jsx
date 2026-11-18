@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/lib/auth-context";
+import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
@@ -41,6 +41,8 @@ export default function AppleAuthButton({ onSuccess, onError, termsAccepted = fa
         await loginWithApple(authorization.id_token, name, { termsAccepted: termsRef.current });
         onSuccess?.();
       } catch (err) {
+        // MEH-3305: the login page takes over with the recovery-code form.
+        if (err instanceof PasskeyStepRequired) return;
         onError?.(detailToMessage(err.response?.data?.detail) || t("apple_error"));
       }
     };
