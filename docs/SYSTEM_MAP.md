@@ -63,6 +63,7 @@ This page links to those and does not repeat their numbers.
 | Access token (15 minutes) | browser `localStorage` | sent as a Bearer header |
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
+| Last successful run of each background job, and the day its overdue email went out | Postgres, `admin_settings` keys `job_ok:<slug>` / `job_stale_alerted:<slug>` | written by `@heartbeat` and `services/job_staleness.py`, production only (MEH-3332); bounded by the number of jobs |
 | Images | Cloudinary | Postgres holds the URL only |
 | Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
 | Rate-limit counters | backend process memory | reset on every deploy, not shared between processes |

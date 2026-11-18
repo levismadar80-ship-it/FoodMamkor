@@ -91,8 +91,9 @@ def interval_monitor_config(minutes: int) -> dict[str, Any]:
 # (MEH-3350): the account holds exactly ONE cron monitor, `auto-reply-watchdog`,
 # because the Developer ($0) plan allows one and it is at 100% (MEH-3332).
 #
-# MEH-3332 (18/11): the seven are watched for free instead — every success is
-# recorded and services/job_staleness.py emails the admin when one is late.
+# MEH-3332 (18/11): "unmonitored" below means by SENTRY. The seven are now
+# watched for free instead: every run that returns is recorded, and
+# services/job_staleness.py emails the admin when one stops running.
 #
 # The other seven send check-ins for a monitor that was never created. That is not
 # a code bug to fix here — it is a plan limit, and Sapir's to decide. It IS a

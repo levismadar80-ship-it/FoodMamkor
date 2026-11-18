@@ -10,7 +10,12 @@ Does NOT: replace Sentry for the scheduler as a whole — `auto-reply-watchdog`
           keeps the plan's one Sentry cron monitor, and that is what notices a
           dead scheduler thread (this checker runs on the same thread). Does
           NOT check a job that is not registered (a flag-gated job that is
-          off is not overdue). Does NOT run outside production.
+          off is not overdue). Does NOT run outside production. Does NOT
+          see a run that "succeeded" while failing inside: a job that swallows
+          its own exceptions returns normally and is recorded (same limit as
+          the Sentry check-in). It catches jobs that stop running or hang.
+          Does NOT confirm delivery: send_email is fail-open, so a failed send
+          still marks the day alerted and the next email is tomorrow's.
 Related:  app/services/job_heartbeat.py (`heartbeat` calls `record_ok`);
           app/startup.py `register_scheduler_jobs` (registers the checker);
           docs/audits/2026-11-sentry-crons.md §4.
@@ -85,16 +90,16 @@ def record_ok(slug: str, *, now: datetime | None = None) -> None:
     failure here must not fail the job (same contract as the check-in)."""
     from app.database import SessionLocal
 
-    db = SessionLocal()
     try:
-        _write(db, OK_KEY.format(slug=slug), (now or _now()).isoformat())
+        db = SessionLocal()
+        try:
+            _write(db, OK_KEY.format(slug=slug), (now or _now()).isoformat())
+        finally:
+            db.close()
     except Exception:  # bookkeeping must never fail the job
-        db.rollback()
         logger.warning(
             "[JOB-STALENESS] could not record ok for %s", slug, exc_info=True
         )
-    finally:
-        db.close()
 
 
 def overdue_slugs(
@@ -113,7 +118,12 @@ def overdue_slugs(
     late: list[str] = []
     for slug, config in jobs:
         raw = _read(db, OK_KEY.format(slug=slug))
-        last = datetime.fromisoformat(raw) if raw else booted_at
+        try:
+            last = datetime.fromisoformat(raw) if raw else booted_at
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=UTC)
+        except ValueError:
+            last = booted_at  # unreadable row: measure from boot, never crash
         if now - max(last, booted_at) > max_age(config):
             late.append(slug)
     return late
@@ -157,7 +167,13 @@ def check_jobs(
         late = overdue_slugs(db, jobs, booted_at=booted_at, now=now)
         today = israel_today().isoformat()
         for slug in late:
-            _alert(db, slug, today, _read(db, OK_KEY.format(slug=slug)))
+            try:
+                _alert(db, slug, today, _read(db, OK_KEY.format(slug=slug)))
+            except Exception:  # one job's alert must not silence the others
+                db.rollback()
+                logger.warning(
+                    "[JOB-STALENESS] alert for %s failed", slug, exc_info=True
+                )
         return late
     finally:
         db.close()

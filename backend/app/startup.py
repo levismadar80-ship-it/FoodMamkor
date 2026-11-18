@@ -754,20 +754,20 @@ def _register_job_staleness_check(scheduler: Any) -> None:
         return
     booted_at = datetime.now(timezone.utc)
 
-    def _run() -> None:
-        jobs = [
-            (j.func.heartbeat_slug, j.func.heartbeat_config)
-            for j in scheduler.get_jobs()
-            if hasattr(j.func, "heartbeat_slug")
-        ]
+    def _run_job_staleness_check() -> None:
         try:
+            jobs = [
+                (j.func.heartbeat_slug, j.func.heartbeat_config)
+                for j in scheduler.get_jobs()
+                if hasattr(j.func, "heartbeat_slug")
+            ]
             check_jobs(jobs, booted_at=booted_at)
         except Exception as exc:
             capture_background_exception(exc, task="job_staleness_check")
             log.error("[JOB-STALENESS] check crashed", exc_info=True)
 
     scheduler.add_job(
-        _run,
+        _run_job_staleness_check,
         IntervalTrigger(minutes=CHECK_INTERVAL_MINUTES),
         id="meh_3332_job_staleness_check",
         replace_existing=True,

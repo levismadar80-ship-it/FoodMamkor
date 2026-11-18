@@ -214,7 +214,9 @@ def test_registered_triggers_match_monitor_configs(monkeypatch, checkins):
 
     triggers = _registered(monkeypatch, flags_on=True)
     _stub_services(monkeypatch)
-    assert set(triggers) == {j[0] for j in JOBS}
+    # MEH-3332: the overdue-job checker is registered too and is deliberately
+    # not a @heartbeat job (tests/test_meh3332_job_staleness.py covers it).
+    assert set(triggers) - {"_run_job_staleness_check"} == {j[0] for j in JOBS}
     for func_name, _slug, kind, _value in JOBS:
         checkins.clear()
         getattr(startup, func_name)()
