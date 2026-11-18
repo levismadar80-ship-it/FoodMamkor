@@ -24,6 +24,7 @@
 * `frontend/e2e/flows/03-view-producer-detail.spec.ts` · `frontend/e2e/flows/manual/producer-detail.spec.ts`
 * `frontend/e2e/flows/04-whatsapp-click.spec.ts` — לחיצת WhatsApp, זרימה קריטית (כלל 5).
 * `frontend/e2e/flows/47-products-show-all.spec.ts` — רשימת מוצרים ארוכה וקיפול.
+* `tests/test_meh3385_producer_detail_product_order.py` — סדר המוצרים בדף העסק (לפי `position`, בלי מקום בסוף), טיוטות לא מופיעות, ואין מכפלה בין אוספים (MEH-3385).
 * `tests/test_meh2602_producer_page_lists.py` · `tests/test_producer_contract_snapshot.py`
 
 **מזהי רישום שזה מכסה.** `gallery_story`, `product_details`, `top_product`, `hours`, `vacation_mode`, `primary_cta`, `wa_prefill`, `product_wa`, `faq_answers`, `wa_group`, `nav_buttons`, `similar_businesses`.

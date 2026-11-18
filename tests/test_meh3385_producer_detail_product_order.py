@@ -33,6 +33,12 @@ def _seed(db):
         Product(producer_id=producer.id, name="שני", price_min=10, position=1),
         Product(producer_id=producer.id, name="בלי מקום ב", price_min=10),
         Product(producer_id=producer.id, name="ראשון", price_min=10, position=0),
+        # MEH-2312 draft gate, kept through the MEH-3385 merge: position 0
+        # would sort it first if the relationship ever lost its is_draft
+        # clause, and every order assertion below would see it.
+        Product(
+            producer_id=producer.id, name="טיוטה", price_min=10, position=0, is_draft=True
+        ),
     ]
     for row in rows:  # one flush each: heap order = this list's order
         db.add(row)
@@ -47,6 +53,7 @@ def _names(body):
 
 
 def _assert_owner_order(names):
+    assert "טיוטה" not in names, names
     assert names[:3] == ["ראשון", "שני", "שלישי"], names
     assert sorted(names[3:]) == ["בלי מקום א", "בלי מקום ב"], names
 
