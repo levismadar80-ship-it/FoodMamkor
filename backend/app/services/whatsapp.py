@@ -67,6 +67,7 @@ OUTCOME_WINDOW_EXPIRED = "window_expired"
 # MEH-3402: dropped outside production (recipient not a staff number). Stored
 # only outside production, with the content, for /admin/whatsapp/blocked.
 OUTCOME_BLOCKED_NON_PROD = "blocked_nonprod"
+BLOCKED_DEDUPE_WINDOW = timedelta(hours=24)
 
 # MEH-771 Chunk C — the two terminal-bad outcomes from the recipient's
 # perspective (`failed` = Meta reported an error, `window_expired` = the 24h
@@ -332,16 +333,34 @@ def _record_blocked(kind: str, to: str, content: str) -> None:
     try:
         from app.database import SessionLocal
         from app.models.models import OutboundMessage
+        from app.utils.clock import utc_now
 
+        phone, now = to.lstrip("+")[:20], utc_now()
         with SessionLocal() as db:
-            db.add(
-                OutboundMessage(
-                    to_phone=to.lstrip("+")[:20],
-                    kind=kind[:64],
-                    status=OUTCOME_BLOCKED_NON_PROD,
-                    error_message=content,
-                )
+            blocked = db.query(OutboundMessage).filter(
+                OutboundMessage.status == OUTCOME_BLOCKED_NON_PROD
             )
+            # Bounded (MEH-3022): rows past the list's window are dropped here,
+            # and a retrying caller (watchdog, dispatcher) adds no duplicate.
+            blocked.filter(
+                OutboundMessage.created_at
+                < now - timedelta(days=UNDELIVERED_WINDOW_DAYS)
+            ).delete(synchronize_session=False)
+            duplicate = blocked.filter(
+                OutboundMessage.to_phone == phone,
+                OutboundMessage.kind == kind[:64],
+                OutboundMessage.error_message == content,
+                OutboundMessage.created_at >= now - BLOCKED_DEDUPE_WINDOW,
+            ).first()
+            if duplicate is None:
+                db.add(
+                    OutboundMessage(
+                        to_phone=phone,
+                        kind=kind[:64],
+                        status=OUTCOME_BLOCKED_NON_PROD,
+                        error_message=content,
+                    )
+                )
             db.commit()
     except Exception as exc:  # noqa: BLE001 — capture is best-effort, fail-open
         logger.warning(
@@ -352,8 +371,17 @@ def _record_blocked(kind: str, to: str, content: str) -> None:
         )
 
 
+# DO NOT store a one-time login code — anyone reading /admin/whatsapp/blocked
+# or a staging backup could use it (MEH-3402 review). producer_otp_v1.code.
+_SECRET_TEMPLATE_FIELDS = frozenset({"code"})
+_REDACTED = "******"
+
+
 def _template_preview(template: WhatsAppTemplate) -> str:
-    values = [str(getattr(template, f)) for f in type(template).model_fields]
+    values = [
+        _REDACTED if f in _SECRET_TEMPLATE_FIELDS else str(getattr(template, f))
+        for f in type(template).model_fields
+    ]
     return f"{template.name}: {' | '.join(values)}" if values else template.name
 
 

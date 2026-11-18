@@ -277,7 +277,10 @@ class OutboundMessage(Base):
     `meta_message_id` (the wamid) is UNIQUE for webhook idempotency
     (Meta delivers at-least-once). `status` is app-enforced (no DB
     enum/CHECK), by-convention 'accepted' | 'delivered' | 'failed' |
-    'window_expired', consistent with availability_state.
+    'window_expired', consistent with availability_state — plus
+    'blocked_nonprod' outside production only (MEH-3402: the guard dropped
+    the send). For those rows `error_message` holds what the message would
+    have said, not an error; never feed them into error grouping.
     """
 
     __tablename__ = "outbound_messages"

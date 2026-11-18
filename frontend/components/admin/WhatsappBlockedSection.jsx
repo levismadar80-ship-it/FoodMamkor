@@ -41,12 +41,12 @@ export default function WhatsappBlockedSection() {
     <section className="space-y-3" data-testid="whatsapp-blocked">
       <div>
         <h2 className="text-lg font-bold">{t("whatsapp_failures.blocked.title")}</h2>
-        <p className="text-muted text-sm mt-1">{t("whatsapp_failures.blocked.subtitle")}</p>
+        <p className="text-fg-muted text-sm mt-1">{t("whatsapp_failures.blocked.subtitle")}</p>
       </div>
       <div className="bg-surface border border-border rounded-md overflow-x-auto">
         <table className="table-stack w-full text-sm">
           <thead>
-            <tr className="bg-surface text-fg-muted text-xs">
+            <tr className="bg-surface-card text-fg-muted text-xs">
               <th className="px-5 py-2 text-start font-medium">{t("whatsapp_failures.columns.phone")}</th>
               <th className="px-5 py-2 text-start font-medium">{t("whatsapp_failures.columns.kind")}</th>
               <th className="px-5 py-2 text-start font-medium">{t("whatsapp_failures.blocked.content")}</th>
@@ -56,7 +56,7 @@ export default function WhatsappBlockedSection() {
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className="border-t border-border">
-                <td className="px-5 py-3 font-mono text-xs">{row.to_phone}</td>
+                <td className="px-5 py-3 font-mono text-xs" data-label={t("whatsapp_failures.columns.phone")}>{row.to_phone}</td>
                 <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("whatsapp_failures.columns.kind")}>{row.kind}</td>
                 <td className="px-5 py-3 text-xs whitespace-pre-line break-words" data-label={t("whatsapp_failures.blocked.content")}>
                   {row.error_message || "—"}
