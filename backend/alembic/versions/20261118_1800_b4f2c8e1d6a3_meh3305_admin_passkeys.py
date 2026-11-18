@@ -13,6 +13,9 @@ existing is touched.
         credential_id BYTEA NOT NULL UNIQUE   (the authenticator's id)
         public_key    BYTEA NOT NULL          (COSE key)
         sign_count    BIGINT NOT NULL DEFAULT 0
+        aaguid        VARCHAR(36) NULL     -- authenticator model, for the device label
+        backup_eligible BOOLEAN NOT NULL DEFAULT false  -- a synced passkey
+        backup_state  BOOLEAN NOT NULL DEFAULT false
         transports    VARCHAR(120) NULL
         name          VARCHAR(60) NULL
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -61,6 +64,13 @@ def upgrade() -> None:
         sa.Column("credential_id", sa.LargeBinary(), nullable=False),
         sa.Column("public_key", sa.LargeBinary(), nullable=False),
         sa.Column("sign_count", sa.BigInteger(), server_default="0", nullable=False),
+        sa.Column("aaguid", sa.String(length=36), nullable=True),
+        sa.Column(
+            "backup_eligible", sa.Boolean(), server_default=sa.false(), nullable=False
+        ),
+        sa.Column(
+            "backup_state", sa.Boolean(), server_default=sa.false(), nullable=False
+        ),
         sa.Column("transports", sa.String(length=120), nullable=True),
         sa.Column("name", sa.String(length=60), nullable=True),
         sa.Column(

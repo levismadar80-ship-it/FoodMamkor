@@ -16,11 +16,13 @@ import uuid
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
     LargeBinary,
     String,
+    false,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -49,6 +51,16 @@ class AdminPasskey(Base):
     credential_id = Column(LargeBinary, nullable=False, unique=True)
     public_key = Column(LargeBinary, nullable=False)
     sign_count = Column(BigInteger, nullable=False, default=0, server_default="0")
+    # From py_webauthn's registration result: the authenticator model, and
+    # whether the passkey is synced (backup-eligible) and currently backed up.
+    # Kept now so the settings list can say «מסונכרן» without a second migration.
+    aaguid = Column(String(36), nullable=True)
+    backup_eligible = Column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    backup_state = Column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
     # "internal,hybrid" — what the browser reported, passed back as a hint.
     transports = Column(String(120), nullable=True)
     # The admin's own label («הטלפון», «המחשב»). Never shown to anyone else.

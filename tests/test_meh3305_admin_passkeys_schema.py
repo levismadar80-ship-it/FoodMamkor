@@ -36,6 +36,9 @@ def test_tables_and_columns(db):
         "credential_id",
         "public_key",
         "sign_count",
+        "aaguid",
+        "backup_eligible",
+        "backup_state",
         "transports",
         "name",
         "created_at",
@@ -74,6 +77,7 @@ def test_a_new_passkey_starts_unused_with_count_zero(db):
     db.commit()
     db.refresh(row)
     assert row.sign_count == 0
+    assert row.backup_eligible is False and row.backup_state is False
     assert row.last_used_at is None
     assert row.created_at is not None
 
@@ -90,3 +94,13 @@ def test_the_migration_creates_both_tables():
     src = files[0].read_text()
     assert '"admin_passkeys"' in src and '"admin_recovery_codes"' in src
     assert 'ondelete="CASCADE"' in src
+    # The model-vs-migration match itself is `alembic check` in CI
+    # (pr-checks.yml, "No new upgrade operations detected").
+
+
+def test_a_passkey_needs_a_credential_id(db):
+    admin = make_user(db, role="admin")
+    db.add(AdminPasskey(user_id=admin.id, credential_id=None, public_key=b"pk"))
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()

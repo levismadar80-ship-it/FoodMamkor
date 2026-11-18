@@ -275,6 +275,9 @@ erDiagram
         bytea credential_id "UNIQUE — the authenticator's id"
         bytea public_key "COSE key"
         bigint sign_count "authenticator counter; going backwards = cloned key"
+        string aaguid "nullable, authenticator model"
+        boolean backup_eligible "synced passkey"
+        boolean backup_state
         string transports "nullable"
         string name "nullable, the admin's own label"
         timestamptz created_at
