@@ -6605,7 +6605,8 @@
       "back_experience": "To the workshop page",
       "page_title": "Cancel sign-up",
       "waitlisted": "You're on the waitlist. If a spot opens up, we'll email you.",
-      "confirm_waitlist": "Leave the waitlist"
+      "confirm_waitlist": "Leave the waitlist",
+      "done_waitlist": "You've left the waitlist."
     }
   },
   "filter_axes": {

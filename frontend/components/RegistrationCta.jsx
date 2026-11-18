@@ -108,14 +108,15 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
     try {
       // Literal paths, so the API-contract audit can resolve both routes.
       const path = kind === "events" ? `/events/${itemId}/registrations` : `/experiences/${itemId}/registrations`;
-      await api.post(path, {
+      const res = await api.post(path, {
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
         // MEH-3314: a full item takes the same fields onto its waitlist.
         ...(waitlist ? { waitlist: true } : {}),
       });
-      onDone();
+      // The server decides: a place may have freed since the page loaded.
+      onDone(res?.data?.status === "waitlisted");
     } catch (err) {
       const detail = err.response?.data?.detail;
       const fields = err.response?.status === 422 ? fieldsFrom(detail) : [];
@@ -257,14 +258,15 @@ export default function RegistrationCta(props) {
   const tCommon = useTranslations("common.aria");
   // null = closed · "inline" = in the card (desktop) · "sheet" = full screen (phone)
   const [open, setOpen] = useState(null);
-  const [done, setDone] = useState(false);
+  // false = not sent · "registered" | "waitlisted" = what the server answered
+  const [done, setDone] = useState(/** @type {false | "registered" | "waitlisted"} */ (false));
   const openBtnRef = useRef(null);
   const inlineRef = useRef(null);
   const action = resolveAction({ ...props, t });
   const inlineVisible = useInView(inlineRef, Boolean(action));
   const onWaitlist = Boolean(action?.waitlist);
   const signupLabel = onWaitlist ? t("waitlist_join") : kind === "events" ? t("signup_event") : t("signup_experience");
-  const successText = onWaitlist ? tSignup("waitlist_success") : tSignup("success");
+  const successText = done === "waitlisted" ? tSignup("waitlist_success") : tSignup("success");
 
   const openForm = () => setOpen(isDesktop() ? "inline" : "sheet");
   const closeForm = useCallback(() => {
@@ -291,7 +293,7 @@ export default function RegistrationCta(props) {
   const formAction = action.kind === "form";
   const showBar = action.kind !== "full" && !done && !open && inlineVisible === false;
 
-  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} onDone={() => setDone(true)} />;
+  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} onDone={(waited) => setDone(waited ? "waitlisted" : "registered")} />;
   const question = formAction && action.questionHref && (
     <a
       href={action.questionHref}

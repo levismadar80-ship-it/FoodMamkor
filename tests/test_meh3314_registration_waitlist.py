@@ -213,3 +213,54 @@ def test_waitlist_emails_copy(monkeypatch):
     assert s2 == 'התפנה מקום ב-"יום פתוח"'
     assert 'התפנה מקום ב-"יום פתוח" אצל מאפיית הגליל.' in b2
     assert "להרשמה: https://x/events/1" in b2
+
+
+def test_at_the_cap_a_listed_address_and_a_new_one_get_the_same_answer(client, db, mail, monkeypatch):
+    """Review finding 1: duplicate-before-cap told a stranger who is listed."""
+    monkeypatch.setattr(wl, "WAITLIST_MAX", 1)
+    ev = _full_event(client, db, mail)
+    assert _join(client, ev, "w1@example.com").status_code == 201
+    listed = _join(client, ev, "w1@example.com")
+    new = _join(client, ev, "w2@example.com")
+    assert (listed.status_code, new.status_code) == (409, 409)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"is_active": False}, {"registration_method": "whatsapp"}],
+    ids=["inactive", "off-site-method"],
+)
+def test_no_offer_where_the_form_would_not_take_her(client, db, mail, change):
+    """Review finding 2: the offer email linked to a page with no way in."""
+    ev = _full_event(client, db, mail)
+    _join(client, ev, "w1@example.com")
+    first = db.query(Registration).filter_by(email="first@example.com").one()
+    for k, v in change.items():
+        setattr(ev, k, v)
+    db.commit()
+    mail.clear()
+    assert client.post(f"/registrations/{first.cancel_token}/cancel").status_code == 200
+    assert [m for m in mail if m[0] == "offer"] == []
+
+
+def test_no_offer_once_the_event_has_started_today(client, db, mail, monkeypatch):
+    ev = _full_event(client, db, mail)
+    _join(client, ev, "w1@example.com")
+    first = db.query(Registration).filter_by(email="first@example.com").one()
+    monkeypatch.setattr(r, "_has_started", lambda day, at: True)
+    mail.clear()
+    client.post(f"/registrations/{first.cancel_token}/cancel")
+    assert [m for m in mail if m[0] == "offer"] == []
+
+
+def test_no_offer_while_the_host_tally_still_fills_the_workshop(client, db, mail):
+    host = _owner(db)
+    ex = _experience(db, host, max_participants=2, participants_count=1)
+    assert _join(client, ex, "a@example.com", waitlist=False, path="experiences").status_code == 201
+    _join(client, ex, "w@example.com", path="experiences")
+    ex.participants_count = 2  # the host logged one more off-site sign-up
+    db.commit()
+    a = db.query(Registration).filter_by(email="a@example.com").one()
+    mail.clear()
+    client.post(f"/registrations/{a.cancel_token}/cancel")
+    assert [m for m in mail if m[0] == "offer"] == []

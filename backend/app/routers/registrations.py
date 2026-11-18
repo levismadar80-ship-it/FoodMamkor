@@ -82,6 +82,26 @@ def _has_started(day: date, at: time | None) -> bool:
     return at is not None and israel_now().time() >= at
 
 
+def _offer_open(db: Session, item: Event | Experience) -> bool:
+    """MEH-3314: a freed place is offered only where the form would take it —
+    active, on-site form, not started (a recurring workshop never closes by
+    its first date), and below the cap after this cancel (a workshop's own
+    tally of off-site sign-ups shares it). Mirrors the sign-up gates above."""
+    if not item.is_active or item.registration_method != "site_form":
+        return False
+    recurring = bool(getattr(item, "is_recurring", False))
+    if _has_started(item.event_date, item.event_time) and not recurring:  # type: ignore[arg-type]
+        return False
+    if item.max_participants is None:
+        return True
+    if isinstance(item, Event):
+        taken = registered_counts(db, event_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
+    else:
+        taken = registered_counts(db, experience_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
+        taken += item.participants_count or 0
+    return bool(taken < item.max_participants)
+
+
 def _event_for_signup(db: Session, event_id: UUID) -> Event:
     """The event, row-locked, or 404 if a stranger could not see it."""
     event = db.query(Event).filter(Event.id == event_id).with_for_update().first()
@@ -186,13 +206,16 @@ def _signup_row(
     Free → her waitlisted row promoted, else a new registered row (None if
     she is already registered). Capacity is decided before this, so the
     answer never depends on who else is on the list."""
+    # The cap before the duplicate check, as capacity is: the other order
+    # answers 201 for an address already listed and 409 for a new one.
+    if full:
+        waitlist.refuse_if_waitlist_full(db, column, item_id)
     existing = waitlist.active_row(db, column, item_id, data.email)
     item: dict[str, Any] = {column.key: item_id}
     if existing is not None and (full or existing.status == "registered"):
         db.rollback()  # releases the FOR UPDATE lock on the item row
         return None
     if full:
-        waitlist.refuse_if_waitlist_full(db, column, item_id)
         reg = _new_registration(data, status="waitlisted", **item)
         db.add(reg)
         return reg
@@ -491,7 +514,7 @@ def cancel_registration(
     )
     # MEH-3314: the freed spot goes to the first one waiting (stamped here,
     # mailed after the commit).
-    offer = waitlist.offer_next(db, item) if was_active and is_upcoming else None
+    offer = waitlist.offer_next(db, item) if was_active and _offer_open(db, item) else None
     db.commit()
     if offer:
         to, message, url, test_offer = offer

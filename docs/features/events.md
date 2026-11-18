@@ -9,7 +9,7 @@
 
 **קבצים מרכזיים**
 * `backend/app/routers/events.py` · `backend/app/routers/registrations.py` · `backend/app/services/registration_waitlist.py` (רשימת המתנה לאירוע מלא, MEH-3314)
-* `backend/app/services/registration_emails.py` — שלושת המיילים; הנוסח אושר מילה במילה.
+* `backend/app/services/registration_emails.py` — מיילי ההרשמה (אישור, בעלים, ביטול, תזכורת MEH-3312, רשימת המתנה והצעת מקום MEH-3314).
 * `frontend/app/[locale]/events/EventsClient.jsx`
 * `frontend/components/RegistrationOverlays.jsx` — פס ההרשמה.
 

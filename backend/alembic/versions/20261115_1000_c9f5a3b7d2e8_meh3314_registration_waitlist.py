@@ -52,7 +52,8 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute(
-        "UPDATE registrations SET status = 'cancelled' WHERE status = 'waitlisted'"
+        "UPDATE registrations SET status = 'cancelled', cancelled_at = now() "
+        "WHERE status = 'waitlisted'"
     )
     op.drop_column("registrations", "waitlist_offered_at")
     op.drop_constraint("ck_registrations_status", "registrations", type_="check")

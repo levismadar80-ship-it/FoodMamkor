@@ -6601,7 +6601,8 @@
       "back_experience": "לדף הסדנה",
       "page_title": "ביטול הרשמה",
       "waitlisted": "זו הרשמה לרשימת ההמתנה. אם יתפנה מקום, נשלח אימייל עם קישור להרשמה.",
-      "confirm_waitlist": "יציאה מרשימת ההמתנה"
+      "confirm_waitlist": "יציאה מרשימת ההמתנה",
+      "done_waitlist": "הוסרתם מרשימת ההמתנה."
     }
   },
   "filter_axes": {

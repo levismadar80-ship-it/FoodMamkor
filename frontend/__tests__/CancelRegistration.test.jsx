@@ -60,7 +60,7 @@ describe("cancel page", () => {
     await waitFor(() => expect(screen.getByTestId("registration-cancel-waitlisted").textContent).toBe(X.waitlisted));
     expect(screen.getByTestId("registration-cancel-confirm").textContent).toBe(X.confirm_waitlist);
     fireEvent.click(screen.getByTestId("registration-cancel-confirm"));
-    await waitFor(() => expect(screen.getByTestId("registration-cancel-done")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId("registration-cancel-done").textContent).toBe(X.done_waitlist));
     expect(screen.queryByTestId("registration-cancel-waitlisted")).toBeNull();
   });
 

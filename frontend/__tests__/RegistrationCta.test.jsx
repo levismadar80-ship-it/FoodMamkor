@@ -122,6 +122,17 @@ describe("MEH-3314 — a full on-site form is the waitlist", () => {
       waitlist: true,
     });
   });
+
+  it("a place freed before submit → the server registers her, and the page says so", async () => {
+    api.post.mockResolvedValue({ data: { status: "registered" } });
+    fullForm();
+    fireEvent.click(screen.getByTestId("registration-open"));
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByTestId("registration-success").textContent).toBe(S.success));
+  });
 });
 
 describe("RegistrationCta — the on-site form", () => {
