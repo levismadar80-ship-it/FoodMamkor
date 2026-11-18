@@ -10,7 +10,8 @@ Does NOT: Create products (routers/menu_import.py publish does, after the
           or set allergen / diet flags (those stay owner-declared).
 Related:  config.AI_MENU_MODEL; routers/menu_import.py; schemas/menu_import.py;
           the MEH-3430 accuracy test (artifact linked from the card).
-History:  MEH-3430 (creation).
+History:  MEH-3430 (creation; review 18/11: no retry, an inverted range is
+          flagged, a malformed item is skipped).
 
 Fail-open: returns None when ANTHROPIC_API_KEY is missing or the call fails,
 and the route answers 503. The owner can always add products by hand.
@@ -103,11 +104,13 @@ def _get_client() -> Any:
         import httpx
 
         # CLAUDE.md lock: always an explicit httpx.Client. A menu with several
-        # pages takes ~5–15 s; 90 s leaves room without holding a worker forever.
+        # pages takes ~5–15 s; 60 s and no retry stay under the browser's
+        # 120 s upload timeout (lib/api.js), so a slow read ends as a 503 the
+        # screen can show, not as a request the browser gave up on.
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(timeout=90.0),
-            max_retries=1,
+            http_client=httpx.Client(timeout=60.0),
+            max_retries=0,
         )
     except Exception as exc:  # pragma: no cover - import failure only
         logger.warning("[menu] client init failed: %s", exc)
@@ -150,6 +153,8 @@ def to_rows(items: list[dict[str, Any]]) -> list[MenuRow]:
     question, never as a number."""
     rows: list[MenuRow] = []
     for item in items[:MAX_ROWS]:
+        if not isinstance(item, dict):
+            continue
         name = _text(item.get("name"), _NAME_MAX)
         if not name:
             continue
@@ -163,6 +168,7 @@ def to_rows(items: list[dict[str, Any]]) -> list[MenuRow]:
             uncertain.add("price")
         elif price_max is not None and price_max <= price_min:
             price_max = None
+            uncertain.add("price")
         unit = item.get("unit") if item.get("unit") in _UNITS else "unit"
         rows.append(
             MenuRow(

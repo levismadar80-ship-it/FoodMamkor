@@ -8,8 +8,8 @@
  *           A field the model was unsure of carries «כדאי לבדוק»; a row with
  *           no price says so and blocks the publish until one is typed.
  * Touches:  nothing — the parent (MenuImport.jsx) owns the rows.
- * Does NOT: validate ranges (the server does, 422 in Hebrew), or set
- *           allergens / diet flags / photos (those stay in the product form).
+ * Does NOT: set allergens / diet flags / photos (those stay in the product
+ *           form; the publish route refuses them).
  * History:  MEH-3430 (creation).
  */
 
@@ -19,6 +19,27 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 
 const UNITS = ["unit", "kg", "100g"];
+const MIN_PRICE = 1;
+const MAX_PRICE = 10000; // backend ProductCreate: 1 – 10,000 ₪
+
+/**
+ * What blocks this row from publishing, as a `settings.products` key, or
+ * null. Checked here so a 422 never reaches a screen that cannot name the row
+ * (review 18/11); the server still checks the same ranges.
+ * @param {{ name: string, price_min: string, price_max: string }} row
+ * @returns {string | null}
+ */
+export function rowProblem(row) {
+  if (!row.name.trim()) return "errors.name_required";
+  if (row.price_min.trim() === "") return "menu_import.no_price";
+  const min = Number(row.price_min);
+  if (!(min >= MIN_PRICE)) return "errors.price_min_too_low";
+  if (min > MAX_PRICE) return "errors.price_too_high";
+  if (row.price_max.trim() === "") return null;
+  const max = Number(row.price_max);
+  if (max > MAX_PRICE) return "errors.price_too_high";
+  return max > min ? null : "errors.price_max_below_min";
+}
 
 /**
  * @typedef {{ key: string, name: string, description: string, price_min: string,
@@ -37,10 +58,10 @@ function CheckFlag({ flag }) {
  */
 export default function MenuReviewRow({ row, onChange, onRemove }) {
   const t = useTranslations("settings.products");
-  const tm = useTranslations("settings.products.menu_import");
   const tUnit = useTranslations("admin.producers.product_import.unit");
   const unsure = (/** @type {string} */ f) => row.uncertain.includes(f);
   const set = (/** @type {Partial<MenuDraftRow>} */ patch) => onChange(row.key, patch);
+  const problem = rowProblem(row);
   const noPrice = row.price_min.trim() === "";
   const label = (/** @type {string} */ key, /** @type {string} */ flag) => (
     <>
@@ -78,13 +99,18 @@ export default function MenuReviewRow({ row, onChange, onRemove }) {
             value={row.price_max} onChange={(e) => set({ price_max: e.target.value })} />
         </div>
         <div className="w-28">
+          <CheckFlag flag={unsure("unit")} />
           <Select inline aria-label={t("form.price_min_label")} value={row.price_unit}
             onChange={(e) => set({ price_unit: e.target.value })}>
             {UNITS.map((u) => <option key={u} value={u}>{tUnit(u)}</option>)}
           </Select>
         </div>
       </div>
-      {noPrice && <p className="text-xs text-error" data-testid="menu-row-no-price">{tm("no_price")}</p>}
+      {problem && (
+        <p className="text-xs text-error" data-testid={noPrice ? "menu-row-no-price" : "menu-row-problem"}>
+          {t(problem)}
+        </p>
+      )}
     </li>
   );
 }

@@ -582,9 +582,13 @@ export default function ProductsSection({
       <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
 
       {/* MEH-3430: «העלו תפריט» — a strip at 0–2 products, a button at 3+.
-          Hidden while a product form is open, so one task shows at a time. */}
-      {products && !loadError && !adding && editingId === null && (
-        <MenuImport productCount={products.length} onPublished={() => setReloadKey((k) => k + 1)} />
+          Steps aside while a product form is open; a review in progress stays. */}
+      {products && !loadError && (
+        <MenuImport
+          productCount={products.length}
+          hidden={adding || editingId !== null}
+          onPublished={() => setReloadKey((k) => k + 1)}
+        />
       )}
 
       {/* MEH-2094: the toggle's own guidance line (MEH-1539 principle 4 — a

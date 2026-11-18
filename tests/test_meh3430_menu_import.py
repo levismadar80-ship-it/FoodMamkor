@@ -204,7 +204,12 @@ def test_rows_keep_a_range_and_drop_an_inverted_one():
     (ok,) = menu_reader.to_rows([_item(price_min=250, price_max=400)])
     assert (ok.price_min, ok.price_max) == (Decimal("250.00"), Decimal("400.00"))
     (bad,) = menu_reader.to_rows([_item(price_min=250, price_max=100)])
-    assert bad.price_max is None
+    assert bad.price_max is None and bad.uncertain == ["price"]
+
+
+def test_rows_skip_an_item_that_is_not_an_object():
+    rows = menu_reader.to_rows(["לחם", None, _item(name="בגט")])
+    assert [r.name for r in rows] == ["בגט"]
 
 
 def test_rows_skip_nameless_items_and_cap_at_100():
@@ -244,11 +249,59 @@ def test_reader_treats_a_cut_off_answer_as_unread(monkeypatch):
     assert menu_reader.read_menu([("image/jpeg", JPEG)]) is None
 
 
-def test_publish_refuses_another_business_photo(client, db):
-    # MEH-3247 parity with POST /producers/me/products (security review, 18/11).
+
+def test_publish_refuses_fields_the_menu_never_sends(client, db):
+    # Review 18/11: a photo would skip the MEH-3247 ownership check and
+    # ingredients the batch text check, so the body takes the menu fields only.
     user, producer = _owner(db)
     foreign = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/owner/owner_" + str(uuid.uuid4()) + ".jpg"
-    body = {"products": [_row("לחם", image_url=foreign)]}
-    r = client.post("/producers/me/menu-import/publish", json=body, headers=auth_header(user))
-    assert r.status_code == 403
+    for extra in ({"image_url": foreign}, {"ingredients": "קמח"}, {"allergens": ["milk"]}):
+        body = {"products": [_row("לחם", **extra)]}
+        r = client.post("/producers/me/menu-import/publish", json=body, headers=auth_header(user))
+        assert r.status_code == 422, extra
     assert db.query(Product).filter(Product.producer_id == producer.id).count() == 0
+
+
+def test_publish_counts_the_whole_batch_against_the_cap(client, db, monkeypatch):
+    # Discriminates the batch arithmetic: with enforce_cap(len(existing)) this
+    # batch of 3 onto 1 existing would pass a cap of 3.
+    monkeypatch.setattr(limits, "CAPS", {**limits.CAPS, "products": 3})
+    user, producer = _owner(db)
+    db.add(Product(producer_id=producer.id, name="קיים", price_min=10))
+    db.commit()
+    body = {"products": [_row("א"), _row("ב"), _row("ג")]}
+    r = client.post("/producers/me/menu-import/publish", json=body, headers=auth_header(user))
+    assert r.status_code == 409
+    assert db.query(Product).filter(Product.producer_id == producer.id).count() == 1
+
+
+def test_publish_needs_a_business_owner(client, db):
+    consumer = make_user(db, role="consumer", email=f"c{uuid.uuid4().hex[:8]}@example.com")
+    body = {"products": [_row("לחם")]}
+    assert client.post("/producers/me/menu-import/publish", json=body, headers=auth_header(consumer)).status_code == 403
+    assert client.post("/producers/me/menu-import/publish", json=body).status_code == 401
+
+
+def test_a_rejected_menu_saves_nothing(client, db, monkeypatch):
+    from fastapi import HTTPException
+
+    def reject(*_a, **_k):
+        raise HTTPException(status_code=422, detail="נדחה")
+
+    monkeypatch.setattr(route.approved_edit, "check_product", reject)
+    user, producer = _owner(db)
+    r = client.post("/producers/me/menu-import/publish", json={"products": [_row("לחם")]}, headers=auth_header(user))
+    assert r.status_code == 422
+    assert db.query(Product).filter(Product.producer_id == producer.id).count() == 0
+
+
+def test_reads_have_a_daily_budget_per_business_not_per_ip(client, db, fake_reader, monkeypatch):
+    from limits import parse
+
+    monkeypatch.setattr(route, "READS_PER_BUSINESS", parse("2/day"))
+    user, _ = _owner(db)
+    codes = [
+        client.post("/producers/me/menu-import/read", files=_files(JPEG), headers={**auth_header(user), "X-Real-IP": f"10.0.0.{i}"}).status_code
+        for i in range(3)
+    ]
+    assert codes == [200, 200, 429]

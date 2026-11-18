@@ -21,13 +21,17 @@ const M = he.settings.products.menu_import;
 const row = (name, price = "30.00", extra = {}) => ({ name, description: null, section: null, price_min: price,
   price_max: null, price_unit: "unit", uncertain: [], ...extra });
 
-function mount(productCount = 0) {
+const P = he.settings.products;
+
+function mount(productCount = 0, hidden = false) {
   const onPublished = vi.fn();
-  render(
+  const ui = (h) => (
     <NextIntlClientProvider locale="he" messages={he}>
-      <MenuImport productCount={productCount} onPublished={onPublished} />
-    </NextIntlClientProvider>,
+      <MenuImport productCount={productCount} onPublished={onPublished} hidden={h} />
+    </NextIntlClientProvider>
   );
+  const { rerender } = render(ui(hidden));
+  onPublished.setHidden = (h) => rerender(ui(h));
   return onPublished;
 }
 
@@ -162,5 +166,62 @@ describe("MenuImport — a read that fails", () => {
       target: { files: [new File(["x"], "m.heic", { type: "image/heic" })] },
     });
     expect(await screen.findByText(detail)).toBeInTheDocument();
+  });
+});
+
+describe("MenuImport — review findings (18/11)", () => {
+  it("while the read runs: the button says «קוראים את התפריט…» and is off", async () => {
+    mount(0);
+    let finish;
+    api.post.mockReturnValueOnce(new Promise((r) => { finish = r; }));
+    fireEvent.change(screen.getByTestId("menu-file-input"), {
+      target: { files: [new File(["x"], "m.jpg", { type: "image/jpeg" })] },
+    });
+    const busy = await screen.findByRole("button", { name: new RegExp(M.reading) });
+    expect(busy).toBeDisabled();
+    finish({ data: { rows: [row("א")] } });
+    await screen.findByTestId("menu-review");
+  });
+
+  it("a failed publish keeps the rows and says the save failed, not the read", async () => {
+    mount(0);
+    await upload([row("א")]);
+    api.post.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    fireEvent.click(screen.getByRole("button", { name: M.publish.replace("{count}", "1") }));
+    expect(await screen.findByText(P.errors.save_failed)).toBeInTheDocument();
+    expect(screen.queryByText(M.failed)).toBeNull();
+    expect(screen.getAllByTestId("menu-row")).toHaveLength(1);
+  });
+
+  it("the cap 409 on publish shows the server's line", async () => {
+    mount(0);
+    await upload([row("א")]);
+    const detail = "אפשר להוסיף עד 100 מוצרים.";
+    api.post.mockRejectedValueOnce({ response: { status: 409, data: { detail } } });
+    fireEvent.click(screen.getByRole("button", { name: M.publish.replace("{count}", "1") }));
+    expect(await screen.findByText(detail)).toBeInTheDocument();
+  });
+
+  it("a price under 1 or a range that goes down blocks publish with the form's own line", async () => {
+    mount(0);
+    await upload([row("א", "0.50"), row("ב", "40.00", { price_max: "20.00" })]);
+    const problems = screen.getAllByTestId("menu-row-problem").map((p) => p.textContent);
+    expect(problems).toEqual([P.errors.price_min_too_low, P.errors.price_max_below_min]);
+    expect(screen.getByRole("button", { name: M.publish.replace("{count}", "2") })).toBeDisabled();
+  });
+
+  it("a unit the model was unsure of is flagged", async () => {
+    mount(0);
+    await upload([row("גבינה", "80.00", { price_unit: "kg", uncertain: ["unit"] })]);
+    expect(within(screen.getByTestId("menu-row")).getByText(M.check)).toBeInTheDocument();
+  });
+
+  it("a product form open: the strip steps aside, a review in progress stays", async () => {
+    const ctl = mount(0, true);
+    expect(screen.queryByTestId("menu-strip")).toBeNull();
+    ctl.setHidden(false);
+    await upload([row("א")]);
+    ctl.setHidden(true);
+    expect(screen.getByTestId("menu-review")).toBeInTheDocument();
   });
 });

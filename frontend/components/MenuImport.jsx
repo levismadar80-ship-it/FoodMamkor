@@ -27,7 +27,7 @@ import { detailToMessage } from "@/lib/errors";
 import { shrinkMenuImage } from "@/lib/menu-image";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
-import MenuReviewRow from "@/components/MenuReviewRow";
+import MenuReviewRow, { rowProblem } from "@/components/MenuReviewRow";
 import {
   ReadMyMenuProducersMeMenuImportReadPostResponse as MenuReadOut,
   PublishMyMenuProducersMeMenuImportPublishPostResponse as MenuPublishOut,
@@ -37,7 +37,7 @@ import {
 const MAX_MENU_FILES = 5;
 const MAX_PRODUCTS = 100; // backend/app/limits.py MAX_PRODUCTS
 const STRIP_UNTIL = 2; // 0–2 products → the strip; 3+ → the button
-const ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
+const ACCEPT = "image/jpeg,image/png,image/webp,image/gif,application/pdf";
 
 /** @param {any} r @param {number} i @returns {import("./MenuReviewRow").MenuDraftRow} */
 function toDraft(r, i) {
@@ -67,9 +67,10 @@ function toPayload(r) {
 /** @param {any} err @param {string} fallback */
 function errorText(err, fallback) {
   const status = err?.response?.status;
-  // 413 / 415 / 409 / 422 carry a specific Hebrew line; anything else (503,
-  // network, a model that read nothing) is the one approved fallback.
-  if ([409, 413, 415, 422].includes(status)) {
+  // 409 / 413 / 415 / 422 / 429 carry a specific Hebrew line (a pydantic 422
+  // list does not, and falls through); anything else (503, network, a model
+  // that read nothing) is the caller's fallback.
+  if ([409, 413, 415, 422, 429].includes(status)) {
     return detailToMessage(err.response.data?.detail) || fallback;
   }
   return fallback;
@@ -88,8 +89,13 @@ async function buildForm(files) {
   return total > MAX_UPLOAD_BYTES ? null : fd;
 }
 
-/** @param {{ productCount: number, onPublished: () => void }} props */
-export default function MenuImport({ productCount, onPublished }) {
+/**
+ * `hidden`: a product form is open. The entry point steps aside, but a read or
+ * review in progress stays — closing it would drop rows the owner paid a read
+ * for (review 18/11).
+ * @param {{ productCount: number, onPublished: () => void, hidden?: boolean }} props
+ */
+export default function MenuImport({ productCount, onPublished, hidden = false }) {
   const t = useTranslations("settings.products.menu_import");
   const tp = useTranslations("settings.products");
   const inputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
@@ -131,7 +137,8 @@ export default function MenuImport({ productCount, onPublished }) {
       setPhase("idle");
       onPublished();
     } catch (err) {
-      setError(errorText(err, t("failed")));
+      // Not the read line: the rows are still here, the save is what failed.
+      setError(errorText(err, tp("errors.save_failed")));
       setPhase("review");
     }
   };
@@ -143,14 +150,16 @@ export default function MenuImport({ productCount, onPublished }) {
   const pickButton = (/** @type {string} */ variant) => (
     <Button type="button" variant={variant} size="sm" loading={phase === "reading"}
       leadingIcon={<FileArrowUp size={16} aria-hidden="true" />}
-      onClick={() => inputRef.current?.click()} disabled={phase === "reading"}>
+      onClick={() => inputRef.current?.click()} disabled={phase === "reading"}
+      // the shared loading label is generic; this one says what is happening
+      aria-label={phase === "reading" ? t("reading") : undefined}>
       {phase === "reading" ? t("reading") : t("button")}
     </Button>
   );
 
   if (phase === "review" || phase === "publishing") {
     const overCap = productCount + rows.length > MAX_PRODUCTS;
-    const missingPrice = rows.some((r) => r.price_min.trim() === "" || !r.name.trim());
+    const missingPrice = rows.some((r) => rowProblem(r) !== null);
     return (
       <section data-testid="menu-review" className="border border-primary/30 rounded-lg p-4 mb-4 space-y-3">
         <p className="text-sm font-semibold text-text" role="status">{t("found", { count: rows.length })}</p>
@@ -176,6 +185,7 @@ export default function MenuImport({ productCount, onPublished }) {
     );
   }
 
+  if (hidden && phase === "idle") return null;
   if (productCount <= STRIP_UNTIL) {
     return (
       <section data-testid="menu-strip" className="border border-primary/30 bg-primary/5 rounded-lg p-4 mb-4">

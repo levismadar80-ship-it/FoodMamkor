@@ -12,9 +12,12 @@ Does NOT: save anything on read — the uploaded bytes live for the request
 Related:  app/schemas/menu_import.py · app/limits.py MAX_PRODUCTS ·
           app/routers/upload.py:_sniff_image_type ·
           app/services/approved_edit_moderation.py:check_product
-History:  MEH-3430 (creation)
+History:  MEH-3430 (creation; review 18/11: read off the event loop, a daily
+          budget per business, moderation before the lock, limits that match
+          the proxy in front)
 """
 
+import asyncio
 import logging
 import re
 
@@ -27,6 +30,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
+from limits import parse as parse_limit
 from sqlalchemy.orm import Session
 
 from app.auth import require_producer
@@ -42,15 +46,21 @@ from app.schemas.menu_import import (
     MenuReadOut,
 )
 from app.services import approved_edit_moderation as approved_edit
-from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.menu_reader import read_menu
 
 router = APIRouter(prefix="/producers/me/menu-import", tags=["producer-management"])
 logger = logging.getLogger(__name__)
 
 MAX_FILES = 5
-MAX_FILE_BYTES = 8 * 1024 * 1024
-MAX_TOTAL_BYTES = 20 * 1024 * 1024  # base64 → ~27 MB, under the API's 32 MB
+# The real ceiling is in front of us: Vercel refuses a body over ~4.5 MB
+# (MEH-3399) and BodySizeLimitMiddleware one over 6 MB (body_limit.py). The
+# browser shrinks photos to fit; these only refuse what got past it.
+MAX_FILE_BYTES = 4 * 1024 * 1024
+MAX_TOTAL_BYTES = 6 * 1024 * 1024
+# The decorator limits key on the IP; a business gets its own daily budget
+# too, so a new IP is not a new budget for the paid call (review, 18/11).
+READS_PER_BUSINESS = parse_limit("30/day")
+_READ_SCOPE = "menu-read"
 MAX_PDF_PAGES = 10
 _MEDIA = {
     "jpeg": "image/jpeg",
@@ -63,9 +73,10 @@ _PDF_PAGE = re.compile(rb"/Type\s*/Page(?![s\w])")
 
 # Hebrew in `detail=` is required — backend/app/routers/CLAUDE.md.
 _BAD_FILE = "אפשר להעלות תמונות JPG/PNG/WebP או קובץ PDF"
-_TOO_BIG = "הקבצים גדולים מדי. אפשר עד 5 קבצים, עד 8MB כל אחד."
+_TOO_BIG = "הקבצים גדולים מדי. אפשר עד 5 קבצים, עד 4MB כל אחד."
 _TOO_MANY_PAGES = f"אפשר להעלות PDF של עד {MAX_PDF_PAGES} עמודים"
 _UNAVAILABLE = "לא הצלחנו לקרוא את התפריט כרגע"
+_DAILY = "הגעתם למספר הקריאות היומי של תפריטים. אפשר לנסות שוב מחר."
 
 
 def _media_type(data: bytes) -> str:
@@ -99,7 +110,11 @@ async def read_my_menu(
         if len(data) > MAX_FILE_BYTES or total > MAX_TOTAL_BYTES:
             raise HTTPException(status_code=413, detail=_TOO_BIG)
         payload.append((_media_type(data), data))
-    rows = read_menu(payload)
+    if not limiter.limiter.hit(READS_PER_BUSINESS, _READ_SCOPE, str(user.producer_id)):
+        raise HTTPException(status_code=429, detail=_DAILY)
+    # The SDK is sync and a read takes seconds: off the event loop, as
+    # upload.py does for Cloudinary (MEH-2551).
+    rows = await asyncio.to_thread(read_menu, payload)
     if rows is None:
         raise HTTPException(status_code=503, detail=_UNAVAILABLE)
     logger.info(
@@ -116,6 +131,25 @@ def _name_key(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip().casefold()
 
 
+def _new_items(
+    db: Session, producer_id: object, items: list[MenuProductIn]
+) -> tuple[list[MenuProductIn], list[str]]:
+    """The items whose name the business does not have yet (nor earlier in
+    the batch), and the names skipped."""
+    rows = db.query(Product.name).filter(Product.producer_id == producer_id).all()
+    seen = {_name_key(str(r.name)) for r in rows}
+    kept: list[MenuProductIn] = []
+    skipped: list[str] = []
+    for item in items:
+        key = _name_key(item.name)
+        if key in seen:
+            skipped.append(item.name)
+            continue
+        seen.add(key)
+        kept.append(item)
+    return kept, skipped
+
+
 @router.post("/publish", response_model=MenuPublishOut, status_code=201)
 @limiter.limit("10/hour")
 def publish_my_menu(
@@ -125,51 +159,40 @@ def publish_my_menu(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> MenuPublishOut:
-    # MEH-3247: the menu screen sends no photos, but the body is ProductCreate,
-    # so a hand-made request could store another business's Cloudinary URL.
-    # Same check as POST /producers/me/products (producer_me.py).
-    assert_own_new_images(user, [p.image_url for p in body.products if p.image_url])
-    # Two publishes at once must not both pass the cap: lock the business row.
-    # REUSES: backend/app/services/product_import.py:import_drafts
-    producer = (
-        db.query(Producer)
-        .filter(Producer.id == user.producer_id)
-        .with_for_update()
-        .first()
-    )
+    # Moderate BEFORE taking the row lock: the AI call takes seconds and must
+    # not hold a lock and a pool slot (approved_edit_moderation.py). Then the
+    # duplicates and the cap are decided again under the lock.
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if producer is None:
         raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
-    existing = db.query(Product.name).filter(Product.producer_id == producer.id).all()
-    seen = {_name_key(str(r.name)) for r in existing}
-    to_create: list[Product] = []
-    kept: list[MenuProductIn] = []
-    skipped: list[str] = []
-    for item in body.products:
-        key = _name_key(item.name)
-        if key in seen:
-            skipped.append(item.name)
-            continue
-        seen.add(key)
-        kept.append(item)
-        to_create.append(Product(producer_id=producer.id, **item.model_dump()))
-    if not to_create:
+    candidates, _ = _new_items(db, producer.id, body.products)
+    if candidates:
+        # One moderation call for the whole menu, not one per product
+        # (MEH-3261): REJECTED refuses the publish, FLAGGED pings the admin once.
+        approved_edit.check_product(
+            background_tasks,
+            producer,
+            None,
+            {
+                "name": "\n".join(p.name for p in candidates),
+                "description": "\n".join(
+                    p.description for p in candidates if p.description
+                ),
+            },
+            bool(producer.is_test or getattr(user, "is_test", False)),
+        )
+    # Two publishes at once must not both pass the cap: lock the business row.
+    # REUSES: backend/app/services/product_import.py:import_drafts
+    db.query(Producer).filter(Producer.id == producer.id).with_for_update().first()
+    kept, skipped = _new_items(db, producer.id, body.products)
+    if not kept:
+        db.rollback()
         return MenuPublishOut(created=0, skipped_duplicates=skipped)
+    existing = db.query(Product.id).filter(Product.producer_id == producer.id).count()
     # MEH-3022: enforce_cap refuses at count >= cap for ONE insert; for n
     # inserts the last one lands at current + n - 1.
-    enforce_cap(len(existing) + len(to_create) - 1, "products")
-    # One moderation call for the whole menu, not one per product (MEH-3261):
-    # REJECTED refuses the publish, FLAGGED pings the admin once.
-    approved_edit.check_product(
-        background_tasks,
-        producer,
-        None,
-        {
-            "name": "\n".join(p.name for p in kept),
-            "description": "\n".join(p.description for p in kept if p.description),
-        },
-        bool(producer.is_test or getattr(user, "is_test", False)),
-    )
-    db.add_all(to_create)
+    enforce_cap(existing + len(kept) - 1, "products")
+    db.add_all(Product(producer_id=producer.id, **p.model_dump()) for p in kept)
     db.commit()
-    logger.info("menu published: producer=%s created=%s", producer.id, len(to_create))
-    return MenuPublishOut(created=len(to_create), skipped_duplicates=skipped)
+    logger.info("menu published: producer=%s created=%s", producer.id, len(kept))
+    return MenuPublishOut(created=len(kept), skipped_duplicates=skipped)
