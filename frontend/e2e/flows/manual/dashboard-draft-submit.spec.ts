@@ -143,7 +143,7 @@ const banner = (page: Page) => checklist(page).getByTestId("draft-submit-actions
 /** The pre-MEH-2883 list. A business never gets it; asserted absent, never read. */
 const missingList = (page: Page) => page.getByTestId("draft-missing-list");
 const cta = (page: Page) => page.getByTestId("draft-submit-cta");
-const checklistRows = (page: Page) => checklist(page).getByRole("list", { name: "התקדמות השלמת הפרופיל" }).getByRole("listitem");
+const checklistRows = (page: Page) => checklist(page).getByRole("list", { name: "התקדמות השלמת העמוד" }).getByRole("listitem");
 /** Rows whose screen-reader status reads «עדיין חסר» (checklist_todo). */
 const missingRows = (page: Page) => checklistRows(page).filter({ hasText: "עדיין חסר" });
 
@@ -206,7 +206,7 @@ test.describe("draft banner — matrix cells and the cancel path", () => {
     await openOverview(page);
     await cta(page).click();
     await page.getByTestId("draft-submit-confirm-yes").click();
-    await expect(page.getByText("הפרופיל נשלח לבדיקה — נעדכן עד 3 ימי עסקים.")).toBeVisible();
+    await expect(page.getByText("העמוד נשלח לבדיקה — נעדכן עד 3 ימי עסקים.")).toBeVisible();
     await expect(page.getByTestId("status-pending-banner")).toBeVisible();
     expect(posts.filter((p) => p.url === "submit-for-review")).toHaveLength(1);
   });
@@ -297,7 +297,7 @@ test.describe("WhatsApp verification from the draft", () => {
     // The checklist saw the same flip: 7/7 collapses to the single confirmation
     // line — no row is left reading missing (the item is gone) — and the
     // actions stay at its foot.
-    await expect(checklist(page)).toContainText("הפרופיל מלא");
+    await expect(checklist(page)).toContainText("העמוד מלא");
     await expect(checklistRows(page)).toHaveCount(0);
     await expect(missingList(page)).toHaveCount(0);
   });
