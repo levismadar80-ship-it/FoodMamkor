@@ -61,6 +61,19 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     expect(lines.find((line, i) => i > 0 && line)).toBe(SITE_DESCRIPTION);
   });
 
+  // MEH-3424: two more describing surfaces read the same line — the root
+  // layout's fallback metadata (through the constant, never a literal) and
+  // the PWA manifest.
+  it("layout.js feeds SITE_DESCRIPTION to description, og and twitter, and manifest.json carries it", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const layout = readFileSync(path.join(here, "..", "app", "[locale]", "layout.js"), "utf8");
+    expect(layout.match(/^\s+description: SITE_DESCRIPTION,$/gm)).toHaveLength(3);
+    const manifest = JSON.parse(
+      readFileSync(path.join(here, "..", "public", "manifest.json"), "utf8"),
+    );
+    expect(manifest.description).toBe(SITE_DESCRIPTION);
+  });
+
   it("declares sameAs, and every entry is an absolute https URL", () => {
     const org = buildOrganizationNode();
 

@@ -31,7 +31,8 @@ It is `SITE_DESCRIPTION` in `frontend/lib/constants.js`. It is shown in:
 - `seo.site.og_description` and `seo.site.twitter_description`, which are the shared-link card;
 - the fallback `description`, `openGraph.description` and `twitter.description` in `app/[locale]/layout.js`;
 - the Organization JSON-LD `description` (`buildOrganizationNode`, `lib/seo.js`);
-- the summary line of `public/llms.txt`.
+- the summary line of `public/llms.txt`;
+- the PWA `description` in `public/manifest.json`.
 
 The other two sentences are unchanged and move to surfaces that are not "what is this site":
 
@@ -40,7 +41,12 @@ The other two sentences are unchanged and move to surfaces that are not "what is
 
 That the site checks every business before it goes up is **not** part of the descriptor. It is supporting copy where a reader is already deciding whether to contact a business (the business page, `/about`, `/about/process`). That copy needs its own word-for-word approval.
 
-**Not in this ADR:** English. `en.json` keeps its current description until Sapir approves an English sentence. Privacy policy §1 and any outreach templates also wait for their own approved wording.
+**Not in this ADR:** English. `en.json` keeps its current description until Sapir approves an English sentence. Privacy policy §1 and any outreach templates also wait for their own approved wording. Also left as they are, because they are not a one-line description of the site or need wording of their own:
+
+- page titles (`seo.site.title`, `og_title`, `twitter_title`) and the per-page descriptions of `/about` and `/login`;
+- the email footer line «מהמקור — בתי עסק מקומיים, כולם במקום אחד.» (`backend/app/routers/marketing.py`, `backend/app/services/delivery_waitlist.py`);
+- the chat assistant's system prompt (`backend/app/routers/chat.py`), which no user sees;
+- the share message (`share_msg`) and short promo lines in `he.json`.
 
 ## Consequences
 **Positive:**

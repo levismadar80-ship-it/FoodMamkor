@@ -27,7 +27,7 @@ This is the DNA. Every product decision passes through "does this push toward ma
 
 > **במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.**
 
-The one sentence that says what the site is. It appears wherever the site is described in a line: the meta description, the shared-link card (og/twitter), the Organization JSON-LD `description`, the `llms.txt` summary. Code owner: `SITE_DESCRIPTION` (`frontend/lib/constants.js`). Approved word for word by Sapir, 18/11/2026.
+The one sentence that says what the site is. It appears wherever the site is described in a line: the meta description, the shared-link card (og/twitter), the Organization JSON-LD `description`, the `llms.txt` summary, the PWA manifest `description`. Code owner: `SITE_DESCRIPTION` (`frontend/lib/constants.js`). Approved word for word by Sapir, 18/11/2026.
 
 - It leads with **finding** («מוצאים»), because the problem the site solves is not knowing where to find local food. "We check every business" is supporting copy on the business page, `/about` and `/about/process`, not part of this line.
 - **Do not** replace it with a category noun. «מדריך» was read as "a guide for businesses" (MEH-3424 research).
