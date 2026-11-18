@@ -998,6 +998,17 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > nothing. All mail is a BackgroundTask (fail-open, `test_cause` for a test
 > business).
 >
+> **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
+> `max_participants` below the item's active on-site sign-ups → **422**
+> «כבר נרשמו N, ולכן אי אפשר להגדיר פחות מקומות מזה.» (MEH-2871,
+> `services/registrations.refuse_too_few_places`), nothing written. Not checked
+> when the value equals the stored one, or when the same PUT cancels the item:
+> those sign-ups are cancelled with it, so nobody is left holding a place. Switching
+> `registration_method` away from `site_form` on an active item keeps every
+> sign-up and mails each registrant once («עדכון על ההרשמה ל"{title}"», with the
+> cancel link). A PUT that also moves the date sends only the «moved» email. Both dashboards keep showing the list while `registered_count`
+> > 0. No schema change.
+>
 > **MEH-2502 — the admin edit cannot change status.** `PUT
 > /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
 > סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status
@@ -1032,6 +1043,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > plain string. Additive — no schema change.
 
 > **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
+
+> **MEH-3289 — joining continues after the minimum (2026-11-15):** `POST /group-buys/{id}/commit` accepts status `open` **or** `funded` (was `open` only), still refused past the deadline (400) and at `max_participants` (400 «קבוצת הרכישה מלאה»). A join into a `funded` group leaves it `funded` and emails **only the joiner** the funded email (`send_funded_notifications(..., late_joiner=True)`: no business email, no re-send to earlier participants). Before this, `max_participants` could never be reached, because the first commit at the minimum closed joining. `DELETE /group-buys/{id}/commit` already allowed `funded`. No schema change.
 
 > **MEH-3311 — a funded group buy that drops below its goal (2026-11-15).** Migration `a7d3e9c1b5f2` adds two nullable naive-UTC columns to `group_buys`: `below_goal_notified_at`, `refunded_notified_at`. When `DELETE /group-buys/{id}/commit` reverts `funded → open` on a group whose funded email went out (`funded_notified_at` set), everyone who stayed gets one email «מהמקור — הקבוצה "{title}" ירדה מתחת ליעד» and `below_goal_notified_at` is stamped. When a later join re-crosses the minimum, every participant gets the funded email again (not the business) and `refunded_notified_at` is stamped. Each stamp is set once, so a flapping group mails a participant at most three times in all; `funded_notified_at` stays one-way (MEH-1651). The account-deletion revert (`group_buy_delist.withdraw_user_commits`) sends nothing. Service: `app/services/group_buy_goal_flap.py`.
 
@@ -1220,6 +1233,17 @@ GET    /producers/by-slug/{slug}                  public
                                                or renamed-away slug → 404. Middleware rewrites (no status — a 410 rewrite shows Vercel's
                                                own GONE page) to /[locale]/business-gone → ProducerGone, 200 + noindex.
                                                Not via [slug]: its Data Cache keeps the last 200 after a delete (MEH-2576).
+                                               MEH-3336: a slug RENAMED away from a business that is still public →
+                                               404 {detail: {code: "slug_moved", message, slug: <current>}}; the
+                                               middleware answers the browser 301 → /<current> (locale prefix kept,
+                                               query kept, only a-z0-9- slugs followed). Every old slug points at the
+                                               business, so renames chain. A renamed business that is no longer
+                                               public → plain 404. Slugs are minted Latin (a-z0-9-, ≤40): Instagram
+                                               handle, else the name transliterated; collision → town appended
+                                               (`-2` only as the last resort); a typed slug must be Latin (422
+                                               `slug_not_latin`), checked only when the slug CHANGES so a legacy
+                                               Hebrew slug stays editable. A name that transliterates to nothing
+                                               (all-Arabic, no handle) → NULL slug, /producer/{id}.
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
@@ -1313,6 +1337,14 @@ DELETE /producers/me/locations/{id}               producer  — delete. Cross-ow
                                                               automatically — that had no kind filter, so deleting the primary
                                                               could make a pickup point the business's navigation target.
                                                               Deleting the last row is allowed.
+GET    /admin/producers/{producer_id}/locations   admin     — MEH-3333: the same CRUD for any business, mounted on
+POST   /admin/producers/{producer_id}/locations   admin       the admin edit page (LocationsEditor basePath). Same
+PUT    /admin/producers/{producer_id}/locations/{location_id}  admin  invariants, imported from producer_me_locations.py
+DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city label, branch-only primary — also on a
+                                                              kind edit of the primary row —, single primary, city
+                                                              sync). A location of ANOTHER business under the path →
+                                                              404 (not 403); unknown business → 404. 120/hr on writes.
+                                                              No admin "sensitive edit" ping — the actor is the admin.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
@@ -1615,7 +1647,7 @@ PUT    /admin/users/{id}/role                  admin. role=consumer **or role=ad
 GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at>. Newest first.
                                                { items: [{ id, actor_id, action, target_type, target_id, details, created_at }] }.
                                                The stored IP is not returned.
-POST   /admin/users/{id}/block                 admin
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
@@ -1844,7 +1876,7 @@ GET  /admin/outreach/metrics/summary
 
 ```
 GET  /search            public — q (max 100 chars), limit (1–20, default 8)
-                                 returns { producers, products, cities, categories }
+                                 returns { producers, products, cities, categories, corrected_query }
                                  rate-limited 60/minute per IP
 ```
 
@@ -1853,6 +1885,15 @@ GET  /search            public — q (max 100 chars), limit (1–20, default 8)
 matches the same three plus `city`, category names, product names + descriptions and
 delivery-area cities (`producer_listing._token_search_filter`). Both use the same
 per-token ilike patterns (`hebrew_search.token_patterns`, escaped).
+
+**Wrong keyboard layout, niqqud, final letters (MEH-3415).** The query is normalised
+first (`hebrew_search.normalise`: niqqud dropped, nothing else; a trailing regular
+letter also tries its final form). When the query as typed returns nothing, both
+endpoints re-read it on the other SI 1452 layout (`hebrew_search.layout_alternative`:
+`sca` → `דבש`, `נרקשג` → `bread`; ≥ 3 characters, no 1-character token, one script
+only) and run once more. `GET /search` then sets `corrected_query` to the
+word the results are for (`null` otherwise); `GET /producers?q=` serves the corrected
+results silently and logs the query as typed with the count served.
 
 ### Chat widget (`app/routers/chat.py`)
 
@@ -1882,6 +1923,11 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically
+POST /upload/owner-photo/{producer_id}  admin — MEH-3338: the same upload for the business in the PATH
+                                 (admin builds the page on the owner's behalf). Shared helper
+                                 `_store_owner_photo`: same size cap, magic-byte sniff, fixed slot.
+                                 Owner → 403 (she has the route above); unknown business → 404. 30/hr.
+                                 `ProducerAdminCreate` also accepts `owner_bio` (sanitized, ≤300).
 ```
 
 > **Destroying an old photo (MEH-3247).** Every post-commit cleanup

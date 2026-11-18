@@ -47,6 +47,7 @@ graph LR
     App --> BizSuggest[business_suggestions.router<br/>POST /business-suggestions]
     App --> Chat[chat.router<br/>/chat/*]
     App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
+    App --> AdminLocations[admin_producer_locations.router<br/>/admin/producers/:producer_id/locations (MEH-3333, invariants imported from producer_me_locations)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
     App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel]
@@ -72,7 +73,7 @@ graph TD
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b<br/>404 for an organizer MEH-2465]
     GGoogleRating -.needs.-> PGooglePlaceId[PUT /admin/producers/{id}/google-place-id<br/>🔒 admin · MEH-2582 one-field write from the approval row<br/>skips licence/delivery gates on purpose, 30/min]
-    ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug<br/>410 if the business was deleted · MEH-2534]
+    ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug<br/>410 if the business was deleted · MEH-2534<br/>404 + slug_moved for a renamed business → middleware 301 · MEH-3336]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
     GProducer --> Waitlist[POST /producers/{id}/delivery-waitlist<br/>🌐 rate-limited 10/min · MEH-2618<br/>{email, city, wants_to_host?} → delivery_waitlist row<br/>MEH-2673: wants_to_host → confirmation email; after POST /delivery-waitlist/host-confirm the owner sees the email in /producers/me/analytics pickup_hosts<br/>201 added · 200 exists · 404 non-live<br/>JWT optional: sets user_id, fills empty users.city]
     Waitlist -.->|PUT /producers/me adds the city → BackgroundTask<br/>notify_cities: one email per entry, notified_at stamped| WaitlistMail[Resend email<br/>«{business} מגיעים עכשיו גם ל{city}»<br/>fail-open per recipient]
@@ -165,8 +166,8 @@ graph TD
     Producers --> ReviewChecksPut[PUT /admin/producers/{producer_id}/review-checks<br/>🛡️ MEH-1399 set semantics — present=ticked, absent=deleted. Idempotent; label_snapshot written at tick time; ON CONFLICT DO NOTHING so a concurrent save resolves instead of 500ing]
 
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
-    Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
-    Users --> Block[POST /admin/users/{id}/block<br/>🛡️]
+    Users --> Role[PUT /admin/users/{id}/role<br/>🛡️ 409 while a business is linked (MEH-2871)]
+    Users --> Block[POST /admin/users/{id}/block<br/>🛡️ toggle; the only owner of a live business → hide_business (MEH-2871)]
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
     AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first — the row is scheduled in get_current_user for every change by an admin account]
 

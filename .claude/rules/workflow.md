@@ -168,6 +168,9 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 11. **After every PR — auto-update every doc your code touched**, same PR
     (DATA / ADMIN / DESIGN / FEATURES / SECURITY / DEPLOYMENT,
     `.ai/diagrams/`; CHANGELOG via rule 31). Stop hooks run build + pytest.
+    A new page also gets a row in `docs/FEATURES.md` «route inventory» —
+    `features-route-guard.sh` fails without it (MEH-3175: a new feature
+    touches no doc, so this rule alone never fired).
 12. **After every PR that touches `backend/app/routers/**`,
     `backend/app/models/**` or `backend/app/auth.py` — update `.ai/diagrams/`.**
 13. **End of session protocol (MANDATORY — same priority as Rule 1).** Update

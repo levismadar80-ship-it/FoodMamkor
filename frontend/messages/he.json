@@ -1153,7 +1153,7 @@
       "status_funded": "הגיעו ליעד",
       "status_fulfilled": "הושלמו",
       "status_hint_open": "ההצטרפות בלי תשלום. כשהקבוצה מגיעה למינימום, המחיר הקבוצתי נפתח.",
-      "status_hint_funded": "הקבוצות האלה הגיעו למינימום. ההצטרפות נסגרה, ומי שהצטרפו יוצרים קשר עם בית העסק לתיאום ההזמנה.",
+      "status_hint_funded": "הקבוצות האלה הגיעו למינימום, והמחיר הקבוצתי נפתח. אפשר עוד להצטרף עד שהקבוצה מתמלאת או עד המועד האחרון. מי שהצטרפו יוצרים קשר עם בית העסק לתיאום ההזמנה.",
       "status_hint_fulfilled": "ההזמנות נמסרו.",
       "empty_title": "עדיין אין קבוצות רכישה פעילות",
       "empty_subtitle": "כשבתי עסק יפתחו קבוצות — תמצאו אותן כאן"
@@ -1164,6 +1164,7 @@
       "unit_prefix": "/ {unit}",
       "min_hint": "במחיר הקבוצתי מ‑{min} הצטרפויות",
       "progress_label": "{commits} מתוך {min} הצטרפו",
+      "progress_joined": "{commits} הצטרפו",
       "days_left": "{days} ימים נותרו",
       "expired": "פג התוקף",
       "cta_funded_details": "פרטים",
@@ -1182,6 +1183,7 @@
       "unit_suffix": "/ {unit}",
       "discount_hint": "חיסכון של {discount}% במחיר קבוצתי",
       "progress_label": "{commits} מתוך {min} הצטרפו",
+      "progress_joined": "{commits} הצטרפו",
       "remaining_to_open": "עוד {n} לפתיחת המחיר",
       "deadline_prefix": "מועד אחרון: {date}",
       "fulfillment_title": "איסוף ומשלוח",
@@ -1202,6 +1204,7 @@
       "cancel_confirm": "לבטל את ההצטרפות?",
       "cancel_dismiss": "לא, להשאיר",
       "deadline_passed": "המועד האחרון חלף — לא ניתן להצטרף",
+      "full": "הקבוצה מלאה — לא ניתן להצטרף",
       "share_wa": "שתפו בוואטסאפ",
       "share_text": "בואו להצטרף לקבוצת רכישה — {title} ב{city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "ישראל",
@@ -1740,7 +1743,8 @@
           "availability": "זמינות",
           "admin_notes": "הערות פנימיות (לא גלוי למשתמשים)",
           "availability_tooltip": "סמני שבית העסק בחופשה. מוצג badge 'בחופשה' בדף העסק, ולחצן וואטסאפ מוסתר עד לתאריך החזרה.",
-          "availability_tooltip_label": "מידע על מצב חופשה"
+          "availability_tooltip_label": "מידע על מצב חופשה",
+          "owner_story": "מאחורי העסק"
         },
         "fields": {
           "name": "שם העסק",
@@ -1828,7 +1832,10 @@
           "avail_vacation": "בהפסקה",
           "vacation_until": "תאריך חזרה (אופציונלי)",
           "as_draft": "טיוטה שבעלת העסק תקבל בקישור הזמנה",
-          "as_draft_hint": "העסק נשמר כטיוטה בלי בעלים. אחרי השמירה אפשר ליצור קישור הזמנה ולשלוח לבעלת העסק."
+          "as_draft_hint": "העסק נשמר כטיוטה בלי בעלים. אחרי השמירה אפשר ליצור קישור הזמנה ולשלוח לבעלת העסק.",
+          "owner_bio": "מאחורי העסק — משפט של בעלת העסק",
+          "owner_photo": "תמונת בעלת העסק",
+          "owner_photo_remove": "הסרת תמונה"
         }
       },
       "toast_approved": "העסק אושר",
@@ -3411,7 +3418,8 @@
         "spices": "תערובות תבלינים, עשבי תיבול",
         "chocolate": "פרלינים, ממתקים בעבודת יד",
         "honey": "דבש מכוורת, פולן, חלות דבש",
-        "fish": "דג טרי, דג מעושן"
+        "fish": "דג טרי, דג מעושן",
+        "kph": "פולי קפה"
       },
       "section_results": "תוצאות",
       "section_popular": "פופולריות",
@@ -6228,6 +6236,7 @@
       "instagram": "אינסטגרם",
       "website": "אתר",
       "facebook": "פייסבוק",
+      "meta_description_fallback": "{name} במהמקור: שווקים ואירועי אוכל.",
       "owner_heading": "מאחורי האירועים",
       "since_prefix": "פעילים מאז",
       "phone": "התקשרו",
@@ -6665,7 +6674,9 @@
     "regions": {
       "north": "בצפון",
       "haifa": "בחיפה והקריות",
+      "carmel_coast": "בחוף הכרמל",
       "sharon": "בשרון",
+      "hefer_valley": "בעמק חפר",
       "gush_dan": "בגוש דן",
       "shfela": "בשפלה",
       "jerusalem": "בירושלים והסביבה",
@@ -7010,7 +7021,7 @@
       "back_link": "חזרה לעמוד ההצטרפות",
       "or": "או",
       "sub_fit": "מתאים לבית עסק עם הרבה הזמנות בתשלום.",
-      "sub_example": "אחרי כמה הזמנות בחודש המנוי מחזיר את עצמו: כשהעמלות מגיעות ל-{breakEvenFees} ₪.",
+      "sub_example": "המנוי משתלם בכל חודש שבו העמלות בלי מנוי היו מגיעות ל-{breakEvenFees} ₪ או יותר.",
       "fee_fit": "מתאים לבית עסק בתחילת הדרך או עם מעט הזמנות.",
       "fee_note": "משלמים רק על חודש שבו ההזמנות בתשלום הגיעו ל-{threshold} ₪.",
       "fee_example": "לדוגמה: על הזמנה של {examplePrice} ₪, העמלה היא {exampleFee} ₪ ונשארים לכם {exampleKeep} ₪.",

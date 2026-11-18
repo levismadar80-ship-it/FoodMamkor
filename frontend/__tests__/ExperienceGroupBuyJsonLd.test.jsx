@@ -157,8 +157,9 @@ describe("group-buy page — Product + Offer JSON-LD (MEH-2478)", () => {
     expect(p.offers.availability).toBe("https://schema.org/OutOfStock");
   });
 
-  it("funded (no longer joinable) → not InStock", async () => {
-    const [p] = ofType(await ldNodes(GroupBuyPage, { ...GROUP_BUY, status: "funded" }), "Product");
+  // MEH-3289: funded still takes joiners until full; fulfilled does not.
+  it("fulfilled (no longer joinable) → not InStock", async () => {
+    const [p] = ofType(await ldNodes(GroupBuyPage, { ...GROUP_BUY, status: "fulfilled" }), "Product");
     expect(p).toBeDefined();
     expect(p.offers.availability).toBe("https://schema.org/OutOfStock");
   });
