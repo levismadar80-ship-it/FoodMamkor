@@ -651,6 +651,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               contentTestId="badge-overflow-popover"
               contentClassName="w-max whitespace-nowrap"
               sheetOnMobile
+              closeLabel={t("common.aria.close")} // MEH-3271: sheet ✕
               // MEH-1592: lg-and-up presentation moves to the overlay layer.
               // The pre-1592 anchored panel opened `top-full` DOWNWARD out of a
               // strip pinned to the photo's bottom edge, so it landed on the
