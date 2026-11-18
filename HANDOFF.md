@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-18 — גרסה 1.5.6: אפס PR-ים פתוחים, שחרור לפרודקשן
+
+**שורה אחת:** כל ה-PR-ים הפתוחים נכנסו ל-staging ברכבות w1, w2 ו-3 (#4774, #4803, `f57540d`). נשאר רק PR השחרור #4773. ספיר אישרה «Go merge» ב-18/11 17:42 (שעון ישראל), בתנאי שהבדיקה המלאה עוברת.
+
+**מה צריך לדעת לפני עבודה:**
+- **התוכנית ומיפוי כל 66 הבקשות מ-15/11 עד 18/11:** `/mnt/project-files/release-wed-18-11/` (asks-digest.md, plan.html).
+- **גל 2 (מ-19/11):** בקשות UX מ-15/11 שאין להן עדיין קוד (חלון הרשמה קומפקטי, גלריה עם זום, «יום משלוח» בסינון, מיני-מפות, תפריט נייד, הסבר מונחים ועוד). כל אחת מקבלת מחקר מיקום לפי כלל 37.
+- **אחרי השחרור:** פרומפט הכרום `sapir-tasks/chrome-prompt-bing-join-after-release.md`. passkeys ותפקיד DB ב-Railway נדחו לאחרי ההשקה (ספיר).
+- **תגיות:** ב-origin יש רק `v1.5.0`. פקודות התיוג ל-1.5.1 עד 1.5.6 עוברות לכרום.
+
 ## 2026-11-15 — חמישה קבצים גדולים פוצלו לפי תחום
 
 **שורה אחת:** #4519, #4612, #4613, #4614 ו-#4615 מוזגו ל-staging (רכבות 17 ו-18). אין שינוי התנהגות ואין מיגרציות.
