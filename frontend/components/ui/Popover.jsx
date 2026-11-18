@@ -75,7 +75,8 @@ const PLACEMENT_CLASSES = {
  * @param {object} props
  * @param {import("react").ReactElement} props.trigger — a single native
  *   element (or forwardRef component); receives onClick toggle,
- *   aria-haspopup, aria-expanded, and an id (kept if it already has one).
+ *   aria-expanded, aria-haspopup="dialog" (dialog role or sheetOnMobile only),
+ *   and an id (kept if it already has one).
  *   Its own onClick, if any, still runs first.
  * @param {import("react").ReactNode} props.children — rich content.
  * @param {"top"|"bottom"} [props.placement="bottom"]
@@ -319,7 +320,13 @@ export default function Popover({
       }
       setOpen(next);
     },
-    "aria-haspopup": role === "dialog" ? "dialog" : "true",
+    // aria-haspopup="true" means "menu" to assistive tech, so a tooltip-kind
+    // panel announced itself as a menu that arrow keys could not walk. A
+    // dialog (or a panel that becomes the mobile dialog sheet) says "dialog";
+    // a plain toggletip carries aria-expanded only — the WAI-ARIA disclosure
+    // pattern.
+    "aria-haspopup":
+      role === "dialog" || sheetOnMobile ? "dialog" : undefined,
     "aria-expanded": open,
   });
 
