@@ -61,6 +61,8 @@ def resend_spy(monkeypatch):
         ("", "pr-123", False),
         ("  PRODUCTION\n", "", True),
         ("prod", "prod", False),
+        ("production", "staging", False),
+        ("production", "pr-42", False),
     ],
 )
 def test_is_production(monkeypatch, env, railway, expected):
@@ -264,3 +266,20 @@ def test_staging_newsletter_does_not_touch_resend(staging, contacts_spy):
 def test_production_newsletter_syncs(production, contacts_spy):
     newsletter_sync.sync_subscribe(REAL_OWNER)
     assert contacts_spy.Contacts.create.called
+
+
+@pytest.mark.parametrize(
+    "admin", ["sapir.admin@gmail.com, real@person.com", "Admin <sapir.admin@gmail.com>"]
+)
+def test_staging_list_or_display_name_admin_email_is_not_a_target(
+    staging, resend_spy, monkeypatch, admin
+):
+    monkeypatch.setattr(settings, "admin_email", admin)
+    email_mod.send_email(REAL_OWNER, "נושא", "גוף")
+    assert resend_spy == []
+
+
+def test_empty_local_part_admin_email_allows_nothing(staging, resend_spy, monkeypatch):
+    monkeypatch.setattr(settings, "contact_email", "@gmail.com")
+    email_mod.send_email("+x@gmail.com", "נושא", "גוף")
+    assert resend_spy[0]["to"] == ADMIN

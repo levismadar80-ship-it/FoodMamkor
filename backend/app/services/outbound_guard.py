@@ -43,10 +43,19 @@ def is_production() -> bool:
     # DO NOT invert this into "is_staging()" — a new environment name would
     # then be unguarded (MEH-3402).
     """
-    return (
-        settings.env.strip().lower() == "production"
-        or settings.railway_environment.strip().lower() == "production"
-    )
+    railway = settings.railway_environment.strip().lower()
+    # Railway names the environment itself. When it says anything other than
+    # production (a staging or PR environment that copied ENV=production from
+    # production's variables), that wins: guarded (Fable review, MEH-3402).
+    if railway and railway != "production":
+        return False
+    return settings.env.strip().lower() == "production" or railway == "production"
+
+
+# A single plain address only: a list ("a@x,b@y"), a display name or any
+# whitespace is never "allowed", so it cannot smuggle a second recipient past
+# the plus-alias check (fresh reviewer, MEH-3402).
+_NOT_A_SINGLE_ADDRESS = re.compile(r"[,;<>\s\"']")
 
 
 def _norm_email(address: str) -> str:
@@ -65,18 +74,21 @@ def _allowed_emails() -> frozenset[str]:
         settings.contact_email,
         settings.super_admin_email,
     )
-    return frozenset(_norm_email(a) for a in configured if a and "@" in a)
+    return frozenset(_norm_email(a) for a in configured if a and _is_single_address(a))
 
 
-# A single plain address only: a list ("a@x,b@y"), a display name or any
-# whitespace is never "allowed", so it cannot smuggle a second recipient past
-# the plus-alias check (fresh reviewer, MEH-3402).
-_NOT_A_SINGLE_ADDRESS = re.compile(r"[,;<>\s\"']")
+def _is_single_address(address: str) -> bool:
+    """One plain `local@domain`, both halves non-empty."""
+    a = address.strip()
+    if _NOT_A_SINGLE_ADDRESS.search(a) or a.count("@") != 1:
+        return False
+    local, _, domain = a.partition("@")
+    return bool(local) and bool(domain)
 
 
 def email_allowed_outside_production(to: str) -> bool:
     """A staff address from settings, or a plus-alias of one."""
-    if _NOT_A_SINGLE_ADDRESS.search(to.strip()) or to.count("@") != 1:
+    if not _is_single_address(to):
         return False
     allowed = _allowed_emails()
     return _norm_email(to) in allowed or _base_email(to) in allowed
@@ -105,7 +117,7 @@ def route_email(to: str, subject: str, reply_to: str | None) -> EmailRoute:
     if is_production() or email_allowed_outside_production(to):
         return EmailRoute(to=to, subject=subject, reply_to=reply_to, redirected=False)
     target = settings.admin_email.strip()
-    if not target or "@" not in target:
+    if not _is_single_address(target):
         return EmailRoute(
             to="", subject=subject, reply_to=None, redirected=True, original_to=to
         )
