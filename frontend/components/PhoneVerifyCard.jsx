@@ -77,7 +77,7 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
   const userFlow = variant === "user";
   const base = userFlow ? "/users/me/verify-phone" : "/producers/me/verify-phone";
   const sentKey = userFlow ? USER_SENT_AT_KEY : SENT_AT_KEY;
-  const t = useTranslations("dashboard.producer.phone_verify");
+  const t = useTranslations("phone_verify");
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
   const [sending, setSending] = useState(false);

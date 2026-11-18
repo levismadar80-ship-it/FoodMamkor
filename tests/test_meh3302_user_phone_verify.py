@@ -330,3 +330,49 @@ def test_purge_drops_user_codes_a_day_after_expiry(db):
     run_purge(db)
     left = {t.code for t in db.query(UserPhoneOtpToken).filter_by(user_id=u.id)}
     assert left == {"654321"}
+
+
+def test_after_remove_a_new_code_restores_consent(client, db, sent):
+    """Reviewer finding: «הסר» clears consent but keeps the phone verified.
+    She must be able to say yes again with a new code, or she is locked out
+    of WhatsApp alerts for good."""
+    u = _user(db)
+    verify_phone(u)
+    u.whatsapp_consent_at = None  # what the «הסר» webhook leaves behind
+    db.commit()
+    me = client.get("/auth/me", headers=auth_header(u)).json()
+    assert me["phone_verified"] is True
+    assert me["whatsapp_ready"] is False
+    r = client.post("/users/me/verify-phone", headers=auth_header(u))
+    assert r.status_code == 200, r.text
+    assert len(sent) == 1  # a code went out; not «already verified»
+    r = client.post(
+        "/users/me/verify-phone/confirm",
+        json={"code": _code(db, u).code},
+        headers=auth_header(u),
+    )
+    assert r.status_code == 200, r.text
+    db.refresh(u)
+    assert u.whatsapp_consent_at is not None
+    assert client.get("/auth/me", headers=auth_header(u)).json()["whatsapp_ready"] is True
+
+
+def test_capped_number_that_said_remove_answers_429_like_any_capped(client, db, sent):
+    """The cap runs before the opt-out check, so the status does not reveal
+    a «הסר» on a number that is also capped."""
+    u = _user(db)
+    db.add(InboundMessage(from_phone=CANON, body="הסר"))
+    for _ in range(3):
+        db.add(
+            UserPhoneOtpToken(
+                user_id=u.id,
+                phone=CANON,
+                code="000000",
+                expires_at=utc_now() + timedelta(minutes=10),
+                used=True,
+            )
+        )
+    db.commit()
+    r = client.post("/users/me/verify-phone", headers=auth_header(u))
+    assert r.status_code == 429
+    assert sent == []

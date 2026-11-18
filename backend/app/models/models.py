@@ -1009,6 +1009,13 @@ class User(Base):
         never the timestamps)."""
         return bool(self.phone and self.phone_verified_at is not None)
 
+    @property
+    def whatsapp_ready(self) -> bool:
+        """MEH-3302: verified AND standing consent — the fire_alerts gate
+        (user_phone_verify.can_get_whatsapp). False after «הסר» even though
+        the phone stays verified, so the panel offers a new code."""
+        return self.phone_verified and self.whatsapp_consent_at is not None
+
     email_verify_token = Column(String(64), nullable=True, index=True)
     email_verify_expires = Column(DateTime, nullable=True)
     # MEH-2644: rescue-bag no-shows. The pilot blocks new reservations after

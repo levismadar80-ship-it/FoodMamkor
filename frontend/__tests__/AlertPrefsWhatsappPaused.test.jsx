@@ -48,19 +48,25 @@ beforeEach(() => {
 
 describe("AlertPrefsPanel — WhatsApp paused until the phone is verified (MEH-3302)", () => {
   it("unverified: shows strings 19 and 13, and the code goes to the user route", async () => {
-    auth.user = { id: 1, phone: "0501234567", phone_verified: false };
+    auth.user = { id: 1, phone: "0501234567", phone_verified: false, whatsapp_ready: false };
     renderPanel();
     const box = await screen.findByTestId("whatsapp-paused");
     expect(box.textContent).toContain("העדכונים בוואטסאפ מושהים עד שתאמתי את המספר.");
     expect(box.textContent).toContain(
       "נשלח קוד בן 6 ספרות לוואטסאפ של המספר הזה. אחרי האימות נשלח לשם עדכונים מבתי העסק ששמרת. אפשר להפסיק בכל רגע: משיבים «הסר».",
     );
-    fireEvent.click(screen.getByText(he.dashboard.producer.phone_verify.send_cta));
+    fireEvent.click(screen.getByText(he.phone_verify.send_cta));
     await waitFor(() => expect(post).toHaveBeenCalledWith("/users/me/verify-phone"));
   });
 
-  it("verified: no paused notice", async () => {
-    auth.user = { id: 1, phone: "0501234567", phone_verified: true };
+  it("verified after «הסר» (consent cleared): the notice and code come back", async () => {
+    auth.user = { id: 1, phone: "0501234567", phone_verified: true, whatsapp_ready: false };
+    renderPanel();
+    expect(await screen.findByTestId("whatsapp-paused")).toBeTruthy();
+  });
+
+  it("verified with consent: no paused notice", async () => {
+    auth.user = { id: 1, phone: "0501234567", phone_verified: true, whatsapp_ready: true };
     renderPanel();
     await screen.findByRole("group");
     await waitFor(() => expect(screen.queryByTestId("whatsapp-paused")).toBeNull());

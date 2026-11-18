@@ -33,6 +33,8 @@ class UserOut(BaseModel):
     # MEH-3302: the current phone was verified with a WhatsApp code. WhatsApp
     # alerts are paused until it is (string 19). Timestamps are never exposed.
     phone_verified: bool = False
+    # MEH-3302: phone_verified AND consent standing; false after «הסר».
+    whatsapp_ready: bool = False
     role: str
     producer_id: UUID | None = None
     # MEH-16: whether the user signed in via OAuth. Used by /settings to

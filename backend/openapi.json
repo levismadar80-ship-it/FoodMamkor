@@ -16707,6 +16707,11 @@
           "role": {
             "title": "Role",
             "type": "string"
+          },
+          "whatsapp_ready": {
+            "default": false,
+            "title": "Whatsapp Ready",
+            "type": "boolean"
           }
         },
         "required": [

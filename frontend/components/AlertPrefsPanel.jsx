@@ -296,7 +296,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
           {/* MEH-3302 (D14): WhatsApp alerts go only to a verified phone. The
               opt-in stays on; until she verifies, say they are paused (string
               19) and offer the code right here (string 13). */}
-          {prefs.whatsapp_opt_in && hasPhone && user && !user.phone_verified && !showPhoneField && (
+          {prefs.whatsapp_opt_in && hasPhone && user && !user.whatsapp_ready && !showPhoneField && (
             <div data-testid="whatsapp-paused">
               <PhoneVerifyCard
                 variant="user"

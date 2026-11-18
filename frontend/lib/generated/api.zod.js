@@ -3125,6 +3125,7 @@ export const getMeAuthMeGetResponseIsProducerDefault = false;
 export const getMeAuthMeGetResponseIsSuperAdminDefault = false;
 export const getMeAuthMeGetResponsePhoneVerifiedDefault = false;
 export const getMeAuthMeGetResponseProducerResubmissionCountDefault = 0;
+export const getMeAuthMeGetResponseWhatsappReadyDefault = false;
 
 export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "avatar_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3145,7 +3146,8 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMeAuthMeGetResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "role": /*#__PURE__*/ zod.string()
+  "role": /*#__PURE__*/ zod.string(),
+  "whatsapp_ready": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseWhatsappReadyDefault)
 })
 
 
@@ -7446,6 +7448,7 @@ export const updateProfileUsersMePatchResponseIsProducerDefault = false;
 export const updateProfileUsersMePatchResponseIsSuperAdminDefault = false;
 export const updateProfileUsersMePatchResponsePhoneVerifiedDefault = false;
 export const updateProfileUsersMePatchResponseProducerResubmissionCountDefault = 0;
+export const updateProfileUsersMePatchResponseWhatsappReadyDefault = false;
 
 export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "avatar_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7466,7 +7469,8 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateProfileUsersMePatchResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "role": /*#__PURE__*/ zod.string()
+  "role": /*#__PURE__*/ zod.string(),
+  "whatsapp_ready": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponseWhatsappReadyDefault)
 })
 
 

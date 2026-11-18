@@ -83,10 +83,10 @@ def prepare_send(
     canonical = canonical_il_msisdn(cast(str, user.phone)) if user.phone else None
     if canonical is None:
         return SendDecision("no_phone")
-    if is_verified(user):
+    # A verified phone whose consent «הסר» cleared is NOT done: a new code is
+    # how she says yes again, so the gate is can_get_whatsapp, not is_verified.
+    if can_get_whatsapp(user):
         return SendDecision("already_verified")
-    if _opted_out(db, canonical):
-        return SendDecision("opted_out")
 
     since = utc_now() - timedelta(days=1)
     by_user = (
@@ -107,6 +107,10 @@ def prepare_send(
     )
     if by_user >= SENDS_PER_USER_PER_DAY or by_phone >= SENDS_PER_PHONE_PER_DAY:
         return SendDecision("capped")
+    # After the caps, so a capped opted-out number answers 429 like any other
+    # capped number and the order does not reveal the «הסר».
+    if _opted_out(db, canonical):
+        return SendDecision("opted_out")
 
     code = fixed_code or "".join(secrets.choice(string.digits) for _ in range(6))
     # One live code per user: earlier unused ones die.
@@ -134,7 +138,7 @@ def confirm(db: Session, user: User, code: str) -> bool:
     The claim is a conditional UPDATE so two parallel confirms cannot both win
     (same reasoning as producer_me_review.confirm_phone_otp, MEH-1820).
     """
-    if is_verified(user):
+    if can_get_whatsapp(user):
         return True
     canonical = canonical_il_msisdn(cast(str, user.phone)) if user.phone else None
     if canonical is None:
@@ -149,6 +153,9 @@ def confirm(db: Session, user: User, code: str) -> bool:
             UserPhoneOtpToken.expires_at > now,
         )
         .order_by(UserPhoneOtpToken.created_at.desc())
+        # Row lock: parallel wrong guesses queue here, so each one reads the
+        # count the previous one wrote and the 5-guess limit holds.
+        .with_for_update()
         .first()
     )
     if token is None:
