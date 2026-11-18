@@ -53,12 +53,17 @@ from app.services.booking_cancellations import (  # MEH-3227
     item_state,
 )
 from app.services.date_rules import refuse_past_date  # MEH-3224
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import (
     host_test_cause,
     notify_admin_new_submission,
 )
-from app.services.registrations import method_problem, registered_counts
+from app.services.registrations import (
+    refuse_too_few_places,  # MEH-2871
+    method_problem,
+    registered_counts,
+)
 from app.utils.clock import israel_today
 
 router = APIRouter(prefix="/experiences", tags=["experiences"])
@@ -433,6 +438,7 @@ def submit_experience(
     if _min_above_max(data.min_participants, data.max_participants):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     refuse_past_date(data.event_date)  # MEH-3224 (D6)
+    assert_own_new_images(user, data.image_url)  # MEH-3247
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
@@ -592,6 +598,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     payload = data.model_dump(exclude_unset=True)
     # MEH-3224 (D6): same rule as events.update_event.
     refuse_past_date(payload.get("event_date"), ex.event_date)  # type: ignore[arg-type]
+    assert_own_new_images(user, payload.get("image_url"), ex.image_url)  # MEH-3247
     # Only an edit that touches min or max is checked, so a stored pair that
     # is somehow already inverted never blocks an unrelated edit.
     touches_range = "min_participants" in payload or "max_participants" in payload
@@ -599,6 +606,12 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     new_max = payload.get("max_participants", ex.max_participants)
     if touches_range and _min_above_max(new_min, new_max):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
+    refuse_too_few_places(  # MEH-2871
+        db,
+        payload,
+        experience_id=ex.id,  # type: ignore[arg-type]
+        stored_max=ex.max_participants,
+    )
     _check_method_edit(db, ex, payload)
     # MEH-3180: only an edit that MAKES it a paid site sign-up asks.
     capabilities.require_paid_signup(

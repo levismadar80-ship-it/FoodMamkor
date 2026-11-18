@@ -23,5 +23,4 @@
 /register/producer/prefill/{}
 /reviews/{}/reply
 /upload/avatar
-/upload/kashrut-cert
 /users/me/favorites/{}/alerts

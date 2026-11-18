@@ -77,6 +77,7 @@ from app.services.producer_queries import (
     get_producer_or_404,
 )
 from app.utils.clock import utc_now
+from app.utils.pii import round_coord
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(tags=["producers"])
@@ -236,6 +237,8 @@ def list_producers(
     response: Response = None,  # type: ignore[assignment]  # FastAPI injects it; widening the annotation would change param parsing
     db: Session = Depends(get_db),
 ) -> list[ProducerListOut] | list[Producer]:
+    # MEH-3219 (B17): never use a visitor's exact point — ~1 km is enough.
+    lat, lng = round_coord(lat), round_coord(lng)
     # MEH-1483: validate the sort axis explicitly (the router's manual-422
     # pattern, cf. record_contact_click). None/"newest" = default created_at
     # DESC; "rating" = avg_rating DESC nulls-last. An unknown value 422s rather
@@ -448,6 +451,19 @@ def get_producer_by_slug(
         # status, not the HTML's. Everything else that misses stays 404.
         if retired_slugs.is_gone(db, slug):
             raise HTTPException(status_code=410, detail="בית העסק כבר לא במהמקור")
+        # MEH-3336: a renamed business. Still a 404 to every client that only
+        # asks "is it here" — the page edge (middleware.js) reads `slug` and
+        # answers the browser with a 301 to the current URL.
+        new_slug = retired_slugs.moved_to(db, slug)
+        if new_slug:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "slug_moved",
+                    "message": "בית העסק עבר לכתובת חדשה",
+                    "slug": new_slug,
+                },
+            )
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)

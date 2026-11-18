@@ -4,7 +4,7 @@
  * Cells: no cap · plenty (4+) · few (2–3) · last (1) · full (0) · past + full.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
@@ -144,7 +144,7 @@ describe("dashboard — «כמה כבר נרשמו»", () => {
 
   it("no site sign-ups and another method → no list", async () => {
     await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 0, registered_count: 0 }]);
-    expect(screen.queryByText(/הרשמות באתר/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/נרשמו באתר/)).not.toBeInTheDocument();
   });
 
   it.each([

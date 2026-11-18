@@ -321,7 +321,7 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
 });
 
 // MEH-3033 (Sapir chose א, 13/11): the distance is its own fact after the
-// city — «עיר · 3.2 ק"מ» — the same label as the cards (formatDistance, no
+// city — «עיר · כ-3 ק"מ» — the same label as the cards (formatDistance, no
 // «ממך», MEH-1307), measured to the NEAREST location row (producerPoints),
 // and only when the visitor's location is already cached. Never asks.
 describe("ProducerHeader distance fact (MEH-3033)", () => {
@@ -368,7 +368,7 @@ describe("ProducerHeader distance fact (MEH-3033)", () => {
     const meta = screen.getByTestId("producer-header-meta");
     const d = within(meta).getByTestId("producer-header-distance");
     // 850 m to the near (non-primary) row — not the ~20 km primary row.
-    expect(d.textContent).toBe("850 מ'");
+    expect(d.textContent).toBe('כ-1 ק"מ'); // MEH-3219: ~850 m → minimum 1
     expect(d.textContent).not.toContain("ממך");
     expect(meta.textContent.indexOf("יקנעם עילית")).toBeLessThan(meta.textContent.indexOf(d.textContent));
   });

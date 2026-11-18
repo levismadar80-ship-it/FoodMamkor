@@ -49,6 +49,8 @@ mehamakor/
 | Read DB schema diagram | `.ai/diagrams/db-schema.md` |
 | Read endpoint map | `.ai/diagrams/api-routes.md` |
 | Check past decisions | `docs/decisions/README.md` (ADR index) |
+| See every status and who can move it | `docs/STATE_MACHINES.md` |
+| See what talks to what, where data lives, what breaks first under load | `docs/SYSTEM_MAP.md` |
 | Look up a workflow rule | `.claude/rules/workflow.md` |
 | Add an Alembic migration | `backend/alembic/versions/` (`docs/MIGRATIONS.md`) |
 
@@ -61,7 +63,7 @@ if `npm run build` fails (workflow rule 20). Logic risk > syntax risk.
 Current set: `MapClient.jsx`, `MapComponent.jsx`, `producers/page.jsx`,
 `app/page.js`, `app/layout.js`, `ProducerCard.jsx`,
 `Header.jsx`, `BottomNav.jsx`, `Footer.jsx`, `backend/app/main.py`,
-`backend/app/routers/auth.py`, `backend/app/config.py`. Refactor planned: MEH-407.
+`backend/app/routers/auth.py`, `backend/app/routers/auth_register_producer.py`, `backend/app/config.py`. Refactor planned: MEH-407.
 
 ---
 

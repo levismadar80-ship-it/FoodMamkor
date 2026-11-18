@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models import RescueNoShowTombstone, RescueOffer, RescueOrder, User
 from app.services.email import send_email
+from app.services.registration_emails import _shell
 from app.utils.clock import utc_now
 
 # The pilot's no-show rule: the SECOND no-show inside this window blocks new
@@ -178,12 +179,25 @@ def send_no_show_email(
             "אפשר לבטל בחינם עד השעה שכתובה במייל השריון."
         )
     lines.append(f"אם זו טעות, כתבו לנו ונבדוק: {contact}")
-    html = (
-        '<div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.6">'
-        + "".join(f"<p>{html_escape(line)}</p>" for line in lines[:-1])
-        + f'<p>אם זו טעות, <a href="{html_escape(contact)}">כתבו לנו</a> ונבדוק.</p>'
-        + "</div>"
+    # MEH-0000: the shared card, like every other HTML mail. This was the one
+    # that emitted a bare `div dir="rtl"`: no document element, no viewport
+    # meta, no width cap, default 16px body text — so on a phone it rendered
+    # as unstyled full-bleed text while its siblings rendered as a card. The
+    # strings are unchanged; only the frame is.
+    #
+    # The tags above are named WITHOUT their angle brackets on purpose.
+    # test_email_logo.py scans backend/app for an HTML document and requires a
+    # logo call in the same file; this file calls _shell, which makes that call
+    # in registration_emails.py. Writing the opening tag in prose here made the
+    # scan count a document with no logo — the exact blind spot
+    # tests/test_meh0000_email_frame.py documents and blanks comments to avoid.
+    body_html = "".join(
+        f'<p style="margin:0 0 12px;">{html_escape(line)}</p>' for line in lines[:-1]
+    ) + (
+        f'<p style="margin:0 0 12px;">אם זו טעות, '
+        f'<a href="{html_escape(contact)}" style="color:#2e6853;">כתבו לנו</a> ונבדוק.</p>'
     )
+    html = _shell(f"הסל ב{html_escape(name)} לא נאסף", body_html)
     send_email(
         to,
         f"הסל ב{name} לא נאסף",

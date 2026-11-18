@@ -98,6 +98,7 @@ from app.schemas.rescue import (
     RescueTypicalItemsOut,
 )
 from app.sentry import capture_background_exception
+from app.services.rescue_business_emails import queue_business_reservation_email
 from app.services.rescue_emails import (
     ReservationEmail,
     israel_hhmm,
@@ -113,6 +114,8 @@ from app.services.rescue_no_show import (  # MEH-3226
     queue_no_show_email,
 )
 from app.utils.clock import israel_today, utc_now
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
+from app.utils.pii import round_coord
 
 logger = logging.getLogger(__name__)
 
@@ -491,6 +494,7 @@ def list_offers(
     Sold-out and cancelled offers are omitted rather than greyed out: the list
     is "what you can still get tonight", and chunk 4 has no empty-stock state.
     """
+    lat, lng = round_coord(lat), round_coord(lng)  # MEH-3219: ~1 km, never exact
     today = israel_today()
     q = (
         db.query(RescueOffer)
@@ -911,6 +915,7 @@ def create_order(
     # it into a 500: the buyer would read that as "not reserved" and retry.
     try:
         _queue_reservation_email(background_tasks, current_user, offer, order)
+        queue_business_reservation_email(background_tasks, db, offer, order)  # MEH-3313
     except Exception as exc:  # noqa: BLE001 — fail-open by design (MEH-2715)
         capture_background_exception(exc, task="rescue_reservation_email")
         logger.error("rescue reservation email not queued: %s", type(exc).__name__)
@@ -936,7 +941,7 @@ def _refuse_unless_reserved_for_handover(order: RescueOrder) -> None:
     if order.status == "handed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"הסל כבר נמסר ב-{order.handed_at:%H:%M}"
+            detail=f"הסל כבר נמסר ב-{israel_hhmm(order.handed_at)}"  # type: ignore[arg-type]
             if order.handed_at
             else "הסל כבר נמסר",
         )
@@ -1119,6 +1124,7 @@ def create_review(
             detail="אפשר לדרג רק אחרי שקיבלתם את הסל",
         )
 
+    assert_own_new_images(current_user, body.photo_url)  # MEH-3247
     review = RescueReview(
         order_id=order.id,
         rating=body.rating,

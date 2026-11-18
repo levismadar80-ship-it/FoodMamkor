@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 import * as Phosphor from "@phosphor-icons/react";
@@ -12,6 +12,7 @@ import {
   HIGHLIGHT_FEATURE_IDS,
   visibleBusinessFeatures,
   countVisibleBusinessFeatures,
+  EDITOR_FILES_WITHOUT_TOOL,
 } from "@/lib/business-features";
 
 /**
@@ -112,6 +113,57 @@ describe("the drift guard — codeRef must resolve", () => {
   });
 });
 
+/**
+ * MEH-3416 — the drift guard above catches a tool that was REMOVED. This one
+ * catches the other direction: an owner-facing editor that was ADDED and never
+ * placed in the tool list. Every file under producer/dashboard/edit/ must be
+ * named in some tool's codeRef, or in EDITOR_FILES_WITHOUT_TOOL with a reason.
+ */
+const EDIT_DIR = "frontend/app/[locale]/producer/dashboard/edit";
+
+function editorFiles() {
+  const out = [];
+  const walk = (rel) => {
+    for (const entry of readdirSync(path.join(REPO_ROOT, rel), { withFileTypes: true })) {
+      const child = `${rel}/${entry.name}`;
+      if (entry.isDirectory()) walk(child);
+      else if (/\.(jsx?|tsx?)$/.test(entry.name)) out.push(child);
+    }
+  };
+  walk(EDIT_DIR);
+  return out;
+}
+
+function unclaimed(files, features, exempt) {
+  const claimed = new Set(features.flatMap((f) => f.codeRef ?? []));
+  return files.filter((file) => !claimed.has(file) && !(file in exempt));
+}
+
+describe("the reverse guard — every dashboard editor belongs to a tool (MEH-3416)", () => {
+  it("every editor file is in a tool's codeRef or exempt with a reason", () => {
+    expect(
+      unclaimed(editorFiles(), BUSINESS_FEATURES, EDITOR_FILES_WITHOUT_TOOL),
+      "a new dashboard editor needs a place in lib/business-features.js",
+    ).toEqual([]);
+  });
+
+  it("every exemption names a real file, is not also claimed, and says why", () => {
+    const claimed = new Set(BUSINESS_FEATURES.flatMap((f) => f.codeRef ?? []));
+    const bad = Object.entries(EDITOR_FILES_WITHOUT_TOOL).filter(
+      ([file, why]) =>
+        !existsSync(path.join(REPO_ROOT, file)) || claimed.has(file) || why.trim().length < 10,
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it("control: a new editor file with no registry entry is caught", () => {
+    const files = editorFiles();
+    expect(files.length).toBeGreaterThan(10);
+    const ghost = `${EDIT_DIR}/cards/BrandNewToolCard.jsx`;
+    expect(unclaimed([...files, ghost], BUSINESS_FEATURES, EDITOR_FILES_WITHOUT_TOOL)).toEqual([ghost]);
+  });
+});
+
 describe("copy", () => {
   it.each([
     ["he", he],
@@ -173,9 +225,18 @@ describe("copy", () => {
 
 describe("visibility", () => {
   it("never returns an unverified entry", () => {
-    const unverified = BUSINESS_FEATURES.filter((f) => f.status === "unverified").map((f) => f.id);
-    const visible = visibleBusinessFeatures().map((f) => f.id);
-    for (const id of unverified) expect(visible).not.toContain(id);
+    // MEH-3295: the registry holds no unverified entry today, so the old loop
+    // ran zero times and this test passed while checking nothing (caught by
+    // vitest `expect.requireAssertions`). Plant one, then remove it.
+    const planted = { ...BUSINESS_FEATURES[0], id: "meh3295_planted_unverified", status: "unverified", flag: undefined };
+    BUSINESS_FEATURES.push(planted);
+    try {
+      const visible = visibleBusinessFeatures().map((f) => f.id);
+      expect(visible).not.toContain(planted.id);
+      expect(visible.length).toBeGreaterThan(0);
+    } finally {
+      BUSINESS_FEATURES.pop();
+    }
   });
 
   it("drops rescue_bags when its flag is off, keeps it when on", () => {

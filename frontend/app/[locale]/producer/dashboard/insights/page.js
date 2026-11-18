@@ -36,6 +36,7 @@ import { SITE_URL } from "@/lib/env";
 import { showToast } from "@/lib/toast";
 import { shareOrCopy } from "@/lib/share-link";
 import { copyOrThrow } from "@/lib/clipboard";
+import ShareVisitsLine from "@/components/producer/ShareVisitsLine";
 
 export default function ProducerDashboardInsightsPage() {
   const router = useRouter();
@@ -198,6 +199,8 @@ function DeepAnalyticsSection({ analytics, profile }) {
     coverage_requests = [],
     // MEH-2674: same defence for a pre-MEH-2673 payload.
     pickup_hosts = [],
+    // MEH-3331: absent on a pre-MEH-3331 payload → the line stays hidden.
+    share_visits,
   } = analytics;
 
   return (
@@ -259,6 +262,8 @@ function DeepAnalyticsSection({ analytics, profile }) {
           tooltip={t("windowed.contact_clicks_tooltip")}
         />
       </div>
+      {/* MEH-3331: visits from links she shared — 30 days, hidden at 0. */}
+      <ShareVisitsLine windows={share_visits} />
       </div>
 
       {/* Row 2: static cards (followers, reviews) */}

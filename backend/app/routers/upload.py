@@ -14,15 +14,17 @@ from typing import Any
 import asyncio  # MEH-2551: Cloudinary's SDK is sync — every upload runs in to_thread
 import logging
 import uuid
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
+from app.services.image_ownership import owner_key  # MEH-3247
 
 log = logging.getLogger("app.upload")
 
@@ -120,7 +122,9 @@ async def upload_image(
         result = await asyncio.to_thread(
             cloudinary.uploader.upload,
             contents,
-            folder="mehamakor",
+            # MEH-3247: per-uploader folder. image_ownership refuses a NEW
+            # image URL outside the caller's own folder on every write.
+            folder=f"mehamakor/u/{owner_key(user.id)}",
             public_id=uuid.uuid4().hex,
             resource_type="image",
             transformation=[{"width": 1200, "crop": "limit"}],
@@ -236,7 +240,38 @@ async def upload_owner_photo(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    return await _store_owner_photo(file, producer, db)
 
+
+@router.post("/owner-photo/{producer_id}", response_model=None)
+@limiter.limit("30/hour")
+async def admin_upload_owner_photo(
+    request: Request,
+    producer_id: UUID,
+    file: UploadFile,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3338: the admin uploads the owner photo for a business she builds
+    on the owner's behalf. Same validation, same fixed Cloudinary slot
+    (`owner_{producer_id}`, overwrite) as the owner route — the business comes
+    from the PATH, and only an admin reaches it (403 for anyone else, the owner
+    included: she has her own route)."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    return await _store_owner_photo(file, producer, db)
+
+
+async def _store_owner_photo(
+    file: UploadFile, producer: Producer, db: Session
+) -> dict[str, Any]:
+    """Validate, upload to the business's fixed slot, save the URL.
+
+    Moved verbatim out of `upload_owner_photo` (MEH-3338) so the owner route
+    and the admin route cannot drift: one size cap, one magic-byte sniff, one
+    public_id rule (MEH-375).
+    """
     contents = await file.read(MAX_FILE_SIZE + 1)
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(
@@ -347,7 +382,7 @@ async def upload_kashrut_cert(
         result = await asyncio.to_thread(
             cloudinary.uploader.upload,
             contents,
-            folder="mehamakor/kashrut",
+            folder=f"mehamakor/kashrut/u/{owner_key(user.id)}",  # MEH-3247
             public_id=uuid.uuid4().hex,
             resource_type="image",
             transformation=[{"width": 1200, "crop": "limit"}],

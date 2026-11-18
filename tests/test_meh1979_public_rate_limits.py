@@ -43,7 +43,6 @@ MOUNTED = [
     ("/group-buys", 120),
     ("/events/upcoming", 120),
     ("/experiences/count", 60),
-    ("/search/trending", 60),
     ("/categories", 60),
     ("/stats", 60),
     # Six the ORIGINAL file-walking audit never saw. The app-introspecting
@@ -86,7 +85,7 @@ class TestBoundaryPerDistinctLimit:
     """N pass, N+1 is refused — the exact boundary, not merely "a 429 occurred"."""
 
     def test_60_per_minute_boundary(self, client):
-        codes = _statuses(client, "/search/trending", 61)
+        codes = _statuses(client, "/categories", 61)
         assert 429 not in codes[:60], "a request inside the budget was refused"
         assert codes[60] == 429, "the 61st request was not refused"
 

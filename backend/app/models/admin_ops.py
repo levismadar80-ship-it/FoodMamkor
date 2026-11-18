@@ -22,7 +22,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 from app.database import Base
 from app.utils.clock import utc_now
@@ -113,6 +113,40 @@ class PhoneOtpToken(Base):
     # unit-of-work trying to nullify it → NotNullViolation 500 (MEH-755).
     producer = relationship(
         "Producer", backref=backref("otp_tokens", passive_deletes=True)
+    )
+
+
+class UserPhoneOtpToken(Base):
+    """MEH-3301 (D14): one-time WhatsApp code that verifies a USER's phone.
+
+    The sibling of PhoneOtpToken (which verifies a business phone), kept as
+    its own table so the user flow carries its own hardening: `phone` is the
+    canonical number the code was sent to (the code is bound to it — a phone
+    change expires it), and `attempts` counts wrong guesses (5 per token).
+    Rows go with the user (ON DELETE CASCADE). Written only by the D14
+    routes (MEH-3302); nothing reads it before then.
+    """
+
+    __tablename__ = "user_phone_otp_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    phone = Column(String(30), nullable=False)
+    code = Column(String(6), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False, nullable=False, server_default="false")
+    attempts = Column(Integer, default=0, nullable=False, server_default="0")
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    # passive_deletes: the DB cascade removes the rows (same reason as
+    # PhoneOtpToken, MEH-755).
+    user = relationship(
+        "User", backref=backref("phone_otp_tokens", passive_deletes=True)
     )
 
 
@@ -277,7 +311,10 @@ class OutboundMessage(Base):
     `meta_message_id` (the wamid) is UNIQUE for webhook idempotency
     (Meta delivers at-least-once). `status` is app-enforced (no DB
     enum/CHECK), by-convention 'accepted' | 'delivered' | 'failed' |
-    'window_expired', consistent with availability_state.
+    'window_expired', consistent with availability_state — plus
+    'blocked_nonprod' outside production only (MEH-3402: the guard dropped
+    the send). For those rows `error_message` holds what the message would
+    have said, not an error; never feed them into error grouping.
     """
 
     __tablename__ = "outbound_messages"
@@ -426,4 +463,34 @@ class AlembicLineage(Base):
     revision = Column(String(64), primary_key=True)
     recorded_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AdminAuditLog(Base):
+    """MEH-3306 — one row per successful change an admin made.
+
+    Append-only: the app adds a row (services/admin_audit.py) and reads it
+    (GET /admin/audit-log). Nothing updates or deletes one —
+    tests/test_meh3306_admin_audit_log.py scans for it.
+
+    `actor_id` is NOT a foreign key, on purpose: a FK needs an ON DELETE rule,
+    and both rules are wrong here — CASCADE erases the record with the
+    account, SET NULL is an UPDATE on an append-only table and erases who.
+    `details` holds a reduced before/after (role, status, a flag) — never
+    names, phones, addresses or free text. `ip` is kept for an investigation
+    and is not returned by the list route.
+    """
+
+    __tablename__ = "admin_audit_log"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    actor_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    # "PUT /admin/users/{user_id}/role" — method + route TEMPLATE, never the URL.
+    action = Column(String(160), nullable=False)
+    target_type = Column(String(40), nullable=True)
+    target_id = Column(String(64), nullable=True)
+    details = Column(JSONB, nullable=True)
+    ip = Column(String(64), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )

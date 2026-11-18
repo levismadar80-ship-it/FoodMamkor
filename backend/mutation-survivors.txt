@@ -1,0 +1,6 @@
+# MEH-3295 — surviving mutants that are explained, one per line:
+#   <fingerprint exactly as scripts/mutation/report.py prints it>  ## <why it may survive>
+# A survivor not listed here is NEW: scripts/mutation/run.sh exits 1 and the
+# weekly repo-health scan opens a card. Prefer killing a survivor with a test;
+# list it only when it is equivalent (no test could tell it apart) and say why.
+# Lines starting with "# " are comments. Empty since the 18/11/2026 run.

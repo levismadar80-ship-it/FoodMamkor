@@ -47,10 +47,10 @@ class TestArgparseDefaults:
         assert args.yes is False
 
     def test_default_prefixes_constant_is_two_specific_folders(self):
-        # Lock the spec: the script defaults to the two folders our uploaders
+        # Lock the spec: the script defaults to the folders our uploaders
         # actually write to. mehamakor/producers/* is reserved (story-card,
         # overwrite=True) and is filtered separately by the reject-list.
-        assert DEFAULT_PREFIXES == ("mehamakor", "mehamakor/avatars")
+        assert DEFAULT_PREFIXES == ("mehamakor", "mehamakor/avatars", "mehamakor/u")
 
     def test_apply_flag_flips_to_true(self):
         args = build_parser().parse_args(["--apply"])
@@ -182,7 +182,7 @@ class TestPrefixDefaultPostFill:
         assert rc == 0
         msgs = [r.message for r in caplog.records]
         assert any(
-            "prefix=['mehamakor', 'mehamakor/avatars']" in m for m in msgs
+            "prefix=['mehamakor', 'mehamakor/avatars', 'mehamakor/u']" in m for m in msgs
         ), f"expected default prefixes in log, saw: {msgs}"
 
 
@@ -210,6 +210,8 @@ class TestSourceConstants:
             ("ProducerRecipe", "image_url"),
             ("RescueReview", "photo_url"),
             ("KashrutBadgeRequest", "cert_url"),
+            # MEH-3377: the consent screenshot, an audit record.
+            ("Producer", "consent_screenshot_url"),
         ]
 
     def test_array_sources_is_two_specific_columns(self):
@@ -219,9 +221,9 @@ class TestSourceConstants:
             ("HomeProduct", "images"),
         ]
 
-    def test_total_source_count_is_twelve(self):
-        # MEH-3247: 10 scalar + 2 array = 12 referenced-set sources (was 8).
-        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 12
+    def test_total_source_count_is_thirteen(self):
+        # MEH-3247: 10 scalar + 2 array = 12 (was 8). MEH-3377: +1 scalar.
+        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 13
 
 
 class TestAddScalarUrls:

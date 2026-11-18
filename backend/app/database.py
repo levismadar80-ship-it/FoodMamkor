@@ -110,11 +110,44 @@ def _engine_kwargs_for(database_url: str) -> dict[str, Any]:
 engine = create_engine(
     settings.database_url, **_engine_kwargs_for(settings.database_url)
 )
+
+
+# MEH-3307: the app and the migrations may connect as two different database
+# roles. The app's role (DATABASE_URL / DATABASE_URL_<ENV>) can read and write
+# rows but not change the schema; MIGRATION_DATABASE_URL is the schema owner,
+# used only by alembic/env.py and scripts/migrate_on_boot.py at boot. Unset →
+# the migrations use the app's URL, exactly as before. Read here and not in
+# config.py for the reason the pool knobs above are (config.py is
+# permission-protected); runbook: docs/DEPLOYMENT.md «Two database roles».
+# DO NOT use this URL for request handling — only the migration step.
+def migration_database_url() -> str:
+    """The URL Alembic connects with: MIGRATION_DATABASE_URL, else the app's."""
+    return (os.getenv("MIGRATION_DATABASE_URL") or "").strip() or settings.database_url
+
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
     pass
+
+
+def end_transaction(db: Session) -> None:
+    """MEH-2889: return a session's connection to the pool, keep its instances.
+
+    For a background task that was handed the request's session: by then
+    `_release_session` has closed it once, so the only open transaction is the
+    task's own, and its writes are already committed. `commit()` ends that
+    transaction (a no-op when none is open); `rollback()` is the fallback for
+    a session left in a failed state. Never raises: it runs in a `finally`.
+    """
+    try:
+        db.commit()
+    except Exception:  # noqa: BLE001 — a failed session must still let go
+        try:
+            db.rollback()
+        except Exception:  # noqa: BLE001
+            log.warning("end_transaction: rollback failed", exc_info=True)
 
 
 async def _release_session(db: Session) -> None:

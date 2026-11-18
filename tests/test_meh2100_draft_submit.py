@@ -282,7 +282,8 @@ def test_no_creation_site_writes_a_queue_status():
 
     root = pathlib.Path(__file__).resolve().parents[1]
     sites = [
-        root / "backend" / "app" / "routers" / "auth.py",
+        # MEH-3293: the registration creation sites moved out of auth.py.
+        root / "backend" / "app" / "routers" / "auth_register_producer.py",
         root / "backend" / "app" / "services" / "producer_queries.py",
     ]
     for path in sites:

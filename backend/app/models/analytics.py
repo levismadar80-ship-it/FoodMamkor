@@ -81,7 +81,7 @@ class ProducerPageView(Base):
     referrer = Column(
         String(30), nullable=True
     )  # search | map | category | home | favorites | follow
-    # | producers-index | similar | nearby | None
+    # | producers-index | similar | nearby | share (MEH-3331) | None
     created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 
 

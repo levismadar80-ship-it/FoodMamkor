@@ -25,12 +25,17 @@ separate product decision (MEH-1613 §7), deliberately not taken here.
 
 from __future__ import annotations
 
+from html import escape
 from typing import Any
 
 import logging
 
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.outbound_guard import (
+    REDIRECT_BODY_PREFIX,
+    route_email,
+)
 from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
@@ -139,6 +144,38 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
         pass
 
 
+def _route_outside_production(
+    to: str, subject: str, reply_to: str | None, body: str, html: str | None
+) -> tuple[str, str, str | None, str, str | None] | None:
+    """MEH-3402: decided by the environment, not by `is_test` on a row. A staff
+    address (or its +alias) goes through; any other recipient is redirected to
+    ADMIN_EMAIL, the masked recipient in the subject and the full one in the
+    body. Production unchanged.
+    None = not sent (outside production with no ADMIN_EMAIL, or the guard
+    itself failed — fail CLOSED, and never raise: send_email is fail-open)."""
+    try:
+        route = route_email(to, subject, reply_to)
+    except Exception as exc:  # noqa: BLE001 — never raise out of send_email
+        _report(exc, to=to, subject=subject, stage="outbound-guard")
+        return None
+    if not route.redirected:
+        return to, subject, reply_to, body, html
+    if not route.to:
+        logger.warning(
+            "[EMAIL] NOT SENT outside production: %s is not a staff address "
+            "and ADMIN_EMAIL is unset (subject=%r)",
+            _mask(to),
+            subject[:80],
+        )
+        return None
+    logger.info("[EMAIL] Redirected outside production: %s → ADMIN_EMAIL", _mask(to))
+    # The full original recipient goes in the BODY only (never logged).
+    note = REDIRECT_BODY_PREFIX.format(to=route.original_to)
+    if html:
+        html = f'<p dir="rtl">{escape(note.strip())}</p>{html}'
+    return route.to, route.subject, route.reply_to, note + body, html
+
+
 def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     to: str,
     subject: str,
@@ -162,10 +199,14 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
 
     MEH-2952: `test_cause=True` means the send was caused by a test business
     or a test user (`producers.is_test` / `users.is_test`). Nothing is sent —
-    staging and production alike, no allowlist — and one INFO line records
+    staging and production alike — and one INFO line records
     the drop. Checked FIRST, before the recipient/key checks and before any
     API call. Defaults to False so every caller that does not pass it is
     unchanged.
+
+    MEH-3402 is a SEPARATE, environment-level layer: outside production a
+    recipient that is not a staff address is redirected to ADMIN_EMAIL
+    (services/outbound_guard.py), whatever `test_cause` says.
     """
     if test_cause:
         logger.info(
@@ -175,6 +216,34 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
         )
         return
 
+    _deliver(to, subject, body, html, reply_to)
+
+
+def send_email_result(  # noqa: PLR0913 — the same arguments as send_email
+    to: str,
+    subject: str,
+    body: str,
+    html: str | None = None,
+    reply_to: str | None = None,
+    test_cause: bool = False,
+) -> str:
+    """MEH-3296: `send_email`, answering what happened, for a caller that
+    retries (the order outbox): "sent", "failed" (worth another try),
+    "skipped_test", "unconfigured", "no_address" or "skipped" (a reserved
+    test domain). Same fail-open contract: it never raises."""
+    if test_cause:
+        logger.info(
+            "[EMAIL] skipped: caused by a test row (to=%s, subject=%r)",
+            _mask(to),
+            subject[:80],
+        )
+        return "skipped_test"
+    return _deliver(to, subject, body, html, reply_to)
+
+
+def _deliver(
+    to: str, subject: str, body: str, html: str | None, reply_to: str | None
+) -> str:
     # MEH-1613 swallow point 1/3 — empty recipient. Was a bare `return` with
     # ZERO logging: a caller passing an unset settings.admin_email produced no
     # trace anywhere. Almost always a config or caller bug, so it is reported
@@ -186,7 +255,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
             subject=subject,
             stage="empty-recipient",
         )
-        return
+        return "no_address"
 
     # MEH-1613 swallow point 2/3 — no API key. THE headline outage: this was
     # logger.debug, invisible at the INFO default, so an unset/rotated key
@@ -209,7 +278,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
                 _mask(to),
                 subject[:80],
             )
-        return
+        return "unconfigured"
 
     # MEH-2550: a reserved test domain (RFC 2606 / 6761) can never receive
     # mail, and Resend rejects it with a ValidationError that swallow point 3
@@ -217,7 +286,14 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     # real delivery failures. Skipped before the API call, logged at INFO.
     if _is_reserved_domain(to):
         logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
-        return
+        return "skipped"
+
+    # MEH-3402: outside production a real person never receives mail.
+    # DO NOT move this below the Resend call or make it opt-in per caller.
+    routed = _route_outside_production(to, subject, reply_to, body, html)
+    if routed is None:
+        return "skipped"
+    to, subject, reply_to, body, html = routed
     try:
         # MEH-2886 chunk 4: key + 10 s HTTP timeout (the SDK default is 30 s).
         resend = configure_resend(settings.resend_api_key)
@@ -247,9 +323,11 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
         # MEH-1613: was `to.split("@")[0] + "***"` — that masks the DOMAIN and
         # prints the local part, the wrong half. _mask does the inverse.
         logger.info("[EMAIL] Sent to %s", _mask(to))
+        return "sent"
     except Exception as e:  # noqa: BLE001 — fail-open by design
         # MEH-1613 swallow point 3/3 — the real delivery failure (expired key,
         # Resend 5xx, network). Was logger.warning WITH THE FULL ADDRESS and no
         # Sentry event. Reported every time: it fires only on actual failures,
         # so there is no flood to latch against.
         _report(e, to=to, subject=subject, stage="send-failed")
+        return "failed"

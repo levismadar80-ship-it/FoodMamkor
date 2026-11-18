@@ -432,9 +432,9 @@ it fails. Four of its cases are lifted from the real document.
 | 2704 | ProducerCard badges (start-3) | Homepage — if a "פרמיום" or "זמין היום" badge appears on a card, it is in the **top-right** corner of the card… |
 | 2750 | ProducerDetail — 4 location modes | DeliveryBlock WhatsApp button → tapping opens WhatsApp correctly; Network tab shows POST /producers/:id/whatsa… |
 | 2757 | Geo-search (map) exclusion | Open /map → delivery-only producer does NOT appear as a pin; physical producer at same coords DOES appear |
-| 2778 | Hero search pill — recent / trending dropdown | Homepage — type "חוו" → press Enter → navigates to `/producers?q=חוו` |
+| 2778 | Hero search pill — recent dropdown (trending removed, MEH-3257) | Homepage — type "חוו" → press Enter → navigates to `/producers?q=חוו` |
 | 2793 | Rate limiting | Fire > 60 requests to `GET /search?q=x` in 1 minute → 429 response |
-| 2794 | Rate limiting | Fire > 30 requests to `GET /search/trending` in 1 minute → 429 response |
+| 2794 | Rate limiting | Retired: `GET /search/trending` removed (MEH-3257) |
 | 2800 | Google OAuth / CSP (fix #173, 2026-04-19) | /login — open DevTools Console → zero CSP violations when page loads |
 | 2801 | Google OAuth / CSP (fix #173, 2026-04-19) | /login — click "כניסה עם Google" → Google popup opens and completes without postMessage error |
 | 2802 | Google OAuth / CSP (fix #173, 2026-04-19) | /login — Network tab → `accounts.google.com/gsi/style` loads with status 200 (not blocked) |

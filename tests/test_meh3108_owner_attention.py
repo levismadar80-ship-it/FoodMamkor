@@ -25,7 +25,15 @@ def _attention(client, owner):
 
 def _review(db, producer_id, *, reply=None, hidden=False):
     consumer = make_user(db, role="consumer")
-    db.add(ProducerReview(producer_id=producer_id, user_id=consumer.id, stars=5, reply=reply, is_hidden=hidden))
+    db.add(
+        ProducerReview(
+            producer_id=producer_id,
+            user_id=consumer.id,
+            stars=5,
+            reply=reply,
+            is_hidden=hidden,
+        )
+    )
     db.commit()
 
 
@@ -34,8 +42,11 @@ def _reg(db, *, event=None, experience=None, days_ago=0, status="registered"):
         Registration(
             event_id=event.id if event else None,
             experience_id=experience.id if experience else None,
-            name="דנה כהן", phone="052-7654321", email=f"{secrets.token_hex(4)}@example.com",
-            cancel_token=secrets.token_hex(16), status=status,
+            name="דנה כהן",
+            phone="052-7654321",
+            email=f"{secrets.token_hex(4)}@example.com",
+            cancel_token=secrets.token_hex(16),
+            status=status,
             created_at=utc_now() - timedelta(days=days_ago),
         )
     )
@@ -45,9 +56,16 @@ def _reg(db, *, event=None, experience=None, days_ago=0, status="registered"):
 def _group_buy(db, producer_id, status):
     db.add(
         GroupBuy(
-            producer_id=producer_id, title=f"רכש {status}", product_name="קמח מלא", unit="שק",
-            price_per_unit_regular=120, price_per_unit_group=90, min_participants=5,
-            deadline=utc_now() + timedelta(days=7), city="חדרה", status=status,
+            producer_id=producer_id,
+            title=f"רכש {status}",
+            product_name="קמח מלא",
+            unit="שק",
+            price_per_unit_regular=120,
+            price_per_unit_group=90,
+            min_participants=5,
+            deadline=utc_now() + timedelta(days=7),
+            city="חדרה",
+            status=status,
             fulfillment_note="איסוף מהמאפייה",
         )
     )
@@ -56,7 +74,12 @@ def _group_buy(db, producer_id, status):
 
 def test_nothing_waiting_is_all_zero(client, db):
     owner = _owner(db, email="att-0@example.com")
-    assert _attention(client, owner) == {"unreplied_reviews": 0, "new_signups": [], "funded_group_buys": 0}
+    assert _attention(client, owner) == {
+        "unreplied_reviews": 0,
+        "new_signups": [],
+        "funded_group_buys": 0,
+        "pending_orders": 0,
+    }
 
 
 def test_unreplied_reviews_count_only_visible_ones_with_no_reply(client, db):
@@ -127,4 +150,35 @@ def test_a_failed_count_returns_an_empty_card_not_a_500(client, db, monkeypatch)
     monkeypatch.setattr(oa, "_funded_group_buys", boom)
     owner = _owner(db, email="att-fail@example.com")
     _review(db, owner.producer_id)
-    assert _attention(client, owner) == {"unreplied_reviews": 0, "new_signups": [], "funded_group_buys": 0}
+    assert _attention(client, owner) == {
+        "unreplied_reviews": 0,
+        "new_signups": [],
+        "funded_group_buys": 0,
+        "pending_orders": 0,
+    }
+
+
+def test_pending_orders_count_only_while_ordering_is_on(client, db, monkeypatch):
+    # MEH-3316: the «הזמנות מחכות לאישור» row.
+    from app.models.product_orders import ProductOrder
+    from app.routers import product_orders as orders_module
+
+    owner = _owner(db, email="att-o@example.com")
+    now = utc_now()
+    for status in ("pending", "pending", "confirmed"):
+        db.add(
+            ProductOrder(
+                producer_id=owner.producer_id,
+                customer_name="דנה",
+                customer_phone="972501234567",
+                fulfilment="pickup",
+                slot_start=now + timedelta(days=1),
+                slot_end=now + timedelta(days=1, hours=1),
+                estimated_total_agorot=1000,
+                status=status,
+            )
+        )
+    db.commit()
+    assert _attention(client, owner)["pending_orders"] == 0
+    monkeypatch.setattr(orders_module, "product_orders_enabled", lambda: True)
+    assert _attention(client, owner)["pending_orders"] == 2

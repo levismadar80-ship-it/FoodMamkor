@@ -36,6 +36,14 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    // MEH-3295: a test that runs no `expect` fails instead of passing. Same
+    // as `expect.hasAssertions()` at the top of every test. Measured before
+    // switching it on (15/11/2026): 1 of 8,808 tests ran zero assertions —
+    // BusinessFeaturesRegistry «never returns an unverified entry», a loop
+    // over an empty list — and it is fixed in the same PR. A test whose only
+    // check is "does not throw" writes `expect(() => fn()).not.toThrow()`.
+    // DO NOT turn this off to get a test green — MEH-3295.
+    expect: { requireAssertions: true },
     setupFiles: "./__tests__/setup.js",
     css: false,
     include: ["__tests__/**/*.test.{js,jsx,ts,tsx}"],

@@ -91,11 +91,16 @@ describe("LocationModal commit contract (MEH-1192)", () => {
     const geoBtn = screen.getByText("modals.location.geo_button");
     await act(async () => { fireEvent.click(geoBtn); });
 
+    // MEH-3219 (B17): stored rounded to 2 decimals, never the raw fix.
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY))).toEqual({
-      lat: 32.0853,
-      lng: 34.7818,
+      lat: 32.09,
+      lng: 34.78,
     });
     expect(eventListener).toHaveBeenCalledTimes(1);
+    // ...and OpenStreetMap's reverse geocode gets the same rounded point.
+    const url = String(global.fetch.mock.calls[0][0]);
+    expect(url).toContain("lat=32.09&lon=34.78");
+    expect(url).not.toContain("32.0853");
 
     window.removeEventListener(EVENT_NAME, eventListener);
   });
@@ -157,5 +162,19 @@ describe("LocationModal dialog contract (MEH-2039)", () => {
     // Deliberate: focusing the text input would raise the on-screen keyboard
     // the moment the modal opens on mobile.
     expect(document.activeElement).toBe(screen.getByLabelText("modals.location.close_aria"));
+  });
+});
+
+// MEH-3271 (Sapir 18/11): the ✕ shows on the phone sheet too — it used to be
+// `hidden sm:flex`, so the sheet had no visible close button.
+describe("LocationModal visible close on the phone (MEH-3271)", () => {
+  it("the ✕ is not hidden below sm, and the title reserves its space", () => {
+    const { onClose } = setup();
+    const close = screen.getByRole("button", { name: "modals.location.close_aria" });
+    expect(close.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    expect(close.className).toMatch(/(^|\s)flex(\s|$)/);
+    expect(document.getElementById("location-modal-title").className).toMatch(/(^|\s)pe-10(\s|$)/);
+    fireEvent.click(close);
+    expect(onClose).toHaveBeenCalled();
   });
 });

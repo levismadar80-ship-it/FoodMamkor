@@ -7,6 +7,11 @@
  *           the two heights (own / ridden) the card and the controls read.
  * Does NOT: test when the card is mounted (MapPickPan.test.jsx) or what a
  *           marker tap does to the sheet (useMapSync.test.jsx).
+ *           MEH-0000 adds the close button's accessible name and Escape. An
+ *           audit of that button found everything else already right — real
+ *           <button>, 44x44, Hebrew aria-label, focus ring, no physical
+ *           directional class — but none of the name or keyboard behaviour was
+ *           asserted anywhere, so a regression in it would have been silent.
  * Related:  app/[locale]/map/components/MobileSheetSelectedCard.jsx,
  *           components/MapBottomSheet.jsx
  */
@@ -29,17 +34,25 @@ afterEach(cleanup);
 const producer = { id: "p1", name: "biz" };
 
 describe("MobileSheetSelectedCard — floating card (MEH-3119)", () => {
-  it("the close button is outside the card, in the row before it", () => {
+  it("MEH-3417: the X is on the card's top-end corner, with no row of its own above the card", () => {
     const { getByTestId } = render(<MobileSheetSelectedCard selectedProducer={producer} onClose={() => {}} />);
     const close = getByTestId("map-selected-card-close");
     const card = getByTestId("map-producer-card");
-    expect(card.contains(close)).toBe(false);
-    // The X's row precedes the card in the DOM: it is above it, not over it.
-    expect(close.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // 44px hit area; not absolutely positioned over anything.
+    // Same positioned box as the card, after it in the DOM (painted over it).
+    expect(close.parentElement).toBe(card.parentElement);
+    expect(card.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(close.parentElement.className).toMatch(/\brelative\b/);
+    // The card forces RTL in every locale; the X's `end-0` must resolve the
+    // same way, or on /en it lands on the photo.
+    expect(close.parentElement.getAttribute("dir")).toBe("rtl");
+    // Top-END corner (logical, rtl.md), inside the card, 44px hit area.
+    expect(close.className).toMatch(/\babsolute\b/);
+    expect(close.className).toMatch(/\btop-0\b/);
+    expect(close.className).toMatch(/\bend-0\b/);
     expect(close.className).toMatch(/\bw-11\b/);
     expect(close.className).toMatch(/\bh-11\b/);
-    expect(close.className).not.toMatch(/\babsolute\b/);
+    // Without a location label nothing renders above the card: the row is gone.
+    expect(getByTestId("map-selected-card").firstElementChild).toBe(close.parentElement);
   });
 
   it("the card is the active one, and the X deselects", () => {
@@ -135,5 +148,67 @@ describe("short screens (MEH-3119)", () => {
     expect(getByTestId("map-near-me-pill").className).toContain(
       "[@media(max-height:600px)]:group-data-[pick=on]/mapshell:hidden",
     );
+  });
+});
+
+describe("the close button's name and keyboard behaviour (MEH-0000)", () => {
+  it("is a real button with an accessible name, and the icon is hidden from it", () => {
+    const { getByTestId } = render(<MobileSheetSelectedCard selectedProducer={producer} onClose={() => {}} />);
+    const close = getByTestId("map-selected-card-close");
+    expect(close.tagName).toBe("BUTTON");
+    expect(close.getAttribute("type")).toBe("button");
+    // The name comes from i18n; this suite's mock returns the KEY, so assert
+    // the key is wired rather than the Hebrew — the Hebrew value itself is
+    // covered by the i18n parity suite.
+    expect(close.getAttribute("aria-label")).toBe("common.aria.close");
+    // An icon that is not hidden gets read out after the label.
+    expect(close.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(close.className).toMatch(/focus-ring/);
+  });
+
+  it("Escape closes the card", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("another key does not", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "a" });
+    fireEvent.keyDown(document, { key: "Enter" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("Escape inside a text field is the field's, not the card's", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    const input = document.createElement("input");
+    document.body.append(input);
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    input.remove();
+  });
+
+  it("Escape inside a dialog is the dialog's", () => {
+    const onClose = vi.fn();
+    render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    const button = document.createElement("button");
+    dialog.append(button);
+    document.body.append(dialog);
+    fireEvent.keyDown(button, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    dialog.remove();
+  });
+
+  it("the listener is removed on unmount", () => {
+    const onClose = vi.fn();
+    const { unmount } = render(<MobileSheetSelectedCard selectedProducer={producer} onClose={onClose} />);
+    unmount();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

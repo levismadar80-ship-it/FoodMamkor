@@ -39,25 +39,40 @@ const PRODUCER = {
 };
 
 describe("Organization JSON-LD (MEH-2192)", () => {
-  it("carries the CANONICAL_SENTENCE, verbatim — the same one llms.txt ships", () => {
+  it("describes the site with SITE_DESCRIPTION — the same line llms.txt ships (ADR-043)", () => {
     const org = buildOrganizationNode();
 
     expect(org["@type"]).toBe("Organization");
     expect(org.name).toBe(BRAND_NAME);
-    // MEH-2192 AC: entity description = the one approved brand sentence, so the
-    // JSON-LD and llms.txt say the same thing to answer engines. It is NOT the
-    // per-page meta description (SITE_DESCRIPTION) — that one sells the page
-    // to a SERP and legitimately differs.
-    expect(org.description).toBe(CANONICAL_SENTENCE);
-    expect(org.description).not.toBe(SITE_DESCRIPTION);
-    expect(CANONICAL_SENTENCE.length).toBeGreaterThan(0);
+    // MEH-3424 / ADR-043: the entity description is the one approved line
+    // that every describing surface carries (meta description, og, llms.txt).
+    // The brand sentence it carried since MEH-2192 is now the `slogan`.
+    expect(org.description).toBe(SITE_DESCRIPTION);
+    expect(org.slogan).toBe(CANONICAL_SENTENCE);
+    expect(org.description).not.toBe(org.slogan);
   });
 
-  it("public/llms.txt carries CANONICAL_SENTENCE as its own line (single owner)", () => {
+  it("public/llms.txt carries SITE_DESCRIPTION as its summary line (single owner)", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const llms = readFileSync(path.join(here, "..", "public", "llms.txt"), "utf8");
     const lines = llms.split("\n").map((line) => line.trim());
-    expect(lines).toContain(CANONICAL_SENTENCE);
+    // llmstxt.org: the summary is the first non-heading line after the H1.
+    expect(lines[0]).toBe("# מהמקור");
+    expect(lines.find((line, i) => i > 0 && line)).toBe(SITE_DESCRIPTION);
+  });
+
+  // MEH-3424: the root layout's fallback metadata reads the constants, never a
+  // literal — the descriptor for the meta description, the brand sentence for
+  // a shared link (ADR-043) — and the PWA manifest carries the descriptor.
+  it("layout.js feeds the descriptor to description and the brand sentence to og/twitter; manifest.json carries the descriptor", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const layout = readFileSync(path.join(here, "..", "app", "[locale]", "layout.js"), "utf8");
+    expect(layout.match(/^\s+description: SITE_DESCRIPTION,$/gm)).toHaveLength(1);
+    expect(layout.match(/^\s+description: CANONICAL_SENTENCE,$/gm)).toHaveLength(2);
+    const manifest = JSON.parse(
+      readFileSync(path.join(here, "..", "public", "manifest.json"), "utf8"),
+    );
+    expect(manifest.description).toBe(SITE_DESCRIPTION);
   });
 
   it("declares sameAs, and every entry is an absolute https URL", () => {
@@ -116,9 +131,9 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     // separately; enriching one and forgetting the other is the regression
     // this catches, and it catches it in either direction.
     expect(homeOrg).toEqual(producerOrg);
-    // MEH-2192: both surfaces carry the canonical sentence (not the meta description).
-    expect(homeOrg.description).toBe(CANONICAL_SENTENCE);
-    expect(producerOrg.description).toBe(CANONICAL_SENTENCE);
+    // MEH-3424: both surfaces carry the descriptor.
+    expect(homeOrg.description).toBe(SITE_DESCRIPTION);
+    expect(producerOrg.description).toBe(SITE_DESCRIPTION);
     expect(homeOrg.sameAs).toEqual(BRAND_SAME_AS);
     expect(producerOrg.sameAs).toEqual(BRAND_SAME_AS);
 

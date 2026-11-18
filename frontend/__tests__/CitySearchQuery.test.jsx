@@ -33,7 +33,11 @@ vi.mock("@/lib/api", () => ({
 
 const DEBOUNCE = 250;
 // Not in data/cities.js (asserted below) — only the fetch can produce it.
-const SEEDED_ONLY = "שדות ים";
+// MEH-3334 moved «שדות ים» INTO the static list (it is a חוף הכרמל settlement),
+// which falsified this fixture's premise and reddened the control at :106 —
+// working exactly as intended. «שדות מיכה» is the sibling official locality
+// that is still table-only, so the «שדות» prefix below is unchanged.
+const SEEDED_ONLY = "שדות מיכה";
 
 function deferred() {
   let resolve;
@@ -110,7 +114,7 @@ describe("MEH-2270 — one debounced query per value, results merged into the li
     api.get.mockImplementation((path, opts) =>
       Promise.resolve({
         data:
-          opts?.params?.q === "שדות" ? [SEEDED_ONLY, "שדות מיכה"] : ["אבו גוש", "אבו סנאן"],
+          opts?.params?.q === "שדות" ? [SEEDED_ONLY, "שדות ים"] : ["אבו גוש", "אבו סנאן"],
       }),
     );
 

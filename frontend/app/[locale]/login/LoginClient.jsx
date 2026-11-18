@@ -8,7 +8,8 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 import Image from "next/image";
 import { ArrowRight, EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/lib/auth-context";
+import { PasskeyStepRequired, useAuth } from "@/lib/auth-context";
+import PasskeyRecoveryPanel from "@/components/PasskeyRecoveryPanel"; // MEH-3305
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import { oauthTermsKey } from "@/lib/oauthTermsKey";
@@ -80,7 +81,7 @@ function LoginPageBody() {
   const registerHref = passedRedirect
     ? `/register?redirect=${encodeURIComponent(passedRedirect)}`
     : "/register";
-  const { user, loading: authLoading, login } = useAuth();
+  const { user, loading: authLoading, login, passkeyTicket } = useAuth();
   // MEH-2481: a business owner who signs in without an explicit ?redirect=
   // lands in her dashboard, not on the homepage — measured on staging 28/10,
   // a fresh owner was dropped on "/" with no path to the three required
@@ -147,6 +148,8 @@ function LoginPageBody() {
       const me = await login(emailValue, passwordValue);
       router.push(landingFor(me));
     } catch (err) {
+      // MEH-3305: the recovery-code panel takes over; nothing to show here.
+      if (err instanceof PasskeyStepRequired) return;
       setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
     } finally {
       setLoading(false);
@@ -247,8 +250,11 @@ function LoginPageBody() {
           )}
         </div>
 
+        {/* MEH-3305: an admin whose passkey did not answer finishes here. */}
+        {passkeyTicket && <PasskeyRecoveryPanel onSignedIn={(me) => router.push(landingFor(me))} />}
+
         {/* Social-first auth (S9 locked order): Google → Apple, then "או". */}
-        {oauthAvailable && (
+        {!passkeyTicket && oauthAvailable && (
           <>
             <div className="grid gap-2.5">
               {/* MEH-2080: Google/Apple can create an account from here, so
@@ -304,6 +310,7 @@ function LoginPageBody() {
         {/* Email + password — labels above, 54px field rhythm */}
         {/* MEH-2623: noValidate — our inline Hebrew messages replace the
             browser's own bubble; `required` stays on the inputs for a11y. */}
+        {!passkeyTicket && (
         <form onSubmit={handleSubmit} noValidate className="grid gap-4">
           <div className="grid gap-2 text-start">
             <label htmlFor="login-email" className="text-sm font-semibold text-text">
@@ -448,6 +455,7 @@ function LoginPageBody() {
             )}
           </button>
         </form>
+        )}
 
         {/* Register — understated editorial text link (no box, no icon) */}
         <p className="text-center text-sm text-fg-muted">

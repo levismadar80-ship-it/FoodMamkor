@@ -72,7 +72,7 @@ const PRODUCERS = [
   { ...base(2), name: "מאפייה טרייה", days_since_created: 3 },
   { ...base(3), name: "משק המרעה", grass_fed: true },
   { ...base(4), name: "מטבח ללא גלוטן", has_gluten_free_products: true },
-  { ...base(5), name: "בחירת העורכת", is_recommended: true },
+  { ...base(5), name: "בחירת העורכות", is_recommended: true },
   { ...base(6), name: "כשרות מאושרת", kashrut_verified_at: "2026-07-01", kashrut_expires_at: "2027-07-01" },
   { ...base(7), name: "משלוחים", has_delivery: true, delivery_count: 4 },
   { ...base(8), name: "קטלוג מלא", products_count: 12 },

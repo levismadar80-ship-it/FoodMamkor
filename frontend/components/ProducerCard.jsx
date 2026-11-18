@@ -646,11 +646,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             // the panel, and the popover anchors start-0 from the chip — which
             // sits ~141px into a 294px xl:grid-cols-4 card, so a 160px panel
             // lost 7px off its inline-end (measured in self-QA). Content-sized
-            // + nowrap keeps the widest label ("בחירת העורכת") inside the card.
+            // + nowrap keeps the widest label ("בחירת העורכות") inside the card.
             <Popover
               contentTestId="badge-overflow-popover"
               contentClassName="w-max whitespace-nowrap"
               sheetOnMobile
+              closeLabel={t("common.aria.close")} // MEH-3271: sheet ✕
               // MEH-1592: lg-and-up presentation moves to the overlay layer.
               // The pre-1592 anchored panel opened `top-full` DOWNWARD out of a
               // strip pinned to the photo's bottom edge, so it landed on the

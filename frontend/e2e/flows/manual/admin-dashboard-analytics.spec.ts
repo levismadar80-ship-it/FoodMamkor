@@ -183,6 +183,10 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     return json(r, { detail: "unstubbed" }, 404);
   });
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-3305: /admin/settings renders <PasskeySettings>, which reads the admin's own passkeys.
+  await page.route((u) => /\/api\/auth\/passkey\/?$/.test(u.pathname), (r) =>
+    json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
+  );
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
@@ -455,7 +459,14 @@ test.describe("admin nav — the pending-businesses pill, the queue filter, «ע
     await expect(page).toHaveURL(/\/admin\/producers$/);
     await expect(page.getByRole("heading", { name: /בתי עסק/ }).first()).toBeVisible();
     await expect(pill(page, 1)).toHaveCount(2);
-    expect(stub.dashboardCalls(), "one more /admin/dashboard read for the new pathname").toBeGreaterThan(before);
+    // MEH-3090: polled, not read once. The provider keeps the old `data`
+    // while it re-reads (admin/dashboard-data.js), so every assertion above is
+    // already true BEFORE the new request is sent — the read fires from an
+    // effect after the new page commits, and a one-shot read here could beat
+    // it (CI run 44378115964). The poll still fails if the re-read never comes.
+    await expect
+      .poll(() => stub.dashboardCalls(), { message: "one more /admin/dashboard read for the new pathname" })
+      .toBeGreaterThan(before);
   });
 
   // MT:ANALYTICS:47 — once the count reaches 0 the pill is gone on the next load.

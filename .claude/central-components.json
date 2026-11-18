@@ -12,6 +12,7 @@
     "frontend/components/Footer.jsx",
     "backend/app/main.py",
     "backend/app/routers/auth.py",
+    "backend/app/routers/auth_register_producer.py",
     "backend/app/config.py"
   ]
 }

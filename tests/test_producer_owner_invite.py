@@ -2141,7 +2141,14 @@ class TestExposure:
         _, token = invite(client, db, p, admin=admin)
         accept_invite(client, token)
         body = client.get(f"/admin/producers/{p.id}", headers=auth_header(admin)).json()
-        assert body["owner"] == {"name": "דנה כהן", "email": INVITE_EMAIL}
+        owner = db.query(User).filter(User.producer_id == p.id).one()
+        # MEH-3256 D9: the id is what «ניתוק בעלים» sends back as
+        # expected_owner_user_id.
+        assert body["owner"] == {
+            "id": str(owner.id),
+            "name": "דנה כהן",
+            "email": INVITE_EMAIL,
+        }
         assert body["owner_invite_accepted_at"]
 
     def test_the_public_business_page_carries_nothing(self, client, db):

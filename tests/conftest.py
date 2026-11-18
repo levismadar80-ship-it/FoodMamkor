@@ -232,6 +232,25 @@ def _reset_rate_limiter():
 
 
 @pytest.fixture(autouse=True)
+def _outbound_guard_as_production(monkeypatch, request):
+    """MEH-3402: the suite runs with ENV=development, where the outbound guard
+    redirects mail and drops WhatsApp/push/newsletter sends. Every existing
+    test of a sender asserts the PRODUCTION behaviour, so the guard reads
+    "production" here by default.
+
+    Skipped for tests/test_meh3402_outbound_guard.py, which tests the guard
+    itself in both environments and sets the environment per test.
+    """
+    if request.node.fspath.basename == "test_meh3402_outbound_guard.py":
+        yield
+        return
+    from app.services import outbound_guard
+
+    monkeypatch.setattr(outbound_guard, "is_production", lambda: True)
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _mock_hibp_clean(monkeypatch, request):
     """MEH-306: stub HIBP to "no match" by default for tests that exercise
     validate_password through the API surface (test_api.py + test_auth.py).
@@ -312,6 +331,17 @@ def make_user(
     return user
 
 
+def verify_phone(user: User) -> User:
+    """MEH-3302: WhatsApp alerts go only to a verified phone with consent.
+    Stamps both, as a successful OTP confirm does. Caller commits."""
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    user.phone_verified_at = now
+    user.whatsapp_consent_at = now
+    return user
+
+
 def make_producer(
     db,
     *,
@@ -369,8 +399,20 @@ def make_producer(
     return producer
 
 
-def make_category(db, name: str = "ירקות אורגניים", emoji: str = "🥬") -> Category:
-    cat = Category(name=name, emoji=emoji)
+def make_category(
+    db,
+    name: str = "ירקות אורגניים",
+    emoji: str = "🥬",
+    requires_license: bool | None = None,
+) -> Category:
+    # MEH-3255 (D10 contract): the licence rule reads the column. A test that
+    # names a seeded licensed category gets the seed's answer unless it says
+    # otherwise, the same way seed_categories writes it.
+    if requires_license is None:
+        from app.constants import LICENSE_REQUIRED_CATEGORIES
+
+        requires_license = name in LICENSE_REQUIRED_CATEGORIES
+    cat = Category(name=name, emoji=emoji, requires_license=requires_license)
     db.add(cat)
     db.commit()
     db.refresh(cat)

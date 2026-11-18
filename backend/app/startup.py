@@ -14,12 +14,17 @@ from app.sentry import capture_background_exception
 from app.services.job_heartbeat import (
     ADMIN_PENDING_REMINDER_CRON,
     ANALYTICS_ROLLUP_CRON,
+    BILLING_START_SIGNAL_CRON,
     FOLLOWUP_CRON,
+    GROUP_BUY_EXPIRY_CRON,
+    PRODUCT_ORDERS_INTERVAL_MINUTES,
     RESCUE_DIGEST_INTERVAL_MINUTES,
     RETENTION_PURGE_CRON,
     WATCHDOG_INTERVAL_MINUTES,
     WEEKLY_OWNER_SUMMARY_CRON,
     WEEKLY_OWNER_SUMMARY_TZ,
+    REGISTRATION_REMINDER_CRON,
+    REGISTRATION_REMINDER_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -140,7 +145,7 @@ def _check_email_delivery_config(env: str, resend_api_key: str) -> str | None:
 # Everything in-process depends on it: the APScheduler jobs (MEH-539 onboarding
 # follow-ups + the auto-reply watchdog → a 2nd worker sends DUPLICATE emails),
 # the slowapi in-memory rate-limit store (per-worker → effective limit ×N),
-# the analytics metrics deque, the trending cache, and the JWKS cache. No
+# the analytics metrics deque and the JWKS cache. No
 # distributed lock coordinates workers. Railway's worker count is Sapir-domain,
 # so this is a loud boot ERROR, never a crash.
 _WORKER_COUNT_ENV_VARS = ("WEB_CONCURRENCY", "UVICORN_WORKERS")
@@ -170,7 +175,7 @@ def _check_single_replica(worker_values: dict[str, str | None]) -> str | None:
                 "duplicate APScheduler jobs (double onboarding emails + "
                 "watchdog runs), per-worker slowapi rate limits (effective "
                 f"limit ×{count}), and fragmented in-memory metrics/caches "
-                "(analytics deque, trending, JWKS). Keep the count at 1, or "
+                "(analytics deque, JWKS). Keep the count at 1, or "
                 "move these mechanisms to a shared store first."
             )
     return None
@@ -280,6 +285,8 @@ def _run_followup_job() -> None:
     from app.database import SessionLocal
     from app.services.onboarding_followup import send_due_followups
     from app.services.pending_nudge import send_pending_nudges
+    from app.services.page_freshness import send_freshness_emails
+    from app.services.page_freshness_digest import send_stale_digest
 
     db = SessionLocal()
     try:
@@ -320,6 +327,24 @@ def _run_followup_job() -> None:
             # separate filterable stream from the follow-up sequence.
             capture_background_exception(exc, task="pending_nudge")
             log.error("[PENDING-NUDGE] daily run crashed", exc_info=True)
+
+        # Page freshness: the monthly "is everything still correct?" email
+        # shares the daily tick. Off until `page_freshness_enabled` is set.
+        try:
+            fresh = send_freshness_emails(db)
+            log.info("[PAGE-FRESHNESS] daily run complete counts=%s", fresh)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="page_freshness")
+            log.error("[PAGE-FRESHNESS] daily run crashed", exc_info=True)
+        # Sunday only: the admin gets the pages unconfirmed for 60+ days.
+        try:
+            listed = send_stale_digest(db)
+            log.info("[PAGE-FRESHNESS] stale digest listed=%s", listed)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="page_freshness_digest")
+            log.error("[PAGE-FRESHNESS] stale digest crashed", exc_info=True)
     finally:
         db.close()
 
@@ -343,6 +368,53 @@ def _run_admin_pending_reminder_job() -> None:
         db.rollback()
         capture_background_exception(exc, task="admin_pending_reminder")
         log.error("[ADMIN-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed evening raises an issue.
+@heartbeat(
+    "registration-reminder-daily",
+    cron_monitor_config(REGISTRATION_REMINDER_CRON, timezone=REGISTRATION_REMINDER_TZ),
+)
+def _run_registration_reminder_job() -> None:
+    """MEH-3312: the evening-before reminder to on-site registrants. Fresh
+    session per run; any exception is swallowed so the scheduler thread
+    never dies."""
+    from app.database import SessionLocal
+    from app.services.registration_reminders import send_registration_reminders
+
+    db = SessionLocal()
+    try:
+        sent = send_registration_reminders(db)
+        log.info("[REG-REMINDER] daily run complete sent=%s", sent)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="registration_reminder")
+        log.error("[REG-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3413: monthly «הגיע הזמן» email (terms §11 enforcement audit).
+@heartbeat(
+    "billing-start-signal-monthly", cron_monitor_config(BILLING_START_SIGNAL_CRON)
+)
+def _run_billing_start_signal_job() -> None:
+    """MEH-3413: early in the month, email the admin when the month that just
+    ended reached the billing-start signal. Fresh session; exceptions swallowed so
+    the scheduler thread never dies."""
+    from app.database import SessionLocal
+    from app.services.billing_start_signal import send_billing_start_signal
+
+    db = SessionLocal()
+    try:
+        sent = send_billing_start_signal(db)
+        log.info("[BILLING-SIGNAL] monthly run complete sent=%s", sent)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="billing_start_signal")
+        log.error("[BILLING-SIGNAL] monthly run crashed", exc_info=True)
     finally:
         db.close()
 
@@ -429,6 +501,30 @@ def _run_retention_purge_job() -> None:
     except Exception as exc:
         capture_background_exception(exc, task="retention_purge")
         log.error("[RETENTION-PURGE] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("group-buy-expiry-daily", cron_monitor_config(GROUP_BUY_EXPIRY_CRON))
+def _run_group_buy_expiry_job() -> None:
+    """MEH-3287: close open group buys whose deadline passed below their
+    minimum, and mail the participants. Same shape as the purge job above:
+    fresh session, own Sentry tag, exception swallowed so the scheduler thread
+    never dies. A crashed run costs nothing: the next one selects the same
+    rows again (the status change is the only stamp).
+    """
+    from app.database import SessionLocal
+    from app.services.group_buy_expiry import expire_unfunded_group_buys
+
+    db = SessionLocal()
+    try:
+        count = expire_unfunded_group_buys(db)
+        log.info("[GROUP-BUY-EXPIRY] daily run complete expired=%s", count)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="group_buy_expiry")
+        log.error("[GROUP-BUY-EXPIRY] daily run crashed", exc_info=True)
     finally:
         db.close()
 
@@ -565,6 +661,57 @@ def _register_weekly_owner_summary(scheduler: Any, now: datetime | None = None) 
     return True
 
 
+@heartbeat(
+    "product-orders-tick", interval_monitor_config(PRODUCT_ORDERS_INTERVAL_MINUTES)
+)
+def _run_product_order_jobs() -> None:
+    """MEH-3296: one 2-minute tick for on-site orders — expire the requests
+    nobody answered, then send the messages that are due.
+
+    Same shape as _run_rescue_digest_job: fresh session, exceptions swallowed
+    so the scheduler thread never dies. Expiry runs first so the buyer's
+    «expired» message goes out on the same tick. Both services commit per row,
+    so a crash costs at most the row it was on.
+    """
+    from app.database import SessionLocal
+    from app.services.product_order_outbox import dispatch_due
+    from app.services.product_order_sweeper import expire_due
+
+    # Each step on its own session and its own guard: an expiry that keeps
+    # failing must not stop every message.
+    for step in (expire_due, dispatch_due):
+        db = SessionLocal()
+        try:
+            step(db)
+        except Exception as exc:
+            capture_background_exception(exc, task="product_orders")
+            log.error("[PRODUCT-ORDERS] %s crashed", step.__name__, exc_info=True)
+        finally:
+            db.close()
+
+
+def _register_product_order_job(scheduler: Any) -> None:
+    """MEH-3296: adds the on-site order tick, only while ordering is on, so a
+    dark feature runs no job at all. Same guards as the rescue digest."""
+    from app.routers.product_orders import product_orders_enabled
+
+    if not product_orders_enabled():
+        log.info("[PRODUCT-ORDERS] disabled (PRODUCT_ORDERS_ENABLED=false) — no job")
+        return
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    scheduler.add_job(
+        _run_product_order_jobs,
+        IntervalTrigger(minutes=PRODUCT_ORDERS_INTERVAL_MINUTES),
+        id="meh_3296_product_orders",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
+    log.info("[PRODUCT-ORDERS] job registered — every 2 minutes")
+
+
 def register_scheduler_jobs(followup_scheduler: Any) -> None:
     """Add every background job to the scheduler (not started here).
 
@@ -590,6 +737,31 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3 * 3600,
+    )
+    # MEH-3312: evening-before reminder, 17:00 Israel (the zone travels with
+    # the schedule, so DST moves the UTC fire time). coalesce + a 3h grace: a
+    # deploy over 17:00 sends it a little late rather than skipping the day.
+    followup_scheduler.add_job(
+        _run_registration_reminder_job,
+        CronTrigger.from_crontab(
+            REGISTRATION_REMINDER_CRON, timezone=REGISTRATION_REMINDER_TZ
+        ),
+        id="meh_3312_registration_reminder_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
+    )
+    # MEH-3413: billing-start signal, mornings of the 1st–3rd (see the cron's
+    # comment); the service sends at most once per month per process.
+    followup_scheduler.add_job(
+        _run_billing_start_signal_job,
+        CronTrigger.from_crontab(BILLING_START_SIGNAL_CRON, timezone="UTC"),
+        id="meh_3413_billing_start_signal_monthly",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=24 * 3600,
     )
     # MEH-509 PR2b: register the after-hours watchdog on the same
     # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-
@@ -646,6 +818,17 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
+    # MEH-3287: daily close of open group buys past their deadline. coalesce +
+    # a 6h grace: a pause over the fire time runs it late rather than skipping.
+    followup_scheduler.add_job(
+        _run_group_buy_expiry_job,
+        CronTrigger.from_crontab(GROUP_BUY_EXPIRY_CRON, timezone="UTC"),
+        id="meh_3287_group_buy_expiry_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
     # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
     # AND the digest gate are both on — the digest cannot work before Meta
     # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
@@ -680,6 +863,47 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         )
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
+    _register_job_staleness_check(followup_scheduler)
+    # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED).
+    _register_product_order_job(followup_scheduler)
+
+
+def _register_job_staleness_check(scheduler: Any) -> None:
+    """MEH-3332: every 30 minutes, email the admin about a registered
+    @heartbeat job with no recent success. Reads the job list off the
+    scheduler at each run, so a flag-gated job that is off is never checked.
+    Not itself a @heartbeat job: a dead scheduler thread is what the one
+    Sentry monitor (auto-reply-watchdog) catches."""
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    from app.services.job_heartbeat import _enabled
+    from app.services.job_staleness import CHECK_INTERVAL_MINUTES, check_jobs
+
+    if not _enabled():
+        return
+    booted_at = datetime.now(timezone.utc)
+
+    def _run_job_staleness_check() -> None:
+        try:
+            jobs = [
+                (j.func.heartbeat_slug, j.func.heartbeat_config)
+                for j in scheduler.get_jobs()
+                if hasattr(j.func, "heartbeat_slug")
+            ]
+            check_jobs(jobs, booted_at=booted_at)
+        except Exception as exc:
+            capture_background_exception(exc, task="job_staleness_check")
+            log.error("[JOB-STALENESS] check crashed", exc_info=True)
+
+    scheduler.add_job(
+        _run_job_staleness_check,
+        IntervalTrigger(minutes=CHECK_INTERVAL_MINUTES),
+        id="meh_3332_job_staleness_check",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300,
+    )
 
 
 @asynccontextmanager

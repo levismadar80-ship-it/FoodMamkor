@@ -3,32 +3,33 @@ name = "foodmamkor-backend"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi==0.162.0",
+    "fastapi==0.163.0",
     "uvicorn[standard]==0.54.0",
     # Held at 2.0: SQLAlchemy 2.1 resolves postgresql:// to psycopg v3, and this
     # backend ships psycopg2 only (Dependabot #3956 broke conftest import).
     "sqlalchemy==2.0.55",
     "psycopg2-binary==2.9.13",
     "alembic==1.20.1",
-    "joserfc==1.7.7",
+    "joserfc==1.8.0",
     "bcrypt==5.0.0",
     "bleach==6.4.0",
     "python-multipart==0.0.33",
-    "pydantic[email]==2.14.2",
-    "pydantic-settings==2.16.2",
-    "cloudinary==1.46.3",
-    "google-auth==2.62.0",
+    "pydantic[email]==2.14.3",
+    "pydantic-settings==2.16.3",
+    "cloudinary==1.47.0",
+    "google-auth==2.62.2",
     "PyJWT[crypto]==2.15.1",
     "requests==2.34.2",
     "httpx==0.28.1",
     "anthropic==0.107.1",
     "slowapi==0.1.10",
     "pywebpush==2.5.0",
-    "resend==2.50.1",
+    "resend==2.53.2",
     "structlog==24.4.0",
     "asgi-correlation-id==5.0.1",
-    "sentry-sdk[fastapi]==2.73.0",
+    "sentry-sdk[fastapi]==2.75.0",
     "apscheduler~=3.11",
+    "webauthn==3.0.1",
 ]
 
 [dependency-groups]
@@ -36,13 +37,14 @@ dev = [
     "mutmut>=3.8.1",
     "mypy==2.4.1",
     "pip-audit>=2.10.1",
+    "hypothesis>=6.155.2",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pytest-rerunfailures>=16.7",
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.8.0",
     "ruff>=0.15.20",
-    "schemathesis>=4.0",
+    "schemathesis>=4.33.4",
 ]
 
 [tool.uv]
@@ -66,33 +68,55 @@ constraint-dependencies = ["starlette>=1.3.1"]
 package = false
 
 # ─────────────────────────────────────────────────────────────
-# MEH-558 — mutmut mutation testing pilot (SHIP-narrow)
-# Scope: auth.py + producer_me.py only. NOT full repo, NOT in CI.
-# Run: cd backend && uv run mutmut run
-# Results: docs/research/mutation-testing-pilot.md
-# Threshold for future CI gate: see pilot doc.
+# Mutation testing (mutmut). MEH-558 pilot → MEH-3295 standing set.
+# Run: bash scripts/mutation/run.sh (from the repo root; own test database).
+# NOT in CI (≈1 h). Run by: a PR that touches source_paths (mutation-guard.sh)
+# and the weekly repo-health scan. Docs: docs/research/mutation-testing.md.
 # ─────────────────────────────────────────────────────────────
 [tool.mutmut]
-# Linear spec MEH-558 listed auth.py + producer_me.py. Scoped down to auth.py
-# only per spec STOP-(b) "if runtime >30 min, scope down to auth.py only and
-# document". producer_me.py is 920 lines and its happy-path coverage lives in
-# tests/test_api.py (~81s) — full mutmut would exceed budget by ~5×.
-# producer_me.py pilot deferred to a follow-up ticket.
-paths_to_mutate = [
+# MEH-3295 — the money-and-permissions set. One list, read by three callers:
+# `bash scripts/mutation/run.sh` (local / a PR thread), the weekly repo-health
+# scan (MEH-3143, area 9) and docs/research/mutation-testing.md.
+# routers/auth.py joins after its split (MEH-3293) — mutating a 1,678-line
+# router through the whole auth suite is the slow half, and the split moves it.
+# MEH-558 history: the pilot mutated app/auth.py alone (90.6%).
+# The whole app/ tree is copied into mutants/ so app.services resolves to the
+# mutated copy: app/ has no __init__.py, and with only the listed files copied
+# the real backend/app/services package won and those mutants never ran
+# (first run 15/11: billing_* and capabilities all "no tests").
+source_paths = ["app"]
+only_mutate = [
     "app/auth.py",
+    "app/limits.py",
+    "app/pricing.py",
+    "app/services/capabilities.py",
+    "app/services/billing_summary.py",
+    "app/services/billing_ledger.py",
 ]
-# tests_dir is a list of pytest test selectors (paths) appended after `-x -q`.
-# mutmut runs from `backend/mutants/` cwd. The repo-root `tests/` lives
-# two levels up; pytest accepts the relative path because `--rootdir=.`
-# (set by mutmut) doesn't constrain test selection. The auth-targeted
-# subset (~64 tests, ~32s baseline) is much faster than full test_api.py.
-tests_dir = [
+# Test files appended to pytest's command line. mutmut runs from
+# `backend/mutants/`, so the repo-root tests/ is two levels up. mutmut 3 maps
+# each function to the tests that execute it and runs only those per mutant.
+pytest_add_cli_args_test_selection = [
     "../../tests/test_auth.py",
     "../../tests/test_password_policy.py",
     "../../tests/test_forgot_password.py",
     "../../tests/test_verify_email.py",
     "../../tests/test_oauth_unconfigured.py",
     "../../tests/test_auth_email_notify.py",
+    "../../tests/test_verified_email_enforcement.py",
+    "../../tests/test_expansion_auth_jwt.py",
+    "../../tests/test_expansion_admin_authz.py",
+    "../../tests/test_admin_role_orphan_source.py",
+    "../../tests/test_meh2900_admin_role_endpoint.py",
+    "../../tests/test_optional_auth_contract.py",
+    "../../tests/test_meh3022_resource_caps.py",
+    "../../tests/test_meh3179_billing_ledger.py",
+    "../../tests/test_meh3179_pricing_mirror.py",
+    "../../tests/test_meh3180_billing_state.py",
+    "../../tests/test_meh3181_billing_summary.py",
+    "../../tests/test_meh3208_ledger_outlives_business.py",
+    "../../tests/test_meh3295_properties.py",
+    "../../tests/test_meh3295_auth_tokens.py",
 ]
 # Mutmut v3 mutates operators/conditionals/numbers/strings by default.
 
@@ -125,6 +149,7 @@ max-complexity = 10
 # Existing god-files — large refactor tickets pending. Remove ignore after merge.
 "app/routers/producers.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-438
 "app/routers/auth.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-440
+"app/routers/auth_register_producer.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-3293: moved out of auth.py with its code
 
 # Auto-generated migrations are long by design.
 "alembic/versions/**" = ["PLR0915", "PLR0912"]
@@ -144,6 +169,7 @@ plugins = ["pydantic.mypy"]
 files = [
     "app/allergens.py",
     "app/auth.py",
+    "app/body_limit.py",
     "app/cloudinary_utils.py",
     "app/config.py",
     "app/constants.py",
@@ -156,6 +182,7 @@ files = [
     "app/main.py",
     "app/middleware.py",
     "app/models/admin_ops.py",
+    "app/models/admin_passkeys.py",
     "app/models/analytics.py",
     "app/models/billing.py",
     "app/models/catalog.py",
@@ -180,6 +207,7 @@ files = [
     "app/routers/admin_whatsapp.py",
     "app/routers/alerts.py",
     "app/routers/auth.py",
+    "app/routers/auth_register_producer.py",
     "app/routers/billing.py",
     "app/routers/business_suggestions.py",
     "app/routers/category_requests.py",
@@ -195,16 +223,23 @@ files = [
     "app/routers/home_products.py",
     "app/routers/marketing.py",
     "app/routers/organizers.py",
+    "app/routers/page_freshness.py",
     "app/routers/producer_claim.py",
+    "app/routers/producer_draft_preview.py",
+    "app/services/draft_preview.py",
     "app/routers/producer_me.py",
     "app/routers/producer_me_analytics.py",
     "app/routers/producer_me_locations.py",
     "app/routers/producer_me_review.py",
     "app/routers/producer_name_requests.py",
+    "app/routers/producer_owner_detach.py",
     "app/routers/producer_owner_invite.py",
     "app/routers/producer_owner_invite_existing.py",
     "app/routers/producer_recipes.py",
     "app/routers/producers.py",
+    "app/routers/product_order_business.py",
+    "app/routers/product_order_buyer.py",
+    "app/routers/product_order_offer.py",
     "app/routers/product_orders.py",
     "app/routers/product_organize.py",
     "app/routers/registrations.py",
@@ -226,10 +261,13 @@ files = [
     "app/schemas/experiences.py",
     "app/schemas/group_buy_counts.py",
     "app/schemas/group_buys_requests.py",
+    "app/schemas/owner_detach.py",
     "app/schemas/owner_invite_existing.py",
     "app/schemas/password.py",
     "app/schemas/producer.py",
     "app/schemas/producer_out.py",
+    "app/schemas/product_order_buy.py",
+    "app/schemas/product_order_offer.py",
     "app/schemas/product_orders.py",
     "app/schemas/recipes_outreach.py",
     "app/schemas/registration.py",
@@ -239,8 +277,12 @@ files = [
     "app/schemas/site.py",
     "app/sentry.py",
     "app/services/account_guards.py",
+    "app/services/admin_audit.py",
     "app/services/admin_pending_reminder.py",
+    "app/services/billing_start_signal.py",
     "app/services/admin_producer_emails.py",
+    "app/services/outbound_guard.py",
+    "app/services/approved_edit_moderation.py",
     "app/services/analytics.py",
     "app/services/analytics_rollup.py",
     "app/services/auth_emails.py",
@@ -268,12 +310,17 @@ files = [
     "app/services/farmer_declaration.py",
     "app/services/gallery_cap.py",
     "app/services/group_buy_delist.py",
+    "app/services/group_buy_expiry.py",
+    "app/services/group_buy_goal_flap.py",
     "app/services/group_buy_notifications.py",
+    "app/services/hebrew_calendar.py",
     "app/services/home_product_moderation.py",
+    "app/services/image_ownership.py",
     "app/services/image_refs.py",
     "app/services/indexnow.py",
     "app/services/invite_gate.py",
     "app/services/job_heartbeat.py",
+    "app/services/job_staleness.py",
     "app/services/license_validation.py",
     "app/services/moderation_fail_open.py",
     "app/services/moderation_prompt.py",
@@ -282,6 +329,9 @@ files = [
     "app/services/oauth_verifiers.py",
     "app/services/onboarding_followup.py",
     "app/services/owner_attention.py",
+    "app/services/owner_detach.py",
+    "app/services/page_freshness.py",
+    "app/services/page_freshness_digest.py",
     "app/services/password_policy.py",
     "app/services/pending_nudge.py",
     "app/services/phone_reverify.py",
@@ -291,17 +341,34 @@ files = [
     "app/services/producer_queries.py",
     "app/services/producer_recipe_moderation.py",
     "app/services/producer_risk.py",
+    "app/services/product_order_actions.py",
+    "app/services/product_order_clock.py",
+    "app/services/product_order_create.py",
+    "app/services/product_order_delivery.py",
+    "app/services/product_order_guards.py",
+    "app/services/product_order_menu.py",
+    "app/services/product_order_outbox.py",
+    "app/services/product_order_phone.py",
+    "app/services/product_order_privacy.py",
+    "app/services/product_order_slots.py",
     "app/services/product_order_state.py",
+    "app/services/product_order_sweeper.py",
+    "app/services/product_order_views.py",
     "app/services/push.py",
     "app/services/rating_dispatcher.py",
     "app/services/registration_emails.py",
+    "app/services/registration_waitlist.py",
     "app/services/registrations.py",
     "app/services/report_notifications.py",
     "app/services/rescue_digest.py",
+    "app/services/registration_reminders.py",
+    "app/services/rescue_business_emails.py",
     "app/services/rescue_emails.py",
+    "app/services/review_conflicts.py",
+    "app/services/review_reports.py",
     "app/services/rescue_no_show.py",
     "app/services/resend_client.py",
-    "app/services/resend_verify_cap.py",
+    "app/services/resend_verify_cap.py", "app/services/email_change_guard.py",
     "app/services/retention_purge.py",
     "app/services/retired_slugs.py",
     "app/services/sanitization.py",
@@ -309,12 +376,15 @@ files = [
     "app/services/submission_gate.py",
     "app/services/trust_tier.py",
     "app/services/user_deletion.py",
+    "app/services/user_phone_verify.py",
     "app/services/vacation_state.py",
     "app/services/verification_status.py",
     "app/services/verify_session.py",
     "app/services/weekly_owner_summary.py",
     "app/services/whatsapp.py",
     "app/services/whatsapp_templates.py",
+    "app/services/whatsapp_template_bodies.py",
+    "app/services/whatsapp_template_lint.py",
     "app/slug_utils.py",
     "app/startup.py",
     "app/utils/clock.py",
@@ -322,6 +392,9 @@ files = [
     "app/utils/phone.py",
     "app/utils/pii.py",
     "app/utils/sql.py",
+    "app/routers/admin_passkey.py",
+    "app/schemas/admin_passkey.py",
+    "app/services/admin_passkey.py",
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:

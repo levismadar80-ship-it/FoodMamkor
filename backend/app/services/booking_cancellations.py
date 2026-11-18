@@ -21,7 +21,7 @@ Related:  services/group_buy_delist.py::cancel_live_group_buys (MEH-2498,
           the precedent) · routers/rescue.py::cancel_offer (the business's
           own bag cancel) · routers/registrations.py (the confirmation email
           these mirror).
-History:  MEH-3227 (creation)
+History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants)
 """
 
 from __future__ import annotations
@@ -30,6 +30,7 @@ from datetime import date, time
 from typing import Any
 
 from fastapi import BackgroundTasks
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -43,12 +44,14 @@ from app.models import (
     RescueOrder,
     User,
 )
+from app.services import billing_ledger
 from app.services.email import send_email
 from app.services.group_buy_delist import cancel_live_group_buys
 from app.services.registration_emails import (
     RegistrantEmail,
     send_registrant_cancelled,
     send_registrant_delisted,
+    send_registrant_method_changed,
     send_registrant_moved,
 )
 from app.services.rescue_emails import send_delisted_cancel_email
@@ -84,10 +87,13 @@ def _message(
     reg: Registration, item: Event | Experience, host_name: str
 ) -> RegistrantEmail:
     place = _event_place(item) if isinstance(item, Event) else _experience_place(item)
+    past_first = _is_recurring(item) and not _is_upcoming(item)
     return RegistrantEmail(
         title=item.title or "",  # type: ignore[arg-type]
-        date_text=_date_text(item.event_date),  # type: ignore[arg-type]
-        time_text=_time_text(item.event_time),  # type: ignore[arg-type]
+        # MEH-2871: a recurring experience's event_date is its FIRST occasion;
+        # once that is past the email names no date rather than a past one.
+        date_text="" if past_first else _date_text(item.event_date),  # type: ignore[arg-type]
+        time_text="" if past_first else _time_text(item.event_time),  # type: ignore[arg-type]
         place=place,
         host_name=host_name,
         cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
@@ -101,24 +107,35 @@ def _active_registrations(
         return []
     return (
         db.query(Registration)
-        .filter(column.in_(ids), Registration.status == "registered")
+        # MEH-3314: a waitlisted visitor is told the item is off too.
+        .filter(column.in_(ids), Registration.status.in_(("registered", "waitlisted")))
         .with_for_update()
         .all()
     )
 
 
 def _cancel_and_queue(
+    db: Session,
     background_tasks: BackgroundTasks,
     regs: list[tuple[Registration, Event | Experience, str]],
     sender: Any,
     test_cause: bool,
 ) -> int:
-    """Cancel each sign-up and queue one email per sign-up (plain values)."""
+    """Cancel each sign-up and queue one email per sign-up (plain values).
+
+    MEH-2871: also void its billing-ledger row. Every caller passes upcoming
+    items only, so these are bookings the business never received — the same
+    rule the registrant's own cancel applies (registrations.py)."""
     now = utc_now()
     for reg, item, host_name in regs:
         message = _message(reg, item, host_name)
         reg.status = "cancelled"  # type: ignore[assignment]
         reg.cancelled_at = now  # type: ignore[assignment]
+        billing_ledger.void(
+            db,
+            kind="event_registration" if reg.event_id else "experience_registration",
+            source_id=reg.id,
+        )
         if reg.email:
             background_tasks.add_task(sender, reg.email, message, test_cause=test_cause)
     return len(regs)
@@ -179,7 +196,7 @@ def _cancel_upcoming_signups(
 ) -> int:
     """Sign-ups to this business's events, and to experiences its owner
     hosts, from today on → cancelled, one email each. A recurring experience
-    is dated too: sign-up closes once its date passes (registrations.py)."""
+    counts whatever its first date (MEH-2871)."""
     today = israel_today()
     events = (
         db.query(Event)
@@ -190,7 +207,8 @@ def _cancel_upcoming_signups(
         db.query(Experience)
         .join(User, Experience.host_user_id == User.id)
         .filter(User.producer_id == producer.id)
-        .filter(Experience.event_date >= today)
+        # MEH-2871: a recurring experience is live past its first date.
+        .filter(or_(Experience.event_date >= today, Experience.is_recurring.is_(True)))
         .all()
     )
     by_event = {e.id: e for e in events}
@@ -204,7 +222,7 @@ def _cancel_upcoming_signups(
         for r in _active_registrations(db, Registration.experience_id, list(by_ex))
     ]
     return _cancel_and_queue(
-        background_tasks, regs, send_registrant_delisted, bool(producer.is_test)
+        db, background_tasks, regs, send_registrant_delisted, bool(producer.is_test)
     )
 
 
@@ -255,7 +273,7 @@ def send_owner_delisted(
     lines = [first]
     if cancelled_any:
         lines.append(
-            "שריונים לסלי הצלה, הרשמות לאירועים וקניות קבוצתיות פתוחות בוטלו, "
+            "שריונים לסלי הצלה, הרשמות לאירועים וקבוצות רכישה פתוחות בוטלו, "
             "והלקוחות קיבלו על כך מייל."
         )
     lines.append(f"לשאלות אפשר לכתוב לנו: {contact}")
@@ -305,6 +323,22 @@ def delist_business(
     return count
 
 
+def hide_business(
+    db: Session, producer: Producer, background_tasks: BackgroundTasks
+) -> int:
+    """approved → inactive for cause (admin pause, or its owner blocked —
+    MEH-2871). Revokes an outstanding owner invite (MEH-2974: accepting it
+    would otherwise put the page back up) and runs ``delist_business``.
+    The caller commits."""
+    producer.status = "inactive"  # type: ignore[assignment]
+    if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
+        producer.owner_invite_token_hash = None  # type: ignore[assignment]
+        producer.owner_invite_code_hash = None  # type: ignore[assignment]
+        producer.owner_invite_code_expires_at = None  # type: ignore[assignment]
+        producer.owner_invite_code_attempts = None  # type: ignore[assignment]
+    return delist_business(db, producer, background_tasks, "hidden")
+
+
 # ---------- 2. the business changes one event or experience ----------
 
 
@@ -320,8 +354,21 @@ def _column_for(item: Event | Experience) -> Any:
     )
 
 
+def _is_recurring(item: Event | Experience) -> bool:
+    return bool(getattr(item, "is_recurring", False))
+
+
 def _is_upcoming(item: Event | Experience) -> bool:
     return bool(item.event_date and item.event_date >= israel_today())
+
+
+def _signups_live(item: Event | Experience) -> bool:
+    """MEH-2871: sign-up to a recurring experience stays open after its first
+    date (registrations.py), so its sign-ups are live after it too. Used for
+    CANCELLING only: a "moved" email for a recurring item past its first date
+    would have no date to give, so ``notify_item_moved`` keeps
+    ``_is_upcoming``."""
+    return _is_recurring(item) or _is_upcoming(item)
 
 
 def cancel_item_signups(
@@ -333,7 +380,7 @@ def cancel_item_signups(
     """The business cancelled or is deleting ``item``: cancel its active
     sign-ups and mail each registrant. Before a delete — the cascade removes
     the rows. A past item is left alone (nobody is waiting on it)."""
-    if not _is_upcoming(item):
+    if not _signups_live(item):
         return 0
     host_name = _host_name_for(item)
     regs = [
@@ -341,7 +388,7 @@ def cancel_item_signups(
         for r in _active_registrations(db, _column_for(item), [item.id])
     ]
     return _cancel_and_queue(
-        background_tasks, regs, send_registrant_cancelled, test_cause
+        db, background_tasks, regs, send_registrant_cancelled, test_cause
     )
 
 
@@ -350,11 +397,15 @@ def notify_item_moved(
     item: Event | Experience,
     background_tasks: BackgroundTasks,
     test_cause: bool,
+    sender: Any = None,
 ) -> int:
     """The business moved ``item``'s date or time (already applied): each
-    active registrant gets the new time and her cancel link. Sign-ups stay."""
+    active registrant gets the new time and her cancel link. Sign-ups stay.
+    MEH-3310: the same walk with ``send_registrant_method_changed`` when the
+    business stops taking sign-ups on the site."""
     if not _is_upcoming(item):
         return 0
+    sender = sender or send_registrant_moved  # resolved per call (tests patch it)
     host_name = _host_name_for(item)
     regs = (
         db.query(Registration)
@@ -364,12 +415,17 @@ def notify_item_moved(
     for reg in regs:
         if reg.email:
             background_tasks.add_task(
-                send_registrant_moved,
+                sender,
                 str(reg.email),
                 _message(reg, item, host_name),
                 test_cause=test_cause,
             )
     return len(regs)
+
+
+def registrant_message(reg: Registration, item: Event | Experience) -> RegistrantEmail:
+    """MEH-3312: the same plain values every registrant email carries."""
+    return _message(reg, item, _host_name_for(item))
 
 
 def is_test_item(item: Event | Experience) -> bool:
@@ -380,28 +436,44 @@ def is_test_item(item: Event | Experience) -> bool:
     return bool(business and business.is_test)
 
 
-def item_state(item: Event | Experience) -> tuple[Any, Any, Any]:
-    """What an edit is compared against: (is_active, date, time). Read it
-    before the route applies the edit."""
-    return (bool(item.is_active), item.event_date, item.event_time)
+def item_state(item: Event | Experience) -> tuple[Any, Any, Any, Any]:
+    """What an edit is compared against: (is_active, date, time, method).
+    Read it before the route applies the edit."""
+    return (
+        bool(item.is_active),
+        item.event_date,
+        item.event_time,
+        item.registration_method,
+    )
 
 
 def after_item_edit(
     db: Session,
     item: Event | Experience,
-    before: tuple[Any, Any, Any],
+    before: tuple[Any, Any, Any, Any],
     background_tasks: BackgroundTasks,
     test_cause: bool,
 ) -> int:
     """Call after the edit is applied, before the commit (MEH-3227 D1b):
     active → cancelled cancels the sign-ups; a new date or time on a live
-    item mails each registrant the new time. Anything else sends nothing."""
-    was_active, old_date, old_time = before
+    item mails each registrant the new time; MEH-3310: leaving «site_form»
+    tells each registrant her sign-up stands. Anything else sends nothing."""
+    was_active, old_date, old_time, old_method = before
     if was_active and not item.is_active:
         return cancel_item_signups(db, item, background_tasks, test_cause)
+    sent = 0
     moved = (item.event_date, item.event_time) != (old_date, old_time)
     # A past item moved forward: its registrants were for the old, past date.
     was_upcoming = bool(old_date and old_date >= israel_today())
     if item.is_active and moved and was_upcoming:
-        return notify_item_moved(db, item, background_tasks, test_cause)
-    return 0
+        sent += notify_item_moved(db, item, background_tasks, test_cause)
+    left_site_form = (
+        old_method == "site_form" and item.registration_method != "site_form"
+    )
+    # A move already mailed each registrant her kept sign-up and cancel link;
+    # one email per edit, not two.
+    if item.is_active and left_site_form and not sent:
+        sent += notify_item_moved(
+            db, item, background_tasks, test_cause, send_registrant_method_changed
+        )
+    return sent

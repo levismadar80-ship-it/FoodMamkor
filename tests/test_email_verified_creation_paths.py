@@ -28,6 +28,7 @@ import pytest
 from app.config import settings
 from app.models import User
 from app.routers import auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 
 from conftest import valid_producer_register_payload, valid_user_register_payload
 
@@ -51,6 +52,16 @@ def google_verified(monkeypatch):
             "picture": "https://example.com/g.jpg",
         },
     )
+    monkeypatch.setattr(
+        reg_router,
+        "_verify_google_token",
+        lambda token: {
+            "sub": GOOGLE_SUB,
+            "email": "google-new@example.com",
+            "name": "לקוחה גוגל",
+            "picture": "https://example.com/g.jpg",
+        },
+    )
 
 
 @pytest.fixture
@@ -58,6 +69,11 @@ def apple_verified(monkeypatch):
     monkeypatch.setattr(settings, "apple_client_id", "dummy-apple-id")
     monkeypatch.setattr(
         auth_router,
+        "_verify_apple_token",
+        lambda token: {"sub": APPLE_SUB, "email": "apple-new@example.com"},
+    )
+    monkeypatch.setattr(
+        reg_router,
         "_verify_apple_token",
         lambda token: {"sub": APPLE_SUB, "email": "apple-new@example.com"},
     )

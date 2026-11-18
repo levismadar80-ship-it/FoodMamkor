@@ -73,4 +73,17 @@ describe("OwnerAttentionCard (MEH-3108)", () => {
     expect(row).toHaveTextContent("הרשמה חדשה ליום פתוח");
     expect(within(row).getByRole("link")).toHaveAttribute("href", "/producer/dashboard/events");
   });
+
+  it("MEH-3316: orders waiting come first and link to the orders tab", () => {
+    renderCard({ ...none, unreplied_reviews: 1, pending_orders: 3 });
+    const rows = screen.getAllByRole("listitem");
+    expect(rows.map((r) => r.dataset.testid)).toEqual(["owner-attention-orders", "owner-attention-reviews"]);
+    expect(rows[0]).toHaveTextContent("3 הזמנות מחכות לאישור");
+    expect(within(rows[0]).getByRole("link", { name: "לאשר" })).toHaveAttribute("href", "/producer/dashboard/orders");
+  });
+
+  it("MEH-3316: one order waiting reads in the singular; none shows no row", () => {
+    renderCard({ ...none, pending_orders: 1 });
+    expect(screen.getByTestId("owner-attention-orders")).toHaveTextContent("הזמנה אחת מחכה לאישור");
+  });
 });

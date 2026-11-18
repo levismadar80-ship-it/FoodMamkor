@@ -66,6 +66,11 @@ class RegistrationCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     phone: str = Field(..., min_length=1, max_length=20)
     email: EmailStr = Field(..., max_length=200)
+    # MEH-3314: the visitor chose «רשימת המתנה» on a full item. Ignored when a
+    # spot is free by the time she submits — then she is simply registered.
+    waitlist: bool = False
+    # MEH-3315: «כמה אנשים» — the places this sign-up takes.
+    party_size: int = Field(1, ge=1, le=10)
 
     @field_validator("name")
     @classmethod
@@ -99,7 +104,9 @@ class RegistrationCreatedOut(BaseModel):
     """What the visitor gets back. Deliberately nothing she did not type, and
     not the cancel token — that goes to her inbox only."""
 
-    status: Literal["registered"] = "registered"
+    # MEH-3314: "waitlisted" only when she asked for the waitlist and the item
+    # was full — decided by capacity alone, so it reveals nothing about others.
+    status: Literal["registered", "waitlisted"] = "registered"
 
 
 class RegistrationOwnerOut(BaseModel):
@@ -112,8 +119,16 @@ class RegistrationOwnerOut(BaseModel):
     status: str
     created_at: datetime
     cancelled_at: datetime | None = None
+    party_size: int = 1  # MEH-3315
+    attendance: Literal["attended", "no_show"] | None = None  # MEH-3315
 
     model_config = {"from_attributes": True}
+
+
+class RegistrationAttendanceIn(BaseModel):
+    """MEH-3315: the owner marks whether the party came; null clears it."""
+
+    attendance: Literal["attended", "no_show"] | None
 
 
 class RegistrationCancelInfoOut(BaseModel):
@@ -289,10 +304,14 @@ class ExperienceValidateRequest(BaseModel):
     """Real-time form validation. No auth, no persistence."""
 
     title: str = Field(..., min_length=1, max_length=300)
-    description: str | None = None
-    category: str | None = None
-    city: str | None = None
-    location_type: str | None = None
+    # MEH-3271: this body goes to the moderation model from a public route, so
+    # every string is bounded. The caps are the create form's own
+    # (ExperienceCreate: description 5000, city 100); category and location_type
+    # are short labels and get 200.
+    description: str | None = Field(None, max_length=5000)
+    category: str | None = Field(None, max_length=200)
+    city: str | None = Field(None, max_length=100)
+    location_type: str | None = Field(None, max_length=200)
     price_per_person: Decimal | None = None
     max_participants: int | None = None
 

@@ -43,7 +43,13 @@ const ALLOWED = {
   "app/[locale]/messages/page.js": 1, // small aside label
   "app/[locale]/producers/[category]/[region]/page.js": 2, // chip-row labels
   "app/[locale]/register/producer/RegisterPreflight.jsx": 1, // form step
-  "app/[locale]/register/producer/RegisterProducerClient.jsx": 6, // form steps
+  // MEH-3294: the six form-step h2s moved with their frames, one per file.
+  "app/[locale]/register/producer/steps/AccountStep.jsx": 1,
+  "app/[locale]/register/producer/steps/CategoryStep.jsx": 1,
+  "app/[locale]/register/producer/steps/ConfirmInboxStep.jsx": 1,
+  "app/[locale]/register/producer/steps/ConfirmUpgradedStep.jsx": 1,
+  "app/[locale]/register/producer/steps/DetailsStep.jsx": 1,
+  "app/[locale]/register/producer/steps/StoryStep.jsx": 1,
   "app/[locale]/settings/page.jsx": 3, // account settings cards
   "components/AccountDeleteCard.jsx": 2, // the settings delete card, moved out of settings/page.jsx (MEH-3248): same 2 h2s, not new ones
   "components/CategoryRequestModal.jsx": 1, // dialog title
@@ -55,6 +61,7 @@ const ALLOWED = {
   "components/LoginPromptModal.jsx": 1, // dialog title
   "components/ProfileCompletenessCard.jsx": 1, // owner card title
   "components/ReportInfoModal.jsx": 1, // dialog title
+  "components/ReviewReportMenu.jsx": 1, // dialog title (MEH-3260)
   "components/producer/BusinessQrCard.jsx": 1, // owner card title
   "components/producer/OwnerAttentionCard.jsx": 1, // owner card title (MEH-3108, dashboard home)
   "components/producer/FirstMomentCard.jsx": 1, // owner card title (MEH-3200 part 2, dashboard home)

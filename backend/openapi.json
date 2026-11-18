@@ -170,6 +170,21 @@
             ],
             "title": "Body"
           },
+          "conflict": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "competitor"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflict"
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"
@@ -209,6 +224,43 @@
               }
             ],
             "title": "Producer Name"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
+          },
+          "reply_ai_moderation_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "APPROVED",
+                  "FLAGGED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply Ai Moderation Status"
+          },
+          "reply_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply At"
           },
           "source": {
             "default": "click",
@@ -737,6 +789,20 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
+      "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post",
+        "type": "object"
+      },
       "Body_upload_avatar_upload_avatar_post": {
         "properties": {
           "file": {
@@ -791,6 +857,185 @@
           "file"
         ],
         "title": "Body_upload_owner_photo_upload_owner_photo_post",
+        "type": "object"
+      },
+      "BusinessOrderOut": {
+        "properties": {
+          "age_declared": {
+            "title": "Age Declared",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "customer_phone": {
+            "title": "Customer Phone",
+            "type": "string"
+          },
+          "delivery_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Address"
+          },
+          "delivery_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery City"
+          },
+          "delivery_fee_agorot": {
+            "title": "Delivery Fee Agorot",
+            "type": "integer"
+          },
+          "estimated_total_agorot": {
+            "title": "Estimated Total Agorot",
+            "type": "integer"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "final_total_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Total Agorot"
+          },
+          "fulfilment": {
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "has_estimate": {
+            "title": "Has Estimate",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderLineOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slot_end": {
+            "format": "date-time",
+            "title": "Slot End",
+            "type": "string"
+          },
+          "slot_start": {
+            "format": "date-time",
+            "title": "Slot Start",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "producer_id",
+          "status",
+          "fulfilment",
+          "slot_start",
+          "slot_end",
+          "items",
+          "estimated_total_agorot",
+          "final_total_agorot",
+          "delivery_fee_agorot",
+          "delivery_city",
+          "customer_name",
+          "note",
+          "proposal",
+          "created_at",
+          "expires_at",
+          "customer_phone",
+          "delivery_address",
+          "age_declared",
+          "has_estimate"
+        ],
+        "title": "BusinessOrderOut",
+        "type": "object"
+      },
+      "BusinessOrdersOut": {
+        "properties": {
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/BusinessOrderOut"
+            },
+            "title": "Orders",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "orders",
+          "total"
+        ],
+        "title": "BusinessOrdersOut",
         "type": "object"
       },
       "BusinessSuggestionAck": {
@@ -914,6 +1159,213 @@
           "city"
         ],
         "title": "BusinessSuggestionCreate",
+        "type": "object"
+      },
+      "BuyerOrderOut": {
+        "properties": {
+          "can_cancel": {
+            "title": "Can Cancel",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "delivery_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery City"
+          },
+          "delivery_fee_agorot": {
+            "title": "Delivery Fee Agorot",
+            "type": "integer"
+          },
+          "estimated_total_agorot": {
+            "title": "Estimated Total Agorot",
+            "type": "integer"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "final_total_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Total Agorot"
+          },
+          "fulfilment": {
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderLineOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "phone_masked": {
+            "title": "Phone Masked",
+            "type": "string"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slot_end": {
+            "format": "date-time",
+            "title": "Slot End",
+            "type": "string"
+          },
+          "slot_start": {
+            "format": "date-time",
+            "title": "Slot Start",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "producer_id",
+          "status",
+          "fulfilment",
+          "slot_start",
+          "slot_end",
+          "items",
+          "estimated_total_agorot",
+          "final_total_agorot",
+          "delivery_fee_agorot",
+          "delivery_city",
+          "customer_name",
+          "note",
+          "proposal",
+          "created_at",
+          "expires_at",
+          "producer_name",
+          "phone_masked",
+          "pickup_code",
+          "can_cancel"
+        ],
+        "title": "BuyerOrderOut",
+        "type": "object"
+      },
+      "BuyerOrdersOut": {
+        "properties": {
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/BuyerOrderOut"
+            },
+            "title": "Orders",
+            "type": "array"
+          }
+        },
+        "required": [
+          "orders"
+        ],
+        "title": "BuyerOrdersOut",
+        "type": "object"
+      },
+      "BuyerRefIn": {
+        "additionalProperties": false,
+        "description": "How a buyer names her order: the token she got when she sent it, or —\nwhen she is logged in — the order id. In the body, never in the URL, so\nthe token does not land in logs, history or a Referer header.",
+        "properties": {
+          "order_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token"
+          }
+        },
+        "title": "BuyerRefIn",
         "type": "object"
       },
       "CategoryCreate": {
@@ -1211,6 +1663,25 @@
         "title": "CategoryRequestUpdate",
         "type": "object"
       },
+      "CeremonyOptions": {
+        "properties": {
+          "options": {
+            "additionalProperties": true,
+            "title": "Options",
+            "type": "object"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "options"
+        ],
+        "title": "CeremonyOptions",
+        "type": "object"
+      },
       "ChatMessage": {
         "properties": {
           "content": {
@@ -1282,6 +1753,26 @@
         "title": "CheckPasswordRequest",
         "type": "object"
       },
+      "ConfirmIn": {
+        "additionalProperties": false,
+        "properties": {
+          "final_total_agorot": {
+            "anyOf": [
+              {
+                "maximum": 10000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Total Agorot"
+          }
+        },
+        "title": "ConfirmIn",
+        "type": "object"
+      },
       "ContactClickIn": {
         "properties": {
           "method": {
@@ -1299,6 +1790,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -1458,6 +1950,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -1522,6 +2015,88 @@
           "token"
         ],
         "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
+      "DraftConsentPublishIn": {
+        "properties": {
+          "consent_confirmed": {
+            "title": "Consent Confirmed",
+            "type": "boolean"
+          },
+          "consent_note": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Consent Note",
+            "type": "string"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
+          }
+        },
+        "required": [
+          "consent_confirmed",
+          "consent_note"
+        ],
+        "title": "DraftConsentPublishIn",
+        "type": "object"
+      },
+      "DraftConsentPublishOut": {
+        "properties": {
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "status"
+        ],
+        "title": "DraftConsentPublishOut",
+        "type": "object"
+      },
+      "DraftPreviewLinkOut": {
+        "description": "MEH-3377. Its own shape, not ProducerClaimLinkOut: the two links grant\ndifferent things, and the claim-link inventory test pins that schema to the\none route that mints a claim link.",
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "DraftPreviewLinkOut",
         "type": "object"
       },
       "EventCreate": {
@@ -3188,6 +3763,7 @@
           "category": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -3199,6 +3775,7 @@
           "city": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -3210,6 +3787,7 @@
           "description": {
             "anyOf": [
               {
+                "maxLength": 5000,
                 "type": "string"
               },
               {
@@ -3221,6 +3799,7 @@
           "location_type": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -3330,6 +3909,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -4116,6 +4696,25 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HandedIn": {
+        "additionalProperties": false,
+        "properties": {
+          "pickup_code": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
+          }
+        },
+        "title": "HandedIn",
+        "type": "object"
+      },
       "KashrutApproveIn": {
         "properties": {
           "expires_on": {
@@ -4440,10 +5039,32 @@
         "title": "LicenseExpiryReminderRow",
         "type": "object"
       },
+      "LoginRecovery": {
+        "properties": {
+          "code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "ticket": {
+            "maxLength": 2048,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "code"
+        ],
+        "title": "LoginRecovery",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -4457,6 +5078,26 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "LoginVerify": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          },
+          "ticket": {
+            "maxLength": 2048,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "credential"
+        ],
+        "title": "LoginVerify",
         "type": "object"
       },
       "NameCheckOut": {
@@ -4519,10 +5160,26 @@
         "title": "NameMatch",
         "type": "object"
       },
+      "NewsletterConfirmIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "NewsletterConfirmIn",
+        "type": "object"
+      },
       "NewsletterIn": {
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -4545,6 +5202,612 @@
           "token"
         ],
         "title": "NewsletterUnsubscribeIn",
+        "type": "object"
+      },
+      "NoteIn": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "title": "NoteIn",
+        "type": "object"
+      },
+      "OrderCreateIn": {
+        "additionalProperties": false,
+        "properties": {
+          "age_declared": {
+            "default": false,
+            "title": "Age Declared",
+            "type": "boolean"
+          },
+          "code": {
+            "pattern": "^[0-9]{6}$",
+            "title": "Code",
+            "type": "string"
+          },
+          "customer_name": {
+            "maxLength": 120,
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "delivery_address": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Address"
+          },
+          "delivery_city": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery City"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "format": "uuid",
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderLineIn"
+            },
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "phone": {
+            "maxLength": 20,
+            "minLength": 9,
+            "title": "Phone",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "slot_start": {
+            "format": "date-time",
+            "title": "Slot Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "items",
+          "fulfilment",
+          "slot_start",
+          "customer_name",
+          "phone",
+          "code",
+          "idempotency_key"
+        ],
+        "title": "OrderCreateIn",
+        "type": "object"
+      },
+      "OrderCreatedOut": {
+        "properties": {
+          "can_cancel": {
+            "title": "Can Cancel",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "delivery_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery City"
+          },
+          "delivery_fee_agorot": {
+            "title": "Delivery Fee Agorot",
+            "type": "integer"
+          },
+          "estimated_total_agorot": {
+            "title": "Estimated Total Agorot",
+            "type": "integer"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "final_total_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Total Agorot"
+          },
+          "fulfilment": {
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderLineOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "phone_masked": {
+            "title": "Phone Masked",
+            "type": "string"
+          },
+          "pickup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Code"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slot_end": {
+            "format": "date-time",
+            "title": "Slot End",
+            "type": "string"
+          },
+          "slot_start": {
+            "format": "date-time",
+            "title": "Slot Start",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "status_token": {
+            "title": "Status Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "producer_id",
+          "status",
+          "fulfilment",
+          "slot_start",
+          "slot_end",
+          "items",
+          "estimated_total_agorot",
+          "final_total_agorot",
+          "delivery_fee_agorot",
+          "delivery_city",
+          "customer_name",
+          "note",
+          "proposal",
+          "created_at",
+          "expires_at",
+          "producer_name",
+          "phone_masked",
+          "pickup_code",
+          "can_cancel",
+          "status_token"
+        ],
+        "title": "OrderCreatedOut",
+        "type": "object"
+      },
+      "OrderLineIn": {
+        "additionalProperties": false,
+        "properties": {
+          "product_id": {
+            "format": "uuid",
+            "title": "Product Id",
+            "type": "string"
+          },
+          "qty": {
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "product_id",
+          "qty"
+        ],
+        "title": "OrderLineIn",
+        "type": "object"
+      },
+      "OrderLineOut": {
+        "properties": {
+          "contains_alcohol": {
+            "title": "Contains Alcohol",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_is_estimate": {
+            "title": "Price Is Estimate",
+            "type": "boolean"
+          },
+          "price_unit": {
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "unit_price_agorot": {
+            "title": "Unit Price Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "qty",
+          "unit_price_agorot",
+          "price_unit",
+          "price_is_estimate",
+          "contains_alcohol"
+        ],
+        "title": "OrderLineOut",
+        "type": "object"
+      },
+      "OrderMenuOut": {
+        "properties": {
+          "cancel_cutoff_hours": {
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "lead_time_hours": {
+            "title": "Lead Time Hours",
+            "type": "integer"
+          },
+          "min_order_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Agorot"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/OrderMenuProductOut"
+            },
+            "title": "Products",
+            "type": "array"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/OrderMenuSlotOut"
+            },
+            "title": "Slots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "producer_id",
+          "min_order_agorot",
+          "cancel_cutoff_hours",
+          "lead_time_hours",
+          "products",
+          "slots"
+        ],
+        "title": "OrderMenuOut",
+        "type": "object"
+      },
+      "OrderMenuProductOut": {
+        "properties": {
+          "contains_alcohol": {
+            "title": "Contains Alcohol",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "in_stock": {
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_is_estimate": {
+            "title": "Price Is Estimate",
+            "type": "boolean"
+          },
+          "price_max_agorot": {
+            "title": "Price Max Agorot",
+            "type": "integer"
+          },
+          "price_min_agorot": {
+            "title": "Price Min Agorot",
+            "type": "integer"
+          },
+          "price_unit": {
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "image_url",
+          "price_min_agorot",
+          "price_max_agorot",
+          "price_unit",
+          "price_is_estimate",
+          "in_stock",
+          "contains_alcohol"
+        ],
+        "title": "OrderMenuProductOut",
+        "type": "object"
+      },
+      "OrderMenuSlotOut": {
+        "properties": {
+          "alcohol_ok": {
+            "title": "Alcohol Ok",
+            "type": "boolean"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "fulfilment",
+          "alcohol_ok"
+        ],
+        "title": "OrderMenuSlotOut",
+        "type": "object"
+      },
+      "OrderWindowIn": {
+        "additionalProperties": false,
+        "properties": {
+          "end_time": {
+            "format": "time",
+            "title": "End Time",
+            "type": "string"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "start_time": {
+            "format": "time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "weekday": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Weekday",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time",
+          "fulfilment"
+        ],
+        "title": "OrderWindowIn",
+        "type": "object"
+      },
+      "OrderWindowOut": {
+        "properties": {
+          "end_time": {
+            "format": "time",
+            "title": "End Time",
+            "type": "string"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "start_time": {
+            "format": "time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "weekday": {
+            "title": "Weekday",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time",
+          "fulfilment"
+        ],
+        "title": "OrderWindowOut",
+        "type": "object"
+      },
+      "OrderWindowsIn": {
+        "additionalProperties": false,
+        "description": "The whole week. PUT replaces every window of the business.",
+        "properties": {
+          "windows": {
+            "items": {
+              "$ref": "#/components/schemas/OrderWindowIn"
+            },
+            "maxItems": 28,
+            "title": "Windows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "windows"
+        ],
+        "title": "OrderWindowsIn",
+        "type": "object"
+      },
+      "OrderWindowsOut": {
+        "properties": {
+          "windows": {
+            "items": {
+              "$ref": "#/components/schemas/OrderWindowOut"
+            },
+            "title": "Windows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "windows"
+        ],
+        "title": "OrderWindowsOut",
         "type": "object"
       },
       "OrganizerPublicOut": {
@@ -5286,6 +6549,27 @@
         "title": "OutreachPrefillResponse",
         "type": "object"
       },
+      "OwnerDetachIn": {
+        "properties": {
+          "confirm_name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Confirm Name",
+            "type": "string"
+          },
+          "expected_owner_user_id": {
+            "format": "uuid",
+            "title": "Expected Owner User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm_name",
+          "expected_owner_user_id"
+        ],
+        "title": "OwnerDetachIn",
+        "type": "object"
+      },
       "OwnerInviteAccept": {
         "properties": {
           "code": {
@@ -5300,6 +6584,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -5354,6 +6639,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -5423,6 +6709,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -5538,6 +6825,147 @@
         "title": "OwnerInvitePublicOut",
         "type": "object"
       },
+      "PageFreshnessConfirmIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "PageFreshnessConfirmIn",
+        "type": "object"
+      },
+      "PageFreshnessConfirmOut": {
+        "properties": {
+          "business_name": {
+            "title": "Business Name",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "format": "date-time",
+            "title": "Confirmed At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "business_name",
+          "confirmed_at"
+        ],
+        "title": "PageFreshnessConfirmOut",
+        "type": "object"
+      },
+      "PasskeyList": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "has_password": {
+            "title": "Has Password",
+            "type": "boolean"
+          },
+          "passkeys": {
+            "items": {
+              "$ref": "#/components/schemas/PasskeyOut"
+            },
+            "title": "Passkeys",
+            "type": "array"
+          },
+          "recovery_codes_left": {
+            "title": "Recovery Codes Left",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "passkeys",
+          "recovery_codes_left",
+          "has_password"
+        ],
+        "title": "PasskeyList",
+        "type": "object"
+      },
+      "PasskeyOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "synced": {
+            "title": "Synced",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "synced",
+          "created_at",
+          "last_used_at"
+        ],
+        "title": "PasskeyOut",
+        "type": "object"
+      },
+      "PasskeyRequired": {
+        "description": "Returned by /auth/login, /auth/google and /auth/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n/auth/passkey/login/verify (or /login/recovery) with this ticket.",
+        "properties": {
+          "options": {
+            "additionalProperties": true,
+            "title": "Options",
+            "type": "object"
+          },
+          "passkey_required": {
+            "const": true,
+            "default": true,
+            "title": "Passkey Required",
+            "type": "boolean"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "options"
+        ],
+        "title": "PasskeyRequired",
+        "type": "object"
+      },
       "PasswordChange": {
         "properties": {
           "current_password": {
@@ -5558,6 +6986,28 @@
           "new_password"
         ],
         "title": "PasswordChange",
+        "type": "object"
+      },
+      "PhoneCodeIn": {
+        "additionalProperties": false,
+        "properties": {
+          "phone": {
+            "maxLength": 20,
+            "minLength": 9,
+            "title": "Phone",
+            "type": "string"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "phone"
+        ],
+        "title": "PhoneCodeIn",
         "type": "object"
       },
       "ProducerAdminCreate": {
@@ -5602,6 +7052,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -5770,6 +7221,17 @@
             "title": "Organic Certified",
             "type": "boolean"
           },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
+          },
           "phone": {
             "anyOf": [
               {
@@ -5813,6 +7275,29 @@
               }
             ],
             "title": "Producer License Number"
+          },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
           },
           "short_description": {
             "anyOf": [
@@ -5904,6 +7389,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -5961,6 +7458,17 @@
               }
             ],
             "title": "Claim Link Sent At"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
           },
           "contact_email": {
             "anyOf": [
@@ -6348,6 +7856,18 @@
             "default": "unknown",
             "title": "Lactose Free Facility",
             "type": "string"
+          },
+          "last_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Confirmed At"
           },
           "lat": {
             "anyOf": [
@@ -6752,6 +8272,28 @@
             ],
             "title": "Risk Score"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "sells_on_site": {
             "default": false,
             "title": "Sells On Site",
@@ -7031,6 +8573,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -7548,6 +9091,29 @@
             ],
             "title": "Reservist Owned"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -8007,6 +9573,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -8556,6 +10134,28 @@
             "title": "Reviews Count",
             "type": "integer"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "sells_on_site": {
             "default": false,
             "title": "Sells On Site",
@@ -8858,6 +10458,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -10208,6 +11820,12 @@
             "title": "Enabled",
             "type": "boolean"
           },
+          "lead_time_hours": {
+            "maximum": 168.0,
+            "minimum": 0.0,
+            "title": "Lead Time Hours",
+            "type": "integer"
+          },
           "min_order_agorot": {
             "anyOf": [
               {
@@ -10224,6 +11842,10 @@
           "shabbat_observant": {
             "title": "Shabbat Observant",
             "type": "boolean"
+          },
+          "slot_minutes": {
+            "title": "Slot Minutes",
+            "type": "integer"
           }
         },
         "required": [
@@ -10232,7 +11854,9 @@
           "auto_confirm_slot_cap",
           "cancel_cutoff_hours",
           "shabbat_observant",
-          "min_order_agorot"
+          "min_order_agorot",
+          "slot_minutes",
+          "lead_time_hours"
         ],
         "title": "ProducerOrderSettingsIn",
         "type": "object"
@@ -10266,6 +11890,10 @@
             "title": "Enabled",
             "type": "boolean"
           },
+          "lead_time_hours": {
+            "title": "Lead Time Hours",
+            "type": "integer"
+          },
           "min_order_agorot": {
             "anyOf": [
               {
@@ -10285,6 +11913,10 @@
           "shabbat_observant": {
             "title": "Shabbat Observant",
             "type": "boolean"
+          },
+          "slot_minutes": {
+            "title": "Slot Minutes",
+            "type": "integer"
           }
         },
         "required": [
@@ -10295,6 +11927,8 @@
           "cancel_cutoff_hours",
           "shabbat_observant",
           "min_order_agorot",
+          "slot_minutes",
+          "lead_time_hours",
           "alcohol_licensed"
         ],
         "title": "ProducerOrderSettingsOut",
@@ -10327,6 +11961,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -10961,6 +12607,28 @@
             "title": "Reviews Count",
             "type": "integer"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "sells_on_site": {
             "default": false,
             "title": "Sells On Site",
@@ -11163,6 +12831,18 @@
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "name": {
             "title": "Name",
@@ -11602,6 +13282,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -11651,6 +13332,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -12019,6 +13701,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -12524,6 +14207,29 @@
             ],
             "title": "Reservist Owned"
           },
+          "secondary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone"
+          },
+          "secondary_phone_label": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Phone Label"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -12803,6 +14509,98 @@
         "title": "ProductCreate",
         "type": "object"
       },
+      "ProductDraftApproveRequest": {
+        "properties": {
+          "product_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Ids"
+          }
+        },
+        "title": "ProductDraftApproveRequest",
+        "type": "object"
+      },
+      "ProductDraftApproveResult": {
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "approved"
+        ],
+        "title": "ProductDraftApproveResult",
+        "type": "object"
+      },
+      "ProductDraftOut": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_min": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Min"
+          },
+          "price_unit": {
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "source_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Image Url"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price_unit"
+        ],
+        "title": "ProductDraftOut",
+        "type": "object"
+      },
       "ProductGroupAssignIn": {
         "properties": {
           "group_id": {
@@ -12936,6 +14734,161 @@
         "title": "ProductHit",
         "type": "object"
       },
+      "ProductImportInvalidRow": {
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "name",
+          "reason"
+        ],
+        "title": "ProductImportInvalidRow",
+        "type": "object"
+      },
+      "ProductImportRequest": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ProductImportRow"
+            },
+            "maxItems": 100,
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "ProductImportRequest",
+        "type": "object"
+      },
+      "ProductImportResult": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          },
+          "invalid": {
+            "items": {
+              "$ref": "#/components/schemas/ProductImportInvalidRow"
+            },
+            "title": "Invalid",
+            "type": "array"
+          },
+          "skipped_duplicates": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Skipped Duplicates",
+            "type": "array"
+          },
+          "unknown_units": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknown Units",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created",
+          "skipped_duplicates",
+          "invalid"
+        ],
+        "title": "ProductImportResult",
+        "type": "object"
+      },
+      "ProductImportRow": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "source_image_url": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Image Url"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "title": "ProductImportRow",
+        "type": "object"
+      },
       "ProductOrderIn": {
         "description": "Every product of the business, in the order the owner wants.",
         "properties": {
@@ -12953,6 +14906,80 @@
           "product_ids"
         ],
         "title": "ProductOrderIn",
+        "type": "object"
+      },
+      "ProductOrderingIn": {
+        "additionalProperties": false,
+        "description": "The four ordering fields of one product. All required: the screen\nsaves the whole row.",
+        "properties": {
+          "contains_alcohol": {
+            "title": "Contains Alcohol",
+            "type": "boolean"
+          },
+          "in_stock": {
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "is_orderable": {
+            "title": "Is Orderable",
+            "type": "boolean"
+          },
+          "price_unit": {
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "is_orderable",
+          "in_stock",
+          "price_unit",
+          "contains_alcohol"
+        ],
+        "title": "ProductOrderingIn",
+        "type": "object"
+      },
+      "ProductOrderingOut": {
+        "properties": {
+          "contains_alcohol": {
+            "title": "Contains Alcohol",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_stock": {
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "is_orderable": {
+            "title": "Is Orderable",
+            "type": "boolean"
+          },
+          "price_unit": {
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "is_orderable",
+          "in_stock",
+          "price_unit",
+          "contains_alcohol"
+        ],
+        "title": "ProductOrderingOut",
         "type": "object"
       },
       "ProductOut": {
@@ -13323,6 +15350,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -13360,6 +15388,120 @@
         "title": "ProfileUpdate",
         "type": "object"
       },
+      "ProposalOut": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "slot_end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot End"
+          },
+          "slot_start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot Start"
+          },
+          "total_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Agorot"
+          }
+        },
+        "required": [
+          "slot_start",
+          "slot_end",
+          "total_agorot",
+          "note"
+        ],
+        "title": "ProposalOut",
+        "type": "object"
+      },
+      "ProposeChangeIn": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "slot_start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot Start"
+          },
+          "total_agorot": {
+            "anyOf": [
+              {
+                "maximum": 10000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Agorot"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "ProposeChangeIn",
+        "type": "object"
+      },
+      "RecoveryCodes": {
+        "properties": {
+          "recovery_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recovery Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "recovery_codes"
+        ],
+        "title": "RecoveryCodes",
+        "type": "object"
+      },
       "RegisterAck": {
         "properties": {
           "detail": {
@@ -13371,6 +15513,90 @@
           "detail"
         ],
         "title": "RegisterAck",
+        "type": "object"
+      },
+      "RegisterVerify": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "ticket": {
+            "maxLength": 2048,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "credential"
+        ],
+        "title": "RegisterVerify",
+        "type": "object"
+      },
+      "Registered": {
+        "properties": {
+          "passkey": {
+            "$ref": "#/components/schemas/PasskeyOut"
+          },
+          "recovery_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Codes"
+          }
+        },
+        "required": [
+          "passkey",
+          "recovery_codes"
+        ],
+        "title": "Registered",
+        "type": "object"
+      },
+      "RegistrationAttendanceIn": {
+        "description": "MEH-3315: the owner marks whether the party came; null clears it.",
+        "properties": {
+          "attendance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "attended",
+                  "no_show"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attendance"
+          }
+        },
+        "required": [
+          "attendance"
+        ],
+        "title": "RegistrationAttendanceIn",
         "type": "object"
       },
       "RegistrationCancelInfoOut": {
@@ -13428,11 +15654,23 @@
             "title": "Name",
             "type": "string"
           },
+          "party_size": {
+            "default": 1,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Party Size",
+            "type": "integer"
+          },
           "phone": {
             "maxLength": 20,
             "minLength": 1,
             "title": "Phone",
             "type": "string"
+          },
+          "waitlist": {
+            "default": false,
+            "title": "Waitlist",
+            "type": "boolean"
           }
         },
         "required": [
@@ -13447,8 +15685,11 @@
         "description": "What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.",
         "properties": {
           "status": {
-            "const": "registered",
             "default": "registered",
+            "enum": [
+              "registered",
+              "waitlisted"
+            ],
             "title": "Status",
             "type": "string"
           }
@@ -13459,6 +15700,21 @@
       "RegistrationOwnerOut": {
         "description": "One row of the owner's list (owner / admin only).",
         "properties": {
+          "attendance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "attended",
+                  "no_show"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attendance"
+          },
           "cancelled_at": {
             "anyOf": [
               {
@@ -13488,6 +15744,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "party_size": {
+            "default": 1,
+            "title": "Party Size",
+            "type": "integer"
           },
           "phone": {
             "title": "Phone",
@@ -14919,6 +17180,64 @@
         "title": "ReviewReplyUpdate",
         "type": "object"
       },
+      "ReviewReportCreate": {
+        "description": "MEH-3260: «דיווח על ביקורת» — emailed to the admin, no DB row, no\nautomatic action. `details` is optional except for reason \"other\".",
+        "properties": {
+          "details": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "producer_slug": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Producer Slug",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "fake",
+              "abusive",
+              "personal",
+              "irrelevant",
+              "other"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "reporter_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reporter Email"
+          },
+          "review_id": {
+            "format": "uuid",
+            "title": "Review Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_slug",
+          "review_id",
+          "reason"
+        ],
+        "title": "ReviewReportCreate",
+        "type": "object"
+      },
       "ReviewsPage": {
         "properties": {
           "page": {
@@ -15597,6 +17916,17 @@
             "title": "Cities",
             "type": "array"
           },
+          "corrected_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Query"
+          },
           "producers": {
             "default": [],
             "items": {
@@ -15699,6 +18029,61 @@
           "categories_count"
         ],
         "title": "StatsOut",
+        "type": "object"
+      },
+      "StepUp": {
+        "description": "Proof that the person at the keyboard is the account holder, asked\nbefore a passkey is added or removed. Which proof counts depends on the\naccount: one of its passkeys if it has any (ticket + credential from\n/auth/passkey/step-up/options), or one of its recovery codes; otherwise its\npassword; an account with no password and no passkey has only its session.",
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "recovery_code": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Code"
+          },
+          "ticket": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket"
+          }
+        },
+        "title": "StepUp",
         "type": "object"
       },
       "StoryCardUploadRequest": {
@@ -15905,6 +18290,11 @@
             ],
             "title": "Phone"
           },
+          "phone_verified": {
+            "default": false,
+            "title": "Phone Verified",
+            "type": "boolean"
+          },
           "producer_id": {
             "anyOf": [
               {
@@ -15969,6 +18359,11 @@
           "role": {
             "title": "Role",
             "type": "string"
+          },
+          "whatsapp_ready": {
+            "default": false,
+            "title": "Whatsapp Ready",
+            "type": "boolean"
           }
         },
         "required": [
@@ -15980,11 +18375,26 @@
         "title": "UserOut",
         "type": "object"
       },
+      "UserPhoneOtpConfirmIn": {
+        "properties": {
+          "code": {
+            "pattern": "^[0-9]{6}$",
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "UserPhoneOtpConfirmIn",
+        "type": "object"
+      },
       "UserRegister": {
         "properties": {
           "city": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -15995,6 +18405,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -16207,6 +18618,89 @@
         ]
       }
     },
+    "/admin/audit-log": {
+      "get": {
+        "description": "MEH-3306: the admin audit log, newest first. `before` pages back by\n`created_at`; with `before_id` too (the last row's id) it is a keyset\ncursor on (created_at, id), so two rows sharing one created_at at a page\nboundary are not skipped. The stored IP is not returned: it is kept for an\ninvestigation, not for a list. `actor_email` is looked up in one query\nfor the page, and is None when that account no longer exists (actor_id\nis not a FK, on purpose — models/admin_ops.py).",
+        "operationId": "list_audit_log_admin_audit_log_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Audit Log",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
     "/admin/billing/overview": {
       "get": {
         "operationId": "admin_billing_overview_admin_billing_overview_get",
@@ -16383,7 +18877,7 @@
         ]
       },
       "put": {
-        "description": "Rename / re-emoji a category. Two guards, both on the rename path only.\n\nMEH-1571: `LICENSE_REQUIRED_CATEGORIES` (app/constants.py) pins a משרד\nהבריאות licensing requirement to the category NAME, and\n`license_validation.categories_require_license` resolves ids -> names ->\nintersection at request time. Renaming a licensed row here therefore\ndropped it out of the regulatory set silently — no error, no log, and the\nnext producer in that category was no longer asked for a license number.\nThe rename is refused; re-keying the taxonomy belongs in a reviewed,\nreversible Alembic revision (the MEH-927 pattern), which writes raw SQL and\ndoes not pass through this endpoint.\n\nThe second guard is the `categories_name_key` collision: this handler wrote\nthe new name with no pre-check, so renaming onto a name another row already\nholds surfaced as an unhandled IntegrityError -> 500. `create_category`\nabove has always pre-checked; this mirrors it.",
+        "description": "Rename / re-emoji a category. Two guards, both on the rename path only.\n\nMEH-1571: the licensing requirement used to be pinned to the category NAME\n(`LICENSE_REQUIRED_CATEGORIES`), so renaming a licensed row dropped it out\nof the regulatory set silently. Since MEH-3255 the row's own\n`requires_license` column decides and a rename no longer changes the\nanswer, but the guard stays: a licensed row keeps its name so an admin\ncannot relabel a regulated category into something it is not.\nThe rename is refused; re-keying the taxonomy belongs in a reviewed,\nreversible Alembic revision (the MEH-927 pattern), which writes raw SQL and\ndoes not pass through this endpoint.\n\nThe second guard is the `categories_name_key` collision: this handler wrote\nthe new name with no pre-check, so renaming onto a name another row already\nholds surfaced as an unhandled IntegrityError -> 500. `create_category`\nabove has always pre-checked; this mirrors it.",
         "operationId": "update_category_admin_categories__category_id__put",
         "parameters": [
           {
@@ -17913,6 +20407,16 @@
               "title": "Recommended Review Due",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "freshness_stale",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Freshness Stale",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -18321,6 +20825,62 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/detach-owner": {
+      "post": {
+        "operationId": "detach_owner_admin_producers__producer_id__detach_owner_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerDetachIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Detach Owner",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/google-place-candidates": {
       "get": {
         "description": "Admin-only: up to 3 Google Place candidates for a producer, or 204.\n\nBuilds the query from the producer's own name + city — or from `q` when the\nadmin typed one — and runs Places Text Search. 204 (fail-quiet) when: no server key, no results, or any Google API\nerror. 403 for non-admins (require_admin). 404 for an unknown producer.\nNO auto-select — the admin picks one in ProducerForm; the response is\ndisplay-only and nothing here is stored (ToS §3.2.3(b)).",
@@ -18498,6 +21058,231 @@
         "summary": "Grant Verified",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/locations": {
+      "get": {
+        "operationId": "admin_list_locations_admin_producers__producer_id__locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                  },
+                  "title": "Response Admin List Locations Admin Producers  Producer Id  Locations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Locations",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_location_admin_producers__producer_id__locations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerLocationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Create Location",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/locations/{location_id}": {
+      "delete": {
+        "operationId": "admin_delete_location_admin_producers__producer_id__locations__location_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete Location",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_location_admin_producers__producer_id__locations__location_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerLocationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Update Location",
+        "tags": [
+          "admin-producer-locations"
         ]
       }
     },
@@ -18713,6 +21498,275 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/preview-link": {
+      "post": {
+        "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
+        "operationId": "create_preview_link_admin_producers__producer_id__preview_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Preview Link",
+        "tags": [
+          "producer-draft-preview"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-drafts": {
+      "get": {
+        "operationId": "admin_list_product_drafts_admin_producers__producer_id__product_drafts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductDraftOut"
+                  },
+                  "title": "Response Admin List Product Drafts Admin Producers  Producer Id  Product Drafts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Product Drafts",
+        "tags": [
+          "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-drafts/approve": {
+      "post": {
+        "description": "Publish drafts of THIS business: the listed ids, or all of them.\n\nAn id that is not a draft of this business (another business's product,\nan already-published one, a typo) is simply not matched — the filter is on\nproducer_id AND is_draft, so nothing outside the business can be touched.",
+        "operationId": "admin_approve_product_drafts_admin_producers__producer_id__product_drafts_approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductDraftApproveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDraftApproveResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Approve Product Drafts",
+        "tags": [
+          "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-drafts/{product_id}": {
+      "delete": {
+        "operationId": "admin_delete_product_draft_admin_producers__producer_id__product_drafts__product_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete Product Draft",
+        "tags": [
+          "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-import": {
+      "post": {
+        "operationId": "admin_import_products_admin_producers__producer_id__product_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Import Products",
+        "tags": [
+          "admin-product-import"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/products": {
       "post": {
         "operationId": "admin_create_draft_product_admin_producers__producer_id__products_post",
@@ -18819,6 +21873,74 @@
         "summary": "Admin Delete Draft Product",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/publish-with-consent": {
+      "post": {
+        "operationId": "publish_draft_with_consent_admin_producers__producer_id__publish_with_consent_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "allow_without_license",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Allow Without License",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftConsentPublishIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftConsentPublishOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Publish Draft With Consent",
+        "tags": [
+          "producer-draft-preview"
         ]
       }
     },
@@ -19809,6 +22931,53 @@
         ]
       }
     },
+    "/admin/reviews/{review_id}/clear-reply": {
+      "put": {
+        "description": "MEH-3259: remove the business owner's reply to a review. The review\nitself is untouched; the business can write a new reply, which is checked\nby the AI again. No notification to the business in v1 (known gap).",
+        "operationId": "clear_review_reply_admin_reviews__review_id__clear_reply_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Review Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Clear Review Reply",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
     "/admin/reviews/{review_id}/hide": {
       "put": {
         "description": "Set is_hidden=True on a review. Recomputes producer aggregates.\n\nMEH-2381: `seen` is the edited_after_hidden_at the admin's page showed\n(\"keep hidden\"). The row is read FOR UPDATE, so an author edit that\ncommits first is what this compares against; a mismatch is 409 and the\nmarker stays.",
@@ -20422,6 +23591,37 @@
         ]
       }
     },
+    "/admin/whatsapp/blocked": {
+      "get": {
+        "description": "Return the newest dropped-outside-production rows, last 7 days.",
+        "operationId": "list_blocked_outbound_admin_whatsapp_blocked_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OutboundMessageAdminOut"
+                  },
+                  "title": "Response List Blocked Outbound Admin Whatsapp Blocked Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Blocked Outbound",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/whatsapp/failed": {
       "get": {
         "description": "Return undelivered outbound WhatsApp rows from the last 7 days.\n\nFilter: `undelivered_predicate` — status IN ('failed', 'window_expired'),\nor `accepted` for more than a day with no delivery receipt (MEH-2122\nChunk E), AND created_at within the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest\nfailures show up at the top of the admin table.\n\nNo pagination — the per-day failure volume is small (single-digit\ntypical, two-digit during incidents) and the 7-day window bounds the\nworst case. If the row count ever materially exceeds the page, add\npagination here; until then, simpler is better.",
@@ -20472,7 +23672,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppleAuthResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AppleAuthResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasskeyRequired"
+                    }
+                  ],
+                  "title": "Response Apple Auth Auth Apple Post"
                 }
               }
             },
@@ -20600,7 +23808,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GoogleAuthResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/GoogleAuthResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasskeyRequired"
+                    }
+                  ],
+                  "title": "Response Google Auth Auth Google Post"
                 }
               }
             },
@@ -20647,7 +23863,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Token"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Token"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasskeyRequired"
+                    }
+                  ],
+                  "title": "Response Login Auth Login Post"
                 }
               }
             },
@@ -20995,6 +24219,329 @@
           }
         },
         "summary": "Get Owner Invite",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey": {
+      "get": {
+        "operationId": "list_passkeys_auth_passkey_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Passkeys",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/login/recovery": {
+      "post": {
+        "operationId": "login_recovery_auth_passkey_login_recovery_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRecovery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login Recovery",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/login/verify": {
+      "post": {
+        "operationId": "login_verify_auth_passkey_login_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login Verify",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/recovery-codes": {
+      "post": {
+        "operationId": "regenerate_codes_auth_passkey_recovery_codes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Regenerate Codes",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/register/options": {
+      "post": {
+        "operationId": "register_options_auth_passkey_register_options_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CeremonyOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Register Options",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/register/verify": {
+      "post": {
+        "operationId": "register_verify_auth_passkey_register_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Registered"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Register Verify",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/step-up/options": {
+      "post": {
+        "operationId": "step_up_options_auth_passkey_step_up_options_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CeremonyOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Step Up Options",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/passkey/{passkey_id}/delete": {
+      "post": {
+        "operationId": "delete_passkey_auth_passkey__passkey_id__delete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Passkey",
         "tags": [
           "auth"
         ]
@@ -23094,6 +26641,7 @@
     },
     "/newsletter": {
       "post": {
+        "description": "MEH-3300 (D13): double opt-in. Nothing is written here.\n\nA new address gets a confirmation email; the row, the Resend sync and the\nwelcome email wait for POST /newsletter/confirm. An address already on the\nlist gets no email (grandfathered) and the same answer, so the response\nnever reveals who is subscribed.",
         "operationId": "subscribe_newsletter_newsletter_post",
         "requestBody": {
           "content": {
@@ -23126,6 +26674,46 @@
           }
         },
         "summary": "Subscribe Newsletter",
+        "tags": [
+          "marketing"
+        ]
+      }
+    },
+    "/newsletter/confirm": {
+      "post": {
+        "description": "MEH-3300: the confirm page POSTs the token from a button click (a GET\nfrom a mail scanner confirms nothing). Idempotent: a second click is 200\nand sends no second welcome.",
+        "operationId": "confirm_newsletter_newsletter_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsletterConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Newsletter",
         "tags": [
           "marketing"
         ]
@@ -23237,6 +26825,47 @@
         "summary": "Get Organizer",
         "tags": [
           "organizers"
+        ]
+      }
+    },
+    "/page-freshness/confirm": {
+      "post": {
+        "operationId": "confirm_page_freshness_page_freshness_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFreshnessConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFreshnessConfirmOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Page Freshness",
+        "tags": [
+          "page-freshness"
         ]
       }
     },
@@ -23410,6 +27039,49 @@
         "summary": "Producer Name Check",
         "tags": [
           "producers"
+        ]
+      }
+    },
+    "/producer-preview/{token}": {
+      "get": {
+        "description": "The draft's page payload, for whoever holds the link.\n\nThe same `ProducerDetailOut` the public page serves once the business is\nlive, so the holder sees nothing the page will not show everyone after she\nsays yes. Refused with one 404 unless the row is still an ownerless draft.",
+        "operationId": "read_draft_preview_producer_preview__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Draft Preview",
+        "tags": [
+          "producer-draft-preview"
         ]
       }
     },
@@ -24198,7 +27870,7 @@
     },
     "/producers/me/analytics": {
       "get": {
-        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
+        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - share_visits (MEH-3331): visits through a link the owner shared, same shape\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
         "operationId": "producer_analytics_producers_me_analytics_get",
         "responses": {
           "200": {
@@ -24216,6 +27888,31 @@
           }
         ],
         "summary": "Producer Analytics",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/availability-confirm": {
+      "post": {
+        "description": "MEH-2697 «עדיין נכון»: the owner says her availability is still true.\n\nChanges nothing but the stamp — the state and the vacation date stay.\nREUSES: set_availability_state above — same owner gate and rate limit.",
+        "operationId": "confirm_availability_producers_me_availability_confirm_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm Availability",
         "tags": [
           "producer-management"
         ]
@@ -24820,6 +28517,77 @@
         ]
       }
     },
+    "/producers/me/order-windows": {
+      "get": {
+        "operationId": "get_my_order_windows_producers_me_order_windows_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderWindowsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get My Order Windows",
+        "tags": [
+          "product-orders"
+        ]
+      },
+      "put": {
+        "description": "Replace the business's whole week. The list is capped by the schema,\nso the table cannot grow past 28 rows a business (MEH-3022).",
+        "operationId": "put_my_order_windows_producers_me_order_windows_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderWindowsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderWindowsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put My Order Windows",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/producers/me/product-groups": {
       "get": {
         "operationId": "list_my_product_groups_producers_me_product_groups_get",
@@ -24947,6 +28715,492 @@
         "summary": "Set My Product Order",
         "tags": [
           "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-orders": {
+      "get": {
+        "description": "The business's orders, the soonest slot first.",
+        "operationId": "list_business_orders_producers_me_product_orders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "pending",
+                    "confirmed",
+                    "change_proposed",
+                    "ready",
+                    "handed",
+                    "declined",
+                    "cancelled",
+                    "expired",
+                    "no_show"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrdersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Business Orders",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/cancel": {
+      "post": {
+        "operationId": "cancel_order_producers_me_product_orders__order_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Order",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/confirm": {
+      "post": {
+        "operationId": "confirm_order_producers_me_product_orders__order_id__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm Order",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/decline": {
+      "post": {
+        "operationId": "decline_order_producers_me_product_orders__order_id__decline_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Decline Order",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/handed": {
+      "post": {
+        "operationId": "hand_order_over_producers_me_product_orders__order_id__handed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Hand Order Over",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/no-show": {
+      "post": {
+        "operationId": "report_no_show_producers_me_product_orders__order_id__no_show_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Report No Show",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/propose-change": {
+      "post": {
+        "operationId": "propose_order_change_producers_me_product_orders__order_id__propose_change_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeChangeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Propose Order Change",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/{order_id}/ready": {
+      "post": {
+        "operationId": "ready_order_producers_me_product_orders__order_id__ready_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Ready Order",
+        "tags": [
+          "product-orders"
         ]
       }
     },
@@ -25176,6 +29430,65 @@
         "summary": "Set My Product Group",
         "tags": [
           "producer-management"
+        ]
+      }
+    },
+    "/producers/me/products/{product_id}/ordering": {
+      "put": {
+        "description": "Set one product's ordering fields. The lookup is scoped to the caller's\nown business, so another business's product is a 404, not a 403.",
+        "operationId": "put_product_ordering_producers_me_products__product_id__ordering_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOrderingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOrderingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put Product Ordering",
+        "tags": [
+          "product-orders"
         ]
       }
     },
@@ -26016,6 +30329,50 @@
         ]
       }
     },
+    "/producers/{producer_id}/order-menu": {
+      "get": {
+        "description": "What can be ordered from this business, and when.\n\nOne 404 for every \"no\": unknown business, a business not shown on the\nsite, a seeded test row, ordering never switched on, or switched off.",
+        "operationId": "get_order_menu_producers__producer_id__order_menu_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMenuOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Order Menu",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/producers/{producer_id}/report": {
       "post": {
         "operationId": "report_producer_producers__producer_id__report_post",
@@ -26404,6 +30761,238 @@
         ]
       }
     },
+    "/product-orders": {
+      "post": {
+        "description": "Send an order request. A guest and a logged-in buyer take the same\npath: both prove the phone with a code.",
+        "operationId": "send_order_product_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Send Order",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/product-orders/phone-code": {
+      "post": {
+        "description": "Send a six-digit code to the phone a buyer wants to order with.\n\nOnly for a business that takes orders now, so the route cannot be used to\nmessage phones at will. Fails closed: with WhatsApp not configured there\nis no way to prove a phone, so there is no order.",
+        "operationId": "send_order_phone_code_product_orders_phone_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneCodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Send Order Phone Code Product Orders Phone Code Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Order Phone Code",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/product-orders/status": {
+      "post": {
+        "description": "A read, sent as POST so the token stays out of the URL.",
+        "operationId": "read_order_status_product_orders_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerRefIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Read Order Status",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/product-orders/status/accept-change": {
+      "post": {
+        "operationId": "accept_proposed_change_product_orders_status_accept_change_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerRefIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Accept Proposed Change",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/product-orders/status/cancel": {
+      "post": {
+        "operationId": "cancel_own_order_product_orders_status_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerRefIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Own Order",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/push-vapid-key": {
       "get": {
         "description": "Return the VAPID public key for the frontend push subscription.",
@@ -26461,6 +31050,65 @@
         "summary": "Get Prefill",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/registrations/{registration_id}/attendance": {
+      "patch": {
+        "description": "«הגיעו» / «לא הגיעו» on one sign-up — the item's owner or an admin.\n\nA note for the business only: nothing reads it to block a visitor\n(card MEH-3315). 403 for anyone else, as the card asks; 404 for an id\nthat does not exist. Only an active sign-up is marked (409 otherwise).",
+        "operationId": "set_registration_attendance_registrations__registration_id__attendance_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "registration_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Registration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationAttendanceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Registration Attendance",
+        "tags": [
+          "registrations"
         ]
       }
     },
@@ -26578,6 +31226,46 @@
           }
         },
         "summary": "Report Producer Info",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/reports/review": {
+      "post": {
+        "description": "MEH-3260: email the admin about one review. 204, no automatic action.\n\n404 «ביקורת לא נמצאה» when the review is not a visible review of this\nbusiness (wrong business, hidden, deleted). A repeat of the same report\nfrom the same IP within 24 h answers 204 and sends nothing.",
+        "operationId": "report_review_reports_review_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewReportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Report Review",
         "tags": [
           "reports"
         ]
@@ -27234,6 +31922,16 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "as_typed",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "As Typed",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -27259,32 +31957,6 @@
           }
         },
         "summary": "Smart Search",
-        "tags": [
-          "search"
-        ]
-      }
-    },
-    "/search/trending": {
-      "get": {
-        "description": "Return top 5 queries that returned results, cached 1 hour.",
-        "operationId": "trending_searches_search_trending_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "title": "Response Trending Searches Search Trending Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Trending Searches",
         "tags": [
           "search"
         ]
@@ -27491,9 +32163,66 @@
         ]
       }
     },
+    "/upload/owner-photo/{producer_id}": {
+      "post": {
+        "description": "MEH-3338: the admin uploads the owner photo for a business she builds\non the owner's behalf. Same validation, same fixed Cloudinary slot\n(`owner_{producer_id}`, overwrite) as the owner route — the business comes\nfrom the PATH, and only an admin reaches it (403 for anyone else, the owner\nincluded: she has her own route).",
+        "operationId": "admin_upload_owner_photo_upload_owner_photo__producer_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Upload Owner Photo",
+        "tags": [
+          "upload"
+        ]
+      }
+    },
     "/users/me": {
       "patch": {
-        "description": "Update the current user's name and/or email.\n\n- Name is trimmed and must be non-empty.\n- Email uniqueness is re-checked; collisions are rejected with 409.\n- MEH-3095: a changed email is an unproved one. The account goes back to\n  unverified and a fresh link is mailed to the NEW address.",
+        "description": "Update the current user's name and/or email.\n\n- Name is trimmed and must be non-empty.\n- Email uniqueness is re-checked; collisions are rejected with 409.\n- MEH-3095: a changed email is an unproved one. The account goes back to\n  unverified and a fresh link is mailed to the NEW address.\n- MEH-3104: the OLD address gets a notice that the address changed.",
         "operationId": "update_profile_users_me_patch",
         "requestBody": {
           "content": {
@@ -27802,6 +32531,33 @@
         ]
       }
     },
+    "/users/me/product-orders": {
+      "get": {
+        "description": "The logged-in buyer's orders, newest first.",
+        "operationId": "list_own_orders_users_me_product_orders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrdersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Own Orders",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/users/me/saved": {
       "get": {
         "operationId": "get_saved_users_me_saved_get",
@@ -27974,6 +32730,75 @@
         "summary": "Save Item",
         "tags": [
           "saved"
+        ]
+      }
+    },
+    "/users/me/verify-phone": {
+      "post": {
+        "description": "Send a 6-digit WhatsApp code to the user's own phone.\n\nCaps live in the service (3/user/day, 3/phone/day); this limit is the\nburst layer. A number that last told us «הסר» gets no code, and the\nanswer is the same «could not send» a provider failure gives, so the\nroute does not reveal what a number replied.",
+        "operationId": "send_user_phone_otp_users_me_verify_phone_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Send User Phone Otp",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/me/verify-phone/confirm": {
+      "post": {
+        "operationId": "confirm_user_phone_otp_users_me_verify_phone_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPhoneOtpConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm User Phone Otp",
+        "tags": [
+          "users"
         ]
       }
     },

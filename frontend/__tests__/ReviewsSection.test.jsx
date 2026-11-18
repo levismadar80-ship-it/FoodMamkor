@@ -66,6 +66,7 @@ vi.mock("@/lib/contact-tracking", () => ({
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
   X: (props) => <span {...props} />,
+  DotsThreeVertical: (props) => <span {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
   ShieldCheck: (props) => <span data-testid="icon-shield" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
@@ -1031,5 +1032,24 @@ describe("ReviewsSection — the star says why (MEH-3130)", () => {
     fireEvent.click(screen.getByTestId("reviews-star-3"));
     fireEvent.click(screen.getByTestId("reviews-star-4"));
     expect(showToast.info).toHaveBeenCalledTimes(1);
+  });
+});
+
+// MEH-3260: the ⋮ report menu is mounted per review card, and hidden on the
+// signed-in author's own review. 0 / 1 / many reviews, one of them hers.
+describe("ReviewsSection — report menu mount (MEH-3260)", () => {
+  const mk = (i, userId) => ({ ...noReply, id: `rev-m${i}`, user_id: userId, body: `גוף ${i}` });
+
+  it.each([
+    [0, [], 0],
+    [1, [mk(1, "u-9")], 1],
+    [3, [mk(1, "u-me"), mk(2, "u-8"), mk(3, "u-9")], 2],
+  ])("%i reviews → %#: one ⋮ per review not written by the viewer", async (_n, reviews, expected) => {
+    authState.user = { id: "u-me" };
+    mockReviews(reviews);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    if (reviews.length) await screen.findByText(reviews[0].body);
+    else await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryAllByLabelText("menu_aria")).toHaveLength(expected);
   });
 });

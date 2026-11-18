@@ -18,7 +18,6 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
-import { BRAND_NAME } from "@/lib/constants";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { HUB_GROUPS, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
@@ -475,10 +474,14 @@ export default function Header() {
               and the link gap is gap-6 below lg so 768 at 100% stays one row.
               lg+ geometry (gap-9) is unchanged. */}
           <div className="flex md:flex-wrap md:min-w-0 items-center gap-9 md:gap-y-1">
-            <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={BRAND_NAME}>
+            <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={t("nav.footer.brand_aria")}>
+              {/* MEH-3412: the link carries the localized name (he «מהמקור — דף הבית»,
+                  en «Mehamakor — Home page», same key as the Footer), so the
+                  image is decorative — alt="" keeps the name from being read
+                  twice. The image itself stays Hebrew in every locale (ADR-012). */}
               <Image
                 src="/logo.png"
-                alt={BRAND_NAME}
+                alt=""
                 // MEH-896 chunk 2: 122×46 → 101×38 (≈17% reduction, aspect
                 // 2.652 → 2.658, ~0.2% off — visually identical). Pairs with
                 // the slim pill (~50px); tap target preserved by the wrapper

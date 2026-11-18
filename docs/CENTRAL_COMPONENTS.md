@@ -39,7 +39,8 @@ See `.claude/central-components.json` for the authoritative list. Current entrie
 | File | Why it's central |
 |---|---|
 | `backend/app/main.py` | App entry point — middleware, CORS, route registration |
-| `backend/app/routers/auth.py` | Registration + login — duplicate-user, token issuance, BackgroundTasks |
+| `backend/app/routers/auth.py` | Login, consumer registration, OAuth, tokens — duplicate-user, token issuance, BackgroundTasks |
+| `backend/app/routers/auth_register_producer.py` | Business registration (`/auth/register/producer`, `/oauth`), split out of auth.py in MEH-3293 — anti-enumeration branches, upgrade path, BackgroundTasks |
 | `backend/app/config.py` | Settings — env var defaults, missing key → silent misconfiguration |
 
 ## 4-Step Protocol (mandatory before shipping an edit)

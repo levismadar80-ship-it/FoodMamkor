@@ -221,6 +221,10 @@ def create_home_product(
     # Run AI moderation — blocks REJECTED, records status for APPROVED/FLAGGED.
     # The frontend also calls /validate before submit for fast feedback, but
     # we re-check server-side so a crafted client can't bypass.
+    from app.services.image_ownership import assert_own_new_images  # MEH-3247
+
+    assert_own_new_images(user, data.photo)
+    assert_own_new_images(user, data.images)
     moderation = validate_home_product(
         {
             "title": data.title,
@@ -297,6 +301,10 @@ def update_home_product(
     # out of sync if commit raises.
     old_photo = hp.photo
     old_images = list(hp.images or [])
+    from app.services.image_ownership import assert_own_new_images  # MEH-3247
+
+    assert_own_new_images(user, payload.get("photo"), [old_photo, *old_images])
+    assert_own_new_images(user, payload.get("images"), [old_photo, *old_images])
 
     for field, value in payload.items():
         setattr(hp, field, value)
