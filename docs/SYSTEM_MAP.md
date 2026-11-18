@@ -74,6 +74,7 @@ This page links to those and does not repeat their numbers.
 | Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails |
 | Backups | Railway volume + the backup job | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)) |
 | Draft of a registration form, recent searches, chosen city | browser storage | never on the server |
+| Which «הקישור שלך בכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
 
 ## What gives first under load
 

@@ -54,6 +54,7 @@ def producer_analytics(
 
     Returns:
       - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}
+      - share_visits (MEH-3331): visits through a link the owner shared, same shape
       - follower_count + new_followers_this_week
       - average_rating + total_reviews (from the producers.avg_rating aggregate)
       - home_products_count (active only, scoped to the owning user)
@@ -77,6 +78,7 @@ def producer_analytics(
     search_appearances = windows["search_appearances"]
     whatsapp_clicks = windows["whatsapp_clicks"]
     contact_clicks = windows["contact_clicks"]
+    share_visits = windows["share_visits"]  # MEH-3331
 
     # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,
     # the canonical interest record, since MEH-1363 removed the follow button.
@@ -308,6 +310,7 @@ def producer_analytics(
         "search_appearances": search_appearances,
         "whatsapp_clicks": whatsapp_clicks,
         "contact_clicks": contact_clicks,
+        "share_visits": share_visits,
         "follower_count": int(follower_count),
         "new_followers_this_week": int(new_followers_this_week),
         "average_rating": round(average_rating, 2),
