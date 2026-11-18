@@ -906,6 +906,17 @@ The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by
 - **Newsletter** (`services/newsletter_sync.py`): Resend Contacts is the list real Broadcasts go to, so staging neither adds nor deletes contacts.
 - **A new channel** (Instagram publishing, payments, SMS) asks `outbound_guard` before its first external call. Tests: `tests/test_meh3402_outbound_guard.py`; the rest of the suite runs the guard as production via the `_outbound_guard_as_production` autouse fixture.
 
+## 17d. Changing the account email (MEH-3095, MEH-3104)
+
+`PATCH /users/me` with a new `email` (`backend/app/routers/users_me.py::_change_email`):
+
+- **The current password is required.** A session alone cannot move the account: otherwise a stolen session could change the address, ask for a reset there and keep the account. Wrong or missing password → 403, checked before the 409 «already in use», so a session-only caller learns nothing about other addresses.
+- **Google / Apple accounts and the super-admin cannot change it** (400): the OAuth sign-in falls back to matching by email, and the owner account is protected by its exact address (`services/account_guards.is_super_admin`).
+- **The new address is unproved**: `email_verified` goes false, a new verify link goes to the NEW address only, and any pending reset link is cleared.
+- **The old address gets a notice** (masked new address, no name), queued before the verify mail, after the commit. A takeover is not silent.
+- **OAuth email match also checks the provider id** (`auth.py` Google / Apple upsert): an address that matches an account bound to a different provider id → 409, never a sign-in.
+- **Known gaps, tracked:** the route limit is 10/hour per IP, not per account, and other sessions are not signed out by the change (follow-up recorded in PR #4491; a Linear card is opened once the workspace has room).
+
 ## 18. Skills supply chain (MEH-397)
 
 Mehamakor loads 83 third-party skills via Claude Code's skill ingestion

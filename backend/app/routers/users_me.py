@@ -69,7 +69,7 @@ def _change_email(
     if user.google_id or user.apple_id:
         raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
     # MEH-3104: the protected owner account is matched by exact email
-    # (admin_extra.is_super_admin); moving it would drop the protection.
+    # (services/account_guards.is_super_admin); moving it would drop the protection.
     if is_super_admin(user):
         raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
     # MEH-3104: a session alone is not enough to move the account. Without
@@ -103,6 +103,14 @@ def _queue_email_change_mails(
     gets a notice (MEH-3104), so a takeover is not silent.
     """
     test_cause = bool(user.is_test)
+    # The notice is queued FIRST: tasks run in order, so a failure in the
+    # verify mail can never skip the warning to the old address.
+    background_tasks.add_task(
+        send_email_changed_notice,
+        old_email,
+        user.email,  # type: ignore[arg-type]
+        test_cause=test_cause,
+    )
     if user.email_verify_token:
         background_tasks.add_task(
             send_verify_email,
@@ -111,12 +119,6 @@ def _queue_email_change_mails(
             user.email_verify_token,  # type: ignore[arg-type]
             test_cause=test_cause,
         )
-    background_tasks.add_task(
-        send_email_changed_notice,
-        old_email,
-        user.email,  # type: ignore[arg-type]
-        test_cause=test_cause,
-    )
 
 
 @router.patch("", response_model=UserOut)
