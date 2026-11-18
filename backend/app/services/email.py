@@ -31,6 +31,7 @@ import logging
 
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.outbound_guard import EmailRoute, route_email
 from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
@@ -139,6 +140,28 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
         pass
 
 
+def _route_outside_production(
+    to: str, subject: str, reply_to: str | None
+) -> EmailRoute | None:
+    """MEH-3402: decided by the environment, not by `is_test` on a row. A staff
+    address (or its +alias) goes through; any other recipient is redirected to
+    ADMIN_EMAIL with the real recipient in the subject. Production unchanged.
+    None = not sent (outside production with no ADMIN_EMAIL)."""
+    route = route_email(to, subject, reply_to)
+    if not route.redirected:
+        return route
+    if not route.to:
+        logger.warning(
+            "[EMAIL] NOT SENT outside production: %s is not a staff address "
+            "and ADMIN_EMAIL is unset (subject=%r)",
+            _mask(to),
+            subject[:80],
+        )
+        return None
+    logger.info("[EMAIL] Redirected outside production: %s → ADMIN_EMAIL", _mask(to))
+    return route
+
+
 def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     to: str,
     subject: str,
@@ -218,6 +241,13 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     if _is_reserved_domain(to):
         logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
         return
+
+    # MEH-3402: outside production a real person never receives mail.
+    # DO NOT move this below the Resend call or make it opt-in per caller.
+    route = _route_outside_production(to, subject, reply_to)
+    if route is None:
+        return
+    to, subject, reply_to = route.to, route.subject, route.reply_to
     try:
         # MEH-2886 chunk 4: key + 10 s HTTP timeout (the SDK default is 30 s).
         resend = configure_resend(settings.resend_api_key)
