@@ -44,6 +44,7 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services import indexnow  # MEH-2852
+from app.services import approved_edit_moderation as approved_edit  # MEH-3261
 from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.gallery_cap import assert_free_gallery_cap  # MEH-3220
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
@@ -253,9 +254,9 @@ def _pending_and_approvable(db: Session, producer: Producer) -> bool:
 # declarations MEH-1508 cross-checks at approval time (the diet scopes). ONE
 # constant; the Hebrew labels live with the sender in auth_notifications.py.
 #
-# Deliberately NOT the whole writable set: description / short_description /
-# owner_bio / links change often and legitimately, and a ping that fires on
-# every copy edit is a ping the admin learns to ignore.
+# Not the whole writable set. MEH-3261 (D11) replaced the old "never ping on
+# copy edits": description / short / owner_bio / images now get their own
+# «עדכן תוכן» message + AI check (services/approved_edit_moderation.py).
 #
 # Every member is verified present in _PRODUCER_WRITABLE_FIELDS below — a name
 # that drifts out of that set would make this silently un-pingable, which is
@@ -686,7 +687,7 @@ def _apply_organizer_city(producer: Producer, raw: Any) -> bool:
 
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
-def update_my_producer(
+def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (second phone) each add steps; split tracked with the producer_me size baseline
     request: Request,
     data: ProducerUpdate,
     background_tasks: BackgroundTasks,
@@ -710,6 +711,7 @@ def update_my_producer(
     # they stand before the setattr loop, so the post-commit diff can tell an
     # actual change from a form resubmitting an unchanged value.
     sensitive_before = _snapshot_sensitive(producer)
+    content_before = approved_edit.snapshot_content(producer)  # MEH-3261
 
     # MEH-2137 switch — see _resolve_top_product, defined above this handler.
     _PRODUCER_WRITABLE_FIELDS = {
@@ -965,6 +967,8 @@ def update_my_producer(
     _assert_keeps_a_photo(producer, payload, old_images)
     # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
     assert_free_gallery_cap(producer, payload, old_images)
+    # MEH-3261: changed public text of an APPROVED business → AI (REJECTED = 422).
+    content_ai = approved_edit.check_producer(producer, payload)
 
     reconcile_secondary_phone(producer, payload)  # MEH-3339
     for field, value in payload.items():
@@ -1050,6 +1054,13 @@ def update_my_producer(
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
     _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before, actor=user)
+    approved_edit.fire_content_edit(  # MEH-3261: one «עדכן תוכן» ping per save
+        background_tasks,
+        producer,
+        approved_edit.changed_content(content_before, producer),
+        content_ai == "FLAGGED",
+        _test_cause(producer, user),
+    )
     # MEH-2475 (review #3728): an approved organizer moving her city is the same
     # admin-visible event as a business moving its primary location (the
     # locations CRUD pings "city" through the same gate).
@@ -1257,6 +1268,14 @@ def create_my_product(
         db.query(Product).filter(Product.producer_id == user.producer_id).count(),
         "products",
     )
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    approved_edit.check_product(  # MEH-3261
+        background_tasks,
+        producer,
+        None,
+        data.model_dump(),
+        bool(producer and _test_cause(producer, user)),
+    )
     product = Product(producer_id=user.producer_id, **data.model_dump())
     db.add(product)
     db.commit()
@@ -1266,7 +1285,6 @@ def create_my_product(
     # for new-product alerts. Wires the previously-orphaned "new_product"
     # alert_type (see _ALERT_COL in routers/alerts.py). No Linear ticket was
     # ever assigned — the original marker was a literal, unresolvable MEH-XXX.
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     producer_name = producer.name if producer else "בית העסק"
     from app.routers.alerts import AlertContent, fire_alerts
 
@@ -1287,10 +1305,11 @@ def create_my_product(
 
 @router.put("/products/{product_id}", response_model=ProductOut)
 @limiter.limit("60/hour")
-def update_my_product(
+def update_my_product(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3261 added BackgroundTasks for the flag ping
     request: Request,
     product_id: UUID,
     data: ProductUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> ProductOut | Product:
@@ -1307,7 +1326,16 @@ def update_my_product(
     )
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
-    for field, value in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    approved_edit.check_product(  # MEH-3261
+        background_tasks,
+        producer,
+        product,
+        payload,
+        bool(producer and _test_cause(producer, user)),
+    )
+    for field, value in payload.items():
         setattr(product, field, value)
     db.commit()
     db.refresh(product)

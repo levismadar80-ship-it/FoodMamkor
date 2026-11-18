@@ -5,7 +5,7 @@
 
 ---
 
-## ארבעת המשטחים
+## המשטחים
 
 | משטח | מה נבדק | REJECTED | APPROVED / FLAGGED | שער אנושי | fail-open |
 |---|---|---|---|---|---|
@@ -13,6 +13,7 @@
 | **תגובת בית העסק לביקורת** | טקסט התגובה (`reviews.py:_moderate_reply_text`, MEH-3259). תגובה שלא השתנתה לא נבדקת שוב | 422 «תוכן התגובה אינו עומד בהנחיות הקהילה שלנו. אפשר לנסח מחדש ולשלוח שוב.», התגובה הקודמת נשארת (`set_review_reply`) | **מתפרסמת מיד**. הסטטוס נשמר ב-`reply_ai_moderation_status`; FLAGGED מקבל תג «סומן ע״י AI» ונתפס בסינון «רק ביקורות שסומנו» | אין. אדמין יכולה להסיר את התגובה («הסירי תגובה», `PUT /admin/reviews/{id}/clear-reply`) | מתפרסמת, הסטטוס נשמר NULL |
 | **חוויות** | כותרת, תיאור, קטגוריה, עיר, מחיר, משתתפים (`services/experience_moderation.py`) | 400, לא נשמר (`routers/experiences.py:submit_experience`) | נשמר `status=pending`, והסטטוס של ה-AI נשמר ב-`moderation_status` | תמיד: אדמין מאשרת כל חוויה | APPROVED |
 | **מתכונים** | כותרת, תיאור, מצרכים, הוראות (`services/producer_recipe_moderation.py`) | 400, לא נשמר (`routers/producer_recipes.py:create_my_recipe`) | נשמר `moderation_status=pending`, וסיבת ה-AI נשמרת ב-`moderation_notes` | תמיד: אדמין מאשרת כל מתכון | APPROVED |
+| **עריכות של עסק מאושר** (MEH-3261) | תיאור, תיאור קצר, «מאחורי העסק» בשמירת `PUT /producers/me`; שם, תיאור ורכיבים של מוצר ביצירה ובעריכה. רק טקסט שהשתנה (אחרי strip), ורק לעסק `approved` (`services/approved_edit_moderation.py`) | 422 «הטקסט אינו עומד בהנחיות הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב.», שום שדה לא נשמר | נשמר מיד, הסטטוס לא נשמר (אין עמודה). התראה לאדמין «📝 עסק מאושר עדכן תוכן: {שם} — {שדות}» על כל שמירה ששינתה תיאור / תיאור קצר / מאחורי העסק / תמונות, עם « — טקסט סומן ע״י AI» כשסומן (ובנושא המייל « (סומן ע״י AI)»); שינוי סדר התמונות בלבד לא מתריע; מוצר מתריע («מוצרים») רק כשסומן | אדמין קוראת בדיעבד | נשמר, התראה בלי סימון. הקריאה ל-AI מוגבלת ל-10 שניות וניסיון חוזר אחד. surfaces: `producer_content` / `product_content` |
 | **סיכון בית עסק** | פרופיל בית העסק בהרשמה ובשיוך (`services/producer_risk.py`) | — | ציון 0–100 + נימוק ב-`producers.risk_score` / `risk_reasoning`, מוצג בטבלת `/admin/producers` | הציון הוא רק מידע לאדמין | ציון NULL (אדמין לא רואה ציון) |
 
 הסיכון רץ כ-background task ולא חוסם הרשמה (`routers/auth.py` — שני מסלולי ההרשמה, `routers/producer_claim.py` — שיוך).
@@ -30,7 +31,7 @@
 
 ## המודל
 
-כל ארבעת המשטחים קוראים ל-`AI_FAST_MODEL` (`config.py:257`, היום `claude-haiku-5-5`) דרך `ai_fast_request_kwargs()` בלבד. כך יש מקור אחד למודל, ל-`thinking: disabled` ול-`effort: low`. החלפת מודל = שינוי שורה אחת והרצת ה-eval.
+כל משטחי התוכן קוראים ל-`AI_FAST_MODEL` (`config.py:257`, היום `claude-haiku-5-5`) דרך `ai_fast_request_kwargs()` בלבד. כך יש מקור אחד למודל, ל-`thinking: disabled` ול-`effort: low`. החלפת מודל = שינוי שורה אחת והרצת ה-eval.
 
 **Structured outputs** (PR #3608): כל קריאה מעבירה JSON Schema מתוך `services/moderation_schemas.py` (`MODERATION_VERDICT_SCHEMA`, `REVIEW_VERDICT_SCHEMA`, `RISK_SCORE_SCHEMA`). ה-API מחזיר JSON תקף לסכמה בכל תשובה שהושלמה, כך שתשובה עם fence, עם טקסט מסביב או עם סטטוס מומצא כבר לא נופלת ל-fail-open. מגבלת ה-API: אין `minLength`/`maxLength` או גבולות מספריים, ונדרש `additionalProperties: false`. את הגבולות אוכפים בקוד (`_clamp_score`, `_truncate_reasoning`).
 
@@ -48,7 +49,7 @@
 
 הכלל לא השתנה: אין מפתח, שגיאת API או תשובה לא קריאה ← הפריט עובר כאילו אושר (בביקורות הסטטוס נשמר NULL מאז MEH-2390; בסיכון: ציון NULL). מה שנוסף הוא אות שזה קרה. `services/moderation_fail_open.py:report_fail_open(surface, reason)` כותב warning ל-structlog (Railway logs) ואירוע Sentry אחד לכל מקרה.
 
-- tags: `moderation_fail_open=true`, `moderation_surface` (`review` / `review_reply` / `experience` / `recipe` / `producer_risk`), `fail_open_reason`
+- tags: `moderation_fail_open=true`, `moderation_surface` (`review` / `review_reply` / `experience` / `recipe` / `producer_content` / `product_content` / `producer_risk`), `fail_open_reason`
 - `fail_open_reason`: `no_client` (אין מפתח), `api_error_4xx` / `api_error_5xx` (תשובת HTTP מה-API, MEH-2390: 401 מפתח מת ו-429 מכסה הם 4xx, 529 עומס הוא 5xx), `api_error` (אין תשובה בכלל: חיבור, timeout), `truncated` (נחתך ב-`max_tokens`), `unparseable`, `bad_status` (גם JSON תקין שאינו אובייקט), `error`, ובסיכון בלבד גם `refusal` (במשטחי התוכן סירוב הוא FLAGGED ולא fail-open)
 - fingerprint: `["moderation-fail-open", surface, reason]`. ה-burst cap הקיים (`app/sentry.py`, 12 ליום לכל fingerprint) מגביל את צריכת המכסה, ולכן בתקלה מתמשכת המונה ב-Sentry הוא רצפה. הספירה המלאה נמצאת ב-Railway logs.
 - התראה: מוניטור Sentry בפרודקשן «Moderation fail-open (production) — any in 1 h» (MEH-2887, מוניטור 10909286, מחובר להתראה 6320572 במייל) סופר כל אירוע עם `moderation_fail_open:true`, **בלי סינון לפי `moderation_surface`**, ולכן הוא מכסה כל משטח, כולל `review_reply` (MEH-3259) ו-`producer_content` / `product_content` (MEH-3261), וגם `producer_risk`. נבדק ב-Sentry ב-14/11/2026. משטח חדש שמשתמש ב-`report_fail_open` נכנס להתראה בלי צעד נוסף.
