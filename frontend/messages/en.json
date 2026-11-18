@@ -1561,6 +1561,7 @@
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
         "billing": "Billing",
+        "audit_log": "Audit log",
         "settings": "Settings",
         "help": "Help",
         "name_change_requests": "Name changes"
@@ -2565,6 +2566,28 @@
       },
       "stuck_hint": "Messages Meta accepted more than a day ago that still have no delivery confirmation. If there are many, delivery confirmations may not be reaching us."
     },
+    "audit_log": {
+      "title": "Admin audit log",
+      "subtitle": "Every change made from an admin account: when, who, what and on what. Rows cannot be edited or deleted.",
+      "empty": "No actions recorded yet.",
+      "load_error": "Could not load the log",
+      "load_more": "Show earlier actions",
+      "deleted_actor": "Deleted account",
+      "columns": {
+        "when": "When",
+        "actor": "Who",
+        "action": "Action",
+        "target": "On what",
+        "change": "What changed"
+      },
+      "method": {
+        "POST": "Action",
+        "PUT": "Update",
+        "PATCH": "Update",
+        "DELETE": "Delete",
+        "OTHER": "Action"
+      }
+    },
     "group_buys": {
       "title": "Group buys",
       "status": {
@@ -2790,6 +2813,14 @@
             "Before calling: “Call script”.",
             "After each step update the status: new → contacted → replied → registered or declined.",
             "“WhatsApp” prepares a message with a profile link. Send only after she agreed on the phone."
+          ]
+        },
+        "audit_log": {
+          "q": "How do I check who changed something in the admin, and when?",
+          "steps": [
+            "On the «Audit log» screen: one row for every change made from an admin account, newest first.",
+            "Each row shows when, which account, which action, on what, and what changed (for example a role or a status).",
+            "Names, phone numbers and free text are not stored in the log, and its rows cannot be edited or deleted."
           ]
         },
         "settings": {

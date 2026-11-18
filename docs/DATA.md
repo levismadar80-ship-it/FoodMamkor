@@ -1650,8 +1650,8 @@ DELETE /admin/home-products/{id}               admin
 # Users
 GET    /admin/users                            admin — search · rows carry rescue_active_no_shows + rescue_blocked (MEH-3226)
 PUT    /admin/users/{id}/role                  admin. role=consumer **or role=admin** on an account with a linked business (producer_id set) → 409 (MEH-3376): an owner is never an admin, and is not demoted while the business is linked; detach the owner first.
-GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at>. Newest first.
-                                               { items: [{ id, actor_id, action, target_type, target_id, details, created_at }] }.
+GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at> [&before_id=<uuid>]. Newest first. With both, a keyset cursor on (created_at, id), so a tie on created_at at a page edge is not skipped.
+                                               { items: [{ id, actor_id, actor_email, action, target_type, target_id, details, created_at }] }. actor_email is None when the account is gone.
                                                The stored IP is not returned.
 POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
