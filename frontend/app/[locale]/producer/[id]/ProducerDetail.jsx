@@ -143,7 +143,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   // matching -mx-4 — change the two together. MEH-2592: so does the
   // OtherBusinesses band.
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6" data-testid="producer-detail-root">
+    <div
+      // MEH-3216 stage 5b: room under the last row for the order bar, which
+      // shows on every width (the contact bar is phone-only and IO-driven).
+      className={`max-w-6xl mx-auto px-4 pt-6 ${orderCart.count > 0 ? "pb-24" : "pb-6"}`}
+      data-testid="producer-detail-root"
+    >
       {/* MEH-1209: owner-only edit entry — renders above the h1 (which lives in
           the Tinted Masthead for imageless profiles and in ProducerHeader
           otherwise), in-flow, above the fold. Self-gates on ownership; a
