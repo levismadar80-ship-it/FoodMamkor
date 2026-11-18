@@ -536,6 +536,19 @@ def test_owner_lists_only_her_own_products_with_their_ordering_fields(
     assert (rows["עוגה"]["has_price"], rows["עוגה"]["in_stock"]) == (False, False)
 
 
+def test_the_product_list_refuses_anonymous_and_non_business_callers(
+    client, db, flag_on
+):
+    _, producer = _owner(db)
+    db.add(Product(producer_id=producer.id, name="לחם", price_min=20))
+    db.commit()
+    url = "/producers/me/products/ordering"
+    anon = client.get(url)
+    consumer = client.get(url, headers=auth_header(make_user(db)))
+    assert (anon.status_code, consumer.status_code) == (401, 403)
+    assert "לחם" not in anon.text + consumer.text
+
+
 def test_a_business_with_no_products_gets_an_empty_list(client, db, flag_on):
     owner, _ = _owner(db)
     res = client.get("/producers/me/products/ordering", headers=auth_header(owner))
