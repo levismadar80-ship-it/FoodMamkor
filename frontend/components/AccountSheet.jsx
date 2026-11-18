@@ -145,7 +145,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           onClick={onClose}
           aria-label={t("nav.menu_close")}
           data-testid="account-sheet-close"
-          className="absolute top-3 end-3 w-11 h-11 rounded-full flex items-center justify-center text-background/80 hover:bg-white/10 transition-colors"
+          className="absolute top-3 end-3 w-11 h-11 rounded-full flex items-center justify-center text-background/80 hover:bg-background/10 transition-colors"
         >
           <X size={18} weight="regular" aria-hidden="true" />
         </button>
