@@ -85,7 +85,7 @@ def approve_experience(
         .first()
     )
     if not ex:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
 
     ex.status = "approved"  # type: ignore[assignment]
     ex.admin_feedback = None  # type: ignore[assignment]
@@ -120,7 +120,7 @@ def request_changes(
     db: Session = Depends(get_db),
 ) -> ExperienceDetailOut | dict[str, Any]:
     if not action.feedback:
-        raise HTTPException(status_code=400, detail="feedback is required")
+        raise HTTPException(status_code=400, detail="יש לכתוב משוב")
 
     ex = (
         db.query(Experience)
@@ -129,7 +129,7 @@ def request_changes(
         .first()
     )
     if not ex:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
 
     was_live = ex.status == "approved"  # MEH-2852
     ex.status = "changes_requested"  # type: ignore[assignment]
@@ -169,7 +169,7 @@ def reject_experience(
         .first()
     )
     if not ex:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
 
     was_live = ex.status == "approved"  # MEH-2852
     ex.status = "rejected"  # type: ignore[assignment]

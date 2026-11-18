@@ -75,7 +75,7 @@
 >
 > **MEH-1399 (2026-08-21):** the pre-approval review checklist becomes DATA, and every tick becomes an audit record (migration `d4a9c31e6f82`, two tables). Phase 1 (MEH-1396) put `docs/VERIFICATION.md`'s knowledge in front of the admin as a frozen frontend constant with session-local ticks; that left two gaps — editing an item required a deploy, and the ticks evaporated, so nothing recorded WHAT was verified before a business went live.
 >
-> `admin_checklist_items` — `id` UUID PK, `position` INT NOT NULL (indexed), `label` TEXT NOT NULL, `hint` TEXT NULL, `active` BOOL NOT NULL DEFAULT true, `updated_at` TIMESTAMPTZ NOT NULL DEFAULT now() with model-level `onupdate=func.now()`. Seeded in the migration with the same 7 items `frontend/lib/admin-review-checklist.js` already shipped, so the switch is a change of source and not of content; the constant survives only as that seed plus two copy exports. `position` is written as `index * 10` by the router (never accepted from the client — a client-supplied position lets two items claim one slot and makes the order depend on an unspecified tiebreak), spaced so a later insertion needs no renumbering. **Only `updated_at`, no `created_at`:** the question anyone asks of a config row is when it last changed; the audit surface is the other table.
+> `admin_checklist_items` — `id` UUID PK, `position` INT NOT NULL (indexed), `label` TEXT NOT NULL, `hint` TEXT NULL, `active` BOOL NOT NULL DEFAULT true, `updated_at` TIMESTAMPTZ NOT NULL DEFAULT now() with model-level `onupdate=func.now()`. Seeded in the migration with the same 7 items `frontend/lib/admin-review-checklist.js` already shipped, so the switch is a change of source and not of content; the constant itself was deleted in MEH-2954 (the migration is the only copy in the repo; the admin edits the live rows in `/admin/settings`). `position` is written as `index * 10` by the router (never accepted from the client — a client-supplied position lets two items claim one slot and makes the order depend on an unspecified tiebreak), spaced so a later insertion needs no renumbering. **Only `updated_at`, no `created_at`:** the question anyone asks of a config row is when it last changed; the audit surface is the other table.
 >
 > `admin_audit_log` (MEH-3306) — `id` UUID PK, `actor_id` UUID NOT NULL (indexed, **deliberately not a FK**: CASCADE would erase the record with the account, SET NULL is an UPDATE on an append-only table), `action` VARCHAR(160) NOT NULL (method + route template, e.g. `PUT /admin/users/{user_id}/role`), `target_type` VARCHAR(40) NULL, `target_id` VARCHAR(64) NULL (the first path parameter), `details` JSONB NULL (reduced before/after: a role, a status, a flag — never names, phones or free text), `ip` VARCHAR(64) NULL, `created_at` TIMESTAMPTZ NOT NULL DEFAULT now() (indexed). **One row per SUCCESSFUL change made by an admin account**: `get_current_user` (`auth.py`) schedules the write for every signed-in mutating request whose user is an admin, so it covers the `/admin` routes and equally an owner route an admin enters by an inline role check (delete an event, a review). Reads, refused requests and changes that did not go through (404/409/422) leave no row. Append-only in the code (`services/admin_audit.py` inserts; nothing updates or deletes). Not logged: telemetry sent with `get_current_user_lenient`. Fail-open: the row is written after the response, and a failed write is logged, never raised.
 >
@@ -1631,7 +1631,7 @@ the enum is enforced on **write** (`events.py` `VALID_CATEGORIES`, POST + PUT),
 not by a DB constraint, and no backfill was run.
 
 **MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
-"Event not found"**, not 403 — a foreign producer can't confirm an
+"האירוע לא נמצא"**, not 403 — a foreign producer can't confirm an
 event id exists (matches `producer_recipes.py:203-206`). DELETE keeps
 its admin-override, so an admin still deletes (→ 200).
 
@@ -1651,7 +1651,7 @@ DELETE /experiences/{id}               auth    — owner or admin (stranger → 
 ```
 
 **MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
-"Experience not found"**, not 403 — a stranger can't confirm an experience
+"החוויה לא נמצאה"**, not 403 — a stranger can't confirm an experience
 id exists (matches `producer_recipes.py:203-206` + events). DELETE keeps
 its admin-override (admin → 200).
 

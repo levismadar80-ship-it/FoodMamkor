@@ -112,7 +112,7 @@ def _load_or_404(db: Session, recipe_id: UUID) -> ProducerRecipe:
         .first()
     )
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail="המתכון לא נמצא")
     return recipe
 
 
@@ -223,7 +223,7 @@ def request_recipe_changes(
     """REUSES: admin_experiences.py:90-118 — `feedback` is required for
     request-changes (admins must tell the producer what to fix)."""
     if not action.feedback:
-        raise HTTPException(status_code=400, detail="feedback is required")
+        raise HTTPException(status_code=400, detail="יש לכתוב משוב")
 
     recipe = _load_or_404(db, recipe_id)
     was_published = bool(recipe.published)  # MEH-2852

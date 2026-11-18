@@ -13,7 +13,7 @@
  *           range/joiner grammar ("–" inside a range, ", " between them) —
  *           that stays with each card.
  * Related:  app/[locale]/producer/[id]/components/OrderWindowStrip.jsx (origin),
- *           components/OpeningHours.jsx, components/ProducerCard.jsx,
+ *           components/OpeningHours.jsx (deleted in MEH-2810), components/ProducerCard.jsx,
  *           app/[locale]/producer/[id]/components/ProducerHeader.jsx,
  *           app/[locale]/producer/[id]/lib/order-status.js (israelTime — the
  *           HH:MM primitive this is applied TO, deliberately left padded).

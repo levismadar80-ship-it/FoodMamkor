@@ -16,7 +16,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import (
     get_current_user_lenient,
@@ -431,11 +431,14 @@ def get_producer_by_slug(
     producer = (
         db.query(Producer)
         .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
-            # so it doesn't widen the 3-way collection joinedload cartesian).
+            # MEH-3385: one SELECT per collection. Three collection
+            # joinedloads multiplied categories × products × delivery areas
+            # into one result set. Order comes from each relationship's
+            # order_by (models.py: categories by position, products by position).
+            selectinload(Producer.categories),
+            selectinload(Producer.products),
+            selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
             selectinload(Producer.locations),
             # MEH-1823: active_offer reads this collection — eager-load it here
             # or the property fires one query per producer on every list page.
@@ -495,11 +498,14 @@ def get_producer(
     producer = (
         db.query(Producer)
         .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
-            # so it doesn't widen the 3-way collection joinedload cartesian).
+            # MEH-3385: one SELECT per collection. Three collection
+            # joinedloads multiplied categories × products × delivery areas
+            # into one result set. Order comes from each relationship's
+            # order_by (models.py: categories by position, products by position).
+            selectinload(Producer.categories),
+            selectinload(Producer.products),
+            selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
             selectinload(Producer.locations),
             # MEH-1823: active_offer reads this collection — eager-load it here
             # or the property fires one query per producer on every list page.
@@ -711,7 +717,7 @@ def record_contact_click(
     10/minute per IP consistent with whatsapp-click.
     """
     if data.method not in _VALID_CONTACT_METHODS:
-        raise HTTPException(status_code=422, detail="method לא חוקי")
+        raise HTTPException(status_code=422, detail="סוג הפנייה לא תקין")
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
     # MEH-2156: owner/admin clicks are not audience, so they are not logged.

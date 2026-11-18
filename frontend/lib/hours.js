@@ -7,9 +7,9 @@
  *           (producer detail) and the compact /map card line reuse one parser.
  * Does NOT: render anything (callers own JSX) and does NOT fetch — it only
  *           transforms the `opening_hours` string the API already returns.
- * Related:  frontend/components/OpeningHours.jsx (detail-page consumer),
+ * Related:  frontend/components/OpeningHours.jsx (deleted in MEH-2810) (detail-page consumer),
  *           frontend/components/MapProducerCard.jsx (compact card consumer).
- * History:  MEH-826 Gap2-hours (extracted from OpeningHours.jsx so the map
+ * History:  MEH-826 Gap2-hours (extracted from OpeningHours.jsx (deleted in MEH-2810) so the map
  *           card can share the parser instead of duplicating it);
  *           MEH-2142 (added resolveStoreHours — the one place that decides
  *           WHICH hours string a consumer surface reads);

@@ -9,10 +9,7 @@ import {
 } from "@testing-library/react";
 import AdminReviewChecklist from "@/app/[locale]/admin/producers/AdminReviewChecklist";
 import { useReviewChecklist } from "@/app/[locale]/admin/producers/use-review-checklist";
-import {
-  ADMIN_REVIEW_CHECKLIST,
-  approveConfirmMessage,
-} from "@/lib/admin-review-checklist";
+import { approveConfirmMessage } from "@/lib/admin-review-checklist";
 import api from "@/lib/api";
 import he from "@/messages/he.json";
 import { renderHe as render } from "./helpers/render-with-he";
@@ -77,9 +74,8 @@ beforeEach(() => {
   mockApi();
 });
 
-describe("admin-review-checklist config (still the seed + shared copy)", () => {
-  it("exposes 7 seed items and the confirm copy interpolates the count", () => {
-    expect(ADMIN_REVIEW_CHECKLIST).toHaveLength(7);
+describe("admin-review-checklist copy helper", () => {
+  it("the confirm copy interpolates the count", () => {
     expect(confirmMessage(3)).toContain("3");
     expect(confirmMessage(3)).toContain("לאשר בכל זאת");
   });

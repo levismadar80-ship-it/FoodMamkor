@@ -58,7 +58,6 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));
 vi.mock("@/components/ReviewsSection", () => ({ default: () => <div data-testid="reviews" /> }));
-vi.mock("@/components/OpeningHours", () => ({ default: () => <div data-testid="hours" /> }));
 vi.mock("@/components/DirectoryDisclaimer", () => ({ default: () => <div /> }));
 vi.mock("@/components/ReportButton", () => ({ default: () => <div /> }));
 vi.mock("@/components/OwnerSectionEditLink", () => ({ default: () => null }));

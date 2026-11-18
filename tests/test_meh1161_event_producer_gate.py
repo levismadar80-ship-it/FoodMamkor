@@ -132,7 +132,7 @@ class TestEventDetailProducerGate:
 
         resp = client.get(f"/events/{event.id}")
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Event not found"
+        assert resp.json()["detail"] == "האירוע לא נמצא"
 
     def test_pending_producer_event_404_for_stranger(self, client, db):
         pending, _ = _make_producer_user(db, email="p5@example.com", status="pending")

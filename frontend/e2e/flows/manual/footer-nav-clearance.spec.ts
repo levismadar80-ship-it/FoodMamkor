@@ -137,6 +137,36 @@ const inMain = (page: Page, testId: string) =>
   page.locator(`#main-content [data-testid="${testId}"]`);
 
 /**
+ * MEH-3428: on /map the body reserve is the cookie banner's height
+ * (globals.css `body:has([data-map-shell])`). Polled, not read once: one CI
+ * run read `body reserve 0 vs banner 92` and passed on retry. A 0 there can
+ * only come from the `body:has(footer[data-site-footer])` rule, so for that
+ * instant the page carried a site footer; why is unverified. A red names the
+ * last read, footer count included, so the next one says which state it hit.
+ */
+async function expectReserveIsBanner(page: Page) {
+  let last = {};
+  try {
+    await expect
+      .poll(
+        async () => {
+          const m = await page.evaluate(() => ({
+            pad: parseFloat(getComputedStyle(document.body).paddingBottom),
+            banner: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cookie-banner-h")),
+            footers: document.querySelectorAll("footer[data-site-footer]").length,
+          }));
+          last = m;
+          return Math.abs(m.pad - m.banner);
+        },
+        { timeout: 5_000 },
+      )
+      .toBeLessThanOrEqual(1);
+  } catch (error) {
+    throw new Error(`body reserve != banner; last read ${JSON.stringify(last)}`, { cause: error });
+  }
+}
+
+/**
  * RGB of one viewport pixel, read from a real screenshot. Decoded in the page
  * (canvas getImageData) so the spec needs no PNG library — Knip's
  * unlisted-dependency ratchet, and MEH-2824's "no new deps".
@@ -237,11 +267,7 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
     await page.goto("/he/map");
     await expect(mapShell(page, "mobile")).toBeVisible({ timeout: 15_000 });
     await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
-    const m = await page.evaluate(() => ({
-      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
-      banner: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cookie-banner-h")),
-    }));
-    expect.soft(Math.abs(m.pad - m.banner), `body reserve ${m.pad} vs banner ${m.banner}`).toBeLessThanOrEqual(1);
+    await expectReserveIsBanner(page);
     // trial: actionability only (no click side effects) — fails if the banner covers the pill.
     await inMain(page, "map-near-me-pill").click({ trial: true, timeout: 5_000 });
   });
@@ -267,10 +293,6 @@ test.describe("MEH-2824 · desktop unchanged", () => {
     await page.goto("/he/map");
     await expect(mapShell(page, "desktop")).toBeVisible({ timeout: 15_000 });
     await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
-    const m = await page.evaluate(() => ({
-      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
-      banner: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cookie-banner-h")),
-    }));
-    expect.soft(Math.abs(m.pad - m.banner), `body reserve ${m.pad} vs banner ${m.banner}`).toBeLessThanOrEqual(1);
+    await expectReserveIsBanner(page);
   });
 });

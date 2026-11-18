@@ -57,7 +57,6 @@ vi.mock("@phosphor-icons/react", () => ({
 
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));
 vi.mock("@/components/ReviewsSection", () => ({ default: () => <div data-testid="reviews" /> }));
-vi.mock("@/components/OpeningHours", () => ({ default: () => <div data-testid="hours" /> }));
 vi.mock("@/components/DirectoryDisclaimer", () => ({ default: () => <div data-testid="disclaimer" /> }));
 vi.mock("@/components/ReportButton", () => ({ default: () => <div data-testid="report" /> }));
 // MEH-1306: the owner pencil is self-gating chrome irrelevant to these
