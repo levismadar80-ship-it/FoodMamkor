@@ -42,6 +42,9 @@ describe("MobileSheetSelectedCard — floating card (MEH-3119)", () => {
     expect(close.parentElement).toBe(card.parentElement);
     expect(card.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(close.parentElement.className).toMatch(/\brelative\b/);
+    // The card forces RTL in every locale; the X's `end-0` must resolve the
+    // same way, or on /en it lands on the photo.
+    expect(close.parentElement.getAttribute("dir")).toBe("rtl");
     // Top-END corner (logical, rtl.md), inside the card, 44px hit area.
     expect(close.className).toMatch(/\babsolute\b/);
     expect(close.className).toMatch(/\btop-0\b/);

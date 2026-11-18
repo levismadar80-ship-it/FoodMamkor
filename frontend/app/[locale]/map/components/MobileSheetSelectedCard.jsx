@@ -132,7 +132,10 @@ export default function MobileSheetSelectedCard({
           </span>
         </div>
       ) : null}
-      <div className="relative rounded-md bg-background shadow-lg">
+      {/* dir="rtl": MapProducerCard forces `direction: rtl` on itself (photo on
+          the right in every locale), so `end-0` must resolve in the same
+          direction, or on /en the X would land on the photo. */}
+      <div dir="rtl" className="relative rounded-md bg-background shadow-lg">
         <MapProducerCard producer={selectedProducer} active />
         <button
           type="button"
