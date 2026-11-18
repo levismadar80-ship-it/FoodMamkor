@@ -22,6 +22,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import InlineMessage from "@/components/ui/InlineMessage";
+import SectionHeading from "@/components/ui/SectionHeading";
 import { SkeletonList } from "@/components/Skeleton";
 import { detailToMessage } from "@/lib/errors";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/order-status";
@@ -78,7 +79,7 @@ function CancelDialog({ onConfirm, onClose, busy, error }) {
   return (
     <Dialog labelledBy={id} size="sm" onClose={onClose} testId={id}>
       <div className="p-5 space-y-4">
-        <h2 id={id} className="font-bold text-lg text-text">{t("cancel_confirm")}</h2>
+        <SectionHeading size="content" id={id}>{t("cancel_confirm")}</SectionHeading>
         {error && <InlineMessage tone="error">{error}</InlineMessage>}
         <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="ghost" onClick={onClose} data-autofocus>{t("back")}</Button>
@@ -107,9 +108,9 @@ export function OrderStatusView({ order, onChange, refOf }) {
   const deadline = order.expires_at ? `${dayLabel(order.expires_at, locale)} ${hhmm(order.expires_at)}` : null;
   return (
     <div className="space-y-4" data-testid="order-status" data-status={order.status}>
-      <h2 className="font-bold text-lg text-text" data-testid="order-headline">
+      <SectionHeading size="content" data-testid="order-headline">
         {t(view.headline, { business_name: order.producer_name })}
-      </h2>
+      </SectionHeading>
       {view.waiting && deadline && <p className="text-fg-muted">{t("waiting", { deadline })}</p>}
       {view.when && (
         <WhenLine start={order.slot_start} end={order.slot_end} kind={view.when} address={order.pickup_address} />
