@@ -32,7 +32,12 @@ Uniformity where a machine reads, variety where a person reads. Three sentences,
 
 A page with its own share copy (`/join`, `/about` and others) keeps it; the table sets the site-wide defaults.
 
-**Not in this ADR:** English, which keeps its current wording until Sapir approves an English descriptor. Also left as they are, because they need wording of their own or are not a description of the site: privacy policy §1, outreach templates, page titles, the per-page descriptions of `/about` and `/login`, the email footer «מהמקור — בתי עסק מקומיים, כולם במקום אחד.» (`backend/app/routers/marketing.py`, `backend/app/services/delivery_waitlist.py`), the chat system prompt (`backend/app/routers/chat.py`), and the share message (`share_msg`).
+**Amendment, 18/11/2026 (Sapir approved the wording Claude chose, message of 20:47Z):**
+- English follows the same three roles: descriptor «Mehamakor is where you find food from local businesses near you, all in one place.» on `seo.site.description` / `seo.home.description`; the share card carries the approved English hero subheading.
+- Privacy policy §1 now reads «"מהמקור" … הוא אתר שבו מוצאים אוכל ומוצרי טיפוח טבעיים מבתי עסק מקומיים בישראל, ופונים אליהם ישירות.» (natural-care products stay, because the site lists them).
+- The email footer is «מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.» (`backend/app/routers/marketing.py`, `backend/app/services/delivery_waitlist.py`).
+
+**Still not in this ADR:** outreach templates, page titles, the per-page descriptions of `/about` and `/login`, the chat system prompt (`backend/app/routers/chat.py`), and the share message (`share_msg`).
 
 ## Consequences
 **Positive:**

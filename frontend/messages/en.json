@@ -620,15 +620,15 @@
   },
   "seo": {
     "home": {
-      "description": "Local food businesses, all in one place. Find real, fresh, and healthy food near you."
+      "description": "Mehamakor is where you find food from local businesses near you, all in one place."
     },
     "site": {
       "title": "Mehamakor — real food, straight from the source",
-      "description": "Real, fresh, healthy food from local businesses — all in one place.",
+      "description": "Mehamakor is where you find food from local businesses near you, all in one place.",
       "og_title": "Mehamakor — real food, straight from the source",
-      "og_description": "Real food from local businesses — all in one place.",
+      "og_description": "Food from local businesses we've personally chosen — close to you, without searching for hours.",
       "twitter_title": "Mehamakor — real food, straight from the source",
-      "twitter_description": "Real food from local businesses — all in one place.",
+      "twitter_description": "Food from local businesses we've personally chosen — close to you, without searching for hours.",
       "keywords": [
         "local products",
         "grass-fed",
@@ -4288,7 +4288,7 @@
       },
       "who": {
         "title": "1. Who we are",
-        "body": "\"Mehamakor\" (the \"site\") presents local food businesses and natural-care producers across Israel. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
+        "body": "\"Mehamakor\" (the \"site\") is where you find food and natural-care products from local businesses in Israel, and contact them directly. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
       },
       "data": {
         "title": "2. What data we collect",
