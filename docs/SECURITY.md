@@ -915,7 +915,9 @@ The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by
 - **The new address is unproved**: `email_verified` goes false, a new verify link goes to the NEW address only, and any pending reset link is cleared.
 - **The old address gets a notice** (masked new address, no name), queued before the verify mail, after the commit. A takeover is not silent.
 - **OAuth email match also checks the provider id** (`auth.py` Google / Apple upsert): an address that matches an account bound to a different provider id → 409, never a sign-in.
-- **Known gaps, tracked:** the route limit is 10/hour per IP, not per account, and other sessions are not signed out by the change (follow-up recorded in PR #4491; a Linear card is opened once the workspace has room).
+- **Per-account cap (MEH-3425):** besides the route's 10/hour per IP, 5 WRONG passwords an hour per account lock the change for that account (429), even for the right password; a right password spends nothing. Counter in `backend/app/services/email_change_guard.py`, fail-open like `resend_verify_cap.py`. The user row is locked (`SELECT … FOR UPDATE`) before the check, so parallel guesses are counted one at a time (measured: 10 parallel wrong guesses → 5×403, 5×429). An absent password spends nothing. Limits: the window is fixed, not moving (up to 10 guesses around a window edge), and the counter is in process memory, so a deploy resets it.
+- **Other devices signed out (MEH-3425):** a real change bumps `token_version`, as `/auth/logout-all-devices` does; the caller's device gets fresh refresh + fingerprint cookies and recovers via `/auth/refresh`.
+- **No password on the account (MEH-3425):** a non-OAuth account with no `password_hash` gets its own 403, which points to «שכחתי סיסמה», instead of «הסיסמה הנוכחית שגויה».
 
 ## 18. Skills supply chain (MEH-397)
 

@@ -167,4 +167,11 @@ sequenceDiagram
 **`token_version` (tv) is the kill switch.** Every access and refresh token carries the user's
 `token_version`; a mismatch is the «tv drift» 401 above. Bumping it retires every session the
 account holds at once. Writers: `POST /auth/logout-all-devices`, owner-invite accept on an existing account
-(MEH-3256 D8), and admin «ניתוק בעלים» (`POST /admin/producers/{id}/detach-owner`, MEH-3256 D9).
+(MEH-3256 D8), an email change (`PATCH /users/me`, MEH-3425), and admin «ניתוק בעלים» (`POST /admin/producers/{id}/detach-owner`, MEH-3256 D9).
+
+**Email change (MEH-3425).** A successful `PATCH /users/me` that changes the
+email bumps `token_version` (same effect as logout-all): every other device's
+access and refresh tokens fail the `tv` check above. The device that made the
+change gets a fresh `refresh_token` + `__Secure-Fgp` cookie in the same
+response, so its next refresh succeeds. Wrong current passwords are capped at
+5/hour per account (`services/email_change_guard.py`), under a row lock.

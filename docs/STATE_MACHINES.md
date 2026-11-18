@@ -44,8 +44,8 @@ There is no soft-delete: deletion removes the row.
 | role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
 | blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
-| email changed → unverified | the user | `routers/users_me.py` | — |
-| tokens invalidated | the user | logout-all, password change, password reset | checked on every request in `auth.py` `get_current_user` |
+| email changed → unverified | the user | `routers/users_me.py` | current password (MEH-3104); 5 wrong per account per hour, row lock (MEH-3425); OAuth and super-admin refused; other devices signed out (`token_version`) |
+| tokens invalidated | the user | logout-all, password change, password reset, email change (MEH-3425) | checked on every request in `auth.py` `get_current_user` |
 | deleted | the user / admin | `services/user_deletion.py` `delete_user_and_data` | admins cannot be deleted; re-authentication required |
 
 A blocked user is refused on every request, login and refresh
