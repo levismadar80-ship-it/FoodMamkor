@@ -449,6 +449,12 @@ class Producer(Base):
     )
     # MEH-155: optional vacation end date — cleared automatically when past.
     vacation_until = Column(Date, nullable=True)
+    # MEH-2697: when the OWNER last said her availability is still true —
+    # tz-aware UTC. Written only by the owner (setting the state, or the
+    # «עדיין נכון» confirm route in producer_me.py). NULL = never confirmed:
+    # the public tag shows nothing, never "confirmed long ago".
+    # DO NOT stamp this from an admin edit — the tag reads «אושר ע״י בית העסק».
+    availability_confirmed_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
     opening_hours = Column(String, nullable=True)
     # MEH-1543: optional weekly ORDER-acceptance window — distinct from

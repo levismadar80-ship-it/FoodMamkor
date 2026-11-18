@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, cast
 from uuid import UUID
 
@@ -1075,6 +1075,8 @@ def set_availability_state(
     producer.availability_state = data.state  # type: ignore[assignment]
     producer.vacation_until = vacation_until  # type: ignore[assignment]
     producer.last_active_at = utc_now()  # type: ignore[assignment]
+    # MEH-2697: stating the availability is confirming it.
+    producer.availability_confirmed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
     return {
         "availability_state": producer.availability_state,
@@ -1082,6 +1084,28 @@ def set_availability_state(
         if producer.vacation_until
         else None,
     }
+
+
+@router.post("/availability-confirm", response_model=None)
+@limiter.limit("20/hour")
+def confirm_availability(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-2697 «עדיין נכון»: the owner says her availability is still true.
+
+    Changes nothing but the stamp — the state and the vacation date stay.
+    REUSES: set_availability_state above — same owner gate and rate limit.
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    now = datetime.now(timezone.utc)
+    producer.availability_confirmed_at = now  # type: ignore[assignment]
+    producer.last_active_at = utc_now()  # type: ignore[assignment]
+    db.commit()
+    return {"availability_confirmed_at": now.isoformat()}
 
 
 @router.get("/dashboard", response_model=None)
