@@ -16,8 +16,9 @@ import { Link } from "@/i18n/navigation";
 import { env } from "@/lib/env";
 import { getWhatsAppHref } from "@/lib/utils";
 
-/** @param {{ onClose: () => void }} props */
-export default function OwnerWelcomeCard({ onClose }) {
+/** @param {{ onClose: () => void, showCta?: boolean }} props */
+// MEH-3079: showCta=false while the completeness card (same action) is on screen.
+export default function OwnerWelcomeCard({ onClose, showCta = true }) {
   const t = useTranslations("dashboard.producer.welcome_card");
   const phone = env.NEXT_PUBLIC_SUPPORT_PHONE;
   return (
@@ -44,6 +45,7 @@ export default function OwnerWelcomeCard({ onClose }) {
         <p className="text-sm text-fg-muted mt-2">{t("whatsapp")}</p>
       )}
       <div className="flex items-center gap-3 mt-3">
+        {showCta && (
         <Link
           href="/producer/dashboard/edit"
           data-testid="owner-welcome-cta"
@@ -51,6 +53,7 @@ export default function OwnerWelcomeCard({ onClose }) {
         >
           {t("cta")}
         </Link>
+        )}
         <button
           type="button"
           onClick={onClose}
