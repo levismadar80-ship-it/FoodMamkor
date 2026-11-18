@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, act, screen, fireEvent, waitFor } from "@testing-library/react";
+import { useEffect } from "react";
+import { render, act, screen, waitFor } from "@testing-library/react";
 import { AuthProvider, PasskeyStepRequired, useAuth } from "../lib/auth-context.js";
 import api from "../lib/api.js";
 import { getPasskeyAssertion } from "../lib/webauthn.js";
@@ -35,8 +36,12 @@ vi.mock("../lib/post-login-action.js", () => ({
 const TICKET = { passkey_required: true, ticket: "tk", options: { challenge: "c" } };
 let auth;
 function Grab() {
-  auth = useAuth();
-  return <p data-testid="ticket">{auth.passkeyTicket ?? "none"}</p>;
+  const value = useAuth();
+  // Handed out in an effect, not during render (react-hooks/globals).
+  useEffect(() => {
+    auth = value;
+  });
+  return <p data-testid="ticket">{value.passkeyTicket ?? "none"}</p>;
 }
 
 async function mount() {
