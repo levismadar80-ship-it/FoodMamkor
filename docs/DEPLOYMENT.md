@@ -1252,6 +1252,51 @@ run anything manually.
 > deployment on vanilla Railway. It has been removed. See commit history
 > for the Haversine migration.
 
+### 1.3 Two database roles — the app cannot change the schema (MEH-3307)
+
+The backend and the migrations can connect as two different Postgres roles:
+
+| Who | Variable | Role | Can |
+|---|---|---|---|
+| The app (every request, every job) | `DATABASE_URL_<ENV>`, else `DATABASE_URL` | `app_runtime` | read and write rows, `SET ROLE mcp_reader` for the chat tools |
+| The migrations at boot (`scripts/migrate_on_boot.py`, `alembic/env.py`) | `MIGRATION_DATABASE_URL` | the schema owner (Railway's `postgres`) | everything |
+
+`MIGRATION_DATABASE_URL` unset → the migrations use the app's URL, as before
+(`app/database.py::migration_database_url`). The SQL for the role is printed by
+`python backend/scripts/app_runtime_role.py`; `tests/test_meh3307_app_runtime_role.py`
+runs that same SQL on a database migrated to head and checks that the role
+writes rows and that every kind of DDL is refused.
+
+**Order, per environment (staging first, then production).** Each step can be
+undone by restoring the previous variable value in Railway.
+
+1. The code is deployed with no variable changed. Nothing changes.
+2. On the backend service, add `MIGRATION_DATABASE_URL` as a reference to the
+   owner URL the service uses today (`${{Postgres.DATABASE_URL}}`). Redeploy;
+   the boot log still shows `running \`alembic upgrade head\``.
+3. On the Postgres service, add `APP_RUNTIME_PASSWORD` with Railway's
+   generator (`${{secret(40)}}`). In the Postgres service's query tab, run the
+   printed SQL with that value in place of the placeholder. The value is never
+   pasted anywhere else.
+4. On the backend service, change the app URL variable (the one it has set:
+   `DATABASE_URL_STAGING` / `DATABASE_URL_PRODUCTION`, else `DATABASE_URL`) to
+   `postgresql://app_runtime:${{Postgres.APP_RUNTIME_PASSWORD}}@${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}`.
+   Redeploy.
+5. Check: `/health` 200, a sign-in, one write (a favourite). A
+   `permission denied` in the backend log is the role missing a grant: put
+   the old URL back (step 4) and report it.
+
+**What stays on the owner URL:** the backup cron service
+(`scripts/backup_production_db.py`) has its own variable and is not changed.
+**Connections:** the migration step opens its connections once at boot, so
+the split does not change how many the app holds; `SHOW max_connections` in
+production is recorded on MEH-3307.
+
+**A new migration needs nothing extra:** the grants include
+`ALTER DEFAULT PRIVILEGES`, so a table or sequence the owner creates later is
+readable and writable by `app_runtime` at once. A migration that creates a
+table as some other role would need its own `GRANT`.
+
 ---
 
 ## 2. Railway — Backend (FastAPI)

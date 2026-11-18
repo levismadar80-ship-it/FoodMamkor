@@ -34,8 +34,9 @@ Usage (from backend/, the container's /app):
     python scripts/migrate_on_boot.py
     python scripts/migrate_on_boot.py --alembic-ini path/to/alembic.ini   # tests
 
-The database URL comes from `settings.database_url`, the same place
-alembic/env.py reads it. No new env var.
+The database URL comes from `app.database.migration_database_url()`, the same
+place alembic/env.py reads it: MIGRATION_DATABASE_URL (the schema owner) when
+it is set, else `settings.database_url` (MEH-3307).
 """
 
 from __future__ import annotations
@@ -139,7 +140,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--alembic-ini", type=Path, default=BACKEND / "alembic.ini")
     args = parser.parse_args(argv)
 
-    from app.config import settings  # after sys.path; same source as env.py
+    # after sys.path; the same URL alembic/env.py uses (MEH-3307: the schema
+    # owner when MIGRATION_DATABASE_URL is set, else the app's URL).
+    from app.database import migration_database_url
+
+    url = migration_database_url()
 
     cfg = _config(args.alembic_ini.resolve())
     script = ScriptDirectory.from_config(cfg)
@@ -157,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    db_heads = database_heads(settings.database_url)
+    db_heads = database_heads(url)
     ahead = unknown_heads(db_heads, script)
     image_head = script.get_current_head()
     if ahead:
@@ -166,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
         # revision that never ran (a split history), and starting it would
         # serve code whose migration is missing. alembic_version holds only
         # the current head, so the applied chain is read from alembic_lineage.
-        applied = head_was_applied(settings.database_url, image_head)
+        applied = head_was_applied(url, image_head)
         if not applied:
             log.error(
                 "SPLIT HISTORY: the database is at %s, a revision this image "
@@ -204,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     # only evidence that this image's head was recorded (ROLLBACK.md §2d).
     log.disabled = False
     log.setLevel(logging.INFO)
-    n = record_lineage(settings.database_url, script)
+    n = record_lineage(url, script)
     log.info("recorded %d applied revisions in %s", n, LINEAGE_TABLE)
     return 0
 
