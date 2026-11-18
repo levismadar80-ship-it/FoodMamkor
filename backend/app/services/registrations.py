@@ -21,6 +21,7 @@ from typing import Any
 from collections.abc import Iterable
 from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -47,6 +48,37 @@ def registered_counts(
         )
         out.update({item_id: int(n) for item_id, n in rows})
     return out
+
+
+def refuse_too_few_places(
+    db: Session,
+    changes: dict[str, Any],
+    *,
+    event_id: UUID | None = None,
+    experience_id: UUID | None = None,
+    stored_max: Any = None,
+) -> None:
+    """MEH-2871 (Sapir 18/11): a host may not set fewer places than the
+    sign-ups already taken — the extra sign-ups had no way out. Eventbrite and
+    Meetup refuse the same edit. Only an edit that sends ``max_participants``
+    is checked; None (unlimited) is always allowed. A value equal to the
+    stored one is not a change — the forms re-send every field on each save,
+    and a row cut below its sign-ups before this rule must stay editable."""
+    new_max = changes.get("max_participants")
+    if new_max is None or new_max == stored_max:
+        return
+    item_id = event_id or experience_id
+    counts = registered_counts(
+        db,
+        event_ids=[event_id] if event_id else (),
+        experience_ids=[experience_id] if experience_id else (),
+    )
+    taken = counts.get(item_id, 0) if item_id else 0
+    if int(new_max) < taken:
+        raise HTTPException(
+            status_code=422,
+            detail=f"כבר נרשמו {taken}, ולכן אי אפשר להגדיר פחות מקומות מזה.",
+        )
 
 
 def method_problem(
