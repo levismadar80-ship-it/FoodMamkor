@@ -71,6 +71,9 @@ export function ContactChannelsCard({
   const tWhat = useTranslations("whats_this");
   const seed = {
     phone: profile?.phone || "",
+    // MEH-3339: optional second number + label (text line on the page).
+    secondary_phone: profile?.secondary_phone || "",
+    secondary_phone_label: profile?.secondary_phone_label || "",
     instagram: profile?.instagram || "",
     website: profile?.website || "",
     // MEH-1242 PR3: whatsapp_group — backend whitelist already accepts it and
@@ -128,6 +131,9 @@ export function ContactChannelsCard({
     try {
       const payload = {
         phone: form.phone.trim() || null,
+        secondary_phone: form.secondary_phone.trim() || null,
+        // MEH-3339 (review): as typed — a label with no number is a visible 422.
+        secondary_phone_label: form.secondary_phone_label.trim() || null,
         instagram: form.instagram.trim() || null,
         website: form.website.trim() || null,
         whatsapp_group: form.whatsapp_group.trim() || null,
@@ -173,6 +179,13 @@ export function ContactChannelsCard({
         {profile?.status !== "draft" && profile?.phone && profile?.phone_verified === false && (
           <PhoneVerifyCard variant="reverify" onVerified={onPhoneVerified} />
         )}
+        {/* MEH-3339: the second number never drives a button — call, WhatsApp
+            and the sticky bar stay on the main number above. */}
+        <Input type="tel" inputMode="tel" dir="ltr" label={t("field_secondary_phone")} value={form.secondary_phone}
+          placeholder={t("secondary_phone_placeholder")} helperText={t("secondary_phone_where")}
+          onChange={(e) => upd("secondary_phone", e.target.value)} error={fieldError("secondary_phone")} />
+        <Input type="text" label={t("field_secondary_phone_label")} value={form.secondary_phone_label} maxLength={30}
+          onChange={(e) => upd("secondary_phone_label", e.target.value)} />
         {/* MEH-1597: each placeholder shows the shape that field's validator
             actually accepts (ProducerUpdate, backend/app/schemas/schemas.py).
             instagram is the odd one out: it has NO validator (:997 is a bare

@@ -36,6 +36,17 @@ describe("group-buy Offer facts", () => {
     expect(offerOf(BASE).availability).toBe("https://schema.org/InStock");
   });
 
+  // MEH-3289: a funded group keeps taking joiners until it is full.
+  it("funded with room → InStock; funded and full → SoldOut", () => {
+    expect(offerOf({ ...BASE, status: "funded" }).availability).toBe("https://schema.org/InStock");
+    expect(offerOf({ ...BASE, status: "funded", commits_count: 10 }).availability).toBe("https://schema.org/SoldOut");
+  });
+
+  it("fulfilled or cancelled → OutOfStock", () => {
+    expect(offerOf({ ...BASE, status: "fulfilled" }).availability).toBe("https://schema.org/OutOfStock");
+    expect(offerOf({ ...BASE, status: "cancelled" }).availability).toBe("https://schema.org/OutOfStock");
+  });
+
   it("a naive deadline is UTC: 11:30 UTC is already past at 12:00 UTC", () => {
     expect(isGroupBuyLive({ ...BASE, deadline: "2026-10-28T11:30:00" }, NOW)).toBe(false);
     expect(isGroupBuyLive({ ...BASE, deadline: "2026-10-28T12:30:00" }, NOW)).toBe(true);

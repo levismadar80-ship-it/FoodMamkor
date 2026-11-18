@@ -188,6 +188,24 @@ async function dietPageExists(slug) {
   }
 }
 
+// MEH-3336: { moved: "<slug>" } for a renamed business, else false. Only a
+// Latin slug is followed — the backend mints nothing else since MEH-3336, and
+// it keeps a crafted body from steering the redirect anywhere odd.
+const MOVED_SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+async function movedSlugFrom(res) {
+  try {
+    const body = await res.json();
+    const d = body?.detail;
+    if (d?.code === "slug_moved" && typeof d.slug === "string" && MOVED_SLUG_SHAPE.test(d.slug)) {
+      return { moved: d.slug };
+    }
+  } catch {
+    // Not JSON — a plain miss.
+  }
+  return false;
+}
+
 async function producerExists(url) {
   try {
     // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
@@ -206,7 +224,9 @@ async function producerExists(url) {
     // MEH-1899: 404 is the ONLY status that answers the question we asked.
     // Everything else means the backend replied about something other than
     // this producer's existence, and must not be read as "no such business".
-    if (res.status === 404) return false;
+    // MEH-3336: a 404 may carry the business's NEW slug (a rename) — the
+    // caller then 301s to it. Any body that is not that shape is a plain miss.
+    if (res.status === 404) return movedSlugFrom(res);
 
     // MEH-2534: 410 = a business that was deleted. Not a backend fault, and
     // not a plain miss: the caller rewrites to the business-gone page.
@@ -350,6 +370,20 @@ export default async function middleware(request) {
     !STATIC_ROUTES.has(decodeSlugParam(segs[0]).toLowerCase()) && isSlugShaped(decodeSlugParam(segs[0]))) {
     // MEH-2977 sibling: /<business-slug>/recipes/<id>.
     exists = await recipeExists(API_URL, decodeSlugParam(segs[0]), decodeSlugParam(segs[2]), report);
+  }
+  if (exists && typeof exists === "object" && exists.moved) {
+    // MEH-3336: a renamed business — a permanent 301 to its current URL, so a
+    // link shared before the rename keeps working and search engines move
+    // the page. The query string is kept.
+    const to = request.nextUrl.clone();
+    // localePrefix is "as-needed": keep the request's own prefix (none for he).
+    to.pathname = locale ? `/${locale}/${exists.moved}` : `/${exists.moved}`;
+    const moved = NextResponse.redirect(to, 301);
+    // MEH-3336 (review): a business may take an old slug back (rename A→B→A);
+    // an indefinitely cached A→B 301 would then loop that browser. One hour
+    // bounds it; search engines still read the 301 as a permanent move.
+    moved.headers.set("Cache-Control", "public, max-age=3600");
+    return moved;
   }
   if (!exists) {
     // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.

@@ -168,6 +168,9 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
 11. **After every PR — auto-update every doc your code touched**, same PR
     (DATA / ADMIN / DESIGN / FEATURES / SECURITY / DEPLOYMENT,
     `.ai/diagrams/`; CHANGELOG via rule 31). Stop hooks run build + pytest.
+    A new page also gets a row in `docs/FEATURES.md` «route inventory» —
+    `features-route-guard.sh` fails without it (MEH-3175: a new feature
+    touches no doc, so this rule alone never fired).
 12. **After every PR that touches `backend/app/routers/**`,
     `backend/app/models/**` or `backend/app/auth.py` — update `.ai/diagrams/`.**
 13. **End of session protocol (MANDATORY — same priority as Rule 1).** Update
@@ -560,7 +563,8 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     waits for her OK; a `do-not-merge` label, a card or batch that says Sapir
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
     ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
-    replaces none of it.
+    replaces none of it. `scripts/checks/pr-evidence-guard.sh` checks the
+    evidence of rules 22, 23, 38 and 40 is in the PR (warns until 22/11).
 39. **A red E2E gate blocks a merge to staging unless all three hold, and the
     PR body says so, one line each (Sapir 11/11, every PR from then on).**
     (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
@@ -592,6 +596,9 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     skips does not clear an earlier failure — it leaves the question open, and
     an open question is not a green.
     A run whose jobs can't be read is unverified, never assumed green.
+    `scripts/ci/staging_health.py decide` answers it this way (18/11); it posts
+    a required `Staging health` status once Sapir applies
+    [docs/ci/staging-health.patch.md](../../docs/ci/staging-health.patch.md).
 42. **A probe or scratch test is never written inside a test glob (Sapir
     12/11).** Not `frontend/__tests__/**`, not `frontend/e2e/**`, not
     `tests/**`. One-off probes, DOM dumps and throwaway harnesses go in a

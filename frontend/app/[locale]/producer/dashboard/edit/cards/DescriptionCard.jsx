@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Warning, X, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -250,8 +251,10 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       setSavedTagline(tagline);
       setSavedInstagram(instagram);
       setSaved(true);
-    } catch {
-      setError(t("error_save"));
+    } catch (err) {
+      // MEH-3261: an approved business's text refused by the AI check (422)
+      // shows the backend's sentence, not the generic "save failed".
+      setError(detailToMessage(err?.response?.data?.detail) || t("error_save"));
     }
     setSaving(false);
   };

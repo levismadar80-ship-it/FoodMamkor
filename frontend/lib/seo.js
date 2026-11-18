@@ -1019,13 +1019,14 @@ export function buildOrganizerJsonLd(organizer, locale = "he") {
 }
 
 /**
- * MEH-2478: the ONE rule for "this group buy can still be joined" — open AND
- * before its deadline. Nothing closes an open group buy when its deadline
- * passes (group_buys.py, OWNER_TRANSITIONS note), so status alone is not
- * enough. Shared by the sitemap and the Offer availability below.
+ * MEH-2478: the ONE rule for "this group buy can still be joined" — open or
+ * funded (MEH-3289: a funded group takes joiners until full) AND before its
+ * deadline. The deadline job (MEH-3287) runs once a day, so status alone is
+ * not enough. Shared by the sitemap and the Offer availability below.
  */
 export function isGroupBuyLive(groupBuy, now = new Date()) {
-  if (groupBuy?.status !== "open" || !groupBuy.deadline) return false;
+  const joinable = groupBuy?.status === "open" || groupBuy?.status === "funded";
+  if (!joinable || !groupBuy.deadline) return false;
   const deadline = parseNaiveUtc(groupBuy.deadline);
   return deadline != null && deadline > now;
 }

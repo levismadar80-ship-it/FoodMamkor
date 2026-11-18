@@ -187,6 +187,10 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         1,
         "POST review: a resource of the page itself, chunk 3",
     ),
+    "backend/app/services/approved_edit_moderation.py": (
+        3,
+        "the owner's own save: AI check + admin ping only for an approved page",
+    ),
     "backend/app/services/onboarding_followup.py": (
         1,
         "owner emails: the send layer, chunk 2",
