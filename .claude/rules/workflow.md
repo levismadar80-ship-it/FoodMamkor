@@ -560,7 +560,8 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     waits for her OK; a `do-not-merge` label, a card or batch that says Sapir
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
     ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
-    replaces none of it.
+    replaces none of it. `scripts/checks/pr-evidence-guard.sh` checks the
+    evidence of rules 22, 23, 38 and 40 is in the PR (warns until 22/11).
 39. **A red E2E gate blocks a merge to staging unless all three hold, and the
     PR body says so, one line each (Sapir 11/11, every PR from then on).**
     (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
