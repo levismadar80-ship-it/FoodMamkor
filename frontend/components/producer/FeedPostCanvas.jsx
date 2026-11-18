@@ -193,11 +193,15 @@ export default function FeedPostCanvas({ producer }) {
   );
 
   useEffect(() => {
-    if (!content || !canvasRef.current) return;
+    if (!content || !canvasRef.current) return undefined;
+    let live = true;
     setRendered(false);
-    drawPost(canvasRef.current, producer, /** @type {any} */ (content.draw), { footer: t("footer") })
-      .then((ok) => setRendered(ok !== false))
-      .catch(() => setRendered(false));
+    drawPost(canvasRef.current, producer, /** @type {any} */ (content.draw), { footer: t("footer"), isCurrent: () => live })
+      .then((ok) => live && setRendered(ok === true))
+      .catch(() => live && setRendered(false));
+    return () => {
+      live = false;
+    };
   }, [content, producer, t]);
 
   const link = trackedLink(producer.slug || "", "copy");

@@ -214,10 +214,13 @@ function drawFooter(ctx, footer) {
 /**
  * Draws the post. Returns false when the canvas has no 2D context, so the
  * caller keeps the buttons disabled (same contract as StoryCardCanvas.drawCard).
+ * Returns null without painting when `isCurrent()` says a newer draw was asked
+ * for while fonts and the photo loaded: a slow photo for an old moment must
+ * not paint over the moment she picked since.
  * @param {HTMLCanvasElement} canvas
  * @param {PostProducer} producer
  * @param {PostContent} content
- * @param {{ footer: string }} strings
+ * @param {{ footer: string, isCurrent?: () => boolean }} strings
  */
 export async function drawPost(canvas, producer, content, strings) {
   const ctx = canvas.getContext("2d");
@@ -225,6 +228,7 @@ export async function drawPost(canvas, producer, content, strings) {
   await loadFonts();
   const imageUrl = (content.kind === "single" && content.item.image_url) || producer.images?.[0];
   const photo = imageUrl ? await loadImage(photoSrc(imageUrl)) : null;
+  if (strings.isCurrent && !strings.isCurrent()) return null;
 
   canvas.width = POST_W;
   canvas.height = POST_H;

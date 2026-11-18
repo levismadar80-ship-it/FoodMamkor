@@ -117,3 +117,18 @@ describe("FeedPostCanvas", () => {
     await waitFor(() => expect(screen.getByTestId("feed-post-caption").textContent).toContain("caption_holiday"));
   });
 });
+
+describe("drawPost — a superseded draw does not paint (MEH-3330 review)", () => {
+  it("returns null and leaves the canvas untouched when isCurrent() turns false while loading", async () => {
+    const { drawPost } = await import("@/components/producer/feed-post-draw");
+    const canvas = document.createElement("canvas");
+    canvas.width = 7;
+    const content = { kind: "list", kicker: "k", items: [] };
+    const stale = await drawPost(canvas, producer, content, { footer: "f", isCurrent: () => false });
+    expect(stale).toBeNull();
+    expect(canvas.width).toBe(7);
+    const fresh = await drawPost(canvas, producer, content, { footer: "f", isCurrent: () => true });
+    expect(fresh).toBe(true);
+    expect(canvas.width).toBe(1080);
+  });
+});
