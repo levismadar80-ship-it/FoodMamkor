@@ -309,7 +309,7 @@ test.describe("hours in the completeness card", () => {
     await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await overview(page, { ...BASE, locations: [LOC_WITH_HOURS] }, "pending");
-    await expect(cardRoot(page)).toContainText("הפרופיל מלא");
+    await expect(cardRoot(page)).toContainText("העמוד מלא");
     await expect(ring(page)).toHaveCount(0);
   });
 });

@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { CaretDown } from "@phosphor-icons/react";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -97,8 +98,12 @@ function TimingFields({ form, set }) {
   );
 }
 
-/** @param {{ settings: any, onSaved: (settings: any) => void }} props */
-export default function OrderSettingsCard({ settings, onSaved }) {
+/**
+ * @param {{ settings: any, onSaved: (settings: any) => void, collapsed?: boolean }} props
+ *   collapsed: start closed — the page closes it once ordering is set up,
+ *   so the tab opens on the orders and the one-time settings wait a tap away.
+ */
+export default function OrderSettingsCard({ settings, onSaved, collapsed = false }) {
   const t = useTranslations("dashboard.producer.orders.settings");
   const tActions = useTranslations("dashboard.producer.orders.actions");
   const [form, setForm] = useState(() => toForm(settings));
@@ -118,8 +123,15 @@ export default function OrderSettingsCard({ settings, onSaved }) {
   };
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 space-y-3" data-testid="order-settings">
-      <h2 className="font-bold text-lg text-text">{t("title")}</h2>
+    <details
+      open={!collapsed}
+      className="group rounded-lg border border-border bg-surface p-4 space-y-3"
+      data-testid="order-settings"
+    >
+      <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
+        <h2 className="font-bold text-lg text-text">{t("title")}</h2>
+        <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+      </summary>
       <p className="text-sm text-fg-muted">{t("lead")}</p>
       <SwitchRow id="orders-enabled" label={t("enabled")} checked={form.enabled} onChange={(on) => set("enabled", on)} />
       <SwitchRow
@@ -137,6 +149,6 @@ export default function OrderSettingsCard({ settings, onSaved }) {
       {state.error && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {state.saved && <InlineMessage tone="success">{t("saved")}</InlineMessage>}
       <Button onClick={save} loading={state.busy} data-testid="orders-settings-save">{t("save")}</Button>
-    </section>
+    </details>
   );
 }

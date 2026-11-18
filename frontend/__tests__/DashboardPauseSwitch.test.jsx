@@ -10,7 +10,7 @@
  *   - on_vacation saved → ON; click POSTs accepting_orders.
  *   - legacy available_today / full_this_week → OFF (the server's read-only
  *     values never light anything, and no radio for them exists).
- *   - not approved → disabled, inert (MEH-964 1D).
+ *   - not approved → no switch (MEH-3079; was disabled, MEH-964 1D).
  *
  * Scaffolding mirrors __tests__/DashboardVacationDateReveal.test.jsx.
  */
@@ -148,14 +148,13 @@ describe("Dashboard pause switch (MEH-2759)", () => {
     },
   );
 
-  it("not approved → disabled, inert (MEH-964 1D)", async () => {
+  // MEH-3079: was «disabled, inert» (MEH-964 1D). The switch now waits for
+  // approval; the page still renders and nothing is posted.
+  it("not approved → no switch, nothing posted", async () => {
     boot({ status: "pending" });
     render(<ProducerDashboardPage />);
-    await screen.findByRole("switch", { name: /options\.on_vacation/ });
-    expect(pauseSwitch()).toBeDisabled();
-    expect(pauseSwitch()).toHaveAttribute("aria-checked", "false");
-    fireEvent.click(pauseSwitch());
-    expect(dateField()).not.toBeInTheDocument();
+    await screen.findByTestId("producer-overview");
+    expect(screen.queryByRole("switch", { name: /options\.on_vacation/ })).toBeNull();
     expect(availabilityPost()).toHaveLength(0);
   });
 });

@@ -16,7 +16,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Phone } from "@phosphor-icons/react";
 
 import Badge from "@/components/ui/Badge";
-import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import OrderActions from "./OrderActions";
 
 /** @param {{ order: any }} props */
@@ -93,7 +93,7 @@ export default function OrderCard({ order, onChanged }) {
         aria-label={t("phone")}
       >
         <Phone size={16} aria-hidden="true" />
-        {`+${order.customer_phone}`}
+        {localPhone(order.customer_phone)}
       </a>
       {order.status === "change_proposed" && (
         <p className="text-sm text-fg-muted">{t("proposal_sent")}</p>

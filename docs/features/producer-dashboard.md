@@ -6,7 +6,7 @@
 * `frontend/app/[locale]/producer/dashboard/` — הבית.
 * `frontend/app/[locale]/producer/dashboard/edit/` · `frontend/app/[locale]/producer/dashboard/insights/` · `frontend/app/[locale]/producer/dashboard/tools/` — הלשוניות.
 * `frontend/app/[locale]/producer/dashboard/preview/` · `frontend/app/[locale]/producer/dashboard/whats-new/` · `frontend/app/[locale]/producer/dashboard/qr-card/`
-* `frontend/app/[locale]/producer/dashboard/orders/` — «הזמנות» (הזמנה באתר, MEH-3316): לשונית שנייה עם מונה, רק כשבשרת `PRODUCT_ORDERS_ENABLED` דולק. הרכיבים ב-`frontend/components/dashboard/orders/`, הקריאות ב-`frontend/lib/product-orders.js`, הטסט `frontend/__tests__/ProductOrdersDashboard.test.jsx`.
+* `frontend/app/[locale]/producer/dashboard/orders/` — «הזמנות» (הזמנה באתר, MEH-3316): לשונית שנייה עם מונה, רק כשבשרת `PRODUCT_ORDERS_ENABLED` דולק. הרכיבים ב-`frontend/components/dashboard/orders/`, הקריאות ב-`frontend/lib/product-orders.js`, הטסט `frontend/__tests__/ProductOrdersDashboard.test.jsx`. כשההזמנות דלוקות ויש לפחות חלון מסירה אחד, כרטיסי ההגדרות והשעות נפתחים מקופלים (`isSetUp`), כך שהלשונית נפתחת על ההזמנות.
 
 **קבצים מרכזיים**
 * `frontend/lib/business-features.js` — הרישום שמכתיב מה קיים ואיפה זה יושב (`dashboard: { home, href }`).
