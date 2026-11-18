@@ -47,6 +47,7 @@ from app.schemas.product_orders import MAX_MIN_ORDER_AGOROT
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
 from app.services.product_order_actions import assign_pickup_code
+from app.services.product_order_clock import active_deadline, rest_end_if_inside
 from app.services.product_order_menu import offered_slots, takes_orders
 from app.services.product_order_slots import Slot
 from app.services.product_order_state import (
@@ -89,6 +90,8 @@ BELOW_MINIMUM_DETAIL = "סכום ההזמנה נמוך ממינימום ההזמ
 AGE_DETAIL = "להזמנה שיש בה אלכוהול צריך להצהיר על גיל 18 ומעלה"
 ALCOHOL_SLOT_DETAIL = "אי אפשר לקבל הזמנה שיש בה אלכוהול במועד הזה. צריך לבחור מועד אחר"
 KEY_REUSED_DETAIL = "ההזמנה הזאת כבר נשלחה"
+# Approved copy (14/11): the business page line for a Shabbat-observant business.
+RESTING_DETAIL = "ההזמנות נפתחות שוב במוצאי שבת"
 TOO_LARGE_DETAIL = "ההזמנה גדולה מדי להזמנה באתר. צריך לפנות ישירות לבית העסק"
 CODE_USED_DETAIL = phone_codes.CODE_WRONG_DETAIL
 
@@ -310,6 +313,10 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
 
     producer, row = _locked_business(db, body.producer_id)
     now = utc_now()
+    # MEH-3296: an observant business takes no order on Shabbat or a festival,
+    # not even for a slot after it.
+    if row.shabbat_observant and rest_end_if_inside(now) is not None:
+        raise _conflict(RESTING_DETAIL)
     _check_phone_standing(db, phone, now)
     _check_business_room(db, producer.id)
 
@@ -343,7 +350,8 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
         estimated_total_agorot=subtotal,
         delivery_fee_agorot=fee,
         age_declared=bool(has_alcohol and body.age_declared),
-        expires_at=now + ANSWER_WINDOW,
+        # MEH-3296: 24 hours counted outside Shabbat and the festivals.
+        expires_at=active_deadline(now, ANSWER_WINDOW.total_seconds() / 3600),
         status_token_hash=token_hash(token),
         idempotency_key=key,
         items=lines,

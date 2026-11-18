@@ -658,7 +658,9 @@ def test_owner_cannot_delete_her_account_while_an_order_is_open(
 ):
     owner, producer = _owner(db)
     _order(db, producer, open_status)
-    res = client.delete("/auth/me", headers=auth_header(owner))
+    res = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(owner)
+    )
     assert res.status_code == 409
     assert "הזמנות פתוחות" in res.text
     db.expire_all()
@@ -683,7 +685,11 @@ def test_closed_orders_do_not_block_a_delete_and_go_with_the_business(client, db
     _order(db, producer, "handed")
     _order(db, producer, "cancelled")
     if who == "owner":
-        res = client.delete("/auth/me", headers=auth_header(owner))
+        res = client.post(
+            "/auth/me/delete",
+            json={"password": "Zx7Yp9Mq2Lr4"},
+            headers=auth_header(owner),
+        )
     else:
         admin = make_user(db, role="admin", email="adm@example.com")
         res = client.delete(

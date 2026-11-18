@@ -482,3 +482,38 @@ def send_template(
         },
     }
     return _post(payload, kind=f"template[{template.name}]", to=to)
+
+
+# MEH-3296: what the order outbox needs to know about a send, which the bool
+# above folds together — a test row, a missing configuration and a refused
+# send all read False there, and only the last is worth retrying.
+OUTCOME_SKIPPED_TEST = "skipped_test"
+OUTCOME_UNCONFIGURED = "unconfigured"
+# MEH-3402 on the outcome path: outside production, a recipient who is not
+# staff is dropped here too (the order outbox sends only through this twin).
+OUTCOME_BLOCKED_NON_PROD = "blocked_nonprod"
+
+
+def send_template_result(
+    to: str, template: WhatsAppTemplate, test_cause: bool = False
+) -> WhatsAppSendResult:
+    """`send_template`, answering with the parsed outcome instead of a bool."""
+    if test_cause:
+        _skip_test_cause(f"template[{template.name}]", to)
+        return WhatsAppSendResult(outcome=OUTCOME_SKIPPED_TEST, ok=False)
+    if not _is_configured():
+        return WhatsAppSendResult(outcome=OUTCOME_UNCONFIGURED, ok=False)
+    # DO NOT drop this — MEH-3402: the bool twins check it; this one must too.
+    if _blocked_outside_production(f"template[{template.name}]", to):
+        return WhatsAppSendResult(outcome=OUTCOME_BLOCKED_NON_PROD, ok=False)
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to.lstrip("+"),
+        "type": "template",
+        "template": {
+            "name": template.name,
+            "language": {"code": template.language},
+            "components": template.to_components(),
+        },
+    }
+    return _post_result(payload, kind=f"template[{template.name}]", to=to)

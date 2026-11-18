@@ -28,7 +28,7 @@ from app.database import get_db
 from app.models.models import Producer, User
 from app.models.product_orders import ProducerOrderSettings, ProductOrder
 from app.rate_limit import limiter
-from app.routers.producer_me import _otp_test_code_for, _send_whatsapp_otp
+from app.routers.producer_me_review import _otp_test_code_for, _send_whatsapp_otp
 from app.routers.product_orders import require_product_orders_enabled
 from app.schemas.product_order_buy import (
     BuyerOrderOut,

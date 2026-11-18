@@ -13,15 +13,13 @@ Does NOT: read `producers.order_window`. That column is when the owner
           and her vacation close this axis too (`ClosedDays`).
           Does NOT count how many orders a slot already holds — the auto-confirm cap
           is checked where the order is written (stage 2b of MEH-3216).
-          Does NOT know Jewish holidays yet: `is_rest_time` covers the weekly
-          Shabbat only, with a wide fixed margin; stage 3 replaces its body
-          with the Hebrew calendar. Until then `shabbat_observant` is not
-          offered to businesses in the UI.
+          `is_rest_time` reads Shabbat and the festivals off the Hebrew
+          calendar (app/services/hebrew_calendar.py, MEH-3296).
 Related:  app/models/product_orders.py (ProducerOrderWindow, the settings
           columns), app/routers/product_order_offer.py (the order menu),
           tests/test_meh3262_order_windows.py (frozen-clock cases at both
           DST switches)
-History:  MEH-3262 (creation; stage 2a of MEH-3216)
+History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3296 (holidays)
 
 Every slot is computed on the Israel clock and returned as naive UTC, the
 form the repo stores (`product_orders.slot_start`).
@@ -31,6 +29,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Protocol
 
+from app.services.hebrew_calendar import rest_windows
 from app.utils.clock import ISRAEL_TZ
 
 SLOT_HORIZON_DAYS = 14
@@ -39,13 +38,6 @@ SLOT_HORIZON_DAYS = 14
 # order that contains alcohol is never handed over between 23:00 and 07:00.
 ALCOHOL_NIGHT_STARTS = time(23, 0)
 ALCOHOL_NIGHT_ENDS = time(7, 0)
-
-# A fixed, deliberately wide weekly rest window on the Israel clock: Friday
-# 14:00 to Saturday 21:00. It is earlier than any candle-lighting and later
-# than any havdalah in Israel, so it errs toward offering fewer slots.
-_FRIDAY, _SATURDAY = 4, 5  # date.weekday(), read off the slot's own date
-REST_STARTS_FRIDAY = time(14, 0)
-REST_ENDS_SATURDAY = time(21, 0)
 
 
 class WindowLike(Protocol):
@@ -101,17 +93,18 @@ class Slot:
 
 
 def is_rest_time(local_start: datetime, local_end: datetime) -> bool:
-    """Whether an Israel-clock slot touches the weekly rest window.
+    """Whether an Israel-clock slot touches Shabbat or a festival.
 
-    # DO NOT widen this into holiday logic by hand — stage 3 replaces the body
-    # with the Hebrew calendar (holidays are computed, never remembered).
+    MEH-3296: the windows come from the Hebrew calendar (hebrew_calendar), the
+    same wide margin as before — 14:00 on the eve to 21:00 on the day.
+    # DO NOT replace this with a typed list of dates — holidays are computed.
     """
-    day = local_start.weekday()
-    if day == _FRIDAY:
-        return local_end.time() > REST_STARTS_FRIDAY
-    if day == _SATURDAY:
-        return local_start.time() < REST_ENDS_SATURDAY
-    return False
+    start = local_start.replace(tzinfo=None)
+    end = local_end.replace(tzinfo=None)
+    return any(
+        start < closes and end > opens
+        for opens, closes in rest_windows(start.date(), end.date())
+    )
 
 
 def _touches_alcohol_night(local_start: datetime, local_end: datetime) -> bool:

@@ -235,6 +235,19 @@ erDiagram
         timestamp created_at
     }
 
+    product_order_notifications {
+        uuid id PK
+        uuid order_id FK "CASCADE (MEH-3296)"
+        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before"
+        string channel "whatsapp email"
+        string outcome "pending sent failed skipped"
+        timestamp send_after "due time; moved to the end of Shabbat/chag for an observant business"
+        int attempts "max 5, backoff 5 min doubling"
+        string last_error "short code, never message text"
+        timestamp sent_at
+        timestamp created_at
+    }
+
     product_order_items {
         uuid id PK
         uuid order_id FK "CASCADE"
@@ -678,6 +691,7 @@ erDiagram
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"
     product_orders ||--o{ product_order_events : "status log"
+    product_orders ||--o{ product_order_notifications : "messages owed, once per kind+channel (MEH-3296)"
     products |o--o{ product_order_items : "SET NULL on delete"
 
     rescue_offers {

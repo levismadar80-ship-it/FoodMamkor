@@ -17,6 +17,7 @@ from app.services.job_heartbeat import (
     BILLING_START_SIGNAL_CRON,
     FOLLOWUP_CRON,
     GROUP_BUY_EXPIRY_CRON,
+    PRODUCT_ORDERS_INTERVAL_MINUTES,
     RESCUE_DIGEST_INTERVAL_MINUTES,
     RETENTION_PURGE_CRON,
     WATCHDOG_INTERVAL_MINUTES,
@@ -660,6 +661,57 @@ def _register_weekly_owner_summary(scheduler: Any, now: datetime | None = None) 
     return True
 
 
+@heartbeat(
+    "product-orders-tick", interval_monitor_config(PRODUCT_ORDERS_INTERVAL_MINUTES)
+)
+def _run_product_order_jobs() -> None:
+    """MEH-3296: one 2-minute tick for on-site orders — expire the requests
+    nobody answered, then send the messages that are due.
+
+    Same shape as _run_rescue_digest_job: fresh session, exceptions swallowed
+    so the scheduler thread never dies. Expiry runs first so the buyer's
+    «expired» message goes out on the same tick. Both services commit per row,
+    so a crash costs at most the row it was on.
+    """
+    from app.database import SessionLocal
+    from app.services.product_order_outbox import dispatch_due
+    from app.services.product_order_sweeper import expire_due
+
+    # Each step on its own session and its own guard: an expiry that keeps
+    # failing must not stop every message.
+    for step in (expire_due, dispatch_due):
+        db = SessionLocal()
+        try:
+            step(db)
+        except Exception as exc:
+            capture_background_exception(exc, task="product_orders")
+            log.error("[PRODUCT-ORDERS] %s crashed", step.__name__, exc_info=True)
+        finally:
+            db.close()
+
+
+def _register_product_order_job(scheduler: Any) -> None:
+    """MEH-3296: adds the on-site order tick, only while ordering is on, so a
+    dark feature runs no job at all. Same guards as the rescue digest."""
+    from app.routers.product_orders import product_orders_enabled
+
+    if not product_orders_enabled():
+        log.info("[PRODUCT-ORDERS] disabled (PRODUCT_ORDERS_ENABLED=false) — no job")
+        return
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    scheduler.add_job(
+        _run_product_order_jobs,
+        IntervalTrigger(minutes=PRODUCT_ORDERS_INTERVAL_MINUTES),
+        id="meh_3296_product_orders",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
+    log.info("[PRODUCT-ORDERS] job registered — every 2 minutes")
+
+
 def register_scheduler_jobs(followup_scheduler: Any) -> None:
     """Add every background job to the scheduler (not started here).
 
@@ -812,6 +864,8 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
     _register_job_staleness_check(followup_scheduler)
+    # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED).
+    _register_product_order_job(followup_scheduler)
 
 
 def _register_job_staleness_check(scheduler: Any) -> None:
