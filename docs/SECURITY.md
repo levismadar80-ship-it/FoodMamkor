@@ -263,7 +263,7 @@ proxy, which answers any body above ~4.5 MB with its own English plain-text 413
 (`FUNCTION_PAYLOAD_TOO_LARGE`, measured on staging 18/11) before the backend can
 answer. So `frontend/lib/api.js` refuses a FormData file above
 `MAX_UPLOAD_BYTES` (4 MB) before sending, and turns any 413 on a FormData
-request into «תמונה גדולה מדי (מקסימום 4MB)». The 6 MB and 5 MB caps above
+request into «הקובץ גדול מדי — מקסימום 4MB» (the existing `settings.products.errors.upload_size` string). The 6 MB and 5 MB caps above
 still guard the backend against a client that skips the browser.
 
 > **Slow bodies and buffered bytes (MEH-3297).** The cap above answers "how
