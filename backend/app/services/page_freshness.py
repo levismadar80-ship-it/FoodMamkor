@@ -1,4 +1,3 @@
-# guard-ok: backend/pyproject.toml is deny-listed for CC, so this file is not in [tool.mypy].files yet; it passes mypy --strict (PR body). Sapir adds the line.
 """
 Module:   page_freshness
 Purpose:  The monthly "is everything on your page still correct?" email to a
@@ -52,10 +51,8 @@ DASHBOARD_PATH = "/producer/dashboard"
 
 
 def freshness_enabled() -> bool:
-    """Off until Sapir turns it on. `config.py` is denied to Claude Code, so
-    the field `page_freshness_enabled: bool = False` is added by her from the
-    patch in the PR body; until then this reads False rather than raising."""
-    return bool(getattr(settings, "page_freshness_enabled", False))
+    """Off until PAGE_FRESHNESS_ENABLED=true is set (config.py)."""
+    return settings.page_freshness_enabled
 
 
 # ---------------------------------------------------------------------------
