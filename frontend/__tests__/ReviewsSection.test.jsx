@@ -1032,6 +1032,9 @@ describe("ReviewsSection — the star says why (MEH-3130)", () => {
     fireEvent.click(screen.getByTestId("reviews-star-3"));
     fireEvent.click(screen.getByTestId("reviews-star-4"));
     expect(showToast.info).toHaveBeenCalledTimes(1);
+  });
+});
+
 // MEH-3260: the ⋮ report menu is mounted per review card, and hidden on the
 // signed-in author's own review. 0 / 1 / many reviews, one of them hers.
 describe("ReviewsSection — report menu mount (MEH-3260)", () => {
