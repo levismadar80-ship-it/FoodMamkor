@@ -9,13 +9,15 @@
  * Does NOT: decide which moves are legal (the server's state machine does;
  *           a refused move comes back as a Hebrew 409 and is shown inline).
  * Related:  lib/product-orders.js (formatting), OrderActions.jsx
- * History:  MEH-3316 (creation; stage 4 of MEH-3216)
+ * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps
+ *           («וואטסאפ ללקוח» next to the phone)
  */
 
 import { useLocale, useTranslations } from "next-intl";
-import { Phone } from "@phosphor-icons/react";
+import { Phone, WhatsappLogo } from "@phosphor-icons/react";
 
 import Badge from "@/components/ui/Badge";
+import { getWhatsAppHref } from "@/lib/utils";
 import { dayLabel, hhmm, localPhone, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
 import OrderActions from "./OrderActions";
 
@@ -86,15 +88,27 @@ export default function OrderCard({ order, onChanged }) {
       <OrderHead order={order} />
       <OrderLines order={order} />
       <OrderFacts order={order} />
-      <a
-        href={`tel:+${order.customer_phone}`}
-        dir="ltr"
-        className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary focus-ring rounded-sm"
-        aria-label={t("phone")}
-      >
-        <Phone size={16} aria-hidden="true" />
-        {localPhone(order.customer_phone)}
-      </a>
+      <div className="flex flex-wrap items-center gap-x-4">
+        <a
+          href={`tel:+${order.customer_phone}`}
+          dir="ltr"
+          className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary focus-ring rounded-sm"
+          aria-label={t("phone")}
+        >
+          <Phone size={16} aria-hidden="true" />
+          {localPhone(order.customer_phone)}
+        </a>
+        <a
+          href={getWhatsAppHref(order.customer_phone)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary focus-ring rounded-sm"
+          data-testid="order-whatsapp"
+        >
+          <WhatsappLogo size={16} aria-hidden="true" />
+          {t("whatsapp")}
+        </a>
+      </div>
       {order.status === "change_proposed" && (
         <p className="text-sm text-fg-muted">{t("proposal_sent")}</p>
       )}

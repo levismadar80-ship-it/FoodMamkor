@@ -5673,7 +5673,7 @@
           "lead": "Customers pick products and a time on your page, and you confirm. They pay you directly. You can switch it off at any time.",
           "enabled": "Take orders on the site",
           "auto_confirm": "Confirm orders automatically, up to {count} per slot",
-          "auto_cap": "How many orders to confirm automatically per slot",
+          "slot_cap": "Up to how many orders per slot (optional)",
           "cutoff": "Customers can cancel up to {hours} hours before the slot",
           "cutoff_label": "Cancellation by customers",
           "shabbat": "No orders or messages on Shabbat and holidays",
@@ -5723,7 +5723,8 @@
           "age": "The order has alcohol · ask for ID at hand-over",
           "phone": "Phone",
           "proposal_sent": "You proposed a change. Waiting for the customer.",
-          "expires": "If you do not answer by {when}, the order will be cancelled."
+          "expires": "If you do not answer by {when}, the order will be cancelled.",
+          "whatsapp": "WhatsApp the customer"
         },
         "status": {
           "pending": "New",
@@ -5764,6 +5765,15 @@
           "cancel_lead": "The customer will get a message about it.",
           "cancel_note": "Note to the customer (optional)",
           "failed": "That did not work. Please try again."
+        },
+        "products": {
+          "title": "Products",
+          "orderable": "Open for ordering on the site",
+          "sold_out": "Sold out for now"
+        },
+        "prep": {
+          "title": "What to prepare",
+          "line": "{count} × {name}"
         }
       }
     },

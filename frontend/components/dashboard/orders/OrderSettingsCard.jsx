@@ -10,7 +10,8 @@
  *           the API refuses a partial body so an omitted field never clears).
  * Does NOT: show `alcohol_licensed` as editable (admin only), or the hand-over
  *           windows (OrderWindowsCard).
- * History:  MEH-3316 (creation; stage 4 of MEH-3216)
+ * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps (the
+ *           per-slot cap is always shown and holds for manual confirm too)
  */
 
 import { useState } from "react";
@@ -140,9 +141,9 @@ export default function OrderSettingsCard({ settings, onSaved, collapsed = false
         checked={form.auto_confirm}
         onChange={(on) => setForm((old) => ({ ...old, auto_confirm: on, cap: old.cap || String(DEFAULT_CAP) }))}
       />
-      {form.auto_confirm && (
-        <Input label={t("auto_cap")} inputMode="numeric" dir="ltr" value={form.cap} onChange={(e) => set("cap", e.target.value)} />
-      )}
+      {/* MEH-3216 gaps: one cap per slot, by hand or automatic — the server
+          stops offering a slot that holds this many open orders. */}
+      <Input label={t("slot_cap")} inputMode="numeric" dir="ltr" value={form.cap} onChange={(e) => set("cap", e.target.value)} data-testid="orders-slot-cap" />
       <SwitchRow id="orders-shabbat" label={t("shabbat")} checked={form.shabbat_observant} onChange={(on) => set("shabbat_observant", on)} />
       <Input label={t("min_order")} inputMode="decimal" dir="ltr" value={form.minimum} onChange={(e) => set("minimum", e.target.value)} />
       <TimingFields form={form} set={set} />
