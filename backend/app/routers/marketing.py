@@ -262,7 +262,7 @@ def _send_newsletter_confirm(email: str) -> None:
               </p>
               <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
               <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
-                מהמקור — בתי עסק מקומיים, כולם במקום אחד.
+                מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.
               </p>
             </td>
           </tr>
@@ -272,7 +272,7 @@ def _send_newsletter_confirm(email: str) -> None:
   </table>
 </body>
 </html>"""
-    plain = f"{subject}\n\n{body}\n\nאישור הרשמה: {confirm_url}\n\nמהמקור — בתי עסק מקומיים, כולם במקום אחד."
+    plain = f"{subject}\n\n{body}\n\nאישור הרשמה: {confirm_url}\n\nמהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     send_email(email, subject, plain, html=html_body)
 
 
@@ -307,7 +307,7 @@ def _send_newsletter_welcome(email: str) -> None:
               </p>
               <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
               <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
-                מהמקור — בתי עסק מקומיים, כולם במקום אחד.<br>
+                מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.<br>
                 <a href="{unsubscribe_url}" style="color:#5C584F;text-decoration:underline;">לבטל הרשמה</a>
               </p>
             </td>
@@ -325,7 +325,7 @@ def _send_newsletter_welcome(email: str) -> None:
         "בלי ספאם, ואפשר לבטל בכל רגע.\n\n"
         "ספיר ✨\n\n"
         f"לבטל הרשמה: {unsubscribe_url}\n"
-        "מהמקור — בתי עסק מקומיים, כולם במקום אחד."
+        "מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     )
     send_email(email, "ברוכים הבאים למהמקור 🌿", plain, html=html_body)
 
