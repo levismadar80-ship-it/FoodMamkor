@@ -165,8 +165,8 @@ graph TD
     Producers --> ReviewChecksPut[PUT /admin/producers/{producer_id}/review-checks<br/>🛡️ MEH-1399 set semantics — present=ticked, absent=deleted. Idempotent; label_snapshot written at tick time; ON CONFLICT DO NOTHING so a concurrent save resolves instead of 500ing]
 
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
-    Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
-    Users --> Block[POST /admin/users/{id}/block<br/>🛡️]
+    Users --> Role[PUT /admin/users/{id}/role<br/>🛡️ 409 while a business is linked (MEH-2871)]
+    Users --> Block[POST /admin/users/{id}/block<br/>🛡️ toggle; the only owner of a live business → hide_business (MEH-2871)]
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
     AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first — the row is scheduled in get_current_user for every change by an admin account]
 

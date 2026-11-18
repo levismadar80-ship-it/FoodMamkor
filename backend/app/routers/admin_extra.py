@@ -61,6 +61,8 @@ from app.services.account_guards import (  # MEH-3248: moved here, re-exported
     is_super_admin,
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
+from app.services import indexnow  # MEH-2871
+from app.services.booking_cancellations import hide_business  # MEH-2871
 from app.services.category_slug import resolve_unique_slug
 from app.services.rescue_no_show import (
     NO_SHOW_BLOCK_AT,
@@ -250,9 +252,30 @@ def update_user_role(
     return {"detail": "Role updated", "role": target.role}
 
 
+def _business_left_ownerless(db: Session, target: User) -> Producer | None:
+    """The live business ``target`` owns, if blocking her leaves it with no
+    owner who can still sign in (MEH-2871). A co-owner keeps it up."""
+    if target.producer_id is None:
+        return None
+    producer = db.query(Producer).filter(Producer.id == target.producer_id).first()
+    if producer is None or producer.status != "approved":
+        return None
+    other_owner = (
+        db.query(User.id)
+        .filter(
+            User.producer_id == producer.id,
+            User.id != target.id,
+            User.is_blocked.is_not(True),
+        )
+        .first()
+    )
+    return None if other_owner else producer
+
+
 @router.post("/users/{user_id}/block", response_model=None)
 def block_user(
     user_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -263,8 +286,25 @@ def block_user(
         raise HTTPException(status_code=400, detail="Cannot block yourself")
     target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
     admin_audit.note(user, after={"is_blocked": bool(target.is_blocked)})
+    # MEH-2871 (Sapir 18/11): blocking the only owner of a live business takes
+    # the business off the site, the way an admin pause does — otherwise it
+    # stayed live with nobody able to hand over a bag or answer a booking.
+    # Airbnb and Etsy hide a suspended account's listings the same way.
+    # Unblocking does not put it back: an admin un-pauses it, through the
+    # approval gates (admin.py toggle).
+    hidden = None
+    if target.is_blocked:
+        hidden = _business_left_ownerless(db, target)
+        if hidden is not None:
+            hide_business(db, hidden, background_tasks)
     db.commit()
-    return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
+    if hidden is not None:
+        indexnow.schedule(background_tasks, indexnow.producer_urls(hidden))
+    return {
+        "detail": "Blocked toggled",
+        "is_blocked": target.is_blocked,
+        "business_hidden": hidden is not None,
+    }
 
 
 @router.get("/audit-log", response_model=None)
