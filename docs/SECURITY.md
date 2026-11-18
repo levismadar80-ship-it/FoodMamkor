@@ -882,6 +882,17 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only.
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
 
+## 17c. Outside production, no message reaches a real person (MEH-3402)
+
+The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by a marked row in every environment; this guard covers the row nobody marked — a staging business built from real data, or a restored production backup.
+
+- **Production** = `ENV=production` or `RAILWAY_ENVIRONMENT=production` (the same test as `config.py`). Everything else is guarded, including an unknown or empty environment name: fail-closed. A non-empty `RAILWAY_ENVIRONMENT` other than `production` wins over `ENV=production` (a staging or PR environment that copied production's variables stays guarded).
+- **Email** (`services/email.py` → `services/outbound_guard.py::route_email`): `ADMIN_EMAIL`, `CONTACT_EMAIL`, `SUPER_ADMIN_EMAIL` and their plus-aliases (`you+biz1@…`) are delivered as addressed. A single plain address only — a list (`a@x,b@y`), display name or whitespace is never allowed. Any other recipient is **redirected to `ADMIN_EMAIL`**, subject prefixed `[STAGING → ***@domain]` (masked: the subject reaches logs and Sentry), the full original recipient on the first body line, and `reply_to` dropped so a reply from the staff inbox cannot reach the real person (Sapir 18/11). No `ADMIN_EMAIL`, or the guard itself raising → not sent (fail-closed, `send_email` still never raises). Reserved test domains (`example.com`…) are still skipped before this.
+- **WhatsApp** (`services/whatsapp.py`): only `ADMIN_WHATSAPP_TO` and `OTP_TEST_NUMBERS` (digits compared, `0…` = `972…`; a `+972 0…` or `00972…` form does not match and is dropped — fail-closed). Others: not sent, nothing persisted, returns False. `OTP_TEST_NUMBERS` must therefore be numbers the team owns — any WhatsApp, not only the OTP, may reach them from staging.
+- **Push** (`services/push.py`): never outside production — a subscription is a browser, not a staff member.
+- **Newsletter** (`services/newsletter_sync.py`): Resend Contacts is the list real Broadcasts go to, so staging neither adds nor deletes contacts.
+- **A new channel** (Instagram publishing, payments, SMS) asks `outbound_guard` before its first external call. Tests: `tests/test_meh3402_outbound_guard.py`; the rest of the suite runs the guard as production via the `_outbound_guard_as_production` autouse fixture.
+
 ## 18. Skills supply chain (MEH-397)
 
 Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
