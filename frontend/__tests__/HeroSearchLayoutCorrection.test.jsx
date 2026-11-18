@@ -12,10 +12,14 @@ import HeroSearch from "@/components/HeroSearch";
 vi.mock("next-intl", async () => {
   const he = (await import("../messages/he.json")).default;
   const lookup = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), he);
+  // Drop the approved copy's own rich tags (literal strings, before the vars
+  // go in) — a regex tag-strip here tripped CodeQL's sanitization rule.
+  const RICH_TAGS = ["<strong>", "</strong>", "<bdi>", "</bdi>"];
   const fill = (s, vars = {}) =>
-    s
-      .replace(/\{(\w+)\}/g, (_, k) => (typeof vars[k] === "string" ? vars[k] : `{${k}}`))
-      .replace(/<\/?\w+>/g, "");
+    RICH_TAGS.reduce((acc, tag) => acc.split(tag).join(""), s).replace(
+      /\{(\w+)\}/g,
+      (_, k) => (typeof vars[k] === "string" ? vars[k] : `{${k}}`),
+    );
   return {
     useTranslations: (ns) => {
       const fn = (key, vars) => fill(lookup(`${ns}.${key}`) ?? `${ns}.${key}`, vars);
