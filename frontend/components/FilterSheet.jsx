@@ -119,6 +119,10 @@ function chipsForGroup(group, source) {
   return [...chips].sort((a, b) => rank(a.key) - rank(b.key));
 }
 
+// MEH-3271: the breakpoint where the sheet becomes the anchored desktop panel
+// (the `lg:` classes below).
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
 const DRAG_CLOSE_PX = 80;
 
@@ -147,10 +151,17 @@ export default function FilterSheet({
   const panelRef = useRef(null);
   const dragStartY = useRef(null);
 
-  const focusables = () =>
-    panelRef.current
-      ? panelRef.current.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')
-      : [];
+  const focusables = () => {
+    if (!panelRef.current) return [];
+    const all = [
+      ...panelRef.current.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'),
+    ];
+    // MEH-3271: the ✕ is phone-only (lg:hidden). On desktop it is
+    // display:none, so as the first focusable it swallowed the initial focus
+    // and broke the Tab trap's first stop. Found by the fresh reviewer.
+    const desktop = typeof window !== "undefined" && window.matchMedia?.(DESKTOP_QUERY).matches;
+    return desktop ? all.filter((el) => !el.hasAttribute("data-phone-only")) : all;
+  };
 
   // REUSES: frontend/components/AccountSheet.jsx:40-68 — modal a11y, split in
   // two effects (PR #1565 review): focus capture/restore keys on [open] ONLY,
@@ -317,6 +328,7 @@ export default function FilterSheet({
           onClick={onClose}
           aria-label={t("filters.sheet.close_aria")}
           data-testid="filter-sheet-close"
+          data-phone-only
           className="absolute top-3 end-3 w-11 h-11 rounded-full flex items-center justify-center text-text hover:bg-green-50 transition-colors lg:hidden"
         >
           <X size={18} weight="regular" aria-hidden="true" />

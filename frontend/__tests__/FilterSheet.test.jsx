@@ -389,3 +389,30 @@ describe("FilterSheet visible close (MEH-3271)", () => {
     expect(title.className).toContain("lg:pe-0");
   });
 });
+
+describe("FilterSheet desktop focus skips the phone-only ✕ (MEH-3271)", () => {
+  it("on desktop the first focus lands on a chip, not the hidden ✕", () => {
+    const prev = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: query.includes("min-width: 1024px"),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    try {
+      renderSheet();
+      expect(document.activeElement).not.toBe(screen.getByTestId("filter-sheet-close"));
+      expect(document.getElementById("filter-sheet-panel").contains(document.activeElement)).toBe(true);
+    } finally {
+      window.matchMedia = prev;
+    }
+  });
+
+  it("on the phone the ✕ is part of the trap", () => {
+    renderSheet();
+    expect(document.activeElement).toBe(screen.getByTestId("filter-sheet-close"));
+  });
+});

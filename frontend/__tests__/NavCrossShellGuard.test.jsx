@@ -113,6 +113,7 @@ vi.mock("@phosphor-icons/react", () => {
     Storefront: stub("Storefront"), SignIn: stub("SignIn"), SignOut: stub("SignOut"),
     ArrowUpLeft: stub("ArrowUpLeft"), Gauge: stub("Gauge"),
     Lock: stub("Lock"), // MEH-2070 — the AccountSheet admin row.
+    X: stub("X"), // MEH-3271 — the AccountSheet visible close.
   };
 });
 vi.mock("@/components/LanguageToggle", () => ({
