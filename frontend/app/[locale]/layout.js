@@ -283,7 +283,13 @@ export default async function LocaleLayout({ children, params }) {
                 {/* MEH-735: tabIndex=-1 + focus:outline-none make <main> a
                     programmatic focus target for the skip-to-content link
                     (layout.js:199) without a full-width focus ring. */}
-                <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none"><VerifyBanner />{children}</main>
+                {/* MEH-3343: min-h-screen — the footer never starts inside the
+                    first screen. While a page streams or hydrates its main is
+                    short, the footer sat in view, and when the content arrived
+                    it jumped below the fold: 1.58 CLS on a business page
+                    (phone), 0.53 on /login. MEH-2754 did the same for the
+                    route loading boundary; this covers every other stage. */}
+                <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen focus:outline-none"><VerifyBanner />{children}</main>
                 <FooterSlot />
                 <BottomNav />
                 <Toaster />
