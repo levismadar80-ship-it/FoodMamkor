@@ -2852,6 +2852,9 @@ export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.obj
   "is_hidden": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "reply_ai_moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['APPROVED', 'FLAGGED']),/*#__PURE__*/ zod.null()])),
+  "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['click', 'invite_link']), adminListReviewsAdminReviewsGetResponseSourceDefault),
   "stars": /*#__PURE__*/ zod.int(),
   "user_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2859,6 +2862,15 @@ export const AdminListReviewsAdminReviewsGetResponseItem = /*#__PURE__*/ zod.obj
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const AdminListReviewsAdminReviewsGetResponse = /*#__PURE__*/ zod.array(AdminListReviewsAdminReviewsGetResponseItem)
+
+
+/**
+ * MEH-3259: remove the business owner's reply to a review. The review
+ * itself is untouched; the business can write a new reply, which is checked
+ * by the AI again. No notification to the business in v1 (known gap).
+ * @summary Clear Review Reply
+ */
+export const ClearReviewReplyAdminReviewsReviewIdClearReplyPutResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**

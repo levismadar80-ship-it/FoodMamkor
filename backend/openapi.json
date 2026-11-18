@@ -225,6 +225,43 @@
             ],
             "title": "Producer Name"
           },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
+          },
+          "reply_ai_moderation_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "APPROVED",
+                  "FLAGGED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply Ai Moderation Status"
+          },
+          "reply_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply At"
+          },
           "source": {
             "default": "click",
             "enum": [
@@ -21099,6 +21136,53 @@
           }
         ],
         "summary": "Admin List Reviews",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/admin/reviews/{review_id}/clear-reply": {
+      "put": {
+        "description": "MEH-3259: remove the business owner's reply to a review. The review\nitself is untouched; the business can write a new reply, which is checked\nby the AI again. No notification to the business in v1 (known gap).",
+        "operationId": "clear_review_reply_admin_reviews__review_id__clear_reply_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Review Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Clear Review Reply",
         "tags": [
           "reviews"
         ]

@@ -107,6 +107,11 @@ class AdminReviewOut(BaseModel):
     # author now owns this business, or one sharing a category. Computed per
     # read (services/review_conflicts.py), never stored. Admin-only.
     conflict: Literal["owner", "competitor"] | None = None
+    # MEH-3259: the business owner's reply, its time, and the AI verdict on
+    # it — so the admin can read it, see a FLAGGED one, and remove it.
+    reply: str | None = None
+    reply_at: str | None = None
+    reply_ai_moderation_status: Literal["APPROVED", "FLAGGED"] | None = None
 
     model_config = {"from_attributes": True}
 
