@@ -26,9 +26,13 @@ config = context.config
 # or DATABASE_URL_STAGING with DATABASE_URL fallback — see backend/app/config.py).
 # This means alembic.ini never contains a hardcoded connection string, and the
 # same file works identically for local dev, staging, and prod.
-from app.config import settings  # noqa: E402
+# MEH-3307: MIGRATION_DATABASE_URL (the schema owner) wins when it is set, so
+# the app itself can run as a role without DDL rights. app/database.py.
+from app.database import migration_database_url  # noqa: E402
 
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# `%` doubled: Config is a ConfigParser, and a percent-encoded password in the
+# URL would otherwise be read as an interpolation and fail the boot.
+config.set_main_option("sqlalchemy.url", migration_database_url().replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
