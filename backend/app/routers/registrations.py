@@ -514,7 +514,9 @@ def cancel_registration(
     )
     # MEH-3314: the freed spot goes to the first one waiting (stamped here,
     # mailed after the commit).
-    offer = waitlist.offer_next(db, item) if was_active and _offer_open(db, item) else None
+    offer = (
+        waitlist.offer_next(db, item) if was_active and _offer_open(db, item) else None
+    )
     db.commit()
     if offer:
         to, message, url, test_offer = offer
