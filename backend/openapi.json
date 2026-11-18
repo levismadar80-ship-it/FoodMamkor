@@ -27769,6 +27769,16 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "as_typed",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "As Typed",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

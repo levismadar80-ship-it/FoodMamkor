@@ -87,13 +87,16 @@ def smart_search(
     request: Request,
     q: str = Query("", max_length=200),
     limit: int = Query(8, ge=1, le=20),
+    # MEH-3415: «לחפש בכל זאת» — the client asks for the query exactly as
+    # typed, with no keyboard-layout re-read.
+    as_typed: bool = Query(False),
     db: Session = Depends(get_db),
 ) -> SearchOut:
     q_clean = (q or "").strip()
     if not q_clean:
         return _empty()
     result = _search_once(db, q_clean, limit)
-    if _is_empty(result):
+    if _is_empty(result) and not as_typed:
         # MEH-3415 — nothing for the query as typed: re-read it on the other
         # keyboard layout ("sca" -> "דבש") and try once more. Only on a miss,
         # so a real word with results is never rewritten; corrected_query tells

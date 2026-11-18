@@ -18,6 +18,7 @@ import api from "@/lib/api";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { avatarInitial } from "@/components/ui/Avatar";
+import SearchCorrectionNote from "@/components/SearchCorrectionNote";
 
 /**
  * HeroSearch — hero autocomplete for the homepage (MEH-99).
@@ -132,6 +133,9 @@ export default function HeroSearch({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
   const [loading, setLoading] = useState(false);
+  // MEH-3415: «לחפש בכל זאת» — re-run the query with no keyboard-layout
+  // re-read. Any new keystroke clears it (see onChange).
+  const [asTyped, setAsTyped] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   // MEH-1684: rotating placeholder. `phIdx` is 0 on the server and on the first
   // client paint, so SSR and hydration agree; only the interval advances it.
@@ -195,7 +199,9 @@ export default function HeroSearch({
       setLoading(true);
       api
         .get("/search", {
-          params: { q, limit: MAX_PER_SECTION },
+          params: asTyped
+            ? { q, limit: MAX_PER_SECTION, as_typed: true }
+            : { q, limit: MAX_PER_SECTION },
           signal: controller.signal,
         })
         .then((r) => setResults(r.data || EMPTY_RESULT))
@@ -203,7 +209,7 @@ export default function HeroSearch({
         .finally(() => setLoading(false));
     }, DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [value]);
+  }, [value, asTyped]);
 
   // Outside-click closes dropdown.
   useEffect(() => {
@@ -363,6 +369,7 @@ export default function HeroSearch({
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
+          setAsTyped(false);
           setIsOpen(true);
           setHighlightIdx(0);
         }}
@@ -419,6 +426,13 @@ export default function HeroSearch({
           className="absolute z-hero-suggestions top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl max-h-[70vh] overflow-auto text-start"
           dir="rtl"
         >
+          {!loading && results.corrected_query && (
+            <SearchCorrectionNote
+              corrected={results.corrected_query}
+              original={trimmed}
+              onSearchAsTyped={() => setAsTyped(true)}
+            />
+          )}
           {loading && !hasAutoResults && (
             <p className="px-3 py-3 text-xs text-fg-muted">{t("loading")}</p>
           )}

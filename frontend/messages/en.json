@@ -3626,7 +3626,10 @@
       "section_categories": "Categories",
       "section_cities": "Cities",
       "recent_heading": "Recent searches",
-      "remove_recent_aria": "Remove {q} from recent searches"
+      "remove_recent_aria": "Remove {q} from recent searches",
+      "corrected_showing": "Showing results for <strong>{word}</strong>",
+      "corrected_typed": "You typed <bdi>{original}</bdi> — maybe the keyboard was set to English.",
+      "corrected_search_as_typed": "Search for “{original}” instead"
     },
     "smart": {
       "loading": "Loading results...",
