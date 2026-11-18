@@ -138,13 +138,17 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
   it("«שתפו» opens the share sheet with the /p/{slug} link as url (MEH-2876)", async () => {
     const shareSpy = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "share", { value: shareSpy, configurable: true });
-    setup({ status: "approved", complete: true });
-    render(<ProducerDashboardPage />);
-    await screen.findByTestId("producer-overview");
-    screen.getByTestId("vanity-share").click();
-    expect(shareSpy).toHaveBeenCalledTimes(1);
-    expect(shareSpy.mock.calls[0][0].url).toMatch(/\/p\/demo-farm$/);
-    delete navigator.share;
+    try {
+      setup({ status: "approved", complete: true });
+      render(<ProducerDashboardPage />);
+      await screen.findByTestId("producer-overview");
+      screen.getByTestId("vanity-share").click();
+      expect(shareSpy).toHaveBeenCalledTimes(1);
+      expect(shareSpy.mock.calls[0][0].url).toMatch(/\/p\/demo-farm$/);
+    } finally {
+      // Later cases must not inherit a share sheet, even when this one fails.
+      delete navigator.share;
+    }
   });
 
   it("hides the share card + shows the locked hint when INCOMPLETE", async () => {
