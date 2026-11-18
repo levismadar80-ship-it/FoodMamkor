@@ -52,8 +52,10 @@ RETENTION_PURGE_CRON = "30 2 * * *"  # MEH-2303
 # 08:00/09:00 Israel: an expired group is told in the morning, not at night.
 GROUP_BUY_EXPIRY_CRON = "0 6 * * *"  # MEH-3287
 ADMIN_PENDING_REMINDER_CRON = "0 5 * * *"  # 07:00/08:00 Israel (MEH-3147)
-# The 1st of the month, after the previous month closed on the Israel clock.
-BILLING_START_SIGNAL_CRON = "0 5 1 * *"  # MEH-3413
+# The 1st–3rd of the month, after the previous month closed on the Israel
+# clock. Three mornings because there is no persistent jobstore: a restart over
+# the 1st would otherwise lose the month. The service sends once per month.
+BILLING_START_SIGNAL_CRON = "0 5 1-3 * *"  # MEH-3413
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
 # Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the

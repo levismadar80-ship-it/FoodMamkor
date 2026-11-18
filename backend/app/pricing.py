@@ -113,6 +113,12 @@ SWITCH_ON_BLOCKERS: Final[tuple[str, ...]] = (
     # after written notice to the businesses. Editing version 1 is blocked by
     # tests/test_meh3413_terms11_enforcement.py; sending the notice is not built.
     "terms11-price-change-notice",
+    # §11 «change»: a yearly subscriber keeps the price it bought until renewal.
+    # No subscription records its purchase price.
+    "terms11-yearly-price-kept",
+    # §11 «early»: the end of the launch period is published on the price page
+    # price_change_notice_days ahead. Nothing publishes or checks that date.
+    "terms11-launch-end-published",
 )
 
 

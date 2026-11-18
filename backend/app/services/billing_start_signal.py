@@ -32,6 +32,11 @@ from app.services.email import send_email
 
 logger = logging.getLogger(__name__)
 
+# Months already reported by this process. The job runs on three mornings so a
+# restart over the 1st does not lose the month; this keeps it to one email.
+# A restart between two of those mornings can send a second one — accepted.
+_sent_months: set[str] = set()
+
 
 def signal_reached(view: dict[str, Any]) -> bool:
     """The «הגיע הזמן» rule, read off one billing_summary.overview()."""
@@ -43,12 +48,14 @@ def build_email(view: dict[str, Any]) -> tuple[str, str]:
     (her standing ask, 14/11/2026), the rest states the numbers."""
     count = view["businesses_over_two_months"]
     threshold = view["threshold_agorot"] // pricing.AGOROT_PER_SHEKEL
+    notice_days = pricing.current_price_list().notice_days
     subject = "מהמקור - הגיע הזמן להתחיל לגבות"
     body = (
         f"בחודש {view['month']} היו {count} בתי עסק עם הזמנות בתשלום "
         f"של {threshold:,} ₪ ומעלה, {view['start_billing_months']} חודשים ברצף "
         f"או יותר (הסף להתחלה: {view['start_billing_businesses']} בתי עסק).\n\n"
-        "לפי סעיף 11 בתנאים, החיוב מתחיל רק 60 יום אחרי הודעה בכתב לבתי העסק.\n"
+        f"לפי סעיף 11 בתנאים, החיוב מתחיל רק {notice_days} יום אחרי הודעה "
+        "בכתב לבתי העסק.\n"
         f"הפירוט: {settings.frontend_url}/admin/billing"
     )
     return subject, body
@@ -58,11 +65,14 @@ def send_billing_start_signal(db: Session, *, month: Month | None = None) -> boo
     """Email the admin if the month that just ended reached the signal.
 
     Returns True when an email was sent. Once billing is on, the signal has
-    done its job and nothing is sent.
+    done its job and nothing is sent. It repeats every month the rule holds,
+    until billing is switched on.
     """
     if pricing.billing_is_on():
         return False
     target = month or Month.current().previous()
+    if target.label() in _sent_months:
+        return False
     view = billing_summary.overview(db, target)
     if not signal_reached(view):
         logger.info(
@@ -76,5 +86,6 @@ def send_billing_start_signal(db: Session, *, month: Month | None = None) -> boo
         return False
     subject, body = build_email(view)
     send_email(settings.admin_email, subject, body)
+    _sent_months.add(target.label())
     logger.info("[BILLING-SIGNAL] sent for %s", target.label())
     return True

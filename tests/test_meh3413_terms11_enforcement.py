@@ -28,23 +28,70 @@ from conftest import make_producer
 ROOT = Path(__file__).resolve().parents[1]
 HE = ROOT / "frontend" / "messages" / "he.json"
 
-# Paragraph key → what keeps it. ("test", <file::name>) or ("blocker", <id>).
+# Paragraph key → what keeps it. Each entry is a list of
+# ("test", "<file>::<test name>"), ("blocker", "<SWITCH_ON_BLOCKERS id>") or
+# ("copy", "<why no code can keep it>").
+_FILE = "test_meh3413_terms11_enforcement.py"
+_SUMMARY = "test_meh3181_billing_summary.py"
+_LEDGER = "test_meh3179_billing_ledger.py"
 TERMS11 = {
-    "free": ("test", "test_meh3413_terms11_enforcement.py::test_a_closed_business_keeps_its_free_page"),
-    "launch": ("blocker", "terms11-notice-sent-record"),
-    "scope": ("test", "test_meh3179_billing_ledger.py"),
-    "dispute": ("blocker", "terms11-monthly-summary-and-dispute"),
-    "early": ("blocker", "terms11-launch-joiner-reduced-rate"),
-    "change": ("blocker", "terms11-price-change-notice"),
-    "threshold": ("test", "test_meh3181_billing_summary.py"),
-    "nochoice": ("blocker", "terms11-notice-expiry-to-page-only"),
-    "trial": ("blocker", "terms11-trial-days"),
-    "cancel": ("blocker", "terms11-cancel-and-refund"),
-    "unpaid": ("blocker", "terms11-unpaid-reminder"),
-    # Shown prices are the prices; tests/test_meh3179_pricing_mirror.py keeps
-    # the site, the server and docs/PRICING.md equal.
-    "vat": ("test", "test_meh3179_pricing_mirror.py"),
+    "free": [("test", f"{_FILE}::test_a_closed_business_keeps_its_free_page")],
+    "launch": [
+        ("test", "test_meh3180_billing_state.py::test_the_shipped_switch_is_off"),
+        ("blocker", "terms11-notice-sent-record"),
+        ("test", f"{_FILE}::test_a_closed_business_keeps_its_free_page"),
+    ],
+    "scope": [
+        ("test", f"{_LEDGER}::test_paid_event_signup_is_counted_with_five_percent"),
+        ("test", f"{_LEDGER}::test_a_host_with_no_business_is_not_counted"),
+    ],
+    "dispute": [("blocker", "terms11-monthly-summary-and-dispute")],
+    "early": [
+        ("blocker", "terms11-launch-joiner-reduced-rate"),
+        ("blocker", "terms11-launch-end-published"),
+    ],
+    "change": [
+        ("test", f"{_FILE}::test_price_list_1_is_what_was_published"),
+        ("blocker", "terms11-price-change-notice"),
+        ("blocker", "terms11-yearly-price-kept"),
+    ],
+    "threshold": [
+        (
+            "test",
+            f"{_SUMMARY}::test_the_threshold_is_an_amount_reached_at_exactly_its_value",
+        ),
+        ("test", f"{_SUMMARY}::test_free_sign_ups_never_reach_the_threshold"),
+        ("test", f"{_SUMMARY}::test_the_month_edge_is_on_the_israel_clock"),
+    ],
+    "nochoice": [
+        ("blocker", "terms11-notice-expiry-to-page-only"),
+        (
+            "test",
+            "test_meh3180_billing_state.py::test_a_closed_state_cannot_open_a_new_paid_booking",
+        ),
+        (
+            "test",
+            "test_meh3180_billing_state.py::test_a_running_paid_event_can_still_be_cancelled",
+        ),
+    ],
+    "trial": [("blocker", "terms11-trial-days")],
+    "cancel": [("blocker", "terms11-cancel-and-refund")],
+    "unpaid": [
+        ("blocker", "terms11-unpaid-reminder"),
+        (
+            "test",
+            "test_meh3180_billing_state.py::test_a_closed_state_cannot_open_a_new_paid_booking",
+        ),
+    ],
+    # A statement about the shown prices (the operator is עוסק פטור); there is
+    # no behaviour behind it. Receipts arrive with the billing stage (MEH-3180).
+    "vat": [("copy", "statement about shown prices; receipts are MEH-3180")],
 }
+
+
+def _keepers(kind):
+    return [ident for entries in TERMS11.values() for k, ident in entries if k == kind]
+
 
 # Price list 1 as published on 14/11/2026. DO NOT edit to make this pass —
 # add version 2 to PRICE_LISTS instead (terms §11 «change»).
@@ -81,23 +128,22 @@ def test_every_terms11_paragraph_is_classified():
 
 
 def test_every_unbuilt_promise_is_a_switch_blocker():
-    missing = [
-        ident
-        for kind, ident in TERMS11.values()
-        if kind == "blocker" and ident not in pricing.SWITCH_ON_BLOCKERS
-    ]
+    missing = [i for i in _keepers("blocker") if i not in pricing.SWITCH_ON_BLOCKERS]
     assert missing == []
 
 
+def test_every_terms11_blocker_belongs_to_a_paragraph():
+    listed = {b for b in pricing.SWITCH_ON_BLOCKERS if b.startswith("terms11-")}
+    assert listed == set(_keepers("blocker"))
+
+
 def test_every_named_keeper_test_exists():
-    for kind, ident in TERMS11.values():
-        if kind != "test":
-            continue
+    for ident in _keepers("test"):
         file_name, _, test_name = ident.partition("::")
         path = Path(__file__).parent / file_name
         assert path.is_file(), ident
-        if test_name:
-            assert f"def {test_name}(" in path.read_text(encoding="utf-8"), ident
+        assert test_name, ident
+        assert f"def {test_name}(" in path.read_text(encoding="utf-8"), ident
 
 
 # ---------- price list 1 is frozen ----------
@@ -163,6 +209,7 @@ def _qualifying(db, count):
 @pytest.fixture
 def sent(monkeypatch):
     outbox: list[tuple[str, str, str]] = []
+    monkeypatch.setattr(billing_start_signal, "_sent_months", set())
     monkeypatch.setattr(
         billing_start_signal,
         "send_email",
@@ -192,6 +239,24 @@ def test_at_the_signal_one_email_to_the_admin(db, sent):
     assert "/admin/billing" in body
 
 
+def test_test_businesses_never_raise_the_signal(db, sent):
+    for i in range(START_BILLING_BUSINESSES):
+        producer = make_producer(db, name=f"בדיקה {i}")
+        producer.is_test = True
+        db.commit()
+        _over_in(db, producer, OCT)
+        _over_in(db, producer, NOV)
+    assert billing_start_signal.send_billing_start_signal(db, month=NOV) is False
+    assert sent == []
+
+
+def test_a_month_is_reported_once_across_the_three_mornings(db, sent):
+    _qualifying(db, START_BILLING_BUSINESSES)
+    assert billing_start_signal.send_billing_start_signal(db, month=NOV) is True
+    assert billing_start_signal.send_billing_start_signal(db, month=NOV) is False
+    assert len(sent) == 1
+
+
 def test_one_month_over_is_not_two(db, sent):
     for i in range(START_BILLING_BUSINESSES):
         _over_in(db, make_producer(db, name=f"חודש אחד {i}"), NOV)
@@ -206,17 +271,25 @@ def test_once_billing_is_on_the_signal_is_silent(db, sent, monkeypatch):
     assert sent == []
 
 
-def test_default_month_is_the_one_that_just_ended(db, sent, monkeypatch):
+@pytest.mark.parametrize(
+    ("israel_day", "expected"),
+    [((2026, 12, 1), "2026-11"), ((2027, 1, 3), "2026-12")],
+)
+def test_default_month_is_the_one_that_just_ended(
+    db, sent, monkeypatch, israel_day, expected
+):
+    from datetime import date
+
+    from app.services import billing_summary
+
     seen: list[str] = []
-    real = billing_start_signal.billing_summary.overview
+    real = billing_summary.overview
 
     def spy(db_, month):
         seen.append(month.label())
         return real(db_, month)
 
-    monkeypatch.setattr(billing_start_signal.billing_summary, "overview", spy)
-    monkeypatch.setattr(
-        billing_start_signal.Month, "current", classmethod(lambda cls: Month(2026, 12))
-    )
+    monkeypatch.setattr(billing_summary, "overview", spy)
+    monkeypatch.setattr(billing_summary, "israel_today", lambda: date(*israel_day))
     billing_start_signal.send_billing_start_signal(db)
-    assert seen == ["2026-11"]
+    assert seen == [expected]

@@ -374,8 +374,8 @@ def _run_admin_pending_reminder_job() -> None:
     "billing-start-signal-monthly", cron_monitor_config(BILLING_START_SIGNAL_CRON)
 )
 def _run_billing_start_signal_job() -> None:
-    """MEH-3413: on the 1st, email the admin when the month that just ended
-    reached the billing-start signal. Fresh session; exceptions swallowed so
+    """MEH-3413: early in the month, email the admin when the month that just
+    ended reached the billing-start signal. Fresh session; exceptions swallowed so
     the scheduler thread never dies."""
     from app.database import SessionLocal
     from app.services.billing_start_signal import send_billing_start_signal
@@ -660,9 +660,8 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         coalesce=True,
         misfire_grace_time=3 * 3600,
     )
-    # MEH-3413: billing-start signal on the 1st. No persistent jobstore, so a
-    # restart over the fire time loses the run; a 24h grace covers a pause,
-    # and /admin/billing shows the same numbers any day.
+    # MEH-3413: billing-start signal, mornings of the 1st–3rd (see the cron's
+    # comment); the service sends at most once per month per process.
     followup_scheduler.add_job(
         _run_billing_start_signal_job,
         CronTrigger.from_crontab(BILLING_START_SIGNAL_CRON, timezone="UTC"),
