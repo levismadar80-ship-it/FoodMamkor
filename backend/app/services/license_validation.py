@@ -7,9 +7,11 @@ Purpose:  Single source of truth for the conditional-required check on
 Touches:  reads `categories` table (one SELECT per call).
 Does NOT: validate format (frontend-only UX warning per MEH-530 spec),
           persist anything, mutate the producer row.
-Related:  app/constants.py:LICENSE_REQUIRED_CATEGORIES,
-          frontend/lib/license-required-categories.js (mirror).
-History:  MEH-530 (creation, 2026-05-15).
+Related:  categories.requires_license (the answer, set when a category is
+          created; the seed fills it from app/constants.py
+          LICENSE_REQUIRED_CATEGORIES).
+History:  MEH-530 (creation, 2026-05-15). MEH-3255 (D10): reads the column,
+          so a category an admin creates is no longer silently exempt.
 """
 
 from collections.abc import Iterable
@@ -18,7 +20,6 @@ from typing import Any, TYPE_CHECKING
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.models.models import Category
 
 if TYPE_CHECKING:
@@ -40,17 +41,19 @@ def _normalize_license(value: str | None) -> str | None:
 
 
 def categories_require_license(db: Session, category_ids: Iterable[int]) -> bool:
-    """Return True if any of the given category IDs maps to a name in
-    LICENSE_REQUIRED_CATEGORIES. Empty input → False (no categories selected
+    """Return True if any of the given category IDs has
+    `requires_license` (MEH-3255). Empty input → False (no categories selected
     means nothing is required yet — Pydantic still applies on the field itself).
     """
     ids = list(category_ids or [])
     if not ids:
         return False
-    names = {
-        row.name for row in db.query(Category.name).filter(Category.id.in_(ids)).all()
-    }
-    return bool(names.intersection(LICENSE_REQUIRED_CATEGORIES))
+    return (
+        db.query(Category.id)
+        .filter(Category.id.in_(ids), Category.requires_license.is_(True))
+        .first()
+        is not None
+    )
 
 
 def ensure_license_for_categories(
@@ -59,7 +62,7 @@ def ensure_license_for_categories(
     license_number: str | None,
 ) -> None:
     """Raise HTTPException(422) if at least one of `category_ids` belongs
-    to LICENSE_REQUIRED_CATEGORIES and `license_number` is missing.
+    to a category with `requires_license` and `license_number` is missing.
 
     `license_number` is normalised first: None / "" / whitespace-only all
     count as "not supplied" — necessary because frontend forms commonly send

@@ -12,6 +12,7 @@
 
 **קבצים מרכזיים**
 * `frontend/lib/wizard-step-numbers.js` — המספור בטופס הרב-שלבי: מספר של שלב הוא מיקומו הנראה, לא ערך ה-enum שלו.
+* `backend/app/routers/auth_register_producer.py` — הרשמה עצמית של בית עסק, בסיסמה וב-Google/Apple (MEH-3293).
 * `backend/app/routers/producer_claim.py` · `frontend/components/admin/ClaimLinkPanel.jsx`
 * `backend/app/routers/producer_draft_preview.py` · `backend/app/services/draft_preview.py` · `frontend/components/admin/DraftPreviewLinkPanel.jsx` · `frontend/components/admin/PublishWithConsentPanel.jsx` · `frontend/scripts/capture-page-video.mjs`
 * `backend/app/services/pending_nudge.py` — מיילי ההמשך לעסק שלא סיים.

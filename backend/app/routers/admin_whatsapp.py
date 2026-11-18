@@ -20,6 +20,8 @@ History:  MEH-771 Chunk C (creation — final chunk of the delivery-status
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -27,7 +29,11 @@ from app.auth import require_admin
 from app.database import get_db
 from app.models.models import OutboundMessage, User
 from app.schemas.schemas import OutboundMessageAdminOut
-from app.services.whatsapp import undelivered_predicate
+from app.services.whatsapp import (
+    OUTCOME_BLOCKED_NON_PROD,
+    UNDELIVERED_WINDOW_DAYS,
+    undelivered_predicate,
+)
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/admin/whatsapp", tags=["admin"])
@@ -62,5 +68,30 @@ def list_failed_outbound(
         db.query(OutboundMessage)
         .filter(undelivered_predicate(OutboundMessage, utc_now()))
         .order_by(OutboundMessage.created_at.desc())
+        .all()
+    )
+
+
+# MEH-3402 follow-up: messages the outbound guard dropped outside production,
+# with what they would have said. Never written in production, so there this
+# list is always empty.
+BLOCKED_LIST_LIMIT = 200
+
+
+@router.get("/blocked", response_model=list[OutboundMessageAdminOut])
+def list_blocked_outbound(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> list[OutboundMessage]:
+    """Return the newest dropped-outside-production rows, last 7 days."""
+    since = utc_now() - timedelta(days=UNDELIVERED_WINDOW_DAYS)
+    return (
+        db.query(OutboundMessage)
+        .filter(
+            OutboundMessage.status == OUTCOME_BLOCKED_NON_PROD,
+            OutboundMessage.created_at >= since,
+        )
+        .order_by(OutboundMessage.created_at.desc(), OutboundMessage.id.desc())
+        .limit(BLOCKED_LIST_LIMIT)
         .all()
     )

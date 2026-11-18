@@ -53,7 +53,7 @@ vi.mock("next-intl", () => ({
   },
 }));
 
-const T = (k) => `dashboard.producer.phone_verify.${k}`;
+const T = (k) => `phone_verify.${k}`;
 const SEND_URL = "/producers/me/verify-phone";
 const CONFIRM_URL = "/producers/me/verify-phone/confirm";
 

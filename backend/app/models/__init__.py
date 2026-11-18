@@ -20,6 +20,7 @@ from app.models.models import (
     NewsletterSubscriber,
     OutreachLead,
     PhoneOtpToken,
+    UserPhoneOtpToken,
     Producer,
     ProducerCategory,
     ProducerLocation,
@@ -55,9 +56,12 @@ from app.models.product_orders import (
     PRODUCT_ORDER_STATUSES,
     PRODUCT_PRICE_UNITS,
     ProducerOrderSettings,
+    ProducerOrderWindow,
     ProductOrder,
     ProductOrderEvent,
     ProductOrderItem,
+    ProductOrderNotification,
+    ProductOrderPhoneCode,
 )
 
 # MEH-3179: its own module (models.py is at its size baseline). Imported here
@@ -116,6 +120,7 @@ __all__ = [
     "ProducerWhatsAppClick",
     "OutreachLead",
     "PhoneOtpToken",
+    "UserPhoneOtpToken",
     "KashrutBadgeRequest",
     "SearchQuery",
     # MEH-588 — producer recipes (chunk 1/4)
@@ -131,9 +136,12 @@ __all__ = [
     "ProducerOffer",
     # MEH-3218 — on-site ordering (stage 1 of MEH-3216)
     "ProducerOrderSettings",
+    "ProducerOrderWindow",
     "ProductOrder",
     "ProductOrderItem",
     "ProductOrderEvent",
+    "ProductOrderNotification",
+    "ProductOrderPhoneCode",
     "PRODUCT_ORDER_STATUSES",
     "PRODUCT_ORDER_FULFILMENTS",
     "PRODUCT_ORDER_PAYMENT_STATUSES",

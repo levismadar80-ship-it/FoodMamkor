@@ -17,6 +17,16 @@ import {
 } from "./favorites-cache";
 import { resetSavedCache } from "./saved-cache"; // MEH-2558
 import { useLaunchCohortTag } from "./launch-cohort";
+import { getPasskeyAssertion } from "./webauthn"; // MEH-3305
+
+/** MEH-3305: the passkey step was not finished on this device; the login page
+ * shows the recovery-code form (the ticket is in `passkeyTicket`). */
+export class PasskeyStepRequired extends Error {
+  constructor() {
+    super("passkey step required");
+    this.name = "PasskeyStepRequired";
+  }
+}
 import { DRAFT_KEY } from "./register-draft"; // MEH-2915
 import {
   USER_CITY_CHANGED_EVENT,
@@ -58,6 +68,8 @@ export function AuthProvider({ children }) {
   // request aborted by a navigation). Not "signed out": the layouts that gate
   // on `user` show a retry state for this instead of pushing /login.
   const [authUnreachable, setAuthUnreachable] = useState(false);
+  // MEH-3305: the second step's ticket, while the login page asks for a code.
+  const [passkeyTicket, setPasskeyTicket] = useState(null);
   const t = useTranslations("auth.toasts");
 
   // MEH-434 — keep the Sentry launch_cohort tag in sync with the signed-in
@@ -159,11 +171,45 @@ export function AuthProvider({ children }) {
     return me;
   };
 
-  const login = async (email, password) => {
-    const res = await api.post("/auth/login", { email, password });
-    localStorage.setItem("token", res.data.access_token);
+  // MEH-3305: an admin with a passkey gets a ticket instead of a token from
+  // /auth/login, /auth/google and /auth/apple. The device is asked right away;
+  // if she cancels (or the device is gone) the ticket is kept in memory only
+  // and the login page offers a recovery code instead (`passkeyTicket`).
+  const finishSignIn = async (data) => {
+    let session = data;
+    if (data?.passkey_required) {
+      let credential;
+      try {
+        credential = await getPasskeyAssertion(data.options);
+      } catch {
+        setPasskeyTicket(data.ticket);
+        throw new PasskeyStepRequired();
+      }
+      const res = await api.post("/auth/passkey/login/verify", {
+        ticket: data.ticket,
+        credential,
+      });
+      session = res.data;
+    }
+    setPasskeyTicket(null);
+    localStorage.setItem("token", session.access_token);
     const me = await api.get("/auth/me");
     return afterLogin(me.data);
+  };
+
+  const loginWithRecoveryCode = async (code) => {
+    const res = await api.post("/auth/passkey/login/recovery", {
+      ticket: passkeyTicket,
+      code,
+    });
+    return finishSignIn(res.data);
+  };
+
+  const cancelPasskeyStep = () => setPasskeyTicket(null);
+
+  const login = async (email, password) => {
+    const res = await api.post("/auth/login", { email, password });
+    return finishSignIn(res.data);
   };
 
   const register = async (data) => {
@@ -183,9 +229,7 @@ export function AuthProvider({ children }) {
       id_token: idToken,
       terms_accepted: termsAccepted,
     });
-    localStorage.setItem("token", res.data.access_token);
-    const me = await api.get("/auth/me");
-    return afterLogin(me.data);
+    return finishSignIn(res.data);
   };
 
   const loginWithApple = async (idToken, name, { termsAccepted = false } = {}) => {
@@ -194,9 +238,7 @@ export function AuthProvider({ children }) {
       name,
       terms_accepted: termsAccepted,
     });
-    localStorage.setItem("token", res.data.access_token);
-    const me = await api.get("/auth/me");
-    return afterLogin(me.data);
+    return finishSignIn(res.data);
   };
 
   // MEH-3248: `body` is { password } or { id_token } — the server re-checks
@@ -285,6 +327,9 @@ export function AuthProvider({ children }) {
         register,
         loginWithGoogle,
         loginWithApple,
+        passkeyTicket,
+        loginWithRecoveryCode,
+        cancelPasskeyStep,
         deleteAccount,
         logout,
         updateProfile,

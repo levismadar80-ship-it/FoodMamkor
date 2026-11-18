@@ -1331,7 +1331,7 @@ test.describe("manual › map city search width + dropdown z-index", () => {
 test.describe("manual › map z-index token system + UI bugfixes", () => {
   // MT:MEH-1010:6 · MT:z:b4 — MEH-3119: a marker tap on a phone shows the picked
   //   business ONCE: a card floating over the map, above the collapsed sheet.
-  //   The X is in its own row (it used to cover the photo) and closes the card.
+  //   The X sits on the card's top-end corner (MEH-3417), off the photo, and closes it.
   //   The controls that ride the sheet edge clear the card too.
   test("mobile: a marker tap shows one floating card above the PEEK sheet; controls clear it; the X closes it", async ({ page }, info) => {
     mobileOnly(info, "the floating card is the mobile shell's selection");
@@ -1348,15 +1348,19 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
     expect(cardBox.y + cardBox.height, "the card ends above the sheet's top edge").toBeLessThanOrEqual(sheet.y);
     expect(sheet.y - (cardBox.y + cardBox.height), "…and close to it, not adrift up the map").toBeLessThanOrEqual(16);
 
-    // The X: its own row above the business card, never over the photo.
+    // MEH-3417: the X sits on the business card's top-end corner (no row of
+    // its own above it), inside the card, and never over the photo.
     const close = shell.getByTestId("map-selected-card-close");
     const closeBox = await box(close);
     const inner = await box(card.getByTestId("map-card"));
+    const thumb = await box(card.getByTestId("map-thumb"));
     expect(closeBox.width, "44px tap target").toBeGreaterThanOrEqual(44);
     expect(closeBox.height, "44px tap target").toBeGreaterThanOrEqual(44);
     expect(await hitTestIsSelf(close), "the X takes its own tap").toBe(true);
-    // Its painted circle (32px, centred in the 44px target) ends above the card.
-    expect(closeBox.y + closeBox.height / 2 + 16, "the X's circle ends above the business card").toBeLessThanOrEqual(inner.y + 1);
+    expect(Math.abs(closeBox.y - inner.y), "the X starts at the card's top edge").toBeLessThanOrEqual(1);
+    expect(closeBox.x, "the X is on the card's left (END) edge in RTL").toBeLessThanOrEqual(inner.x + 1);
+    expect(closeBox.x + closeBox.width, "…and clear of the photo on the right").toBeLessThanOrEqual(thumb.x);
+    expect(Math.abs((await box(card)).y - inner.y), "no row above the business card").toBeLessThanOrEqual(1);
 
     // Controls that ride the sheet edge now ride the card's top instead. Polled:
     // the pill's `bottom` animates for 300ms after the card reports its height.

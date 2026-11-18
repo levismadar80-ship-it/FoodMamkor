@@ -18,7 +18,7 @@ Monkeypatch boundaries:
 
 from uuid import uuid4
 
-from conftest import auth_header, make_producer, make_user
+from conftest import auth_header, make_producer, make_user, verify_phone
 
 from app.models import AlertLog, Favorite, FavoriteAlert
 from app.routers.alerts import fire_alerts
@@ -205,6 +205,7 @@ class TestFireAlerts:
         producer = make_producer(db, name="משק הבקר של הראל")
         user = make_user(db, email="wa@example.com")
         user.phone = "0501234567"
+        verify_phone(user)  # MEH-3302
         db.commit()
         _make_alert(db, user, producer, notify_new_product=True, whatsapp_opt_in=True)
 
@@ -247,6 +248,7 @@ class TestFireAlerts:
         producer = make_producer(db, name="🐄 משק  הבקר")
         user = make_user(db, email="emoji@example.com")
         user.phone = "0501112222"
+        verify_phone(user)  # MEH-3302
         db.commit()
         _make_alert(db, user, producer, notify_new_event=True, whatsapp_opt_in=True)
 
@@ -279,6 +281,7 @@ class TestFireAlerts:
         producer = make_producer(db, name="🎉🥕")  # all-emoji → sanitizes to ""
         user = make_user(db, email="allemoji@example.com")
         user.phone = "0503334444"
+        verify_phone(user)  # MEH-3302
         db.commit()
         _make_alert(
             db,
@@ -359,6 +362,7 @@ class TestFireAlerts:
         producer = make_producer(db, name="Farm Unknown")
         user = make_user(db, email="unknown@example.com")
         user.phone = "0509999999"
+        verify_phone(user)  # MEH-3302
         db.commit()
         _make_alert(
             db,
@@ -449,6 +453,7 @@ class TestDeliveryAreaTargeting:
             whatsapp_opt_in=True,
         )
         user.phone = "0501234567"
+        verify_phone(user)  # MEH-3302
         db.commit()
 
         fire_alerts(db, producer.id, "delivery_area", self._content(), ["אילת"])

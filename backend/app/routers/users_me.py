@@ -8,6 +8,7 @@ MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
 import asyncio
+from typing import cast
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -41,8 +42,16 @@ from app.rate_limit import limiter
 # cookie attributes — the single-source-of-truth wins. Future refactor:
 # move both helpers to app/auth_cookies.py.
 from app.services.account_guards import is_super_admin  # MEH-3104, MEH-3248
+from app.services import email_change_guard  # MEH-3425
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
-from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
+from app.schemas.schemas import (
+    PasswordChange,
+    ProfileUpdate,
+    UserOut,
+    UserPhoneOtpConfirmIn,
+)
+from app.services import user_phone_verify
+from app.utils.phone import canonical_il_msisdn
 from app.services.auth_emails import send_email_changed_notice, send_verify_email
 from app.services.password_policy import validate_password
 from app.utils.clock import utc_now
@@ -74,13 +83,17 @@ def _change_email(
         raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
     # MEH-3104: a session alone is not enough to move the account. Without
     # this, a stolen session could change the address, ask for a password
-    # reset there and take the account. Same check and copy as change_password.
-    if (
-        not current_password
-        or not user.password_hash
-        or not verify_password(current_password, user.password_hash)  # type: ignore[arg-type]
-    ):
-        raise HTTPException(status_code=403, detail="הסיסמה הנוכחית שגויה")
+    # reset there and take the account. MEH-3425: wrong passwords are capped
+    # per account, and an account with no password gets its own message.
+    # MEH-3425: lock this user's row first. Test-then-spend on the counter
+    # is two steps around a ~100 ms bcrypt; without the lock a burst of
+    # parallel wrong guesses all pass the check before any is counted.
+    db.query(User).filter(User.id == user.id).with_for_update().one()
+    email_change_guard.check_current_password(
+        user.id,  # type: ignore[arg-type]
+        user.password_hash,  # type: ignore[arg-type]
+        current_password,
+    )
     existing = db.query(User).filter(User.email == new_email).first()
     if existing and existing.id != user.id:
         raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
@@ -91,6 +104,9 @@ def _change_email(
     # MEH-3104: a reset link mailed to the old address must not outlive it.
     user.reset_token = None  # type: ignore[assignment]
     user.reset_token_expires_at = None  # type: ignore[assignment]
+    # MEH-3425: sign every other device out, as logout-all does. The caller's
+    # device gets fresh cookies in update_profile and recovers via refresh.
+    user.token_version = (user.token_version or 1) + 1  # type: ignore[assignment]
     return True
 
 
@@ -121,12 +137,23 @@ def _queue_email_change_mails(
         )
 
 
+def _set_phone(db: Session, user: User, phone: str | None) -> None:
+    """MEH-3302: a different number is unverified, and codes sent to the old
+    one die. A reformatted SAME number keeps its verification."""
+    before = canonical_il_msisdn(cast(str, user.phone)) if user.phone else None
+    user.phone = phone  # type: ignore[assignment]
+    after = canonical_il_msisdn(phone) if phone else None
+    if before != after:
+        user_phone_verify.on_phone_changed(db, user)
+
+
 @router.patch("", response_model=UserOut)
 @limiter.limit("10/hour")
-def update_profile(
+def update_profile(  # noqa: PLR0913 — FastAPI-injected; MEH-3425 added response for the cookie re-arm
     request: Request,
     data: ProfileUpdate,
     background_tasks: BackgroundTasks,
+    response: Response,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserOut | User:
@@ -158,6 +185,9 @@ def update_profile(
     # louder than the old handler-side check, and it can no longer be swallowed.
     sent = data.model_fields_set
     email_changed = False
+    from app.services.image_ownership import assert_own_new_images  # MEH-3247
+
+    assert_own_new_images(user, data.avatar_url, old_avatar)
 
     if "name" in sent and data.name is not None:
         user.name = data.name  # type: ignore[assignment]
@@ -169,7 +199,7 @@ def update_profile(
         user.city = data.city.strip() or None  # type: ignore[assignment]
 
     if "phone" in sent:
-        user.phone = data.phone  # type: ignore[assignment]
+        _set_phone(db, user, data.phone)
 
     old_email = str(user.email)
     if data.email is not None:
@@ -190,6 +220,10 @@ def update_profile(
 
     if email_changed:
         _queue_email_change_mails(background_tasks, user, old_email)
+        # MEH-3425: token_version moved, so re-arm THIS device only (the
+        # change_password / logout-all pattern); other devices get 401.
+        _set_refresh_cookie(response, user)
+        _set_fingerprint_cookie(response, generate_fingerprint())
 
     # MEH-375: post-commit destroy of the prior avatar when its value
     # changed, regardless of how the change happened (PATCH swap or
@@ -268,3 +302,66 @@ async def change_password(
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return None
+
+
+# ============================================================
+# MEH-3302 (D14): verify the user's phone before WhatsApp alerts go to it
+# ============================================================
+_NO_PHONE = "לא נמצא מספר טלפון בפרופיל"
+_TOO_MANY = "יותר מדי ניסיונות. נסו שוב עוד מעט."
+_BAD_CODE = "קוד שגוי או שפג תוקפו. נסו שוב."
+
+
+@router.post("/verify-phone", status_code=200, response_model=None)
+@limiter.limit("3/10minute")
+def send_user_phone_otp(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    """Send a 6-digit WhatsApp code to the user's own phone.
+
+    Caps live in the service (3/user/day, 3/phone/day); this limit is the
+    burst layer. A number that last told us «הסר» gets no code, and the
+    answer is the same «could not send» a provider failure gives, so the
+    route does not reveal what a number replied.
+    """
+    # Local import: producer_me_review imports a large router graph; the
+    # helpers are shared on purpose (one WhatsApp OTP template, one test-mode
+    # gate), not copied.
+    from app.routers.producer_me import OTP_NOT_SENT
+    from app.routers.producer_me_review import (
+        _otp_test_code_for,
+        _send_whatsapp_otp,
+    )
+
+    fixed = _otp_test_code_for(user.phone) if user.phone else None  # type: ignore[arg-type]
+    decision = user_phone_verify.prepare_send(db, user, fixed_code=fixed)
+    if decision.outcome == "no_phone":
+        raise HTTPException(status_code=400, detail=_NO_PHONE)
+    if decision.outcome == "already_verified":
+        return {"detail": "הטלפון כבר מאומת"}
+    if decision.outcome == "capped":
+        raise HTTPException(status_code=429, detail=_TOO_MANY)
+    if decision.outcome == "opted_out":
+        raise HTTPException(status_code=503, detail=OTP_NOT_SENT)
+    if fixed is None:
+        _send_whatsapp_otp(
+            user.phone,  # type: ignore[arg-type]
+            decision.code or "",
+            test_cause=bool(user.is_test),
+        )
+    return {"detail": "קוד נשלח"}
+
+
+@router.post("/verify-phone/confirm", status_code=200, response_model=None)
+@limiter.limit("5/minute")
+def confirm_user_phone_otp(
+    request: Request,
+    body: UserPhoneOtpConfirmIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    if not user_phone_verify.confirm(db, user, body.code):
+        raise HTTPException(status_code=400, detail=_BAD_CODE)
+    return {"detail": "הטלפון אומת"}

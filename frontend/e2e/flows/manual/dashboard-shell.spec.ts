@@ -233,6 +233,17 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
   await page.route("**/favorites**", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
   );
+  // MEH-3316: the dashboard layout asks whether on-site ordering is on (lib/use-orders-tab.js).
+  // 404 = off, the server's answer while PRODUCT_ORDERS_ENABLED is false: no «הזמנות» tab.
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+  // The tools tab's share kit (components/producer/FeedPostCanvas.jsx) reads the
+  // business's products on mount; unstubbed, the fake token draws a 401 and api.js
+  // ends the session (seen locally: the click landed on /login).
+  await page.route((u) => /\/api\/producers\/me\/products\/?$/.test(u.pathname), (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
   await page.route("**/producers/me/dashboard", (route) =>
     route.fulfill({
       status: 200,

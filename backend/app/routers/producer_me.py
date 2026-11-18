@@ -47,6 +47,7 @@ from app.services import indexnow  # MEH-2852
 from app.services import approved_edit_moderation as approved_edit  # MEH-3261
 from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.gallery_cap import assert_free_gallery_cap  # MEH-3220
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
 from app.services.submission_gate import (
@@ -517,6 +518,15 @@ LAST_PHOTO_REMOVAL_MESSAGE = (
 LAST_PHOTO_GUARDED_STATUSES = frozenset({"approved", "inactive"})
 
 
+def _assert_gallery_rules(
+    producer: Producer, payload: dict[str, Any], old_images: list[Any]
+) -> None:
+    """MEH-3247: both gallery-write rules in one call (PLR0915 budget)."""
+    _assert_keeps_a_photo(producer, payload, old_images)
+    # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
+    assert_free_gallery_cap(producer, payload, old_images)
+
+
 def _assert_keeps_a_photo(
     producer: Producer, payload: dict[str, Any], old_images: list[Any]
 ) -> None:
@@ -962,11 +972,15 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
         and _apply_organizer_city(producer, payload["city"])
     )
 
-    # MEH-2911: raised BEFORE the setattr loop, so the whole PUT is refused
-    # rather than half-applied. See the helper for the ruling it enforces.
-    _assert_keeps_a_photo(producer, payload, old_images)
-    # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
-    assert_free_gallery_cap(producer, payload, old_images)
+    # MEH-2911 + MEH-3220: raised BEFORE the setattr loop, so the whole PUT is
+    # refused rather than half-applied (keeps a photo; free-plan 3-photo cap).
+    _assert_gallery_rules(producer, payload, old_images)
+    # MEH-3247: a business stores only photos she uploaded herself.
+    assert_own_new_images(
+        user,
+        [*(payload.get("images") or []), payload.get("owner_photo_url")],
+        [*old_images, producer.owner_photo_url],
+    )
     # MEH-3261: changed public text of an APPROVED business → AI (REJECTED = 422).
     content_ai = approved_edit.check_producer(producer, payload)
 
@@ -1268,6 +1282,7 @@ def create_my_product(
         db.query(Product).filter(Product.producer_id == user.producer_id).count(),
         "products",
     )
+    assert_own_new_images(user, data.image_url)  # MEH-3247
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     approved_edit.check_product(  # MEH-3261
         background_tasks,
@@ -1327,6 +1342,7 @@ def update_my_product(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
     payload = data.model_dump(exclude_unset=True)
+    assert_own_new_images(user, payload.get("image_url"), product.image_url)  # MEH-3247
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     approved_edit.check_product(  # MEH-3261
         background_tasks,

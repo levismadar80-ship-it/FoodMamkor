@@ -297,11 +297,14 @@ EXEMPT_TABLES = {
     "admin_settings": "runtime config, written by the admin panel",
     "alert_log": "runtime log",
     "admin_audit_log": "MEH-3306 admin audit trail — one row per admin action, written at runtime; seeding one would fabricate an action that never happened",
+    "admin_passkeys": "MEH-3305 an admin's registered passkeys — created by the admin's own device; a seeded key would be a credential nobody holds",
+    "admin_recovery_codes": "MEH-3305 hashed one-time recovery codes — generated with the passkey and shown once; seeding one would plant a code",
     "contact_messages": "inbound form submissions — runtime only",
     "inbound_messages": "messaging runtime",
     "outbound_messages": "messaging runtime",
     "newsletter_subscribers": "runtime opt-ins",
     "phone_otp_tokens": "short-lived auth tokens (MEH-51)",
+    "user_phone_otp_tokens": "short-lived user phone-verification codes (MEH-3301)",
     "static_pages": "CMS content, seeded separately when it exists",
     "retired_slugs": "MEH-2528 tombstones — written only when a public business is deleted or renamed; the demo seed deletes nothing",
     "saved_items": "MEH-2556 a user's saved recipes/events/experiences — runtime user action, like favorites clicks",
@@ -322,9 +325,12 @@ EXEMPT_TABLES = {
     # MEH-3218 on-site ordering — dark behind product_orders_enabled; a seed
     # row would show an order no visitor sent and a setting no owner chose.
     "producer_order_settings": "MEH-3218 on-site ordering — dark behind a flag; saved by an owner at runtime",
+    "producer_order_windows": "MEH-3262 on-site ordering — dark behind a flag; saved by an owner at runtime",
     "product_orders": "MEH-3218 on-site ordering — a visitor's order request, runtime only",
     "product_order_items": "MEH-3218 on-site ordering — lines of a visitor's order, runtime only",
     "product_order_events": "MEH-3218 on-site ordering — status log of an order, runtime only",
+    "product_order_phone_codes": "MEH-3263 on-site ordering — one-time phone codes, ten minutes each, runtime only",
+    "product_order_notifications": "MEH-3296 on-site ordering — messages an order owes, written at runtime only",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",
     # `cities` is EMPTY after a full local seed — measured, not assumed. It is
     # owned by backend/scripts/seed_cities.py, not by seed_data.py, so it is

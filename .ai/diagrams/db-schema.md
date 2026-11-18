@@ -137,7 +137,7 @@ erDiagram
         string slug UK "MEH-2139, VARCHAR(50) NOT NULL UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. Nullable in a7c3e91d5f28, NOT NULL in c9f2a41e8b03 once a column default (services/category_slug) made every writer produce one. A rename never re-derives it"
         string emoji
         boolean is_system "NOT NULL, server_default false — MEH-1456 chunk A, revision b7d3e5a9c1f4; TRUE for the 18 seed_data.CATEGORIES rows (backfilled by name + written by the seed), FALSE for admin-created rows. Chunk 2b refuses rename/delete on TRUE"
-        boolean requires_license "NOT NULL, server_default false — MEH-3255 expand, revision f1a7c3e9b5d2; TRUE for licence-required categories (backfilled from the constants name list; required on admin create)"
+        boolean requires_license "NOT NULL, server_default false — MEH-3255, revision f1a7c3e9b5d2; TRUE for licence-required categories (backfilled from the constants name list; required on admin create). Since the contract step every licence reader asks this column, not the name list"
     }
 
     products {
@@ -162,7 +162,7 @@ erDiagram
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
         varchar price_unit "MEH-3218: unit|kg|100g, default unit"
-        boolean is_orderable "MEH-3218: default false, the owner opts each product in"
+        boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
     }
@@ -175,9 +175,21 @@ erDiagram
         int cancel_cutoff_hours "0..168, default 24"
         boolean shabbat_observant
         int min_order_agorot "nullable"
+        int slot_minutes "MEH-3262: 30|60|120, default 60"
+        int lead_time_hours "MEH-3262: 0..168, default 24"
         boolean alcohol_licensed "admin only"
         timestamp created_at
         timestamp updated_at
+    }
+
+    producer_order_windows {
+        uuid id PK
+        uuid producer_id FK "CASCADE; whole-list replace, max 28 per business (MEH-3262)"
+        smallint weekday "0 = Sunday .. 6 = Saturday, as producers.order_window"
+        time start_time "Israel clock"
+        time end_time
+        string fulfilment "pickup|delivery"
+        timestamp created_at
     }
 
     product_orders {
@@ -202,8 +214,38 @@ erDiagram
         timestamp confirmed_at
         timestamp handed_at
         timestamp closed_at
+        string status_token_hash "MEH-3263: sha256 of the buyer's token; partial UNIQUE"
+        string idempotency_key "MEH-3263: client UUID per attempt; partial UNIQUE"
+        string delivery_city "MEH-3263: canonical city, delivery only"
+        timestamp proposed_slot_start "MEH-3263: while change_proposed"
+        timestamp proposed_slot_end
+        int proposed_total_agorot
+        text proposal_note
         timestamp created_at
         timestamp updated_at
+    }
+
+    product_order_phone_codes {
+        uuid id PK
+        string phone "canonical 9725XXXXXXXX (MEH-3263)"
+        string code_hash "HMAC-SHA256(secret, phone:code); the code is never stored"
+        timestamp expires_at "10 minutes"
+        int attempts "5 wrong tries burn the code"
+        timestamp used_at "nullable; single use"
+        timestamp created_at
+    }
+
+    product_order_notifications {
+        uuid id PK
+        uuid order_id FK "CASCADE (MEH-3296)"
+        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before"
+        string channel "whatsapp email"
+        string outcome "pending sent failed skipped"
+        timestamp send_after "due time; moved to the end of Shabbat/chag for an observant business"
+        int attempts "max 5, backoff 5 min doubling"
+        string last_error "short code, never message text"
+        timestamp sent_at
+        timestamp created_at
     }
 
     product_order_items {
@@ -272,6 +314,27 @@ erDiagram
         jsonb details "nullable — reduced before/after, no PII"
         string ip "nullable — not returned by the list route"
         timestamptz created_at "NOT NULL DEFAULT now(), indexed — append-only"
+    }
+    admin_passkeys {
+        uuid id PK
+        uuid user_id FK "users.id ON DELETE CASCADE, indexed (MEH-3305)"
+        bytea credential_id "UNIQUE — the authenticator's id"
+        bytea public_key "COSE key"
+        bigint sign_count "authenticator counter; going backwards = cloned key"
+        string aaguid "nullable, authenticator model"
+        boolean backup_eligible "synced passkey"
+        boolean backup_state
+        string transports "nullable"
+        string name "nullable, the admin's own label"
+        timestamptz created_at
+        timestamptz last_used_at "nullable"
+    }
+    admin_recovery_codes {
+        uuid id PK
+        uuid user_id FK "users.id ON DELETE CASCADE, indexed (MEH-3305)"
+        string code_hash "hash only — the code is shown once and never stored"
+        timestamptz used_at "nullable — set = spent"
+        timestamptz created_at
     }
     admin_checklist_items {
         uuid id PK
@@ -379,10 +442,13 @@ erDiagram
         string phone
         string email
         string cancel_token UK "cancel link credential"
-        string status "registered|cancelled"
+        string status "registered|cancelled|waitlisted"
         timestamp created_at
         timestamp cancelled_at
         timestamp reminder_sent_at "MEH-3312 day-before reminder, one-way"
+        timestamp waitlist_offered_at "MEH-3314 the one offer email"
+        int party_size "MEH-3315 1-10, places taken"
+        string attendance "MEH-3315 NULL|attended|no_show"
     }
 
     business_billing {
@@ -620,10 +686,12 @@ erDiagram
     users ||--o{ rescue_orders : "reserves"
     producers ||--o| rescue_typical_items : "usual contents"
     producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
+    producers ||--o{ producer_order_windows : "weekly ordering windows (MEH-3262)"
     producers ||--o{ product_orders : "order requests (MEH-3218)"
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"
     product_orders ||--o{ product_order_events : "status log"
+    product_orders ||--o{ product_order_notifications : "messages owed, once per kind+channel (MEH-3296)"
     products |o--o{ product_order_items : "SET NULL on delete"
 
     rescue_offers {

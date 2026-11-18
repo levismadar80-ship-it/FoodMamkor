@@ -35,7 +35,8 @@ from app.utils.phone import canonical_il_msisdn
 def registered_counts(
     db: Session, *, event_ids: Iterable[UUID] = (), experience_ids: Iterable[UUID] = ()
 ) -> dict[UUID, int]:
-    """{item id: active sign-ups}. Items with none are absent (read as 0)."""
+    """{item id: places taken by active sign-ups (sum of party_size)}. Items
+    with none are absent (read as 0)."""
     out: dict[UUID, int] = {}
     for column, ids in (
         (Registration.event_id, list(event_ids)),
@@ -44,7 +45,8 @@ def registered_counts(
         if not ids:
             continue
         rows = (
-            db.query(column, func.count(Registration.id))
+            # MEH-3315: a sign-up takes party_size places, not one.
+            db.query(column, func.sum(Registration.party_size))
             .filter(column.in_(ids), Registration.status == "registered")
             .group_by(column)
             .all()

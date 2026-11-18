@@ -79,6 +79,17 @@ async function stubManage(page: Page, events: Row[], experiences: Row[], writes:
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, 200, { id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7 }));
   await page.route("**/favorites**", (r) => json(r, 200, []));
+  // MEH-3316: the dashboard layout asks whether on-site ordering is on (lib/use-orders-tab.js).
+  // 404 = off, the server's answer while PRODUCT_ORDERS_ENABLED is false: no «הזמנות» tab.
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+  // The tools tab's share kit (components/producer/FeedPostCanvas.jsx) reads the
+  // business's products on mount; unstubbed, the fake token draws a 401 and api.js
+  // ends the session (seen locally: the click landed on /login).
+  await page.route((u) => /\/api\/producers\/me\/products\/?$/.test(u.pathname), (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
   // The tools page renders its quick links only after this read (tools/page.js:55-58).
   await page.route("**/producers/me/dashboard", (r) =>
     json(r, 200, { producer: { id: 7, name: "מאפיית שקד", slug: "shaked", status: "approved", availability_state: "accepting_orders", vacation_until: null }, stats: {} }));

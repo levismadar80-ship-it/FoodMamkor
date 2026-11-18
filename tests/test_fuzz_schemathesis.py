@@ -46,6 +46,7 @@ pytestmark = pytest.mark.skipif(
 from hypothesis import HealthCheck, settings  # noqa: E402
 
 import app.routers.auth as auth_router  # noqa: E402
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 from app.config import settings as app_settings  # noqa: E402
 from app.main import app  # noqa: E402
 from tests.conftest import auth_header, make_user  # noqa: E402
@@ -90,7 +91,9 @@ def oauth_configured(monkeypatch):
     monkeypatch.setattr(app_settings, "google_client_id", "fuzz-google-client-id")
     monkeypatch.setattr(app_settings, "apple_client_id", "fuzz-apple-client-id")
     monkeypatch.setattr(auth_router, "_verify_google_token", lambda _id_token: None)
+    monkeypatch.setattr(reg_router, "_verify_google_token", lambda _id_token: None)
     monkeypatch.setattr(auth_router, "_verify_apple_token", lambda _id_token: None)
+    monkeypatch.setattr(reg_router, "_verify_apple_token", lambda _id_token: None)
 
 
 @pytest.mark.fuzz

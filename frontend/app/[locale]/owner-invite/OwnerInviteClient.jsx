@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { LinkBreak, WarningCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
@@ -25,6 +25,9 @@ import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { loginHrefBackHere } from "@/lib/safe-redirect";
+import OwnerInviteConsents from "./OwnerInviteConsents";
+import OwnerInviteExistingAccount from "./OwnerInviteExistingAccount";
 
 /**
  * Module:   OwnerInviteClient
@@ -89,7 +92,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
   useEffect(() => {
     routerRef.current = router;
   });
-  const { refreshUser } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
 
   const [token, setToken] = useState(null);
   const [view, setView] = useState(VIEW.LOADING);
@@ -276,7 +279,9 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
     }
   };
 
-  if (view === VIEW.LOADING) {
+  // MEH-3256 (D8): wait for the session before choosing a form, or a
+  // signed-in owner sees the new-account form flash first.
+  if (view === VIEW.LOADING || (view === VIEW.READY && authLoading)) {
     return (
       <Shell>
         <BrandLoader label={t("loading")} testId="owner-invite-loading" className="min-h-0 py-8" />
@@ -334,6 +339,27 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         </p>
       )}
 
+      {user ? (
+        // MEH-3256 (D8): a signed-in account accepts as itself. The server
+        // refuses an admin account or one that already has a business.
+        <OwnerInviteExistingAccount
+          token={token}
+          invite={invite}
+          accountEmail={user.email || ""}
+          onInvalid={() => setView(VIEW.INVALID)}
+        />
+      ) : (
+      <>
+      {/* The link only when the token has left the address bar: the login
+          page carries this address in ?redirect=, and the token must not. */}
+      {!tokenFromPath && (
+        <p className="text-sm text-fg-muted mb-4" data-testid="owner-invite-has-account">
+          {t("existing.has_account")}{" "}
+          <a href={loginHrefBackHere()} className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current" data-testid="owner-invite-login-link">
+            {t("existing.login_link")}
+          </a>
+        </p>
+      )}
       <form onSubmit={submit} noValidate data-testid="owner-invite-form" className="space-y-4">
         <div>
           <Input
@@ -407,44 +433,15 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           testId="owner-invite-password"
         />
 
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            data-testid="owner-invite-terms"
-            checked={agreedToTerms}
-            onChange={(e) => setAgreedToTerms(e.target.checked)}
-            className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-          />
-          <span className="leading-relaxed text-fg-muted">
-            {tReg("terms.intro")}{" "}
-            <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.tos_link")}</Link>{" "}
-            {tReg("terms.and")}<Link href="/privacy" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.privacy_link")}</Link>
-          </span>
-        </label>
-
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            data-testid="owner-invite-declaration"
-            checked={declarationConfirmed}
-            onChange={(e) => setDeclarationConfirmed(e.target.checked)}
-            className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-          />
-          <span className="leading-relaxed text-fg-muted">{tReg("terms.declaration")}</span>
-        </label>
-
-        {farmerRequired && (
-          <label className="flex items-start gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              data-testid="owner-invite-farmer"
-              checked={farmerConfirmed}
-              onChange={(e) => setFarmerConfirmed(e.target.checked)}
-              className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-            />
-            <span className="leading-relaxed text-fg-muted">{tReg("terms.farmer_declaration")}</span>
-          </label>
-        )}
+        <OwnerInviteConsents
+          terms={agreedToTerms}
+          onTerms={setAgreedToTerms}
+          declaration={declarationConfirmed}
+          onDeclaration={setDeclarationConfirmed}
+          farmerRequired={farmerRequired}
+          farmer={farmerConfirmed}
+          onFarmer={setFarmerConfirmed}
+        />
 
         {(validation || submitError) && (
           <InlineMessage data-testid="owner-invite-error">
@@ -463,6 +460,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           {submitting ? t("submitting") : submitLabel}
         </Button>
       </form>
+      </>
+      )}
     </Shell>
   );
 }

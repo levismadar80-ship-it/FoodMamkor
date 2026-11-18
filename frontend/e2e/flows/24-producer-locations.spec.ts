@@ -379,17 +379,21 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
 
     const coords = (multi!.locations || []).filter(usableCoords);
     const target = coords.find((l) => !l.is_primary) || coords[0];
+    // MEH-3219 (B17): the server rounds lat/lng to 2 decimals (~1 km), so query
+    // from the pin's own rounded point — an offset on top of the rounding could
+    // land just over 1 km. Worst case here is ~0.73 km.
+    const r2 = (v: number) => Math.round(v * 100) / 100;
     const res = await page.request.get(
-      `/api/producers?lat=${target.lat! + 0.003}&lng=${target.lng}&radius_km=5`,
+      `/api/producers?lat=${r2(target.lat!)}&lng=${r2(target.lng!)}&radius_km=5`,
     );
     expect(res.ok(), "geo search must respond 2xx").toBeTruthy();
     const near = (await res.json()) as Array<Producer & { distance_km?: number }>;
     const hit = near.find((p) => String(p.id) === String(multi!.id));
     expect(hit, "the multi-location business must be within radius of its nearest pin").toBeTruthy();
     if (typeof hit?.distance_km === "number") {
-      // ~0.3km to the nearest pin — comfortably under 1km, proving MIN-distance
+      // At most ~0.73km to the nearest pin (rounding) — under 1km, proving MIN-distance
       // (its primary is farther away).
-      expect(hit.distance_km, "distance should equal the NEAREST location (~0.3km)").toBeLessThan(1);
+      expect(hit.distance_km, "distance should equal the NEAREST location (≤ ~0.73km after rounding)").toBeLessThan(1);
     }
   });
 

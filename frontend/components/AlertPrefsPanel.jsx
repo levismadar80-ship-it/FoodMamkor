@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
+import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
 import Switch from "@/components/ui/Switch";
@@ -35,7 +36,7 @@ const DEFAULT_PREFS = {
 export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
   const t = useTranslations("sweep_tail.alert_prefs");
   const headingId = useId();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth();
   const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -289,6 +290,20 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                   ×
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* MEH-3302 (D14): WhatsApp alerts go only to a verified phone. The
+              opt-in stays on; until she verifies, say they are paused (string
+              19) and offer the code right here (string 13). */}
+          {prefs.whatsapp_opt_in && hasPhone && user && !user.whatsapp_ready && !showPhoneField && (
+            <div data-testid="whatsapp-paused">
+              <PhoneVerifyCard
+                variant="user"
+                title={t("whatsapp_paused")}
+                description={t("whatsapp_verify_description")}
+                onVerified={() => refreshUser?.()}
+              />
             </div>
           )}
 

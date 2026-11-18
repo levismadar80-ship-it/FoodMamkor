@@ -241,6 +241,11 @@ class OtpConfirmIn(BaseModel):
     code: str
 
 
+# MEH-3302: a user's phone-verification code — exactly six digits.
+class UserPhoneOtpConfirmIn(BaseModel):
+    code: str = Field(..., pattern=r"^[0-9]{6}$")
+
+
 class SetAmbassadorIn(BaseModel):
     ambassador: bool
 

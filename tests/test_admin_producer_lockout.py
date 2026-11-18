@@ -20,6 +20,7 @@ import pytest
 from app.config import settings
 from app.models import User
 from app.routers import auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 
 from tests.conftest import auth_header, make_user, valid_producer_register_payload
 
@@ -106,6 +107,15 @@ class TestRegisterProducerOAuthAdminLockout:
         monkeypatch.setattr(settings, "google_client_id", "dummy-google-id")
         monkeypatch.setattr(
             auth_router,
+            "_verify_google_token",
+            lambda token: {
+                "sub": self.OAUTH_SUB,
+                "email": ADMIN_EMAIL,
+                "name": "מנהלת",
+            },
+        )
+        monkeypatch.setattr(
+            reg_router,
             "_verify_google_token",
             lambda token: {
                 "sub": self.OAUTH_SUB,

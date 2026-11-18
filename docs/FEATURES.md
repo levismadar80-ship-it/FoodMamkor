@@ -67,6 +67,7 @@ left in v1" vs "what's planned for v2".
 | `/messages` | Messages between visitors and businesses |
 | `/settings` | Profile, security, notifications, delete account |
 | `/registration/[token]` | Cancel an event registration from the confirmation email (noindex) |
+| `/newsletter/confirm` | Newsletter double opt-in: the link in the confirm email lands here (MEH-3300, #4636) |
 | `/newsletter/unsubscribe` | Newsletter unsubscribe |
 | `/delivery-waitlist/unsubscribe` | Leave a delivery-area waitlist |
 | `/unsubscribe/weekly` | Stop the weekly owner summary email (MEH-3079) |
@@ -90,6 +91,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/edit` | Edit the business page (details, photos, products, locations, delivery, payment methods, hours) |
 | `/producer/dashboard/preview` | See the page before approval |
 | `/producer/dashboard/insights` | Views, WhatsApp clicks, searches, cities, followers |
+| `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, ordering settings, weekly hand-over hours; a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
@@ -144,7 +146,7 @@ left in v1" vs "what's planned for v2".
 | `/admin/group-buys` | Group buys overview |
 | `/admin/reports` | User reports, flagged and hidden content |
 | `/admin/outreach` | Lead pipeline (incl. community suggestions) |
-| `/admin/whatsapp-failures` | Undelivered outbound WhatsApp messages |
+| `/admin/whatsapp-failures` | Undelivered outbound WhatsApp messages; outside production also the messages the guard blocked, with their content (MEH-3402) |
 | `/admin/users` | Users |
 | `/admin/content` | Static content pages |
 | `/admin/analytics` | Site analytics |
@@ -255,6 +257,7 @@ left in v1" vs "what's planned for v2".
 | 🚧 | v1 | MEH-51: Kashrut badge review queue (`/admin/kashrut`) — approve/reject with notes | `frontend/app/admin/kashrut/page.js`, `backend/app/routers/admin_kashrut.py` |
 | 🚧 | v1 | MEH-51: 5-tier Trust Ladder — real-time computed, TrustBadge.jsx + KashrutBadgeStrip.jsx | `backend/app/services/trust_tier.py`, `frontend/components/TrustBadge.jsx` |
 | 🚧 | v1 | MEH-51: Phone verification via WhatsApp OTP (step 4 of producer registration) | `backend/app/routers/producer_me_review.py`, `frontend/app/register/producer/page.js` |
+| 🚧 | v2 | MEH-3216: on-site ordering («בקשת הזמנה») — server stages only so far, dark behind `PRODUCT_ORDERS_ENABLED`: order tables + status rules + business settings (MEH-3218), weekly hand-over windows + order menu (MEH-3262), the order itself: phone code, sending, buyer status by token, business actions (MEH-3263), messages to business and buyer + the expiry timer, Shabbat-aware (MEH-3296). No screen yet | `backend/app/routers/product_orders.py`, `product_order_offer.py`, `product_order_buyer.py`, `product_order_business.py`, `backend/app/services/product_order_state.py`, `product_order_slots.py`, `product_order_create.py`, `product_order_actions.py` |
 
 Detail: [ADMIN.md](./ADMIN.md)
 
@@ -318,7 +321,7 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 
 | Status | Version | Feature | Where |
 |---|---|---|---|
-| ✅ | v1 | Newsletter signup (footer) — POST /newsletter, rate-limited 5/hour per IP | `backend/app/routers/marketing.py` |
+| ✅ | v1 | Newsletter signup (footer) — POST /newsletter, rate-limited 5/hour per IP + 3/hour per email; double opt-in via POST /newsletter/confirm from /newsletter/confirm (MEH-3300) | `backend/app/routers/marketing.py` |
 | ✅ | v1 | Contact form — standalone `/contact` page (migrated out of `/about`), POST /contact persists to `contact_messages` + sends SMTP email to CONTACT_EMAIL, fail-open if SMTP unconfigured, rate-limited 5/hour per IP, 12 pytest cases | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact`, `tests/test_api.py::TestContact` |
 | ✅ | v1 | WhatsApp share button on every producer page (viral loop) | `frontend/components/WhatsAppShareButton.jsx` |
 | ✅ | v1 | WhatsApp click tracking on home products | `home_products.py` |

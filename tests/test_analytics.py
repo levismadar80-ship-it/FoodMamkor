@@ -180,6 +180,7 @@ class TestProducerViewTracking:
             "producers-index",
             "similar",
             "nearby",
+            "share",
         ],
     )
     def test_allowlisted_referrer_is_stored_verbatim(self, client, db, referrer):
@@ -1326,3 +1327,38 @@ class TestViewBeaconEndpoint:
         r = client.get(f"/producers/{p.id}?from=search")
         assert r.status_code == 200
         assert db.query(ProducerPageView).count() == before
+
+
+class TestShareVisits:
+    """MEH-3331: «כניסות מהשיתופים שלך» — visits that arrived through a link
+    the owner shared from the share kit (``?from=share``,
+    frontend/lib/share-post.js SHARE_FROM). Visitors per Israel day (the
+    MEH-160 grain every view count uses), last 30 days, only that referrer."""
+
+    def test_counts_only_share_referrer_inside_30_days(self, client, db):
+        p = make_producer(db)
+        user = make_user(db, email="share-owner@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        _seed_view(db, p.id, days_ago=1, referrer="share")
+        _seed_view(db, p.id, days_ago=10, referrer="share")
+        _seed_view(db, p.id, days_ago=2, referrer="share", ip_hash="a" * 64)
+        _seed_view(db, p.id, days_ago=2, referrer="share", ip_hash="a" * 64)  # same visitor, same day (MEH-160 grain)
+        _seed_view(db, p.id, days_ago=40, referrer="share")  # outside the window
+        _seed_view(db, p.id, days_ago=1, referrer="search")  # another source
+        _seed_view(db, p.id, days_ago=1)  # no source
+
+        r = client.get("/producers/me/analytics", headers=auth_header(user))
+        assert r.status_code == 200
+        assert r.json()["share_visits"]["last_30d"] == 3
+
+    def test_zero_when_nothing_was_shared(self, client, db):
+        p = make_producer(db)
+        user = make_user(db, email="share-owner2@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+        _seed_view(db, p.id, days_ago=1, referrer="search")
+
+        r = client.get("/producers/me/analytics", headers=auth_header(user))
+        assert r.json()["share_visits"]["last_30d"] == 0

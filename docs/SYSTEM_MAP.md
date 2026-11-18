@@ -31,7 +31,7 @@ This page links to those and does not repeat their numbers.
 | Frontend | Next.js App Router, JavaScript. Server-renders public pages, proxies `/api/*`. | Vercel · `frontend/` |
 | Backend | FastAPI. One process holds the API, the rate limiter's counters and the scheduler. | Railway · `backend/app/` |
 | Database | PostgreSQL. Schema changes only through Alembic. | Railway · `backend/alembic/versions/` |
-| Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled. | `backend/app/startup.py` |
+| Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email, the monthly billing-start signal (1st of the month, email to the admin, MEH-3413) and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled, and (production only) a 30-minute check that emails the admin when one of those jobs has no recent success (MEH-3332 — last success in `admin_settings` `job_ok:<slug>`; Sentry's $0 plan monitors only the watchdog). | `backend/app/startup.py` |
 | CI | GitHub Actions: the two required gates, E2E, uptime probe, backup-restore check. | `.github/workflows/` |
 
 ## What talks to what
@@ -45,7 +45,7 @@ This page links to those and does not repeat their numbers.
 | Browser | Google Identity / Apple | sign-in tokens | password login still works |
 | Browser | Google Places or Nominatim | address autocomplete (`lib/places.js`) | falls back to settlement only |
 | Browser | PostHog, Clarity, Sentry | analytics and errors, after consent | nothing visible |
-| Backend | Postgres | everything | 5xx |
+| Backend | Postgres | everything; the app may log in as `app_runtime` (rows only) while the boot migration step uses the schema owner (`MIGRATION_DATABASE_URL`, MEH-3307, DEPLOYMENT.md §1.3) | 5xx |
 | Backend | Anthropic | moderation of reviews, recipes, workshops, owner replies; chat | **fails open**: content publishes unchecked, chat answers offline |
 | Backend | Resend | every email, including the monthly page-freshness email (`services/page_freshness.py`) and its Sunday admin digest (`services/page_freshness_digest.py`), off until `PAGE_FRESHNESS_ENABLED`) | verification and reset emails stop |
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
@@ -61,19 +61,23 @@ This page links to those and does not repeat their numbers.
 | Accounts, businesses, products, events, workshops, sign-ups, reviews, bags, group buys, billing ledger | Postgres | the only system of record |
 | Passwords | Postgres, bcrypt hash | never logged |
 | Admin audit log (who changed what, when, from which IP) | Postgres, `admin_audit_log` | append-only: one INSERT per successful change by an admin account, scheduled in `auth.get_current_user` and written by `services/admin_audit.py`; no update or delete in the code. Reduced before/after only, no names or contact details (MEH-3306) |
+| An admin's passkeys and recovery codes (MEH-3305) | Postgres, `admin_passkeys` + `admin_recovery_codes` | public keys only (the private key never leaves her device); recovery codes as hashes, shown once; both go with the account |
 | Access token (15 minutes) | browser `localStorage` | sent as a Bearer header |
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
+| Last successful run of each background job, and the day its overdue email went out | Postgres, `admin_settings` keys `job_ok:<slug>` / `job_stale_alerted:<slug>` | written by `@heartbeat` and `services/job_staleness.py`, production only (MEH-3332); bounded by the number of jobs |
 | Images | Cloudinary | Postgres holds the URL only |
 | Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
+| Spent passkey sign-in tickets (MEH-3305) | backend process memory | a ticket is single-use for its 5 minutes; a restart forgets the set, so a ticket issued just before a deploy could be used once more within those minutes. The ticket itself, while the login page waits for a recovery code, lives in React state only (no browser storage) |
 | Rate-limit counters | backend process memory | reset on every deploy, not shared between processes |
 | Scheduler state | backend process memory | a job that was due during a restart does not run late |
 | Secrets | Railway and Vercel environment variables | none in the repo ([SECURITY.md](./SECURITY.md)) |
 | Product analytics | PostHog (EU), Clarity | consent-gated, no account data |
 | Errors and traces | Sentry | the backend strips tokens from event URLs before sending (`backend/app/sentry.py`) |
-| Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails |
+| Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails; outside production only, a WhatsApp send the guard dropped is kept with its content (`blocked_nonprod`, /admin/whatsapp/blocked) |
 | Backups | Railway volume + the backup job | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)) |
 | Draft of a registration form, recent searches, chosen city | browser storage | never on the server |
+| Which «הקישור שלך בכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
 
 ## What gives first under load
 

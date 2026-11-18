@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { copyOrThrow } from "@/lib/clipboard";
 import Input from "@/components/ui/Input";
+import OwnerDetachControl from "@/components/admin/OwnerDetachControl";
 
 /**
  * Module:   OwnerInvitePanel
@@ -276,6 +277,14 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
             date: fmtDate(acceptedAt),
           })}
         </p>
+      )}
+      {owner && (
+        <OwnerDetachControl
+          producerId={producerId}
+          business={producer?.name || ""}
+          owner={owner}
+          onDetached={onChanged}
+        />
       )}
 
       {!owner && pending && (

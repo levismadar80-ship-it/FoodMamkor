@@ -1,0 +1,21 @@
+# MEH-3295 test-honesty baseline — findings that predate the guard.
+# Delete a line when you fix it. Never add one: a new finding gets fixed,
+# a card in its reason, or (no-verify only) a '# no-assert: <reason>' comment.
+# The three xfails that held known bugs without a card now name MEH-3317/3318/3319.
+no-verify tests/test_availability_validation.py::test_every_state_may_move_to_a_writable_state
+no-verify tests/test_availability_validation.py::test_transition_from_none_allows_any_initial_state
+no-verify tests/test_availability_validation.py::test_transition_from_legacy_unknown_state_not_locked_out
+no-verify tests/test_fuzz_schemathesis.py::test_fuzz_unauthenticated
+no-verify tests/test_fuzz_schemathesis.py::test_fuzz_authenticated
+no-verify tests/test_meh3010_chat_global_cap.py::test_assistant_message_keeps_the_wider_limit
+no-verify tests/test_meh3180_billing_state.py::test_a_host_with_no_business_is_never_closed
+no-verify tests/test_seed_env_gate.py::test_production_seed_does_not_raise
+skip-no-card tests/test_analytics_chokepoint.py::TestChokePointIsEnforced.test_no_analytics_write_outside_the_choke_point
+no-verify tests/test_cleanup_cloudinary_orphans.py::TestConfirmOrAbort.test_lowercase_yes_returns
+no-verify tests/test_cleanup_cloudinary_orphans.py::TestConfirmOrAbort.test_whitespace_padded_yes_returns
+no-verify tests/test_cleanup_cloudinary_orphans.py::TestConfirmOrAbort.test_trailing_newline_yes_returns
+skip-no-card tests/test_fuzz_schemathesis.py::pytestmark
+skip-no-card tests/test_meh2794_marketing_fixtures.py::test_rescue_bag_satisfies_its_db_checks
+skip-no-card tests/test_meh3373_registration_recipient_limit.py::test_another_spelling_of_the_same_address_is_the_same_bucket
+no-verify tests/test_producer_owner_invite.py::TestTokenNeverReachesSentry.test_the_scrubber_never_breaks_reporting
+skip-no-card frontend/__tests__/FooterCopyrightYear.test.jsx::precondition — the runner's own calendar still says 2026 at this instant

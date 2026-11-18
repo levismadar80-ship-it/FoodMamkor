@@ -26,7 +26,7 @@ function element(file, anchor) {
 }
 
 const CASES = [
-  ["business signup phone", "app/[locale]/register/producer/RegisterProducerClient.jsx", 'id="producer-phone"', { type: "tel", autoComplete: "tel" }],
+  ["business signup phone", "app/[locale]/register/producer/steps/DetailsStep.jsx", 'id="producer-phone"', { type: "tel", autoComplete: "tel" }],
   ["user signup name", "app/[locale]/register/RegisterClient.jsx", 'data-testid="register-name"', { autoComplete: "name" }],
   ["user signup email", "app/[locale]/register/RegisterClient.jsx", 'data-testid="register-email"', { type: "email", autoComplete: "email" }],
   ["forgot-password email", "app/[locale]/forgot-password/ForgotPasswordClient.jsx", 'data-testid="forgot-email"', { type: "email", autoComplete: "email" }],

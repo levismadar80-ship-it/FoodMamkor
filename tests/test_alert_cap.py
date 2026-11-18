@@ -7,7 +7,7 @@ Channels are capped independently; the cap is isolated per (user, producer).
 
 from datetime import timedelta
 
-from conftest import make_producer, make_user
+from conftest import make_producer, make_user, verify_phone
 
 from app.models import AlertLog, FavoriteAlert
 from app.routers.alerts import fire_alerts
@@ -74,6 +74,7 @@ class TestFrequencyCap:
         producer = make_producer(db, name="Cap Farm")
         user = make_user(db, email="cap@example.com")
         user.phone = "0501234567"
+        verify_phone(user)  # MEH-3302
         db.commit()
         _alert(
             db,
@@ -97,6 +98,7 @@ class TestFrequencyCap:
         producer = make_producer(db, name="Chan Farm")
         user = make_user(db, email="chan@example.com")
         user.phone = "0502223344"
+        verify_phone(user)  # MEH-3302
         db.commit()
         _alert(db, user, producer, whatsapp_opt_in=True, push_subscription=_SUB)
         _seed_log(db, user, producer, "push")  # push already sent in-window

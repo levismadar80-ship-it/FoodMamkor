@@ -152,7 +152,7 @@ class ProducerRegister(BaseModel):
     )
     # MEH-530: optional at Pydantic level. Router calls
     # ensure_license_for_categories which 422s if license is missing for
-    # a category in LICENSE_REQUIRED_CATEGORIES. max_length=20 mirrors the
+    # a category whose requires_license is true (MEH-3255). max_length=20 mirrors the
     # DB column — boundary defense only (no regex; format warning lives on
     # the frontend per MEH-530 product decision).
     producer_license_number: str | None = Field(default=None, max_length=20)
@@ -787,6 +787,9 @@ class ProducerOwnerSummary(BaseModel):
     MEH-2541 removed from `GET /admin/producers`.
     """
 
+    # MEH-3256 (D9): the owner the admin is looking at, sent back by
+    # «ניתוק בעלים» as `expected_owner_user_id`. Admin-only like the rest.
+    id: UUID | None = None
     name: str
     email: EmailStr
 
