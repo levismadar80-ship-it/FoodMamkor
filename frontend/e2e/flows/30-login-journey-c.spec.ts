@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
 import { settledField } from "./_settled-field";
+import { watchLoginSubmit } from "./_login-submit-diagnostics";
 
 /**
  * Spec:     30-login-journey-c
@@ -397,9 +398,16 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // negative. Refuted hypotheses so far: the per-IP limiter (the route stub
     // above means the backend is never reached) and this one. Do not add a
     // button guard here without a shown-failing run (MEH-1619).
+    // MEH-3154: the first attempt sometimes ends with no error on screen and
+    // the cause is unknown. This adds what the form held and whether the
+    // request left to the failure message; it asserts nothing itself.
+    const diag = watchLoginSubmit(page);
+    await diag.beforeClick();
     await page.getByTestId("login-submit").click();
 
-    await expect(page.getByTestId("login-error")).toContainText("אימייל או סיסמה שגויים");
+    await diag.explain(() =>
+      expect(page.getByTestId("login-error")).toContainText("אימייל או סיסמה שגויים"),
+    );
 
     // Give a stray navigation an explicit chance to happen, then assert it did
     // not. Inverted wait: with the bug this resolves the moment the push lands;

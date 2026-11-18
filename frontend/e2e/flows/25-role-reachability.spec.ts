@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { settledField } from "./_settled-field";
 import { withRateLimitRetry } from "../login-retry";
+import { watchLoginSubmit } from "./_login-submit-diagnostics";
 
 /**
  * Spec:     25-role-reachability
@@ -269,7 +270,11 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
       ]);
       return res;
     };
-    const { response, attempts } = await withRateLimitRetry(submit, {
+    // MEH-3380: when no /api/auth/login request leaves within 20 s, the
+    // failure message now says what the form held at the click.
+    const diag = watchLoginSubmit(page);
+    await diag.beforeClick();
+    const { response, attempts } = await diag.explain(() => withRateLimitRetry(submit, {
       sleep: (ms) => page.waitForTimeout(ms),
       onRetry: ({ attempt, waitMs }) => {
         // An annotation, not only a console line: a run that passes on the
@@ -283,7 +288,7 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
             `${Math.round(waitMs / 1000)}s for the per-IP window (MEH-3159)`,
         });
       },
-    });
+    }));
     // Named, so a final 429 reads as the shared-IP limit rather than as a
     // broken redirect — rule 39(c) wants the cause quoted, and this quotes
     // itself. Asserting 200 (not merely «not 429») also keeps a 401 from
