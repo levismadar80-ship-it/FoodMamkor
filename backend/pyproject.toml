@@ -144,6 +144,7 @@ plugins = ["pydantic.mypy"]
 files = [
     "app/allergens.py",
     "app/auth.py",
+    "app/body_limit.py",
     "app/cloudinary_utils.py",
     "app/config.py",
     "app/constants.py",
@@ -301,6 +302,7 @@ files = [
     "app/services/rescue_digest.py",
     "app/services/rescue_business_emails.py",
     "app/services/rescue_emails.py",
+    "app/services/review_conflicts.py",
     "app/services/rescue_no_show.py",
     "app/services/resend_client.py",
     "app/services/resend_verify_cap.py",
