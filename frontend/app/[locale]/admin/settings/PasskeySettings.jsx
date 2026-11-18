@@ -69,8 +69,8 @@ function PasskeyRow({ row, onRemove, busy }) {
   const t = useTranslations("admin.passkeys");
   const locale = useLocale();
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-3" data-testid="passkey-row">
-      <div className="grid gap-0.5">
+    <li className="flex items-center justify-between gap-3 py-3" data-testid="passkey-row">
+      <div className="grid min-w-0 gap-0.5">
         <span className="font-medium">
           {row.name || t("unnamed")}
           {row.synced && <span className="ms-2 text-xs text-fg-muted">{t("synced")}</span>}
@@ -83,7 +83,7 @@ function PasskeyRow({ row, onRemove, busy }) {
             : t("never_used")}
         </span>
       </div>
-      <Button variant="text" disabled={busy} onClick={() => onRemove(row.id)}>
+      <Button variant="text" className="shrink-0" disabled={busy} onClick={() => onRemove(row.id)}>
         {t("remove")}
       </Button>
     </li>
