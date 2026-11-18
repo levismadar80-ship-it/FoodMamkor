@@ -10,8 +10,8 @@ Does NOT: gate approval. The soft confirm dialog stays entirely client-side
           (use-review-checklist.js), and the HARD approve gates (photo 422 /
           licence 422) live in routers/admin_decisions.py::approve_producer, untouched
           here. A tick is a record that a human looked, never a permission.
-Related:  frontend/lib/admin-review-checklist.js (the Phase 1 constant this
-          supersedes, now the migration's seed), migration d4a9c31e6f82,
+Related:  migration d4a9c31e6f82 (seeds the 7 items the Phase 1 frontend
+          constant shipped; that constant was deleted in MEH-2954),
           backend/app/routers/admin.py (the approve flow these describe).
 History:  MEH-1399 (creation; Phase 2 of MEH-1396).
 """
