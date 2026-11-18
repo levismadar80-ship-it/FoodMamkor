@@ -777,8 +777,11 @@ export default function MapComponent({
     // Expose the initial center for E2E tests (05-map-navigation.spec.ts) —
     // the DEFAULT on a fresh visit, the RESTORED camera when one was saved.
     if (typeof window !== "undefined") window.__MAP_CENTER__ = initialCenter;
+    // MEH-3077: per-tile referrerPolicy — OSM 403s a tile with no Referer;
+    // set on the <img>, it wins over any page-level policy.
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      referrerPolicy: "strict-origin-when-cross-origin",
     }).addTo(mapInstanceRef.current);
 
     // MEH-58 Phase 1: cluster below zoom 11, green circle + white count.

@@ -26,7 +26,10 @@
 #   inside scripts/checks/ and runs it under the required "Repo guards" job.
 #   This script reports a KNOWN-UNAPPLIED state until Sapir pastes the patch
 #   (`.claude/hooks/**` is CC-deny); promoting it before that would red every
-#   PR. Same reasoning, same home, as scripts/e2e-gate-selftest.sh (MEH-1742).
+#   PR. This is the same reasoning scripts/e2e-gate-selftest.sh (MEH-1742) used
+#   while ITS patch was unapplied; that one has since moved into
+#   scripts/checks/ and reds on regression, because its fix landed (#4743).
+#   When this patch lands, do the same here — move it and make it blocking.
 #
 # WHY THE CASES LIVE IN THIS FILE AND NOT ON A COMMAND LINE
 #   The hook scans the whole Bash command text a session issues. A one-liner

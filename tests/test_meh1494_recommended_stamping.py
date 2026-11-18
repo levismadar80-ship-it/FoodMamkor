@@ -374,8 +374,9 @@ def test_escaping_cannot_push_the_stored_note_over_the_cap(db, client):
     """`Field(max_length=500)` bounds the INPUT; bleach can make the output
     longer. `sanitize_text(v, max_length=500)`'s truncation is what bounds what
     reaches the column, so its `max_length` argument is not redundant with the
-    Field constraint — measured: 500 '<' characters clean to 2000, because
-    `strip=True` removes TAGS while a bare '<' is escaped to '&lt;'.
+    Field constraint. Measured before MEH-3317: 500 '<' cleaned to 2000 chars
+    ('&lt;' each). Since MEH-3317 a bare '<' is stored as typed, so this input
+    no longer grows; the test stays as the floor for any future expansion.
 
     A reviewer read the argument as dead on this path. This test is here so the
     next reader who reaches the same conclusion gets a red instead of a silent
@@ -386,7 +387,10 @@ def test_escaping_cannot_push_the_stored_note_over_the_cap(db, client):
 
     resp = client.put(
         f"/admin/producers/{p.id}",
-        json={"is_recommended": True, "recommended_note": "<" * 500},
+        # MEH-3317: letters first — 500 bare '<' now stay '<' (no letters), so
+        # the ≥3-letters floor rightly 422s them; before, '&lt;' smuggled in
+        # the letters 'l' and 't' and the note passed.
+        json={"is_recommended": True, "recommended_note": "אבג" + "<" * 497},
         headers=auth_header(admin),
     )
 

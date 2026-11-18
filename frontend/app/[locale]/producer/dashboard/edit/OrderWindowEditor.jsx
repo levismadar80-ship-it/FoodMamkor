@@ -27,7 +27,6 @@ import {
   orderDayIssues,
   nextOrderRange,
   canAddOrderRange,
-  MAX_ORDER_RANGES_PER_DAY,
 } from "@/lib/order-window";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
