@@ -19,7 +19,8 @@
  *           re-checks everything (routers/registrations.py).
  * Related:  app/[locale]/experiences/[id]/ExperienceDetailClient.jsx,
  *           app/[locale]/events/[id]/EventDetailClient.jsx
- * History:  MEH-3314 (18/11): a full site_form item offers the same form as
+ * History:  MEH-3315 (18/11): «כמה אנשים» 1–10 (party_size).
+ *           MEH-3314 (18/11): a full site_form item offers the same form as
  *           «להצטרף לרשימת ההמתנה» (POST with waitlist: true).
  *           MEH-2768 (creation). Copy approved by Sapir 6/11 (items 5–9).
  *           MEH-3043 (13/11): the open form can be closed again (× in the
@@ -33,6 +34,7 @@ import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import CollectionNotice from "@/components/CollectionNotice";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -51,6 +53,9 @@ const SIGNUP_PREFILL = { name: "name", phone: "phone", email: "email" };
 
 const telHref = (phone) => `tel:${String(phone).replace(/[^\d+]/g, "")}`;
 
+// MEH-3315: one sign-up for up to 10 people (the server's 1–10 rule).
+const PARTY_SIZES = Array.from({ length: 10 }, (_, i) => String(i + 1));
+
 // Letters in any script — the server's 2-letter rule for a name.
 const LETTERS_RE = /\p{L}/gu;
 
@@ -67,12 +72,15 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
   const t = useTranslations("registration.signup");
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
-  const [form, setForm] = useState(/** @type {Record<string, string>} */ ({ name: "", phone: "", email: "" }));
+  const [form, setForm] = useState(/** @type {Record<string, string>} */ ({ name: "", phone: "", email: "", party: "1" }));
   // MEH-3112: a signed-in visitor finds her own details already in place.
   useAccountPrefill(setForm, SIGNUP_PREFILL);
   const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [banner, setBanner] = useState("");
   const [sending, setSending] = useState(false);
+  // MEH-3315: places are left, but fewer than her party — the waitlist is
+  // still a way in, from the same filled form.
+  const [canWait, setCanWait] = useState(false);
 
   // The button that opened the form is gone; focus lands on the first field.
   useEffect(() => {
@@ -95,9 +103,10 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
     return errs;
   };
 
-  const submit = async (e) => {
+  const submit = async (e, asWaitlist = waitlist) => {
     e.preventDefault();
     setBanner("");
+    setCanWait(false);
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
@@ -112,8 +121,9 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
+        party_size: Number(form.party),
         // MEH-3314: a full item takes the same fields onto its waitlist.
-        ...(waitlist ? { waitlist: true } : {}),
+        ...(asWaitlist ? { waitlist: true } : {}),
       });
       // The server decides: a place may have freed since the page loaded.
       onDone(res?.data?.status === "waitlisted");
@@ -123,6 +133,7 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
       const own = { name: "name_short", phone: "phone_invalid", email: "email_invalid" };
       if (fields.length) setErrors(Object.fromEntries(fields.map((f) => [f, t(own[f])])));
       else setBanner((detail && typeof detail === "object" && !Array.isArray(detail) && detail.message) || t("generic"));
+      if (detail?.code === "registration_not_enough") setCanWait(true);
     } finally {
       setSending(false);
     }
@@ -134,6 +145,17 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
         <InlineMessage variant="box" className="rounded-md p-3">
           {banner}
         </InlineMessage>
+      )}
+      {canWait && (
+        <button
+          type="button"
+          disabled={sending}
+          onClick={(e) => submit(e, true)}
+          className="block w-full text-center text-sm text-primary underline underline-offset-2 min-h-touch"
+          data-testid="registration-join-waitlist"
+        >
+          {t("waitlist_submit")}
+        </button>
       )}
       <Input id="signup-name" label={t("name")} required autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} />
       <Input
@@ -160,6 +182,13 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
         error={errors.email}
       />
       <EmailTypoHint fieldId="signup-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
+      <Select id="signup-party" size="md" label={t("party_size")} value={form.party} onChange={set("party")} data-testid="registration-party">
+        {PARTY_SIZES.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </Select>
       {/* MEH-2777: the SAME approved sentence, now through the
           notice-at-collection component (MEH-1981) so it carries the
           /privacy link the other eight collection points already have.

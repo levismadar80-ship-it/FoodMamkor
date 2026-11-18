@@ -46,6 +46,7 @@ from app.schemas.schemas import (
     RegistrationCancelInfoOut,
     RegistrationCreate,
     RegistrationCreatedOut,
+    RegistrationAttendanceIn,
     RegistrationOwnerOut,
 )
 from app.services.experience_notifications import host_test_cause  # MEH-2952
@@ -82,24 +83,25 @@ def _has_started(day: date, at: time | None) -> bool:
     return at is not None and israel_now().time() >= at
 
 
-def _offer_open(db: Session, item: Event | Experience) -> bool:
+def _places_to_offer(db: Session, item: Event | Experience) -> int | None:
     """MEH-3314: a freed place is offered only where the form would take it —
     active, on-site form, not started (a recurring workshop never closes by
     its first date), and below the cap after this cancel (a workshop's own
-    tally of off-site sign-ups shares it). Mirrors the sign-up gates above."""
+    tally of off-site sign-ups shares it). Mirrors the sign-up gates above.
+    MEH-3315: how many places are free (0 = offer nothing, None = no cap)."""
     if not item.is_active or item.registration_method != "site_form":
-        return False
+        return 0
     recurring = bool(getattr(item, "is_recurring", False))
     if _has_started(item.event_date, item.event_time) and not recurring:  # type: ignore[arg-type]
-        return False
+        return 0
     if item.max_participants is None:
-        return True
+        return None
     if isinstance(item, Event):
         taken = registered_counts(db, event_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
     else:
         taken = registered_counts(db, experience_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
         taken += item.participants_count or 0
-    return bool(taken < item.max_participants)
+    return max(int(item.max_participants) - int(taken), 0)
 
 
 def _event_for_signup(db: Session, event_id: UUID) -> Event:
@@ -193,6 +195,7 @@ def _new_registration(
         email=data.email,
         cancel_token=secrets.token_urlsafe(32),
         status=status,
+        party_size=data.party_size,  # MEH-3315
         **item,
     )
 
@@ -221,16 +224,30 @@ def _signup_row(
         return reg
     if existing is not None:
         existing.status = "registered"  # type: ignore[assignment]
+        existing.party_size = data.party_size  # type: ignore[assignment]
         return existing
     reg = _new_registration(data, **item)
     db.add(reg)
     return reg
 
 
-def _gate(data: RegistrationCreate, *, full: bool) -> None:
-    """A full item refuses a plain sign-up; the waitlist is opt-in."""
+def _gate(data: RegistrationCreate, *, full: bool, left: int | None) -> None:
+    """A full item refuses a plain sign-up; the waitlist is opt-in.
+
+    MEH-3315: "full" is for THIS party — places left, but fewer than she asked
+    for, says how many are left instead of «אין יותר מקומות»."""
     if full and not data.waitlist:
+        if left:
+            message = "נשאר רק מקום אחד" if left == 1 else f"נשארו רק {left} מקומות"
+            raise HTTPException(
+                status_code=409,
+                detail={"code": "registration_not_enough", "message": message},
+            )
         raise HTTPException(status_code=409, detail=_FULL)
+
+
+def _left(cap: int | None, occupied: int) -> int | None:
+    return None if cap is None else max(cap - occupied, 0)
 
 
 @router.post(
@@ -252,8 +269,10 @@ def register_for_event(
     # email already signed up and 409 for a new one on a full item, which
     # tells a stranger whether that address is on the list.
     taken = registered_counts(db, event_ids=[event.id]).get(event.id, 0)  # type: ignore[call-overload,list-item]
-    full = event.max_participants is not None and taken >= event.max_participants
-    _gate(data, full=full)
+    # MEH-3315: places are people — the party must fit, not just one more row.
+    left = _left(event.max_participants, taken)  # type: ignore[arg-type]
+    full = left is not None and data.party_size > left
+    _gate(data, full=full, left=left)
     reg = _signup_row(db, data, Registration.event_id, event.id, full=full)  # type: ignore[arg-type]
     if reg is None:
         return waitlist.WAITLISTED if full else RegistrationCreatedOut()
@@ -286,7 +305,7 @@ def register_for_event(
     owner_email = _owner_email_for_event(db, event)
     if owner_email:
         spots = (
-            event.max_participants - (taken + 1)
+            event.max_participants - (taken + reg.party_size)
             if event.max_participants is not None
             else None
         )
@@ -299,6 +318,7 @@ def register_for_event(
                 phone=reg.phone,  # type: ignore[arg-type]
                 email=reg.email,  # type: ignore[arg-type]
                 spots_left=spots,
+                party_size=int(reg.party_size or 1),  # MEH-3315
                 # MEH-2884 (placement audit item 10): straight to the tool that lists
                 # the registrations, not the dashboard home (one tap saved).
                 manage_url=f"{settings.frontend_url}/producer/dashboard/events",
@@ -327,8 +347,9 @@ def register_for_experience(
     taken = registered_counts(db, experience_ids=[ex.id]).get(ex.id, 0)  # type: ignore[call-overload,list-item]
     # The host's own tally (WhatsApp / phone sign-ups) shares the cap.
     occupied = (ex.participants_count or 0) + taken
-    full = ex.max_participants is not None and occupied >= ex.max_participants
-    _gate(data, full=full)
+    left = _left(ex.max_participants, occupied)  # type: ignore[arg-type]
+    full = left is not None and data.party_size > left
+    _gate(data, full=full, left=left)
     reg = _signup_row(db, data, Registration.experience_id, ex.id, full=full)  # type: ignore[arg-type]
     if reg is None:
         return waitlist.WAITLISTED if full else RegistrationCreatedOut()
@@ -371,7 +392,7 @@ def register_for_experience(
         return waitlist.WAITLISTED
     if host and host.email:
         spots = (
-            ex.max_participants - (occupied + 1)
+            ex.max_participants - (occupied + reg.party_size)
             if ex.max_participants is not None
             else None
         )
@@ -384,6 +405,7 @@ def register_for_experience(
                 phone=reg.phone,  # type: ignore[arg-type]
                 email=reg.email,  # type: ignore[arg-type]
                 spots_left=spots,
+                party_size=int(reg.party_size or 1),  # MEH-3315
                 # MEH-2884: experiences tab, where the host sees this registration.
                 manage_url=f"{settings.frontend_url}/producer/dashboard/experiences",
             ),
@@ -444,6 +466,54 @@ def list_experience_registrations(
         .order_by(Registration.created_at.asc())
         .all()
     )
+
+
+# ---------- attendance (MEH-3315) ----------
+
+
+@router.patch(
+    "/registrations/{registration_id}/attendance",
+    response_model=RegistrationOwnerOut,
+)
+@limiter.limit("60/minute")
+def set_registration_attendance(
+    request: Request,
+    registration_id: UUID,
+    body: RegistrationAttendanceIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RegistrationOwnerOut | Registration:
+    """«הגיעו» / «לא הגיעו» on one sign-up — the item's owner or an admin.
+
+    A note for the business only: nothing reads it to block a visitor
+    (card MEH-3315). 403 for anyone else, as the card asks; 404 for an id
+    that does not exist. Only an active sign-up is marked (409 otherwise)."""
+    reg = (
+        db.query(Registration)
+        .filter(Registration.id == registration_id)
+        .with_for_update()
+        .first()
+    )
+    if reg is None:
+        raise HTTPException(status_code=404, detail="ההרשמה לא נמצאה")
+    if reg.event_id is not None:
+        event = db.get(Event, reg.event_id)
+        owns = (
+            event is not None
+            and user.producer_id is not None
+            and user.producer_id == event.producer_id
+        )
+    else:
+        ex = db.get(Experience, reg.experience_id)
+        owns = ex is not None and ex.host_user_id == user.id
+    if not (owns or _is_admin(user)):
+        raise HTTPException(status_code=403, detail="רק בית העסק יכול לסמן הגעה")
+    if reg.status != "registered":
+        raise HTTPException(status_code=409, detail="אפשר לסמן הגעה רק להרשמה פעילה")
+    reg.attendance = body.attendance  # type: ignore[assignment]
+    db.commit()
+    db.refresh(reg)
+    return reg
 
 
 # ---------- cancel by token ----------
@@ -514,12 +584,13 @@ def cancel_registration(
     )
     # MEH-3314: the freed spot goes to the first one waiting (stamped here,
     # mailed after the commit).
-    offer = (
-        waitlist.offer_next(db, item) if was_active and _offer_open(db, item) else None
+    offers = (
+        waitlist.offer_places(db, item, _places_to_offer(db, item))
+        if was_active
+        else []
     )
     db.commit()
-    if offer:
-        to, message, url, test_offer = offer
+    for to, message, url, test_offer in offers:
         background_tasks.add_task(
             send_waitlist_offer, to, message, url, test_cause=test_offer
         )

@@ -144,7 +144,7 @@ describe("dashboard — «כמה כבר נרשמו»", () => {
 
   it("no site sign-ups and another method → no list", async () => {
     await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 0, registered_count: 0 }]);
-    expect(screen.queryByText(/הרשמות באתר/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/נרשמו באתר/)).not.toBeInTheDocument();
   });
 
   it.each([

@@ -121,6 +121,7 @@ class OwnerNewEmail:
     email: str
     spots_left: int | None  # None = no cap → the line is left out
     manage_url: str
+    party_size: int = 1  # MEH-3315: a «כמה אנשים» line when above 1
 
 
 def send_owner_new_registration(
@@ -129,6 +130,8 @@ def send_owner_new_registration(
     title = _one_line(m.title)
     subject = f'הרשמה חדשה ל-"{title}"'
     lines = [("שם", m.name), ("טלפון", m.phone), ("אימייל", m.email)]
+    if m.party_size > 1:
+        lines.append(("כמה אנשים", str(m.party_size)))
     spots = f"נשארו {m.spots_left} מקומות" if m.spots_left is not None else ""
 
     body = (

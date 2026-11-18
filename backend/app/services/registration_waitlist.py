@@ -72,12 +72,36 @@ def item_url(item: Event | Experience) -> str:
     return f"{settings.frontend_url}/{kind}/{item.id}"
 
 
+Offer = tuple[str, RegistrantEmail, str, bool]
+
+
+def offer_places(
+    db: Session, item: Event | Experience, places: int | None
+) -> list[Offer]:
+    """MEH-3315: offer the freed places, in list order, to every party that
+    fits — a party of 4 first in line is skipped while only 1 place is free,
+    and a cancelled party of 4 can be offered to more than one visitor.
+    `places` None = no cap: one offer. Each row is offered once, ever."""
+    if places is None:
+        one = offer_next(db, item)
+        return [one[0]] if one else []
+    offers: list[Offer] = []
+    while places > 0:
+        found = offer_next(db, item, max_party=places)
+        if found is None:
+            break
+        offers.append(found[0])
+        places -= found[1]
+    return offers
+
+
 def offer_next(
-    db: Session, item: Event | Experience
-) -> tuple[str, RegistrantEmail, str, bool] | None:
-    """Stamp the first waitlisted visitor not yet offered and return what
-    send_waitlist_offer needs (plain values), or None. The caller commits,
-    then queues the email."""
+    db: Session, item: Event | Experience, max_party: int | None = None
+) -> tuple[Offer, int] | None:
+    """Stamp the first waitlisted visitor not yet offered (whose party fits
+    `max_party`, when given) and return what send_waitlist_offer needs (plain
+    values) with her party size, or None. The caller commits, then queues the
+    email."""
     column = (
         Registration.event_id if isinstance(item, Event) else Registration.experience_id
     )
@@ -87,6 +111,7 @@ def offer_next(
             column == item.id,
             Registration.status == "waitlisted",
             Registration.waitlist_offered_at.is_(None),
+            *([Registration.party_size <= max_party] if max_party is not None else []),
         )
         .order_by(Registration.created_at.asc())
         .with_for_update(skip_locked=True)
@@ -95,5 +120,7 @@ def offer_next(
     if reg is None or not reg.email:
         return None
     reg.waitlist_offered_at = utc_now()  # type: ignore[assignment]
+    db.flush()  # the session does not autoflush; offer_places asks again
     message = _message(reg, item, _host_name_for(item))
-    return str(reg.email), message, item_url(item), is_test_item(item)
+    offer: Offer = (str(reg.email), message, item_url(item), is_test_item(item))
+    return offer, int(reg.party_size or 1)

@@ -14085,6 +14085,31 @@
         "title": "RegisterAck",
         "type": "object"
       },
+      "RegistrationAttendanceIn": {
+        "description": "MEH-3315: the owner marks whether the party came; null clears it.",
+        "properties": {
+          "attendance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "attended",
+                  "no_show"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attendance"
+          }
+        },
+        "required": [
+          "attendance"
+        ],
+        "title": "RegistrationAttendanceIn",
+        "type": "object"
+      },
       "RegistrationCancelInfoOut": {
         "description": "GET by cancel token — enough for the cancel page to say what it is.",
         "properties": {
@@ -14140,6 +14165,13 @@
             "title": "Name",
             "type": "string"
           },
+          "party_size": {
+            "default": 1,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Party Size",
+            "type": "integer"
+          },
           "phone": {
             "maxLength": 20,
             "minLength": 1,
@@ -14179,6 +14211,21 @@
       "RegistrationOwnerOut": {
         "description": "One row of the owner's list (owner / admin only).",
         "properties": {
+          "attendance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "attended",
+                  "no_show"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attendance"
+          },
           "cancelled_at": {
             "anyOf": [
               {
@@ -14208,6 +14255,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "party_size": {
+            "default": 1,
+            "title": "Party Size",
+            "type": "integer"
           },
           "phone": {
             "title": "Phone",
@@ -28191,6 +28243,65 @@
         "summary": "Get Prefill",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/registrations/{registration_id}/attendance": {
+      "patch": {
+        "description": "«הגיעו» / «לא הגיעו» on one sign-up — the item's owner or an admin.\n\nA note for the business only: nothing reads it to block a visitor\n(card MEH-3315). 403 for anyone else, as the card asks; 404 for an id\nthat does not exist. Only an active sign-up is marked (409 otherwise).",
+        "operationId": "set_registration_attendance_registrations__registration_id__attendance_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "registration_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Registration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationAttendanceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Registration Attendance",
+        "tags": [
+          "registrations"
         ]
       }
     },

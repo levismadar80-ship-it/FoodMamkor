@@ -960,6 +960,7 @@ from app.schemas.experiences import (  # noqa: E402
     RegistrationCreatedOut as RegistrationCreatedOut,
     RegistrationMethod as RegistrationMethod,
     RegistrationOwnerOut as RegistrationOwnerOut,
+    RegistrationAttendanceIn as RegistrationAttendanceIn,
     _EXPERIENCE_CATEGORY_KEYS as _EXPERIENCE_CATEGORY_KEYS,
     _experience_category as _experience_category,
 )

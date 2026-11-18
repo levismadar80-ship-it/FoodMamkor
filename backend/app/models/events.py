@@ -19,6 +19,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     Text,
     Time,
@@ -230,6 +231,14 @@ class Registration(Base):
             "status IN ('registered', 'cancelled', 'waitlisted')",
             name="ck_registrations_status",
         ),
+        # MEH-3315: a sign-up for up to 10 people; who came, for the owner.
+        CheckConstraint(
+            "party_size BETWEEN 1 AND 10", name="ck_registrations_party_size"
+        ),
+        CheckConstraint(
+            "attendance IS NULL OR attendance IN ('attended', 'no_show')",
+            name="ck_registrations_attendance",
+        ),
         Index("ix_registrations_event_id", "event_id"),
         Index("ix_registrations_experience_id", "experience_id"),
     )
@@ -259,6 +268,12 @@ class Registration(Base):
     waitlist_offered_at = Column(DateTime, nullable=True)
     # MEH-3312: the evening-before reminder went out. NULL = not yet.
     reminder_sent_at = Column(DateTime, nullable=True)
+    # MEH-3315: places this sign-up takes (capacity sums it), and whether the
+    # party came — the owner's note only, it blocks nothing.
+    party_size = Column(
+        SmallInteger, nullable=False, server_default=text("1"), default=1
+    )
+    attendance = Column(String(10), nullable=True)
 
     event = relationship("Event")
     experience = relationship("Experience")
