@@ -70,7 +70,7 @@ This page links to those and does not repeat their numbers.
 | Secrets | Railway and Vercel environment variables | none in the repo ([SECURITY.md](./SECURITY.md)) |
 | Product analytics | PostHog (EU), Clarity | consent-gated, no account data |
 | Errors and traces | Sentry | the backend strips tokens from event URLs before sending (`backend/app/sentry.py`) |
-| Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails |
+| Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails; outside production only, a WhatsApp send the guard dropped is kept with its content (`blocked_nonprod`, /admin/whatsapp/blocked) |
 | Backups | Railway volume + the backup job | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)) |
 | Draft of a registration form, recent searches, chosen city | browser storage | never on the server |
 

@@ -20,6 +20,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { SkeletonList } from "@/components/Skeleton";
+import WhatsappBlockedSection from "@/components/admin/WhatsappBlockedSection";
 
 const STATUS_COLORS = {
   failed: "bg-danger-100 text-danger-800",
@@ -126,6 +127,9 @@ export default function AdminWhatsappFailuresPage() {
           </table>
         </div>
       )}
+
+      {/* MEH-3402 follow-up: staging only — renders nothing when empty. */}
+      <WhatsappBlockedSection />
     </div>
   );
 }

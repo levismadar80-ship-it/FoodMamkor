@@ -202,6 +202,7 @@ graph TD
     Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
     Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
     AdminWhatsapp[/admin/whatsapp-failures page] --> AdminWaFailed[GET /admin/whatsapp/failed<br/>🛡️ MEH-771 Chunk C undelivered outbound<br/>status IN failed,window_expired, or accepted &gt;1 day<br/>with no receipt (stuck, MEH-2122 E) · last 7d<br/>list-only, no resend/retry]
+    AdminWhatsapp --> AdminWaBlocked[GET /admin/whatsapp/blocked<br/>🛡️ MEH-3402 staging-only capture<br/>status = blocked_nonprod, with content · last 7d · max 200]
     AdminProducers[/admin/producers page] --> AdminRiskScore[GET /admin/producers/&#123;id&#125;/risk-score<br/>🛡️ MEH-509 PR3 Anthropic Haiku risk score<br/>NULL when not scored / fail-open]
 ```
 

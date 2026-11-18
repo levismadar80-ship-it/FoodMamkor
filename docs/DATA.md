@@ -1690,6 +1690,14 @@ GET    /admin/whatsapp/failed     admin — undelivered outbound (status IN fail
                                   undelivered_whatsapp_7d uses the same
                                   predicate (services/whatsapp.py
                                   undelivered_predicate).
+GET    /admin/whatsapp/blocked    admin — MEH-3402 follow-up: messages the
+                                  outbound guard dropped outside production
+                                  (status = blocked_nonprod), last 7 days,
+                                  newest first, max 200. error_message holds
+                                  what the message would have said (text body,
+                                  or "template_name: param | param"). Never
+                                  written in production, so empty there; kept
+                                  out of the undelivered list and count.
 ```
 
 ### Admin — experiences (`app/routers/admin_experiences.py`)

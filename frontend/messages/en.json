@@ -2560,7 +2560,12 @@
         "window_expired": "24-hour window closed",
         "accepted": "No delivery confirmation"
       },
-      "stuck_hint": "Messages Meta accepted more than a day ago that still have no delivery confirmation. If there are many, delivery confirmations may not be reaching us."
+      "stuck_hint": "Messages Meta accepted more than a day ago that still have no delivery confirmation. If there are many, delivery confirmations may not be reaching us.",
+      "blocked": {
+        "title": "Messages blocked in the test environment",
+        "subtitle": "In the test environment WhatsApp is sent only to approved numbers. Here you can see what every other message would have said.",
+        "content": "Message content"
+      }
     },
     "group_buys": {
       "title": "Group buys",
