@@ -87,7 +87,14 @@ export async function generateMetadata(props) {
       alternates,
     };
   }
-  const description = organizer.short_description || organizer.description || undefined;
+  // MEH-3381 (rulings 17/11 §א3): no description at all used to leave the
+  // layout's site-wide default here — a page about this organizer describing
+  // the whole site. The fallback names the organizer instead.
+  const t = await getTranslations({ locale, namespace: "organizers.page" });
+  const description =
+    organizer.short_description ||
+    organizer.description ||
+    t("meta_description_fallback", { name: organizer.name });
   return {
     // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
     title: organizer.name,
