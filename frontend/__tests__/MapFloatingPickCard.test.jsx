@@ -34,17 +34,22 @@ afterEach(cleanup);
 const producer = { id: "p1", name: "biz" };
 
 describe("MobileSheetSelectedCard — floating card (MEH-3119)", () => {
-  it("the close button is outside the card, in the row before it", () => {
+  it("MEH-3417: the X is on the card's top-end corner, with no row of its own above the card", () => {
     const { getByTestId } = render(<MobileSheetSelectedCard selectedProducer={producer} onClose={() => {}} />);
     const close = getByTestId("map-selected-card-close");
     const card = getByTestId("map-producer-card");
-    expect(card.contains(close)).toBe(false);
-    // The X's row precedes the card in the DOM: it is above it, not over it.
-    expect(close.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // 44px hit area; not absolutely positioned over anything.
+    // Same positioned box as the card, after it in the DOM (painted over it).
+    expect(close.parentElement).toBe(card.parentElement);
+    expect(card.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(close.parentElement.className).toMatch(/\brelative\b/);
+    // Top-END corner (logical, rtl.md), inside the card, 44px hit area.
+    expect(close.className).toMatch(/\babsolute\b/);
+    expect(close.className).toMatch(/\btop-0\b/);
+    expect(close.className).toMatch(/\bend-0\b/);
     expect(close.className).toMatch(/\bw-11\b/);
     expect(close.className).toMatch(/\bh-11\b/);
-    expect(close.className).not.toMatch(/\babsolute\b/);
+    // Without a location label nothing renders above the card: the row is gone.
+    expect(getByTestId("map-selected-card").firstElementChild).toBe(close.parentElement);
   });
 
   it("the card is the active one, and the X deselects", () => {
