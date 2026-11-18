@@ -36,7 +36,7 @@ Uniformity where a machine reads, variety where a person reads. Three approved s
 - The descriptor leads with **finding** («מוצאים»), because the problem the site solves is not knowing where to find local food. Approved word for word by Sapir, 18/11/2026.
 - **Do not** replace it with a category noun. «מדריך» was read as "a guide for businesses" (MEH-3424 research).
 - A new surface picks its row by who reads it: a machine → the descriptor; a consumer → the brand sentence; a business → the tagline.
-- English has no approved descriptor yet; `en.json` keeps its own description until it does.
+- English follows the same roles (18/11/2026): descriptor «Mehamakor is where you find food from local businesses near you, all in one place.» on `seo.site.description` / `seo.home.description`; the share card carries the English hero subheading. The email footer is «מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.»
 
 ## 2 · Tagline (locked — see ADR-011)
 

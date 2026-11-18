@@ -64,8 +64,10 @@ describe("ADR-043 English roles", () => {
     expect(en.seo.site.description).toBe(EN_DESCRIPTOR);
     expect(en.seo.home.description).toBe(EN_DESCRIPTOR);
   });
-  it("en share card carries the English brand sentence (the approved hero subheading)", () => {
-    expect(en.seo.site.og_description).toBe(en.about.consumer.hero.subheading);
-    expect(en.seo.site.twitter_description).toBe(en.about.consumer.hero.subheading);
+  const EN_BRAND = "Food from local businesses we've personally chosen — close to you, without searching for hours.";
+  it("en share card carries the English brand sentence, not the old line", () => {
+    expect(en.seo.site.og_description).toBe(EN_BRAND);
+    expect(en.seo.site.twitter_description).toBe(EN_BRAND);
+    expect(en.about.consumer.hero.subheading).toBe(EN_BRAND);
   });
 });
