@@ -382,6 +382,25 @@ export default function ContactCard({ producer, isVacation }) {
           </div>
         )}
 
+        {/* MEH-3339: the optional second number — one quiet text line, never a
+            button. Call / WhatsApp / the sticky bar stay on producer.phone. A
+            number without a label reads «טלפון נוסף». dir="ltr" sits on the
+            digits only, so the label keeps its RTL place. */}
+        {producer.secondary_phone?.trim() && (
+          <p className="mt-3 text-sm text-fg-muted" data-testid="secondary-phone-line">
+            {producer.secondary_phone_label?.trim() || t("producer.detail.contact_card.secondary_phone_default_label")}:{" "}
+            <a
+              // One owner of tel: hrefs (ContactChannelsOneOwner guard) — fed
+              // the second number, so no CTA ever reads it.
+              href={contactHref("phone", { phone: producer.secondary_phone })}
+              dir="ltr"
+              className="numeric text-primary-dark hover:underline focus-visible:ring-2 focus-visible:ring-primary rounded"
+            >
+              {producer.secondary_phone.trim()}
+            </a>
+          </p>
+        )}
+
         {/* MEH-1334: the tertiary follow + share row moved to the header's
             quiet actions row (שמירה · מעקב · שיתוף) — one home per action. */}
 

@@ -939,7 +939,8 @@
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
         "reveal_phone": "Show phone number",
-        "report_info_link": "Wrong info? Let us know"
+        "report_info_link": "Wrong info? Let us know",
+        "secondary_phone_default_label": "Second phone"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message"
@@ -1835,7 +1836,9 @@
           "as_draft_hint": "The business is saved as a draft with no owner. After saving you can create an invite link and send it to the owner.",
           "owner_bio": "Behind the business — a line from the owner",
           "owner_photo": "Owner photo",
-          "owner_photo_remove": "Remove photo"
+          "owner_photo_remove": "Remove photo",
+          "secondary_phone": "Second phone (optional)",
+          "secondary_phone_label": "What is this number for? (e.g. orders)"
         }
       },
       "toast_approved": "Business approved",
@@ -5046,7 +5049,11 @@
         "save_cta": "Save contact channels",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "field_secondary_phone": "Second phone (optional)",
+        "field_secondary_phone_label": "What is this number for? (e.g. orders)",
+        "secondary_phone_placeholder": "050-1234567",
+        "secondary_phone_where": "Shown on your business page"
       },
       "categories": {
         "heading": "Categories",

@@ -201,6 +201,12 @@ producers (
   -- guessed at. Readers fall back to top_product_name, which is unchanged and
   -- still the only writer until the switch step. Revision f4b1c8e0a297.
   top_product_id uuid nullable references products(id) on delete set null,
+  -- MEH-3339: optional second phone + label (migration c3e8a1f05d72, expand-only).
+  -- Public on ProducerDetailOut as one text line «{label}: {number}» («טלפון נוסף»
+  -- when unlabelled). Every CTA, phone verification and WhatsApp notification
+  -- stays on `phone`. Owner PUT /producers/me + admin PUT; label without number → 422.
+  secondary_phone       VARCHAR(20) NULL,
+  secondary_phone_label VARCHAR(30) NULL,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line

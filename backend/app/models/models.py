@@ -86,6 +86,14 @@ class Producer(Base):
     lat = Column(Float)
     lng = Column(Float)
     phone = Column(String(20))
+    # MEH-3339: an optional second number, shown as one quiet text line
+    # ("{label}: {number}") on the public page. Every CTA (call, WhatsApp,
+    # sticky bar), phone verification and WhatsApp notifications stay on
+    # `phone` above. Same validation as `phone` (schemas). Paired migration:
+    # c3e8a1f05d72.
+    # DO NOT wire a CTA or a notification to secondary_phone — MEH-3339.
+    secondary_phone = Column(String(20), nullable=True)
+    secondary_phone_label = Column(String(30), nullable=True)
     instagram = Column(String(100))
     website = Column(String(200))
     whatsapp_group = Column(String(300), nullable=True)  # invite link

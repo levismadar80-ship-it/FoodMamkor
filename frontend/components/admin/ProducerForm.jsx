@@ -176,6 +176,9 @@ const EMPTY = {
   // MEH-3338: «מאחורי העסק» — the owner's line and photo.
   owner_bio: "",
   owner_photo_url: null,
+  // MEH-3339: optional second number + label (text line; CTAs stay on phone).
+  secondary_phone: "",
+  secondary_phone_label: "",
   top_product_name: "",
   price_range: "",
   // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
@@ -257,6 +260,15 @@ function changedOnly(payload, form, seed) {
   // page-open values back. Same rule as reservist_owned.
   if (same(form.owner_bio?.trim(), seed.owner_bio?.trim?.() ?? seed.owner_bio)) delete out.owner_bio;
   if (same(form.owner_photo_url, seed.owner_photo_url)) delete out.owner_photo_url;
+  // MEH-3339: each travels only when the admin changed it — the server judges
+  // the pair on the stored state, so an unchanged number need not be resent
+  // (resending it would revert a number the owner changed meanwhile).
+  if (same(form.secondary_phone?.trim(), String(seed.secondary_phone ?? "").trim())) {
+    delete out.secondary_phone;
+  }
+  if (same(form.secondary_phone_label?.trim(), String(seed.secondary_phone_label ?? "").trim())) {
+    delete out.secondary_phone_label;
+  }
   return out;
 }
 
@@ -291,7 +303,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-3333: the page-open values of the fields another editor can change
   // while this form is open (the locations editor below writes the primary
   // row, which is where city / lat / lng come from).
-  const seedRef = useRef({ city: "", lat: "", lng: "", owner_bio: "", owner_photo_url: "" });
+  const seedRef = useRef({
+    city: "",
+    lat: "",
+    lng: "",
+    owner_bio: "",
+    owner_photo_url: "",
+    secondary_phone: "",
+    secondary_phone_label: "",
+  });
   const t = useTranslations("admin");
   // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
   // address search — no new i18n keys (see dashboard.producer.location).
@@ -340,6 +360,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-3338: the owner edits these in her dashboard too.
         owner_bio: initial.owner_bio ?? "",
         owner_photo_url: initial.owner_photo_url ?? "",
+        // MEH-3339: owner-editable in her contact card too.
+        secondary_phone: initial.secondary_phone ?? "",
+        secondary_phone_label: initial.secondary_phone_label ?? "",
       };
       setForm({
         ...EMPTY,
@@ -380,6 +403,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
         owner_bio: initial.owner_bio ?? "",
+        secondary_phone: initial.secondary_phone ?? "",
+        secondary_phone_label: initial.secondary_phone_label ?? "",
         owner_photo_url: initial.owner_photo_url ?? null,
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? "",
@@ -524,6 +549,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // MEH-3338: blank bio → null clears it. The photo is uploaded (and saved)
       // by its own admin route; null here is the «הסרת תמונה» path.
       owner_bio: form.owner_bio?.trim() || null,
+      // MEH-3339: a label only travels with a number (the API refuses a
+      // label alone), so clearing the number clears the label too.
+      secondary_phone: form.secondary_phone?.trim() || null,
+      // MEH-3339 (review): sent as typed. The server clears the label with an
+      // emptied number and refuses a label with no number (a visible error,
+      // not a silently dropped label).
+      secondary_phone_label: form.secondary_phone_label?.trim() || null,
       owner_photo_url: form.owner_photo_url || null,
       top_product_name: form.top_product_name?.trim() || null,
       price_range: form.price_range,
@@ -643,6 +675,19 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.phone}
             onChange={(e) => update("phone", e.target.value)}
             placeholder={t("producers.form.fields.phone_placeholder")}
+          />
+          <Input
+            type="tel"
+            dir="ltr"
+            label={t("producers.form.fields.secondary_phone")}
+            value={form.secondary_phone}
+            onChange={(e) => update("secondary_phone", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.secondary_phone_label")}
+            value={form.secondary_phone_label}
+            maxLength={30}
+            onChange={(e) => update("secondary_phone_label", e.target.value)}
           />
           <Input
             label={t("producers.form.fields.instagram")}

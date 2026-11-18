@@ -279,8 +279,36 @@ SENSITIVE_FIELDS = frozenset(
         "vegetarian_scope",
         "gluten_free_facility",
         "whatsapp_group",
+        # MEH-3339 (review): the second number is a live public tel: link, the
+        # same reason whatsapp_group is here — a swapped one sends visitors to
+        # a different number, and it skips phone verification by design.
+        "secondary_phone",
     }
 )
+
+
+def reconcile_secondary_phone(producer: Producer, payload: dict[str, Any]) -> None:
+    """MEH-3339 (review): the number/label pair is judged on the MERGED state,
+    not on the payload alone, before the setattr loop of either PUT.
+
+    - the number ends up empty → the label is cleared with it (no orphan label
+      that a later number would resurrect);
+    - a label ends up with no number → 422.
+    So each field may travel on its own: a label-only save is fine while a
+    number is stored, and the admin form need not resend a number it did not
+    change (which would revert the owner's own edit).
+    """
+    if "secondary_phone" not in payload and "secondary_phone_label" not in payload:
+        return
+    number = payload.get("secondary_phone", producer.secondary_phone)
+    label = payload.get("secondary_phone_label", producer.secondary_phone_label)
+    if not number:
+        if "secondary_phone_label" in payload and label:
+            raise HTTPException(
+                status_code=422, detail="לתווית של הטלפון הנוסף צריך גם מספר"
+            )
+        payload["secondary_phone_label"] = None
+
 
 # MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
 # ONE voice. Both the demote arm and the delete arm of the locations CRUD are
@@ -707,6 +735,9 @@ def update_my_producer(
         #                writer racing that write-through. The ping's new home
         #                is MEH-2073 chunk 2 (`_sync_producer_city_from_primary`).
         "phone",
+        # MEH-3339: the optional second number + label (no CTA reads them).
+        "secondary_phone",
+        "secondary_phone_label",
         "instagram",
         "website",
         "whatsapp_group",
@@ -931,6 +962,7 @@ def update_my_producer(
     # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
     assert_free_gallery_cap(producer, payload, old_images)
 
+    reconcile_secondary_phone(producer, payload)  # MEH-3339
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
