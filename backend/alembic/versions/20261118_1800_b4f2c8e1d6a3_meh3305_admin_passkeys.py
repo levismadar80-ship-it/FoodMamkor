@@ -1,7 +1,7 @@
 """meh3305_admin_passkeys
 
 Revision ID: b4f2c8e1d6a3
-Revises: a3d9e5c1f7b2
+Revises: c7d3e1a9f4b2
 Create Date: 2026-11-18 18:00:00.000000+00:00
 
 MEH-3305 (Sapir's approval 18/11), EXPAND only: two new tables, nothing
@@ -46,7 +46,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "b4f2c8e1d6a3"
-down_revision: Union[str, None] = "a3d9e5c1f7b2"
+down_revision: Union[str, None] = "c7d3e1a9f4b2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
