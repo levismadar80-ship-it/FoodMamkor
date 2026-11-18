@@ -1821,10 +1821,17 @@ POST /reports/review           🌐 public (optional auth), rate-limited 5/day/I
 
 ```
 GET  /stats                      public — { producers_count, categories_count, cities_count }
-POST /newsletter                 public — { email } → newsletter_subscribers
-                                 rate-limited 5/hour per IP
-                                 + background mirror to Resend Contacts, segment
-                                   `newsletter` (MEH-2611; never clears an opt-out)
+POST /newsletter                 public — { email } → MEH-3300 double opt-in: writes NOTHING; a new
+                                 address gets a confirmation email (signed token, scope
+                                 `newsletter_confirm`, exp 48 h); an address already on the list gets
+                                 no email (grandfathered) and the same 201 answer (no enumeration)
+                                 rate-limited 5/hour per IP + 3/hour per email
+                                 + existing rows only: background mirror to Resend Contacts
+                                   (MEH-2611 back-fill; never clears an opt-out)
+POST /newsletter/confirm         public — { token } → inserts newsletter_subscribers (idempotent),
+                                 Resend sync, welcome email on the first confirm only; 400 on a
+                                 bad/expired/wrong-scope token; 20/hour. The page
+                                 /newsletter/confirm POSTs only from a button click
 POST /newsletter/unsubscribe     public — { token } → deletes the row
                                  + deletes the Resend contact (MEH-2611); a Broadcast-footer opt-out stays sticky
 POST /weekly-summary/unsubscribe public — { token } → producers.weekly_summary_opt_out = true (MEH-3079)

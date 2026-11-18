@@ -65,7 +65,7 @@
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
       "newsletter_submit": "Join",
-      "newsletter_success": "Welcome to Mehamakor See you in your inbox",
+      "newsletter_success": "We sent you a confirmation email. Your signup is complete once you click the link in it.",
       "cookie_settings": "Cookie settings"
     },
     "opportunities": "Finds"
@@ -3622,6 +3622,13 @@
     "error_title": "This link isn't valid",
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
     "cta_home": "Back to home"
+  },
+  "newsletter_confirm": {
+    "meta_title": "Confirm signup",
+    "title": "Confirm your signup for Mehamakor updates",
+    "button": "Confirm signup",
+    "success_title": "You're signed up.",
+    "success_body": "We'll write when there's something worth telling."
   },
   "weekly_summary_unsubscribe": {
     "meta_title": "Stop the weekly summary",

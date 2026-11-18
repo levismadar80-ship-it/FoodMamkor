@@ -65,7 +65,7 @@
       "newsletter_label": "אימייל לניוזלטר",
       "newsletter_placeholder": "האימייל שלך, בבקשה",
       "newsletter_submit": "להירשם",
-      "newsletter_success": "ברוכים הבאים למהמקור נפגשות בתיבה",
+      "newsletter_success": "שלחנו מייל לאישור. ההרשמה תושלם אחרי לחיצה על הקישור שבו.",
       "cookie_settings": "הגדרות עוגיות"
     },
     "opportunities": "הזדמנויות"
@@ -3622,6 +3622,13 @@
     "error_title": "הקישור אינו תקין",
     "error_body": "ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסו שוב מהמייל, או פנו אלינו.",
     "cta_home": "חזרה לדף הבית"
+  },
+  "newsletter_confirm": {
+    "meta_title": "אישור הרשמה",
+    "title": "אישור הרשמה לעדכונים ממהמקור",
+    "button": "אישור הרשמה",
+    "success_title": "ההרשמה אושרה.",
+    "success_body": "נכתוב כשיש משהו ששווה לספר."
   },
   "weekly_summary_unsubscribe": {
     "meta_title": "הפסקת הסיכום השבועי",

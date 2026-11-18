@@ -25,7 +25,9 @@ from app.services import newsletter_sync
 @pytest.fixture
 def calls(monkeypatch):
     seen = []
-    monkeypatch.setattr(marketing, "sync_subscribe", lambda e: seen.append(("sub", e)))
+    monkeypatch.setattr(
+        marketing, "sync_subscribe", lambda e, **k: seen.append(("sub", e))
+    )
     monkeypatch.setattr(
         marketing, "sync_unsubscribe", lambda e: seen.append(("unsub", e))
     )
@@ -34,9 +36,15 @@ def calls(monkeypatch):
 
 
 class TestRouterHandsOffToSync:
-    def test_new_signup_syncs(self, client, calls):
+    def test_new_signup_syncs_only_on_confirm(self, client, calls):
+        # MEH-3300 (D13): double opt-in — the signup itself syncs nothing; the
+        # address reaches Resend when the confirm link is clicked.
         resp = client.post("/newsletter", json={"email": "New.Reader@Gmail.com"})
         assert resp.status_code == 201, resp.text
+        assert calls == []
+        token = marketing.create_confirm_token("new.reader@gmail.com")
+        resp = client.post("/newsletter/confirm", json={"token": token})
+        assert resp.status_code == 200, resp.text
         assert calls == [("sub", "new.reader@gmail.com")]
 
     def test_repeat_signup_still_syncs(self, client, db, calls):
@@ -111,6 +119,10 @@ def _fake_resend(
             return {"email": email, "unsubscribed": existing == "opted_out"}
 
         @staticmethod
+        def update(params):
+            log.append(("contacts.update", params))
+
+        @staticmethod
         def remove(email):
             log.append(("contacts.remove", email))
             if fail:
@@ -170,6 +182,17 @@ class TestSyncService:
         newsletter_sync.sync_subscribe("back@gmail.com")
         assert not any(c[0] in ("contacts.update", "contacts.create") for c in log)
         assert ("contact.segment.add", "back@gmail.com", "s1") in log
+        assert reported == []
+
+    def test_confirm_resubscribe_clears_an_earlier_opt_out(self, fake):
+        # MEH-3300: only the confirm path passes resubscribe=True — a click on
+        # the link mailed to the address is the owner's own fresh consent.
+        log, reported = fake(existing="opted_out")
+        newsletter_sync.sync_subscribe("back@gmail.com", resubscribe=True)
+        assert (
+            "contacts.update",
+            {"email": "back@gmail.com", "unsubscribed": False},
+        ) in log
         assert reported == []
 
     def test_non_duplicate_create_error_is_reported_not_masked(self, fake):

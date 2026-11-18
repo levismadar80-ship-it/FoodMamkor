@@ -4675,6 +4675,21 @@
         "title": "NameMatch",
         "type": "object"
       },
+      "NewsletterConfirmIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "NewsletterConfirmIn",
+        "type": "object"
+      },
       "NewsletterIn": {
         "properties": {
           "email": {
@@ -24531,6 +24546,7 @@
     },
     "/newsletter": {
       "post": {
+        "description": "MEH-3300 (D13): double opt-in. Nothing is written here.\n\nA new address gets a confirmation email; the row, the Resend sync and the\nwelcome email wait for POST /newsletter/confirm. An address already on the\nlist gets no email (grandfathered) and the same answer, so the response\nnever reveals who is subscribed.",
         "operationId": "subscribe_newsletter_newsletter_post",
         "requestBody": {
           "content": {
@@ -24563,6 +24579,46 @@
           }
         },
         "summary": "Subscribe Newsletter",
+        "tags": [
+          "marketing"
+        ]
+      }
+    },
+    "/newsletter/confirm": {
+      "post": {
+        "description": "MEH-3300: the confirm page POSTs the token from a button click (a GET\nfrom a mail scanner confirms nothing). Idempotent: a second click is 200\nand sends no second welcome.",
+        "operationId": "confirm_newsletter_newsletter_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsletterConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Newsletter",
         "tags": [
           "marketing"
         ]

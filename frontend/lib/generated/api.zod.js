@@ -4247,9 +4247,24 @@ export const GetHolidayModeHolidayModeGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-3300 (D13): double opt-in. Nothing is written here.
+ *
+ * A new address gets a confirmation email; the row, the Resend sync and the
+ * welcome email wait for POST /newsletter/confirm. An address already on the
+ * list gets no email (grandfathered) and the same answer, so the response
+ * never reveals who is subscribed.
  * @summary Subscribe Newsletter
  */
 export const SubscribeNewsletterNewsletterPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * MEH-3300: the confirm page POSTs the token from a button click (a GET
+ * from a mail scanner confirms nothing). Idempotent: a second click is 200
+ * and sends no second welcome.
+ * @summary Confirm Newsletter
+ */
+export const ConfirmNewsletterNewsletterConfirmPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
