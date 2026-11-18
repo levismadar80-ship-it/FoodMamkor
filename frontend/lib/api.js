@@ -90,6 +90,8 @@ const SKIP_REFRESH = [
   "/auth/register/producer/oauth",
   "/auth/google",
   "/auth/apple",
+  // MEH-3305: the second sign-in step has no session yet to refresh.
+  "/auth/passkey/login",
   "/auth/logout",
 ];
 

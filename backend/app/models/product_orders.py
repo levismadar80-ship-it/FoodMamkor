@@ -15,7 +15,10 @@ Related:  app/models/models.py (Product.price_unit / is_orderable / in_stock /
           env.py, which imports models.py only, sees these tables), backend/alembic/versions/
           20261114_2130_d5a7c3e9f1b4_meh3218_product_orders.py (the CHECKs
           these tuples mirror), tests/test_meh3218_product_orders.py
-History:  MEH-3218 (creation; stage 1 of MEH-3216)
+History:  MEH-3218 (creation; stage 1 of MEH-3216); MEH-3262 (stage 2a:
+          producer_order_windows, slot_minutes, lead_time_hours); MEH-3263
+          (stage 2b: product_order_phone_codes, status token, delivery city,
+          idempotency key, the proposed-change columns)
 
 Lives in its own module, not in models.py, because models.py is on the
 file-size baseline and does not grow (code-execution.md §16).
@@ -32,8 +35,10 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    SmallInteger,
     String,
     Text,
+    Time,
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -68,6 +73,32 @@ PRODUCT_ORDER_ACTORS = ("customer", "business", "admin", "system")
 PRODUCT_ORDER_MAX_QTY_PER_ITEM = 99
 PRODUCT_ORDER_MAX_CUTOFF_HOURS = 168
 PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS = 24
+# MEH-3262: how long one pickup/delivery slot is, and how early an order must
+# be sent. Mirrored by the CHECKs of revision e6b9d4f1a2c7.
+PRODUCT_ORDER_SLOT_MINUTES = (30, 60, 120)
+PRODUCT_ORDER_DEFAULT_SLOT_MINUTES = 60
+PRODUCT_ORDER_MAX_LEAD_HOURS = 168
+PRODUCT_ORDER_DEFAULT_LEAD_HOURS = 24
+# Four windows a day, seven days: more than any real week needs, and the
+# bound that keeps the table from growing without limit (MEH-3022).
+PRODUCT_ORDER_MAX_WINDOWS = 28
+# MEH-3263: an order someone is still waiting on. The partial unique index on
+# pickup codes (revision f7c1a5e9b3d2) covers the last two.
+PRODUCT_ORDER_OPEN_STATUSES = ("pending", "change_proposed", "confirmed", "ready")
+PRODUCT_ORDER_CODE_STATUSES = ("confirmed", "ready")
+PRODUCT_ORDER_MAX_LINES = 30
+# MEH-3296: the messages an order sends, and how each one ends.
+PRODUCT_ORDER_NOTICE_KINDS = (
+    "new_order",  # to the business: a request came in
+    "business_reminder",  # to the business: still unanswered after 4 active hours
+    "confirmed",  # to the buyer
+    "change_proposed",  # to the buyer
+    "closed",  # to the buyer: declined, cancelled by the business, or expired
+    "buyer_cancelled",  # to the business
+    "day_before",  # to the buyer: tomorrow's hand-over
+)
+PRODUCT_ORDER_NOTICE_CHANNELS = ("whatsapp", "email")
+PRODUCT_ORDER_NOTICE_STATUSES = ("pending", "sent", "failed", "skipped")
 
 
 def _check_in(column: str, values: tuple[str, ...]) -> str:
@@ -108,6 +139,17 @@ class ProducerOrderSettings(Base):
             "min_order_agorot IS NULL OR min_order_agorot >= 0",
             name="producer_order_settings_min_order_check",
         ),
+        CheckConstraint(
+            "slot_minutes IN ({})".format(
+                ", ".join(str(m) for m in PRODUCT_ORDER_SLOT_MINUTES)
+            ),
+            name="producer_order_settings_slot_minutes_check",
+        ),
+        CheckConstraint(
+            "lead_time_hours >= 0 AND lead_time_hours <= "
+            f"{PRODUCT_ORDER_MAX_LEAD_HOURS}",
+            name="producer_order_settings_lead_time_check",
+        ),
     )
 
     producer_id = Column(
@@ -132,6 +174,18 @@ class ProducerOrderSettings(Base):
         Boolean, default=False, nullable=False, server_default=text("false")
     )
     min_order_agorot = Column(Integer, nullable=True)
+    slot_minutes = Column(
+        Integer,
+        default=PRODUCT_ORDER_DEFAULT_SLOT_MINUTES,
+        nullable=False,
+        server_default=text(str(PRODUCT_ORDER_DEFAULT_SLOT_MINUTES)),
+    )
+    lead_time_hours = Column(
+        Integer,
+        default=PRODUCT_ORDER_DEFAULT_LEAD_HOURS,
+        nullable=False,
+        server_default=text(str(PRODUCT_ORDER_DEFAULT_LEAD_HOURS)),
+    )
     alcohol_licensed = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
@@ -139,6 +193,54 @@ class ProducerOrderSettings(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     producer = relationship("Producer")
+
+
+class ProducerOrderWindow(Base):
+    """One weekly window in which a business hands orders over.
+
+    `producers.opening_hours` is free text and cannot yield a time slot, so
+    the business states its ordering windows here: a weekday, a start and an
+    end on the Israel clock, and whether the window is for pickup or delivery.
+    services/product_order_slots.py cuts these into concrete slots.
+
+    `weekday` is 0 = Sunday ... 6 = Saturday — the convention of
+    `producers.order_window` and lib/orderWindow.js, NOT `date.weekday()`.
+
+    Not the same fact as `producers.order_window` (when the owner ANSWERS
+    orders, MEH-1543): a row here is when she HANDS one over. A date closed in
+    `producers.special_hours` and her vacation close this axis too
+    (services/product_order_slots.py::ClosedDays).
+
+    Written only as a whole list (PUT replaces every row of the business),
+    capped at PRODUCT_ORDER_MAX_WINDOWS by the request schema.
+    """
+
+    __tablename__ = "producer_order_windows"
+    __table_args__ = (
+        CheckConstraint(
+            "weekday >= 0 AND weekday <= 6", name="producer_order_windows_weekday_check"
+        ),
+        CheckConstraint(
+            "end_time > start_time", name="producer_order_windows_time_check"
+        ),
+        CheckConstraint(
+            _check_in("fulfilment", PRODUCT_ORDER_FULFILMENTS),
+            name="producer_order_windows_fulfilment_check",
+        ),
+        Index("ix_producer_order_windows_producer_id", "producer_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    weekday = Column(SmallInteger, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    fulfilment = Column(String(10), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
 
 class ProductOrder(Base):
@@ -182,6 +284,28 @@ class ProductOrder(Base):
         Index("ix_product_orders_customer_phone", "customer_phone"),
         Index("ix_product_orders_expires_at", "expires_at"),
         Index("ix_product_orders_producer_slot", "producer_id", "slot_start"),
+        # MEH-3263: the business types four digits at the counter, so a code
+        # is unique among the orders it can still hand over — and free to be
+        # reused once an order is closed (10,000 codes would otherwise run out).
+        Index(
+            "uq_product_orders_open_pickup_code",
+            "producer_id",
+            "pickup_code",
+            unique=True,
+            postgresql_where=text("status IN ('confirmed', 'ready')"),
+        ),
+        Index(
+            "uq_product_orders_idempotency_key",
+            "idempotency_key",
+            unique=True,
+            postgresql_where=text("idempotency_key IS NOT NULL"),
+        ),
+        Index(
+            "uq_product_orders_status_token_hash",
+            "status_token_hash",
+            unique=True,
+            postgresql_where=text("status_token_hash IS NOT NULL"),
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -224,6 +348,19 @@ class ProductOrder(Base):
     confirmed_at = Column(DateTime, nullable=True)
     handed_at = Column(DateTime, nullable=True)
     closed_at = Column(DateTime, nullable=True)
+    # MEH-3263. `status_token_hash` is sha256 of the token the buyer got once
+    # at creation — a guest's only credential for her order, never stored in
+    # the clear. `idempotency_key` is chosen by the client per attempt, so a
+    # double tap or a retry after a lost answer creates one order.
+    status_token_hash = Column(CHAR(64), nullable=True)
+    idempotency_key = Column(String(64), nullable=True)
+    delivery_city = Column(String(100), nullable=True)
+    # What the business proposed while the order is `change_proposed`: a new
+    # slot, a new total, or both, with a note. Cleared when the buyer accepts.
+    proposed_slot_start = Column(DateTime, nullable=True)
+    proposed_slot_end = Column(DateTime, nullable=True)
+    proposed_total_agorot = Column(Integer, nullable=True)
+    proposal_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -337,3 +474,89 @@ class ProductOrderEvent(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     order = relationship("ProductOrder", back_populates="events")
+
+
+class ProductOrderPhoneCode(Base):
+    """A one-time code sent to a buyer's phone before she can order.
+
+    Six digits, ten minutes, five wrong tries, single use. Only an HMAC of the
+    code is stored (services/product_order_phone.py), so a database read does
+    not reveal a live code. `phone` is the canonical MSISDN ("9725...").
+
+    Rows are short-lived and bounded by the send limits: per phone and per day
+    overall, both counted here in the table.
+    """
+
+    __tablename__ = "product_order_phone_codes"
+    __table_args__ = (
+        Index("ix_product_order_phone_codes_phone_created", "phone", "created_at"),
+        Index("ix_product_order_phone_codes_created_at", "created_at"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    phone = Column(String(20), nullable=False)
+    code_hash = Column(CHAR(64), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False, server_default=text("0"))
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
+class ProductOrderNotification(Base):
+    """One message an order owes someone, written in the same transaction as
+    the status move that caused it (services/product_order_outbox.py).
+
+    A row is the promise; the dispatcher keeps it. `send_after` holds a
+    reminder until its time, and holds any message to a Shabbat-observant
+    business until the rest window ends. One row per (order, kind, channel):
+    a message is never owed twice.
+    """
+
+    __tablename__ = "product_order_notifications"
+    __table_args__ = (
+        CheckConstraint(
+            _check_in("kind", PRODUCT_ORDER_NOTICE_KINDS),
+            name="product_order_notifications_kind_check",
+        ),
+        CheckConstraint(
+            _check_in("channel", PRODUCT_ORDER_NOTICE_CHANNELS),
+            name="product_order_notifications_channel_check",
+        ),
+        CheckConstraint(
+            _check_in("outcome", PRODUCT_ORDER_NOTICE_STATUSES),
+            name="product_order_notifications_outcome_check",
+        ),
+        Index(
+            "uq_product_order_notifications_once",
+            "order_id",
+            "kind",
+            "channel",
+            unique=True,
+        ),
+        Index(
+            "ix_product_order_notifications_due",
+            "send_after",
+            postgresql_where=text("outcome = 'pending'"),
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("product_orders.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    kind = Column(String(20), nullable=False)
+    channel = Column(String(10), nullable=False)
+    # Named `outcome`, not `status`: only an order has a status, and only
+    # product_order_state writes it (the single-writer probe reads `.status`).
+    outcome = Column(
+        String(10), default="pending", nullable=False, server_default=text("'pending'")
+    )
+    send_after = Column(DateTime, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False, server_default=text("0"))
+    # A short code, never a message body or an address: "unconfigured",
+    # "provider", "no_address", "stale".
+    last_error = Column(String(20), nullable=True)
+    sent_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)

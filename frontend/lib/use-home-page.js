@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { useUserCity } from "@/lib/use-user-city";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import { getUserLocation, setUserLocation } from "@/lib/user-location";
+import { getUserLocation, roundCoord, setUserLocation } from "@/lib/user-location";
 import { showToast } from "@/lib/toast";
 import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
 // MEH-2130: home's URL param name per axis comes from the taxonomy — the one
@@ -681,7 +681,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
+        // MEH-3219 (B17): round before it is stored or sent to the API.
+        const latitude = roundCoord(pos.coords.latitude);
+        const longitude = roundCoord(pos.coords.longitude);
         // Persist the GPS fix → card distance labels light up (ProducerCard.jsx
         // reads it via useUserLocation), same contract as LocationModal.
         setUserLocation(latitude, longitude);

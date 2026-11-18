@@ -33,6 +33,7 @@ from app.schemas.schemas import (
 from app.services import indexnow  # MEH-2852
 from app.services.auth_notifications import notify_admin_new_recipe
 from app.services.producer_recipe_moderation import validate_producer_recipe
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 
 router = APIRouter(tags=["producer-recipes"])
 
@@ -155,6 +156,7 @@ def create_my_recipe(
         "recipes",
     )
     products = _validate_product_ids(db, user.producer_id, data.product_ids)  # type: ignore[arg-type]
+    assert_own_new_images(user, data.image_url)  # MEH-3247
 
     verdict = validate_producer_recipe(data.model_dump(mode="json"))
     if verdict["status"] == "REJECTED":
@@ -298,6 +300,7 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     payload = data.model_dump(exclude_unset=True)
+    assert_own_new_images(user, payload.get("image_url"), recipe.image_url)  # MEH-3247
     # MEH-1000: remember where the recipe stood BEFORE this edit — a
     # content change below always resets to "pending", and the admin ping
     # should fire only when the recipe (re-)ENTERS the queue (e.g.

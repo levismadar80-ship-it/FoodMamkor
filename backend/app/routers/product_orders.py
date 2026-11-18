@@ -31,6 +31,8 @@ from app.database import get_db
 from app.models.models import Producer, User
 from app.models.product_orders import (
     PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS,
+    PRODUCT_ORDER_DEFAULT_LEAD_HOURS,
+    PRODUCT_ORDER_DEFAULT_SLOT_MINUTES,
     ProducerOrderSettings,
 )
 from app.rate_limit import limiter
@@ -74,6 +76,8 @@ def _defaults(producer_id: Any) -> dict[str, Any]:
         "cancel_cutoff_hours": PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS,
         "shabbat_observant": False,
         "min_order_agorot": None,
+        "slot_minutes": PRODUCT_ORDER_DEFAULT_SLOT_MINUTES,
+        "lead_time_hours": PRODUCT_ORDER_DEFAULT_LEAD_HOURS,
         "alcohol_licensed": False,
     }
 

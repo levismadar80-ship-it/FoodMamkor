@@ -22,15 +22,19 @@ export const BRAND_NAME_LATIN = "Mehamakor";
 // MEH-2364 (26/10): now the ADR-011 locked tagline, verbatim, on the footer,
 // meta and OG surfaces (__tests__/adr011-tagline.test.js ties all of them to
 // the ADR). Changing it needs a new ADR superseding ADR-011, not a copy edit.
+// MEH-3424 / ADR-043: the ONE sentence that says what the site is, on every
+// surface that describes it in a line: <meta name="description">, og/twitter
+// description, the Organization JSON-LD `description` and public/llms.txt.
+// Approved verbatim by Sapir on 18/11/2026 (rule 22). It replaced the ADR-011
+// tagline here, which speaks to business owners and was read by ChatGPT as
+// the site's self-description (ADR-041). The tagline stays on the footer.
 export const SITE_DESCRIPTION =
-  "מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.";
+  "במהמקור מוצאים אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד.";
 
-// MEH-2192: the ONE brand sentence that machine-identity surfaces share —
-// the Organization JSON-LD `description` and public/llms.txt line 3 (a test
-// asserts the file matches this constant, so the file cannot drift alone).
-// Rule-22 approved verbatim by Sapir on MEH-2192 (06/09). SITE_DESCRIPTION
-// above stays the per-page <meta name="description">; the two are different
-// jobs — one describes the entity, the other sells the page to a SERP.
+// MEH-2192: the brand sentence (the home hero subheading). Since MEH-3424 /
+// ADR-043 it is the Organization JSON-LD `slogan`, no longer its
+// `description` or the llms.txt summary — those carry SITE_DESCRIPTION above.
+// Rule-22 approved verbatim by Sapir on MEH-2192 (06/09).
 // MEH-2313 (25/10): «קטנים שבדקנו» → «מקומיים שבחרנו», approved verbatim.
 export const CANONICAL_SENTENCE =
   "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.";

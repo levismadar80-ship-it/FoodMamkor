@@ -267,14 +267,16 @@ class TestJourney2ProducerRegistration:
         notice it coming back.
         """
         import app.routers.auth as auth_mod
+        import app.routers.auth_register_producer as reg_router  # MEH-3293
 
-        assert not hasattr(auth_mod, "notify_admin_new_producer"), (
-            "the admin ping must not be reachable from the registration "
-            "module — it belongs to submit-for-review now (MEH-2100)"
-        )
+        for module in (auth_mod, reg_router):  # MEH-3293: registration moved
+            assert not hasattr(module, "notify_admin_new_producer"), (
+                "the admin ping must not be reachable from the registration "
+                "module — it belongs to submit-for-review now (MEH-2100)"
+            )
 
         producer_notify = MagicMock()
-        monkeypatch.setattr(auth_mod, "notify_producer_registered", producer_notify)
+        monkeypatch.setattr(reg_router, "notify_producer_registered", producer_notify)
 
         payload = valid_producer_register_payload() | {
             "email": f"reg{uuid4().hex[:8]}@example.com",

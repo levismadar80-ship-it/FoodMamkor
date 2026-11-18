@@ -60,6 +60,7 @@ from app.models.models import (
     Event,
     Experience,
     PhoneOtpToken,
+    UserPhoneOtpToken,
     ProducerPageView,
     ProducerWhatsAppClick,
     Registration,
@@ -258,6 +259,14 @@ def run_purge(
         db,
         PhoneOtpToken,
         PhoneOtpToken.expires_at,
+        now - OTP_RETENTION_AFTER_EXPIRY,
+    )
+    # MEH-3302: user phone codes, same rule. Kept a full day past expiry
+    # because the 3-per-day send caps count the last 24 h of rows.
+    otps += _delete_in_batches(
+        db,
+        UserPhoneOtpToken,
+        UserPhoneOtpToken.expires_at,
         now - OTP_RETENTION_AFTER_EXPIRY,
     )
 

@@ -296,6 +296,11 @@ class NewsletterUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1)
 
 
+# MEH-3300 (D13): the confirm link's signed token (scope newsletter_confirm, 48 h).
+class NewsletterConfirmIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2000)
+
+
 # MEH-3079: the weekly owner summary's unsubscribe link — same shape, its own
 # token scope (services/weekly_owner_summary.py).
 class WeeklySummaryUnsubscribeIn(BaseModel):

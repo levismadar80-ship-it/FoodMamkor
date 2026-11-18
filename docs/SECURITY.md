@@ -327,6 +327,9 @@ async def validate_and_upload_image(file: UploadFile) -> str:
 אחרת לא משתמשת באותו public_id (`services/image_refs.py`), ואם הבדיקה נכשלת —
 לא מוחקים. בלי זה, בעלת עסק יכלה להכניס לגלריה שלה כתובת של תמונה של עסק אחר,
 להסיר אותה, ולמחוק לו את התמונה. פירוט: DATA.md, סעיף Upload.
+מאז MEH-3247 חלק 2 גם אי אפשר לשמור תמונה של מישהו אחר: העלאה נשמרת בתיקייה של
+המעלה, וכל שמירה של כתובת תמונה מסרבת (403) לכתובת Cloudinary חדשה שלא בתיקייה
+של המשתמש (`services/image_ownership.py`).
 
 ### 7. CORS — אל תאפשרי לכולם
 
@@ -378,6 +381,8 @@ async def add_security_headers(request, call_next):
 
 > **שגיאת שרת (500) — MEH-2761.** ה-500 של חריגה לא מטופלת נבנה ב-ServerErrorMiddleware של Starlette, שיושב מחוץ לכל ה-middleware, ולכן עד 06/11 יצא בלי אף אחת מהכותרות. התיקון: `app.add_exception_handler(Exception, server_error_with_headers)` ב-`backend/app/middleware.py`, שמחיל את אותה `apply_security_headers`. החריגה עדיין נזרקת הלאה (לוגים ו-Sentry). הקוד העדכני הוא ב-`middleware.py`, לא בדוגמה שלמעלה. טסט: `tests/test_meh2761_error_security_headers.py` (גם 429).
 
+> **דוגמה היסטורית.** ה-CSP למטה הוא הגרסה המקורית; המדיניות העדכנית (כולל `'unsafe-eval'`, PostHog, Sentry ו-Report-Only) נמצאת ב-`frontend/next.config.js`, ראו 8-CSP למטה.
+
 ```js
 // frontend: next.config.js
 const securityHeaders = [
@@ -406,6 +411,14 @@ module.exports = {
 ```
 
 ---
+
+#### 8-CSP. Report-Only בלי `'unsafe-eval'` (MEH-3304, 15/11/2026)
+
+ה-CSP הנאכף (`frontend/next.config.js`) עדיין מתיר `'unsafe-inline'` ו-`'unsafe-eval'`.
+שלב 1: כותרת `Content-Security-Policy-Report-Only` נגזרת ממנו בלי `'unsafe-eval'` ומדווחת
+ל-Sentry דרך אותו report-uri. שלב 2 (אחרי שבוע נקי): להוריד `'unsafe-eval'` מהנאכף.
+שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. `CspReportOnly.test.js` שומר
+ששתי הכותרות זהות פרט ל-`'unsafe-eval'`.
 
 ### ✅ 8a. Analytics privacy (feature/producer-analytics, April 2026)
 
@@ -713,7 +726,8 @@ away on enough samples.
   `/auth/register/producer`. The handlers' branch order was rewritten
   so HIBP + `hash_password` both run on the collision branches before
   the response shape diverges. See the `/register` and
-  `/register/producer` handlers in `backend/app/routers/auth.py`.
+  `/register/producer` handlers in `backend/app/routers/auth.py` and
+  `backend/app/routers/auth_register_producer.py` (split out in MEH-3293).
 - **Sentinel hash** (MEH-626) — `/auth/login`. A pre-computed
   `SENTINEL_HASH` module constant (created at import via
   `hash_password("sentinel-password-do-not-use")`) gives the
@@ -751,7 +765,17 @@ logger.warning(f"Rate limit exceeded for IP: {ip}")
 
 ## 🟢 כדאי — תוסיפי בהדרגה
 
-### 15. 2FA / אימות דו-שלבי לאדמין
+### ✅ 15. 2FA / אימות דו-שלבי לאדמין — SHIPPED as a passkey (MEH-3305)
+
+**What runs:** a passkey (WebAuthn, `py_webauthn`), not TOTP — phishing-resistant, nothing to type. An admin account that enrolled one gets no session from `/auth/login`, `/auth/google` or `/auth/apple`: it gets a 5-minute single-use ticket (JWT scope `passkey_ticket`, refused by `get_current_user` and by `/auth/refresh`, bound to purpose + account + `token_version`), and the session is issued by `/auth/passkey/login/verify` (user verification required, RP id + origin from `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN`) or `/auth/passkey/login/recovery`.
+- **Recovery:** 10 one-time codes (50 bits each), stored as salted SHA-256, compared over every unused row with `compare_digest`, spent under a row lock. Wrong codes have their own budget (10 / 15 minutes per account), apart from the MEH-3372 password budget. A wrong code does not burn the ticket; the first right one does.
+- **Step-up before a change** (add / remove a passkey, new codes): a passkey or a recovery code once one exists — the password alone is no longer enough — else the password, else (a Google / Apple account with neither) the session.
+- **Off** where the two env vars are unset (local, vercel.app previews); the staging `demo-admin` never enrolls, so E2E is unchanged.
+- **Accepted:** spent tickets are remembered in process memory (one uvicorn process); after a restart a ticket can be tried again within its 5 minutes, still needing the passkey or a code. Existing sessions continue through `/auth/refresh` — the gate is at sign-in, as at the big providers.
+- Tests: `tests/test_meh3305_admin_passkeys_routes.py` (a software authenticator, real verification).
+
+The TOTP sketch below is kept as the alternative that was not chosen.
+
 
 ```python
 # pip install pyotp qrcode
@@ -901,7 +925,7 @@ The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by
 
 - **Production** = `ENV=production` or `RAILWAY_ENVIRONMENT=production` (the same test as `config.py`). Everything else is guarded, including an unknown or empty environment name: fail-closed. A non-empty `RAILWAY_ENVIRONMENT` other than `production` wins over `ENV=production` (a staging or PR environment that copied production's variables stays guarded).
 - **Email** (`services/email.py` → `services/outbound_guard.py::route_email`): `ADMIN_EMAIL`, `CONTACT_EMAIL`, `SUPER_ADMIN_EMAIL` and their plus-aliases (`you+biz1@…`) are delivered as addressed. A single plain address only — a list (`a@x,b@y`), display name or whitespace is never allowed. Any other recipient is **redirected to `ADMIN_EMAIL`**, subject prefixed `[STAGING → ***@domain]` (masked: the subject reaches logs and Sentry), the full original recipient on the first body line, and `reply_to` dropped so a reply from the staff inbox cannot reach the real person (Sapir 18/11). No `ADMIN_EMAIL`, or the guard itself raising → not sent (fail-closed, `send_email` still never raises). Reserved test domains (`example.com`…) are still skipped before this.
-- **WhatsApp** (`services/whatsapp.py`): only `ADMIN_WHATSAPP_TO` and `OTP_TEST_NUMBERS` (digits compared, `0…` = `972…`; a `+972 0…` or `00972…` form does not match and is dropped — fail-closed). Others: not sent, nothing persisted, returns False. `OTP_TEST_NUMBERS` must therefore be numbers the team owns — any WhatsApp, not only the OTP, may reach them from staging.
+- **WhatsApp** (`services/whatsapp.py`): only `ADMIN_WHATSAPP_TO` and `OTP_TEST_NUMBERS` (digits compared, `0…` = `972…`; a `+972 0…` or `00972…` form does not match and is dropped — fail-closed). Others: not sent, nothing persisted, returns False. `OTP_TEST_NUMBERS` must therefore be numbers the team owns — any WhatsApp, not only the OTP, may reach them from staging. Except a template that links to the site: its Meta text holds `https://mehamakor.co.il/…` in every environment, so outside production only templates marked `sends_outside_production` (no link; today `OtpCodeV1`) are sent (MEH-3414, fail-closed — a new template is blocked until marked).
 - **Push** (`services/push.py`): never outside production — a subscription is a browser, not a staff member.
 - **Newsletter** (`services/newsletter_sync.py`): Resend Contacts is the list real Broadcasts go to, so staging neither adds nor deletes contacts.
 - **A new channel** (Instagram publishing, payments, SMS) asks `outbound_guard` before its first external call. Tests: `tests/test_meh3402_outbound_guard.py`; the rest of the suite runs the guard as production via the `_outbound_guard_as_production` autouse fixture.
@@ -915,7 +939,9 @@ The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by
 - **The new address is unproved**: `email_verified` goes false, a new verify link goes to the NEW address only, and any pending reset link is cleared.
 - **The old address gets a notice** (masked new address, no name), queued before the verify mail, after the commit. A takeover is not silent.
 - **OAuth email match also checks the provider id** (`auth.py` Google / Apple upsert): an address that matches an account bound to a different provider id → 409, never a sign-in.
-- **Known gaps, tracked:** the route limit is 10/hour per IP, not per account, and other sessions are not signed out by the change (follow-up recorded in PR #4491; a Linear card is opened once the workspace has room).
+- **Per-account cap (MEH-3425):** besides the route's 10/hour per IP, 5 WRONG passwords an hour per account lock the change for that account (429), even for the right password; a right password spends nothing. Counter in `backend/app/services/email_change_guard.py`, fail-open like `resend_verify_cap.py`. The user row is locked (`SELECT … FOR UPDATE`) before the check, so parallel guesses are counted one at a time (measured: 10 parallel wrong guesses → 5×403, 5×429). An absent password spends nothing. Limits: the window is fixed, not moving (up to 10 guesses around a window edge), and the counter is in process memory, so a deploy resets it.
+- **Other devices signed out (MEH-3425):** a real change bumps `token_version`, as `/auth/logout-all-devices` does; the caller's device gets fresh refresh + fingerprint cookies and recovers via `/auth/refresh`.
+- **No password on the account (MEH-3425):** a non-OAuth account with no `password_hash` gets its own 403, which points to «שכחתי סיסמה», instead of «הסיסמה הנוכחית שגויה».
 
 ## 18. Skills supply chain (MEH-397)
 
@@ -1254,7 +1280,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 
 - **Both register endpoints (non-upgrade path) return identical 200 ack** regardless of branch:
   - `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}`
-  - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / **google**-collision / **apple**-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test). **Quad, not triple, since MEH-1624** — the apple branch (`auth.py:338`, and `auth.py:695` on the producer endpoint) was absent from the set, so a divergence unique to Apple would have shipped green. The two test *names* still say `three_branches`: MEH-1624 was a tests-only PR and renaming was left out of it. Read them as the byte-identity tests, not as a branch count.
+  - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / **google**-collision / **apple**-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test). **Quad, not triple, since MEH-1624** — the apple branch (`auth.py:338`, and `auth_register_producer.py:643` on the producer endpoint since MEH-3293) was absent from the set, so a divergence unique to Apple would have shipped green. The two test *names* still say `three_branches`: MEH-1624 was a tests-only PR and renaming was left out of it. Read them as the byte-identity tests, not as a branch count.
 - **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
 - **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
 - **`/auth/email-exists` deleted entirely.** No 30/min oracle. Frontend caller in `register/producer/page.js` removed.
@@ -1309,3 +1335,23 @@ The «אשמח לארח נקודת מסירה» box on the city waitlist is a **
 - **Accepted disclosure:** a repeat signup with the box ticked tells an anonymous caller `confirmed` / `already_sent` / `limit_reached` for that (business, city, email) — the same class as `exists` since MEH-2618. Relabeling `confirmed` would lie to the address's real owner; the honest tightening, if ever wanted, is `null`, not `already_sent`. Cost of probing: the attacker needs email + business + city and learns a fact that business already sees.
 - **Accepted limits of the cap:** a third party who knows an address can burn its 3/day with other business/city combos (the real request waits a day — delay, not exposure), and Gmail `+tag`/dot aliases count as separate addresses; the route's `10/min` per-IP limit is the backstop for both. The `resent` flag on 410 reveals whether a mail went in the last 24 h to the link holder — an oracle only to someone already holding a signed link for that entry.
 - **Reach:** the owner reads confirmed hosts only for their own business (`GET /producers/me/analytics → pickup_hosts`, scoped to `require_producer`'s `pid`, capped at 50, newest confirmation first).
+
+## 20. Least privilege in the database — the app cannot change the schema (MEH-3307) — code shipped, switch-over per environment
+
+The backend can run as `app_runtime`, a role that reads and writes rows and nothing else; the migrations keep the schema owner through `MIGRATION_DATABASE_URL` (`app/database.py::migration_database_url`, used by `alembic/env.py` and `scripts/migrate_on_boot.py`). A SQL injection, or a stolen app credential, can then change data but cannot make a persistent schema change: no table, column, index, view or function created, altered or dropped (a session's `TEMP` table, which PUBLIC keeps, is the one exception and dies with the session). Runbook and order: [DEPLOYMENT.md §1.3](./DEPLOYMENT.md). The SQL lives in `backend/scripts/app_runtime_role.py`; `tests/test_meh3307_app_runtime_role.py` runs it on a database at head and proves the writes work, `SET ROLE mcp_reader` works, and CREATE / ALTER / DROP / TRUNCATE / CREATE INDEX / VIEW / FUNCTION / COMMENT are refused.
+
+- **Until the variables change, nothing changes:** with `MIGRATION_DATABASE_URL` unset the app and the migrations share the owner URL, as before.
+- **Accepted:** `app_runtime` can still `DELETE` every row of a table it can write; that is the backups' job (daily `pg_dump` to R2, DEPLOYMENT.md), not the role's. `TRUNCATE` is refused.
+
+---
+
+## 21. On-site product orders — guest surface (MEH-3263) — dark behind `PRODUCT_ORDERS_ENABLED`
+
+Stage 2b of on-site ordering adds the first routes where a **guest** writes data that a business acts on. Every route answers 404 while the flag is off.
+
+- **Unauthenticated code sender:** `POST /product-orders/phone-code` messages a phone through WhatsApp. Bounds: only for a business that takes orders now; 5/hour per IP; 3 codes an hour per phone and 500 a day site-wide, both counted in `product_order_phone_codes` (not in memory). At the site-wide ceiling the route answers 503 and logs an error: it fails closed. **Accepted cost:** an attacker with several IPs can spend the ceiling and close ordering for the day, and can spend a victim phone's 3 codes an hour. Delay, not exposure. The route does not say whether a phone is blocked for no-shows.
+- **The code:** six digits, 10 minutes, newest only, single use. Stored as `HMAC-SHA256(server secret, phone:code)`. A wrong try is committed before the 422, so five wrong tries end the code even when every request fails.
+- **Guest status token:** `base64url(HMAC(server secret, "product-order-status:" + idempotency key))`; only its sha256 is stored. It travels in the POST **body**, never in a URL. The buyer view masks the phone, omits the street address, shows the pickup code only while it can be used, sends `Cache-Control: no-store`, and stops answering 30 days after the order closed.
+- **10-minute replay window:** a repeat of `POST /product-orders` with the same idempotency key, phone and business within 10 minutes returns the same order and token **without a new code** (a lost answer must not cost the buyer her order). For those 10 minutes the key is a credential. It is a client-made UUID that appears in no response, view or log. **The frontend must never put it in a URL or an analytics event.**
+- **What a business may do alone:** confirm at or below the total the buyer saw, and only before the slot starts. Anything else needs the buyer's acceptance. Two no-shows in 90 days block a phone, so a no-show can be reported only after the slot of an order that was confirmed in time.
+- **Ownership:** a business reaches only its own orders (404 otherwise); there is no admin path yet (stage 6).

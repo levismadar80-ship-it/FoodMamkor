@@ -993,6 +993,29 @@ class User(Base):
     password_changed_at = Column(DateTime(timezone=True), nullable=True, default=None)
     # MEH-192: email verification. Token is cleared on successful verify.
     email_verified = Column(Boolean, default=False)
+    # MEH-3301 (D14): WhatsApp alerts go only to a phone the user verified
+    # with a code (user_phone_otp_tokens). `phone_verified_at` is when THIS
+    # `phone` was verified — a phone change clears it. `whatsapp_consent_at`
+    # is when she agreed to WhatsApp updates; «הסר» clears it. Both nullable,
+    # no backfill: NULL = no evidence, which is the truth for every existing
+    # row (same reasoning as terms_accepted_at above). Not in any response
+    # schema yet; MEH-3302 decides what the profile shows.
+    phone_verified_at = Column(DateTime(timezone=True), nullable=True)
+    whatsapp_consent_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def phone_verified(self) -> bool:
+        """MEH-3302: the CURRENT phone is verified (UserOut exposes this bool,
+        never the timestamps)."""
+        return bool(self.phone and self.phone_verified_at is not None)
+
+    @property
+    def whatsapp_ready(self) -> bool:
+        """MEH-3302: verified AND standing consent — the fire_alerts gate
+        (user_phone_verify.can_get_whatsapp). False after «הסר» even though
+        the phone stays verified, so the panel offers a new code."""
+        return self.phone_verified and self.whatsapp_consent_at is not None
+
     email_verify_token = Column(String(64), nullable=True, index=True)
     email_verify_expires = Column(DateTime, nullable=True)
     # MEH-2644: rescue-bag no-shows. The pilot blocks new reservations after
@@ -1152,9 +1175,9 @@ class Category(Base):
         Boolean, nullable=False, default=False, server_default=text("false")
     )
     # MEH-3255 (D10): the manufacturer-licence requirement lives on the row,
-    # answered when the category is created. EXPAND step — the readers still
-    # use constants.LICENSE_REQUIRED_CATEGORIES until the contract PR, and
-    # tests/test_meh3255_requires_license_parity.py holds the two equal.
+    # answered when the category is created. Every licence reader uses it
+    # (contract step); constants.LICENSE_REQUIRED_CATEGORIES only feeds the
+    # seed, held equal by tests/test_meh3255_requires_license_parity.py.
     requires_license = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
@@ -1196,6 +1219,7 @@ from app.models.admin_ops import (  # noqa: E402
     OutboundMessage as OutboundMessage,
     OutreachLead as OutreachLead,
     PhoneOtpToken as PhoneOtpToken,
+    UserPhoneOtpToken as UserPhoneOtpToken,
     ProducerNameChangeRequest as ProducerNameChangeRequest,
     ProducerReviewCheck as ProducerReviewCheck,
 )
@@ -1262,3 +1286,6 @@ from app.models.rescue import (  # noqa: E402
 # free of a mid-file import; product_orders.py imports nothing from this file,
 # so there is no cycle either way.
 import app.models.product_orders  # noqa: E402,F401
+
+# MEH-3305: an admin's passkeys and recovery codes (own module, same reason).
+import app.models.admin_passkeys  # noqa: E402,F401

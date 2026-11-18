@@ -27,8 +27,8 @@ const read = (messages, path) =>
   path.split(".").reduce((node, key) => (node == null ? node : node[key]), messages);
 
 const VERIFY_KEYS = [
-  "dashboard.producer.phone_verify.description",
-  "dashboard.producer.phone_verify.success",
+  "phone_verify.description",
+  "phone_verify.success",
 ];
 
 const WINDOW_KEYS = [
@@ -54,7 +54,7 @@ describe("phone verification does not claim the business was sent for review (ME
     // renamed, this follows it instead of going stale.
     const button = read(he, "dashboard.producer.draft.submit_cta");
     expect(typeof button, "submit button key moved — update this test").toBe("string");
-    expect(read(he, "dashboard.producer.phone_verify.success")).toContain(button);
+    expect(read(he, "phone_verify.success")).toContain(button);
   });
 });
 

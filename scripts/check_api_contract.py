@@ -56,6 +56,18 @@ KNOWN_DYNAMIC_EXPANSIONS: dict[tuple[str, str], list[tuple[str, str]]] = {
         ("POST", "/rescue/orders/{_}/handed"),
         ("POST", "/rescue/orders/{_}/no_show"),
     ],
+    # frontend/lib/product-orders.js:229 (MEH-3316) — `action` is one of the
+    # seven literals in its JSDoc type, set by OrderActions.jsx:43-61 and
+    # OrderDialogs.jsx; backend product_order_business.py:129-211.
+    ("POST", "/producers/me/product-orders/{_}/{_}"): [
+        ("POST", "/producers/me/product-orders/{_}/confirm"),
+        ("POST", "/producers/me/product-orders/{_}/decline"),
+        ("POST", "/producers/me/product-orders/{_}/propose-change"),
+        ("POST", "/producers/me/product-orders/{_}/ready"),
+        ("POST", "/producers/me/product-orders/{_}/handed"),
+        ("POST", "/producers/me/product-orders/{_}/no-show"),
+        ("POST", "/producers/me/product-orders/{_}/cancel"),
+    ],
 }
 
 FRONTEND_EXTS = {".js", ".jsx", ".ts", ".tsx"}

@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import ChecklistSettings from "./ChecklistSettings";
+import PasskeySettings from "./PasskeySettings";
 import { SkeletonForm } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import Switch from "@/components/ui/Switch";
@@ -153,6 +154,9 @@ export default function AdminSettingsPage() {
           disable, and a fifth stateful section here would make that disable
           load-bearing instead of historical. */}
       <ChecklistSettings />
+
+      {/* MEH-3305: the signed-in admin's own passkeys + recovery codes. */}
+      <PasskeySettings />
 
       {/* MEH-1566: the notifications section (admin_email / admin_whatsapp)
           was removed — both inputs wrote admin_settings keys that nothing ever

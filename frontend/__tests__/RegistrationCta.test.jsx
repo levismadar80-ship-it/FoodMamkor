@@ -78,13 +78,108 @@ describe("RegistrationCta — by method", () => {
     expect(screen.queryByTestId("registration-question")).toBeNull();
   });
 
-  it("full → the waitlist link when given, else «אין יותר מקומות»", () => {
-    const { unmount } = cta({ method: "site_form", isFull: true, waitlistHref: "https://wa.me/972501234567?text=x", waitlistLabel: "ww" });
+  it("full, off-site method → the waitlist link when given, else «אין יותר מקומות»", () => {
+    const { unmount } = cta({ method: "whatsapp", phone: "050-1234567", isFull: true, waitlistHref: "https://wa.me/972501234567?text=x", waitlistLabel: "ww" });
     expect(screen.getByTestId("registration-waitlist").textContent).toBe("ww");
     expect(screen.queryByTestId("registration-open")).toBeNull();
     unmount();
-    cta({ method: "site_form", isFull: true });
+    cta({ method: "phone", phone: "050-1234567", isFull: true });
     expect(screen.getByTestId("registration-full").textContent).toBe(C.full);
+    expect(screen.queryByTestId("registration-open")).toBeNull();
+  });
+});
+
+describe("MEH-3315 — «כמה אנשים»", () => {
+  it("the form offers 1–10, defaults to 1, and posts the chosen party", async () => {
+    api.post.mockResolvedValue({ data: { status: "registered" } });
+    cta({ method: "site_form" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    const party = screen.getByLabelText(S.party_size, { exact: false });
+    expect(party.value).toBe("1");
+    expect([...party.querySelectorAll("option")].map((o) => o.value)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.change(party, { target: { value: "4" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    expect(api.post.mock.calls[0][1].party_size).toBe(4);
+  });
+
+  it("not enough places → the server's «נשארו רק 2 מקומות» in the banner", async () => {
+    api.post.mockRejectedValue({ response: { status: 409, data: { detail: { code: "registration_not_enough", message: "נשארו רק 2 מקומות" } } } });
+    cta({ method: "site_form" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByText("נשארו רק 2 מקומות")).toBeInTheDocument());
+    // the same filled form can still join the waitlist
+    api.post.mockReset();
+    api.post.mockResolvedValue({ data: { status: "waitlisted" } });
+    fireEvent.click(screen.getByTestId("registration-join-waitlist"));
+    await waitFor(() => expect(screen.getByTestId("registration-success").textContent).toBe(S.waitlist_success));
+    expect(api.post.mock.calls[0][1].waitlist).toBe(true);
+  });
+
+  it("any other 409 offers no waitlist button", async () => {
+    api.post.mockRejectedValue({ response: { status: 409, data: { detail: { code: "registration_closed", message: "ההרשמה נסגרה" } } } });
+    cta({ method: "site_form" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByText("ההרשמה נסגרה")).toBeInTheDocument());
+    expect(screen.queryByTestId("registration-join-waitlist")).toBeNull();
+  });
+});
+
+describe("MEH-3314 — a full on-site form is the waitlist", () => {
+  const fullForm = (props = {}) => cta({ method: "site_form", isFull: true, ...props });
+
+  it("full site_form → «אין יותר מקומות» and «להצטרף לרשימת ההמתנה», even with a WhatsApp waitlist link", () => {
+    fullForm({ waitlistHref: "https://wa.me/972501234567?text=x", waitlistLabel: "ww" });
+    expect(screen.getByTestId("registration-full").textContent).toBe(C.full);
+    expect(screen.getByTestId("registration-open").textContent).toBe(C.waitlist_join);
+    expect(screen.queryByTestId("registration-waitlist")).toBeNull();
+  });
+
+  it("not full → the plain sign-up, no waitlist wording", () => {
+    cta({ method: "site_form" });
+    expect(screen.getByTestId("registration-open").textContent).toBe(C.signup_experience);
+    expect(screen.queryByTestId("registration-full")).toBeNull();
+  });
+
+  it("submit posts waitlist: true and shows the waitlist confirmation", async () => {
+    api.post.mockResolvedValue({ data: { status: "waitlisted" } });
+    fullForm();
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(screen.getByTestId("registration-submit").textContent).toBe(S.waitlist_submit);
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByTestId("registration-success").textContent).toBe(S.waitlist_success));
+    expect(api.post).toHaveBeenCalledWith("/experiences/x1/registrations", {
+      name: "נועה כהן",
+      phone: "050-1112233",
+      email: "noa@example.com",
+      party_size: 1,
+      waitlist: true,
+    });
+  });
+
+  it("a place freed before submit → the server registers her, and the page says so", async () => {
+    api.post.mockResolvedValue({ data: { status: "registered" } });
+    fullForm();
+    fireEvent.click(screen.getByTestId("registration-open"));
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה כהן" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "050-1112233" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "noa@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    await waitFor(() => expect(screen.getByTestId("registration-success").textContent).toBe(S.success));
   });
 });
 
@@ -179,6 +274,7 @@ describe("RegistrationCta — the on-site form", () => {
       name: "נועה כהן",
       phone: "050-1112233",
       email: "noa@example.com",
+      party_size: 1,
     });
   });
 
@@ -344,8 +440,14 @@ describe("MEH-3043 — sticky phone bar", () => {
     );
   });
 
+  it("MEH-3314 full site_form → the bar offers the waitlist", () => {
+    cta({ method: "site_form", phone: null, isFull: true });
+    fire(false);
+    expect(screen.getByTestId("registration-bar-action").textContent).toBe(C.waitlist_join);
+  });
+
   it("full with no waitlist, or no channel at all → no bar", () => {
-    const { unmount } = cta({ method: "site_form", phone: null, isFull: true });
+    const { unmount } = cta({ method: "phone", phone: "050-1234567", isFull: true });
     fire(false);
     expect(screen.queryByTestId("registration-bar")).toBeNull();
     unmount();

@@ -13,7 +13,9 @@ from app.routers import (
     admin_recipes,
     admin_whatsapp,
     alerts,
+    admin_passkey,
     auth,
+    auth_register_producer,
     business_suggestions,
     category_requests,
     chat,
@@ -37,9 +39,13 @@ from app.routers import (
     producer_name_requests,
     producer_owner_invite,
     producer_owner_invite_existing,
+    producer_owner_detach,
     producer_recipes,
     billing,
     product_organize,
+    product_order_business,
+    product_order_buyer,
+    product_order_offer,
     product_orders,
     rescue,
     producers,
@@ -78,6 +84,7 @@ def _include_owner_links(app: FastAPI) -> None:
     app.include_router(producer_owner_invite.router)
     app.include_router(producer_owner_invite.public_router)
     app.include_router(producer_owner_invite_existing.router)  # MEH-3256
+    app.include_router(producer_owner_detach.router)  # MEH-3256 (D9)
     # Page freshness: the «כן, הכול נכון» link in the monthly owner email.
     app.include_router(page_freshness.router)
 
@@ -111,6 +118,14 @@ def _register_flagged_features(app: FastAPI) -> None:
     # Every route answers 404 while PRODUCT_ORDERS_ENABLED is off (the default).
     app.include_router(product_orders.me_router)
     app.include_router(product_orders.admin_router)
+    # MEH-3262: stage 2a — the business's weekly windows, a product's ordering
+    # fields, and the public order menu. Same flag, same 404 while off.
+    app.include_router(product_order_offer.me_router)
+    app.include_router(product_order_offer.public_router)
+    # MEH-3263: stage 2b — the order itself: the buyer sends and follows it,
+    # the business acts on it. Same flag, same 404 while off.
+    app.include_router(product_order_buyer.router)
+    app.include_router(product_order_business.router)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -123,6 +138,9 @@ def register_routers(app: FastAPI) -> None:
     inline AFTER the `app.include_router(...)` block.
     """
     app.include_router(auth.router)
+    app.include_router(auth_register_producer.router)  # MEH-3293: split out of auth.py
+    # MEH-3305: /auth/passkey/* — the admin second factor.
+    app.include_router(admin_passkey.router)
     app.include_router(cities.router)
     app.include_router(producer_name_check.router)  # MEH-3086
     _include_producer_me(app)

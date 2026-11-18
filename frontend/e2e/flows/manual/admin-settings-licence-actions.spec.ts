@@ -164,6 +164,10 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<{ items: () =
 
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-3305: /admin/settings renders <PasskeySettings>, which reads the admin's own passkeys.
+  await page.route((u) => /\/api\/auth\/passkey\/?$/.test(u.pathname), (r) =>
+    json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
+  );
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/admin/dashboard", (r) =>
     json(r, { stats: { total_producers: 1, pending_producers: 1, total_users: users.length, total_group_buys: 0, pending_moderation_count: 1, pending_kashrut_requests: 0 }, recent_activity: [], monthly_producers: [] }),

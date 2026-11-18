@@ -61,6 +61,12 @@ class TestSmartSearchLayoutFallback:
         assert [p["name"] for p in body["producers"]] == ["דבש הגליל"]
         assert body["corrected_query"] == "דבש"
 
+    def test_as_typed_skips_the_layout_read(self, client, db):
+        make_producer(db, name="דבש הגליל", city="צפת")
+        body = client.get("/search?q=sca&as_typed=true").json()
+        assert body["producers"] == []
+        assert body["corrected_query"] is None
+
     def test_query_with_results_is_not_rewritten(self, client, db):
         make_producer(db, name="sca farm", city="צפת")
         make_producer(db, name="דבש הגליל", city="צפת")

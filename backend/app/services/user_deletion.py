@@ -39,7 +39,9 @@ from app.utils.clock import utc_now
 from app.utils.phone import canonical_il_msisdn
 from app.services import retired_slugs  # MEH-2528
 from app.services.booking_cancellations import delist_business  # MEH-3227
+from app.services.product_order_guards import refuse_delete_with_open_orders
 from app.services.group_buy_delist import withdraw_user_commits  # MEH-2503
+from app.services.product_order_privacy import release_buyer_orders  # MEH-3263
 from app.services.rescue_no_show import record_tombstones  # MEH-3225
 
 
@@ -96,6 +98,12 @@ def delete_user_and_data(
     (``auth.delete_account`` / ``admin.delete_user``).
     """
     producer_id = user.producer_id
+    # MEH-3262: before the first write — a business with an open order stays.
+    refuse_delete_with_open_orders(db, producer_id)
+    # MEH-3263: her own orders as a BUYER — open ones are cancelled, and all
+    # of them lose her name, phone, address and note. The rows stay
+    # (product_orders.user_id is SET NULL): they are the business's record.
+    release_buyer_orders(db, user.id)
     # MEH-3225: the no-show block outlives the account (hashed email only).
     record_tombstones(db, user)
 

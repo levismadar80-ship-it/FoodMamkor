@@ -116,6 +116,40 @@ class PhoneOtpToken(Base):
     )
 
 
+class UserPhoneOtpToken(Base):
+    """MEH-3301 (D14): one-time WhatsApp code that verifies a USER's phone.
+
+    The sibling of PhoneOtpToken (which verifies a business phone), kept as
+    its own table so the user flow carries its own hardening: `phone` is the
+    canonical number the code was sent to (the code is bound to it — a phone
+    change expires it), and `attempts` counts wrong guesses (5 per token).
+    Rows go with the user (ON DELETE CASCADE). Written only by the D14
+    routes (MEH-3302); nothing reads it before then.
+    """
+
+    __tablename__ = "user_phone_otp_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    phone = Column(String(30), nullable=False)
+    code = Column(String(6), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False, nullable=False, server_default="false")
+    attempts = Column(Integer, default=0, nullable=False, server_default="0")
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    # passive_deletes: the DB cascade removes the rows (same reason as
+    # PhoneOtpToken, MEH-755).
+    user = relationship(
+        "User", backref=backref("phone_otp_tokens", passive_deletes=True)
+    )
+
+
 class KashrutBadgeRequest(Base):
     """MEH-51: producer uploads cert → admin approves → badge activates."""
 
@@ -277,7 +311,10 @@ class OutboundMessage(Base):
     `meta_message_id` (the wamid) is UNIQUE for webhook idempotency
     (Meta delivers at-least-once). `status` is app-enforced (no DB
     enum/CHECK), by-convention 'accepted' | 'delivered' | 'failed' |
-    'window_expired', consistent with availability_state.
+    'window_expired', consistent with availability_state — plus
+    'blocked_nonprod' outside production only (MEH-3402: the guard dropped
+    the send). For those rows `error_message` holds what the message would
+    have said, not an error; never feed them into error grouping.
     """
 
     __tablename__ = "outbound_messages"

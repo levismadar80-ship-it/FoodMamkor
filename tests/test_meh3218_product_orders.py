@@ -62,17 +62,17 @@ ALLOWED: dict[tuple[str, str], tuple[str, ...]] = {
     ("pending", "confirmed"): (*B, "system"),
     ("pending", "change_proposed"): B,
     ("pending", "declined"): B,
-    ("pending", "cancelled"): ("customer",),
+    ("pending", "cancelled"): ("customer", "system"),
     ("pending", "expired"): ("system",),
     ("change_proposed", "confirmed"): ("customer",),
-    ("change_proposed", "cancelled"): ("customer", *B),
+    ("change_proposed", "cancelled"): ("customer", *B, "system"),
     ("change_proposed", "expired"): ("system",),
     ("confirmed", "ready"): B,
     ("confirmed", "handed"): B,
-    ("confirmed", "cancelled"): ("customer", *B),
+    ("confirmed", "cancelled"): ("customer", *B, "system"),
     ("confirmed", "no_show"): B,
     ("ready", "handed"): B,
-    ("ready", "cancelled"): B,
+    ("ready", "cancelled"): (*B, "system"),
     ("ready", "no_show"): B,
 }
 TERMINAL = ("handed", "declined", "cancelled", "expired", "no_show")
@@ -86,6 +86,8 @@ def valid_settings_payload() -> dict:
         "cancel_cutoff_hours": 24,
         "shabbat_observant": False,
         "min_order_agorot": None,
+        "slot_minutes": 60,
+        "lead_time_hours": 24,
     }
 
 
@@ -364,6 +366,8 @@ def test_a_business_that_never_saved_has_ordering_off(client, db, flag_on):
         "cancel_cutoff_hours": 24,
         "shabbat_observant": False,
         "min_order_agorot": None,
+        "slot_minutes": 60,
+        "lead_time_hours": 24,
         "alcohol_licensed": False,
     }
 

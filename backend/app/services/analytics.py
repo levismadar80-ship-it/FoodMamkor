@@ -226,6 +226,9 @@ _ALLOWED_REFERRERS = frozenset(
         "producers-index",
         "similar",
         "nearby",
+        # MEH-3331: a link the owner shared (her post, her bio, her Google
+        # profile) — frontend/lib/share-post.js SHARE_FROM.
+        "share",
     }
 )
 

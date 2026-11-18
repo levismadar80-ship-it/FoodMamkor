@@ -183,6 +183,10 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     return json(r, { detail: "unstubbed" }, 404);
   });
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-3305: /admin/settings renders <PasskeySettings>, which reads the admin's own passkeys.
+  await page.route((u) => /\/api\/auth\/passkey\/?$/.test(u.pathname), (r) =>
+    json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
+  );
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).

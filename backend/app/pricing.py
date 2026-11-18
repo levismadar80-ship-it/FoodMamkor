@@ -85,6 +85,40 @@ SWITCH_ON_BLOCKERS: Final[tuple[str, ...]] = (
     # voids sign-ups that did take place. The ledger row does not hold the
     # item's date at sign-up, so the fix needs a column (billing stage).
     "void-after-redate",
+    # MEH-3413: promises in terms §11 (frontend/messages/he.json
+    # «terms.sections.pricing») that no code keeps yet. Each one is a promise
+    # the switch would break the day it moves; remove a line only in the
+    # change that builds it. Classified in tests/test_meh3413_terms11_enforcement.py.
+    # §11 «launch»: billing starts only after written notice, notice_days
+    # ahead. Nothing records when (or whether) the notice was sent.
+    "terms11-notice-sent-record",
+    # §11 «nochoice»: no answer by the end of the notice → page only. Nothing
+    # writes business_billing.state (docs/STATE_MACHINES.md, "no writer").
+    "terms11-notice-expiry-to-page-only",
+    # §11 «dispute»: a monthly summary before the charge, and dispute_days to
+    # report a booking that did not happen. No email, no «disputed» status.
+    "terms11-monthly-summary-and-dispute",
+    # §11 «early»: a launch-period joiner pays the subscriber's rates for
+    # launch_joiner_months. No fee calculation reads it.
+    "terms11-launch-joiner-reduced-rate",
+    # §11 «trial»: trial_days without commission for a later joiner. No fee
+    # calculation reads it.
+    "terms11-trial-days",
+    # §11 «cancel»: cancel any time; a yearly plan refunds the remaining full
+    # months. No subscription flow exists.
+    "terms11-cancel-and-refund",
+    # §11 «unpaid»: a reminder before the paid tools close. No reminder exists.
+    "terms11-unpaid-reminder",
+    # §11 «change»: a new price list takes effect price_change_notice_days
+    # after written notice to the businesses. Editing version 1 is blocked by
+    # tests/test_meh3413_terms11_enforcement.py; sending the notice is not built.
+    "terms11-price-change-notice",
+    # §11 «change»: a yearly subscriber keeps the price it bought until renewal.
+    # No subscription records its purchase price.
+    "terms11-yearly-price-kept",
+    # §11 «early»: the end of the launch period is published on the price page
+    # price_change_notice_days ahead. Nothing publishes or checks that date.
+    "terms11-launch-end-published",
 )
 
 

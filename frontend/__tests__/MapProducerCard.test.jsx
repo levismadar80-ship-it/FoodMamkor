@@ -81,7 +81,7 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     render(<MapProducerCard producer={producer} />);
     const pill = screen.getByTestId("map-distance-pill");
     expect(pill.tagName).toBe("BDI");
-    expect(pill.textContent).toBe('54 ק"מ'); // MEH-1298: 53.9 km rounds (≥10) // 🔒 §3 Hebrew unit, no "ממך"
+    expect(pill.textContent).toBe('כ-54 ק"מ'); // MEH-3219: whole approximate km // 🔒 §3 Hebrew unit, no "ממך"
     expect(pill.textContent).not.toContain("km");
     // MEH-1296: no dir override — <bdi> auto-resolves to RTL so the token reads
     // digits-first in the RTL meta line.
@@ -109,7 +109,7 @@ describe("MapProducerCard — distance (MEH-826)", () => {
         }}
       />,
     );
-    expect(screen.getByTestId("map-distance-pill").textContent).toBe('54 ק"מ');
+    expect(screen.getByTestId("map-distance-pill").textContent).toBe('כ-54 ק"מ');
   });
 });
 

@@ -12,7 +12,7 @@ import he from "../messages/he.json";
 import api from "@/lib/api";
 import RegistrationsList from "@/components/RegistrationsList";
 
-vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
+vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
 
 const L = he.registration.list;
 const row = (n, status = "registered") => ({
@@ -74,6 +74,64 @@ describe("RegistrationsList", () => {
     await waitFor(() => expect(screen.getAllByTestId("registration-row")).toHaveLength(3));
     expect(screen.getAllByText(L.cancelled)).toHaveLength(1);
     expect(screen.getByText("נרשמת 2").className).toContain("line-through");
+  });
+
+  it("MEH-3314 open × waitlist: waitlisted rows sit in their own numbered section", async () => {
+    api.get.mockResolvedValue({ data: [row(1), row(2, "waitlisted"), row(3, "waitlisted")] });
+    open(renderList(1));
+    await waitFor(() => expect(screen.getAllByTestId("waitlist-row")).toHaveLength(2));
+    expect(screen.getAllByTestId("registration-row")).toHaveLength(1);
+    const section = screen.getByTestId("registrations-waitlist");
+    expect(section.textContent).toContain(L.waitlist.replace("{count}", "2"));
+    expect(section.querySelector("ol")).not.toBeNull();
+  });
+
+  it("MEH-3314 open × waitlist only: the empty line for sign-ups, then the waitlist", async () => {
+    api.get.mockResolvedValue({ data: [row(1, "waitlisted")] });
+    open(renderList(0));
+    await waitFor(() => expect(screen.getAllByTestId("waitlist-row")).toHaveLength(1));
+    expect(screen.getByText(L.empty)).toBeInTheDocument();
+    expect(screen.queryAllByTestId("registration-row")).toHaveLength(0);
+  });
+
+  it("open × no waitlist: no waitlist section", async () => {
+    api.get.mockResolvedValue({ data: [row(1)] });
+    open(renderList(1));
+    await waitFor(() => expect(screen.getAllByTestId("registration-row")).toHaveLength(1));
+    expect(screen.queryByTestId("registrations-waitlist")).toBeNull();
+  });
+
+  it("MEH-3315 a party shows its size; a party of one says nothing", async () => {
+    api.get.mockResolvedValue({ data: [{ ...row(1), party_size: 4 }, row(2)] });
+    open(renderList(5));
+    await waitFor(() => expect(screen.getAllByTestId("registration-row")).toHaveLength(2));
+    const parties = screen.getAllByTestId("registration-party");
+    expect(parties.map((p) => p.textContent)).toEqual([L.party.replace("{count}", "4")]);
+  });
+
+  it("MEH-3315 «הגיעו» / «לא הגיעו»: marks, shows pressed, a second tap clears", async () => {
+    api.get.mockResolvedValue({ data: [row(1), row(2, "cancelled"), row(3, "waitlisted")] });
+    api.patch.mockResolvedValueOnce({ data: { ...row(1), attendance: "attended" } });
+    open(renderList(1));
+    await waitFor(() => expect(screen.getAllByTestId("registration-attendance")).toHaveLength(1));
+    fireEvent.click(screen.getByTestId("attendance-attended"));
+    expect(api.patch).toHaveBeenCalledWith("/registrations/r1/attendance", { attendance: "attended" });
+    await waitFor(() => expect(screen.getByTestId("attendance-attended")).toHaveAttribute("aria-pressed", "true"));
+    expect(screen.getByTestId("attendance-no_show")).toHaveAttribute("aria-pressed", "false");
+    api.patch.mockResolvedValueOnce({ data: { ...row(1), attendance: null } });
+    fireEvent.click(screen.getByTestId("attendance-attended"));
+    expect(api.patch).toHaveBeenLastCalledWith("/registrations/r1/attendance", { attendance: null });
+    await waitFor(() => expect(screen.getByTestId("attendance-attended")).toHaveAttribute("aria-pressed", "false"));
+  });
+
+  it("MEH-3315 a failed mark says so and keeps the old state", async () => {
+    api.get.mockResolvedValue({ data: [row(1)] });
+    api.patch.mockRejectedValue(new Error("500"));
+    open(renderList(1));
+    await waitFor(() => expect(screen.getByTestId("attendance-no_show")).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId("attendance-no_show"));
+    await waitFor(() => expect(screen.getByText(L.attendance_error)).toBeInTheDocument());
+    expect(screen.getByTestId("attendance-no_show")).toHaveAttribute("aria-pressed", "false");
   });
 
   it("open × failed: one error line, no empty line", async () => {

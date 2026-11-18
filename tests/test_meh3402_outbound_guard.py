@@ -207,6 +207,22 @@ def test_staging_whatsapp_to_real_number_is_dropped(staging, graph_spy):
     assert graph_spy == []
 
 
+def test_staging_whatsapp_outcome_twin_is_dropped_too(staging, monkeypatch):
+    """MEH-3296: the on-site order outbox sends through send_template_result,
+    not send_template. A real number outside production is dropped there too,
+    with an outcome the outbox records as a skip (never a retry)."""
+    posted: list[str] = []
+    monkeypatch.setattr(settings, "whatsapp_phone_number_id", "pid")
+    monkeypatch.setattr(settings, "whatsapp_access_token", "tok")
+    monkeypatch.setattr(
+        whatsapp, "_post_result", lambda payload, *, kind, to: posted.append(to)
+    )
+    template = ProducerWelcomeV1(producer_name="משק")
+    result = whatsapp.send_template_result("0541112233", template)
+    assert (result.ok, result.outcome) == (False, whatsapp.OUTCOME_BLOCKED_NON_PROD)
+    assert posted == []
+
+
 @pytest.mark.parametrize("to", ["+972501234567", "0501234567", "972520000001"])
 def test_staging_whatsapp_to_staff_numbers_is_sent(staging, graph_spy, to):
     assert whatsapp.send_text(to, "שלום") is True

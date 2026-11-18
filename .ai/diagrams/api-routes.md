@@ -35,6 +35,9 @@ graph LR
     App --> OwnerInvite[producer_owner_invite.router · .public_router<br/>/admin/producers/:id/owner-invite[/resend] · /auth/owner-invite/:token · …/email-code · …/accept<br/>MEH-2974 owner invite: APPROVED or INACTIVE + ownerless, sha256 of a token_urlsafe on the producer row,<br/>7 days, single-use, revoked by resend / cancel / suspension. NO users row until acceptance;<br/>v3 the address is optional on the invite and proved by a 6-digit code sha256 on the row 10 min 5 attempts;<br/>acceptance creates the user, stamps her declaration + terms, PUBLISHES a hidden page, and logs her in;<br/>MEH-3256 …/email-code-existing · …/accept-existing (producer_owner_invite_existing.router): a SIGNED-IN<br/>verified account accepts instead — code to her own address, no admin, one business per account, token_version bumped]
     App --> Rescue[rescue.router · rescue.admin_router<br/>/rescue/* · /admin/rescue/*<br/>MEH-2646 rescue-bags pilot — EVERY route 404s while RESCUE_BAGS_ENABLED is off (its default).<br/>No payment anywhere: the buyer pays at the counter]
     App --> ProductOrders[product_orders.me_router · .admin_router<br/>/producers/me/order-settings GET·PUT · /admin/producers/:id/order-settings/alcohol<br/>MEH-3218 on-site ordering, stage 1 — settings only, no order route yet.<br/>EVERY route 404s while PRODUCT_ORDERS_ENABLED is off (its default)]
+    App --> ProductOrderOffer[product_order_offer.me_router · .public_router<br/>/producers/me/order-windows GET·PUT · /producers/me/products/:id/ordering PUT · /producers/:id/order-menu GET<br/>MEH-3262 stage 2a — what a business offers: weekly windows, product ordering fields, the public menu with slots.<br/>Same flag, same 404 while off]
+    App --> ProductOrderBuyer[product_order_buyer.router<br/>/product-orders/phone-code · /product-orders POST · /product-orders/status · …/status/cancel · …/status/accept-change · /users/me/product-orders<br/>MEH-3263 the buyer: phone proved by a WhatsApp code, server-side prices, token in the POST body, no-store. 404 while the flag is off]
+    App --> ProductOrderBusiness[product_order_business.router<br/>/producers/me/product-orders GET · …/:id/confirm · decline · propose-change · ready · handed · no-show · cancel<br/>MEH-3263 the business acts on its own orders only; every move through product_order_state. 404 while the flag is off]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> Saved[saved_items.router<br/>/users/me/saved/* MEH-2557]
@@ -52,7 +55,7 @@ graph LR
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
-    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel]
+    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel,<br/>MEH-3315: PATCH /registrations/id/attendance owner/admin]
     App --> Health[health.router<br/>/health, /health/liveness, /health/readiness, /health/places]
 ```
 
@@ -94,11 +97,12 @@ graph TD
 ```mermaid
 graph TD
     SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
-    SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 3/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
+    SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 10/hour (MEH-1635)<br/>routers/auth_register_producer.py (MEH-3293)<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
     SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token + terms_accepted?]
     SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token + terms_accepted?<br/>App Store requirement]
 
     Login[/login page] --> LoginPost[POST /auth/login<br/>🌐 rate-limited 5/min]
+    LoginPost -.->|admin with a passkey, MEH-3305| PasskeyVerify[POST /auth/passkey/login/verify<br/>or /login/recovery]
 
     Account[/settings page] --> Me[GET /auth/me<br/>🔑 current user]
     Account --> Delete[POST /auth/me/delete<br/>🔑 password or fresh Google/Apple token<br/>403 for admins MEH-3248<br/>cascade delete, App Store requirement]
@@ -110,6 +114,9 @@ graph TD
     Favorites --> SavedIds[GET /users/me/saved/ids<br/>🔑 hearts cache]
     Favorites --> AddSaved[POST /users/me/saved/{type}/{id}<br/>🔑 404 unless public]
     Favorites --> DelSaved[DELETE /users/me/saved/{type}/{id}<br/>🔑 own rows only]
+    AlertPrefs[AlertPrefsPanel · WhatsApp on, phone unverified] --> UserOtp[POST /users/me/verify-phone<br/>🔑 3/10min · 3 per user and 3 per phone a day<br/>none to a number whose last message was «הסר» · MEH-3302]
+    AlertPrefs --> UserOtpConfirm[POST /users/me/verify-phone/confirm<br/>🔑 5/min · code bound to the canonical phone<br/>5 wrong guesses kill it · stamps phone_verified_at + whatsapp_consent_at]
+    UserOtpConfirm -.->|fire_alerts sends WhatsApp only when both are set| FireAlerts[fire_alerts]
 ```
 
 ## 4. Producer self-management (role=producer)
@@ -118,7 +125,7 @@ graph TD
 graph TD
     Dashboard[/producer/dashboard page] --> Me_p[GET /producers/me<br/>👤 own producer record]
     Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week]
-    Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>home_products, 30d chart, top cities]
+    Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>home_products, 30d chart, top cities,<br/>share_visits (MEH-3331, referrer=share)]
     Dashboard --> Avail[POST /producers/me/availability-state<br/>👤 pause-only write: accepting_orders or on_vacation MEH-2758]
     Dashboard --> AvailConfirm[POST /producers/me/availability-confirm<br/>👤 stamps availability_confirmed_at, changes nothing else MEH-2697]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
@@ -159,6 +166,7 @@ graph TD
     Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft;<br/>MEH-2495 also minted from the drafts-list row «העתקת הודעה עם קישור»;<br/>MEH-2496 locks the draft FOR UPDATE and stamps producers.claim_link_sent_at on success only]
     Producers --> AdminPListAll[GET /admin/producers<br/>🛡️ ProducerAdminOut rows; MEH-2495 has_owner derived per row in ONE batched query]
     Producers --> OwnerInviteAdmin[POST /admin/producers/{id}/owner-invite · …/resend · DELETE …<br/>🛡️ MEH-2974 invite the owner of an APPROVED or INACTIVE ownerless business, 10/hour;<br/>422 without the recorded written consent · 409 wrong status / already owned / email already a user;<br/>v3 the email is OPTIONAL — with none nothing is mailed and the admin copies the link;<br/>a resend drops a taken address rather than refusing; the raw link is returned ONCE — the DB keeps only its sha256]
+    Producers --> OwnerDetach[POST /admin/producers/{id}/detach-owner<br/>🛡️ MEH-3256 D9 «ניתוק בעלים», 10/hour: typed name + expected owner id;<br/>owner → consumer, token_version bumped, accepted_at cleared → invitable again; never an admin]
     Producers --> DraftProducts[POST /admin/producers/{id}/products · DELETE …/products/{product_id}<br/>🛡️ MEH-2326 catalogue of an ownerless draft only, 409 once claimed / not draft]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type;<br/>MEH-2459: 409 for kind=organizer]
@@ -206,6 +214,7 @@ graph TD
     Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
     Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
     AdminWhatsapp[/admin/whatsapp-failures page] --> AdminWaFailed[GET /admin/whatsapp/failed<br/>🛡️ MEH-771 Chunk C undelivered outbound<br/>status IN failed,window_expired, or accepted &gt;1 day<br/>with no receipt (stuck, MEH-2122 E) · last 7d<br/>list-only, no resend/retry]
+    AdminWhatsapp --> AdminWaBlocked[GET /admin/whatsapp/blocked<br/>🛡️ MEH-3402 staging-only capture<br/>status = blocked_nonprod, with content · last 7d · max 200]
     AdminProducers[/admin/producers page] --> AdminRiskScore[GET /admin/producers/&#123;id&#125;/risk-score<br/>🛡️ MEH-509 PR3 Anthropic Haiku risk score<br/>NULL when not scored / fail-open]
 ```
 
@@ -213,8 +222,11 @@ graph TD
 
 ```mermaid
 graph LR
-    Footer[Footer newsletter form] --> Newsletter[POST /newsletter<br/>🌐 5/hour per IP<br/>idempotent — returns 201 whether<br/>already subscribed or not]
-    Newsletter -.->|background, fail-open| ResendContacts[Resend Contacts<br/>segment newsletter · MEH-2611<br/>sent from Resend Broadcasts]
+    Footer[Footer newsletter form] --> Newsletter[POST /newsletter<br/>🌐 5/hour per IP + 3/hour, 5/day per email<br/>MEH-3300 double opt-in: writes nothing,<br/>mails a confirm link · same 201 either way]
+    Newsletter -.->|existing row only: back-fill,<br/>opt-out kept| ResendContacts[Resend Contacts<br/>segment newsletter · MEH-2611<br/>sent from Resend Broadcasts]
+    ConfirmPage[/newsletter/confirm page<br/>button click] --> Confirm[POST /newsletter/confirm<br/>🌐 20/hour · signed token,<br/>scope newsletter_confirm, 48 h]
+    Confirm -->|insert, idempotent| NewsletterTable[(newsletter_subscribers)]
+    Confirm -.->|background: sync, clears opt-out| ResendContacts
     Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
     WeeklyUnsub[POST /weekly-summary/unsubscribe<br/>🌐 20/hour · signed token, MEH-3079] -->|weekly_summary_opt_out = true| ProducersTable[(producers)]
     FreshConfirm[POST /page-freshness/confirm<br/>🌐 20/hour · signed token, 404 on any dead link] -->|last_confirmed_at = now| ProducersTable

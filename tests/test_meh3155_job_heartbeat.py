@@ -45,6 +45,7 @@ def _stub_services(monkeypatch):
         admin_pending_reminder,
         analytics_rollup,
         auto_reply_watchdog,
+        billing_start_signal,
         group_buy_expiry,
         onboarding_followup,
         pending_nudge,
@@ -58,6 +59,9 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(
         admin_pending_reminder, "send_admin_pending_reminder", lambda db: 0
     )
+    monkeypatch.setattr(
+        billing_start_signal, "send_billing_start_signal", lambda db: False
+    )
     monkeypatch.setattr(pending_nudge, "send_pending_nudges", lambda db: {})
     monkeypatch.setattr(auto_reply_watchdog, "run_watchdog", lambda db: {})
     monkeypatch.setattr(analytics_rollup, "run_rollup", lambda db: {})
@@ -70,6 +74,10 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(
         weekly_owner_summary, "send_weekly_summaries", lambda db, now=None: {}
     )
+    from app.services import product_order_outbox, product_order_sweeper
+
+    monkeypatch.setattr(product_order_sweeper, "expire_due", lambda db: 0)
+    monkeypatch.setattr(product_order_outbox, "dispatch_due", lambda db: 0)
 
 
 JOBS = [
@@ -84,6 +92,12 @@ JOBS = [
         "admin-pending-reminder-daily",
         "crontab",
         job_heartbeat.ADMIN_PENDING_REMINDER_CRON,
+    ),
+    (
+        "_run_billing_start_signal_job",
+        "billing-start-signal-monthly",
+        "crontab",
+        job_heartbeat.BILLING_START_SIGNAL_CRON,
     ),
     (
         "_run_watchdog_job",
@@ -126,6 +140,12 @@ JOBS = [
         "registration-reminder-daily",
         "crontab",
         job_heartbeat.REGISTRATION_REMINDER_CRON,
+    ),
+    (
+        "_run_product_order_jobs",
+        "product-orders-tick",
+        "interval",
+        job_heartbeat.PRODUCT_ORDERS_INTERVAL_MINUTES,
     ),
 ]
 
@@ -210,6 +230,9 @@ def _registered(monkeypatch, *, flags_on: bool):
     from app.services import weekly_owner_summary
 
     monkeypatch.setattr(weekly_owner_summary, "summary_enabled", lambda: flags_on)
+    from app.routers import product_orders
+
+    monkeypatch.setattr(product_orders, "product_orders_enabled", lambda: flags_on)
     # The boot catch-up is a one-off DateTrigger, not the schedule the monitor
     # announces; keep it out so this test sees only the recurring jobs.
     monkeypatch.setattr(weekly_owner_summary, "catchup_due", lambda now: False)
@@ -224,7 +247,9 @@ def test_registered_triggers_match_monitor_configs(monkeypatch, checkins):
 
     triggers = _registered(monkeypatch, flags_on=True)
     _stub_services(monkeypatch)
-    assert set(triggers) == {j[0] for j in JOBS}
+    # MEH-3332: the overdue-job checker is registered too and is deliberately
+    # not a @heartbeat job (tests/test_meh3332_job_staleness.py covers it).
+    assert set(triggers) - {"_run_job_staleness_check"} == {j[0] for j in JOBS}
     for func_name, _slug, kind, _value in JOBS:
         checkins.clear()
         getattr(startup, func_name)()
@@ -245,9 +270,11 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     assert "_run_watchdog_job" not in triggers
     assert "_run_rescue_digest_job" not in triggers
     assert "_run_weekly_owner_summary_job" not in triggers
+    assert "_run_product_order_jobs" not in triggers  # MEH-3296
     flagged = {
         "_run_watchdog_job",
         "_run_rescue_digest_job",
         "_run_weekly_owner_summary_job",
+        "_run_product_order_jobs",
     }
     assert set(triggers) == {j[0] for j in JOBS} - flagged

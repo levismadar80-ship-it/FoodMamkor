@@ -16,6 +16,7 @@ from app.config import settings
 from app.constants import TERMS_VERSION
 from app.models import User
 from app.routers import auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 from conftest import make_user
 
 EMAIL = "noa@example.com"
@@ -30,10 +31,19 @@ def oauth_ok(monkeypatch):
         "_verify_google_token",
         lambda token: {"sub": "g-sub-1", "email": EMAIL, "name": "נועה"},
     )
+    monkeypatch.setattr(
+        reg_router,
+        "_verify_google_token",
+        lambda token: {"sub": "g-sub-1", "email": EMAIL, "name": "נועה"},
+    )
     monkeypatch.setattr(auth_router, "_upload_google_avatar_or_none", lambda url: None)
+    monkeypatch.setattr(reg_router, "_upload_google_avatar_or_none", lambda url: None)
     monkeypatch.setattr(settings, "apple_client_id", "dummy-apple-id")
     monkeypatch.setattr(
         auth_router, "_verify_apple_token", lambda token: {"sub": "a-sub-1", "email": EMAIL}
+    )
+    monkeypatch.setattr(
+        reg_router, "_verify_apple_token", lambda token: {"sub": "a-sub-1", "email": EMAIL}
     )
 
 

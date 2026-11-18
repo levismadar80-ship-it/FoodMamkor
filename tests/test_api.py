@@ -402,11 +402,17 @@ class TestAuth:
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email", fake_dup
         )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email", fake_dup
+        )
         # Also stub the verify-mail so a hypothetical regression that
         # treats the existing email as "new" would still not send the
         # wrong notification (would fail captured["provider"] assertion).
         monkeypatch.setattr(
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None
         )
         resp = client.post(
             "/auth/register",
@@ -441,6 +447,12 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
+                to=to, name=name, provider=provider, flow=flow
+            ),
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
             lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
@@ -488,10 +500,20 @@ class TestAuth:
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
             "app.routers.auth._send_welcome_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
             lambda *a, **kw: None,
         )
         # Seed an existing password-user and an existing google-user.
@@ -816,6 +838,12 @@ class TestAuth:
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
+                to=to, name=name, provider=provider, flow=flow
+            ),
+        )
         resp = client.post(
             "/auth/register/producer",
             json={**self.VALID_PRODUCER_REG, "email": "producer_pw@test.com"},
@@ -849,6 +877,12 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
+                to=to, name=name, provider=provider, flow=flow
+            ),
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
             lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
@@ -894,14 +928,24 @@ class TestAuth:
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
             "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_welcome_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
-            "app.routers.auth.notify_producer_registered", lambda *a, **kw: None
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer.notify_producer_registered", lambda *a, **kw: None
         )
         make_user(db, email="prod_ident_pw@test.com")
         from app.models.models import User
@@ -980,6 +1024,10 @@ class TestAuth:
         make_user(db, email="prod_collision@test.com")
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
             lambda *a, **kw: None,
         )
         producers_before = db.query(Producer).count()
@@ -1080,10 +1128,20 @@ class TestRegisterPerEmailRateLimit:
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
             "app.routers.auth._send_welcome_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
             lambda *a, **kw: None,
         )
         payload = {
@@ -1122,14 +1180,24 @@ class TestRegisterPerEmailRateLimit:
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
             "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_welcome_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
             lambda *a, **kw: None,
         )
         monkeypatch.setattr(
-            "app.routers.auth.notify_producer_registered",
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer.notify_producer_registered",
             lambda *a, **kw: None,
         )
         payload = valid_producer_register_payload() | {
@@ -1191,6 +1259,12 @@ class TestRegistrationCoverageGaps:
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
+                to=to, name=name, provider=provider, flow=flow
+            ),
+        )
         resp = client.post(
             "/auth/register",
             json={"terms_accepted": True,
@@ -1222,6 +1296,12 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
+                to=to, name=name, provider=provider, flow=flow
+            ),
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email",
             lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
@@ -1258,6 +1338,7 @@ class TestRegistrationCoverageGaps:
         db.commit()
         dup = Mock()
         monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", dup)
+        monkeypatch.setattr("app.routers.auth_register_producer._send_duplicate_attempt_email", dup)
         resp = client.post(
             "/auth/register",
             json={"terms_accepted": True,
@@ -1289,6 +1370,7 @@ class TestRegistrationCoverageGaps:
         db.commit()
         dup = Mock()
         monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", dup)
+        monkeypatch.setattr("app.routers.auth_register_producer._send_duplicate_attempt_email", dup)
         resp = client.post(
             "/auth/register/producer",
             json=self._producer_reg(email="noauth_p@test.com"),
@@ -1311,8 +1393,12 @@ class TestRegistrationCoverageGaps:
         make_user(db, email="novertify@test.com", name="Dana")
         verify = Mock()
         monkeypatch.setattr("app.routers.auth._send_verify_email", verify)
+        monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", verify)
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email", lambda *a, **kw: None
         )
         resp = client.post(
             "/auth/register",
@@ -1334,8 +1420,12 @@ class TestRegistrationCoverageGaps:
         make_user(db, email="novertify_p@test.com", name="Dana")
         verify = Mock()
         monkeypatch.setattr("app.routers.auth._send_verify_email", verify)
+        monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", verify)
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email", lambda *a, **kw: None
         )
         resp = client.post(
             "/auth/register/producer",
@@ -1357,7 +1447,7 @@ class TestRegistrationCoverageGaps:
         from app.models.models import Producer
 
         score = Mock()
-        monkeypatch.setattr("app.routers.auth.score_producer", score)
+        monkeypatch.setattr("app.routers.auth_register_producer.score_producer", score)
         resp = client.post(
             "/auth/register/producer",
             json=self._producer_reg(email="scored@example.com"),
@@ -1374,7 +1464,7 @@ class TestRegistrationCoverageGaps:
 
         user = make_user(db, email="upgrade_score@example.com", role="consumer")
         score = Mock()
-        monkeypatch.setattr("app.routers.auth.score_producer", score)
+        monkeypatch.setattr("app.routers.auth_register_producer.score_producer", score)
         payload = valid_producer_register_payload()
         for field in ("email", "name", "password"):
             payload.pop(field, None)
@@ -1396,9 +1486,12 @@ class TestRegistrationCoverageGaps:
 
         make_user(db, email="noscore@test.com")
         score = Mock()
-        monkeypatch.setattr("app.routers.auth.score_producer", score)
+        monkeypatch.setattr("app.routers.auth_register_producer.score_producer", score)
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email", lambda *a, **kw: None
         )
         resp = client.post(
             "/auth/register/producer",
@@ -1418,8 +1511,12 @@ class TestRegistrationCoverageGaps:
 
         welcome = Mock()
         monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome)
+        monkeypatch.setattr("app.routers.auth_register_producer._send_welcome_email", welcome)
         monkeypatch.setattr(
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None
         )
         resp = client.post(
             "/auth/register",
@@ -1444,8 +1541,12 @@ class TestRegistrationCoverageGaps:
 
         welcome = Mock()
         monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome)
+        monkeypatch.setattr("app.routers.auth_register_producer._send_welcome_email", welcome)
         monkeypatch.setattr(
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_verify_email", lambda *a, **kw: None
         )
         resp = client.post(
             "/auth/register/producer",
@@ -1465,8 +1566,12 @@ class TestRegistrationCoverageGaps:
         make_user(db, email="nowelcome@test.com")
         welcome = Mock()
         monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome)
+        monkeypatch.setattr("app.routers.auth_register_producer._send_welcome_email", welcome)
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth_register_producer._send_duplicate_attempt_email", lambda *a, **kw: None
         )
         resp = client.post(
             "/auth/register",
@@ -1573,6 +1678,8 @@ class TestRegisterPerIpRateLimit:
     """
 
     def _stub_side_effects(self, monkeypatch):
+        from importlib import import_module
+
         for target in (
             "_send_verify_email",
             "_send_welcome_email",
@@ -1580,9 +1687,17 @@ class TestRegisterPerIpRateLimit:
             "notify_producer_registered",
             "score_producer",
         ):
-            monkeypatch.setattr(
-                f"app.routers.auth.{target}", lambda *a, **kw: None
-            )
+            # MEH-3293: business registration lives in its own module; a name
+            # it shares with auth.py is stubbed in both, a moved one only there.
+            owners = [
+                m for m in ("auth", "auth_register_producer")
+                if hasattr(import_module(f"app.routers.{m}"), target)
+            ]
+            assert owners, f"{target} is in neither auth router module"
+            for module in owners:
+                monkeypatch.setattr(
+                    f"app.routers.{module}.{target}", lambda *a, **kw: None
+                )
 
     def test_register_per_ip_limit_trips_on_11th(self, client, monkeypatch):
         self._stub_side_effects(monkeypatch)
@@ -2102,8 +2217,10 @@ class TestMeh56WhatsAppOnboarding:
         # auth.py — the admin ping moved to submit-for-review — so there is
         # nothing to stub for it here.
         import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
+        import app.routers.auth_register_producer as reg_router  # MEH-3293
+        monkeypatch.setattr(reg_router, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
+        monkeypatch.setattr(reg_router, "_send_welcome_email", lambda *a, **k: None)
 
         resp = client.post("/auth/register/producer", json=valid_producer_register_payload() | {
             "email": "farm56@test.com",

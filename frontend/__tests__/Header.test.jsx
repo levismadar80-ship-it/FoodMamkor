@@ -38,6 +38,8 @@ vi.mock("next-intl", () => {
     "nav.main_label": "ניווט ראשי",
     "nav.search_label": "חיפוש",
     "nav.trust_strip": "היכרות אישית עם כל בית עסק",
+    // MEH-3412: he.json:nav.footer.brand_aria — the header logo link's name.
+    "nav.footer.brand_aria": "מהמקור — דף הבית",
     // he.json:25 — the aria-label LanguageToggle renders at locale "he".
     "nav.lang_switch_to_en": "Switch to English",
     "nav.add_business": "הוסיפו את העסק שלך",
@@ -126,6 +128,17 @@ describe("Header", () => {
     mockLogout.mockClear();
     mockPush.mockClear();
     setScrollY(0);
+  });
+
+  describe("logo link name (MEH-3412)", () => {
+    it("names the logo link from the locale key, and the image is decorative", () => {
+      render(<Header />);
+      const link = screen.getByRole("link", { name: "מהמקור — דף הבית" });
+      expect(link).toHaveAttribute("href", "/");
+      const img = link.querySelector("img");
+      expect(img).not.toBeNull();
+      expect(img).toHaveAttribute("alt", "");
+    });
   });
 
   describe("search entry → /producers (MEH-819)", () => {

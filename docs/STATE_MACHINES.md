@@ -40,12 +40,12 @@ There is no soft-delete: deletion removes the row.
 | Transition | Who | Where | Guard |
 |---|---|---|---|
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
-| consumer → producer (with a draft business) | the user | `routers/auth.py` `register_producer`; claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
+| consumer → producer (with a draft business) | the user | `routers/auth_register_producer.py` `register_producer` (moved out of `routers/auth.py` in MEH-3293); claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
 | role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
 | blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
-| email changed → unverified | the user | `routers/users_me.py` | — |
-| tokens invalidated | the user | logout-all, password change, password reset | checked on every request in `auth.py` `get_current_user` |
+| email changed → unverified | the user | `routers/users_me.py` | current password (MEH-3104); 5 wrong per account per hour, row lock (MEH-3425); OAuth and super-admin refused; other devices signed out (`token_version`) |
+| tokens invalidated | the user | logout-all, password change, password reset, email change (MEH-3425) | checked on every request in `auth.py` `get_current_user` |
 | deleted | the user / admin | `services/user_deletion.py` `delete_user_and_data` | admins cannot be deleted; re-authentication required |
 
 A blocked user is refused on every request, login and refresh
@@ -108,14 +108,24 @@ an approved workshop sends it back to pending. Public = approved, active, host
 business live, and a future date (a recurring workshop stays open after its
 first date).
 
-**Sign-up** (`registrations`): registered · cancelled. No waitlist, no
-no-show. A host cannot set fewer places than the active sign-ups (422,
+**Sign-up** (`registrations`): registered · cancelled · waitlisted
+(MEH-3314; the CHECK `ck_registrations_status` holds the three). No no-show.
+A waitlist row is an offer queue, not a held spot: a cancel emails the first
+waitlisted visitor not yet offered (`waitlist_offered_at` stamped), and whoever
+submits the form first takes the place. At most 50 waiting per item
+(`services/registration_waitlist.py` `WAITLIST_MAX`, 409 `waitlist_full`).
+Places are people: capacity sums `party_size` (MEH-3315). `attendance`
+(NULL · attended · no_show) is the owner's note on a registered row, set by
+`PATCH /registrations/{id}/attendance`; it moves no status and blocks nothing. A host cannot set fewer places than the active sign-ups (422,
 `services/registrations.py` `refuse_too_few_places`, MEH-2871).
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
 | → registered | anyone (no account) | `routers/registrations.py` | item row locked; owner live; item active and not past; capacity; a repeat email is a silent success |
-| registered → cancelled | the holder of the emailed link | `routers/registrations.py` `cancel_registration` | row lock; ledger voided when the item is still upcoming |
+| → waitlisted | anyone, on a full item, with `waitlist: true` | `routers/registrations.py` `_signup_row` | item row locked; full; fewer than 50 waiting; no owner email, no ledger row |
+| waitlisted → registered | the same email re-submits once a place is free | `routers/registrations.py` `_signup_row` | capacity; her row is promoted, not duplicated |
+| waitlisted → cancelled | the holder of the emailed link; host cancels the item; business delisted | `cancel_registration` · `services/booking_cancellations.py` | as the registered rows below |
+| registered → cancelled | the holder of the emailed link | `routers/registrations.py` `cancel_registration` | row lock; ledger voided when the item is still upcoming; an upcoming item emails the next waitlisted visitor (`registration_waitlist.offer_next`) |
 | registered → cancelled | host cancels or deletes the item | `services/booking_cancellations.py` `cancel_item_signups` | items dated today or later, and every recurring workshop (MEH-2871); ledger voided |
 | registered → cancelled | the business leaves the live state | `services/booking_cancellations.py` `delist_business` | same |
 | purged | scheduler | `services/retention_purge.py` | 30 days after the date |
@@ -162,7 +172,7 @@ funded on purpose: the owner fulfils or cancels it.
 |---|---|---|
 | Recipe | `published` × `moderation_status` | owner, admin (`routers/producer_recipes.py`, `routers/admin_recipes.py`) |
 | Review | visible · hidden, plus the business's rating aggregate; the owner reply carries its own AI verdict APPROVED · FLAGGED, cleared with the reply by `PUT /admin/reviews/{id}/clear-reply` (MEH-3259) | author, owner reply, admin (`routers/reviews.py`) |
-| WhatsApp message (`outbound_messages`) | accepted → sent → delivered / failed; a stuck `accepted` counts as undelivered | webhook (`routers/whatsapp_webhook.py`, `services/whatsapp.py`) |
+| WhatsApp message (`outbound_messages`) | accepted → sent → delivered / failed; a stuck `accepted` counts as undelivered; outside production a dropped send is born and stays `blocked_nonprod` (MEH-3402 follow-up, `services/whatsapp.py:_record_blocked`), never undelivered | webhook (`routers/whatsapp_webhook.py`, `services/whatsapp.py`) |
 | Newsletter | subscribed (row) · gone | form, signed unsubscribe link (`routers/marketing.py`) |
 | Weekly summary to owners | on · opted out (one way, by link) | `routers/marketing.py` |
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |

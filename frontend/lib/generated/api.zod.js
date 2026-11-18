@@ -105,12 +105,12 @@ export const DeleteCategoryAdminCategoriesCategoryIdDeleteResponse = /*#__PURE__
 /**
  * Rename / re-emoji a category. Two guards, both on the rename path only.
  *
- * MEH-1571: `LICENSE_REQUIRED_CATEGORIES` (app/constants.py) pins a משרד
- * הבריאות licensing requirement to the category NAME, and
- * `license_validation.categories_require_license` resolves ids -> names ->
- * intersection at request time. Renaming a licensed row here therefore
- * dropped it out of the regulatory set silently — no error, no log, and the
- * next producer in that category was no longer asked for a license number.
+ * MEH-1571: the licensing requirement used to be pinned to the category NAME
+ * (`LICENSE_REQUIRED_CATEGORIES`), so renaming a licensed row dropped it out
+ * of the regulatory set silently. Since MEH-3255 the row's own
+ * `requires_license` column decides and a rename no longer changes the
+ * answer, but the guard stays: a licensed row keeps its name so an admin
+ * cannot relabel a regulated category into something it is not.
  * The rename is refused; re-keying the taxonomy belongs in a reviewed,
  * reversible Alembic revision (the MEH-927 pattern), which writes raw SQL and
  * does not pass through this endpoint.
@@ -1048,6 +1048,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseOrganicCertifiedDefault),
   "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "email": /*#__PURE__*/ zod.email(),
+  "id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET /admin/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1304,6 +1305,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseOrganicCertifiedDefault),
   "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "email": /*#__PURE__*/ zod.email(),
+  "id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET /admin/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1557,6 +1559,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseOrganicCertifiedDefault),
   "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "email": /*#__PURE__*/ zod.email(),
+  "id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET /admin/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1873,6 +1876,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOrganicCertifiedDefault),
   "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "email": /*#__PURE__*/ zod.email(),
+  "id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET /admin/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2126,6 +2130,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseOrganicCertifiedDefault),
   "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "email": /*#__PURE__*/ zod.email(),
+  "id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET /admin/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2219,6 +2224,12 @@ export const CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse = /*#_
   "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "url": /*#__PURE__*/ zod.string()
 })
+
+
+/**
+ * @summary Detach Owner
+ */
+export const DetachOwnerAdminProducersProducerIdDetachOwnerPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -2343,9 +2354,11 @@ export const SetAlcoholLicensedAdminProducersProducerIdOrderSettingsAlcoholPutRe
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
-  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+  "shabbat_observant": /*#__PURE__*/ zod.boolean(),
+  "slot_minutes": /*#__PURE__*/ zod.int()
 })
 
 
@@ -3001,6 +3014,23 @@ export const UpdateUserRoleAdminUsersUserIdRolePutResponse = /*#__PURE__*/ zod.u
 
 
 /**
+ * Return the newest dropped-outside-production rows, last 7 days.
+ * @summary List Blocked Outbound
+ */
+export const ListBlockedOutboundAdminWhatsappBlockedGetResponseItem = /*#__PURE__*/ zod.object({
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "error_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "error_message": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "kind": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string(),
+  "to_phone": /*#__PURE__*/ zod.string(),
+  "updated_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]))
+})
+export const ListBlockedOutboundAdminWhatsappBlockedGetResponse = /*#__PURE__*/ zod.array(ListBlockedOutboundAdminWhatsappBlockedGetResponseItem)
+
+
+/**
  * Return undelivered outbound WhatsApp rows from the last 7 days.
  *
  * Filter: `undelivered_predicate` — status IN ('failed', 'window_expired'),
@@ -3031,13 +3061,18 @@ export const ListFailedOutboundAdminWhatsappFailedGetResponse = /*#__PURE__*/ zo
  * Authenticate with Apple ID token.
  * @summary Apple Auth
  */
-export const appleAuthAuthApplePostResponseTokenTypeDefault = `bearer`;
+export const appleAuthAuthApplePostResponseOneTokenTypeDefault = `bearer`;
+export const appleAuthAuthApplePostResponseTwoPasskeyRequiredDefault = true;
 
-export const AppleAuthAuthApplePostResponse = /*#__PURE__*/ zod.object({
+export const AppleAuthAuthApplePostResponse = /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "access_token": /*#__PURE__*/ zod.string(),
   "email_sent": /*#__PURE__*/ zod.boolean(),
-  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), appleAuthAuthApplePostResponseTokenTypeDefault)
-})
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), appleAuthAuthApplePostResponseOneTokenTypeDefault)
+}),/*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "passkey_required": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal(true), appleAuthAuthApplePostResponseTwoPasskeyRequiredDefault).check(/*#__PURE__*/ zod.meta({ title: 'Passkey Required' })),
+  "ticket": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Returned by /auth/login, /auth/google and /auth/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n/auth/passkey/login/verify (or /login/recovery) with this ticket.'))])
 
 
 /**
@@ -3068,24 +3103,34 @@ export const ForgotPasswordAuthForgotPasswordPostResponse = /*#__PURE__*/ zod.un
  * Authenticate with Google ID token.
  * @summary Google Auth
  */
-export const googleAuthAuthGooglePostResponseTokenTypeDefault = `bearer`;
+export const googleAuthAuthGooglePostResponseOneTokenTypeDefault = `bearer`;
+export const googleAuthAuthGooglePostResponseTwoPasskeyRequiredDefault = true;
 
-export const GoogleAuthAuthGooglePostResponse = /*#__PURE__*/ zod.object({
+export const GoogleAuthAuthGooglePostResponse = /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "access_token": /*#__PURE__*/ zod.string(),
   "email_sent": /*#__PURE__*/ zod.boolean(),
-  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), googleAuthAuthGooglePostResponseTokenTypeDefault)
-})
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), googleAuthAuthGooglePostResponseOneTokenTypeDefault)
+}),/*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "passkey_required": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal(true), googleAuthAuthGooglePostResponseTwoPasskeyRequiredDefault).check(/*#__PURE__*/ zod.meta({ title: 'Passkey Required' })),
+  "ticket": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Returned by /auth/login, /auth/google and /auth/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n/auth/passkey/login/verify (or /login/recovery) with this ticket.'))])
 
 
 /**
  * @summary Login
  */
-export const loginAuthLoginPostResponseTokenTypeDefault = `bearer`;
+export const loginAuthLoginPostResponseOneTokenTypeDefault = `bearer`;
+export const loginAuthLoginPostResponseTwoPasskeyRequiredDefault = true;
 
-export const LoginAuthLoginPostResponse = /*#__PURE__*/ zod.object({
+export const LoginAuthLoginPostResponse = /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "access_token": /*#__PURE__*/ zod.string(),
-  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginAuthLoginPostResponseTokenTypeDefault)
-})
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginAuthLoginPostResponseOneTokenTypeDefault)
+}),/*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "passkey_required": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal(true), loginAuthLoginPostResponseTwoPasskeyRequiredDefault).check(/*#__PURE__*/ zod.meta({ title: 'Passkey Required' })),
+  "ticket": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Returned by /auth/login, /auth/google and /auth/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n/auth/passkey/login/verify (or /login/recovery) with this ticket.'))])
 
 
 /**
@@ -3123,7 +3168,9 @@ export const getMeAuthMeGetResponseEmailVerifiedDefault = false;
 export const getMeAuthMeGetResponseIsOauthDefault = false;
 export const getMeAuthMeGetResponseIsProducerDefault = false;
 export const getMeAuthMeGetResponseIsSuperAdminDefault = false;
+export const getMeAuthMeGetResponsePhoneVerifiedDefault = false;
 export const getMeAuthMeGetResponseProducerResubmissionCountDefault = 0;
+export const getMeAuthMeGetResponseWhatsappReadyDefault = false;
 
 export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "avatar_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3137,13 +3184,15 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "name": /*#__PURE__*/ zod.string(),
   "oauth_provider": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponsePhoneVerifiedDefault),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "producer_kind": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMeAuthMeGetResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "role": /*#__PURE__*/ zod.string()
+  "role": /*#__PURE__*/ zod.string(),
+  "whatsapp_ready": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseWhatsappReadyDefault)
 })
 
 
@@ -3282,6 +3331,92 @@ export const GetOwnerInviteAuthOwnerInviteTokenGetResponse = /*#__PURE__*/ zod.o
   "requires_farmer_declaration": /*#__PURE__*/ zod.boolean(),
   "will_publish": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getOwnerInviteAuthOwnerInviteTokenGetResponseWillPublishDefault)
 }).check(/*#__PURE__*/ zod.describe('What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.'))
+
+
+/**
+ * @summary List Passkeys
+ */
+export const ListPasskeysAuthPasskeyGetResponse = /*#__PURE__*/ zod.object({
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "has_password": /*#__PURE__*/ zod.boolean(),
+  "passkeys": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "last_used_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "synced": /*#__PURE__*/ zod.boolean()
+})),
+  "recovery_codes_left": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * @summary Login Recovery
+ */
+export const loginRecoveryAuthPasskeyLoginRecoveryPostResponseTokenTypeDefault = `bearer`;
+
+export const LoginRecoveryAuthPasskeyLoginRecoveryPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.string(),
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginRecoveryAuthPasskeyLoginRecoveryPostResponseTokenTypeDefault)
+})
+
+
+/**
+ * @summary Login Verify
+ */
+export const loginVerifyAuthPasskeyLoginVerifyPostResponseTokenTypeDefault = `bearer`;
+
+export const LoginVerifyAuthPasskeyLoginVerifyPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.string(),
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginVerifyAuthPasskeyLoginVerifyPostResponseTokenTypeDefault)
+})
+
+
+/**
+ * @summary Regenerate Codes
+ */
+export const RegenerateCodesAuthPasskeyRecoveryCodesPostResponse = /*#__PURE__*/ zod.object({
+  "recovery_codes": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+})
+
+
+/**
+ * @summary Register Options
+ */
+export const RegisterOptionsAuthPasskeyRegisterOptionsPostResponse = /*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "ticket": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Register Verify
+ */
+export const RegisterVerifyAuthPasskeyRegisterVerifyPostResponse = /*#__PURE__*/ zod.object({
+  "passkey": /*#__PURE__*/ zod.object({
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "last_used_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "synced": /*#__PURE__*/ zod.boolean()
+}),
+  "recovery_codes": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])
+})
+
+
+/**
+ * @summary Step Up Options
+ */
+export const StepUpOptionsAuthPasskeyStepUpOptionsPostResponse = /*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "ticket": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Delete Passkey
+ */
+export const DeletePasskeyAuthPasskeyPasskeyIdDeletePostResponse = /*#__PURE__*/ zod.void()
 
 
 /**
@@ -3706,12 +3841,16 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
 /**
  * @summary List Event Registrations
  */
+export const listEventRegistrationsEventsEventIdRegistrationsGetResponsePartySizeDefault = 1;
+
 export const ListEventRegistrationsEventsEventIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "attendance": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['attended', 'no_show']),/*#__PURE__*/ zod.null()])),
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "email": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
   "name": /*#__PURE__*/ zod.string(),
+  "party_size": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listEventRegistrationsEventsEventIdRegistrationsGetResponsePartySizeDefault),
   "phone": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner / admin only).'))
@@ -3724,7 +3863,7 @@ export const ListEventRegistrationsEventsEventIdRegistrationsGetResponse = /*#__
 export const registerForEventEventsEventIdRegistrationsPostResponseStatusDefault = `registered`;
 
 export const RegisterForEventEventsEventIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
-  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForEventEventsEventIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['registered', 'waitlisted']), registerForEventEventsEventIdRegistrationsPostResponseStatusDefault)
 }).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 
@@ -4033,12 +4172,16 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
 /**
  * @summary List Experience Registrations
  */
+export const listExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponsePartySizeDefault = 1;
+
 export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "attendance": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['attended', 'no_show']),/*#__PURE__*/ zod.null()])),
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "email": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
   "name": /*#__PURE__*/ zod.string(),
+  "party_size": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponsePartySizeDefault),
   "phone": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner / admin only).'))
@@ -4051,7 +4194,7 @@ export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetR
 export const registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault = `registered`;
 
 export const RegisterForExperienceExperiencesExperienceIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
-  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['registered', 'waitlisted']), registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault)
 }).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 
@@ -4247,9 +4390,24 @@ export const GetHolidayModeHolidayModeGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-3300 (D13): double opt-in. Nothing is written here.
+ *
+ * A new address gets a confirmation email; the row, the Resend sync and the
+ * welcome email wait for POST /newsletter/confirm. An address already on the
+ * list gets no email (grandfathered) and the same answer, so the response
+ * never reveals who is subscribed.
  * @summary Subscribe Newsletter
  */
 export const SubscribeNewsletterNewsletterPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * MEH-3300: the confirm page POSTs the token from a button click (a GET
+ * from a mail scanner confirms nothing). Idempotent: a second click is 200
+ * and sends no second welcome.
+ * @summary Confirm Newsletter
+ */
+export const ConfirmNewsletterNewsletterConfirmPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -5730,6 +5888,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  *
  * Returns:
  *   - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}
+ *   - share_visits (MEH-3331): visits through a link the owner shared, same shape
  *   - follower_count + new_followers_this_week
  *   - average_rating + total_reviews (from the producers.avg_rating aggregate)
  *   - home_products_count (active only, scoped to the owning user)
@@ -5987,9 +6146,11 @@ export const GetMyOrderSettingsProducersMeOrderSettingsGetResponse = /*#__PURE__
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
-  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+  "shabbat_observant": /*#__PURE__*/ zod.boolean(),
+  "slot_minutes": /*#__PURE__*/ zod.int()
 })
 
 
@@ -6004,9 +6165,39 @@ export const PutMyOrderSettingsProducersMeOrderSettingsPutResponse = /*#__PURE__
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
-  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+  "shabbat_observant": /*#__PURE__*/ zod.boolean(),
+  "slot_minutes": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * @summary Get My Order Windows
+ */
+export const GetMyOrderWindowsProducersMeOrderWindowsGetResponse = /*#__PURE__*/ zod.object({
+  "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "end_time": /*#__PURE__*/ zod.iso.time({}),
+  "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
+  "start_time": /*#__PURE__*/ zod.iso.time({}),
+  "weekday": /*#__PURE__*/ zod.int()
+}))
+})
+
+
+/**
+ * Replace the business's whole week. The list is capped by the schema,
+ * so the table cannot grow past 28 rows a business (MEH-3022).
+ * @summary Put My Order Windows
+ */
+export const PutMyOrderWindowsProducersMeOrderWindowsPutResponse = /*#__PURE__*/ zod.object({
+  "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "end_time": /*#__PURE__*/ zod.iso.time({}),
+  "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
+  "start_time": /*#__PURE__*/ zod.iso.time({}),
+  "weekday": /*#__PURE__*/ zod.int()
+}))
 })
 
 
@@ -6064,6 +6255,322 @@ export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const SetMyProductOrderProducersMeProductOrderPutResponse = /*#__PURE__*/ zod.array(SetMyProductOrderProducersMeProductOrderPutResponseItem)
+
+
+/**
+ * The business's orders, the soonest slot first.
+ * @summary List Business Orders
+ */
+export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({
+  "orders": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})),
+  "total": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * @summary Cancel Order
+ */
+export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Confirm Order
+ */
+export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Decline Order
+ */
+export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Hand Order Over
+ */
+export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Report No Show
+ */
+export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Propose Order Change
+ */
+export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Ready Order
+ */
+export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
 
 
 /**
@@ -6194,6 +6701,20 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * Set one product's ordering fields. The lookup is scoped to the caller's
+ * own business, so another business's product is a 404, not a 403.
+ * @summary Put Product Ordering
+ */
+export const PutProductOrderingProducersMeProductsProductIdOrderingPutResponse = /*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "is_orderable": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g'])
 })
 
 
@@ -6808,6 +7329,38 @@ export const GetKashrutCertProducersProducerIdKashrutCertBadgeCodeGetResponse = 
 
 
 /**
+ * What can be ordered from this business, and when.
+ *
+ * One 404 for every "no": unknown business, a business not shown on the
+ * site, a seeded test row, ordering never switched on, or switched off.
+ * @summary Get Order Menu
+ */
+export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/ zod.object({
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "products": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_max_agorot": /*#__PURE__*/ zod.int(),
+  "price_min_agorot": /*#__PURE__*/ zod.int(),
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g'])
+})),
+  "slots": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "alcohol_ok": /*#__PURE__*/ zod.boolean(),
+  "end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
+  "start": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+}))
+})
+
+
+/**
  * @summary Report Producer
  */
 export const ReportProducerProducersProducerIdReportPostResponse = /*#__PURE__*/ zod.unknown()
@@ -6945,6 +7498,177 @@ export const GetPublicRecipeProducersSlugRecipesRecipeIdGetResponse = /*#__PURE_
 
 
 /**
+ * Send an order request. A guest and a logged-in buyer take the same
+ * path: both prove the phone with a code.
+ * @summary Send Order
+ */
+export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string(),
+  "status_token": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * Send a six-digit code to the phone a buyer wants to order with.
+ *
+ * Only for a business that takes orders now, so the route cannot be used to
+ * message phones at will. Fails closed: with WhatsApp not configured there
+ * is no way to prove a phone, so there is no order.
+ * @summary Send Order Phone Code
+ */
+export const SendOrderPhoneCodeProductOrdersPhoneCodePostResponse = /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.string())
+
+
+/**
+ * A read, sent as POST so the token stays out of the URL.
+ * @summary Read Order Status
+ */
+export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Accept Proposed Change
+ */
+export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Cancel Own Order
+ */
+export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * Return the VAPID public key for the frontend push subscription.
  * @summary Get Vapid Public Key
  */
@@ -6966,6 +7690,29 @@ export const GetPrefillRegisterProducerPrefillTokenGetResponse = /*#__PURE__*/ z
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('Public response from /register/producer/prefill/{token} —\nintentionally narrow: only what the registration form needs to\npre-fill. Notes + status are NOT exposed.'))
+
+
+/**
+ * «הגיעו» / «לא הגיעו» on one sign-up — the item's owner or an admin.
+ *
+ * A note for the business only: nothing reads it to block a visitor
+ * (card MEH-3315). 403 for anyone else, as the card asks; 404 for an id
+ * that does not exist. Only an active sign-up is marked (409 otherwise).
+ * @summary Set Registration Attendance
+ */
+export const setRegistrationAttendanceRegistrationsRegistrationIdAttendancePatchResponsePartySizeDefault = 1;
+
+export const SetRegistrationAttendanceRegistrationsRegistrationIdAttendancePatchResponse = /*#__PURE__*/ zod.object({
+  "attendance": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['attended', 'no_show']),/*#__PURE__*/ zod.null()])),
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "party_size": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), setRegistrationAttendanceRegistrationsRegistrationIdAttendancePatchResponsePartySizeDefault),
+  "phone": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner / admin only).'))
 
 
 /**
@@ -7442,7 +8189,9 @@ export const updateProfileUsersMePatchResponseEmailVerifiedDefault = false;
 export const updateProfileUsersMePatchResponseIsOauthDefault = false;
 export const updateProfileUsersMePatchResponseIsProducerDefault = false;
 export const updateProfileUsersMePatchResponseIsSuperAdminDefault = false;
+export const updateProfileUsersMePatchResponsePhoneVerifiedDefault = false;
 export const updateProfileUsersMePatchResponseProducerResubmissionCountDefault = 0;
+export const updateProfileUsersMePatchResponseWhatsappReadyDefault = false;
 
 export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "avatar_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7456,13 +8205,15 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "name": /*#__PURE__*/ zod.string(),
   "oauth_provider": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponsePhoneVerifiedDefault),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "producer_kind": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateProfileUsersMePatchResponseProducerResubmissionCountDefault),
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "role": /*#__PURE__*/ zod.string()
+  "role": /*#__PURE__*/ zod.string(),
+  "whatsapp_ready": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponseWhatsappReadyDefault)
 })
 
 
@@ -7699,6 +8450,48 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
 
 
 /**
+ * The logged-in buyer's orders, newest first.
+ * @summary List Own Orders
+ */
+export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({
+  "orders": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+}))
+})
+
+
+/**
  * @summary Get Saved
  */
 export const getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault = `producer`;
@@ -7813,6 +8606,24 @@ export const UnsaveItemUsersMeSavedItemTypeItemIdDeleteResponse = /*#__PURE__*/ 
  * @summary Save Item
  */
 export const SaveItemUsersMeSavedItemTypeItemIdPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Send a 6-digit WhatsApp code to the user's own phone.
+ *
+ * Caps live in the service (3/user/day, 3/phone/day); this limit is the
+ * burst layer. A number that last told us «הסר» gets no code, and the
+ * answer is the same «could not send» a provider failure gives, so the
+ * route does not reveal what a number replied.
+ * @summary Send User Phone Otp
+ */
+export const SendUserPhoneOtpUsersMeVerifyPhonePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Confirm User Phone Otp
+ */
+export const ConfirmUserPhoneOtpUsersMeVerifyPhoneConfirmPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**

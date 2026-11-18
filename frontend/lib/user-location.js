@@ -113,8 +113,25 @@ function getUserLocationOrigin() {
  * `{ source: SOURCE_CITY, city }` to record a manually chosen origin; that
  * write REPLACES any GPS fix, which is what makes the two mutually exclusive.
  */
-export function setUserLocation(lat, lng, origin = null) {
+/**
+ * MEH-3219 (B17): a location is rounded to 2 decimals (at most ~0.7 km off)
+ * before it is stored or sent anywhere — the privacy page promises "rounded to
+ * about one kilometre". Non-numbers pass through untouched so the callers'
+ * own validity checks still see them.
+ * @param {number} value
+ * @returns {number}
+ */
+export function roundCoord(value) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.round(value * 100) / 100
+    : value;
+}
+
+export function setUserLocation(rawLat, rawLng, origin = null) {
   if (!hasStorage()) return;
+  // DO NOT store the raw fix — MEH-3219 (B17), see roundCoord.
+  const lat = roundCoord(rawLat);
+  const lng = roundCoord(rawLng);
   try {
     const isCity = origin?.source === SOURCE_CITY && typeof origin.city === "string" && origin.city.trim();
     window.localStorage.setItem(
