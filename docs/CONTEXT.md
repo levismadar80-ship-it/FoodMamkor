@@ -56,7 +56,7 @@ Next.js + Tailwind → Vercel (frontend) · FastAPI + Python → Railway (backen
 
 - **Colors:** primary `#2e6853` · background `#F5F0E8` (warm cream — NEVER pure white) · text `#1C1A17`. Full token table in `docs/DESIGN.md`.
 - **Fonts:** Frank Ruhl Libre 900 for Hebrew headlines · DM Sans for body. Full font stack (Latin accents, Hebrew fallback, weights, loading) in `docs/DESIGN.md`.
-- **Voice:** Hebrew RTL, hybrid policy — gerund/plural for UI, feminine allowed for brand narrative (see ADR-014, refined by ADR-024 — surface-function + owner-noun gender)
+- **Voice:** Hebrew RTL — gerund/plural for UI; the reader is addressed gender-neutrally on every surface, brand narrative included (ADR-037, which superseded the feminine-for-narrative half of ADR-014 and ADR-024 §1; ADR-024 §2 owner-noun gender still stands)
 - **Hero direction:** Direction A canonical · Direction B campaign-only with 3 preconditions (see ADR-018)
 - **Component state tokens:** opacity-on-cream + `--fg-muted` only; no new state-color tokens (see ADR-019)
 - **Icons:** three-tier — Phosphor for functional UI, hand-drawn SVG for category glyphs, custom illustration for editorial (see ADR-013). **Lucide FORBIDDEN.**

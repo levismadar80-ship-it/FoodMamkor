@@ -58,8 +58,8 @@ WATCHED_DOCS = ("docs/CONTEXT.md", "docs/BRAND.md", "docs/PROJECT_INSTRUCTIONS.m
 # it. An ADR accepted after its last review is a decision CONTEXT may contradict —
 # ADR-040 (who joins) sat unmentioned for a week while CONTEXT still read "producers".
 ADR_DIR = "docs/decisions"
-ADR_DATE = re.compile(r"^\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})", re.M)
-ADR_ACCEPTED = re.compile(r"^\*\*Status:\*\*\s*Accepted", re.M)
+ADR_DATE = re.compile(r"^(?:\*\*)?Date:(?:\*\*)?\s*(\d{4}-\d{2}-\d{2})", re.M)
+ADR_ACCEPTED = re.compile(r"^(?:\*\*)?Status:(?:\*\*)?\s*Accepted", re.M)
 
 
 def today_from(arg: str | None) -> dt.date:
@@ -151,11 +151,18 @@ def adr_findings(ctx: str | None, adrs: list[tuple[str, str]], path: str = "docs
         d = ADR_DATE.search(text)
         if d and ADR_ACCEPTED.search(text) and dt.date.fromisoformat(d.group(1)) > reviewed:
             newer.append(f"{name} ({d.group(1)})")
-    if not newer:
-        return []
+    out = []
     line = ctx[: m.start()].count("\n") + 1
-    return [(f"{path}:{line}: WARNING {len(newer)} ADR(s) accepted after Last reviewed {reviewed}: "
-             f"{', '.join(sorted(newer))} — check §1–2 against them, then bump the date")]
+    if newer:
+        out.append(f"{path}:{line}: WARNING {len(newer)} ADR(s) accepted after Last reviewed {reviewed}: "
+                   f"{', '.join(sorted(newer))} — check §1–2 against them, then bump the date")
+    # A skipped ADR is the dangerous direction: silence reads as "nothing new".
+    # Name every Accepted ADR the date check could not see (MEH-3407 review).
+    undated = sorted(n for n, t in adrs if ADR_ACCEPTED.search(t) and not ADR_DATE.search(t))
+    if undated:
+        out.append(f"{ADR_DIR}: NOTICE {len(undated)} Accepted ADR(s) have no 'Date: YYYY-MM-DD' line and "
+                   f"were not compared: {', '.join(undated)}")
+    return out
 
 
 def read_adrs(root: Path) -> list[tuple[str, str]]:
@@ -232,8 +239,14 @@ def self_test() -> int:
     adr_prop = ("ADR-097", "# A\n\n**Status:** Proposed\n**Date:** 2026-11-12\n")
     fa = adr_findings(ctx_old, [adr_new, adr_old, adr_prop])
     check("adr/newer-accepted-flagged", len(fa) == 1 and "ADR-099 (2026-11-11)" in fa[0] and ":2:" in fa[0], repr(fa))
-    check("adr/older-and-proposed-not-named", fa and "ADR-098" not in fa[0] and "ADR-097" not in fa[0], repr(fa))
+    check("adr/older-and-proposed-not-named", bool(fa) and "ADR-098" not in fa[0] and "ADR-097" not in fa[0], repr(fa))
     check("adr/same-day-is-reviewed", adr_findings(ctx_old.replace("10-26", "11-11"), [adr_new]) == [])
+    plain = ("ADR-096", "# A\nStatus: Accepted\nDate: 2026-11-13\n")
+    check("adr/plain-header-counted", any("ADR-096" in x for x in adr_findings(ctx_old, [plain])),
+          repr(adr_findings(ctx_old, [plain])))
+    nodate = ("ADR-095", "# A\n\n**Status:** Accepted\n")
+    fn = adr_findings(ctx_old, [nodate])
+    check("adr/undated-is-named-not-silent", len(fn) == 1 and "NOTICE" in fn[0] and "ADR-095" in fn[0], repr(fn))
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -256,6 +269,8 @@ def self_test() -> int:
     check("real/CONTEXT-has-last-reviewed", LAST_REVIEWED.search(ctx) is not None)
     real_adrs = read_adrs(REPO_ROOT)
     n_dated_adr = sum(1 for _, t in real_adrs if ADR_DATE.search(t) and ADR_ACCEPTED.search(t))
+    check("real/ADR-024-plain-header-parses",
+          any(n == "ADR-024" and ADR_DATE.search(t) and ADR_ACCEPTED.search(t) for n, t in real_adrs))
     check("real/ADR-040-parses-as-dated-accepted",
           any(n == "ADR-040" and ADR_DATE.search(t) and ADR_ACCEPTED.search(t) for n, t in real_adrs),
           f"{len(real_adrs)} ADR files, {n_dated_adr} dated+accepted")
