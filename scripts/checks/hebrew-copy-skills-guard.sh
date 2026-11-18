@@ -88,6 +88,13 @@ check() {
     echo "hebrew-copy-skills-guard: skipped — not a pull request (no PR body to read)"
     return 0
   fi
+  # A release PR (staging → main) carries every merged PR's copy; each of
+  # those was checked on its own. Dependabot never writes copy.
+  case "${HEBREW_COPY_HEAD:-${GITHUB_HEAD_REF:-}}" in
+    dependabot/*) echo "hebrew-copy-skills-guard: skipped — dependabot PR"; return 0 ;;
+    staging) [ "${HEBREW_COPY_BASE:-${GITHUB_BASE_REF:-}}" = "main" ] \
+               && { echo "hebrew-copy-skills-guard: skipped — release PR (staging → main)"; return 0; } ;;
+  esac
   added="$(added_he_lines)"; rc=$?
   if [ "$rc" -eq 1 ]; then
     echo "hebrew-copy-skills-guard: skipped — no base branch to diff against"
@@ -128,7 +135,7 @@ self_test() {
   local status=0
   run_case() {
     local name="$1" expect="$2" body="$3" added="$4" got rc
-    HEBREW_COPY_TODAY="${CASE_TODAY:-$BLOCK_FROM}" HEBREW_COPY_PR_BODY="$body" HEBREW_COPY_ADDED="$added" check >/dev/null 2>&1; rc=$?
+    GITHUB_HEAD_REF= GITHUB_BASE_REF= HEBREW_COPY_TODAY="${CASE_TODAY:-$BLOCK_FROM}" HEBREW_COPY_PR_BODY="$body" HEBREW_COPY_ADDED="$added" check >/dev/null 2>&1; rc=$?
     got=PASS; [ "$rc" -ne 0 ] && got=FAIL
     if [ "$got" = "$expect" ]; then echo "  [ok] $name → $got"
     else echo "  [XX] $name → $got, expected $expect"; status=1; fi
@@ -139,6 +146,9 @@ self_test() {
   run_case "Hebrew added, both skills"          PASS $'Skills: hebrew-content-writer, clarify\n' "$he"
   run_case "Hebrew added, bold bullet line"     PASS $'- **Skills:** Clarify, Hebrew-Content-Writer\n' "$he"
   run_case "Hebrew added, no Skills line"       FAIL $'Summary only\n' "$he"
+  HEBREW_COPY_HEAD=staging HEBREW_COPY_BASE=main run_case "release PR staging → main skipped" PASS $'Summary only\n' "$he"
+  HEBREW_COPY_HEAD=staging HEBREW_COPY_BASE=staging run_case "head staging into staging still checked" FAIL $'Summary only\n' "$he"
+  HEBREW_COPY_HEAD=dependabot/npm/x run_case "dependabot PR skipped" PASS $'Summary only\n' "$he"
   run_case "Hebrew added, only one skill"       FAIL $'Skills: hebrew-content-writer\n' "$he"
   run_case "Hebrew added, skills named in prose" FAIL $'We ran hebrew-content-writer and clarify.\n' "$he"
   run_case "Hebrew added, none fit"             FAIL $'Skills: none fit — rename\n' "$he"
