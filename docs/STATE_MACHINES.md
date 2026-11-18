@@ -42,7 +42,7 @@ There is no soft-delete: deletion removes the row.
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
 | consumer → producer (with a draft business) | the user | `routers/auth.py` `register_producer`; claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
 | role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
-| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block |
+| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
 | email changed → unverified | the user | `routers/users_me.py` | — |
 | tokens invalidated | the user | logout-all, password change, password reset | checked on every request in `auth.py` `get_current_user` |
@@ -50,7 +50,10 @@ There is no soft-delete: deletion removes the row.
 
 A blocked user is refused on every request, login and refresh
 (`auth.py` `get_current_user`), so a token that is still valid stops working at
-once.
+once. If she is the only owner of a live business who can still sign in, the
+business goes approved → inactive with her (`services/booking_cancellations.py`
+`hide_business`, the same path as an admin pause). Unblocking does not put it
+back; an admin un-pauses it through the approval gates.
 
 **What deletion does:** records no-show tombstones, recomputes the ratings she
 contributed to, removes favorites, reports and her contact trail, withdraws her
@@ -82,7 +85,8 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | rejected → pending | owner | `routers/producer_me_review.py` `request_producer_review` | row lock; resubmission cap |
 | non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
-| approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `delist_business` |
+| approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |
+| approved → inactive | admin blocks the only owner | `routers/admin_extra.py` `block_user` → `hide_business` | a co-owner who can sign in keeps it up |
 | any → (status via plain edit) | — | refused in `routers/admin.py` | — |
 | deleted | admin / owner's account deletion | `routers/admin.py`, `services/user_deletion.py` | `delist_business` first |
 
@@ -105,13 +109,14 @@ business live, and a future date (a recurring workshop stays open after its
 first date).
 
 **Sign-up** (`registrations`): registered · cancelled. No waitlist, no
-no-show.
+no-show. A host cannot set fewer places than the active sign-ups (422,
+`services/registrations.py` `refuse_too_few_places`, MEH-2871).
 
 | Transition | Who | Where | Guard |
 |---|---|---|---|
 | → registered | anyone (no account) | `routers/registrations.py` | item row locked; owner live; item active and not past; capacity; a repeat email is a silent success |
 | registered → cancelled | the holder of the emailed link | `routers/registrations.py` `cancel_registration` | row lock; ledger voided when the item is still upcoming |
-| registered → cancelled | host cancels or deletes the item | `services/booking_cancellations.py` `cancel_item_signups` | items dated today or later; ledger voided |
+| registered → cancelled | host cancels or deletes the item | `services/booking_cancellations.py` `cancel_item_signups` | items dated today or later, and every recurring workshop (MEH-2871); ledger voided |
 | registered → cancelled | the business leaves the live state | `services/booking_cancellations.py` `delist_business` | same |
 | purged | scheduler | `services/retention_purge.py` | 30 days after the date |
 
@@ -156,7 +161,7 @@ funded on purpose: the owner fulfils or cancels it.
 | Thing | States | Written by |
 |---|---|---|
 | Recipe | `published` × `moderation_status` | owner, admin (`routers/producer_recipes.py`, `routers/admin_recipes.py`) |
-| Review | visible · hidden, plus the business's rating aggregate | author, owner reply, admin (`routers/reviews.py`) |
+| Review | visible · hidden, plus the business's rating aggregate; the owner reply carries its own AI verdict APPROVED · FLAGGED, cleared with the reply by `PUT /admin/reviews/{id}/clear-reply` (MEH-3259) | author, owner reply, admin (`routers/reviews.py`) |
 | WhatsApp message (`outbound_messages`) | accepted → sent → delivered / failed; a stuck `accepted` counts as undelivered | webhook (`routers/whatsapp_webhook.py`, `services/whatsapp.py`) |
 | Newsletter | subscribed (row) · gone | form, signed unsubscribe link (`routers/marketing.py`) |
 | Weekly summary to owners | on · opted out (one way, by link) | `routers/marketing.py` |
@@ -182,6 +187,7 @@ section above when it has transitions worth drawing.
 | `group_buys.status` | 5 |
 | `producer_recipes.moderation_status` | 6 |
 | `producer_reviews.ai_moderation_status` | 6 |
+| `producer_reviews.reply_ai_moderation_status` | 6 |
 | `outbound_messages.status` | 6 |
 | `billable_events.status` | 6 |
 | `business_billing.state` | "What does not exist" (no writer) |
@@ -198,13 +204,12 @@ section above when it has transitions worth drawing.
 
 ## Combinations that are still open
 
-Each needs a decision or new copy, so none was fixed in code.
+Each needs a decision or new copy, so none was fixed in code. Four more were
+closed on Sapir's decision of 18/11 (MEH-2871): blocking the only owner,
+changing an owner's role, fewer places than sign-ups, and a recurring workshop
+past its first date — `tests/test_meh2871_open_combinations.py`.
 
 | Combination | What happens today | What is needed |
 |---|---|---|
-| An admin blocks a user who owns a live business or holds bookings | Only the flag flips. Her business stays live and she can no longer mark a bag as handed, so her buyers' orders stay "reserved". | A policy: delist on block, or not. |
-| An admin demotes a business owner to consumer | **Closed (MEH-3376, rulings 17/11 §א6):** refused with 409 while `producer_id` is set, whatever the business status (`routers/admin_extra.py` `update_user_role`). The way out is «ניתוק בעלים», then the demotion passes. The same route also refuses to make such an account an admin, so the state "admin with a business" can no longer be created; `backend/scripts/check_admin_owners.py` counts rows created before. | — |
-| Capacity of an event or workshop is cut below the seats already taken | Accepted. | A 422 with a message. |
-| A recurring workshop whose first date has passed is cancelled, deleted, or its business leaves the live state | Sign-up to it is still open (the first date is not the last), but the cancellation only looks at items dated today or later. Its registrants stay "registered", get no email, and a delete removes their rows silently. | The email prints the item's date, which here is in the past, so it needs wording. Belongs with the per-occurrence design for recurring workshops. |
 | Sign-up on the day, after the start time | Accepted (the gate is by date). | Open PR #4624. |
 | Rating recompute runs in a second, unlocked commit | Two reviews at once can leave the aggregate one behind until the next write. | Post-launch (audit §6.1). |

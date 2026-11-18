@@ -58,6 +58,9 @@ RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
 # schedule so DST moves the UTC fire time, in the trigger and the monitor alike.
 WEEKLY_OWNER_SUMMARY_CRON = "0 8 * * sun"
 WEEKLY_OWNER_SUMMARY_TZ = "Asia/Jerusalem"
+# MEH-3312: the evening-before reminder, 17:00 on the Israel clock.
+REGISTRATION_REMINDER_CRON = "0 17 * * *"
+REGISTRATION_REMINDER_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -112,6 +115,9 @@ UNMONITORED_SLUGS = frozenset(
         # separately, so the slug landed unclassified and pytest went red.
         # No Sentry monitor exists for it (plan limit, MEH-3332).
         "group-buy-expiry-daily",
+        # MEH-3312: the evening-before reminder. No Sentry monitor (plan
+        # limit, MEH-3332).
+        "registration-reminder-daily",
     }
 )
 

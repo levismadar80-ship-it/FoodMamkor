@@ -12,7 +12,16 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Literal, Self
 from uuid import UUID
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
+
+from app.limits import MAX_PRODUCTS  # MEH-2312
 from app.allergens import normalize_allergens
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
@@ -612,3 +621,62 @@ class ProductGroupOut(BaseModel):
 
     id: str
     name: str
+
+
+# ---------------------------------------------------------------------------
+# MEH-2312 — admin catalog import (drafts). Rows are LOOSE on purpose: each row
+# is validated one by one through ProductCreate in services/product_import.py,
+# so one bad price is reported for that row instead of 422-ing the whole batch.
+# ---------------------------------------------------------------------------
+
+
+class ProductImportRow(BaseModel):
+    name: str | None = Field(None, max_length=500)
+    description: str | None = Field(None, max_length=5000)
+    # bool kept as bool, so JSON true is refused
+    price: str | bool | float | None = None
+    unit: str | None = Field(None, max_length=40)
+    source_image_url: str | None = Field(None, max_length=2000)
+
+
+class ProductImportRequest(BaseModel):
+    # MEH-3022: a bounded list. A business can never own more than
+    # MAX_PRODUCTS rows anyway, so a longer batch could only be refused.
+    rows: list[ProductImportRow] = Field(..., max_length=MAX_PRODUCTS)
+
+
+class ProductImportInvalidRow(BaseModel):
+    index: int
+    name: str | None
+    reason: str
+
+
+class ProductImportResult(BaseModel):
+    created: int
+    skipped_duplicates: list[str]
+    invalid: list[ProductImportInvalidRow]
+    # Source unit words the import did not recognise; those rows are priced
+    # per unit — the admin checks them before approving.
+    unknown_units: list[str] = []
+
+
+class ProductDraftOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    description: str | None = None
+    price_min: Decimal | None = None
+    price_unit: str
+    # Admin-only: the source store's image URL, kept for a later image import
+    # (MEH-1184). Never on a public schema.
+    source_image_url: str | None = None
+
+
+class ProductDraftApproveRequest(BaseModel):
+    # None = approve every draft of the business.
+    product_ids: list[UUID] | None = Field(None, max_length=MAX_PRODUCTS)
+
+
+class ProductDraftApproveResult(BaseModel):
+    approved: int

@@ -5,7 +5,7 @@
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 import { itemsForSurface } from "@/lib/nav-registry";
@@ -137,8 +137,21 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         // so a flat 88px overlapped it on notched devices).
         className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-account-sheet rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-xl"
       >
+        {/* MEH-3271 (Sapir 18/11): a visible close — the scrim alone is not
+            discoverable. end-3 mirrors to the reading end (rtl.md MEH-2038);
+            the head reserves 12 + 44 − 22 = 34px → pe-9. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("nav.menu_close")}
+          data-testid="account-sheet-close"
+          className="absolute top-3 end-3 w-11 h-11 rounded-full flex items-center justify-center text-background/80 hover:bg-background/10 transition-colors"
+        >
+          <X size={18} weight="regular" aria-hidden="true" />
+        </button>
+
         {/* Head — avatar · name · state */}
-        <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-3 pb-4 border-b border-white/10 pe-9">
           <span className="w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center bg-white/10 border border-white/30 text-background">
             {isIn ? (
               // MEH-3069: the shared circle; the ring around it is this sheet's own

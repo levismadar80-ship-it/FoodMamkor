@@ -113,6 +113,7 @@ vi.mock("@phosphor-icons/react", () => {
     MagnifyingGlass: stub("MagnifyingGlass"),
     // MEH-2070: the AccountSheet admin row.
     Lock: stub("Lock"),
+    X: stub("X"), // MEH-3271 — the AccountSheet visible close.
     SealCheck: stub("SealCheck"),
     // BottomNav
     Compass: stub("Compass"),

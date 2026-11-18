@@ -373,9 +373,12 @@ def test_the_log_is_readable_by_admins_only_newest_first(client, db):
     items = resp.json()["items"]
     assert [i["target_id"] for i in items] == [str(b.id), str(a.id)]
     assert items[0]["actor_id"] == str(admin.id)
+    # The screen says WHO; an id alone answers nothing (MEH-3306 screen).
+    assert items[0]["actor_email"] == admin.email
     assert set(items[0]) == {
         "id",
         "actor_id",
+        "actor_email",
         "action",
         "target_type",
         "target_id",
@@ -393,3 +396,68 @@ def test_the_log_is_readable_by_admins_only_newest_first(client, db):
         ).status_code
         == 422
     )
+
+
+def test_a_row_outlives_its_actor_and_shows_no_email_for_her(client, db):
+    """actor_id is deliberately not a FK (models/admin_ops.py). A row whose
+    admin account is gone stays, and its email reads None, not an error."""
+    admin = make_user(db, role="admin")
+    db.add(AdminAuditLog(actor_id=uuid.uuid4(), action="DELETE /admin/users/{user_id}"))
+    db.commit()
+    items = client.get("/admin/audit-log", headers=auth_header(admin)).json()["items"]
+    assert len(items) == 1
+    assert items[0]["actor_email"] is None
+
+
+def _seed_at(db, when, actor_id, row_id=None):
+    row = AdminAuditLog(
+        id=row_id or uuid.uuid4(), actor_id=actor_id, action="POST /admin/x"
+    )
+    row.created_at = when
+    db.add(row)
+    return row
+
+
+def test_before_pages_back_and_a_tie_at_the_boundary_is_not_skipped(client, db):
+    """Keyset cursor (created_at, id). Two rows share one created_at (one
+    transaction's now()); paging with `before` alone would skip the second."""
+    from datetime import datetime, timezone
+
+    admin = make_user(db, role="admin")
+    t0 = datetime(2026, 11, 1, 10, tzinfo=timezone.utc)
+    tie = t0 + timedelta(hours=1)
+    ids = sorted([uuid.uuid4(), uuid.uuid4()], reverse=True)  # id desc order
+    oldest = _seed_at(db, t0, admin.id)
+    _seed_at(db, tie, admin.id, ids[0])
+    _seed_at(db, tie, admin.id, ids[1])
+    newest = _seed_at(db, tie + timedelta(hours=1), admin.id)
+    db.commit()
+
+    h = auth_header(admin)
+    page1 = client.get("/admin/audit-log?limit=2", headers=h).json()["items"]
+    assert [i["id"] for i in page1] == [str(newest.id), str(ids[0])]
+    last = page1[-1]
+    page2 = client.get(
+        "/admin/audit-log",
+        params={"limit": 2, "before": last["created_at"], "before_id": last["id"]},
+        headers=h,
+    ).json()["items"]
+    assert [i["id"] for i in page2] == [str(ids[1]), str(oldest.id)]
+
+    # `before` alone still pages by time (older than the given instant).
+    only_time = client.get(
+        "/admin/audit-log", params={"before": tie.isoformat()}, headers=h
+    ).json()["items"]
+    assert [i["id"] for i in only_time] == [str(oldest.id)]
+
+
+def test_each_row_names_its_own_actor(client, db):
+    from datetime import datetime, timezone
+
+    a1, a2 = make_user(db, role="admin"), make_user(db, role="admin")
+    t0 = datetime(2026, 11, 1, 10, tzinfo=timezone.utc)
+    _seed_at(db, t0, a1.id)
+    _seed_at(db, t0 + timedelta(minutes=1), a2.id)
+    db.commit()
+    items = client.get("/admin/audit-log", headers=auth_header(a1)).json()["items"]
+    assert [i["actor_email"] for i in items] == [a2.email, a1.email]

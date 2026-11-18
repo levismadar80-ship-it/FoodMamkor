@@ -610,6 +610,10 @@ describe("MEH-1901 — product rows open the detail sheet", () => {
 
     const row = screen.getByTestId("product-row");
     expect(row.tagName).toBe("BUTTON");
+    // MEH-3271 (WCAG 2.5.3, axe label-content-name-mismatch): the name comes
+    // from the visible text — an aria-label replaced all of it.
+    expect(row).not.toHaveAttribute("aria-label");
+    expect(row).toHaveAccessibleName(expect.stringContaining("גרנולה ביתית"));
     fireEvent.click(row);
 
     const sheet = screen.getByTestId("product-sheet");
@@ -663,6 +667,7 @@ describe("MEH-1901 — product rows open the detail sheet", () => {
     );
     const trigger = screen.getByTestId("signature-product-trigger");
     expect(trigger.tagName).toBe("BUTTON");
+    expect(trigger).not.toHaveAttribute("aria-label"); // MEH-3271, as the row
     fireEvent.click(trigger);
     expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מארז לחמים");
   });

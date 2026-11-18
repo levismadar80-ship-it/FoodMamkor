@@ -159,3 +159,17 @@ describe("LocationModal dialog contract (MEH-2039)", () => {
     expect(document.activeElement).toBe(screen.getByLabelText("modals.location.close_aria"));
   });
 });
+
+// MEH-3271 (Sapir 18/11): the ✕ shows on the phone sheet too — it used to be
+// `hidden sm:flex`, so the sheet had no visible close button.
+describe("LocationModal visible close on the phone (MEH-3271)", () => {
+  it("the ✕ is not hidden below sm, and the title reserves its space", () => {
+    const { onClose } = setup();
+    const close = screen.getByRole("button", { name: "modals.location.close_aria" });
+    expect(close.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    expect(close.className).toMatch(/(^|\s)flex(\s|$)/);
+    expect(document.getElementById("location-modal-title").className).toMatch(/(^|\s)pe-10(\s|$)/);
+    fireEvent.click(close);
+    expect(onClose).toHaveBeenCalled();
+  });
+});
