@@ -7,6 +7,7 @@ import {
   setUserLocation,
   clearUserLocation,
   useUserLocation,
+  roundCoord,
 } from "@/lib/user-location";
 
 describe("user-location", () => {
@@ -18,6 +19,28 @@ describe("user-location", () => {
     it("exports the documented storage key + event name", () => {
       expect(STORAGE_KEY).toBe("user_location");
       expect(EVENT_NAME).toBe("mehamakor:user-location");
+    });
+  });
+
+  describe("rounding (MEH-3219 / B17)", () => {
+    it("stores a GPS fix rounded to 2 decimals, never the raw point", () => {
+      setUserLocation(32.085312, 34.781799);
+      expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY))).toEqual({
+        lat: 32.09,
+        lng: 34.78,
+      });
+    });
+
+    it("rounds a city origin too, and keeps its name", () => {
+      setUserLocation(31.778901, 35.235402, { source: "city", city: "ירושלים" });
+      const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+      expect(stored).toMatchObject({ lat: 31.78, lng: 35.24, city: "ירושלים" });
+    });
+
+    it("roundCoord passes non-numbers through for the callers' own checks", () => {
+      expect(roundCoord(32.0853)).toBe(32.09);
+      expect(roundCoord(undefined)).toBeUndefined();
+      expect(Number.isNaN(roundCoord(NaN))).toBe(true);
     });
   });
 

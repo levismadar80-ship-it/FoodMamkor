@@ -75,7 +75,7 @@ const WHY_ITEMS = ["service", "analytics", "notifications", "compliance"];
 // it was the one processor wired in code (`lib/analytics.js:10`) but absent
 // from this list. An enumeration that names eight and omits a live ninth is
 // worse than a general statement, because it presents itself as complete.
-const THIRD_PARTY_ITEMS = ["cloudinary", "google", "anthropic", "meta", "resend", "sentry", "clarity", "posthog", "infra"];
+const THIRD_PARTY_ITEMS = ["cloudinary", "google", "osm", "anthropic", "meta", "resend", "sentry", "clarity", "posthog", "infra"];
 const RIGHTS_ITEMS = ["access", "rectify", "erase", "object", "portability"];
 
 function MailLink({ email }) {

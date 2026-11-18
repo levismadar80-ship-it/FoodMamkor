@@ -1204,6 +1204,8 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                has_delivery, verified, kosher, city (producer city), availability_state, grass_fed,
                                                near_city (MEH-2602 — the map's city filter: own city OR a location row in it OR
                                                delivers there; located ones ordered first, non-geo mode only)
+                                               MEH-3219 (B17): lat/lng are rounded to 2 decimals (~1 km) on entry, here and in
+                                               GET /rescue/offers, before any distance math; the client rounds before storing too
                                                sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
                                                (byte-identical default). "rating" → unreviewed (NULL avg or reviews_count<1) LAST, then
                                                MEH-2617 Bayesian score (avg*n + 4.0*5)/(n + 5) DESC, tiebreak

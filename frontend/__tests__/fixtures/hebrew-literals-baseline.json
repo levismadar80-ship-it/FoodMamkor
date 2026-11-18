@@ -15,7 +15,7 @@
   "lib/category-registry.js": 8,
   "lib/constants.js": 5,
   "lib/delivery-days.js": 7,
-  "lib/distance.js": 4,
+  "lib/distance.js": 2,
   "lib/errors.js": 1,
   "lib/event-categories.js": 11,
   "lib/farmer-declaration.js": 2,
