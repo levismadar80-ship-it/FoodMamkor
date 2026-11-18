@@ -12,7 +12,14 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Literal, Self
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from app.limits import MAX_PRODUCTS  # MEH-2312
 from app.allergens import normalize_allergens
