@@ -15842,6 +15842,17 @@
             "title": "Cities",
             "type": "array"
           },
+          "corrected_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Query"
+          },
           "producers": {
             "default": [],
             "items": {

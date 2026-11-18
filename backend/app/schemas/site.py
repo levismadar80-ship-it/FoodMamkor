@@ -195,6 +195,9 @@ class SearchOut(BaseModel):
     products: list[ProductHit] = []
     cities: list[str] = []
     categories: list[CategoryHit] = []
+    # MEH-3415: set when nothing matched the query as typed and the results
+    # are for the query re-read on the other keyboard layout ("sca" -> "דבש").
+    corrected_query: str | None = None
 
 
 # --- Alerts (alerts.py) ---

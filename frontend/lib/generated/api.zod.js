@@ -7233,6 +7233,7 @@ export const SmartSearchSearchGetResponse = /*#__PURE__*/ zod.object({
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), smartSearchSearchGetResponseCategoriesDefault),
   "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), smartSearchSearchGetResponseCitiesDefault),
+  "corrected_query": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producers": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), smartSearchSearchGetResponseProducersItemAvgRatingDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
