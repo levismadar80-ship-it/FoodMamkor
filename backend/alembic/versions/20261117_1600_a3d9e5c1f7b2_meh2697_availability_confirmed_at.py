@@ -1,7 +1,7 @@
 """meh2697_availability_confirmed_at
 
 Revision ID: a3d9e5c1f7b2
-Revises: f6c2a8d4e1b7
+Revises: 5808c77bee3a
 Create Date: 2026-11-17 16:00:00.000000+00:00
 
 MEH-2697 phase 1 (rulings 17/11 §א9), EXPAND step of ADR-007: when the owner
@@ -33,7 +33,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = "a3d9e5c1f7b2"
-down_revision: Union[str, None] = "f6c2a8d4e1b7"
+down_revision: Union[str, None] = "5808c77bee3a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
