@@ -711,7 +711,7 @@ def record_contact_click(
     10/minute per IP consistent with whatsapp-click.
     """
     if data.method not in _VALID_CONTACT_METHODS:
-        raise HTTPException(status_code=422, detail="method לא חוקי")
+        raise HTTPException(status_code=422, detail="סוג הפנייה לא תקין")
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
     # MEH-2156: owner/admin clicks are not audience, so they are not logged.

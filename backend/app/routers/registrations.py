@@ -108,11 +108,11 @@ def _event_for_signup(db: Session, event_id: UUID) -> Event:
     """The event, row-locked, or 404 if a stranger could not see it."""
     event = db.query(Event).filter(Event.id == event_id).with_for_update().first()
     if event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     producer = db.get(Producer, event.producer_id)
     # MEH-2952: a seeded test row's event takes no real sign-ups either.
     if not is_live_owner_row(producer):
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     if not event.is_active or _has_started(event.event_date, event.event_time):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_CLOSED)
     if event.registration_method != "site_form":
@@ -125,7 +125,7 @@ def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
     # like events, not 404: the detail page still shows them by link.
     visible = _publicly_visible_query(db).filter(Experience.id == experience_id).first()
     if visible is None:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     ex = (
         db.query(Experience)
         .filter(Experience.id == experience_id)
@@ -135,7 +135,7 @@ def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
     # Re-check on the locked row: it can be deleted, cancelled or moved into
     # the past between the visibility query and the lock.
     if ex is None:
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     # MEH-3219 B12: a recurring experience's event_date is its first
     # occasion, not its last — it stays open after it (experiences.py feed).
     # MEH-3288: a dated one also closes once it has started today.
@@ -437,7 +437,7 @@ def list_event_registrations(
         _is_admin(user)
         or (user.producer_id is not None and user.producer_id == event.producer_id)
     ):
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     return (
         db.query(Registration)
         .filter(Registration.event_id == event.id)
@@ -459,7 +459,7 @@ def list_experience_registrations(
 ) -> list[RegistrationOwnerOut] | list[Registration]:
     ex = db.get(Experience, experience_id)
     if ex is None or not (_is_admin(user) or ex.host_user_id == user.id):
-        raise HTTPException(status_code=404, detail="Experience not found")
+        raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     return (
         db.query(Registration)
         .filter(Registration.experience_id == ex.id)
@@ -527,7 +527,7 @@ def _by_token(db: Session, token: str, *, lock: bool = False) -> Registration:
         q = q.with_for_update(of=Registration)
     reg = q.filter(Registration.cancel_token == token).first()
     if reg is None:
-        raise HTTPException(status_code=404, detail="Registration not found")
+        raise HTTPException(status_code=404, detail="ההרשמה לא נמצאה")
     return reg
 
 

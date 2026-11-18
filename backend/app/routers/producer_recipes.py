@@ -252,7 +252,7 @@ def get_my_recipe(
     # Use 404 instead of 403 on cross-producer access so existence of
     # another producer's recipe is not leaked (REUSES experiences.py:181).
     if not recipe or recipe.producer_id != user.producer_id:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail="המתכון לא נמצא")
     return _serialize(recipe)
 
 
@@ -297,7 +297,7 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
         .first()
     )
     if not recipe or recipe.producer_id != user.producer_id:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail="המתכון לא נמצא")
 
     payload = data.model_dump(exclude_unset=True)
     assert_own_new_images(user, payload.get("image_url"), recipe.image_url)  # MEH-3247
@@ -390,7 +390,7 @@ def delete_my_recipe(
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
     recipe = db.query(ProducerRecipe).filter(ProducerRecipe.id == recipe_id).first()
     if not recipe or recipe.producer_id != user.producer_id:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail="המתכון לא נמצא")
     removed_urls = _public_urls(db, recipe)  # MEH-2852: before the row goes
     db.delete(recipe)
     db.commit()
@@ -410,7 +410,7 @@ def _resolve_producer_by_slug(db: Session, slug: str) -> Producer:
         .first()
     )
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
     return producer
 
 
@@ -467,5 +467,5 @@ def get_public_recipe(
         .first()
     )
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail="המתכון לא נמצא")
     return _serialize(recipe)

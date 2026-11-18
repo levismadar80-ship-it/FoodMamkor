@@ -371,7 +371,7 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
     while api_messages and api_messages[0]["role"] != "user":
         api_messages.pop(0)
     if not api_messages:
-        raise HTTPException(status_code=400, detail="Empty conversation after trim")
+        raise HTTPException(status_code=400, detail="השיחה ריקה. כתבו הודעה ונסו שוב.")
 
     # MEH-586: hybrid — a db_query turn gets the live JSON appended to the
     # fixed knowledge; everything else is the unchanged freeform flow.
