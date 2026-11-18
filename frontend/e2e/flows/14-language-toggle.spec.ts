@@ -132,9 +132,10 @@ test.describe("Language toggle", () => {
 
     // MEH-3392: both lines above are already true in the server HTML, before
     // React hydrates, so a click there lands on a button with no handler and
-    // nothing navigates (22 s fail, 3 s pass on retry). Wait until React owns
-    // the visible toggle, the same `__react…$` expando check as
-    // _settled-field.ts (MEH-2323), with an explicit bound.
+    // nothing navigates (22 s fail, 3 s pass on retry, run 44228348599; the
+    // cause is a hypothesis). Wait until React owns the visible toggle: a
+    // `__reactProps$` key with an onClick (`_settled-field.ts`, MEH-2323,
+    // reads the sibling `__reactFiber$` key), with an explicit bound.
     await waitForToggleHydrated(page);
 
     // HE → EN: `as-needed` prefix adds the /en segment.
