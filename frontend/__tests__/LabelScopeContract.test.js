@@ -210,7 +210,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
         key: "recommended",
         label: "בחירת העורכות",
         tooltip:
-          "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
+          "בחירה אישית של עורכות מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
         color: "accent",
         aboutHref: "/about#editors-pick",
       },
