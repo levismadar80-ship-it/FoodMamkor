@@ -23,7 +23,7 @@ import { FILTER_AXES } from "@/lib/filter-taxonomy";
 // Full contract + precedents: .claude/rules/labels.md.
 
 const SCOPES = new Set(["business", "any-product", "facility"]);
-// MEH-1753 added `editorial` as the 4th value. `recommended` ("בחירת העורכת")
+// MEH-1753 added `editorial` as the 4th value. `recommended` ("בחירת העורכות")
 // is neither self-declared (the owner cannot set it) nor admin-verified
 // (nothing is checked against an external register) — it is an editor's
 // opinion, and ADR-030 bans buying it. Filing it under `admin-verified` would
@@ -208,7 +208,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       },
       recommended: {
         key: "recommended",
-        label: "בחירת העורכת",
+        label: "בחירת העורכות",
         tooltip:
           "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
         color: "accent",

@@ -1784,7 +1784,7 @@
           "grass_fed": "Grass-fed",
           "reservist_owned": "One of the owners serves in the reserves",
           "verified": "Verified",
-          "recommended": "Recommended (editor's pick)",
+          "recommended": "Recommended (editors' pick)",
           "recommended_note": "Editor's reason",
           "recommended_note_hint": "Why this business was picked. Internal only — never shown to the business or on the site. Kept even when the tag is removed, so the history survives. Up to 500 characters.",
           "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
@@ -3181,7 +3181,7 @@
         "body_2": "And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
       },
       "editors_pick": {
-        "heading": "Editor's Pick",
+        "heading": "Editors' Pick",
         "body_1": "Every so often we mark a business we especially loved — for the quality of its products, its freshness, or a story worth knowing. It's our personal choice, after getting to know the business.",
         "list_lead": "Two things worth knowing:",
         "item_1": "you can't pay for this tag — not with premium, not in any other way.",
@@ -6022,8 +6022,8 @@
         "intro": "The business showed us a document and we checked it by hand. <link>How we check</link>"
       },
       "editorial": {
-        "heading": "Editor's pick",
-        "intro": "A badge the editor gives on personal judgement."
+        "heading": "Editors' pick",
+        "intro": "A badge the editors give on personal judgement."
       },
       "self-declared": {
         "heading": "Declared by the business",
@@ -6464,7 +6464,7 @@
       "tooltip": "The business showed a licence or an official exemption document that was checked by hand."
     },
     "recommended": {
-      "label": "Editor's pick",
+      "label": "Editors' pick",
       "tooltip": "A personal pick by the Mehamakor editor — for quality, freshness or a special story. This badge cannot be bought."
     },
     "new": {
@@ -6868,8 +6868,8 @@
         "tile_line": "After the certificate has been checked"
       },
       "editor_pick": {
-        "label": "\"Editor's pick\", which is not for sale",
-        "tile_title": "Editor's pick",
+        "label": "\"Editors' pick\", which is not for sale",
+        "tile_title": "Editors' pick",
         "tile_line": "Not for sale"
       },
       "reservist_diet_tags": {

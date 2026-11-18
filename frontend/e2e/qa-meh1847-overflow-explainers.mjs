@@ -36,7 +36,7 @@ const PRODUCERS_COLLECTION_RE = /\/api\/producers(?:\?[^#]*)?$/;
 // (lib/badges.js BADGE_CONFIG until MEH-2740). Not CI-run; re-mirror on change.
 // Kept as an explicit map so a paraphrase in the component fails the probe.
 const TOOLTIPS = {
-  "בחירת העורכת":
+  "בחירת העורכות":
     "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
   חדש: "העסק הצטרף אלינו בחודש האחרון.",
   "ללא גלוטן": "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",

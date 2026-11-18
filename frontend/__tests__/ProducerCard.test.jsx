@@ -577,7 +577,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     expect(screen.getByRole("button", { name: /מאומת/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /בחירת העורכת/ })).toBeInTheDocument(); // MEH-1492
+    expect(screen.getByRole("button", { name: /בחירת העורכות/ })).toBeInTheDocument(); // MEH-1492
     expect(screen.queryByRole("button", { name: /^חדש/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
