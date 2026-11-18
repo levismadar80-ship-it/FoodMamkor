@@ -125,7 +125,7 @@ export async function loadFonts() {
 }
 
 // Resolves to null on failure, so one missing image never blocks the card.
-function loadImage(src) {
+export function loadImage(src) {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -143,7 +143,7 @@ function photoSrc(url) {
 }
 
 // Draws img over (x, y, w, h) like CSS object-fit: cover.
-function drawCover(ctx, img, x, y, w, h) {
+export function drawCover(ctx, img, x, y, w, h) {
   const s = Math.max(w / img.width, h / img.height);
   const sw = w / s;
   const sh = h / s;
@@ -198,7 +198,7 @@ function fitName(ctx, text, maxWidth) {
   return { size: min, lines };
 }
 
-function roundRect(ctx, x, y, w, h, r) {
+export function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -209,7 +209,7 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 // Draws the mark centred on (cx, cy), `size` px square.
-function drawMark(ctx, cx, cy, size) {
+export function drawMark(ctx, cx, cy, size) {
   if (typeof Path2D === "undefined") return;
   const petal = new Path2D(MARK_PETAL_D);
   ctx.save();

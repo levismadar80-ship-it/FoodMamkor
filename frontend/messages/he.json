@@ -3832,7 +3832,33 @@
         "pick_review": "בחירת ביקורת",
         "download_review": "הורדת כרטיס ביקורת",
         "review_headline": "מה הלקוחות מספרות",
-        "reviews_empty": "עדיין אין ביקורות לשיתוף. <link>שלחו ללקוחות קישור לבקשת ביקורת</link>"
+        "reviews_empty": "עדיין אין ביקורות לשיתוף. <link>שלחו ללקוחות קישור לבקשת ביקורת</link>",
+        "post": {
+          "title": "פוסט מוכן לשיתוף",
+          "subtitle": "נבנה מהפרטים שבעמוד שלך. בוחרים מה לספר, ומשתפים.",
+          "moments_label": "מה לספר",
+          "moment_week": "מה יש השבוע",
+          "moment_new": "מוצר חדש",
+          "moment_holiday": "לקראת {holiday}",
+          "kicker_week": "השבוע אצלנו",
+          "kicker_new": "חדש",
+          "kicker_holiday": "לקראת {holiday}",
+          "footer": "כל הפרטים בקישור",
+          "pick_product": "בחירת מוצר",
+          "share": "שיתוף",
+          "download": "הורדת התמונה",
+          "copy": "העתקת כיתוב וקישור",
+          "copied": "הועתק",
+          "generating": "מכינים את התמונה",
+          "empty": "כדי ליצור פוסט צריך לפחות מוצר אחד במחירון.",
+          "empty_cta": "להוספת מוצרים",
+          "load_error": "לא הצלחנו לטעון את המוצרים.",
+          "retry": "לנסות שוב",
+          "caption_week": "מה יש אצלנו השבוע: {items}. כל הפרטים והמחירים בקישור:",
+          "caption_new": "חדש אצלנו: {item}. כל הפרטים בקישור:",
+          "caption_holiday": "לקראת {holiday}: {items}. כל הפרטים בקישור:",
+          "image_alt": "תצוגה מקדימה של הפוסט"
+        }
       },
       "caption_from": "{name} מ{city}"
     }

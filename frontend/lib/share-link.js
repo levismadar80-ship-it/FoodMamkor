@@ -68,3 +68,15 @@ export async function shareOrCopyText({ data, copyText }) {
   }
   return (await copyClipboard(copyText)) ? "copied" : "failed";
 }
+
+/**
+ * MEH-3330: share an image FILE (the owner's ready-made post) through the
+ * sheet. "unavailable" when the device cannot share files (desktop browsers,
+ * most in-app WebViews) — the caller downloads instead.
+ * @param {{ file: File, text?: string, url?: string }} args
+ * @returns {Promise<"shared"|"cancelled"|"unavailable">}
+ */
+export async function shareFile({ file, text, url }) {
+  if (typeof navigator === "undefined" || !navigator.canShare?.({ files: [file] })) return "unavailable";
+  return tryNativeShare(/** @type {any} */ ({ files: [file], text, url }));
+}
