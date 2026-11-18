@@ -192,12 +192,16 @@ describe("Producer dashboard — conditional card order (MEH-1134)", () => {
     mockPush.mockClear();
   });
 
-  it("pending + incomplete → completeness card above the availability card", async () => {
+  // MEH-3079: a pending business no longer gets the availability card at all
+  // (it was a locked switch it could not use), so the completeness card is
+  // the only card here; the order question applies from approval on.
+  it("pending + incomplete → completeness card, and no availability card", async () => {
     producerStatus = "pending";
     profileFixture = incompleteProfile;
-    const { completeness, availabilityHeading } = await renderAndLocate();
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("completeness-card");
 
-    expect(precedes(completeness, availabilityHeading)).toBe(true);
+    expect(screen.queryByText("availability.heading")).toBeNull();
     expect(screen.getAllByTestId("completeness-card")).toHaveLength(1);
   });
 

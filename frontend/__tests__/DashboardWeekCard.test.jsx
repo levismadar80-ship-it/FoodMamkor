@@ -181,11 +181,14 @@ describe("the week card (MEH-2884 item 5)", () => {
     expect(screen.queryByTestId("overview-zero-state")).toBeNull();
   });
 
-  it("pending business, no activity: ONE empty state and no share button (no public page yet)", async () => {
+  // MEH-3079: was «ONE empty state». Its «שתפו את העמוד» copy contradicted the
+  // share-locked line above it, so a pending business gets no numbers card.
+  it("pending business, no activity: no numbers card and no share button (no public page yet)", async () => {
     statusRef.current = "pending";
     analyticsRef.current = week(0, 0);
     render(<ProducerDashboardPage />);
-    await screen.findByTestId("overview-zero-state");
+    await screen.findByTestId("share-locked-hint");
+    expect(screen.queryByTestId("overview-zero-state")).toBeNull();
     expect(screen.queryByTestId("overview-zero-share")).toBeNull();
     // The zero state is not the week card: no link to numbers that are all 0.
     expect(screen.queryByTestId("week-all-insights")).toBeNull();

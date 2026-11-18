@@ -4927,8 +4927,7 @@
       "states": {
         "zero_activity_title": "Views and clicks",
         "zero_activity": "No views or clicks yet — share your page to get started",
-        "share_locked": "You'll be able to share soon — let's finish approval and details first",
-        "availability_disabled": "You'll be able to update availability once the business is approved and published"
+        "share_locked": "You'll be able to share soon — let's finish approval and details first"
       },
       "changes_requested": {
         "title": "One detail left to complete",
