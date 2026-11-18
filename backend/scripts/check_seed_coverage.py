@@ -297,6 +297,8 @@ EXEMPT_TABLES = {
     "admin_settings": "runtime config, written by the admin panel",
     "alert_log": "runtime log",
     "admin_audit_log": "MEH-3306 admin audit trail — one row per admin action, written at runtime; seeding one would fabricate an action that never happened",
+    "admin_passkeys": "MEH-3305 an admin's registered passkeys — created by the admin's own device; a seeded key would be a credential nobody holds",
+    "admin_recovery_codes": "MEH-3305 hashed one-time recovery codes — generated with the passkey and shown once; seeding one would plant a code",
     "contact_messages": "inbound form submissions — runtime only",
     "inbound_messages": "messaging runtime",
     "outbound_messages": "messaging runtime",

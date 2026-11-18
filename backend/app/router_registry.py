@@ -13,6 +13,7 @@ from app.routers import (
     admin_recipes,
     admin_whatsapp,
     alerts,
+    admin_passkey,
     auth,
     auth_register_producer,
     business_suggestions,
@@ -127,6 +128,8 @@ def register_routers(app: FastAPI) -> None:
     """
     app.include_router(auth.router)
     app.include_router(auth_register_producer.router)  # MEH-3293: split out of auth.py
+    # MEH-3305: /auth/passkey/* — the admin second factor.
+    app.include_router(admin_passkey.router)
     app.include_router(cities.router)
     app.include_router(producer_name_check.router)  # MEH-3086
     _include_producer_me(app)

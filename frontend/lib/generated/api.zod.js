@@ -3059,13 +3059,18 @@ export const ListFailedOutboundAdminWhatsappFailedGetResponse = /*#__PURE__*/ zo
  * Authenticate with Apple ID token.
  * @summary Apple Auth
  */
-export const appleAuthAuthApplePostResponseTokenTypeDefault = `bearer`;
+export const appleAuthAuthApplePostResponseOneTokenTypeDefault = `bearer`;
+export const appleAuthAuthApplePostResponseTwoPasskeyRequiredDefault = true;
 
-export const AppleAuthAuthApplePostResponse = /*#__PURE__*/ zod.object({
+export const AppleAuthAuthApplePostResponse = /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "access_token": /*#__PURE__*/ zod.string(),
   "email_sent": /*#__PURE__*/ zod.boolean(),
-  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), appleAuthAuthApplePostResponseTokenTypeDefault)
-})
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), appleAuthAuthApplePostResponseOneTokenTypeDefault)
+}),/*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "passkey_required": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal(true), appleAuthAuthApplePostResponseTwoPasskeyRequiredDefault).check(/*#__PURE__*/ zod.meta({ title: 'Passkey Required' })),
+  "ticket": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Returned by \/auth\/login, \/auth\/google and \/auth\/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n\/auth\/passkey\/login\/verify (or \/login\/recovery) with this ticket.'))])
 
 
 /**
@@ -3096,24 +3101,34 @@ export const ForgotPasswordAuthForgotPasswordPostResponse = /*#__PURE__*/ zod.un
  * Authenticate with Google ID token.
  * @summary Google Auth
  */
-export const googleAuthAuthGooglePostResponseTokenTypeDefault = `bearer`;
+export const googleAuthAuthGooglePostResponseOneTokenTypeDefault = `bearer`;
+export const googleAuthAuthGooglePostResponseTwoPasskeyRequiredDefault = true;
 
-export const GoogleAuthAuthGooglePostResponse = /*#__PURE__*/ zod.object({
+export const GoogleAuthAuthGooglePostResponse = /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "access_token": /*#__PURE__*/ zod.string(),
   "email_sent": /*#__PURE__*/ zod.boolean(),
-  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), googleAuthAuthGooglePostResponseTokenTypeDefault)
-})
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), googleAuthAuthGooglePostResponseOneTokenTypeDefault)
+}),/*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "passkey_required": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal(true), googleAuthAuthGooglePostResponseTwoPasskeyRequiredDefault).check(/*#__PURE__*/ zod.meta({ title: 'Passkey Required' })),
+  "ticket": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Returned by \/auth\/login, \/auth\/google and \/auth\/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n\/auth\/passkey\/login\/verify (or \/login\/recovery) with this ticket.'))])
 
 
 /**
  * @summary Login
  */
-export const loginAuthLoginPostResponseTokenTypeDefault = `bearer`;
+export const loginAuthLoginPostResponseOneTokenTypeDefault = `bearer`;
+export const loginAuthLoginPostResponseTwoPasskeyRequiredDefault = true;
 
-export const LoginAuthLoginPostResponse = /*#__PURE__*/ zod.object({
+export const LoginAuthLoginPostResponse = /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "access_token": /*#__PURE__*/ zod.string(),
-  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginAuthLoginPostResponseTokenTypeDefault)
-})
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginAuthLoginPostResponseOneTokenTypeDefault)
+}),/*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "passkey_required": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal(true), loginAuthLoginPostResponseTwoPasskeyRequiredDefault).check(/*#__PURE__*/ zod.meta({ title: 'Passkey Required' })),
+  "ticket": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Returned by \/auth\/login, \/auth\/google and \/auth\/apple instead of a\ntoken when the account is an admin with a passkey: the sign-in finishes at\n\/auth\/passkey\/login\/verify (or \/login\/recovery) with this ticket.'))])
 
 
 /**
@@ -3310,6 +3325,92 @@ export const GetOwnerInviteAuthOwnerInviteTokenGetResponse = /*#__PURE__*/ zod.o
   "requires_farmer_declaration": /*#__PURE__*/ zod.boolean(),
   "will_publish": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getOwnerInviteAuthOwnerInviteTokenGetResponseWillPublishDefault)
 }).check(/*#__PURE__*/ zod.describe('What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.'))
+
+
+/**
+ * @summary List Passkeys
+ */
+export const ListPasskeysAuthPasskeyGetResponse = /*#__PURE__*/ zod.object({
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "has_password": /*#__PURE__*/ zod.boolean(),
+  "passkeys": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "last_used_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "synced": /*#__PURE__*/ zod.boolean()
+})),
+  "recovery_codes_left": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * @summary Login Recovery
+ */
+export const loginRecoveryAuthPasskeyLoginRecoveryPostResponseTokenTypeDefault = `bearer`;
+
+export const LoginRecoveryAuthPasskeyLoginRecoveryPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.string(),
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginRecoveryAuthPasskeyLoginRecoveryPostResponseTokenTypeDefault)
+})
+
+
+/**
+ * @summary Login Verify
+ */
+export const loginVerifyAuthPasskeyLoginVerifyPostResponseTokenTypeDefault = `bearer`;
+
+export const LoginVerifyAuthPasskeyLoginVerifyPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.string(),
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), loginVerifyAuthPasskeyLoginVerifyPostResponseTokenTypeDefault)
+})
+
+
+/**
+ * @summary Regenerate Codes
+ */
+export const RegenerateCodesAuthPasskeyRecoveryCodesPostResponse = /*#__PURE__*/ zod.object({
+  "recovery_codes": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+})
+
+
+/**
+ * @summary Register Options
+ */
+export const RegisterOptionsAuthPasskeyRegisterOptionsPostResponse = /*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "ticket": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Register Verify
+ */
+export const RegisterVerifyAuthPasskeyRegisterVerifyPostResponse = /*#__PURE__*/ zod.object({
+  "passkey": /*#__PURE__*/ zod.object({
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "last_used_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "synced": /*#__PURE__*/ zod.boolean()
+}),
+  "recovery_codes": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])
+})
+
+
+/**
+ * @summary Step Up Options
+ */
+export const StepUpOptionsAuthPasskeyStepUpOptionsPostResponse = /*#__PURE__*/ zod.object({
+  "options": /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),
+  "ticket": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Delete Passkey
+ */
+export const DeletePasskeyAuthPasskeyPasskeyIdDeletePostResponse = /*#__PURE__*/ zod.void()
 
 
 /**

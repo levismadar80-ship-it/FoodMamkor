@@ -60,12 +60,14 @@ This page links to those and does not repeat their numbers.
 | Accounts, businesses, products, events, workshops, sign-ups, reviews, bags, group buys, billing ledger | Postgres | the only system of record |
 | Passwords | Postgres, bcrypt hash | never logged |
 | Admin audit log (who changed what, when, from which IP) | Postgres, `admin_audit_log` | append-only: one INSERT per successful change by an admin account, scheduled in `auth.get_current_user` and written by `services/admin_audit.py`; no update or delete in the code. Reduced before/after only, no names or contact details (MEH-3306) |
+| An admin's passkeys and recovery codes (MEH-3305) | Postgres, `admin_passkeys` + `admin_recovery_codes` | public keys only (the private key never leaves her device); recovery codes as hashes, shown once; both go with the account |
 | Access token (15 minutes) | browser `localStorage` | sent as a Bearer header |
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
 | Last successful run of each background job, and the day its overdue email went out | Postgres, `admin_settings` keys `job_ok:<slug>` / `job_stale_alerted:<slug>` | written by `@heartbeat` and `services/job_staleness.py`, production only (MEH-3332); bounded by the number of jobs |
 | Images | Cloudinary | Postgres holds the URL only |
 | Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
+| Spent passkey sign-in tickets (MEH-3305) | backend process memory | a ticket is single-use for its 5 minutes; a restart forgets the set, so a ticket issued just before a deploy could be used once more within those minutes. The ticket itself, while the login page waits for a recovery code, lives in React state only (no browser storage) |
 | Rate-limit counters | backend process memory | reset on every deploy, not shared between processes |
 | Scheduler state | backend process memory | a job that was due during a restart does not run late |
 | Secrets | Railway and Vercel environment variables | none in the repo ([SECURITY.md](./SECURITY.md)) |

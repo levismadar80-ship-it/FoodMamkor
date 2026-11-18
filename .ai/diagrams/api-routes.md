@@ -99,6 +99,7 @@ graph TD
     SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token + terms_accepted?<br/>App Store requirement]
 
     Login[/login page] --> LoginPost[POST /auth/login<br/>🌐 rate-limited 5/min]
+    LoginPost -.->|admin with a passkey, MEH-3305| PasskeyVerify[POST /auth/passkey/login/verify<br/>or /login/recovery]
 
     Account[/settings page] --> Me[GET /auth/me<br/>🔑 current user]
     Account --> Delete[POST /auth/me/delete<br/>🔑 password or fresh Google/Apple token<br/>403 for admins MEH-3248<br/>cascade delete, App Store requirement]
