@@ -23,7 +23,7 @@ import ClarityScript from "@/components/ClarityScript";
 import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
 import { env, SITE_URL } from "@/lib/env";
 import { rootClientMessages } from "@/lib/client-messages";
-import { BRAND_NAME, BRAND_NAME_LATIN, SITE_DESCRIPTION } from "@/lib/constants";
+import { BRAND_NAME, BRAND_NAME_LATIN, CANONICAL_SENTENCE, SITE_DESCRIPTION } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
 import {
   buildAlternates,
@@ -92,7 +92,9 @@ const BASE_METADATA = {
     // for `title` two fields down; `url` was the one it missed. The locale's own
     // home url is set in generateMetadata below, which has the locale.
     siteName: BRAND_NAME,
-    description: SITE_DESCRIPTION,
+    // MEH-3424 / ADR-043: a shared link carries the brand sentence; the
+    // meta description above carries the descriptor. Different readers.
+    description: CANONICAL_SENTENCE,
     images: [
       {
         url: OG_IMAGE,
@@ -105,7 +107,7 @@ const BASE_METADATA = {
   },
   twitter: {
     card: "summary_large_image",
-    description: SITE_DESCRIPTION,
+    description: CANONICAL_SENTENCE,
     images: [OG_IMAGE],
   },
   robots: {
