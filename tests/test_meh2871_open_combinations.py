@@ -121,7 +121,7 @@ class TestOwnerRoleChange:
             headers=auth_header(_admin(db)),
         )
         assert r.status_code == 409, r.text
-        assert "מקושר בית עסק" in r.json()["detail"]
+        assert "מקושרת לבית עסק" in r.json()["detail"]
         db.expire_all()
         assert db.get(User, owner.id).role == "producer"
         assert db.get(User, owner.id).producer_id == producer.id

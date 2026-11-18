@@ -30,6 +30,7 @@ import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phos
 import { chipIcon } from "@/lib/chip-icons";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import api from "@/lib/api";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -284,7 +285,7 @@ export default function ProductsSection({
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(tErr("upload_size"));
       e.target.value = "";
       return;
@@ -410,7 +411,7 @@ export default function ProductsSection({
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(tErr("upload_size"));
       e.target.value = "";
       return;

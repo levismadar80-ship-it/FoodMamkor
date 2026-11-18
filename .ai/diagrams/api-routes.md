@@ -116,6 +116,7 @@ graph TD
     Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>home_products, 30d chart, top cities]
     Dashboard --> Avail[POST /producers/me/availability-state<br/>👤 pause-only write: accepting_orders or on_vacation MEH-2758]
+    Dashboard --> AvailConfirm[POST /producers/me/availability-confirm<br/>👤 stamps availability_confirmed_at, changes nothing else MEH-2697]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
@@ -167,6 +168,7 @@ graph TD
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️ 409 while a business is linked (MEH-2871)]
     Users --> Block[POST /admin/users/{id}/block<br/>🛡️ toggle; the only owner of a live business → hide_business (MEH-2871)]
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
+    AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first — the row is scheduled in get_current_user for every change by an admin account]
 
     Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
     Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]

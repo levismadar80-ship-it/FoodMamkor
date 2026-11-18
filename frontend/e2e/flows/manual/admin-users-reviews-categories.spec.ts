@@ -505,6 +505,28 @@ test.describe("/admin/users — the role kebab", () => {
     await expect(row.getByText("צרכן")).toHaveCount(0);
   });
 
+  // MEH-3376 — an account with a linked business is never offered «העלי לאדמין»
+  //   (Sapir 17/11: an owner must not become an admin; the server answers 409).
+  //   Two rows of one fixture, so the control cannot drift: the same page, the
+  //   same menu, and only `producer_id` differs between them.
+  test("a row with a linked business has no «העלי לאדמין»; the row without one still has it", async ({ page }) => {
+    const users: User[] = [
+      { ...user(1), id: ADMIN.id, email: ADMIN.email, name: ADMIN.name, role: "admin" },
+      user(4, { name: "בעלת עסק", role: "producer", producer_id: uuid(900) }),
+      user(5, { name: "צרכנית", role: "consumer", producer_id: null }),
+    ];
+    await stubAdmin(page, { users });
+    await openUsers(page);
+
+    await openKebab(userRow(page, "צרכנית"));
+    await expect(menu(page).getByRole("menuitem")).toHaveText(["העלי לאדמין", "מחיקה"]);
+    await page.keyboard.press("Escape");
+    await expect(menu(page)).toHaveCount(0);
+
+    await openKebab(userRow(page, "בעלת עסק"));
+    await expect(menu(page).getByRole("menuitem")).toHaveText(["מחיקה"]);
+  });
+
   // MT:MEH-530:47 — demote on a regular admin: a red item → confirm → PUT role=consumer.
   test("«הסירי הרשאות» is red, confirms, and PUTs role=consumer", async ({ page }) => {
     const writes: Rec[] = [];

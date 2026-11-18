@@ -41,7 +41,7 @@ There is no soft-delete: deletion removes the row.
 |---|---|---|---|
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
 | consumer → producer (with a draft business) | the user | `routers/auth.py` `register_producer`; claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
-| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; refused (409) while a business is linked (MEH-2871) |
+| role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
 | blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
 | email changed → unverified | the user | `routers/users_me.py` | — |

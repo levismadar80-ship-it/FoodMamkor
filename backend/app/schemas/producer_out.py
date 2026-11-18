@@ -142,6 +142,9 @@ class ProducerListOut(BaseModel):
     availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
+    # MEH-2697: when the owner last confirmed her availability (tz-aware UTC);
+    # None = never, and then nothing is shown.
+    availability_confirmed_at: datetime | None = None
     # MEH-1880: the declared weekly order window. Expand-only (ADR-007) and no
     # migration — the column has existed since f4a1e9c3b7d2; only the LIST
     # serializer was missing it, which is why no list surface (home grid,
