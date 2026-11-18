@@ -224,4 +224,21 @@ test.describe("axe a11y net — extended public routes (MEH-921)", () => {
       ).toEqual([]);
     });
   }
+  // MEH-3351: the pages a business lands on at launch (outreach links point at
+  // /join, then /join/pricing; /rescue is on in staging). Written before the
+  // a11y net reached them and never scanned. Same gate, same ignores.
+  for (const [route, ready] of [
+    ["/join", "h1"],
+    ["/join/pricing", "h1"],
+    ["/rescue", '[data-testid="rescue-page"]'],
+  ] as const) {
+    test(route, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState("domcontentloaded");
+      await expect(page.locator(ready).first()).toBeVisible({ timeout: 20_000 });
+      const results = await analyze(page);
+      summarize(route, results);
+      expect(gateViolations(results), `critical/serious axe violations on ${route}`).toEqual([]);
+    });
+  }
 });
