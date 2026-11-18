@@ -13182,6 +13182,98 @@
         "title": "ProductCreate",
         "type": "object"
       },
+      "ProductDraftApproveRequest": {
+        "properties": {
+          "product_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Ids"
+          }
+        },
+        "title": "ProductDraftApproveRequest",
+        "type": "object"
+      },
+      "ProductDraftApproveResult": {
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "approved"
+        ],
+        "title": "ProductDraftApproveResult",
+        "type": "object"
+      },
+      "ProductDraftOut": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_min": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Min"
+          },
+          "price_unit": {
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "source_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Image Url"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price_unit"
+        ],
+        "title": "ProductDraftOut",
+        "type": "object"
+      },
       "ProductGroupAssignIn": {
         "properties": {
           "group_id": {
@@ -13313,6 +13405,161 @@
           "producer_name"
         ],
         "title": "ProductHit",
+        "type": "object"
+      },
+      "ProductImportInvalidRow": {
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "name",
+          "reason"
+        ],
+        "title": "ProductImportInvalidRow",
+        "type": "object"
+      },
+      "ProductImportRequest": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ProductImportRow"
+            },
+            "maxItems": 100,
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "ProductImportRequest",
+        "type": "object"
+      },
+      "ProductImportResult": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          },
+          "invalid": {
+            "items": {
+              "$ref": "#/components/schemas/ProductImportInvalidRow"
+            },
+            "title": "Invalid",
+            "type": "array"
+          },
+          "skipped_duplicates": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Skipped Duplicates",
+            "type": "array"
+          },
+          "unknown_units": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknown Units",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created",
+          "skipped_duplicates",
+          "invalid"
+        ],
+        "title": "ProductImportResult",
+        "type": "object"
+      },
+      "ProductImportRow": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "source_image_url": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Image Url"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "title": "ProductImportRow",
         "type": "object"
       },
       "ProductOrderIn": {
@@ -19470,6 +19717,226 @@
         "summary": "Create Preview Link",
         "tags": [
           "producer-draft-preview"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-drafts": {
+      "get": {
+        "operationId": "admin_list_product_drafts_admin_producers__producer_id__product_drafts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductDraftOut"
+                  },
+                  "title": "Response Admin List Product Drafts Admin Producers  Producer Id  Product Drafts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Product Drafts",
+        "tags": [
+          "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-drafts/approve": {
+      "post": {
+        "description": "Publish drafts of THIS business: the listed ids, or all of them.\n\nAn id that is not a draft of this business (another business's product,\nan already-published one, a typo) is simply not matched — the filter is on\nproducer_id AND is_draft, so nothing outside the business can be touched.",
+        "operationId": "admin_approve_product_drafts_admin_producers__producer_id__product_drafts_approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductDraftApproveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDraftApproveResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Approve Product Drafts",
+        "tags": [
+          "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-drafts/{product_id}": {
+      "delete": {
+        "operationId": "admin_delete_product_draft_admin_producers__producer_id__product_drafts__product_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete Product Draft",
+        "tags": [
+          "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-import": {
+      "post": {
+        "operationId": "admin_import_products_admin_producers__producer_id__product_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Import Products",
+        "tags": [
+          "admin-product-import"
         ]
       }
     },

@@ -2411,6 +2411,56 @@ export const CreatePreviewLinkAdminProducersProducerIdPreviewLinkPostResponse = 
 
 
 /**
+ * @summary Admin List Product Drafts
+ */
+export const AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponseItem = /*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "source_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponse = /*#__PURE__*/ zod.array(AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponseItem)
+
+
+/**
+ * Publish drafts of THIS business: the listed ids, or all of them.
+ *
+ * An id that is not a draft of this business (another business's product,
+ * an already-published one, a typo) is simply not matched — the filter is on
+ * producer_id AND is_draft, so nothing outside the business can be touched.
+ * @summary Admin Approve Product Drafts
+ */
+export const AdminApproveProductDraftsAdminProducersProducerIdProductDraftsApprovePostResponse = /*#__PURE__*/ zod.object({
+  "approved": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * @summary Admin Delete Product Draft
+ */
+export const AdminDeleteProductDraftAdminProducersProducerIdProductDraftsProductIdDeleteResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * @summary Admin Import Products
+ */
+export const adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault = [];
+
+export const AdminImportProductsAdminProducersProducerIdProductImportPostResponse = /*#__PURE__*/ zod.object({
+  "created": /*#__PURE__*/ zod.int(),
+  "invalid": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "index": /*#__PURE__*/ zod.int(),
+  "name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "reason": /*#__PURE__*/ zod.string()
+})),
+  "skipped_duplicates": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "unknown_units": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault)
+})
+
+
+/**
  * @summary Admin Create Draft Product
  */
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault = false;
@@ -4544,6 +4594,8 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseRescuedRecentlyDefault),
   "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseReservistOwnedDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseReviewsCountDefault),
+  "secondary_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "secondary_phone_label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
