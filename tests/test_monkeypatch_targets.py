@@ -19,9 +19,14 @@ Two checks, both over every test file:
    the split code, because the real verifier also rejects a junk token.
 
 Granularity is one test function plus the same-file fixtures and helpers it
-reaches. Out of reach (stated, not hidden): fixtures in conftest.py, paths
-built at run time (f-strings), and names a module reads through another
-module's attribute (`mod.name`), which a patch on `mod` does reach.
+reaches. Out of reach (stated, not hidden): fixtures in conftest.py; autouse
+fixtures, even in the same file (no test names them, so they are not
+followed); paths that are not a literal at the call — built at run time
+(f-strings) or held in a constant (`client.post(REGISTER_URL)`, as in
+test_register_personas.py and test_meh1471_referral_source.py); and names a
+module reads through another module's attribute (`mod.name`), which a patch
+on `mod` does reach. A scan on 18/11 found no live miss of the first two
+shapes; they are blind spots, not known holes.
 """
 from __future__ import annotations
 
