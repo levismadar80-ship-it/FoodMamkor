@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import { SITE_DESCRIPTION, CANONICAL_SENTENCE } from "@/lib/constants";
 import he from "../messages/he.json";
+import en from "../messages/en.json";
 
 /**
  * MEH-2364 — the ADR-011 tagline is one sentence rendered from four places:
@@ -53,5 +54,18 @@ describe("ADR-011 tagline", () => {
   ])("he.json %s is the brand sentence, not the tagline (ADR-043)", (_key, value) => {
     expect(value).toBe(CANONICAL_SENTENCE);
     expect(value).not.toBe(locked);
+  });
+});
+
+// ADR-043 amendment (18/11): the English locale follows the same three roles.
+describe("ADR-043 English roles", () => {
+  const EN_DESCRIPTOR = "Mehamakor is where you find food from local businesses near you, all in one place.";
+  it("en meta descriptions carry the English descriptor", () => {
+    expect(en.seo.site.description).toBe(EN_DESCRIPTOR);
+    expect(en.seo.home.description).toBe(EN_DESCRIPTOR);
+  });
+  it("en share card carries the English brand sentence (the approved hero subheading)", () => {
+    expect(en.seo.site.og_description).toBe(en.about.consumer.hero.subheading);
+    expect(en.seo.site.twitter_description).toBe(en.about.consumer.hero.subheading);
   });
 });
