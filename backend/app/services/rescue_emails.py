@@ -118,7 +118,7 @@ def send_reservation_email(
             <div style="font-size:15px;color:#1c1a17;margin:12px 0 0;line-height:1.6;">אומרים אותו בקופה ומשלמים <b style="color:#2e6853;">{e(price)}&nbsp;₪</b>.</div>
           </td></tr>
           <tr><td style="padding:16px 22px 4px;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#fffefb;border:1px solid #e5dfd3;border-radius:10px;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #e5dfd3;border-radius:10px;">
               <tr><td style="padding:12px 14px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">
                 🕗&nbsp; איסוף היום {e(m.pickup_from)}–{e(m.pickup_until)}{address_html}
               </td></tr>
@@ -126,7 +126,7 @@ def send_reservation_email(
           </td></tr>
 {cancel_html}        </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור 🌱</td></tr>
     </table>
   </td></tr>
 </table>
@@ -160,7 +160,7 @@ def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> 
           <tr><td style="padding:20px 22px 24px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">{e(line1)}<br>{e(line2)}</td></tr>
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור 🌱</td></tr>
     </table>
   </td></tr>
 </table>
@@ -194,7 +194,7 @@ def _send_bag_cancelled(to: str, name: str, line1: str, test_cause: bool) -> Non
           <tr><td style="padding:8px 22px 24px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">{e(line2)} <a href="{e(list_url)}" style="color:#2e6853;font-weight:bold;">{e(link_text)}</a></td></tr>
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור 🌱</td></tr>
     </table>
   </td></tr>
 </table>

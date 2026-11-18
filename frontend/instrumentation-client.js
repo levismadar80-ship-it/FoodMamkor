@@ -38,7 +38,9 @@ if (dsn) {
       clientSentryEnvironment(typeof window !== "undefined" ? window.location.hostname : ""),
     // MEH-2887: 0.1 on mehamakor.co.il, 0.01 on staging / previews (span quota).
     tracesSampleRate: clientTracesSampleRate(typeof window !== "undefined" ? window.location.hostname : ""),
-    replaysOnErrorSampleRate: 1.0,
+    // MEH-3382 (rulings 17/11 §א2): 50 replays a month. At 1.0 one repeating
+    // error burns them all in hours; 0.25 keeps a replay for most bugs.
+    replaysOnErrorSampleRate: 0.25,
     replaysSessionSampleRate: 0,
     integrations: [],
     beforeSend(event) {

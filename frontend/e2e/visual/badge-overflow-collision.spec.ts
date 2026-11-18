@@ -236,11 +236,11 @@ test.describe("MEH-1592 +N popover — one-at-a-time + tap guard", () => {
     const chip = page.locator('[data-testid="badge-overflow"]').first();
     await expect(chip).toBeVisible();
     const card = chip.locator("xpath=ancestor::article[1]");
-    // `[aria-haspopup]` is load-bearing, not decoration: on the CARD surface the
+    // `[aria-expanded]` is load-bearing, not decoration: on the CARD surface the
     // verified seal renders WITHOUT a Popover when it has no tooltip content
     // (BadgeRow.jsx:185-199 — the "cosmetics" branch), so `button[data-badge]`
     // alone can resolve to a chip that opens nothing.
-    const badge = card.locator("button[data-badge][aria-haspopup]").first();
+    const badge = card.locator("button[data-badge][aria-expanded]").first();
     const anyPanel = page.locator(
       '[data-testid="badge-overflow-popover"], [data-testid^="badge-tooltip-"]',
     );

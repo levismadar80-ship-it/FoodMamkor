@@ -1,0 +1,45 @@
+name: Staging health
+
+# Rule 41 — see docs/ci/staging-health.patch.md. Logic: scripts/ci/staging_health.py
+on:
+  # pull_request_target, not pull_request: Dependabot (and fork) PRs get a
+  # read-only token under pull_request, so the required status would never be
+  # posted and they would hang. Safe here because no PR code is checked out or
+  # run — the job checks out staging and only reads the PR's sha and labels.
+  pull_request_target:
+    branches: [staging]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_run:
+    workflows: ["E2E Tests"]
+    types: [completed]
+    branches: [staging]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: staging-health-${{ github.event.pull_request.number || 'all' }}
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: staging   # the script comes from staging, never from the PR head
+      - name: Post Staging health
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+            python3 scripts/ci/staging_health.py post --sha "$SHA" --labels "$LABELS"
+          else
+            python3 scripts/ci/staging_health.py post-all
+          fi

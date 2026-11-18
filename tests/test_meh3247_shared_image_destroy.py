@@ -214,6 +214,9 @@ _EXEMPT = {
     ("experiences", "registration_url"): "external sign-up link",
     ("producers", "coverage_cta_enabled"): "boolean flag, matched on 'cover'",
     ("producers", "organic_certified"): "boolean flag, matched on 'cert'",
+    # MEH-2312: the source store's own image URL (e.g. Firebase Storage), kept
+    # for a later import; never uploaded to Cloudinary, so never destroyed.
+    ("products", "source_image_url"): "third-party URL, never a Cloudinary asset",
 }
 
 

@@ -91,7 +91,12 @@ def _validate_product_ids(
         return []
     # Deduplicate while preserving caller intent.
     unique_ids = list(dict.fromkeys(product_ids))
-    products = db.query(Product).filter(Product.id.in_(unique_ids)).all()
+    # MEH-2312: a recipe can only promote a published product.
+    products = (
+        db.query(Product)
+        .filter(Product.id.in_(unique_ids), Product.is_draft.is_(False))
+        .all()
+    )
     found_ids = {p.id for p in products}
     missing = [pid for pid in unique_ids if pid not in found_ids]
     if missing:

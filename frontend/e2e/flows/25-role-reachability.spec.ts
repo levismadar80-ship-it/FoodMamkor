@@ -2,6 +2,8 @@ import { test, expect, type Page } from "./_cloudinary-stub";
 import fs from "node:fs";
 import path from "node:path";
 import { settledField } from "./_settled-field";
+import { withRateLimitRetry } from "../login-retry";
+import { watchLoginSubmit } from "./_login-submit-diagnostics";
 
 /**
  * Spec:     25-role-reachability
@@ -195,6 +197,11 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
   });
 
   test("logging in from that /login returns her to the dashboard", async ({ page }) => {
+    // MEH-3159: the 429 path below waits out up to three limiter windows
+    // (3 x 20s, login-retry.ts). The waits are the SERVER's window, not a
+    // product delay, and they only happen on a 429 — the happy path still
+    // finishes in seconds. The 45s file default cannot hold them.
+    test.setTimeout(150_000);
     const password = process.env.DEMO_OWNER_PASSWORD;
     test.skip(
       !password,
@@ -210,7 +217,88 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
     // submit goes out empty (the :196 flake).
     await (await settledField(page, "login-email")).fill("demo-owner@example.com");
     await (await settledField(page, "login-password")).fill(password as string);
-    await page.getByTestId("login-submit").click();
+
+    // MEH-3159 — this is the one login in the suite that goes through the
+    // BROWSER, and the only one MEH-2895's retry never covered.
+    //
+    // Reproduced locally with a control, against a seeded stack: `/auth/login`
+    // is 5/minute per client IP (auth.py:1280, keyed on IP with no email
+    // component). Eight straight posts answered
+    // 200,200,200,200,200,429,429,429 — the first five prove the credentials,
+    // so the 429s are the limiter and not a bad password. With the window spent,
+    // this exact flow then answered 429, the page stayed on
+    // `/login?redirect=%2Fproducer%2Fdashboard` showing the generic «משהו
+    // השתבש, נסו שוב», and `toHaveURL` timed out at 20067 ms — the card's
+    // symptom and its timing (21.9 s, retry 2.3 s once the window had rolled).
+    // Neither a product bug nor a race.
+    //
+    // In CI the suite spends the window on ITSELF: global-setup logs in three
+    // accounts per run, and `login-retry.ts` exists because two shards inside
+    // one minute from one IP once made a run execute 0 tests (staging
+    // 541de4995). That helper covered the API logins; this in-browser one was
+    // the site left outside it — so it is REUSED here rather than
+    // reimplemented. (A hand-written copy of its loop was the first draft, and
+    // the independent reviewer named it correctly as a second owner of one
+    // rule — workflow.md Smell #1. Reusing it also keeps docs/TESTING.md's
+    // «each through withRateLimitRetry» true, and picks up `Retry-After`
+    // handling the copy had dropped.)
+    //
+    // Nothing about the limiter is weakened and nothing is skipped: the helper
+    // retries 429 ONLY, a non-429 returns on the first attempt, and the status
+    // is asserted to be 200 below — so a 401 on a wrong password or a 5xx on a
+    // broken backend still reds, immediately and by name.
+    // MEH-3159, SECOND cause — reopened 17/11: this `waitForResponse` timed out
+    // at 20 s on #4641, meaning the POST never went out at all (the 429 path
+    // above does go out and is refused, so it is a different failure). The
+    // obvious candidate — the bare click below firing before the button is
+    // hydrated — was MEASURED AND REFUTED: /he/login's server HTML carries none
+    // of the form's data-testids, so there is no un-hydrated copy to click, and
+    // with login stubbed the POST was issued 12/12 under load (CPU x6/+120 ms
+    // and CPU x20/+400 ms, 6 runs each), against a control that missed 3/3 when
+    // clicking before React could render. So do NOT "fix" this by wrapping the
+    // click in `settledField` — that change is measured to do nothing. Still
+    // unexplained; next untested candidate is the button being `disabled` at
+    // click time (auth.spec.ts:316 asserts `toBeEnabled()` elsewhere, which
+    // implies such a state exists), in which case Playwright waits for enabled
+    // and can expire before the form opens.
+    const submit = async () => {
+      const [res] = await Promise.all([
+        page.waitForResponse((r) => /\/api\/auth\/login$/.test(new URL(r.url()).pathname), {
+          timeout: 20_000,
+        }),
+        page.getByTestId("login-submit").click(),
+      ]);
+      return res;
+    };
+    // MEH-3380: when no /api/auth/login request leaves within 20 s, the
+    // failure message now says what the form held at the click.
+    const diag = watchLoginSubmit(page);
+    await diag.beforeClick();
+    const { response, attempts } = await diag.explain(() => withRateLimitRetry(submit, {
+      sleep: (ms) => page.waitForTimeout(ms),
+      onRetry: ({ attempt, waitMs }) => {
+        // An annotation, not only a console line: a run that passes on the
+        // second attempt must still SAY the limiter refused the first, or the
+        // card's «passes on the first attempt» reading could be satisfied by a
+        // run full of 429s. Nothing in the flaky gate reads stdout.
+        test.info().annotations.push({
+          type: "rate-limited",
+          description:
+            `/auth/login answered 429 (attempt ${attempt}); waited ` +
+            `${Math.round(waitMs / 1000)}s for the per-IP window (MEH-3159)`,
+        });
+      },
+    }));
+    // Named, so a final 429 reads as the shared-IP limit rather than as a
+    // broken redirect — rule 39(c) wants the cause quoted, and this quotes
+    // itself. Asserting 200 (not merely «not 429») also keeps a 401 from
+    // surfacing 20 s later as «the URL did not change».
+    expect(
+      response.status(),
+      `the browser login did not succeed after ${attempts} attempt(s) — ` +
+        "429 here is the per-IP /auth/login limit (5/minute, auth.py:1280) " +
+        "spent by this same suite; any other status is a real failure",
+    ).toBe(200);
 
     // Back on the target, not on "/" — the redirect survived the login.
     await expect(page).toHaveURL(DASHBOARD_URL, { timeout: 20_000 });

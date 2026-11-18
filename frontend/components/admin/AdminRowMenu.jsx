@@ -39,7 +39,8 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *           MEH-2267 (APG keyboard: focus the first item on open, Arrow
  *           navigation with wrap, Tab closes and returns focus to the trigger);
  *           MEH-2587 (inline-axis viewport fit — the panel ran off the right
- *           edge of a phone in the stacked-card layout)
+ *           edge of a phone in the stacked-card layout);
+ *           MEH-3260 (`touch` prop — second consumer, the public review card)
  */
 
 /**
@@ -48,6 +49,9 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *   Menu entries. Empty array → the whole menu (kebab included) renders nothing.
  *   `disabled` mirrors an in-flight busy state — the item renders but can't fire.
  * @param {string} props.ariaLabel — accessible name for the kebab trigger.
+ * @param {boolean} [props.touch] MEH-3260: a 44px target and a 20px icon at
+ *   every width, for a public page (the review card's ⋮); admin tables keep
+ *   their dense trigger.
  */
 // MEH-2230: MENU_GAP_PX + the viewport-fit maths now live in
 // lib/panel-position.js, shared with Popover, which already solved this.
@@ -118,7 +122,7 @@ const MENU_NAV = new Map([
   ["End", (at, n) => n - 1],
 ]);
 
-export default function AdminRowMenu({ items = [], ariaLabel }) {
+export default function AdminRowMenu({ items = [], ariaLabel, touch = false }) {
   const [open, setOpen] = useState(false);
   // Fixed-position coords for the portaled panel, measured from the trigger
   // rect at open time (in the toggle handler, synchronously — so the panel's
@@ -314,9 +318,13 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
         onClick={handleToggle}
         // MEH-2587: 40x40 below md — the bare 26px kebab was the smallest
         // target in the phone card; desktop table density is unchanged.
-        className="inline-flex items-center justify-center rounded-lg p-1 max-md:min-h-10 max-md:min-w-10 text-muted hover:bg-gray-100 hover:text-text transition"
+        className={
+          touch
+            ? "inline-flex items-center justify-center rounded-full min-h-11 min-w-11 text-fg-muted hover:bg-surface hover:text-text transition focus-visible:ring-2 focus-visible:ring-primary"
+            : "inline-flex items-center justify-center rounded-lg p-1 max-md:min-h-10 max-md:min-w-10 text-muted hover:bg-gray-100 hover:text-text transition"
+        }
       >
-        <DotsThreeVertical size={18} weight="bold" aria-hidden="true" />
+        <DotsThreeVertical size={touch ? 20 : 18} weight="bold" aria-hidden="true" />
       </button>
       {open && coords && createPortal(panel, document.body)}
     </div>

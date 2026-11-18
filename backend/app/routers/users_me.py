@@ -43,7 +43,7 @@ from app.rate_limit import limiter
 from app.services.account_guards import is_super_admin  # MEH-3104, MEH-3248
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
-from app.services.auth_emails import send_verify_email
+from app.services.auth_emails import send_email_changed_notice, send_verify_email
 from app.services.password_policy import validate_password
 from app.utils.clock import utc_now
 
@@ -69,7 +69,7 @@ def _change_email(
     if user.google_id or user.apple_id:
         raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
     # MEH-3104: the protected owner account is matched by exact email
-    # (admin_extra.is_super_admin); moving it would drop the protection.
+    # (services/account_guards.is_super_admin); moving it would drop the protection.
     if is_super_admin(user):
         raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
     # MEH-3104: a session alone is not enough to move the account. Without
@@ -94,6 +94,33 @@ def _change_email(
     return True
 
 
+def _queue_email_change_mails(
+    background_tasks: BackgroundTasks, user: User, old_email: str
+) -> None:
+    """After the commit, off the request path.
+
+    The verify link goes to the NEW address only (MEH-3095). The OLD address
+    gets a notice (MEH-3104), so a takeover is not silent.
+    """
+    test_cause = bool(user.is_test)
+    # The notice is queued FIRST: tasks run in order, so a failure in the
+    # verify mail can never skip the warning to the old address.
+    background_tasks.add_task(
+        send_email_changed_notice,
+        old_email,
+        user.email,  # type: ignore[arg-type]
+        test_cause=test_cause,
+    )
+    if user.email_verify_token:
+        background_tasks.add_task(
+            send_verify_email,
+            user.email,  # type: ignore[arg-type]
+            user.name,  # type: ignore[arg-type]
+            user.email_verify_token,  # type: ignore[arg-type]
+            test_cause=test_cause,
+        )
+
+
 @router.patch("", response_model=UserOut)
 @limiter.limit("10/hour")
 def update_profile(
@@ -109,6 +136,7 @@ def update_profile(
     - Email uniqueness is re-checked; collisions are rejected with 409.
     - MEH-3095: a changed email is an unproved one. The account goes back to
       unverified and a fresh link is mailed to the NEW address.
+    - MEH-3104: the OLD address gets a notice that the address changed.
     """
     # MEH-375: snapshot avatar BEFORE mutation so we can destroy the
     # prior Cloudinary asset AFTER db.commit succeeds. The destroy site
@@ -143,6 +171,7 @@ def update_profile(
     if "phone" in sent:
         user.phone = data.phone  # type: ignore[assignment]
 
+    old_email = str(user.email)
     if data.email is not None:
         email_changed = _change_email(
             db, user, data.email.lower(), data.current_password
@@ -159,15 +188,8 @@ def update_profile(
         raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
     db.refresh(user)
 
-    if email_changed and user.email_verify_token:
-        # After the commit, to the new address only, off the request path.
-        background_tasks.add_task(
-            send_verify_email,
-            user.email,  # type: ignore[arg-type]
-            user.name,  # type: ignore[arg-type]
-            user.email_verify_token,  # type: ignore[arg-type]
-            test_cause=bool(user.is_test),
-        )
+    if email_changed:
+        _queue_email_change_mails(background_tasks, user, old_email)
 
     # MEH-375: post-commit destroy of the prior avatar when its value
     # changed, regardless of how the change happened (PATCH swap or
