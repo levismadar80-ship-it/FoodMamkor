@@ -6,6 +6,7 @@ This follows the same pattern as the AI fail-open rule in CLAUDE.md.
 
 from __future__ import annotations
 
+from typing import Any
 import json
 import logging
 
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def send_push_notification(
-    subscription: dict, *, title: str, body: str, url: str = "/"
+    subscription: dict[str, Any], *, title: str, body: str, url: str = "/"
 ) -> None:
     """Send a single Web Push notification to one subscription endpoint.
 
@@ -28,6 +29,14 @@ def send_push_notification(
 
     if not settings.vapid_private_key or not settings.vapid_public_key:
         log.debug("[push] push notifications disabled — VAPID keys not set")
+        return
+
+    # MEH-3402: push only from production — a subscription is a browser, not
+    # a staff member, and a restored production backup carries real ones.
+    from app.services.outbound_guard import push_allowed
+
+    if not push_allowed():
+        log.info("[push] NOT SENT outside production")
         return
 
     try:

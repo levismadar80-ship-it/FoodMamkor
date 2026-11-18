@@ -10,14 +10,16 @@ This version:
   4. Tells Cloudinary resource_type="image" which adds a server-side check
 """
 
+from typing import Any
 import asyncio  # MEH-2551: Cloudinary's SDK is sync — every upload runs in to_thread
 import logging
 import uuid
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
@@ -62,16 +64,16 @@ def _sniff_image_type(header: bytes) -> str | None:
     return "heic" if is_heif else None
 
 
-@router.post("/image")
+@router.post("/image", response_model=None)
 @limiter.limit("20/hour")
 async def upload_image(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Upload image to Cloudinary. Validates size and real content type.
-    Enforces free plan limit (3 images) for producers.
+    The free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).
     """
     # Read the whole file once so we can size-check and content-sniff. We cap
     # at MAX_FILE_SIZE + 1 so oversized uploads still fail cheaply without
@@ -94,21 +96,10 @@ async def upload_image(
             detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
         )
 
-    # Check freemium limit for producers
-    if user.role == "producer" and user.producer_id:
-        producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-        if (
-            producer
-            and producer.plan == "free"
-            and producer.images
-            and len(producer.images) >= 3
-        ):
-            raise HTTPException(
-                status_code=403,
-                # MEH-1008: neutral cap copy — no premium/upgrade promise while the
-                # pricing model is undecided (MEH-617); gender-neutral plural (ADR-024).
-                detail="אפשר להעלות עד 3 תמונות לבית עסק. כדי להוסיף תמונה חדשה, הסירו קודם תמונה קיימת.",
-            )
+    # MEH-3220: no plan cap here. This endpoint also serves product photos,
+    # event covers, recipes and workshops; the free-plan 3-photo cap is a
+    # GALLERY cap (MEH-1335) and lives in services/gallery_cap.py, called
+    # from PUT /producers/me.
 
     if not settings.cloudinary_cloud_name:
         # Dev fallback: return a local placeholder URL that won't trigger
@@ -145,14 +136,14 @@ async def upload_image(
         )
 
 
-@router.post("/avatar")
+@router.post("/avatar", response_model=None)
 @limiter.limit("10/hour")
 async def upload_avatar(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Upload a profile photo to Cloudinary. Same magic-byte validation as
     /upload/image but no freemium gate, smaller crop (400px square), and
     a dedicated avatars/ folder so producer gallery images stay separate.
@@ -177,7 +168,7 @@ async def upload_avatar(
 
     if not settings.cloudinary_cloud_name:
         url = f"/placeholder-image.png?avatar={uuid.uuid4().hex[:8]}"
-        user.avatar_url = url
+        user.avatar_url = url  # type: ignore[assignment]
         db.commit()
         return {"url": url}
 
@@ -220,14 +211,14 @@ async def upload_avatar(
         )
 
 
-@router.post("/owner-photo")
+@router.post("/owner-photo", response_model=None)
 @limiter.limit("10/hour")
 async def upload_owner_photo(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Upload the producer-owner's photo to Cloudinary (MEH-1335).
 
     Mirrors /upload/avatar: same magic-byte validation, square 400px
@@ -246,7 +237,38 @@ async def upload_owner_photo(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    return await _store_owner_photo(file, producer, db)
 
+
+@router.post("/owner-photo/{producer_id}", response_model=None)
+@limiter.limit("30/hour")
+async def admin_upload_owner_photo(
+    request: Request,
+    producer_id: UUID,
+    file: UploadFile,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3338: the admin uploads the owner photo for a business she builds
+    on the owner's behalf. Same validation, same fixed Cloudinary slot
+    (`owner_{producer_id}`, overwrite) as the owner route — the business comes
+    from the PATH, and only an admin reaches it (403 for anyone else, the owner
+    included: she has her own route)."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    return await _store_owner_photo(file, producer, db)
+
+
+async def _store_owner_photo(
+    file: UploadFile, producer: Producer, db: Session
+) -> dict[str, Any]:
+    """Validate, upload to the business's fixed slot, save the URL.
+
+    Moved verbatim out of `upload_owner_photo` (MEH-3338) so the owner route
+    and the admin route cannot drift: one size cap, one magic-byte sniff, one
+    public_id rule (MEH-375).
+    """
     contents = await file.read(MAX_FILE_SIZE + 1)
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(
@@ -265,7 +287,7 @@ async def upload_owner_photo(
 
     if not settings.cloudinary_cloud_name:
         url = f"/placeholder-image.png?owner={uuid.uuid4().hex[:8]}"
-        producer.owner_photo_url = url
+        producer.owner_photo_url = url  # type: ignore[assignment]
         db.commit()
         return {"url": url}
 
@@ -303,13 +325,13 @@ async def upload_owner_photo(
         )
 
 
-@router.post("/kashrut-cert")
+@router.post("/kashrut-cert", response_model=None)
 @limiter.limit("10/hour")
 async def upload_kashrut_cert(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
-):
+) -> dict[str, Any]:
     """Upload a photo of a kashrut certificate → Cloudinary (MEH-1167).
 
     Mirrors /upload/owner-photo: same magic-byte sniff + 5 MB cap +

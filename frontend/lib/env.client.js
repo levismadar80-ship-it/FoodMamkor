@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * CLIENT-SAFE INVARIANT
  *
@@ -52,8 +53,38 @@ export const env = createEnv({
     process.env.NODE_ENV === "test" || !!process.env.SKIP_ENV_VALIDATION,
 });
 
-export const SITE_URL =
-  env.NEXT_PUBLIC_SITE_URL || "https://mehamakor.co.il";
+const PRODUCTION_SITE_URL = "https://mehamakor.co.il";
+
+// A non-production host in `og:url` / `canonical` / the sitemap on a page
+// served from mehamakor.co.il tells every crawler and every link preview to
+// go somewhere else. `NEXT_PUBLIC_SITE_URL` is inlined at BUILD time, so a
+// wrong value is frozen into that deployment until a rebuild — which is why
+// this is checked at build and not at request time.
+//
+// `VERCEL_ENV` is a Vercel system variable, available during the build and
+// deliberately NOT `NEXT_PUBLIC_`: it is absent from the client bundle, so
+// this condition is simply false there and throws nothing in a browser. The
+// check that matters is the one that fails `next build` on Production.
+//
+// The fallback is already the production host, so an UNSET variable was never
+// the risk. A staging value set on the wrong Vercel scope is.
+const NON_PRODUCTION_HOST = /staging|vercel\.app|localhost|127\.0\.0\.1/i;
+
+function resolveSiteUrl() {
+  const raw = env.NEXT_PUBLIC_SITE_URL || PRODUCTION_SITE_URL;
+  if (process.env.VERCEL_ENV === "production" && NON_PRODUCTION_HOST.test(raw)) {
+    throw new Error(
+      `NEXT_PUBLIC_SITE_URL is "${raw}" in a Vercel Production build. ` +
+        `That host would be written into og:url, canonical, hreflang, the ` +
+        `sitemap and every JSON-LD @id on mehamakor.co.il. Set the Production ` +
+        `scope of NEXT_PUBLIC_SITE_URL to ${PRODUCTION_SITE_URL} and redeploy ` +
+        `main — the value is inlined at build time, so a redeploy is required.`,
+    );
+  }
+  return raw;
+}
+
+export const SITE_URL = resolveSiteUrl();
 
 // MEH-1754: no fallback. The schema above guarantees a validated URL at build
 // time, so a `|| "http://localhost:8000"` here could only mask a validation

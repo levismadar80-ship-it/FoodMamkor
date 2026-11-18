@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -102,6 +103,7 @@ export default function ProducerRecipesPage() {
         <div className="mb-8">
           <RecipeForm
             mode="create"
+            emailUnverified={user?.email_verified === false}
             onSaved={() => {
               setShowForm(false);
               load();

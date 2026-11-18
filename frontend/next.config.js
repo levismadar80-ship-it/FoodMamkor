@@ -80,7 +80,7 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org https://unpkg.com https://*.googleusercontent.com data: blob:${vercelLiveImg}`,
+      `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://tile.openstreetmap.org https://unpkg.com https://*.googleusercontent.com data: blob:${vercelLiveImg}`,
       // MEH-435: PostHog's EU assets host serves the remote config script and
       // any lazily loaded extension once NEXT_PUBLIC_POSTHOG_KEY is set.
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com https://eu-assets.i.posthog.com${vercelLiveScript}`,
@@ -240,6 +240,11 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN) {
       project: process.env.SENTRY_PROJECT,
       widenClientFileUpload: true,
       disableLogger: true,
+      // MEH-2976: browser events go through our own origin (/monitoring →
+      // Sentry ingest, a Next rewrite) instead of *.ingest.sentry.io, which
+      // iOS content blockers and tracker protection block. middleware.js
+      // excludes this path from the locale redirect; keep the two in step.
+      tunnelRoute: "/monitoring",
     });
   } catch (e) {
     console.warn("[next.config] Sentry DSN set but @sentry/nextjs not installed — skipping wrap.");

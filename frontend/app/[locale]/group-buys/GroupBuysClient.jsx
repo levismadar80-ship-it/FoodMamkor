@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -13,10 +14,13 @@ import { formatPrice } from "@/lib/utils";
 import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import CitySearch from "@/components/CitySearch";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import { dropZeroChips } from "@/lib/chip-gate"; // MEH-3128
+import { CountGroupBuysByStatusGroupBuysCountsGetResponse as StatusCountsOut } from "@/lib/generated/api.zod";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import HubAlertHint from "@/components/HubAlertHint";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
 // this page's own MEH-797 photo retired so a tab switch never swaps images.
@@ -31,8 +35,9 @@ function GroupBuyCard({ gb }) {
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
   const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
-  const deadline = new Date(gb.deadline);
-  const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
+  // MEH-3219 B13: naive UTC, parsed as UTC.
+  const deadline = parseNaiveUtc(gb.deadline) ?? new Date(NaN);
+  const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
   const imgSrc = gb.producer_image_url
@@ -108,7 +113,10 @@ function GroupBuyCard({ gb }) {
             <div className="h-2.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-1.5 text-sm font-medium text-text" data-testid="group-buy-progress-line">
-            {funded || remaining === 0
+            {/* MEH-3289: past the minimum, the count alone (see detail page). */}
+            {gb.commits_count > gb.min_participants
+              ? t("progress_joined", { commits: gb.commits_count })
+              : funded || remaining === 0
               ? t("progress_label", { commits: gb.commits_count, min: gb.min_participants })
               : td("remaining_to_open", { n: remaining })}
           </p>
@@ -154,6 +162,26 @@ export default function GroupBuysClient() {
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
+  // MEH-3128: rows per status tab for this city — a tab with 0 is not drawn.
+  // null = unknown (loading or failed) → every tab, as before.
+  const [statusCounts, setStatusCounts] = useState(null);
+  useEffect(() => {
+    let live = true;
+    // The last city's counts stand in while this one loads (no flicker per
+    // keystroke); a response for an older city is dropped (`live`).
+    api
+      .get("/group-buys/counts", { params: city ? { city } : {} })
+      // Zod before use (rule 19); a shape we don't know shows every tab.
+      .then((r) => {
+        if (!live) return;
+        const parsed = StatusCountsOut.safeParse(r.data);
+        setStatusCounts(parsed.success ? parsed.data : null);
+      })
+      .catch(() => live && setStatusCounts(null));
+    return () => {
+      live = false;
+    };
+  }, [city]);
 
   useEffect(() => {
     load();
@@ -209,20 +237,24 @@ export default function GroupBuysClient() {
         <div className="pt-3 mb-3">
           <ChipScrollRow
             variant="toggle"
-            chips={[
-              { key: "open", label: t("status_open") },
-              { key: "funded", label: t("status_funded") },
-              { key: "fulfilled", label: t("status_fulfilled") },
-            ]}
+            chips={dropZeroChips({
+              chips: [
+                { key: "open", label: t("status_open") },
+                { key: "funded", label: t("status_funded") },
+                { key: "fulfilled", label: t("status_fulfilled") },
+              ],
+              counts: statusCounts,
+              active: [statusFilter],
+            })}
             activeKeys={statusKeys}
             onChipClick={(key) => setStatusFilter(key)}
           />
         </div>
 
         {/* MEH-2620: one line under the chips says what the selected tab
-            holds. «הגיעו ליעד» alone does not tell a first-timer that those
-            groups can no longer be joined (commit 400s once funded,
-            group_buys.py:247) — copy approved by Sapir 30/10. */}
+            holds — copy approved by Sapir 30/10. MEH-3289: a funded group
+            takes joiners until it is full or the deadline passes, and the
+            funded line says so. */}
         <p className="text-sm text-fg-muted mb-6" aria-live="polite" data-testid="group-buys-status-hint">
           {t(`status_hint_${statusFilter}`)}
         </p>
@@ -248,7 +280,7 @@ export default function GroupBuysClient() {
           // MEH-2994: the shared empty state (was a hand-built copy of it,
           // MEH-862) — same icon and the same two strings.
           <div data-testid="group-buys-empty">
-            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} />
+            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} headingLevel={2} />
             {/* MEH-3117: the way out — the group-buy alert (MEH-2828). */}
             <HubAlertHint kind="group_buys" className="-mt-6 pb-12" />
           </div>

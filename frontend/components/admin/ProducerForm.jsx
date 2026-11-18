@@ -1,9 +1,12 @@
+// @ts-check
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowSquareOut, Cow, Medal, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, Medal } from "@phosphor-icons/react";
+import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
+import AdminOwnerStoryFields from "@/components/admin/AdminOwnerStoryFields";
 import api from "@/lib/api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
@@ -12,11 +15,12 @@ import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
 import { israelToday } from "@/lib/israel-date";
-import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
+// MEH-3333: the owner's locations editor, reused with an admin base path.
+import LocationsEditor from "@/app/[locale]/producer/dashboard/edit/LocationsEditor";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import { deriveAvailability } from "@/lib/availability";
@@ -169,6 +173,9 @@ const EMPTY = {
   google_place_id: "",
   description: "",
   short_description: "",
+  // MEH-3338: «מאחורי העסק» — the owner's line and photo.
+  owner_bio: "",
+  owner_photo_url: null,
   top_product_name: "",
   price_range: "",
   // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
@@ -224,9 +231,39 @@ const EMPTY = {
   vacation_until: "",
 };
 
+/**
+ * MEH-3333 — the edit PUT drops city / lat / lng unless the admin changed them.
+ *
+ * Every admin save used to send them, and `admin.py` mirrors lat/lng onto the
+ * primary location row (`upsert_primary_branch_location`). With the locations
+ * editor on the same page, moving the primary there and then saving any other
+ * field put the page-open coordinates back (or NULLed a primary created in
+ * the editor). The coordinates travel as a pair: the helper needs both.
+ *
+ * @param {Record<string, any>} payload
+ * @param {Record<string, any>} form
+ * @param {Record<string, any>} seed
+ */
+function changedOnly(payload, form, seed) {
+  const out = { ...payload };
+  const same = (a, b) => String(a ?? "") === String(b ?? "");
+  if (same(form.city, seed.city)) delete out.city;
+  if (same(form.lat, seed.lat) && same(form.lng, seed.lng)) {
+    delete out.lat;
+    delete out.lng;
+  }
+  // MEH-3338 (review): the owner can change her bio / photo in the dashboard
+  // while this form is open; an unrelated admin save must not put the
+  // page-open values back. Same rule as reservist_owned.
+  if (same(form.owner_bio?.trim(), seed.owner_bio?.trim?.() ?? seed.owner_bio)) delete out.owner_bio;
+  if (same(form.owner_photo_url, seed.owner_photo_url)) delete out.owner_photo_url;
+  return out;
+}
+
 // Focus-retention fix: Section + Field live at MODULE scope. Defining them
 // inside ProducerForm recreated their component identity on every render, so
 // React remounted the whole subtree and dropped input focus mid-typing.
+/** @param {{ title: import("react").ReactNode, children?: import("react").ReactNode, testId?: string }} props */
 function Section({ title, children, testId }) {
   return (
     <div className="bg-surface rounded-md border border-border p-6" data-testid={testId}>
@@ -251,6 +288,10 @@ function Field({ label, children, full = false }) {
 }
 
 export default function ProducerForm({ initial = null, producerId = null }) {
+  // MEH-3333: the page-open values of the fields another editor can change
+  // while this form is open (the locations editor below writes the primary
+  // row, which is where city / lat / lng come from).
+  const seedRef = useRef({ city: "", lat: "", lng: "", owner_bio: "", owner_photo_url: "" });
   const t = useTranslations("admin");
   // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
   // address search — no new i18n keys (see dashboard.producer.location).
@@ -290,6 +331,16 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // lat/lng this form still submits into upsert_primary_branch_location).
       // No fallback to the columns on purpose: they are dropped in chunk 5b.
       const primaryLocation = initial.locations?.find((loc) => loc?.is_primary === true) ?? null;
+      // MEH-3333: what the page loaded, so an edit save can tell a field the
+      // admin changed from one she never touched (see `changedOnly` below).
+      seedRef.current = {
+        city: initial.city ?? "",
+        lat: primaryLocation?.lat ?? "",
+        lng: primaryLocation?.lng ?? "",
+        // MEH-3338: the owner edits these in her dashboard too.
+        owner_bio: initial.owner_bio ?? "",
+        owner_photo_url: initial.owner_photo_url ?? "",
+      };
       setForm({
         ...EMPTY,
         ...initial,
@@ -328,6 +379,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         facebook: initial.facebook ?? "",
         external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
+        owner_bio: initial.owner_bio ?? "",
+        owner_photo_url: initial.owner_photo_url ?? null,
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? "",
         // MEH-1541: null → "" so the number input stays controlled + empty.
@@ -468,6 +521,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       google_place_id: form.google_place_id?.trim() || null,
       description: form.description,
       short_description: form.short_description,
+      // MEH-3338: blank bio → null clears it. The photo is uploaded (and saved)
+      // by its own admin route; null here is the «הסרת תמונה» path.
+      owner_bio: form.owner_bio?.trim() || null,
+      owner_photo_url: form.owner_photo_url || null,
       top_product_name: form.top_product_name?.trim() || null,
       price_range: form.price_range,
       // MEH-1541: "" clears the year; else send the integer (server validates 1800..now).
@@ -532,7 +589,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           const reservistChanged =
             !!form.reservist_owned !== !!initial?.reservist_owned;
           await api.put(`/admin/producers/${producerId}`, {
-            ...payload,
+            ...changedOnly(payload, form, seedRef.current),
             ...(reservistChanged && { reservist_owned: !!form.reservist_owned }),
           });
         } else if (asDraft) {
@@ -563,6 +620,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     "w-full border border-border rounded-md px-3 py-2 focus:outline-none focus:border-primary bg-surface";
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1083,9 +1141,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               ProducerLocation rows (the locations editor above), and admin.py
               already drops the field on write (MEH-2060) — so a checkbox here
               could only claim pickup that no consumer surface would show. */}
-          <p className="text-sm text-fg-muted self-center">
-            {t("producers.form.fields.pickup_managed_in_locations")}
-          </p>
+          {/* MEH-3333: on the edit page the admin manages the business's
+              locations (pickup points included) with the owner's own editor,
+              against /admin/producers/{id}/locations. A business being created
+              has no id yet, so the create form keeps the pointer text. */}
+          {!producerId && (
+            <p className="text-sm text-fg-muted self-center">
+              {t("producers.form.fields.pickup_managed_in_locations")}
+            </p>
+          )}
           {/* MEH-903 A: the legacy comma-separated delivery_area_cities input was
               removed — cities are now entered once via the CitiesAutocomplete in
               the location-mode block above (single store: delivery_areas). */}
@@ -1137,6 +1201,16 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </div>
       </Section>
 
+      <Section title={t("producers.form.sections.owner_story")} testId="owner-story-section">
+        <AdminOwnerStoryFields
+          producerId={producerId}
+          bio={form.owner_bio}
+          photoUrl={form.owner_photo_url}
+          onBioChange={(v) => update("owner_bio", v)}
+          onPhotoChange={(v) => update("owner_photo_url", v)}
+        />
+      </Section>
+
       <Section title={t("producers.form.sections.images")}>
         <input
           type="file"
@@ -1148,32 +1222,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           className="text-sm w-full max-w-full"
         />
         {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
-        {form.images?.length > 0 && (
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-            {form.images.map((url) => (
-              <div key={url} className="relative group">
-                {/* raw img: admin-entered image URLs may be ANY host (the
-                    MEH-1222 "https://bread.jpg" case). next/image throws on
-                    a src outside remotePatterns / non-absolute instead of
-                    firing onError. Measured under MEH-1833, see PR. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={optimizeCloudinary(url)}
-                  alt=""
-                  className="w-full h-24 object-cover rounded-sm border border-border"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
-                  aria-label={t("common.delete")}
-                >
-                  <X size={14} weight="bold" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* MEH-3320: main-photo marker + «make main» live in AdminPhotoGrid. */}
+        <AdminPhotoGrid
+          images={form.images ?? []}
+          onChange={(images) => setForm((f) => ({ ...f, images }))}
+          onRemove={removeImage}
+        />
       </Section>
 
       <Section title={t("producers.form.sections.hours")}>
@@ -1269,5 +1323,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </button>
       </div>
     </form>
+    {/* MEH-3333: the locations editor lives OUTSIDE the form above. It has its
+        own <form> per location, and nested inside this one its submit bubbled
+        up and saved the whole business (and left the page) on every location
+        save. It saves by itself, so it needs nothing from the form's button. */}
+    {producerId && (
+      <div className="mt-6 max-w-4xl" data-testid="admin-locations-editor">
+        <Section title={t("producers.form.sections.delivery_pickup")}>
+          <LocationsEditor basePath={`/admin/producers/${producerId}/locations`} />
+        </Section>
+      </div>
+    )}
+    </>
   );
 }

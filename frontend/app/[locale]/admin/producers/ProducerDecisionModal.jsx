@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -81,6 +82,9 @@ const canSubmitDecision = (value, freeText) =>
 // declared an interactive role and then owed a keyboard layer they never
 // shipped, and a broken promise reads worse to a screen reader than no
 // promise at all.
+/**
+ * @param {{ legend: string, helper: string, name: string, options: Array<{ value: string, label: string }>, value: string | null, onChange: (value: string) => void, firstRadioRef?: import("react").Ref<HTMLInputElement> }} props
+ */
 function ReasonGroup({ legend, helper, name, options, value, onChange, firstRadioRef }) {
   return (
     <fieldset className="mb-4">

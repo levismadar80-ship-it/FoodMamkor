@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   event-ics
  * Purpose:  Turn one event into an iCalendar (RFC 5545) file the visitor can

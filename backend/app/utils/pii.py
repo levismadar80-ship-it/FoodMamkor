@@ -49,6 +49,16 @@ _URL_TOKEN_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"/owner-invite/[\w-]{40,}"), "/owner-invite/[token]"),
     # /registration(s)/<token_urlsafe(32)> — the sign-up cancel link.
     (re.compile(r"(/registrations?)/[\w-]{40,}"), r"\1/[token]"),
+    # MEH-3273: /register/producer/prefill/<token_urlsafe(32)> (returns lead
+    # PII) and /home-products/rate/<token_urlsafe(32)> — same 40-char floor.
+    (re.compile(r"(/prefill|/rate)/[\w-]{40,}"), r"\1/[token]"),
+    # MEH-3273: any `token=` / `*_token=` query value (`/verify-email?token=`,
+    # `/reset-password?token=`, `/newsletter/unsubscribe?token=`). Anchored on
+    # `?`/`&` or the start, so it also covers a bare query string.
+    (
+        re.compile(r"((?:^|[?&])[\w-]*token=)[^&#\s]*", re.IGNORECASE),
+        r"\1[token]",
+    ),
 )
 
 

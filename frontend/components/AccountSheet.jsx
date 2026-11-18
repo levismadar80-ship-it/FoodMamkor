@@ -1,10 +1,11 @@
+// @ts-check
 "use client";
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 import { itemsForSurface } from "@/lib/nav-registry";
@@ -90,10 +91,12 @@ export default function AccountSheet({ open, onClose, user, logout }) {
       if (!list.length) return;
       const first = list[0];
       const last = list[list.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the panel is pulled back in.
+      const outside = !panelRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }
@@ -121,7 +124,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         type="button"
         aria-label={t("nav.menu_close")}
         onClick={onClose}
-        className="fixed inset-0 z-[1001] bg-black/40"
+        className="fixed inset-0 z-account-scrim bg-black/40"
       />
       <div
         ref={panelRef}
@@ -132,10 +135,23 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         // MEH-868: clear the floating pill AND the safe-area inset (the pill
         // itself rides above safe-area via calc(env(safe-area-inset-bottom)+16px),
         // so a flat 88px overlapped it on notched devices).
-        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-xl"
+        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-account-sheet rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-xl"
       >
+        {/* MEH-3271 (Sapir 18/11): a visible close — the scrim alone is not
+            discoverable. end-3 mirrors to the reading end (rtl.md MEH-2038);
+            the head reserves 12 + 44 − 22 = 34px → pe-9. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("nav.menu_close")}
+          data-testid="account-sheet-close"
+          className="absolute top-3 end-3 w-11 h-11 rounded-full flex items-center justify-center text-background/80 hover:bg-background/10 transition-colors"
+        >
+          <X size={18} weight="regular" aria-hidden="true" />
+        </button>
+
         {/* Head — avatar · name · state */}
-        <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-3 pb-4 border-b border-white/10 pe-9">
           <span className="w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center bg-white/10 border border-white/30 text-background">
             {isIn ? (
               // MEH-3069: the shared circle; the ring around it is this sheet's own

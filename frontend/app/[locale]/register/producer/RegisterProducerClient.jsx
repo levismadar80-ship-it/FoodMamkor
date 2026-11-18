@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { CheckCircle, EnvelopeSimple, Leaf, ShareNetwork, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { renumberTitle, stepNumberOf } from "@/lib/wizard-step-numbers";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -17,6 +18,7 @@ import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import RegisterCardPreview from "@/components/RegisterCardPreview";
 import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import RegisterNameCheck from "@/components/RegisterNameCheck";
 import RegisterPreflight from "./RegisterPreflight";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
@@ -30,6 +32,7 @@ import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/valida
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import { PRICING_PATH } from "@/lib/pricing";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -303,6 +306,13 @@ function RegisterProducerPageBody({ routeKind }) {
   // photos) and its «what happens after» are about a business.
   const [showPreflight, setShowPreflight] = useState(!routeIsOrganizer);
   const [categories, setCategories] = useState([]);
+  // MEH-3193: a failed /categories left step 3 with no tiles and a required
+  // choice nobody could make. Now it says so and offers a retry.
+  const [categoriesFailed, setCategoriesFailed] = useState(false);
+  const loadCategories = () => {
+    setCategoriesFailed(false);
+    api.get("/categories").then((r) => setCategories(r.data)).catch(() => setCategoriesFailed(true));
+  };
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   // MEH-1769: false on the server AND on the first client render, raised only
@@ -396,6 +406,34 @@ function RegisterProducerPageBody({ routeKind }) {
   // the selected category IDs against the categories list fetched at mount.
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const isOrganizer = form.kind === "organizer"; // MEH-2460
+
+  // MEH-0000: every number a user SEES comes from a position in this array.
+  //
+  // The STEP enum stays the state machine — it is the single source for the
+  // 3→5 re-index (MEH-847) and every comparison still uses it. What it is not
+  // is a display value. Two steps are conditionally absent, and the enum cannot
+  // know that:
+  //   · an organizer never visits CATEGORY (MEH-2460), so /register/organizer
+  //     showed «01 02 04» in the stepper and jumped «2.» → «4.» in the headings;
+  //   · an upgrade (already signed in) starts past ACCOUNT, so its headings
+  //     began at «2.».
+  // Deriving from the visible position fixes both, and leaves the ordinary
+  // business path byte-identical (1, 2, 3, 4).
+  const visibleSteps = useMemo(
+    () =>
+      [STEP.ACCOUNT, STEP.DETAILS, STEP.CATEGORY, STEP.STORY].filter(
+        (s) =>
+          !(isOrganizer && s === STEP.CATEGORY) &&
+          !(isUpgrade && s === STEP.ACCOUNT),
+      ),
+    [isOrganizer, isUpgrade],
+  );
+
+  // Both helpers are pure and live in lib/wizard-step-numbers.js, so the digit
+  // swap can be tested against the REAL approved Hebrew — this file's test mock
+  // makes t(key) return the key path, which carries no number to swap.
+  const stepNumber = (s) => stepNumberOf(visibleSteps, s);
+  const numberedTitle = (title, s) => renumberTitle(title, stepNumber(s));
   // MEH-2640: the stored answer; the payload's booleans come from it.
   const fulfilment = form.fulfilment;
   const licenseRequired =
@@ -526,7 +564,7 @@ function RegisterProducerPageBody({ routeKind }) {
   // submit. The producer case joins it (409 already_has_producer at submit).
 
   useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
+    loadCategories();
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
@@ -818,6 +856,9 @@ function RegisterProducerPageBody({ routeKind }) {
         // consent (agreedToTerms) is a separate gate enforced at submit.
         declaration_accepted:
           declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed),
+        // MEH-2923: the grower line on its own, so the server can require and
+        // record it apart from the licensing declaration.
+        farmer_declaration_accepted: farmerDeclarationRequired && farmerConfirmed,
         // MEH-1995: the ToS consent the comment above calls "a separate gate
         // enforced at submit" — it was enforced and then discarded, reaching
         // no column. Sent now so users.terms_accepted_at + terms_version get
@@ -1058,7 +1099,10 @@ function RegisterProducerPageBody({ routeKind }) {
                 className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted"}`}
               >
                 <span dir="ltr" className="font-english italic text-2xl leading-none">
-                  {String(s).padStart(2, "0")}
+                  {/* MEH-0000: the VISIBLE position, not the enum value. The
+                      `s <= step` and `aria-current` comparisons above stay on
+                      the enum — only the printed digit is derived. */}
+                  {String(stepNumber(s)).padStart(2, "0")}
                 </span>
                 <span className="text-xs font-medium leading-none">{caption}</span>
               </div>
@@ -1108,7 +1152,7 @@ function RegisterProducerPageBody({ routeKind }) {
         {/* Step 1: Account */}
         {step === STEP.ACCOUNT && (
           <div className="space-y-4" data-testid="register-frame-account">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.account.title"), STEP.ACCOUNT)}</h2>
             {/* MEH-2183: step-top expectation line — names the time cost and
                 that the draft survives leaving (setAndSave already persists it). */}
             <p data-testid="register-account-duration-hint" className="text-xs text-fg-muted text-start">
@@ -1183,7 +1227,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   *
                 </span>
               </label>
-              <input
+              <Input
                 id="producer-account-password"
                 type="password"
                 data-testid="register-account-password"
@@ -1191,7 +1235,6 @@ function RegisterProducerPageBody({ routeKind }) {
                 value={form.password}
                 onChange={set("password")}
                 required
-                className="w-full border rounded-sm px-3 py-2 min-h-touch focus-ring"
                 dir="ltr"
                 minLength={12}
                 autoComplete="new-password"
@@ -1242,14 +1285,24 @@ function RegisterProducerPageBody({ routeKind }) {
         {/* Step 2: Business basics */}
         {step === STEP.DETAILS && (
           <div className="space-y-4" data-testid="register-frame-details">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.business.title"), STEP.DETAILS)}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
             {/* MEH-2183: the no-cost promise, stated on the step where the
                 seller starts investing real effort. */}
             <p data-testid="register-details-free-hint" className="text-xs text-fg-muted text-start">
-              {t("auth.register.producer.steps.business.free_hint")}
+              {t("auth.register.producer.steps.business.free_hint")}{" "}
+              {/* MEH-3166: new tab, so a half-filled form is not lost. */}
+              <Link
+                href={PRICING_PATH}
+                target="_blank"
+                rel="noopener"
+                data-testid="register-pricing-link"
+                className="underline underline-offset-2 text-primary rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t("pricing.link_short")}
+              </Link>
             </p>
 
             <Input
@@ -1275,7 +1328,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   *
                 </span>
               </label>
-              <input
+              <Input
                 id="producer-phone"
                 data-testid="register-details-phone"
                 type="tel"
@@ -1284,11 +1337,8 @@ function RegisterProducerPageBody({ routeKind }) {
                 value={form.phone}
                 onChange={set("phone")}
                 required
-                aria-invalid={phoneErrorMessage ? "true" : undefined}
+                invalid={!!phoneErrorMessage}
                 aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
-                className={`w-full border rounded-sm px-3 py-2 min-h-touch focus-ring ${
-                  phoneErrorMessage ? "border-danger-400" : ""
-                }`}
                 dir="ltr"
               />
               {phoneErrorMessage && (
@@ -1449,7 +1499,7 @@ function RegisterProducerPageBody({ routeKind }) {
 
         {step === STEP.CATEGORY && (
           <div className="space-y-4" data-testid="register-frame-category">
-            <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
+            <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.category.title"), STEP.CATEGORY)}</h2>
             {/* MEH-1807: the selector is a card grid, not a form control, so it
                 has no id to focus and nothing to hang aria-describedby on. A
                 labelled group wrapper gives the required-gate both — tabIndex
@@ -1463,6 +1513,14 @@ function RegisterProducerPageBody({ routeKind }) {
               aria-describedby={fieldErrors.category_ids ? "register-category-error" : undefined}
               className="focus-ring rounded-md"
             >
+              {categoriesFailed && (
+                <div data-testid="register-categories-failed" className="flex items-center gap-3 mb-3">
+                  <InlineMessage size="xs" className="text-start">{t("dashboard.producer.categories.fetch_error")}</InlineMessage>
+                  <Button type="button" variant="secondary" size="sm" onClick={loadCategories}>
+                    {t("errors.boundary.retry")}
+                  </Button>
+                </div>
+              )}
               <CategorySelector
                 categories={categories}
                 selectedIds={form.category_ids}
@@ -1505,7 +1563,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 <p className="text-xs text-fg-muted mb-2 text-start">
                   {t("auth.register.producer.fields.license_what_is_it")}
                 </p>
-                <input
+                <Input
                   id="producer-license-required"
                   data-testid="register-category-license"
                   value={form.producer_license_number}
@@ -1518,7 +1576,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
+                  className="text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1593,14 +1651,14 @@ function RegisterProducerPageBody({ routeKind }) {
                 >
                   {t("auth.register.producer.fields.license_optional_label")}
                 </label>
-                <input
+                <Input
                   id="producer-license-optional"
                   value={form.producer_license_number}
                   onChange={set("producer_license_number")}
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
+                  className="text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1658,7 +1716,7 @@ function RegisterProducerPageBody({ routeKind }) {
 
         {step === STEP.STORY && (
           <div className="space-y-4" data-testid="register-frame-story">
-            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.story.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.story.title"), STEP.STORY)}</h2>
             {/* MEH-2185: the step-top expectation line (photo_next_hint, added by
                 MEH-2183) is GONE, and deliberately not replaced. It overlapped in
                 substance with photo_disclosure further down this same step, which
@@ -1798,7 +1856,8 @@ function RegisterProducerPageBody({ routeKind }) {
               >
                 {t("auth.register.producer.fields.referral_source.optional_hint")}
               </p>
-              <select
+              <Select
+                size="md"
                 id="register-referral-source"
                 data-testid="register-referral-source"
                 value={form.referral_source}
@@ -1812,7 +1871,7 @@ function RegisterProducerPageBody({ routeKind }) {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                className="w-full border rounded-sm px-3 py-2 min-h-touch bg-surface text-start focus-ring"
+                className="text-start"
               >
                 <option value="" disabled>
                   {t("auth.register.producer.fields.referral_source.placeholder")}
@@ -1824,9 +1883,9 @@ function RegisterProducerPageBody({ routeKind }) {
                     )}
                   </option>
                 ))}
-              </select>
+              </Select>
               {form.referral_source === "other" && (
-                <input
+                <Input
                   id="register-referral-source-other"
                   data-testid="register-referral-source-other"
                   type="text"
@@ -1842,7 +1901,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   aria-label={t(
                     "auth.register.producer.fields.referral_source.other_placeholder",
                   )}
-                  className="w-full border rounded-sm px-3 py-2 min-h-touch mt-2 text-start focus-ring"
+                  className="mt-2 text-start"
                 />
               )}
             </div>

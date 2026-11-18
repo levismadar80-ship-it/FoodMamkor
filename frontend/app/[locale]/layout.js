@@ -1,3 +1,4 @@
+// @ts-check
 import "../globals.css";
 import { FONT_VARIABLES } from "../fonts";
 import { notFound } from "next/navigation";
@@ -5,7 +6,6 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { MotionConfig } from "framer-motion";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
-import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
 import VerifyBanner from "@/components/VerifyBanner";
 import FooterSlot from "@/components/FooterSlot";
@@ -17,6 +17,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
 import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 import InstallPrompt from "@/components/InstallPrompt";
+import { PREHYDRATION_CAPTURE_SCRIPT } from "@/lib/prehydration-capture-inline";
 import PrehydrationInputReplay from "@/components/PrehydrationInputReplay";
 import ClarityScript from "@/components/ClarityScript";
 import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
@@ -26,9 +27,11 @@ import { BRAND_NAME, BRAND_NAME_LATIN, SITE_DESCRIPTION } from "@/lib/constants"
 import { routing } from "@/i18n/routing";
 import {
   buildAlternates,
+  urlForLocalePath,
   OG_LOCALE,
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-1831 / MEH-2029: the four brand typefaces are self-hosted from .woff2
 // files committed in this repo, and the build makes no network request for
@@ -83,7 +86,11 @@ const BASE_METADATA = {
   openGraph: {
     type: "website",
     locale: "he_IL",
-    url: SITE_URL,
+    // MEH-0000: NO `url` here. This object is what a page with no openGraph of
+    // its own inherits, so a static url made every such page claim the Hebrew
+    // HOME as its og:url — /en included. That is the same defect MEH-2853 fixed
+    // for `title` two fields down; `url` was the one it missed. The locale's own
+    // home url is set in generateMetadata below, which has the locale.
     siteName: BRAND_NAME,
     description: SITE_DESCRIPTION,
     images: [
@@ -159,6 +166,12 @@ export async function generateMetadata({ params }) {
     keywords: [...t.raw("keywords"), BRAND_NAME],
     openGraph: {
       ...BASE_METADATA.openGraph,
+      // MEH-0000: the LOCALE's home, not SITE_URL. On /en a static SITE_URL
+      // made og:url the Hebrew home, so a shared /en link previewed — and,
+      // for a crawler that trusts og:url, canonicalised — to the wrong page.
+      // This stays in sync with alternates.canonical below because both come
+      // from urlForLocalePath.
+      url: urlForLocalePath("/", locale),
       // MEH-2853: no og title here either. A page that sets no openGraph of
       // its own inherits this object, and a title in it made the page's
       // og:title the home title. Without it Next fills og:title from the
@@ -194,7 +207,7 @@ export async function generateMetadata({ params }) {
 }
 
 export const viewport = {
-  themeColor: "#2e6853",
+  themeColor: COLOR.primary,
 };
 
 export function generateStaticParams() {
@@ -221,6 +234,10 @@ export default async function LocaleLayout({ children, params }) {
   return (
     <html lang={locale} dir={dir} className={FONT_VARIABLES}>
       <head>
+        {/* MEH-3164: records text typed before React hydrates, from the first
+            byte. Must run before any chunk, so it is inline and first in
+            <head>; PrehydrationInputReplay (end of <body>) replays it. */}
+        <script dangerouslySetInnerHTML={{ __html: PREHYDRATION_CAPTURE_SCRIPT }} />
         {/* MEH-1831: the fonts.googleapis/gstatic preconnects and the Google
             Fonts stylesheet that used to sit here are gone — next/font serves
             every family from our own origin, so there is nothing left to
@@ -230,10 +247,12 @@ export default async function LocaleLayout({ children, params }) {
             preconnect while unsplash and the three OSM shards did. */}
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        {/* MEH-604: preconnect OSM tile shards (a/b/c) for HomepageMiniMap above-the-fold */}
-        <link rel="preconnect" href="https://a.tile.openstreetmap.org" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
+        {/* MEH-2861: no preconnect to the OSM tile host here. It was added for a
+            home mini-map above the fold (MEH-604); that map now sits ~2,700px
+            down and loads on scroll (MEH-2747, MEH-2850), so on most visits the
+            handshake expired unused — on every page of the site.
+            DO NOT add it back in the layout; a page that draws a map at once
+            (/map) can declare its own. */}
       </head>
       {/* MEH-1775: `pb-20 md:pb-0` reserved room for the BottomNav band and for
           NOTHING else, so the cookie banner — which floats in its own band
@@ -246,14 +265,13 @@ export default async function LocaleLayout({ children, params }) {
           still evaluates to exactly 5rem when the banner is absent, which is
           what the old class said — so this is a superset, not a re-spacing. */}
       <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-skip-link focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
         {/* MEH-2233: not the whole catalog — admin/dashboard/server-only
             namespaces stay out of every page's payload (lib/client-messages.js). */}
         <NextIntlClientProvider messages={rootClientMessages(await getMessages())}>
           <AuthProvider>
-            <LanguageProvider>
               <SmoothScrollProvider>
                 {/* MEH-788: global reduced-motion off-switch for ALL
                     framer-motion (FadeInSection scroll-reveals, home hero/grid,
@@ -270,7 +288,13 @@ export default async function LocaleLayout({ children, params }) {
                 {/* MEH-735: tabIndex=-1 + focus:outline-none make <main> a
                     programmatic focus target for the skip-to-content link
                     (layout.js:199) without a full-width focus ring. */}
-                <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none"><VerifyBanner />{children}</main>
+                {/* MEH-3343: min-h-screen — the footer never starts inside the
+                    first screen. While a page streams or hydrates its main is
+                    short, the footer sat in view, and when the content arrived
+                    it jumped below the fold: 1.58 CLS on a business page
+                    (phone), 0.53 on /login. MEH-2754 did the same for the
+                    route loading boundary; this covers every other stage. */}
+                <main id="main-content" tabIndex={-1} className="flex-1 min-h-screen focus:outline-none"><VerifyBanner />{children}</main>
                 <FooterSlot />
                 <BottomNav />
                 <Toaster />
@@ -284,7 +308,6 @@ export default async function LocaleLayout({ children, params }) {
                 <PrehydrationInputReplay />
                 </MotionConfig>
               </SmoothScrollProvider>
-            </LanguageProvider>
           </AuthProvider>
         </NextIntlClientProvider>
         {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}

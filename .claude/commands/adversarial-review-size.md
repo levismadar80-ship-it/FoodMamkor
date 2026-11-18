@@ -1,15 +1,15 @@
 Run adversarial review specialized for code-size drift on central components.
 
 Use this variant when the diff touches any file listed in
-`.claude/central-components.json` (13 files: `MapClient.jsx`, `MapComponent.jsx`,
-`producers/page.jsx`, `app/page.js`, `app/layout.js`, `language-context.js`,
+`.claude/central-components.json` (12 files: `MapClient.jsx`, `MapComponent.jsx`,
+`producers/page.jsx`, `app/[locale]/page.js`, `app/[locale]/layout.js`,
 `ProducerCard.jsx`, `Header.jsx`, `BottomNav.jsx`, `Footer.jsx`, `main.py`,
 `auth.py`, `config.py`).
 
 The base `/adversarial-review` FINDER doesn't reliably catch the MEH-407 class:
 4 god-files accumulated 40+ logic-risk issues before the reactive refactor.
 Round 1 shipped: `main.py` 220→50, `ProducerDetail.jsx` 900→181, `MapClient.jsx`
-885→310. Round 2 queued post-launch: `app/page.js` (~960 LOC, MEH-437),
+885→310. Round 2 queued post-launch: `app/[locale]/page.js` (~960 LOC, MEH-437),
 `backend/app/routers/producers.py` (~600 LOC w/ 16+ params, MEH-438). Even
 post-split, `MapPage` inner function in `MapClient.jsx` is still 233 LOC and
 hits the existing `max-lines-per-function: 50` warn ceiling. HANDOFF lesson:
@@ -84,9 +84,9 @@ This variant blocks at 2× the warn ceiling, leaving a tolerated 50→100 zone.
   #5 (new top-level useState in god-component), #6 (new imports on central).
   Promote to BLOCK only if **3+ WARNs cluster on the same file** (the
   god-file accretion pattern: state + imports + nesting all rising at once).
-- **INFO** — Match against MEH-407 Round 2 known-queued work (`app/page.js`
+- **INFO** — Match against MEH-407 Round 2 known-queued work (`app/[locale]/page.js`
   → MEH-437, `routers/producers.py` → MEH-438, `routers/auth.py` → MEH-440,
-  `frontend/components/ProducerDetail.jsx` already done, etc.). Cite the
+  `frontend/app/[locale]/producer/[id]/ProducerDetail.jsx` already done, etc.). Cite the
   ticket; no action — already tracked.
 
 Output: numbered list of real BLOCKs first, then WARNs, then INFO refs. Each

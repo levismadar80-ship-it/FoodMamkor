@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -16,6 +17,13 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
+import WhatsNewCard from "@/components/producer/WhatsNewCard";
+import WhatsNewRow from "@/components/producer/WhatsNewRow";
+import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
+import { useOwnerWelcome } from "@/hooks/useWhatsNew";
+import PhoneVerifyCard from "@/components/PhoneVerifyCard";
+import { useFirstMoment } from "@/hooks/useFirstMoment";
+import FirstMomentCard from "@/components/producer/FirstMomentCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -28,6 +36,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import { SwitchTrack } from "@/components/ui/Switch";
 import { copyOrThrow } from "@/lib/clipboard";
+import Input from "@/components/ui/Input";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -134,7 +143,7 @@ function StatusSupportModal({ onClose }) {
   return (
     <div
       ref={dialogRef}
-      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-modal flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-label={t("section_aria")}
@@ -327,6 +336,18 @@ export default function ProducerDashboardPage() {
     }
   };
 
+  // MEH-3200: a hook — above the early returns.
+  const welcome = useOwnerWelcome(profile?.created_at);
+  // Organizers get no moments; the counts are stored per business. Wait for
+  // the profile (or its error) so an organizer is known before anything is stored.
+  const momentsOff = !(profile || profileError) || (profile?.kind ?? user?.producer_kind) === "organizer";
+  const firstMoment = useFirstMoment(momentsOff ? null : analytics, user?.producer_id ?? profile?.id);
+  // Latch: if the top slot opened without analytics (fetch failed), a moment
+  // found after a retry waits for the next visit instead of swapping cards.
+  // State, not a ref: it is read while rendering (react-hooks/refs).
+  const [slotOpenedWithAnalytics, setSlotOpenedWithAnalytics] = useState(
+    /** @type {boolean | null} */ (null),
+  );
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -419,6 +440,13 @@ export default function ProducerDashboardPage() {
   // Review #3711 F9: fall back to /auth/me while /producers/me is loading (or
   // failed), so business-only cards never flash for an organizer.
   const isOrganizer = (profile?.kind ?? user?.producer_kind) === "organizer";
+  // MEH-3200: the top slot opens once profile (created_at), the welcome
+  // decision for it, and analytics (moment counts) are all settled.
+  const slotOpen =
+    !isOrganizer && Boolean(profile || profileError) && welcome.ready && Boolean(analytics || analyticsError);
+  if (slotOpen && slotOpenedWithAnalytics === null) setSlotOpenedWithAnalytics(Boolean(analytics));
+  // `??` covers the render that sets the latch, before the new state is read.
+  const slotMoment = (slotOpenedWithAnalytics ?? (slotOpen && Boolean(analytics))) ? firstMoment.moment : null;
 
   return (
     <div
@@ -470,6 +498,19 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-3108: «מה מחכה לך» — what is waiting for the owner, right
           under the greeting. Renders nothing when nothing is waiting. */}
+      {/* MEH-3200: a new business's one-time welcome, else the newest unseen
+          «מה חדש» release — never both. Not for an organizer (business copy). */}
+      {/* Wait for /producers/me (created_at) and the analytics (the moment
+          counts) so no card replaces another one already on screen. One card
+          in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
+      {slotOpen &&
+        (welcome.show ? (
+          <OwnerWelcomeCard onClose={welcome.dismiss} />
+        ) : slotMoment ? (
+          <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
+        ) : (
+          <WhatsNewCard />
+        ))}
       <OwnerAttentionCard attention={data?.attention} />
 
       {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
@@ -500,6 +541,18 @@ export default function ProducerDashboardPage() {
             )
           }
           onPhoneVerified={() =>
+            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+          }
+        />
+      )}
+
+      {/* Grill B8 (Sapir 14/11, «שניהם»): a live business whose WhatsApp
+          number changed is unverified until she enters the new code. The edit
+          page shows the same box under the field; this one is the reminder. */}
+      {producer.status !== "draft" && profile?.phone && profile?.phone_verified === false && (
+        <PhoneVerifyCard
+          variant="reverify"
+          onVerified={() =>
             setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
           }
         />
@@ -723,7 +776,7 @@ export default function ProducerDashboardPage() {
               <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
                 {t("availability.vacation_return_label")}
               </label>
-              <input
+              <Input inline size="sm"
                 id="vacation-until"
                 type="date"
                 value={vacationUntil}
@@ -732,7 +785,6 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
@@ -883,6 +935,7 @@ export default function ProducerDashboardPage() {
           business that got stuck had no way in (Shopify «Help», Wolt support
           chat, Google «Support» are always one tap away). Last on the page, so
           on a phone it sits right above the layout's «יציאה מהחשבון». */}
+      {!isOrganizer && (profile || profileError) && <WhatsNewRow />}
       <div
         data-testid="dashboard-help-row"
         className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"

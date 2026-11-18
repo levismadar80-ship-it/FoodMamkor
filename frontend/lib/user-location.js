@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * User location — localStorage cache + cross-component sync hook.
  *
@@ -54,7 +55,7 @@ function hasStorage() {
   }
 }
 
-export const SOURCE_GPS = "gps";
+const SOURCE_GPS = "gps";
 export const SOURCE_CITY = "city";
 
 /**
@@ -99,7 +100,7 @@ export function getUserLocation() {
  * {lat, lng, source, city} or null. Only /map needs this — it is the one
  * surface that names the active origin (MEH-2014 PR 2).
  */
-export function getUserLocationOrigin() {
+function getUserLocationOrigin() {
   return readRecord();
 }
 

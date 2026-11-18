@@ -1,5 +1,7 @@
+from collections.abc import AsyncIterator
 import asyncio
 import os
+from typing import Any
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -9,6 +11,20 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.job_heartbeat import (
+    ADMIN_PENDING_REMINDER_CRON,
+    ANALYTICS_ROLLUP_CRON,
+    FOLLOWUP_CRON,
+    GROUP_BUY_EXPIRY_CRON,
+    RESCUE_DIGEST_INTERVAL_MINUTES,
+    RETENTION_PURGE_CRON,
+    WATCHDOG_INTERVAL_MINUTES,
+    WEEKLY_OWNER_SUMMARY_CRON,
+    WEEKLY_OWNER_SUMMARY_TZ,
+    cron_monitor_config,
+    heartbeat,
+    interval_monitor_config,
+)
 
 log = structlog.get_logger("mehamakor.startup")
 
@@ -125,7 +141,7 @@ def _check_email_delivery_config(env: str, resend_api_key: str) -> str | None:
 # Everything in-process depends on it: the APScheduler jobs (MEH-539 onboarding
 # follow-ups + the auto-reply watchdog → a 2nd worker sends DUPLICATE emails),
 # the slowapi in-memory rate-limit store (per-worker → effective limit ×N),
-# the analytics metrics deque, the trending cache, and the JWKS cache. No
+# the analytics metrics deque and the JWKS cache. No
 # distributed lock coordinates workers. Railway's worker count is Sapir-domain,
 # so this is a loud boot ERROR, never a crash.
 _WORKER_COUNT_ENV_VARS = ("WEB_CONCURRENCY", "UVICORN_WORKERS")
@@ -155,7 +171,7 @@ def _check_single_replica(worker_values: dict[str, str | None]) -> str | None:
                 "duplicate APScheduler jobs (double onboarding emails + "
                 "watchdog runs), per-worker slowapi rate limits (effective "
                 f"limit ×{count}), and fragmented in-memory metrics/caches "
-                "(analytics deque, trending, JWKS). Keep the count at 1, or "
+                "(analytics deque, JWKS). Keep the count at 1, or "
                 "move these mechanisms to a shared store first."
             )
     return None
@@ -245,6 +261,8 @@ async def _init_db_background(app: FastAPI) -> None:
         app.state.alembic_head = "unknown"
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("onboarding-followups-daily", cron_monitor_config(FOLLOWUP_CRON))
 def _run_followup_job() -> None:
     """MEH-539: daily APScheduler tick. Opens a fresh DB session per run
     (the BackgroundScheduler worker thread does not share the request-scoped
@@ -263,6 +281,8 @@ def _run_followup_job() -> None:
     from app.database import SessionLocal
     from app.services.onboarding_followup import send_due_followups
     from app.services.pending_nudge import send_pending_nudges
+    from app.services.page_freshness import send_freshness_emails
+    from app.services.page_freshness_digest import send_stale_digest
 
     db = SessionLocal()
     try:
@@ -303,10 +323,53 @@ def _run_followup_job() -> None:
             # separate filterable stream from the follow-up sequence.
             capture_background_exception(exc, task="pending_nudge")
             log.error("[PENDING-NUDGE] daily run crashed", exc_info=True)
+
+        # Page freshness: the monthly "is everything still correct?" email
+        # shares the daily tick. Off until `page_freshness_enabled` is set.
+        try:
+            fresh = send_freshness_emails(db)
+            log.info("[PAGE-FRESHNESS] daily run complete counts=%s", fresh)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="page_freshness")
+            log.error("[PAGE-FRESHNESS] daily run crashed", exc_info=True)
+        # Sunday only: the admin gets the pages unconfirmed for 60+ days.
+        try:
+            listed = send_stale_digest(db)
+            log.info("[PAGE-FRESHNESS] stale digest listed=%s", listed)
+        except Exception as exc:
+            db.rollback()
+            capture_background_exception(exc, task="page_freshness_digest")
+            log.error("[PAGE-FRESHNESS] stale digest crashed", exc_info=True)
     finally:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat(
+    "admin-pending-reminder-daily", cron_monitor_config(ADMIN_PENDING_REMINDER_CRON)
+)
+def _run_admin_pending_reminder_job() -> None:
+    """MEH-3147: morning email to the admin listing businesses waiting for
+    approval 2+ business days. Fresh session per run; any exception is
+    swallowed so the scheduler thread never dies."""
+    from app.database import SessionLocal
+    from app.services.admin_pending_reminder import send_admin_pending_reminder
+
+    db = SessionLocal()
+    try:
+        listed = send_admin_pending_reminder(db)
+        log.info("[ADMIN-REMINDER] daily run complete listed=%s", listed)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="admin_pending_reminder")
+        log.error("[ADMIN-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("auto-reply-watchdog", interval_monitor_config(WATCHDOG_INTERVAL_MINUTES))
 def _run_watchdog_job() -> None:
     """MEH-509 PR2b: 5-min after-hours watchdog tick. Shares the same
     APScheduler instance as the MEH-539 followup job (one scheduler, two
@@ -336,6 +399,8 @@ def _run_watchdog_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("analytics-rollup-daily", cron_monitor_config(ANALYTICS_ROLLUP_CRON))
 def _run_analytics_rollup_job() -> None:
     """MEH-2079 chunk B2 (MEH-2283): daily APScheduler tick that rolls every
     pending Israel day of raw producer analytics into `producer_analytics_daily`
@@ -365,6 +430,8 @@ def _run_analytics_rollup_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("retention-purge-daily", cron_monitor_config(RETENTION_PURGE_CRON))
 def _run_retention_purge_job() -> None:
     """MEH-2079 chunk C (MEH-2303): daily purge of raw analytics rows past
     the 90-day window that the roll-up already owns, and alert_log rows past
@@ -387,6 +454,34 @@ def _run_retention_purge_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("group-buy-expiry-daily", cron_monitor_config(GROUP_BUY_EXPIRY_CRON))
+def _run_group_buy_expiry_job() -> None:
+    """MEH-3287: close open group buys whose deadline passed below their
+    minimum, and mail the participants. Same shape as the purge job above:
+    fresh session, own Sentry tag, exception swallowed so the scheduler thread
+    never dies. A crashed run costs nothing: the next one selects the same
+    rows again (the status change is the only stamp).
+    """
+    from app.database import SessionLocal
+    from app.services.group_buy_expiry import expire_unfunded_group_buys
+
+    db = SessionLocal()
+    try:
+        count = expire_unfunded_group_buys(db)
+        log.info("[GROUP-BUY-EXPIRY] daily run complete expired=%s", count)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="group_buy_expiry")
+        log.error("[GROUP-BUY-EXPIRY] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat(
+    "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
+)
 def _run_rescue_digest_job() -> None:
     """MEH-2756: 5-min tick that sends each due rescue offer's pickup codes to
     the business at pickup_start.
@@ -417,8 +512,234 @@ def _run_rescue_digest_job() -> None:
         db.close()
 
 
+def _send_weekly_owner_summary(now: datetime | None = None) -> None:
+    """MEH-3079: Sunday-morning weekly summary email to business owners.
+
+    `now` is passed only by the boot catch-up run: the missed fire time, so it
+    counts the same 7-day window the cron would have, not a later one.
+
+    Same shape as _run_rescue_digest_job: fresh session (the scheduler worker
+    thread cannot share request-scoped sessions), the service is
+    fail-isolated per business, and this wrapper only logs the counters and
+    reports a crash to Sentry so the scheduler thread never dies.
+    """
+    from app.database import SessionLocal
+    from app.services.weekly_owner_summary import send_weekly_summaries
+
+    db = SessionLocal()
+    try:
+        counters = send_weekly_summaries(db, now=now)
+        log.info("[WEEKLY-SUMMARY] run complete counters=%s", counters)
+    except Exception as exc:
+        capture_background_exception(exc, task="weekly_owner_summary")
+        log.error("[WEEKLY-SUMMARY] run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed Sunday run raises an issue.
+@heartbeat(
+    "weekly-owner-summary",
+    cron_monitor_config(WEEKLY_OWNER_SUMMARY_CRON, timezone=WEEKLY_OWNER_SUMMARY_TZ),
+)
+def _run_weekly_owner_summary_job() -> None:
+    """The scheduled Sunday run (MEH-3079); the catch-up calls
+    _send_weekly_owner_summary directly with the missed fire time."""
+    _send_weekly_owner_summary()
+
+
+def _register_weekly_owner_summary(scheduler: Any, now: datetime | None = None) -> bool:
+    """MEH-3079: add the weekly summary job only when its flag is on.
+
+    REUSES: the MEH-2756 rescue-digest gate in register_scheduler_jobs — merging sends nothing
+    until WEEKLY_OWNER_SUMMARY_ENABLED=true. Sunday 08:00 on the Israel clock
+    (the trigger carries the zone, so DST moves with it). max_instances=1 +
+    coalesce so a slow run cannot overlap the next. The 12h misfire grace
+    only covers a fire THIS process missed while running (a stalled worker).
+    The scheduler is in-memory, so a process that boots after 08:00 Sunday
+    has no record of that fire and its cron's next run is next Sunday; for
+    that case, a boot within 12h of the fire also adds a one-off run about a
+    minute later (`catchup_due`). The 6-day sent_at stamp and the per-row
+    claim keep a catch-up that overlaps a real run from sending twice.
+    `now` (aware) is injectable for tests. Returns whether the job was
+    registered.
+    """
+    from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.date import DateTrigger
+
+    from app.services.weekly_owner_summary import (
+        CATCHUP_DELAY,
+        CATCHUP_JOB_ID,
+        JOB_ID,
+        LATE_RUN_WINDOW,
+        catchup_due,
+        last_scheduled_fire,
+        summary_enabled,
+    )
+
+    if not summary_enabled():
+        log.info(
+            "[WEEKLY-SUMMARY] disabled (WEEKLY_OWNER_SUMMARY_ENABLED=false) — no job"
+        )
+        return False
+    scheduler.add_job(
+        _run_weekly_owner_summary_job,
+        CronTrigger.from_crontab(
+            WEEKLY_OWNER_SUMMARY_CRON, timezone=WEEKLY_OWNER_SUMMARY_TZ
+        ),
+        id=JOB_ID,
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=int(LATE_RUN_WINDOW.total_seconds()),
+    )
+    log.info("[WEEKLY-SUMMARY] job registered — Sunday 08:00 Asia/Jerusalem")
+    now = now or datetime.now(timezone.utc)
+    if catchup_due(now):
+        scheduler.add_job(
+            _send_weekly_owner_summary,
+            DateTrigger(run_date=now + CATCHUP_DELAY),
+            # Count the missed fire's window, not the boot time's.
+            kwargs={"now": last_scheduled_fire(now)},
+            id=CATCHUP_JOB_ID,
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=int(LATE_RUN_WINDOW.total_seconds()),
+        )
+        log.info("[WEEKLY-SUMMARY] booted within 12h of the fire — catch-up run added")
+    return True
+
+
+def register_scheduler_jobs(followup_scheduler: Any) -> None:
+    """Add every background job to the scheduler (not started here).
+
+    MEH-3155: extracted from lifespan so a test can build the real scheduler
+    and compare each registered trigger with the job's Sentry monitor config.
+    """
+    from apscheduler.triggers.cron import CronTrigger
+
+    followup_scheduler.add_job(
+        _run_followup_job,
+        CronTrigger.from_crontab(FOLLOWUP_CRON, timezone="UTC"),
+        id="meh_539_onboarding_followups_daily",
+        replace_existing=True,
+    )
+    # MEH-3147: admin pending-approval reminder. 05:00 UTC = 07:00/08:00
+    # Israel, before the admin's day starts. coalesce + a 3h grace: a pause
+    # over the fire time sends it late rather than skipping the day.
+    followup_scheduler.add_job(
+        _run_admin_pending_reminder_job,
+        CronTrigger.from_crontab(ADMIN_PENDING_REMINDER_CRON, timezone="UTC"),
+        id="meh_3147_admin_pending_reminder_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
+    )
+    # MEH-509 PR2b: register the after-hours watchdog on the same
+    # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-
+    # table cron does not spin until PR2c webhook receiver ships.
+    # max_instances=1 + coalesce=True defend against tick overlap if a
+    # single run ever exceeds the 5-min interval; misfire_grace_time
+    # tolerates short pauses (e.g. brief DB hiccup) without skipping.
+    if settings.watchdog_enabled:
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        followup_scheduler.add_job(
+            _run_watchdog_job,
+            IntervalTrigger(minutes=WATCHDOG_INTERVAL_MINUTES),
+            id="meh_509_pr2b_after_hours_watchdog",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+        log.info(
+            "[WATCHDOG] job registered — every %d minutes", WATCHDOG_INTERVAL_MINUTES
+        )
+    else:
+        log.info("[WATCHDOG] disabled (WATCHDOG_ENABLED=false) — PR2c gate")
+    # MEH-1828's weekly full_this_week reset was removed with the state itself
+    # (MEH-2782): nothing can hold full_this_week any more.
+    # MEH-2079 chunk B2 (MEH-2283): daily analytics roll-up. 01:30 UTC is
+    # 03:30/04:30 Israel — safely past Israel midnight all year, so "yesterday"
+    # (the last day the job may roll) is a complete Israel day by the time it
+    # fires. Israel-day semantics live in the service; the trigger only has
+    # to be late enough. coalesce + a 6h grace: a pause spanning the fire
+    # time runs it once, late, instead of skipping — and a fully missed day
+    # costs nothing, since the next run recomputes the range from the
+    # watermark and rolls both days.
+    followup_scheduler.add_job(
+        _run_analytics_rollup_job,
+        CronTrigger.from_crontab(ANALYTICS_ROLLUP_CRON, timezone="UTC"),
+        id="meh_2283_analytics_rollup_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+    # MEH-2303 (MEH-2079 chunk C): daily retention purge, one hour after the
+    # roll-up so a day rolled at 01:30 is already owned by the aggregate. The
+    # service only deletes days <= the watermark, so a late or failed roll-up
+    # makes this a no-op for those days rather than a loss.
+    followup_scheduler.add_job(
+        _run_retention_purge_job,
+        CronTrigger.from_crontab(RETENTION_PURGE_CRON, timezone="UTC"),
+        id="meh_2303_retention_purge_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+    # MEH-3287: daily close of open group buys past their deadline. coalesce +
+    # a 6h grace: a pause over the fire time runs it late rather than skipping.
+    followup_scheduler.add_job(
+        _run_group_buy_expiry_job,
+        CronTrigger.from_crontab(GROUP_BUY_EXPIRY_CRON, timezone="UTC"),
+        id="meh_3287_group_buy_expiry_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+    # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
+    # AND the digest gate are both on — the digest cannot work before Meta
+    # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
+    # False and merging the feature sends nothing. Interval rather than cron
+    # because pickup_start is per-offer; see _run_rescue_digest_job. The
+    # watchdog's guards, for the same reason it has them: max_instances=1 +
+    # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
+    # a brief pause runs it late instead of skipping a window.
+    from app.services.rescue_digest import digest_enabled as _digest_enabled
+
+    if settings.rescue_bags_enabled and _digest_enabled():
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        followup_scheduler.add_job(
+            _run_rescue_digest_job,
+            IntervalTrigger(minutes=RESCUE_DIGEST_INTERVAL_MINUTES),
+            id="meh_2756_rescue_codes_digest",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+        log.info(
+            "[RESCUE-DIGEST] job registered — every %d minutes",
+            RESCUE_DIGEST_INTERVAL_MINUTES,
+        )
+    else:
+        log.info(
+            "[RESCUE-DIGEST] disabled (pilot=%s, digest=%s) — no job registered",
+            settings.rescue_bags_enabled,
+            _digest_enabled(),
+        )
+    # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
+    _register_weekly_owner_summary(followup_scheduler)
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("=" * 60)
     log.info("mehamakor backend starting up")
     log.info("db_url        = %s", _redacted_db_url())
@@ -493,104 +814,19 @@ async def lifespan(app: FastAPI):
     # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
     # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
     from apscheduler.schedulers.background import BackgroundScheduler
-    from apscheduler.triggers.cron import CronTrigger
 
     followup_scheduler = BackgroundScheduler(timezone="UTC")
-    followup_scheduler.add_job(
-        _run_followup_job,
-        CronTrigger(hour=10, minute=0),
-        id="meh_539_onboarding_followups_daily",
-        replace_existing=True,
-    )
-    # MEH-509 PR2b: register the after-hours watchdog on the same
-    # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-
-    # table cron does not spin until PR2c webhook receiver ships.
-    # max_instances=1 + coalesce=True defend against tick overlap if a
-    # single run ever exceeds the 5-min interval; misfire_grace_time
-    # tolerates short pauses (e.g. brief DB hiccup) without skipping.
-    if settings.watchdog_enabled:
-        from apscheduler.triggers.interval import IntervalTrigger
-
-        followup_scheduler.add_job(
-            _run_watchdog_job,
-            IntervalTrigger(minutes=5),
-            id="meh_509_pr2b_after_hours_watchdog",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60,
-        )
-        log.info("[WATCHDOG] job registered — every 5 minutes")
-    else:
-        log.info("[WATCHDOG] disabled (WATCHDOG_ENABLED=false) — PR2c gate")
-    # MEH-1828's weekly full_this_week reset was removed with the state itself
-    # (MEH-2782): nothing can hold full_this_week any more.
-    # MEH-2079 chunk B2 (MEH-2283): daily analytics roll-up. 01:30 UTC is
-    # 03:30/04:30 Israel — safely past Israel midnight all year, so "yesterday"
-    # (the last day the job may roll) is a complete Israel day by the time it
-    # fires. Israel-day semantics live in the service; the trigger only has
-    # to be late enough. coalesce + a 6h grace: a pause spanning the fire
-    # time runs it once, late, instead of skipping — and a fully missed day
-    # costs nothing, since the next run recomputes the range from the
-    # watermark and rolls both days.
-    followup_scheduler.add_job(
-        _run_analytics_rollup_job,
-        CronTrigger(hour=1, minute=30),
-        id="meh_2283_analytics_rollup_daily",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=6 * 3600,
-    )
-    # MEH-2303 (MEH-2079 chunk C): daily retention purge, one hour after the
-    # roll-up so a day rolled at 01:30 is already owned by the aggregate. The
-    # service only deletes days <= the watermark, so a late or failed roll-up
-    # makes this a no-op for those days rather than a loss.
-    followup_scheduler.add_job(
-        _run_retention_purge_job,
-        CronTrigger(hour=2, minute=30),
-        id="meh_2303_retention_purge_daily",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=6 * 3600,
-    )
-    # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
-    # AND the digest gate are both on — the digest cannot work before Meta
-    # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
-    # False and merging the feature sends nothing. Interval rather than cron
-    # because pickup_start is per-offer; see _run_rescue_digest_job. The
-    # watchdog's guards, for the same reason it has them: max_instances=1 +
-    # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
-    # a brief pause runs it late instead of skipping a window.
-    from app.services.rescue_digest import digest_enabled as _digest_enabled
-
-    if settings.rescue_bags_enabled and _digest_enabled():
-        from apscheduler.triggers.interval import IntervalTrigger
-
-        followup_scheduler.add_job(
-            _run_rescue_digest_job,
-            IntervalTrigger(minutes=5),
-            id="meh_2756_rescue_codes_digest",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60,
-        )
-        log.info("[RESCUE-DIGEST] job registered — every 5 minutes")
-    else:
-        log.info(
-            "[RESCUE-DIGEST] disabled (pilot=%s, digest=%s) — no job registered",
-            settings.rescue_bags_enabled,
-            _digest_enabled(),
-        )
+    register_scheduler_jobs(followup_scheduler)
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
+    # MEH-3155: read from the schedule constants (the weekly full-week expiry
+    # this line used to list was removed in MEH-2782).
     log.info(
-        "[FOLLOWUP] scheduler started — daily 10:00 UTC"
-        " + weekly full-week expiry Sun 00:10 Asia/Jerusalem (MEH-1828)"
-        " + daily analytics roll-up 01:30 UTC (MEH-2283)"
-        " + daily retention purge 02:30 UTC (MEH-2303)"
+        "[FOLLOWUP] scheduler started (UTC crontabs) — follow-ups %r"
+        " + analytics roll-up %r (MEH-2283) + retention purge %r (MEH-2303)",
+        FOLLOWUP_CRON,
+        ANALYTICS_ROLLUP_CRON,
+        RETENTION_PURGE_CRON,
     )
 
     yield

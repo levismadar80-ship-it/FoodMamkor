@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   guide-business-story
  * Purpose:  /about/for-businesses/guides/business-story — Guide 1 of 3

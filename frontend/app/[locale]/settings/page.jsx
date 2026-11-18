@@ -1,26 +1,25 @@
+// @ts-check
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import Image from "next/image";
 import {
   UserCircle,
   Lock,
-  Eye,
-  EyeSlash,
   Camera,
   CheckCircle,
-  HourglassSimple,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { detailToMessage } from "@/lib/errors";
 import { useUserCity } from "@/lib/use-user-city";
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
+import PasswordField from "@/components/ui/PasswordField";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
@@ -29,6 +28,7 @@ import { loginHrefBackHere } from "@/lib/safe-redirect";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Avatar from "@/components/ui/Avatar";
 import { SkeletonBlock } from "@/components/Skeleton";
+import AccountDeleteCard from "@/components/AccountDeleteCard"; // MEH-3248
 import ButtonSpinner from "@/components/ButtonSpinner";
 
 function SettingsLoadingFallback() {
@@ -291,7 +291,7 @@ export function ProfileTab() {
       e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setError(t("upload_size_error"));
       e.target.value = "";
       return;
@@ -377,14 +377,13 @@ export function ProfileTab() {
           </p>
         </div>
         <div>
-          <label htmlFor="profile-email" className="block text-sm font-medium mb-1">{t("field_email_label")}</label>
-          <input
+          <Input
             id="profile-email"
             type="email"
+            label={t("field_email_label")}
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-sm px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed focus-ring"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">
@@ -453,7 +452,7 @@ function SecurityTab() {
     <div className="space-y-6">
       <PasswordChangeCard isOAuth={isOAuth} />
       <LogoutAllDevicesCard />
-      <DangerZoneCard />
+      <AccountDeleteCard />
     </div>
   );
 }
@@ -469,8 +468,6 @@ function PasswordChangeCard({ isOAuth }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [nextOk, setNextOk] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -540,36 +537,15 @@ function PasswordChangeCard({ isOAuth }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Current password */}
-        <div>
-          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">
-            {t("current_label")}{" "}
-            <span className="text-error" aria-hidden="true">
-              *
-            </span>
-          </label>
-          <div className="relative">
-            <input
-              id="sec-current"
-              type={showCurrent ? "text" : "password"}
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              required
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-              className="w-full border border-border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
-              dir="ltr"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrent((v) => !v)}
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
-              aria-pressed={showCurrent}
-            >
-              {showCurrent ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-            </button>
-          </div>
-        </div>
+        <PasswordField
+          id="sec-current"
+          label={t("current_label")}
+          required
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          showLabel={t("eye_show_current")}
+          hideLabel={t("eye_hide_current")}
+        />
 
         {/* New password — MEH-306: PasswordInput owns input + eye toggle
             + live policy preview. showCurrentPasswordReuse renders a
@@ -596,35 +572,16 @@ function PasswordChangeCard({ isOAuth }) {
 
         {/* Confirm password */}
         <div>
-          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">
-            {t("confirm_label")}{" "}
-            <span className="text-error" aria-hidden="true">
-              *
-            </span>
-          </label>
-          <div className="relative">
-            <input
-              id="sec-confirm"
-              type={showConfirm ? "text" : "password"}
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              aria-invalid={mismatch || undefined}
-              // rtl-ok
-              className={`w-full border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition ${mismatch ? "border-danger-400" : "border-border"}`}
-              dir="ltr"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirm((v) => !v)}
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
-              aria-pressed={showConfirm}
-            >
-              {showConfirm ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-            </button>
-          </div>
+          <PasswordField
+            id="sec-confirm"
+            label={t("confirm_label")}
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            invalid={mismatch}
+            showLabel={t("eye_show_confirm")}
+            hideLabel={t("eye_hide_confirm")}
+          />
           {mismatch && (
             <InlineMessage size="xs" className="mt-1 text-right">{t("mismatch_error")}</InlineMessage>
           )}
@@ -713,113 +670,6 @@ function LogoutAllDevicesCard() {
           </div>
           {error && <InlineMessage size="xs">{error}</InlineMessage>}
         </div>
-      )}
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// מחיקת חשבון
-// ---------------------------------------------------------------------------
-
-function DangerZoneCard() {
-  const { user, deleteAccount } = useAuth();
-  const router = useRouter();
-  // MEH-475 S2-c: card-scoped + shared-common translators.
-  const t = useTranslations("settings.security.danger_zone");
-  const tCommon = useTranslations("settings.security.common");
-  const [phase, setPhase] = useState("idle"); // idle | confirm | grace
-  const [emailInput, setEmailInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const emailMatch = emailInput.trim().toLowerCase() === (user.email || "").toLowerCase();
-
-  const handleDelete = async (e) => {
-    e.preventDefault();
-    if (!emailMatch) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await deleteAccount(); // clears token + user state via auth context
-      setPhase("grace");
-    } catch (err) {
-      setError(detailToMessage(err?.response?.data?.detail) || tCommon("error_retry"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (phase === "grace") {
-    return (
-      <section className="bg-surface border border-danger-200 rounded-lg p-6 text-center space-y-3">
-        {/* MEH-990: raw ⏳ emoji → Phosphor HourglassSimple (grace/waiting state) */}
-        <HourglassSimple size={32} weight="regular" aria-hidden="true" className="text-fg-muted" />
-        <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
-        <p className="text-sm text-fg-muted">
-          {t("grace_body")}
-        </p>
-        <button
-          type="button"
-          onClick={() => router.push("/login")}
-          className="mt-2 text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
-        >
-          {t("back_to_login")}
-        </button>
-      </section>
-    );
-  }
-
-  return (
-    <section className="bg-surface border border-danger-200 rounded-lg p-6">
-      <h2 className="font-semibold text-danger-700 mb-1">{t("heading")}</h2>
-      <p className="text-sm text-fg-muted mb-4">
-        {t("body")}
-      </p>
-
-      {phase === "idle" && (
-        <button
-          type="button"
-          onClick={() => setPhase("confirm")}
-          className="border border-danger-400 text-danger-600 px-5 py-2 rounded-md text-sm font-medium hover:bg-danger-50 transition"
-        >
-          {t("delete_cta")}
-        </button>
-      )}
-
-      {phase === "confirm" && (
-        <form onSubmit={handleDelete} className="space-y-3">
-          <label htmlFor="danger-email" className="block text-sm font-medium text-danger-700">
-            {t("confirm_email_label")}
-          </label>
-          <input
-            id="danger-email"
-            type="email"
-            value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
-            placeholder={user.email || ""}
-            className="w-full border border-danger-300 rounded-sm px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-400/40 transition"
-            dir="ltr"
-            autoComplete="off"
-          />
-          {error && <InlineMessage size="xs">{error}</InlineMessage>}
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={!emailMatch || loading}
-              variant="danger" size="sm"
-            >
-              {loading ? t("submit_deleting") : t("submit_cta")}
-            </Button>
-            <button
-              type="button"
-              onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
-              className="px-5 py-2 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
-            >
-              {tCommon("cancel")}
-            </button>
-          </div>
-        </form>
       )}
     </section>
   );

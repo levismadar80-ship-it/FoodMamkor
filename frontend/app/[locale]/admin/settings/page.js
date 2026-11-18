@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable max-lines-per-function, complexity, security/detect-object-injection */
 "use client";
 

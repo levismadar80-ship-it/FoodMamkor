@@ -79,9 +79,10 @@ timestamp built from the UTC clock is green at most hours and red at one.
   not only at the hour the suite happens to run.
 - Review question: what does this assertion read at 21:30 UTC on the Monday
   after the clock change — late October, and late March?
-- `scripts/checks/test-clock-guard.sh` (warn-only, MEH-2382) prints `WARNING`
-  for any `date.today()` left in `tests/`; `guard-ok: <reason>` within ±1 line
-  is the escape hatch. It was born with zero findings — a WARNING is a new one.
+- `scripts/checks/test-clock-guard.sh` (blocking since MEH-3160; warn-only
+  before, MEH-2382) fails on any `date.today()` in `tests/`; `guard-ok:
+  <reason>` within ±1 line is the escape hatch. `israel-clock-guard.sh` does
+  the same for a private Israel formatter in `frontend/`.
 
 ---
 
@@ -192,11 +193,21 @@ Eight instances in one week:
 
 Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
 the PR. The independent pass is a **fresh reviewer subagent** given the diff and
-the card's acceptance_criteria; its findings are fixed or answered in the PR. The
+the card's acceptance_criteria; its findings are fixed or answered in the PR. Its
+brief always asks one more question: which docs describe what this diff changed
+(rule 11), and were they updated in it (MEH-3192 — no guard can see this). The
 `claude[bot]` CI review is off since 08/11 (Sapir, until MEH-569) — don't wait for
 its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
 the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a
 web-search CVE check ([security.md](./security.md)).
+
+**RED-tier PRs: the fresh reviewer runs on Fable (Sapir 15/11, MEH-3271).** For a
+RED-tier PR (auth, schema/Alembic, security, central components, prod — ADR-016)
+the rule-5a reviewer subagent is started with `model: "fable"`. If Fable is
+refused or its usage is exhausted, run the same reviewer on Opus and say so in
+the PR body — never skip the review. YELLOW/GREEN keep the default reviewer.
+Measured cost (14/11): ~120k tokens for a small PR, ~165–215k for a whole area;
+on 14/11 every Fable pass found a bug the earlier passes missed.
 
 **Round cap (MEH-2334):** if a 3rd adversarial round on one PR still produces new
 findings, stop the fix loop and hand Sapir the remaining findings as one list.
@@ -230,8 +241,9 @@ run adversarial even if the build fails.
 `protect-staging` (ruleset 15240090) requires exactly two aggregators:
 `CI gate` and `Deploy gate`. Named jobs skip on docs/config-only diffs and a
 skipped leg still aggregates to success — docs-only PRs merge with no override
-and **don't poll E2E**. `Playwright E2E` runs on a PR only once it carries the
-`run-e2e` label (MEH-2779; staging pushes always) and carries no vote until
+and **don't poll E2E**. `Playwright E2E` runs on a PR whose diff touches the
+frontend or backend paths, or that carries the `run-e2e` label (MEH-2956 —
+until then label-only, MEH-2779; staging pushes always), and carries no vote until
 Sapir applies `docs/ci/e2e-gate.patch.md` and adds the context to the ruleset
 (both are hers). So with auto-merge armed a PR lands on the two gates
 alone — an instruction like "wait for N green E2E runs" is enforced only by
@@ -266,6 +278,26 @@ Without it: `ERR_CONNECTION_CLOSED`/`RESET`, which reads like an outage.
 process.env.VERCEL_AUTOMATION_BYPASS_SECRET, "x-vercel-set-bypass-cookie":
 "true" }`. Control: `/he` → 200 with them, 302 → `vercel.com/sso-api` without.
 Never write the secret to a file, commit, PR body or log.
+
+### 3. Log in as a seeded demo account — a screen behind login is checked, not skipped (MEH-3140)
+
+Staging carries three QA users, and their passwords are in every session's env:
+
+| Role | Account | Password env var |
+|---|---|---|
+| business owner (`/producer/dashboard`) | `demo-owner@example.com` | `DEMO_OWNER_PASSWORD` |
+| consumer | `demo-consumer@example.com` | `DEMO_CONSUMER_PASSWORD` |
+| admin (`/admin`) | `demo-admin@example.com` | `DEMO_ADMIN_PASSWORD` |
+
+Log in inside the same Playwright context (fill `/login`, or POST
+`/api/auth/login` as `frontend/e2e/global-setup.ts` does); a token fetched with
+curl fails the fingerprint check. `/auth/login` is 5/minute per IP, plus 10 failed attempts per address in 15 minutes (MEH-3372) — one login
+per role per run. Never write "I could not see the dashboard / admin": check it
+on the demo account, or say which step failed. If a login is refused, that is a
+finding to report (the E2E run logs in with the same three on every staging
+push). Staging only — the seed refuses production. Details:
+[docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) «Staging QA auth fixtures».
+`DemoAccountsRuleSync.test.js` keeps this table equal to `global-setup.ts`.
 
 ### Corollary — a Railway `000` from the sandbox is NOT an outage
 

@@ -1,6 +1,6 @@
 # Claude project instructions — the source Sapir pastes from
 
-**Last reviewed:** 2026-10-26 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
+**Last reviewed:** 2026-11-18 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
 
 The block below is the text of the Claude project's instructions. **Edit it here,
 in a PR, then paste it into the project.** Never edit the pasted copy first:
@@ -41,9 +41,11 @@ written for the old claude.ai project).
 - תבניות: docs/templates/. לפני issue חדש — חיפוש כפילויות ב-Linear.
 
 LOCK (שינוי רק ב-ADR חדש)
-- מגזין, לא marketplace. אין עמלות עסקה; דף בסיסי חינם לתמיד;
-  פרימיום = כלים בלבד, לעולם לא דירוג (ADR-027, ADR-030).
+- מגזין, לא marketplace. דף בסיסי חינם; מחירון גלוי, גבייה רק אחרי סף תוצאות;
+  מותרת עמלה על הזמנות; כסף לעולם לא קונה דירוג, תג או אימות (ADR-042).
 - אישור ידני לכל בית עסק.
+- מי מצטרף (ADR-040): לייצר או לגדל בעצמו זו העדפה, לא תנאי. מי שמוכר רק
+  מוצרים של אחרים (חנות, מעדנייה, מסעדה) — מקרה לגופו, באישורי.
 - רישוי דו-שכבתי (ADR-022): מאומת / מוצהר. הרישיון קובע תג, לא כניסה.
   בישול ביתי ללא רישיון נדרש נשאר בחוץ.
 - אסור בשיווק: «שכנות מבשלות מהבית» / «אוכל ביתי» / «מהמטבח של השכן».
@@ -61,4 +63,6 @@ LOCK (שינוי רק ב-ADR חדש)
 - פיצ'ר UI חדש — מחקר מיקום לפני קוד (workflow.md כלל 37); אני בוחרת מיקום.
 - נתקעת אחרי 2 ניסיונות — עוצרת ומתארת. כל טענה על קוד עם file:line.
 - אישור ממני: «go» / «מאשרת» / «כן».
+- אין לי רואה חשבון. שאלות מס וחוק בודקים מול מקורות רשמיים ומציינים מה לא אומת;
+  לא משאירים לי «לשאול רואה חשבון».
 ```

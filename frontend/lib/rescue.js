@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   rescue
  * Purpose:  The one place the rescue-bags pilot's flag, its fetches and its
@@ -87,6 +88,7 @@ export function israelTime(iso) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    // guard-ok: formats one instant as HH:MM; derives no "today" or "open now".
     timeZone: "Asia/Jerusalem",
   }).format(d);
 }
@@ -115,6 +117,8 @@ export class RescueShapeError extends Error {
  * show an error for a feature that is simply not on yet. Anything else —
  * network, 5xx, or a payload that fails the schema — throws, so the caller
  * shows its own failure state instead of an empty list.
+ *
+ * @param {{ city?: string, lat?: number, lng?: number }} [where]
  */
 export async function fetchOffers({ city, lat, lng } = {}) {
   const params = {};

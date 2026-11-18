@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -50,6 +51,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 
 const HIBP_DEBOUNCE_MS = 500;
 
+/** @param {{ name?: string, id?: string, value?: string, onChange?: (e: import("react").ChangeEvent<HTMLInputElement>) => void, showCurrentPasswordReuse?: boolean, placeholder?: string, ariaLabel?: string, required?: boolean, autoComplete?: string, onValidityChange?: (valid: boolean) => void, testId?: string }} props */
 export default function PasswordInput({
   name = "password",
   id,
@@ -156,7 +158,7 @@ export default function PasswordInput({
           required={required}
           autoComplete={autoComplete}
           dir="ltr"
-          className="w-full min-h-touch border border-border rounded-sm pr-12 pl-3 py-2.5 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary transition" // rtl-ok: pr-12 reserves the dir="ltr" eye toggle (MEH-2554 — pr-11 let the 44px toggle sit on the text)
+          className="w-full min-h-touch border border-border rounded-sm bg-surface-card text-text pr-12 pl-3 py-2.5 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary transition" // rtl-ok: pr-12 reserves the dir="ltr" eye toggle (MEH-2554 — pr-11 let the 44px toggle sit on the text)
         />
         <button
           type="button"

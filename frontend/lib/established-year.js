@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   established-year
  * Purpose:  Shared client-side bounds for the producer "שנת הקמה"

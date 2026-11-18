@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -124,6 +125,7 @@ function ddmm(at, locale) {
   return formatEventDate(at.toISOString(), locale, {
     day: "2-digit",
     month: "2-digit",
+    // guard-ok: a timeZone option on the shared formatter, not a private one.
     timeZone: "Asia/Jerusalem",
   });
 }
@@ -444,6 +446,7 @@ function DateTile({ at, locale }) {
   const part = (options) =>
     formatEventDate(at.toISOString(), locale, {
       ...options,
+      // guard-ok: a timeZone option on the shared formatter, not a private one.
       timeZone: "Asia/Jerusalem",
     });
   return (
@@ -705,6 +708,7 @@ export default function HomeWhatsOn() {
   const weekday = (entry) =>
     formatEventDate(entry.at.toISOString(), locale, {
       weekday: "long",
+      // guard-ok: a timeZone option on the shared formatter, not a private one.
       timeZone: "Asia/Jerusalem",
     });
   const withTime = (day, time) => (

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared validators for form inputs across the site.
  * Used in /register, /register/producer, and anywhere phone/password
@@ -40,7 +41,9 @@ export const PASSWORD_MIN_LENGTH = 12;
 export const passwordRules = [
   {
     id: "len",
-    label: `לפחות ${PASSWORD_MIN_LENGTH} תווים`,
+    // MEH-3170: copy is forms.password.min_length in messages/*.json.
+    labelKey: "min_length",
+    labelValues: { min: PASSWORD_MIN_LENGTH },
     check: (p) => (p || "").length >= PASSWORD_MIN_LENGTH,
   },
 ];

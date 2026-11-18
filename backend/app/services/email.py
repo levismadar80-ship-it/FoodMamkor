@@ -25,10 +25,17 @@ separate product decision (MEH-1613 §7), deliberately not taken here.
 
 from __future__ import annotations
 
+from html import escape
+from typing import Any
+
 import logging
 
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.outbound_guard import (
+    REDIRECT_BODY_PREFIX,
+    route_email,
+)
 from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
@@ -137,6 +144,38 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
         pass
 
 
+def _route_outside_production(
+    to: str, subject: str, reply_to: str | None, body: str, html: str | None
+) -> tuple[str, str, str | None, str, str | None] | None:
+    """MEH-3402: decided by the environment, not by `is_test` on a row. A staff
+    address (or its +alias) goes through; any other recipient is redirected to
+    ADMIN_EMAIL, the masked recipient in the subject and the full one in the
+    body. Production unchanged.
+    None = not sent (outside production with no ADMIN_EMAIL, or the guard
+    itself failed — fail CLOSED, and never raise: send_email is fail-open)."""
+    try:
+        route = route_email(to, subject, reply_to)
+    except Exception as exc:  # noqa: BLE001 — never raise out of send_email
+        _report(exc, to=to, subject=subject, stage="outbound-guard")
+        return None
+    if not route.redirected:
+        return to, subject, reply_to, body, html
+    if not route.to:
+        logger.warning(
+            "[EMAIL] NOT SENT outside production: %s is not a staff address "
+            "and ADMIN_EMAIL is unset (subject=%r)",
+            _mask(to),
+            subject[:80],
+        )
+        return None
+    logger.info("[EMAIL] Redirected outside production: %s → ADMIN_EMAIL", _mask(to))
+    # The full original recipient goes in the BODY only (never logged).
+    note = REDIRECT_BODY_PREFIX.format(to=route.original_to)
+    if html:
+        html = f'<p dir="rtl">{escape(note.strip())}</p>{html}'
+    return route.to, route.subject, route.reply_to, note + body, html
+
+
 def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     to: str,
     subject: str,
@@ -160,10 +199,14 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
 
     MEH-2952: `test_cause=True` means the send was caused by a test business
     or a test user (`producers.is_test` / `users.is_test`). Nothing is sent —
-    staging and production alike, no allowlist — and one INFO line records
+    staging and production alike — and one INFO line records
     the drop. Checked FIRST, before the recipient/key checks and before any
     API call. Defaults to False so every caller that does not pass it is
     unchanged.
+
+    MEH-3402 is a SEPARATE, environment-level layer: outside production a
+    recipient that is not a staff address is redirected to ADMIN_EMAIL
+    (services/outbound_guard.py), whatever `test_cause` says.
     """
     if test_cause:
         logger.info(
@@ -216,10 +259,17 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     if _is_reserved_domain(to):
         logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
         return
+
+    # MEH-3402: outside production a real person never receives mail.
+    # DO NOT move this below the Resend call or make it opt-in per caller.
+    routed = _route_outside_production(to, subject, reply_to, body, html)
+    if routed is None:
+        return
+    to, subject, reply_to, body, html = routed
     try:
         # MEH-2886 chunk 4: key + 10 s HTTP timeout (the SDK default is 30 s).
         resend = configure_resend(settings.resend_api_key)
-        params: dict = {
+        params: dict[str, Any] = {
             "from": settings.email_from_address,
             "to": to,
             "subject": subject,

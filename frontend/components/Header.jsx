@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import Image from "next/image";
@@ -20,7 +21,7 @@ import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
-import { hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
+import { HUB_GROUPS, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -41,7 +42,13 @@ import Avatar from "@/components/ui/Avatar";
  * __tests__/NavRegistryParity.test.jsx compares the rendered link set against
  * the registry for every auth state.
  */
-const HEADER_NAV_ORDER = ["home", "map", "whatsOn", "about"];
+// MEH-3125: «הזדמנויות» sits right after «אירועים», before «אודות».
+const HEADER_NAV_ORDER = ["home", "map", "whatsOn", "opportunities", "about"];
+// MEH-3125: which hub group each gated link opens (lib/hub-landing.js).
+const HUB_GROUP_BY_GATE = {
+  "listing-supply": HUB_GROUPS.whatsOn,
+  "opportunity-supply": HUB_GROUPS.opportunities,
+};
 const HEADER_MENU_ORDER = [
   "producerDashboard",
   "producerPublicPage",
@@ -65,7 +72,7 @@ function orderedForSurface(surface, state, order) {
  * auth-aware behavior the bar carried (MEH-39 UserMenu, MEH-669 CTA role
  * gate, MEH-475 LanguageToggle, "/" search shortcut). The email-verify
  * banner was extracted to VerifyBanner.jsx (MEH-731) so it no longer grows
- * the floating band. usePathname comes from @/i18n/navigation (locale-
+ * the floating band. usePathname comes from `@/i18n/navigation` (locale-
  * stripped: "/" on /he and /en) — next/navigation's is locale-prefixed and
  * broke isHomepage/isActive on the homepage (MEH-731).
  *
@@ -202,7 +209,8 @@ export default function Header() {
       if (e.key !== "/") return;
       const tag = document.activeElement?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select") return;
-      if (document.activeElement?.isContentEditable) return;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active.isContentEditable) return;
       e.preventDefault();
       router.push("/producers?focus=1");
     };
@@ -235,7 +243,13 @@ export default function Header() {
   const showExperiences = useExperiencesNavGate();
   const showGroupBuys = useHubNavGate("groupBuys");
   const showRescue = useHubNavGate("rescue");
-  const showWhatsOn = showEvents || showExperiences || showGroupBuys || showRescue;
+  // MEH-3125: one gate per group — «אירועים» answers to events + experiences,
+  // «הזדמנויות» to group buys + rescue bags.
+  const supply = { events: showEvents, experiences: showExperiences, groupBuys: showGroupBuys, rescue: showRescue };
+  const gateOpen = {
+    "listing-supply": showEvents || showExperiences,
+    "opportunity-supply": showGroupBuys || showRescue,
+  };
   const NAV_ITEMS = orderedForSurface(
     "header",
     { signedIn: !!user, role: user?.role ?? null },
@@ -243,7 +257,7 @@ export default function Header() {
   )
     // The data gate stays here: the registry records THAT the item is gated on
     // supply, not what the current supply is.
-    .filter(({ item }) => item.dataGate !== "listing-supply" || showWhatsOn)
+    .filter(({ item }) => !(item.dataGate in HUB_GROUP_BY_GATE) || gateOpen[item.dataGate])
     .map(({ item, surface }) => ({
       // Stable across a href change: the hub link's href can move after mount
       // as the four gates answer, and a key that moved with it would remount
@@ -252,13 +266,8 @@ export default function Header() {
       // MEH-2975: the hub link lands on the first tab that has something in
       // it, not on an empty «אירועים» when the supply is elsewhere.
       href:
-        item.dataGate === "listing-supply"
-          ? hubLandingHref({
-              events: showEvents,
-              experiences: showExperiences,
-              groupBuys: showGroupBuys,
-              rescue: showRescue,
-            })
+        item.dataGate in HUB_GROUP_BY_GATE
+          ? hubLandingHref(supply, HUB_GROUP_BY_GATE[item.dataGate])
           : item.href,
       label: t(surface.labelKey),
     }));
@@ -291,7 +300,10 @@ export default function Header() {
     // MEH-2975: the hub link's href is whichever hub route has supply, and the
     // hub is four routes under one tab row — so it is current on all four, as
     // on the pill (BottomNav.jsx), not only on the one its href names.
-    if (isHubHref(href)) return isHubPath(pathname);
+    // MEH-3125: per group — on /rescue «הזדמנויות» is current, not «אירועים».
+    for (const group of Object.values(HUB_GROUPS)) {
+      if (isHubHref(href, group)) return isHubPath(pathname, group);
+    }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -318,7 +330,7 @@ export default function Header() {
           text-fg-muted on the body's cream — the prior surface-aware cream ink
           was a holdover from when the strip sat over the hero photo, and
           rendered cream-on-cream once the strip moved onto the body bg
-          (1.00:1 AA fail). #5C584F on #F5F0E8 = 7.66:1 AA pass; the black
+          (1.00:1 AA fail). fg-muted 5C584F on cream F5F0E8 = 7.66:1 AA pass; the black
           text-shadow halo went with it (it only existed to rescue the cream
           ink). Desktop-only via `hidden md:flex`; copy + gold SealCheck kept. */}
       {showStrip && (
@@ -365,7 +377,7 @@ export default function Header() {
         // = isHomepage && scrollY < 60). Past the hero the same bleed-through
         // happened on `/` — hero stats and the CTA button showed under the
         // iOS status bar beside the pill — so the cream band applies there too.
-        className={`sticky top-0 z-[1050] pointer-events-none${transparent ? "" : " bg-background"}`}
+        className={`sticky top-0 z-header pointer-events-none${transparent ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
@@ -457,7 +469,12 @@ export default function Header() {
               switching (was gap-11 at rest → gap-9 at y=60) per Sapir 09/07 +
               NAV-01. Fixed compact geometry, scroll-independent, matches the
               frozen end-cap/gap above. start of the row (visual right in RTL). */}
-          <div className="flex items-center gap-9">
+          {/* MEH-3125: five links (with «הזדמנויות») outgrow 92vw at 768px with
+              150% text (and 1024 at 200%) — «אודות» landed at x -172. The lead
+              group and the links wrap at md+, like the pill itself (MEH-2522),
+              and the link gap is gap-6 below lg so 768 at 100% stays one row.
+              lg+ geometry (gap-9) is unchanged. */}
+          <div className="flex md:flex-wrap md:min-w-0 items-center gap-9 md:gap-y-1">
             <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
@@ -477,7 +494,7 @@ export default function Header() {
             </Link>
 
             {/* NAV LINKS — desktop only, part of the lead group. */}
-            <div className="hidden md:flex items-center gap-9">
+            <div className="hidden md:flex md:flex-wrap items-center gap-x-6 lg:gap-x-9 gap-y-1">
               {NAV_ITEMS.map((item) => (
                 <NavLink
                   key={item.id}
@@ -815,7 +832,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           role="menu"
           ref={menuListRef}
           onKeyDown={onMenuKeyDown}
-          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-lg py-1 z-[1001]"
+          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-lg py-1 z-user-menu"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item, i) => (

@@ -14,7 +14,7 @@
 # History:  MEH-1393 (creation; surfaced by PR #1990's review on MEH-1335).
 #
 # THE INVARIANTS (verified against the code, not the ticket's assumption)
-#   1. OWNER_BIO_MAX (cards.jsx) == the owner_bio sanitize cap (schemas.py).
+#   1. OWNER_BIO_MAX (cards/OwnerStoryCard.jsx) == the owner_bio sanitize cap (schemas.py).
 #      A true mirror: the UI counter and the server truncation must agree.
 #   2. DESC_MAX     <= every description sanitize cap in schemas.py.
 #   3. TAGLINE_MAX  <= every short_description cap in schemas.py.
@@ -35,8 +35,16 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # `|| exit 1` is load-bearing (SC2164) — see scripts/checks/README.md.
 cd "$REPO_ROOT" || exit 1
 
-CARDS="frontend/app/[locale]/producer/dashboard/edit/cards.jsx"
-SCHEMAS="backend/app/schemas/schemas.py"
+# MEH-3152: the cards moved out of edit/cards.jsx into one file each, so each
+# constant is read from the file that owns it.
+CARDS_DIR="frontend/app/[locale]/producer/dashboard/edit/cards"
+OWNER_STORY="$CARDS_DIR/OwnerStoryCard.jsx"
+DESCRIPTION="$CARDS_DIR/DescriptionCard.jsx"
+# Every schema module: the models were split out of schemas.py by area
+# (MEH-3270), so a cap can sit in any of them. SCHEMAS is the label printed in
+# messages; SCHEMA_FILES is what is read.
+SCHEMAS="backend/app/schemas/*.py"
+SCHEMA_FILES=(backend/app/schemas/*.py)
 
 status=0
 
@@ -49,7 +57,7 @@ fail() {
 
 # First numeric literal assigned to a `const NAME = N;` in cards.jsx.
 client_const() {
-  sed -n "s/^const $1 = \([0-9][0-9]*\);.*/\1/p" "$CARDS" | head -n 1
+  sed -n "s/^const $1 = \([0-9][0-9]*\);.*/\1/p" "$2" | head -n 1
 }
 
 # Every max_length=N on the line(s) following a field_validator("<field>")
@@ -58,10 +66,10 @@ client_const() {
 server_caps() {
   local field="$1"
   # sanitize_text(v, max_length=N) inside the validator registered for $field
-  grep -A 3 "field_validator(\"$field\")" "$SCHEMAS" \
+  grep -h -A 3 "field_validator(\"$field\")" "${SCHEMA_FILES[@]}" \
     | sed -n 's/.*max_length=\([0-9][0-9]*\).*/\1/p'
   # Field(..., max_length=N) on the declaration itself
-  grep "^\s*$field:.*max_length=\([0-9]\)" "$SCHEMAS" \
+  grep -h "^\s*$field:.*max_length=\([0-9]\)" "${SCHEMA_FILES[@]}" \
     | sed -n 's/.*max_length=\([0-9][0-9]*\).*/\1/p'
 }
 
@@ -70,12 +78,12 @@ server_caps() {
 # check_lte   NAME client server_caps…   → client must be <= every server cap
 check_equal() {
   local name="$1" client="$2"; shift 2
-  [ -n "$client" ] || { fail "$name: client constant not found in $CARDS"; return; }
+  [ -n "$client" ] || { fail "$name: client constant not found under $CARDS_DIR"; return; }
   [ "$#" -gt 0 ] || { fail "$name: no server cap found in $SCHEMAS"; return; }
   local cap
   for cap in "$@"; do
     if [ "$client" -ne "$cap" ]; then
-      fail "$name: client=$client != server=$cap ($CARDS:1 vs $SCHEMAS:1)"
+      fail "$name: client=$client != server=$cap ($CARDS_DIR vs $SCHEMAS:1)"
       return
     fi
   done
@@ -84,7 +92,7 @@ check_equal() {
 
 check_lte() {
   local name="$1" client="$2"; shift 2
-  [ -n "$client" ] || { fail "$name: client constant not found in $CARDS"; return; }
+  [ -n "$client" ] || { fail "$name: client constant not found under $CARDS_DIR"; return; }
   [ "$#" -gt 0 ] || { fail "$name: no server cap found in $SCHEMAS"; return; }
   local cap
   for cap in "$@"; do
@@ -101,9 +109,9 @@ run_checks() {
   echo
 
   # shellcheck disable=SC2046 — word-splitting the cap lists is intended.
-  check_equal "OWNER_BIO_MAX / owner_bio" "$(client_const OWNER_BIO_MAX)" $(server_caps owner_bio)
-  check_lte   "DESC_MAX / description"    "$(client_const DESC_MAX)"      $(server_caps description)
-  check_lte   "TAGLINE_MAX / short_description" "$(client_const TAGLINE_MAX)" $(server_caps short_description)
+  check_equal "OWNER_BIO_MAX / owner_bio" "$(client_const OWNER_BIO_MAX "$OWNER_STORY")" $(server_caps owner_bio)
+  check_lte   "DESC_MAX / description"    "$(client_const DESC_MAX "$DESCRIPTION")"      $(server_caps description)
+  check_lte   "TAGLINE_MAX / short_description" "$(client_const TAGLINE_MAX "$DESCRIPTION")" $(server_caps short_description)
 
   echo
   if [ "$status" -eq 0 ]; then

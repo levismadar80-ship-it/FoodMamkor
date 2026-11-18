@@ -195,9 +195,9 @@ function icu(msg: string, count: number): string {
 // MEH-2783: the row shows the /map department GROUPS (he.map_category_chips),
 // matched by name or by the stable slug — so the fixture carries slugs, as
 // CategoryOut does. «ביצים» now sits in the dairy group («חלב וביצים»).
-const CAT_MEAT = { id: 1, name: "בשר", slug: "meat" };
-const CAT_DAIRY = { id: 2, name: "חלב וגבינות", slug: "dairy" };
-const CAT_EGGS = { id: 3, name: "ביצים", slug: "eggs" };
+const CAT_MEAT = { id: 1, name: "בשר", slug: "meat", requires_license: false };
+const CAT_DAIRY = { id: 2, name: "חלב וגבינות", slug: "dairy", requires_license: false };
+const CAT_EGGS = { id: 3, name: "ביצים", slug: "eggs", requires_license: false };
 const G_HE = he.map_category_chips;
 const DAIRY_TINT = "rgb(59, 114, 173)"; // #3b72ad, CATEGORY_CHIPS dairy iconColor
 const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_EGGS];
@@ -777,7 +777,8 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
     for (const pill of await card.locator("[data-badge]").all()) {
       expect(Math.abs(centre(await box(pill)) - chip), "pill and «+N» share one line").toBeLessThanOrEqual(4);
     }
-    await expect(more).toHaveAttribute("aria-haspopup", "true");
+    // sheetOnMobile popover → announced as a dialog, never as a menu ("true").
+    await expect(more).toHaveAttribute("aria-haspopup", "dialog");
     await expect(more).toHaveAttribute("aria-expanded", "false");
   });
 
@@ -862,7 +863,7 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
   // MT:MEH-1592:2 — the panel sits beside ITS OWN «+N», inside the same card.
   // MT:MEH-1592:3 — edge columns: the panel stays whole inside the viewport.
   // MT:MEH-1871:5 — Esc, outside click and a second tap on the trigger all close.
-  test("desktop: the panel opens above the strip, clear of name/rating/strip, inside the viewport on both edge columns; Esc / outside / re-tap close it", async ({
+  test("desktop: the panel opens above the card body, clear of name/rating/strip, inside the viewport on both edge columns; Esc / outside / re-tap close it", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "overlay presentation is the lg+ branch");
@@ -877,16 +878,21 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute("role", "tooltip");
     await expect(more).toHaveAttribute("aria-expanded", "true");
-    const [p, strip, name, rating, trigger, card] = await Promise.all([
+    const [p, strip, name, rating, trigger, card, body] = await Promise.all([
       box(panel),
       box(more.locator("xpath=ancestor::div[1]")),
       box(first.getByRole("heading", { level: 3 })),
       box(first.getByTestId("card-rating")),
       box(more),
       box(first),
+      box(first.getByTestId("card-body")),
     ]);
     expect(p.y + p.height, "panel bottom must sit above the strip").toBeLessThanOrEqual(strip.y + 1);
-    expect(strip.y - (p.y + p.height), "panel must stay adjacent to its counter").toBeLessThanOrEqual(40);
+    // MEH-3321: the strip moved off the photo into the card body, and the
+    // panel now clears the whole body (name, rating, strip) — so it sits just
+    // above the body, over the photo, not just above the strip.
+    expect(p.y + p.height, "panel bottom must sit above the card body").toBeLessThanOrEqual(body.y + 1);
+    expect(body.y - (p.y + p.height), "panel must stay adjacent to its card body").toBeLessThanOrEqual(40);
     expect(overlaps(p, strip), "panel must not cover the badge strip").toBe(false);
     expect(overlaps(p, name), "panel must not cover the business name").toBe(false);
     expect(overlaps(p, rating), "panel must not cover the rating").toBe(false);

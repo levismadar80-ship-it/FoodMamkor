@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Post-login action queue. Stores one pending action in sessionStorage
  * so a guest tap on "save" can be replayed after authentication.

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { CircleNotch } from "@phosphor-icons/react";

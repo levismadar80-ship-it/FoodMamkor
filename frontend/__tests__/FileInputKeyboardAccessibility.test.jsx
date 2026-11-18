@@ -101,7 +101,10 @@ const ROOT = path.resolve(__dirname, "..");
 const FIXED_FILES = [
   "components/ProductsSection.jsx",
   "components/RecipeForm.jsx",
-  "app/[locale]/producer/dashboard/edit/cards.jsx",
+  // MEH-3152: the cards moved out of edit/cards.jsx into one file each.
+  "app/[locale]/producer/dashboard/edit/cards/ImagesCard.jsx",
+  "app/[locale]/producer/dashboard/edit/cards/OwnerStoryCard.jsx",
+  "app/[locale]/producer/dashboard/edit/cards/KashrutCard.jsx",
 ];
 
 /** Return the {srOnly, hidden} counts of type="file" input tags in a source. */

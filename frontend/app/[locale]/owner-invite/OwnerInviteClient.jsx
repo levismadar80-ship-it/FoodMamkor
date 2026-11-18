@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +23,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
@@ -237,6 +239,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         // ONE licensing declaration the server stamps (MEH-759 Chunk C).
         declaration_accepted: declarationConfirmed && (!farmerRequired || farmerConfirmed),
         terms_accepted: agreedToTerms,
+        // MEH-3137: and on its own, so the server records it apart.
+        ...(farmerRequired && { farmer_declaration_accepted: farmerConfirmed }),
       });
       // Hold the loading view until the dashboard opens: refreshUser returns
       // her as an owner, and any intermediate view would flash in between.
@@ -332,10 +336,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
 
       <form onSubmit={submit} noValidate data-testid="owner-invite-form" className="space-y-4">
         <div>
-          <label className="block text-sm text-fg-muted mb-1" htmlFor="owner-invite-email">
-            {t("email_label")}
-          </label>
-          <input
+          <Input
+            label={t("email_label")}
             id="owner-invite-email"
             data-testid="owner-invite-email"
             type="email"
@@ -348,7 +350,6 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
               // she holds belongs to the address she just left.
               setCodeSentTo(null);
             }}
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text focus-ring"
           />
         </div>
 
@@ -380,10 +381,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         </div>
 
         <div>
-          <label className="block text-sm text-fg-muted mb-1" htmlFor="owner-invite-code">
-            {t("code_label")}
-          </label>
-          <input
+          <Input
+            label={t("code_label")}
             id="owner-invite-code"
             data-testid="owner-invite-code"
             // `inputMode` + `autoComplete` so a phone offers the digit pad and
@@ -395,7 +394,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
             dir="ltr"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text tracking-[0.3em] focus-ring"
+            className="tracking-[0.3em]"
           />
         </div>
 
@@ -525,6 +524,7 @@ function isCloudinaryUrl(value) {
   }
 }
 
+/** @param {{ children: import("react").ReactNode, testid?: string }} props */
 function Shell({ children, testid }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-10" data-testid={testid}>

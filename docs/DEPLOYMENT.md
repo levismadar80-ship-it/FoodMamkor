@@ -162,17 +162,18 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
-   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
+   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). **In production the backend refuses to boot when it is empty or contains `localhost`, `127.0.0.1` or `staging`** (MEH-3388; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`), so a wrong value fails the deploy instead of sending every email link to the wrong site. |
    | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain is verified (SPF+DKIM) — `mehamakor.co.il` for production (the `email_from_address` default), `mehamakor.online` if staging sends from it. **The two domains are verified in two different Resend accounts**; a key from the wrong account fails every send with 422 (MEH-2341, 24/10). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
    | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.co.il>` (`config.py:115`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
+   | `ADMIN_EMAIL` | **Set it on staging (MEH-3402).** Outside production every email to an address that is not `ADMIN_EMAIL` / `CONTACT_EMAIL` / `SUPER_ADMIN_EMAIL` (or a `+alias` of one) is **redirected here**, subject `[STAGING → ***@domain] …`, full original recipient on the first body line. Unset on staging = those emails are not sent at all (logged at WARNING). Register test businesses as `you+biz1@…` to receive their mail directly. |
    | `SUPER_ADMIN_EMAIL` | **Required in production — the backend refuses to boot without a valid address** (MEH-2890; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`). The owner's login email, **exactly as it appears in `/admin/users`** (the match is case-sensitive). That account cannot be demoted or deleted from `/admin/users`. Set the same value on staging; unset on staging only means nobody is protected there (logged). |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
-   | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
+   | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Outside production the backend sends WhatsApp only to `ADMIN_WHATSAPP_TO` and `OTP_TEST_NUMBERS` whatever is configured here (MEH-3402); prefer Meta's free test number for staging (MEH-3405). Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
    | `WHATSAPP_ACCESS_TOKEN` | Never-expiring System User token from Meta Business Suite. Store in Railway variables, never in `.env` files. |
    | `WHATSAPP_BUSINESS_ID` | WhatsApp Business Account ID (WABA). |
    | `WHATSAPP_API_VERSION` | `v21.0` (hardcoded fallback; override only to pin a different Graph version). |
-   | `OTP_TEST_NUMBERS` | **Staging only, optional.** Comma-separated `producer.phone` values (exact match) that receive a fixed OTP instead of a WhatsApp send, so a harness can pass the `phone_verified` gate (MEH-2231). Empty = feature OFF. Refused outright when `ENV=production`, and on a remote DB host unless `RAILWAY_ENVIRONMENT=staging` — set the values in Railway variables, never in a committed file. |
+   | `OTP_TEST_NUMBERS` | **Staging only, optional.** Comma-separated `producer.phone` values (exact match) that receive a fixed OTP instead of a WhatsApp send; also the only numbers, with `ADMIN_WHATSAPP_TO`, that any WhatsApp from staging may reach (MEH-3402 — digits compared, `0…` = `972…`), so a harness can pass the `phone_verified` gate (MEH-2231). Empty = feature OFF. Refused outright when `ENV=production`, and on a remote DB host unless `RAILWAY_ENVIRONMENT=staging` — set the values in Railway variables, never in a committed file. |
    | `OTP_TEST_CODE` | Exactly 6 digits; the fixed code handed to the numbers above. Anything else turns the feature OFF rather than half-on. Every issue is logged at WARNING with the producer id (never the phone or the code). |
    | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
 
@@ -299,11 +300,12 @@ ruleset belong to the aggregators, the practical consequences invert:
   change.
 - **The real fragility moved inside the aggregator.** Deleting or merging a job
   means updating `ci-gate`'s `needs:` list **and** its `R_*` env block
-  (`pr-checks.yml:707-743`). A `needs:` entry naming a job that no longer exists
+  (the `ci-gate` job in `pr-checks.yml`). A `needs:` entry naming a job that no longer exists
   fails the workflow outright; an `R_*` reference to a removed job resolves empty,
   and `check_ran` treats empty as "did not run" → **every PR red**. That, not the
-  Settings list, is what must be updated in the same breath as any job merge
-  (MEH-2212's consolidation proposal).
+  Settings list, is what must change with any job merge (MEH-2212's
+  consolidation proposal) — and `scripts/checks/gate-wiring-guard.sh` now fails
+  the PR when the two drift (MEH-3192).
 
 **Decision rule — skipping a check on docs-only PRs:**
 
@@ -490,7 +492,7 @@ were ever started:
 |---|---|
 | APScheduler jobs — onboarding follow-ups (MEH-539) + auto-reply watchdog | Each worker runs its own scheduler → **duplicate emails** and double watchdog runs |
 | slowapi rate limiter (in-memory store) | Per-worker counters → effective limit multiplied by the worker count (login/abuse limits weaken ×N) |
-| Analytics request-metrics deque + trending cache | Fragmented per worker → the admin dashboard sees only one worker's slice |
+| Analytics request-metrics deque | Fragmented per worker → the admin dashboard sees only one worker's slice |
 | JWKS cache | Redundant fetches; no correctness break, but wasted work |
 
 Because Railway's worker/replica count is a platform setting (Sapir
@@ -629,10 +631,16 @@ Moved to [docs/RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) on 2026-11-07 (MEH-
 
 ## Testing workflow — Vercel preview URLs
 
-**Every PR gets a Vercel preview URL.** Before merging to `staging`, that
-preview URL must be tested on a real device — primarily on mobile, since the
-phone is the dominant viewport for mehamakor.co.il and many bugs only surface
-in actual iOS Safari / Android Chrome.
+> **14/11/2026 (MEH-3151): nobody tests by hand.** Sapir's decision: «לא עושים
+> בדיקות ידניות יותר». Everything below that once said "the user tests on a
+> phone" is done by the thread: screenshots of the preview at 390×844 WebKit +
+> 1280 Chromium that the thread reads itself (workflow rule 38), 375/1440 in
+> `qa-artifacts/` (rule 23), and the release-time rows in
+> [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) § ד׳.
+
+A feature branch gets a Vercel preview only for a `[preview]` commit (rule 9).
+The thread screenshots it — mobile first, since the phone is the dominant
+viewport for mehamakor.co.il.
 
 ### How preview URLs are generated
 
@@ -659,10 +667,9 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 2. push commits
 3. open PR feature/* → staging
 4. Vercel auto-builds + comments preview URL on the PR (~60s)
-5. assistant surfaces preview URL to the user:
-     "בדיקי על: https://food-mamkor-<hash>.vercel.app"
-6. user tests on mobile → approves
-7. merge to staging
+5. assistant screenshots the preview (390 WebKit + 1280 Chromium) and reads them
+6. full self-check of workflow rule 38 (gates, reviewer, copy table)
+7. assistant merges to staging (rule 38)
 8. Vercel auto-deploys staging to staging.mehamakor.online
 9. final smoke test on staging subdomain
 10. open PR staging → main
@@ -675,8 +682,8 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 - **Vercel preview URL** — either pasted directly into the PR description, or
   a placeholder line (`Vercel preview: posted as a comment by @vercel below`)
   with the bot comment serving as the source of truth.
-- **A test plan checklist** — the specific things the user should verify on
-  the preview URL before approving. At minimum: "loads on mobile", "no console
+- **A test plan checklist** — the specific things the thread verified on
+  the preview URL, each with its evidence (screenshot, run link). At minimum: "loads on mobile", "no console
   errors", "the changed flow works end-to-end".
 - **A list of behavioral changes** — anything that affects what users see or
   how they interact. Doc-only PRs can say "no functional changes" and skip
@@ -684,29 +691,21 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 
 ### Critical rule
 
-**Never merge a PR to `staging` until the user has tested the preview URL.**
-This is enforced by workflow rule #8 in [CLAUDE.md](../CLAUDE.md). Even when
-the assistant is confident the change is safe, the human-on-mobile check
-catches things desktop QA misses: rendering on small viewports, RTL edge
-cases, real-device touch targets, font fallbacks, third-party SDK behavior
-with the actual production CSP, etc.
+**Never merge a PR to `staging` without the rule-38 self-check** — gates green,
+preview screenshots read, fresh reviewer, copy diffed. There is no human
+phone check to wait for (MEH-2302, MEH-3151). What a simulator cannot show
+(real iOS keyboard, felt smoothness) is written in the release PR as residual
+risk, not handed to a person.
 
-The only exception is hotfixes — see [Branch Strategy → Hotfixes](#hotfixes)
-above. Even hotfixes should ideally get a preview-URL check, but if production
-is on fire, ship and verify after.
-
-### Mobile testing checklist
-
-When the user opens the preview URL on a phone, these are the things worth
-checking — particularly for any UI-touching PR:
+### What the thread looks at in the 390 screenshots
 
 - [ ] Homepage hero loads, search pill is tappable
 - [ ] Category icons render correctly (no font fallback to box characters)
 - [ ] Map markers visible and tappable
 - [ ] Bottom navigation works, icons sized correctly
-- [ ] WhatsApp button on a producer page opens the WhatsApp app (not the web)
-- [ ] Form inputs don't zoom on focus (iOS Safari quirk — `font-size: 16px`
-  on inputs is the fix)
+- [ ] WhatsApp button on a producer page has a `wa.me` link with the right text (opening the app itself = residual risk)
+- [ ] Form inputs have computed `font-size` ≥ 16px (the iOS Safari zoom-on-focus
+  quirk; checked in the DOM, since a screenshot cannot show the zoom)
 - [ ] Hebrew text aligns right, no LTR leakage
 - [ ] No horizontal scroll
 - [ ] Sticky elements (header, BottomNav) don't overlap content
@@ -1558,7 +1557,12 @@ The OAuth client id exists, but it needs the production URL whitelisted.
 
 ## 5. Post-deploy smoke test
 
-Run through this checklist in a real browser:
+Automatic since MEH-2749: `post-deploy-checks.yml` runs
+`scripts/checks/smoke_production.py` (pages, sitemap, images, WhatsApp link
+preview) after a push to `main` that touched frontend/backend — non-blocking
+(`continue-on-error`), so the release thread also runs it and reads the lines. The rows it cannot see are run by the
+thread (Google login via Claude in Chrome, admin via the demo admin account),
+never by hand (MEH-3151). Historical list:
 
 - [ ] `https://mehamakor.co.il` loads the homepage with producer cards
 - [ ] `/map` shows the Leaflet map with markers

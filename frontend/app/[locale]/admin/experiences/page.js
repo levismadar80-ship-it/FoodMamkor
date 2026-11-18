@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -326,7 +327,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
               </button>
             )}
             <Link
-              href={`/experiences/${ex.id}`}
+              href={`/experiences/${ex.id}?preview=1`}
               target="_blank"
               className="text-primary text-xs px-2 py-1 underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >

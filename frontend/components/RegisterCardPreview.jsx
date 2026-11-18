@@ -72,7 +72,7 @@ export default function RegisterCardPreview({ form, categories }) {
       </summary>
       {open && (
         // max-w: a card on the site sits in a grid column, never full form width.
-        <div className="mx-auto max-w-[320px] px-4 pb-4" inert={/** @type {any} */ (INERT_PRESENT)} data-testid="register-card-preview-body">
+        <div className="mx-auto max-w-[320px] px-4 pb-4" inert={INERT_PRESENT} data-testid="register-card-preview-body">
           <ProducerCard
             producer={previewProducer(form, categories)}
             active={false}

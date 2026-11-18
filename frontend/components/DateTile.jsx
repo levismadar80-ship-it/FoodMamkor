@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   DateTile
  * Purpose:  The small month/day calendar tile that leads the date row of the

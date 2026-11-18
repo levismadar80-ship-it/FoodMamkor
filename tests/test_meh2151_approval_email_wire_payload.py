@@ -48,7 +48,7 @@ Caught by the CI reviewer on #3180 and removed rather than reworded.
 
 import pytest
 
-import app.routers.admin as admin_module
+import app.routers.admin_decisions as admin_module
 import app.services.email as email_module
 
 # The two characters the MEH-2134 locked copy depends on. `—` is the separator

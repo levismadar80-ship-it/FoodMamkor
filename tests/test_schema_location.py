@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 ROUTERS_DIR = REPO_ROOT / "backend" / "app" / "routers"
 
 # MEH-460 closed (2026-05-06): all 28 pre-existing R1 violations relocated
-# to backend/app/schemas/schemas.py across Pkgs 1–5. The empty dict is
+# to backend/app/schemas/ across Pkgs 1–5. The empty dict is
 # retained intentionally — the enforcement mechanism stays in place so any
 # future, deliberately-temporary R1 debt can be tracked here with a paired
 # cleanup ticket. Both tests below pass trivially on an empty allowlist:
@@ -47,7 +47,7 @@ def test_no_unallowlisted_basemodel_in_routers():
 
     Allowlist documents pre-existing violations from before MEH-458; new
     violations are not permitted. To remove an entry: move the class to
-    backend/app/schemas/schemas.py per R1, then drop the row here.
+    backend/app/schemas/ per R1, then drop the row here.
     """
     new_violations: dict[str, set[str]] = {}
     for py in sorted(ROUTERS_DIR.rglob("*.py")):
@@ -63,7 +63,7 @@ def test_no_unallowlisted_basemodel_in_routers():
     if new_violations:
         msg_lines = [
             "ADR-006 R1 violation — new Pydantic schemas embedded in backend/app/routers/.",
-            "Move them to backend/app/schemas/schemas.py per ADR-006 R1.",
+            "Move them to backend/app/schemas/ per ADR-006 R1.",
             "If pre-existing tech debt: track under MEH-460 + add to ALLOWLIST in this file.",
             "",
         ]

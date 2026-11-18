@@ -11,7 +11,9 @@ Does NOT: check security posture (that is scripts/smoke_test.py, MEH-259) and
 Related:  backend/app/routers/health.py:60 (readiness) vs :138 (the alias that
           cannot fail) · frontend/app/sitemap.js:79 (producer URLs) ·
           scripts/checks/data-readiness.py (the GET-only idiom reused here)
-History:  MEH-2088 (creation, post-Release-#2 smoke for MEH-1909 / MEH-2083)
+History:  MEH-2088 (creation, post-Release-#2 smoke for MEH-1909 / MEH-2083);
+          MEH-3151 (WhatsApp link-preview check, scripts/checks/link_preview.py;
+          the Sentry line names the thread + connector, not Sapir)
 
 Usage
 -----
@@ -58,6 +60,7 @@ import urllib.request
 from pathlib import Path
 
 import vercel_count  # MEH-2864: sibling module, prints «requests to Vercel: N» at exit
+from link_preview import check_link_preview  # MEH-3151: sibling module
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SEED_FILE = REPO_ROOT / "backend" / "seed_data.py"
@@ -68,7 +71,7 @@ TIMEOUT_S = 25
 # A path that must never exist. Used by the control, and by nothing else.
 CONTROL_404_PATH = "/__smoke-control-must-404__"
 
-# Static routes frontend/app/sitemap.js:49-67 emits. Used ONLY to label which
+# Static routes the sitemap emits (frontend/lib/sitemap-static.js since MEH-3265). Used ONLY to label which
 # sitemap URLs are producer pages in the printout — every sitemap URL is
 # fetched and 404-checked regardless, so a wrong label here cannot turn a
 # broken URL into a pass.
@@ -103,7 +106,7 @@ class Board:
 _COUNTING_OPENER = urllib.request.build_opener(vercel_count.CountingRedirectHandler())
 
 
-def fetch(url: str) -> tuple[int, bytes, dict]:
+def fetch(url: str, user_agent: str = "mehamakor-smoke/1.0") -> tuple[int, bytes, dict]:
     """GET a URL. Returns (status, body, headers). Never raises on HTTP status.
 
     The ONLY network primitive in this file — so the control below, which calls
@@ -112,7 +115,7 @@ def fetch(url: str) -> tuple[int, bytes, dict]:
     matters (.claude/rules/testing.md — "exercise the real implementation").
     """
     vercel_count.note(url)  # MEH-2864
-    req = urllib.request.Request(url, headers={"User-Agent": "mehamakor-smoke/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": user_agent})
     try:
         # MEH-2864: an opener that counts the redirect hops it follows.
         with _COUNTING_OPENER.open(req, timeout=TIMEOUT_S) as resp:  # noqa: S310
@@ -374,8 +377,9 @@ def check_sentry(board: Board) -> None:
         "Sentry test event fires and is retrievable",
         "CANNOT VERIFY from a read-only smoke: firing an event is a write to "
         "Sentry and reading it back needs an auth token this repo does not "
-        "carry. Manual step for Sapir — Sentry → Issues, filter environment: "
-        "production, confirm the release appears after deploy. Standing gap: "
+        "carry. The release thread checks it through the Sentry connector "
+        "(search_issues, environment production, since the deploy) — never "
+        "a step for Sapir (MEH-3151). Standing gap: "
         "MEH-1905 records zero production Sentry events in 90 days, so an "
         "empty Sentry is NOT evidence of a healthy release.",
     )
@@ -472,6 +476,15 @@ def main() -> int:
         [s.strip() for s in args.slugs.split(",")] if args.slugs else seed_slugs(),
     )
     check_cloudinary_image(base, board, detail_producers(base, listing))
+    # MEH-3151: replaces «send yourself the link on WhatsApp and look».
+    check_link_preview(base, board, fetch, "/", "home")
+    if listing and listing[0].get("slug"):
+        slug = listing[0]["slug"]
+        check_link_preview(base, board, fetch, f"/{slug}", f"business page ({slug})")
+    else:
+        board.add(SKIP, "WhatsApp link preview — business page",
+                  "the catalog returned no business, so there was no business "
+                  "page to fetch. NOT a pass.")
     check_sentry(board)
 
     print("\n" + "─" * 76)

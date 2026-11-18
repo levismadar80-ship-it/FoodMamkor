@@ -13,7 +13,7 @@ mehamakor/
 │   ├── app/                    routers, models, schemas, services, auth, config
 │   ├── alembic/versions/       migration revisions (sole schema authority — ADR-003)
 │   └── scripts/                backend ops scripts
-├── frontend/                   Next.js 14 App Router (JavaScript)
+├── frontend/                   Next.js 16 App Router (JavaScript)
 │   ├── app/                    routes — one dir per page (server + client)
 │   ├── components/             shared React components
 │   ├── lib/                    auth-context, api, cloudinary, schemas
@@ -37,8 +37,8 @@ mehamakor/
 | If you need to... | Look in... |
 |---|---|
 | Add an API endpoint | `backend/app/routers/<domain>.py` (register in `router_registry.py`) |
-| Modify DB schema | `backend/app/models/models.py` + new Alembic revision (`docs/MIGRATIONS.md`) |
-| Change API I/O shape | `backend/app/schemas/schemas.py` |
+| Modify DB schema | the model module under `backend/app/models/` (core tables in `models.py`, the rest one file per area) + new Alembic revision (`docs/MIGRATIONS.md`) |
+| Change API I/O shape | the area module under `backend/app/schemas/` (shared validators in `schemas.py`) |
 | Tweak auth / JWT | `backend/app/auth.py` + `backend/app/config.py` |
 | Add a backend service | `backend/app/services/<name>.py` |
 | Add a frontend page | `frontend/app/<route>/page.js` |
@@ -49,6 +49,8 @@ mehamakor/
 | Read DB schema diagram | `.ai/diagrams/db-schema.md` |
 | Read endpoint map | `.ai/diagrams/api-routes.md` |
 | Check past decisions | `docs/decisions/README.md` (ADR index) |
+| See every status and who can move it | `docs/STATE_MACHINES.md` |
+| See what talks to what, where data lives, what breaks first under load | `docs/SYSTEM_MAP.md` |
 | Look up a workflow rule | `.claude/rules/workflow.md` |
 | Add an Alembic migration | `backend/alembic/versions/` (`docs/MIGRATIONS.md`) |
 
@@ -59,7 +61,7 @@ mehamakor/
 Files in `.claude/central-components.json` get adversarial review even
 if `npm run build` fails (workflow rule 20). Logic risk > syntax risk.
 Current set: `MapClient.jsx`, `MapComponent.jsx`, `producers/page.jsx`,
-`app/page.js`, `app/layout.js`, `language-context.js`, `ProducerCard.jsx`,
+`app/page.js`, `app/layout.js`, `ProducerCard.jsx`,
 `Header.jsx`, `BottomNav.jsx`, `Footer.jsx`, `backend/app/main.py`,
 `backend/app/routers/auth.py`, `backend/app/config.py`. Refactor planned: MEH-407.
 

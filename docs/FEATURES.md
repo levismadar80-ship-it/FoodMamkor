@@ -18,6 +18,146 @@ left in v1" vs "what's planned for v2".
 
 ---
 
+## Every page on the site — route inventory (guarded, MEH-3175)
+
+> **This table is enforced.** `scripts/checks/features-route-guard.sh` (run by
+> `run-all.sh` in the required **Repo guards** job) fails when a `page.js` under
+> `frontend/app/[locale]/` has no row here, or when a row names a route that no
+> longer exists. A new page = a new row in the same PR. Why: between June and
+> September 2026 about 3,700 commits landed and none touched this file — workflow
+> rule 11 ("update every doc your code touched") never fires for a *new*
+> feature, because a new feature touches no doc (MEH-3175). Routes are written
+> without the `[locale]` prefix (`/he/…` and `/en/…` both serve them).
+
+### Visitors — discovery
+
+| Route | What it is |
+|---|---|
+| `/` | Home: hero search, categories, businesses near you, events / rescue / group-buy strips, mini-map |
+| `/map` | Map of businesses: clusters, category filters, search-this-area, near me, list ↔ map sync |
+| `/producers` | All businesses list with filters (6 category groups, delivery, diet, open now) |
+| `/producers/[category]/[region]` | SEO landing page: one category in one region |
+| `/producers/diet/[dietSlug]` | SEO landing page: businesses by diet (vegan, gluten-free …) |
+| `/[slug]` | Business page (canonical vanity URL): about, products, order/contact, delivery checker, reviews, events, recipes, mini-map |
+| `/[slug]/recipes/[recipe_id]` | A business's recipe, with servings scaler and ingredient checklist |
+| `/producer/[id]` | Business page by id (legacy entry; same component as `/[slug]`) |
+| `/p/[slug]` | Redirect stub to `/[slug]`, noindex |
+| `/business-gone` | Shown (via middleware rewrite) for a deleted business URL |
+| `/events` | Events hub tab: markets, farm days, workshops; date chips |
+| `/events/[id]` | Event page: details, add to calendar (ICS), registration |
+| `/experiences` | Community experiences / workshops hub tab |
+| `/experiences/[id]` | Experience page |
+| `/rescue` | Surprise bags (food rescue) hub tab: reserve a bag, pickup window |
+| `/group-buys` | Group buys hub tab: join a group, progress to target |
+| `/group-buys/[id]` | Group buy page |
+| `/organizers/[slug]` | Public page of a markets / events organizer and their events |
+| `/recommend` | «המליצו על בית עסק» — suggest a business (goes to the outreach pipeline) |
+
+### Visitors — account
+
+| Route | What it is |
+|---|---|
+| `/login` | Log in: email + password, Google, Apple |
+| `/register` | Visitor sign-up |
+| `/forgot-password` | Request a password reset email |
+| `/reset-password` | Set a new password from the email link |
+| `/verify-email` | Email verification landing |
+| `/account-deleted` | Landing after an account is deleted (MEH-3248) |
+| `/favorites` | Saved businesses and items, with alert preferences (new events, group buys, rescue bags) |
+| `/messages` | Messages between visitors and businesses |
+| `/settings` | Profile, security, notifications, delete account |
+| `/registration/[token]` | Cancel an event registration from the confirmation email (noindex) |
+| `/newsletter/unsubscribe` | Newsletter unsubscribe |
+| `/delivery-waitlist/unsubscribe` | Leave a delivery-area waitlist |
+| `/unsubscribe/weekly` | Stop the weekly owner summary email (MEH-3079) |
+| `/freshness/confirm` | «כן, הכול נכון» landing from the monthly owner freshness email (MEH-3393) |
+| `/draft-preview/[token]` | Token link: an owner previews her draft business page and consents to publish (MEH-3377) |
+| `/delivery-waitlist/host-confirm` | A pickup-point host confirms from the email link |
+
+### Business owners
+
+| Route | What it is |
+|---|---|
+| `/join` | Recruitment landing for business owners: what you get, tools, how it works |
+| `/join/pricing` | Pricing for business owners (ADR-042) |
+| `/register/producer` | Business sign-up wizard (manual admin approval after) |
+| `/register/organizer` | Markets / events organizer sign-up (same wizard, kind=organizer) |
+| `/claim` | Claim an existing business page (after the token step) |
+| `/claim/[token]` | Claim link landing; moves the token to sessionStorage |
+| `/owner-invite` | Accept an invite to co-manage a business (after the token step) |
+| `/owner-invite/[token]` | Owner-invite link landing |
+| `/producer/dashboard` | Dashboard home: status, next steps, availability, daily actions |
+| `/producer/dashboard/edit` | Edit the business page (details, photos, products, locations, delivery, payment methods, hours) |
+| `/producer/dashboard/preview` | See the page before approval |
+| `/producer/dashboard/insights` | Views, WhatsApp clicks, searches, cities, followers |
+| `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
+| `/producer/dashboard/followers` | Redirect stub to the insights followers section |
+| `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
+| `/producer/dashboard/tools` | «כלים» tab: launcher for creation tools |
+| `/producer/dashboard/qr-card` | Printable QR card for the counter |
+| `/producer/dashboard/events` | Manage events |
+| `/producer/dashboard/events/new` | Create an event |
+| `/producer/dashboard/events/[id]/edit` | Edit an event |
+| `/producer/dashboard/experiences` | Manage experiences |
+| `/producer/dashboard/experiences/new` | Create an experience |
+| `/producer/dashboard/experiences/[id]/edit` | Edit an experience |
+| `/producer/dashboard/group-buys` | Manage group buys |
+| `/producer/dashboard/recipes` | Manage recipes |
+| `/producer/dashboard/recipes/[id]/edit` | Edit a recipe |
+| `/producer/dashboard/rescue` | Manage surprise bags: offers, reservations, pickups |
+| `/producer/dashboard/rescue/counter-card` | A5 card for the till: check the code, hand over the bag |
+
+### About, trust and legal
+
+| Route | What it is |
+|---|---|
+| `/about` | About Mehamakor: story, values |
+| `/about/process` | How a business gets onto the site (approval process) |
+| `/about/badges` | What every badge means and who stands behind it |
+| `/about/why-local` | Why buy local |
+| `/about/for-businesses` | For businesses: why join |
+| `/about/for-businesses/guides` | Guides index for owners |
+| `/about/for-businesses/guides/business-story` | Guide: writing your story |
+| `/about/for-businesses/guides/customer-messages` | Guide: answering customer messages |
+| `/about/for-businesses/guides/product-photography` | Guide: product photos |
+| `/contact` | Contact form |
+| `/accessibility` | Accessibility statement (IS 5568) |
+| `/privacy` | Privacy policy |
+| `/terms` | Terms of use |
+
+### Admin (`/admin`, admin role only)
+
+| Route | What it is |
+|---|---|
+| `/admin` | Admin dashboard: pending queue counts, stats, health |
+| `/admin/billing` | Billing: per-business results against the ADR-042 threshold (MEH-3180) |
+| `/admin/producers` | Businesses: search, approve, request changes, edit |
+| `/admin/producers/new` | Add a business by hand |
+| `/admin/producers/[id]/edit` | Edit a business |
+| `/admin/name-change-requests` | Business name change requests |
+| `/admin/category-requests` | New category requests |
+| `/admin/kashrut` | Kashrut certificate review |
+| `/admin/reviews` | Review moderation |
+| `/admin/recipes` | Recipe moderation |
+| `/admin/experiences` | Experience moderation |
+| `/admin/group-buys` | Group buys overview |
+| `/admin/reports` | User reports, flagged and hidden content |
+| `/admin/outreach` | Lead pipeline (incl. community suggestions) |
+| `/admin/whatsapp-failures` | Undelivered outbound WhatsApp messages |
+| `/admin/users` | Users |
+| `/admin/content` | Static content pages |
+| `/admin/analytics` | Site analytics |
+| `/admin/settings` | Settings |
+| `/admin/help` | «איך עושים…» — searchable admin how-to |
+
+### Developer only
+
+| Route | What it is |
+|---|---|
+| `/dev/components` | Component gallery; 404 in production |
+
+---
+
 ## v1 — MVP (live)
 
 ### Discovery & browse
@@ -58,7 +198,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Multi-step producer registration (3 steps) | `frontend/app/register/producer/page.js` |
 | ✅ | v1 | Google OAuth | `frontend/components/GoogleAuthButton.jsx` |
 | ✅ | v1 | Apple OAuth | `frontend/components/AppleAuthButton.jsx` |
-| ✅ | v1 | JWT auth (24h expiry, secret from env, never default) | `backend/app/auth.py` |
+| ✅ | v1 | JWT auth (15-minute access token + 14-day refresh, secret from env, never default — `.claude/rules/security.md`) | `backend/app/auth.py` |
 | ✅ | v1 | DELETE /users/me (App Store compliance) | `backend/app/routers/auth.py` |
 | ✅ | v1 | Welcome email (consumer + producer flavors, fail-open) | `backend/app/routers/auth.py` |
 
@@ -69,6 +209,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — availability + favorites + quick links | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Toggle "available today" | `backend/app/routers/producer_me.py` |
 | ✅ | v1 | Add event from dashboard | `frontend/app/producer/dashboard/events/new/page.js` |
+| ✅ | v1.5.1 | «מה חדש» for business owners (MEH-3200): a top card on the dashboard home while the newest release is unseen, a fixed row above «צריכים עזרה?», and an archive page; plus a one-time welcome card for a business ≤ 30 days old. Part 2: a «חדש» pill on a new «כלים» tile + a dot on the tab for 14 days, and once-only first-moment cards (first review / WhatsApp click / 100 views / first follower). Seen state in localStorage | `frontend/lib/whats-new.js`, `frontend/components/producer/WhatsNew*.jsx`, `frontend/app/[locale]/producer/dashboard/whats-new/page.js` |
 | ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table dropped (MEH-2392) | — |
 
 ### Home cooks (`/neighbor`)
@@ -106,10 +247,11 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Content / static pages | `frontend/app/admin/content/` |
 | ✅ | v1 | Analytics | `frontend/app/admin/analytics/` |
 | ✅ | v1 | Settings | `frontend/app/admin/settings/` |
+| ✅ | v1.5 | MEH-3182: Billing, read-only (`/admin/billing`): businesses over the results threshold, what each would pay, billing off in launch | `frontend/app/[locale]/admin/billing/page.js`, `backend/app/services/billing_summary.py` |
 | ✅ | v1 | Admin seed via `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars | `backend/seed_data.py` |
 | 🚧 | v1 | MEH-51: Kashrut badge review queue (`/admin/kashrut`) — approve/reject with notes | `frontend/app/admin/kashrut/page.js`, `backend/app/routers/admin_kashrut.py` |
 | 🚧 | v1 | MEH-51: 5-tier Trust Ladder — real-time computed, TrustBadge.jsx + KashrutBadgeStrip.jsx | `backend/app/services/trust_tier.py`, `frontend/components/TrustBadge.jsx` |
-| 🚧 | v1 | MEH-51: Phone verification via WhatsApp OTP (step 4 of producer registration) | `backend/app/routers/producer_me.py`, `frontend/app/register/producer/page.js` |
+| 🚧 | v1 | MEH-51: Phone verification via WhatsApp OTP (step 4 of producer registration) | `backend/app/routers/producer_me_review.py`, `frontend/app/register/producer/page.js` |
 
 Detail: [ADMIN.md](./ADMIN.md)
 
@@ -127,7 +269,7 @@ stored.
 | ✅ | v1 | `POST /producers/{id}/whatsapp-click` — anonymous, rate-limited 10/min per IP | `backend/app/routers/producers.py::record_whatsapp_click` |
 | ✅ | v1 | Fire-and-forget `navigator.sendBeacon` from the WhatsApp CTA (producer detail page + `WhatsAppButton.jsx`) | `frontend/app/producer/[id]/ProducerDetail.jsx`, `frontend/components/WhatsAppButton.jsx` |
 | ✅ | v1 | `?from=search` / `?from=home` referrer threading through `ProducerCard` (homepage grid, "newest" strip, /map) | `frontend/components/ProducerCard.jsx`, `frontend/app/page.js`, `frontend/app/map/MapClient.jsx` |
-| ✅ | v1 | `GET /producers/me/analytics` — 7d/30d/total windows for views/search/whatsapp, follower delta, avg rating, home products count, 30-day zero-filled views_by_day, top 5 cities | `backend/app/routers/producer_me.py::producer_analytics` |
+| ✅ | v1 | `GET /producers/me/analytics` — 7d/30d/total windows for views/search/whatsapp, follower delta, avg rating, home products count, 30-day zero-filled views_by_day, top 5 cities | `backend/app/routers/producer_me_analytics.py::producer_analytics` |
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — 6 stat cards + inline SVG line chart + inline SVG horizontal bar chart + 3 quick links + availability hero | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Admin dashboard extension — 4 secondary stat cards (weekly deltas + events + experiences) + DAU 30d line chart + top 10 cities + server health panel | `frontend/app/admin/page.js`, `backend/app/routers/admin_extra.py::get_dashboard` |
 | ✅ | v1 | `pending_moderation_count` badge on admin sidebar — sums pending producers + open reports + flagged home products + pending experiences + pending kashrut requests | `frontend/app/admin/layout.js` |
@@ -202,7 +344,7 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 | 📋 | v1 | Sentry DSN hooked up in production | Scaffolding ready, just needs the env var |
 | 📋 | v1 | `whatsapp_clicks_week` real tracking on producer dashboard | Hardcoded to `0` — needs `producer_whatsapp_clicks` table |
 | 📋 | v1 | Smart cross-field search (name + category + city + product) | Currently the hero search routes the query as `delivery_city`, hack-tier |
-| 📋 | v1 | Producer page extras: opening hours, mini-map, similar producers, share button, breadcrumb | Not built |
+| ✅ | v1 | Producer page extras: opening hours, mini-map, share button, back link | Shipped (verified in code 14/11: `opening_hours`, `MiniMap.jsx`, `WhatsAppShareButton.jsx`, `HistoryBackLink.jsx`). "Similar businesses" not built |
 | 📋 | v1 | Calendar view for `/events` (currently grid only) | — |
 
 ---

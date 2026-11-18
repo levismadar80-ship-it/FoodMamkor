@@ -1,8 +1,10 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
+import { X } from "@phosphor-icons/react";
 
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
 import { chipIcon } from "@/lib/chip-icons";
@@ -117,6 +119,10 @@ function chipsForGroup(group, source) {
   return [...chips].sort((a, b) => rank(a.key) - rank(b.key));
 }
 
+// MEH-3271: the breakpoint where the sheet becomes the anchored desktop panel
+// (the `lg:` classes below).
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
 // Drag-down distance (px) on the mobile handle that dismisses the sheet.
 const DRAG_CLOSE_PX = 80;
 
@@ -145,10 +151,17 @@ export default function FilterSheet({
   const panelRef = useRef(null);
   const dragStartY = useRef(null);
 
-  const focusables = () =>
-    panelRef.current
-      ? panelRef.current.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')
-      : [];
+  const focusables = () => {
+    if (!panelRef.current) return [];
+    const all = [
+      ...panelRef.current.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'),
+    ];
+    // MEH-3271: the ✕ is phone-only (lg:hidden). On desktop it is
+    // display:none, so as the first focusable it swallowed the initial focus
+    // and broke the Tab trap's first stop. Found by the fresh reviewer.
+    const desktop = typeof window !== "undefined" && window.matchMedia?.(DESKTOP_QUERY).matches;
+    return desktop ? all.filter((el) => !el.hasAttribute("data-phone-only")) : all;
+  };
 
   // REUSES: frontend/components/AccountSheet.jsx:40-68 — modal a11y, split in
   // two effects (PR #1565 review): focus capture/restore keys on [open] ONLY,
@@ -174,10 +187,13 @@ export default function FilterSheet({
       if (!list.length) return;
       const first = list[0];
       const last = list[list.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the panel (a click on the scrim, a
+      // removed element) is pulled back in, not allowed to walk the page.
+      const outside = !panelRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }
@@ -271,7 +287,7 @@ export default function FilterSheet({
         type="button"
         aria-label={t("filters.sheet.close_aria")}
         onClick={onClose}
-        className="fixed inset-0 z-[1200] bg-black/40 lg:bg-transparent"
+        className="fixed inset-0 z-filter-sheet bg-black/40 lg:bg-transparent"
       />
       <div
         ref={panelRef}
@@ -291,7 +307,7 @@ export default function FilterSheet({
         // the footer's own pb, where it sits UNDER the footer instead of under
         // a scrolling body. lg: restores the container pad: the anchored
         // desktop panel has no safe-area to clear and no notch to sit in.
-        className={`fixed inset-x-0 bottom-0 z-[1200] rounded-t-xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
+        className={`fixed inset-x-0 bottom-0 z-filter-sheet rounded-t-xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -303,7 +319,22 @@ export default function FilterSheet({
           <div className="w-11 h-[5px] rounded-full bg-[#D4C5A9]" />
         </div>
 
-        <h2 id="filter-sheet-title" className="font-headline-md text-lg font-bold text-text m-0">
+        {/* MEH-3271 (Sapir 18/11): a visible close on the phone sheet — the
+            drag handle and the scrim are not discoverable, and WCAG 2.2 2.5.7
+            wants a non-drag way out. end-3 mirrors the X to the reading end
+            (rtl.md MEH-2038); the title reserves 12 + 44 − 16 = 40px → pe-11. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("filters.sheet.close_aria")}
+          data-testid="filter-sheet-close"
+          data-phone-only
+          className="absolute top-3 end-3 w-11 h-11 rounded-full flex items-center justify-center text-text hover:bg-green-50 transition-colors lg:hidden"
+        >
+          <X size={18} weight="regular" aria-hidden="true" />
+        </button>
+
+        <h2 id="filter-sheet-title" className="font-headline-md text-lg font-bold text-text m-0 pe-11 lg:pe-0">
           {t("filters.sheet.title")}
         </h2>
 

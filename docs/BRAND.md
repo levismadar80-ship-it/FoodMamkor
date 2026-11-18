@@ -43,7 +43,7 @@ The **tagline** is specced for: footer brand line, OpenGraph card, `/about` narr
 ### Strategic LOCKs (full set in `docs/CONTEXT.md` §2)
 
 - Magazine, not marketplace
-- הדף הבסיסי חינם לעולם. אין עמלות עסקה. פרימיום = כלים בלבד, לעולם לא משפיע על דירוג/חשיפה גם עם סימון — see docs/decisions/ADR-027-revenue-model.md + ADR-030-premium-tools-not-ranking.md
+- הדף הבסיסי חינם. מחירון גלוי מהיום הראשון, גבייה מבית עסק רק אחרי סף תוצאות; מותרת עמלה על הזמנות (אירוע בתשלום, שקית הצלה, רכישה). כסף לעולם לא משפיע על דירוג/חשיפה/תגים/אימות, גם עם סימון — see docs/decisions/ADR-042-revenue-model-v3.md + docs/PRICING.md
 - Manual approval for every business
 - Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. Unlicensed food production stays out; no home cooks (unchanged)
 - No `"שכנות מבשלות מהבית"` / `"אוכל ביתי"` / `"מהמטבח של השכן"` in marketing
@@ -78,7 +78,7 @@ The **tagline** is specced for: footer brand line, OpenGraph card, `/about` narr
 Hybrid Hebrew policy — surface determines grammatical form:
 
 - **UI strings** (buttons, loading, errors, hero H1 + subtitle): gerund (`"טעינה"`) or plural (`"גלו"`, `"הוסיפו"`)
-- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): reader address is neutral too (ADR-037, 04/11/2026). Feminine stays only in the founder's first-person voice (`"אנחנו מכירות"`) and on admin screens
+- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): reader address is neutral too (ADR-037, 04/11/2026). Feminine stays only in the founders' first-person voice (two founders, Sapir + Topaz — MEH-3323) (`"אנחנו מכירות"`) and on admin screens
 - **Forbidden across all surfaces:** slash form (`"טוענ/ת"`), pure masculine (`"המשתמש שלך"`), `"יצרן"`/`"יצרנית"`
 - **Surface-function taxonomy (ADR-024, amended by ADR-037):** every reader-facing surface → neutral (plural / verbal noun / impersonal; masculine plural as unmarked). הבהרה: "pure masculine" forbidden = פנייה זכרית לקוראת (`"המשתמש שלך"`), NOT the owner noun (`"בעלי עסקים"` is permitted — סתמי/unmarked)
 
@@ -161,7 +161,7 @@ Phrasings that survived to production once and must be caught in review:
 
 **תקדים חיצוני:** Google סגרה את הצ'אט ב-Google Business Profile ביולי 2024 במקום להחזיק ערוץ שאינה יכולה לעמוד מאחוריו. Yelp מציגה "סגור"/"פתוח" ליד השעות ולא יותר. Etsy שולחת auto-reply — אבל מהחשבון של המוכרת ובניסוח שלה.
 
-**הערה לקוד:** האכיפה מתוכננת כ-lexicon check ב-CI (MEH-1652, חצי ב').
+**הערה לקוד:** האכיפה קיימת כ-lexicon check ב-CI מאז MEH-3351 — `scripts/checks/brand-lexicon-guard.sh`, רץ תחת `Repo guards` דרך `run-all.sh`, על `frontend/messages/*.json`, `frontend/{app,components,lib,hooks}` ו-`backend/app`. **הקובץ הזה הוא ה-SoT:** כלל בבדיקה שאין לו שורה כאן הוא באג בבדיקה, לא כאן. מה שמכוסה ומה שלא: [docs/CORRECTIONS_CHECKS.md](./CORRECTIONS_CHECKS.md). (עד MEH-3351 השורה הזאת אמרה «מתוכננת», במשך כל התקופה שבה היא לא נבנתה.)
 
 **ADR מגבה:** [ADR-031](./decisions/ADR-031-outbound-contact-unobservable.md) — הערוץ היוצא בלתי-נצפה, ומכאן מגבלת הקופי ושער ה-lexicon.
 
@@ -237,7 +237,7 @@ v1.3 קבע «רק מי שמייצר או מגדל בעצמו». ספיר תיק
 
 | רמה | מי | מה עושים |
 |---|---|---|
-| 1 | מייצר או מגדל בעצמו את מה שהוא מוכר | הליבה. ראשונים בפנייה, ראשונים בבחירת העורכת |
+| 1 | מייצר או מגדל בעצמו את מה שהוא מוכר | הליבה. ראשונים בפנייה, ראשונים בבחירת העורכות |
 | 2 | מייצר או מגדל בעצמו, ומוכר גם מוצרים של אחרים | מצטרף. עדיף שהדף יציג קודם את המוצרים שלו |
 | 3 | מוכר רק מוצרים של אחרים: חנות, מעדנייה, מסעדה | אפשרי, מקרה לגופו, באישור ספיר. לא ברירת מחדל ולא יעד של הפנייה הראשונה |
 

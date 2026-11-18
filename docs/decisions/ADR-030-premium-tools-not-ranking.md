@@ -1,6 +1,6 @@
 # ADR-030 — Premium sells tools, not exposure (refines ADR-027)
 
-**Status:** Accepted (Sapir ✓ 20/07/2026)
+**Status:** Accepted (Sapir ✓ 20/07/2026) · §3 trigger and §5 superseded by ADR-042 (14/11/2026); §1, §2, §4 stand
 **Refines:** ADR-027 (revenue model). **Related:** MEH-617, MEH-1159, MEH-1381, MEH-1382, MEH-1003.
 
 ## Context

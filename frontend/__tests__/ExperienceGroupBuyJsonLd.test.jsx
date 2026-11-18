@@ -98,7 +98,7 @@ describe("experience page — Event JSON-LD (MEH-2478)", () => {
     expect(events).toHaveLength(1);
     const ev = events[0];
     expect(ev.name).toBe(EXPERIENCE.title);
-    expect(ev.startDate).toBe("2099-09-14T08:30");
+    expect(ev.startDate).toBe("2099-09-14T08:30+03:00"); // MEH-3177: Israel offset, summer time in September
     expect(ev.location["@type"]).toBe("Place");
     expect(ev.location.address.addressLocality).toBe("זכרון יעקב");
     expect(ev.eventStatus).toBe("https://schema.org/EventScheduled");
@@ -157,8 +157,9 @@ describe("group-buy page — Product + Offer JSON-LD (MEH-2478)", () => {
     expect(p.offers.availability).toBe("https://schema.org/OutOfStock");
   });
 
-  it("funded (no longer joinable) → not InStock", async () => {
-    const [p] = ofType(await ldNodes(GroupBuyPage, { ...GROUP_BUY, status: "funded" }), "Product");
+  // MEH-3289: funded still takes joiners until full; fulfilled does not.
+  it("fulfilled (no longer joinable) → not InStock", async () => {
+    const [p] = ofType(await ldNodes(GroupBuyPage, { ...GROUP_BUY, status: "fulfilled" }), "Product");
     expect(p).toBeDefined();
     expect(p.offers.availability).toBe("https://schema.org/OutOfStock");
   });

@@ -53,6 +53,7 @@ import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Button from "@/components/ui/Button";
 import { SkeletonBlock } from "@/components/Skeleton";
+import Input from "@/components/ui/Input";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -132,9 +133,13 @@ function toEditForm(loc) {
   };
 }
 
-export default function LocationsEditor() {
+// MEH-3333: the admin edit page mounts this editor against
+// /admin/producers/{id}/locations; the owner dashboard keeps the default.
+const OWNER_BASE = "/producers/me/locations";
+
+/** @param {{ basePath?: string }} props */
+export default function LocationsEditor({ basePath = OWNER_BASE } = {}) {
   const t = useTranslations("settings.locations");
-  const tForm = useTranslations("settings.locations.form");
   const tKind = useTranslations("settings.locations.kind");
   const [locations, setLocations] = useState(null);
   const [loadError, setLoadError] = useState(false);
@@ -227,10 +232,10 @@ export default function LocationsEditor() {
   useEffect(() => {
     setLoadError(false);
     api
-      .get("/producers/me/locations")
+      .get(basePath)
       .then((r) => setLocations(r.data))
       .catch(() => setLoadError(true));
-  }, [reloadKey]);
+  }, [reloadKey, basePath]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -256,7 +261,7 @@ export default function LocationsEditor() {
       }
       setSaving(true);
       try {
-        await api.post("/producers/me/locations", body);
+        await api.post(basePath, body);
         setSaveError(null);
         setAdding(false);
         reload();
@@ -267,7 +272,7 @@ export default function LocationsEditor() {
         setSaving(false);
       }
     },
-    [validate, reload, saveErrorFrom, isSameCityError],
+    [validate, reload, saveErrorFrom, isSameCityError, basePath],
   );
 
   const handleUpdate = useCallback(
@@ -282,7 +287,7 @@ export default function LocationsEditor() {
       }
       setSaving(true);
       try {
-        await api.put(`/producers/me/locations/${id}`, body);
+        await api.put(`${basePath}/${id}`, body);
         setSaveError(null);
         setEditingId(null);
         reload();
@@ -293,13 +298,13 @@ export default function LocationsEditor() {
         setSaving(false);
       }
     },
-    [validate, reload, saveErrorFrom, isSameCityError],
+    [validate, reload, saveErrorFrom, isSameCityError, basePath],
   );
 
   const handleSetPrimary = useCallback(
     async (id) => {
       try {
-        await api.put(`/producers/me/locations/${id}`, { is_primary: true });
+        await api.put(`${basePath}/${id}`, { is_primary: true });
         reload();
       } catch (err) {
         showToast.error(
@@ -307,14 +312,14 @@ export default function LocationsEditor() {
         );
       }
     },
-    [reload, resolveLocationCode, t],
+    [reload, resolveLocationCode, t, basePath],
   );
 
   const handleDelete = useCallback(
     async (id) => {
       setDeletingId(id);
       try {
-        await api.delete(`/producers/me/locations/${id}`);
+        await api.delete(`${basePath}/${id}`);
         reload();
       } catch (err) {
         showToast.error(
@@ -324,7 +329,7 @@ export default function LocationsEditor() {
         setDeletingId(null);
       }
     },
-    [reload, resolveLocationCode, t],
+    [reload, resolveLocationCode, t, basePath],
   );
 
   if (loadError) {
@@ -1129,7 +1134,7 @@ const TextInput = forwardRef(function TextInput(
   ref,
 ) {
   return (
-    <input
+    <Input inline size="sm"
       ref={ref}
       type={type}
       inputMode={inputMode}
@@ -1137,7 +1142,7 @@ const TextInput = forwardRef(function TextInput(
       onChange={onChange}
       placeholder={placeholder}
       data-testid={testid}
-      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
+      className="w-full"
     />
   );
 });

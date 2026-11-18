@@ -17,6 +17,7 @@ Exported helper:
 
 from __future__ import annotations
 
+from typing import cast
 import logging
 import re
 from datetime import timedelta
@@ -29,7 +30,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.rate_limit import limiter
 from app.auth import get_current_user
 from app.data.cities import city_key
-from app.database import get_db
+from app.database import end_transaction, get_db
 from app.models import AlertLog, Favorite, FavoriteAlert, Producer, User
 from app.services.producer_listing import is_business
 from app.services.whatsapp import send_template
@@ -39,7 +40,8 @@ from app.services.whatsapp_templates import FavoriteAlertHeV1
 # AlertContent is re-exported here so existing
 # `from app.routers.alerts import AlertContent` callers
 # (events.py, producer_me.py) keep working without scope creep.
-from app.schemas.schemas import AlertContent, AlertPrefsIn, AlertPrefsOut
+from app.schemas.schemas import AlertContent as AlertContent
+from app.schemas.schemas import AlertPrefsIn, AlertPrefsOut
 from app.utils.clock import utc_now
 
 log = logging.getLogger(__name__)
@@ -57,7 +59,7 @@ def get_alert_prefs(
     producer_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> AlertPrefsOut:
     alert = (
         db.query(FavoriteAlert)
         .filter(
@@ -84,8 +86,8 @@ def get_alert_prefs(
         notify_new_event=bool(alert.notify_new_event),
         notify_delivery_area=bool(alert.notify_delivery_area),
         notify_new_recipe=bool(alert.notify_new_recipe),
-        notify_new_group_buy=_pref_on(alert.notify_new_group_buy),
-        notify_new_rescue=_pref_on(alert.notify_new_rescue),
+        notify_new_group_buy=_pref_on(alert.notify_new_group_buy),  # type: ignore[arg-type]
+        notify_new_rescue=_pref_on(alert.notify_new_rescue),  # type: ignore[arg-type]
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
@@ -99,7 +101,7 @@ def upsert_alert_prefs(
     data: AlertPrefsIn,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> AlertPrefsOut:
     fav = (
         db.query(Favorite)
         .filter(
@@ -133,15 +135,15 @@ def upsert_alert_prefs(
     )
 
     if alert:
-        alert.notify_new_product = data.notify_new_product
-        alert.notify_new_event = data.notify_new_event
-        alert.notify_delivery_area = data.notify_delivery_area
-        alert.notify_new_recipe = data.notify_new_recipe
-        alert.notify_new_group_buy = data.notify_new_group_buy
-        alert.notify_new_rescue = data.notify_new_rescue
-        alert.whatsapp_opt_in = data.whatsapp_opt_in
+        alert.notify_new_product = data.notify_new_product  # type: ignore[assignment]
+        alert.notify_new_event = data.notify_new_event  # type: ignore[assignment]
+        alert.notify_delivery_area = data.notify_delivery_area  # type: ignore[assignment]
+        alert.notify_new_recipe = data.notify_new_recipe  # type: ignore[assignment]
+        alert.notify_new_group_buy = data.notify_new_group_buy  # type: ignore[assignment]
+        alert.notify_new_rescue = data.notify_new_rescue  # type: ignore[assignment]
+        alert.whatsapp_opt_in = data.whatsapp_opt_in  # type: ignore[assignment]
         if data.push_subscription is not None:
-            alert.push_subscription = data.push_subscription
+            alert.push_subscription = data.push_subscription  # type: ignore[assignment]
     else:
         alert = FavoriteAlert(
             user_id=user.id,
@@ -165,8 +167,8 @@ def upsert_alert_prefs(
         notify_new_event=bool(alert.notify_new_event),
         notify_delivery_area=bool(alert.notify_delivery_area),
         notify_new_recipe=bool(alert.notify_new_recipe),
-        notify_new_group_buy=_pref_on(alert.notify_new_group_buy),
-        notify_new_rescue=_pref_on(alert.notify_new_rescue),
+        notify_new_group_buy=_pref_on(alert.notify_new_group_buy),  # type: ignore[arg-type]
+        notify_new_rescue=_pref_on(alert.notify_new_rescue),  # type: ignore[arg-type]
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
@@ -215,16 +217,19 @@ _CHANNEL_WHATSAPP = "whatsapp"
 def _recently_sent(db: Session, user_id: UUID, producer_id: UUID, channel: str) -> bool:
     """True if `channel` already delivered to (user, producer) within 24h."""
     cutoff = utc_now() - _CAP_WINDOW
-    return db.query(
-        db.query(AlertLog)
-        .filter(
-            AlertLog.user_id == user_id,
-            AlertLog.producer_id == producer_id,
-            AlertLog.channel == channel,
-            AlertLog.sent_at >= cutoff,
-        )
-        .exists()
-    ).scalar()
+    return cast(
+        bool,
+        db.query(
+            db.query(AlertLog)
+            .filter(
+                AlertLog.user_id == user_id,
+                AlertLog.producer_id == producer_id,
+                AlertLog.channel == channel,
+                AlertLog.sent_at >= cutoff,
+            )
+            .exists()
+        ).scalar(),
+    )
 
 
 def _record_alert_send(
@@ -262,7 +267,7 @@ def _matched_target_cities(
 ) -> list[str]:
     """The original target-city strings whose normalized form equals the
     user's normalized city; [] when the user has no usable city or no match."""
-    norm = _normalize_city(user.city if user else None)
+    norm = _normalize_city(user.city if user else None)  # type: ignore[arg-type]
     if not norm:
         return []
     return [orig for norm_t, orig in targets if norm_t == norm]
@@ -296,6 +301,29 @@ def _recipient_body(
 
 
 def fire_alerts(
+    db: Session,
+    producer_id: UUID,
+    alert_type: str,
+    content: AlertContent,
+    target_cities: list[str] | None = None,
+) -> None:
+    """Background-task entry point: fan out, then give the connection back.
+
+    MEH-2889: callers hand this the REQUEST's session. The fan-out opens a
+    transaction with its query and commits only inside `_record_alert_send`,
+    so with nothing to send it returned with the transaction still open, and
+    the connection stayed checked out through every later task of the same
+    request (Resend sends included). Ending the transaction here returns it.
+    Not `db.close()`: that would detach every instance the caller still holds
+    (a test, or a later task reading `producer.id`).
+    """
+    try:
+        _fan_out_alerts(db, producer_id, alert_type, content, target_cities)
+    finally:
+        end_transaction(db)
+
+
+def _fan_out_alerts(
     db: Session,
     producer_id: UUID,
     alert_type: str,
@@ -378,17 +406,24 @@ def fire_alerts(
         # double-send; closing it needs a unique constraint on
         # (user_id, producer_id, channel, window-bucket) or an advisory lock.
         if alert.push_subscription and not _recently_sent(
-            db, alert.user_id, producer_id, _CHANNEL_PUSH
+            db,
+            alert.user_id,  # type: ignore[arg-type]
+            producer_id,
+            _CHANNEL_PUSH,
         ):
             try:
                 send_push_notification(
-                    alert.push_subscription,
+                    alert.push_subscription,  # type: ignore[arg-type]
                     title=content.title,
                     body=body,
                     url=content.url,
                 )
                 _record_alert_send(
-                    db, alert.user_id, producer_id, _CHANNEL_PUSH, alert_type
+                    db,
+                    alert.user_id,  # type: ignore[arg-type]
+                    producer_id,
+                    _CHANNEL_PUSH,
+                    alert_type,
                 )
             except Exception as exc:
                 log.warning("push failed for user %s: %s", alert.user_id, exc)
@@ -397,7 +432,7 @@ def fire_alerts(
             alert.whatsapp_opt_in
             and alert.user
             and alert.user.phone
-            and not _recently_sent(db, alert.user_id, producer_id, _CHANNEL_WHATSAPP)
+            and not _recently_sent(db, alert.user_id, producer_id, _CHANNEL_WHATSAPP)  # type: ignore[arg-type]
         ):
             try:
                 # MEH-1329: business-initiated favorite alerts must go out as the
@@ -417,7 +452,11 @@ def fire_alerts(
                     ),
                 )
                 _record_alert_send(
-                    db, alert.user_id, producer_id, _CHANNEL_WHATSAPP, alert_type
+                    db,
+                    alert.user_id,  # type: ignore[arg-type]
+                    producer_id,
+                    _CHANNEL_WHATSAPP,
+                    alert_type,
                 )
             except Exception as exc:
                 log.warning("whatsapp alert failed for user %s: %s", alert.user_id, exc)

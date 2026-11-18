@@ -1,6 +1,7 @@
+// @ts-check
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, MapPin, MapPinLine, Rows, X } from "@phosphor-icons/react";
 
@@ -352,7 +353,7 @@ export default function MapPage() {
     setMapMoved: filters.setMapMoved,
     setCommittedBounds: filters.setCommittedBounds,
     categories: feed.categories,
-    setAllProducers: feed.setAllProducers,
+    loadArea: feed.loadArea,
     setSheetSnap: hints.setSheetSnap,
   });
 
@@ -889,8 +890,10 @@ export default function MapPage() {
   // not an empty result. The condition is city-only on purpose — with a chip
   // also on, "the filters did this" is the true story and MEH-2425's
   // filtered-zero row (with its way out) is the right one.
+  // MEH-3198: a failed load is not a town with no businesses.
   const cityZero =
     !feed.loading &&
+    !feed.loadError &&
     filters.cityFilter.trim() !== "" &&
     !filters.hasNonCityFilters &&
     filters.visibleProducers.length === 0 &&
@@ -921,6 +924,9 @@ export default function MapPage() {
       // too is a no-op there (the sheet swaps children for its own skeleton
       // while loading) and makes the sidebar mount safe.
       loading={feed.loading}
+      // MEH-3198: a failed load shows an error with «נסו שוב», not "none found".
+      loadError={feed.loadError}
+      onRetry={feed.retry}
       visibleProducers={sortedProducers}
       hoveredProducerId={filters.hoveredProducerId}
       activeProducerId={filters.activeProducerId}
@@ -985,7 +991,8 @@ export default function MapPage() {
                     style={{ width: "120px", height: "12px" }}
                     aria-hidden="true"
                   />
-                ) : (
+                ) : feed.loadError && filters.visibleProducers.length === 0 ? null : (
+                  // MEH-3198: a failed load is not «אין בתי עסק» — the list below says what happened.
                   <p className="text-xs text-fg-muted" data-testid="map-list-count">
                     {/* MEH-2425: zero under active filters names the filters as
                         the cause, same as the mobile sheet's peek row. */}
@@ -1072,7 +1079,7 @@ export default function MapPage() {
             search-this-area pill + zoom control.
             MEH-1133: surface was `bg-background/95 backdrop-blur` — the 5% map
             bleed-through behind the category chips read as the chips "floating"
-            over the tiles. Now fully-opaque cream (`bg-background` = #F5F0E8), so
+            over the tiles. Now fully-opaque cream (`bg-background`, F5F0E8), so
             the bar is a solid band the map starts cleanly below (the blur becomes
             moot once nothing shows through).
 
@@ -1206,8 +1213,12 @@ export default function MapPage() {
           nearMeEmpty={nearMeEmpty}
           hasOrigin={!!userLoc || filters.cityFilter.trim() !== ""}
           rideExtraPx={showPickCard ? pickCardHeight : 0}
+          loadError={feed.loadError}
+          onRetry={feed.retry}
         >
-          {cardList}
+          {/* MEH-3198: the peek row above already shows the error + «נסו שוב»;
+              the list inside the sheet must not repeat them. */}
+          {cloneElement(cardList, { loadError: false, onRetry: null })}
         </MapBottomSheet>
       </div>
 

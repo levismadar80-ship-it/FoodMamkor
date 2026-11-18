@@ -1,6 +1,37 @@
 {
   "components": {
     "schemas": {
+      "AccountDeleteRequest": {
+        "description": "Body of POST /auth/me/delete. A session alone is not enough to delete\nan account (D15, same threat as MEH-3104's email change): an account with\na password sends it; an account that signs in only with Google or Apple\nsends a fresh id_token from that provider.",
+        "properties": {
+          "id_token": {
+            "anyOf": [
+              {
+                "maxLength": 8192,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Token"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          }
+        },
+        "title": "AccountDeleteRequest",
+        "type": "object"
+      },
       "AdminChecklistItemIn": {
         "description": "One item in a full-list PUT.\n\n`id` is optional: present = update that row, absent = create a new item.\nThat is what lets the settings screen add, edit and reorder in one request\nwithout a separate POST — the admin drags three rows and saves once.\n\nThere is deliberately NO delete. Retirement is `active: false`, and the DB\nenforces it (`producer_review_checks.item_id` is ON DELETE RESTRICT), so a\ndelete endpoint would only ever produce a 500 on any item with history.",
         "properties": {
@@ -138,6 +169,21 @@
               }
             ],
             "title": "Body"
+          },
+          "conflict": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "competitor"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflict"
           },
           "created_at": {
             "title": "Created At",
@@ -416,6 +462,245 @@
         "title": "AvailabilityStateUpdate",
         "type": "object"
       },
+      "BillingHistoryMonthOut": {
+        "description": "One past month as it would have been billed (shadow billing).",
+        "properties": {
+          "businesses": {
+            "title": "Businesses",
+            "type": "integer"
+          },
+          "businesses_over_threshold": {
+            "title": "Businesses Over Threshold",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          },
+          "would_pay_total_agorot": {
+            "title": "Would Pay Total Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "businesses",
+          "businesses_over_threshold",
+          "value_agorot",
+          "would_pay_total_agorot"
+        ],
+        "title": "BillingHistoryMonthOut",
+        "type": "object"
+      },
+      "BillingKindOut": {
+        "properties": {
+          "bookings": {
+            "title": "Bookings",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "bookings",
+          "value_agorot"
+        ],
+        "title": "BillingKindOut",
+        "type": "object"
+      },
+      "BillingOverviewOut": {
+        "properties": {
+          "businesses_over_threshold": {
+            "title": "Businesses Over Threshold",
+            "type": "integer"
+          },
+          "businesses_over_two_months": {
+            "title": "Businesses Over Two Months",
+            "type": "integer"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/BillingHistoryMonthOut"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "phase": {
+            "enum": [
+              "launch",
+              "billing"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/BillingOverviewRowOut"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "start_billing_businesses": {
+            "title": "Start Billing Businesses",
+            "type": "integer"
+          },
+          "start_billing_months": {
+            "title": "Start Billing Months",
+            "type": "integer"
+          },
+          "threshold_agorot": {
+            "title": "Threshold Agorot",
+            "type": "integer"
+          },
+          "would_pay_total_agorot": {
+            "title": "Would Pay Total Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "threshold_agorot",
+          "businesses_over_threshold",
+          "businesses_over_two_months",
+          "start_billing_businesses",
+          "start_billing_months",
+          "would_pay_total_agorot",
+          "phase",
+          "history",
+          "rows"
+        ],
+        "title": "BillingOverviewOut",
+        "type": "object"
+      },
+      "BillingOverviewRowOut": {
+        "properties": {
+          "bookings": {
+            "title": "Bookings",
+            "type": "integer"
+          },
+          "months_over_in_a_row": {
+            "title": "Months Over In A Row",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "over_threshold": {
+            "title": "Over Threshold",
+            "type": "boolean"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          },
+          "would_pay_agorot": {
+            "title": "Would Pay Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "producer_id",
+          "name",
+          "bookings",
+          "value_agorot",
+          "over_threshold",
+          "months_over_in_a_row",
+          "would_pay_agorot"
+        ],
+        "title": "BillingOverviewRowOut",
+        "type": "object"
+      },
+      "BillingSummaryOut": {
+        "properties": {
+          "bookings": {
+            "title": "Bookings",
+            "type": "integer"
+          },
+          "by_kind": {
+            "items": {
+              "$ref": "#/components/schemas/BillingKindOut"
+            },
+            "title": "By Kind",
+            "type": "array"
+          },
+          "charged_agorot": {
+            "title": "Charged Agorot",
+            "type": "integer"
+          },
+          "fee_with_subscription_agorot": {
+            "title": "Fee With Subscription Agorot",
+            "type": "integer"
+          },
+          "fee_without_subscription_agorot": {
+            "title": "Fee Without Subscription Agorot",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "over_threshold": {
+            "title": "Over Threshold",
+            "type": "boolean"
+          },
+          "phase": {
+            "enum": [
+              "launch",
+              "billing"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "price_list_version": {
+            "title": "Price List Version",
+            "type": "integer"
+          },
+          "threshold_agorot": {
+            "title": "Threshold Agorot",
+            "type": "integer"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "phase",
+          "bookings",
+          "value_agorot",
+          "by_kind",
+          "threshold_agorot",
+          "over_threshold",
+          "fee_without_subscription_agorot",
+          "fee_with_subscription_agorot",
+          "charged_agorot",
+          "price_list_version"
+        ],
+        "title": "BillingSummaryOut",
+        "type": "object"
+      },
       "BioGenerateIn": {
         "properties": {
           "area": {
@@ -465,6 +750,20 @@
           "sells"
         ],
         "title": "BioGenerateIn",
+        "type": "object"
+      },
+      "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post",
         "type": "object"
       },
       "Body_upload_avatar_upload_avatar_post": {
@@ -536,7 +835,7 @@
         "type": "object"
       },
       "BusinessSuggestionCreate": {
-        "description": "Public body for POST /business-suggestions (MEH-2633).\n\nA visitor suggesting a business that is not on Mehamakor yet. The row it\nproduces is an ordinary OutreachLead with source=\"community\" — nothing is\npublished, and the business still registers itself and passes manual\napproval + the licence check.\n\nField rules worth stating, because each one is a decision:\n\n- `city` is REQUIRED. REUSES `clean_display_city` (:259), so it gets the\n  same bleach + >=1-letter floor as the registration form's city; \"בת ים\"\n  and \"לוד\" clear a 1-letter floor where the >=3 used for names would not.\n- `instagram` / `phone` / `website`: at least ONE is required, enforced by\n  `_require_one_contact` below — without a way to reach the business the\n  suggestion is unactionable, which is the whole point of the queue. The\n  error text is the approved `<hebrew_copy>` string verbatim.\n- `company` is a HONEYPOT. No human sees it (Chunk B hides it from sighted\n  users AND from screen readers), so any value at all means a bot. The\n  router answers 201 and stores nothing — never a 4xx, which would tell\n  the bot what tripped it.\n- `suggester_email` is optional PII. It is normalised through\n  `_normalize_contact_email` (:342) so a cleared field arrives as None\n  rather than 422-ing, and capped at 254 to match the column. It is NEVER\n  echoed back: see BusinessSuggestionAck.\n\n`Field(max_length=…)` sits at field level on `instagram` / `suggester_name`\n/ `reason`, whose separate `@field_validator`s may return None. That is\nsafe, and deliberately NOT the Annotated form: an `AfterValidator` inside\nthe annotation would have the cap applied to the validator's OUTPUT and\nblow up with \"Unable to apply constraint 'max_length' to supplied value\nNone\" (the trap documented at :640-652). `suggester_email` carries no\nfield-level cap for the same reason in reverse — its validator is\nmode=\"before\", so a cap would land after it.",
+        "description": "Public body for POST /business-suggestions (MEH-2633).\n\nA visitor suggesting a business that is not on Mehamakor yet. The row it\nproduces is an ordinary OutreachLead with source=\"community\" — nothing is\npublished, and the business still registers itself and passes manual\napproval + the licence check.\n\nField rules worth stating, because each one is a decision:\n\n- `city` is REQUIRED. REUSES `clean_display_city` (:259), so it gets the\n  same bleach + >=1-letter floor as the registration form's city; \"בת ים\"\n  and \"לוד\" clear a 1-letter floor where the >=3 used for names would not.\n- `instagram` / `phone` / `website`: at least ONE is required, enforced by\n  `_require_one_contact` below — without a way to reach the business the\n  suggestion is unactionable, which is the whole point of the queue. The\n  error text is the approved `<hebrew_copy>` string verbatim.\n- `company` is a HONEYPOT. No human sees it (Chunk B hides it from sighted\n  users AND from screen readers), so any value at all means a bot. The\n  router answers 201 and stores nothing — never a 4xx, which would tell\n  the bot what tripped it.\n- `suggester_email` is still ACCEPTED but IGNORED by the router since\n  MEH-2642: the stored address is the signed-in, verified account's only.\n  It stays in the schema so an old client does not 422. DO NOT wire it\n  back in — a typed address is unverified (MEH-2642). It is still\n  normalised through `_normalize_contact_email` (:342) and never echoed.\n\n`Field(max_length=…)` sits at field level on `instagram` / `suggester_name`\n/ `reason`, whose separate `@field_validator`s may return None. That is\nsafe, and deliberately NOT the Annotated form: an `AfterValidator` inside\nthe annotation would have the cap applied to the validator's OUTPUT and\nblow up with \"Unable to apply constraint 'max_length' to supplied value\nNone\" (the trap documented at :640-652). `suggester_email` carries no\nfield-level cap for the same reason in reverse — its validator is\nmode=\"before\", so a cap would land after it.",
         "properties": {
           "city": {
             "maxLength": 100,
@@ -646,6 +945,36 @@
         "title": "BusinessSuggestionCreate",
         "type": "object"
       },
+      "CategoryCreate": {
+        "description": "MEH-3255 (D10): a NEW category must answer «דורשת רישיון?» — no\ndefault, so a create without an explicit choice is a 422, not a silent\n«no». PUT keeps CategoryIn: the flag is not editable through rename.",
+        "properties": {
+          "emoji": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emoji"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "requires_license": {
+            "title": "Requires License",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "requires_license"
+        ],
+        "title": "CategoryCreate",
+        "type": "object"
+      },
       "CategoryHit": {
         "properties": {
           "emoji": {
@@ -747,6 +1076,10 @@
             ],
             "title": "Producer Count"
           },
+          "requires_license": {
+            "title": "Requires License",
+            "type": "boolean"
+          },
           "slug": {
             "anyOf": [
               {
@@ -761,7 +1094,8 @@
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "requires_license"
         ],
         "title": "CategoryOut",
         "type": "object"
@@ -994,6 +1328,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -1153,6 +1488,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -1217,6 +1553,88 @@
           "token"
         ],
         "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
+      "DraftConsentPublishIn": {
+        "properties": {
+          "consent_confirmed": {
+            "title": "Consent Confirmed",
+            "type": "boolean"
+          },
+          "consent_note": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Consent Note",
+            "type": "string"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
+          }
+        },
+        "required": [
+          "consent_confirmed",
+          "consent_note"
+        ],
+        "title": "DraftConsentPublishIn",
+        "type": "object"
+      },
+      "DraftConsentPublishOut": {
+        "properties": {
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "status"
+        ],
+        "title": "DraftConsentPublishOut",
+        "type": "object"
+      },
+      "DraftPreviewLinkOut": {
+        "description": "MEH-3377. Its own shape, not ProducerClaimLinkOut: the two links grant\ndifferent things, and the claim-link inventory test pins that schema to the\none route that mints a claim link.",
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "DraftPreviewLinkOut",
         "type": "object"
       },
       "EventCreate": {
@@ -2883,6 +3301,7 @@
           "category": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -2894,6 +3313,7 @@
           "city": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -2905,6 +3325,7 @@
           "description": {
             "anyOf": [
               {
+                "maxLength": 5000,
                 "type": "string"
               },
               {
@@ -2916,6 +3337,7 @@
           "location_type": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -3025,6 +3447,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -3495,6 +3918,17 @@
             ],
             "title": "Unit"
           },
+          "units_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units Total"
+          },
           "user_commit": {
             "anyOf": [
               {
@@ -3675,6 +4109,17 @@
               }
             ],
             "title": "Unit"
+          },
+          "units_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units Total"
           }
         },
         "required": [
@@ -3690,6 +4135,30 @@
           "created_at"
         ],
         "title": "GroupBuyOut",
+        "type": "object"
+      },
+      "GroupBuyStatusCountsOut": {
+        "description": "How many group buys each public status tab would list right now.",
+        "properties": {
+          "fulfilled": {
+            "title": "Fulfilled",
+            "type": "integer"
+          },
+          "funded": {
+            "title": "Funded",
+            "type": "integer"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open",
+          "funded",
+          "fulfilled"
+        ],
+        "title": "GroupBuyStatusCountsOut",
         "type": "object"
       },
       "GroupBuyStatusOut": {
@@ -4093,6 +4562,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -4172,6 +4642,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -4949,8 +5420,14 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "password": {
             "description": "Password — additional checks via password_policy service",
@@ -4998,6 +5475,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -5067,6 +5545,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -5082,6 +5561,58 @@
           "email"
         ],
         "title": "OwnerInviteEmailCodeRequest",
+        "type": "object"
+      },
+      "OwnerInviteExistingAccept": {
+        "properties": {
+          "code": {
+            "maxLength": 12,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "declaration_accepted": {
+            "title": "Declaration Accepted",
+            "type": "boolean"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
+          "terms_accepted": {
+            "title": "Terms Accepted",
+            "type": "boolean"
+          },
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "code",
+          "terms_accepted",
+          "declaration_accepted"
+        ],
+        "title": "OwnerInviteExistingAccept",
+        "type": "object"
+      },
+      "OwnerInviteExistingCodeRequest": {
+        "properties": {
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "OwnerInviteExistingCodeRequest",
         "type": "object"
       },
       "OwnerInvitePublicOut": {
@@ -5128,6 +5659,40 @@
           "requires_farmer_declaration"
         ],
         "title": "OwnerInvitePublicOut",
+        "type": "object"
+      },
+      "PageFreshnessConfirmIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "PageFreshnessConfirmIn",
+        "type": "object"
+      },
+      "PageFreshnessConfirmOut": {
+        "properties": {
+          "business_name": {
+            "title": "Business Name",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "format": "date-time",
+            "title": "Confirmed At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "business_name",
+          "confirmed_at"
+        ],
+        "title": "PageFreshnessConfirmOut",
         "type": "object"
       },
       "PasswordChange": {
@@ -5194,6 +5759,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -5362,6 +5928,17 @@
             "title": "Organic Certified",
             "type": "boolean"
           },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
+          },
           "phone": {
             "anyOf": [
               {
@@ -5496,6 +6073,18 @@
             "title": "Ambassador",
             "type": "boolean"
           },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
+          },
           "availability_state": {
             "default": "accepting_orders",
             "title": "Availability State",
@@ -5553,6 +6142,17 @@
               }
             ],
             "title": "Claim Link Sent At"
+          },
+          "consent_screenshot_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Screenshot Url"
           },
           "contact_email": {
             "anyOf": [
@@ -5940,6 +6540,18 @@
             "default": "unknown",
             "title": "Lactose Free Facility",
             "type": "string"
+          },
+          "last_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Confirmed At"
           },
           "lat": {
             "anyOf": [
@@ -6623,6 +7235,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -6793,6 +7406,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "free_delivery_above": {
             "anyOf": [
@@ -7301,6 +7919,19 @@
         "title": "ProducerClaimLinkOut",
         "type": "object"
       },
+      "ProducerClaimNewLinkOut": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "ProducerClaimNewLinkOut",
+        "type": "object"
+      },
       "ProducerClaimOut": {
         "properties": {
           "producer_id": {
@@ -7396,6 +8027,11 @@
             "title": "Declaration Accepted",
             "type": "boolean"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "terms_accepted": {
             "default": false,
             "title": "Terms Accepted",
@@ -7475,6 +8111,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "instagram": {
             "anyOf": [
@@ -7571,6 +8212,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -8422,6 +9075,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -9727,6 +10392,143 @@
         "title": "ProducerOfferOut",
         "type": "object"
       },
+      "ProducerOrderAlcoholIn": {
+        "additionalProperties": false,
+        "properties": {
+          "alcohol_licensed": {
+            "title": "Alcohol Licensed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "alcohol_licensed"
+        ],
+        "title": "ProducerOrderAlcoholIn",
+        "type": "object"
+      },
+      "ProducerOrderSettingsIn": {
+        "additionalProperties": false,
+        "description": "What the owner may change. Every field is required: the settings screen\nsaves the whole form, so a missing field is a client bug, not \"leave it\".",
+        "properties": {
+          "auto_confirm": {
+            "title": "Auto Confirm",
+            "type": "boolean"
+          },
+          "auto_confirm_slot_cap": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Confirm Slot Cap"
+          },
+          "cancel_cutoff_hours": {
+            "maximum": 168.0,
+            "minimum": 0.0,
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "min_order_agorot": {
+            "anyOf": [
+              {
+                "maximum": 10000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Agorot"
+          },
+          "shabbat_observant": {
+            "title": "Shabbat Observant",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "auto_confirm",
+          "auto_confirm_slot_cap",
+          "cancel_cutoff_hours",
+          "shabbat_observant",
+          "min_order_agorot"
+        ],
+        "title": "ProducerOrderSettingsIn",
+        "type": "object"
+      },
+      "ProducerOrderSettingsOut": {
+        "properties": {
+          "alcohol_licensed": {
+            "title": "Alcohol Licensed",
+            "type": "boolean"
+          },
+          "auto_confirm": {
+            "title": "Auto Confirm",
+            "type": "boolean"
+          },
+          "auto_confirm_slot_cap": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Confirm Slot Cap"
+          },
+          "cancel_cutoff_hours": {
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "min_order_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Agorot"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "shabbat_observant": {
+            "title": "Shabbat Observant",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "producer_id",
+          "enabled",
+          "auto_confirm",
+          "auto_confirm_slot_cap",
+          "cancel_cutoff_hours",
+          "shabbat_observant",
+          "min_order_agorot",
+          "alcohol_licensed"
+        ],
+        "title": "ProducerOrderSettingsOut",
+        "type": "object"
+      },
       "ProducerOwnerOut": {
         "properties": {
           "active_offer": {
@@ -9754,6 +10556,18 @@
             "default": false,
             "title": "Ambassador",
             "type": "boolean"
+          },
+          "availability_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Confirmed At"
           },
           "availability_state": {
             "default": "accepting_orders",
@@ -9964,6 +10778,18 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Declared At"
           },
           "favorites_count": {
             "default": 0,
@@ -11017,6 +11843,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -11066,6 +11893,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -11073,6 +11901,11 @@
               }
             ],
             "title": "Email"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "has_physical_location": {
             "default": true,
@@ -11429,6 +12262,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -11599,6 +12433,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "free_delivery_above": {
             "anyOf": [
@@ -12728,6 +13567,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -14252,6 +15092,11 @@
             "title": "Id",
             "type": "string"
           },
+          "is_mine": {
+            "default": false,
+            "title": "Is Mine",
+            "type": "boolean"
+          },
           "producer_id": {
             "format": "uuid",
             "title": "Producer Id",
@@ -14283,11 +15128,6 @@
             "title": "Stars",
             "type": "integer"
           },
-          "user_id": {
-            "format": "uuid",
-            "title": "User Id",
-            "type": "string"
-          },
           "user_name": {
             "anyOf": [
               {
@@ -14303,7 +15143,6 @@
         "required": [
           "id",
           "producer_id",
-          "user_id",
           "stars",
           "created_at"
         ],
@@ -15003,6 +15842,17 @@
             "title": "Cities",
             "type": "array"
           },
+          "corrected_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Query"
+          },
           "producers": {
             "default": [],
             "items": {
@@ -15207,6 +16057,16 @@
             ],
             "title": "Producer Id"
           },
+          "rescue_active_no_shows": {
+            "default": 0,
+            "title": "Rescue Active No Shows",
+            "type": "integer"
+          },
+          "rescue_blocked": {
+            "default": false,
+            "title": "Rescue Blocked",
+            "type": "boolean"
+          },
           "role": {
             "title": "Role",
             "type": "string"
@@ -15270,9 +16130,25 @@
             "title": "Is Producer",
             "type": "boolean"
           },
+          "is_super_admin": {
+            "default": false,
+            "title": "Is Super Admin",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "oauth_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Provider"
           },
           "phone": {
             "anyOf": [
@@ -15365,6 +16241,7 @@
           "city": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -15375,6 +16252,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -15494,6 +16372,21 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WeeklySummaryUnsubscribeIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "WeeklySummaryUnsubscribeIn",
+        "type": "object"
+      },
       "WhatsAppClickIn": {
         "description": "MEH-1677: OPTIONAL body of POST /producers/{id}/whatsapp-click.\n\nThe endpoint took no body before this. It still accepts none -- the\nanonymous path uses `navigator.sendBeacon`, which cannot set\n`Content-Type: application/json` (it sends text/plain, which FastAPI\nrejects with 422), so a REQUIRED body would break every anonymous\nWhatsApp click on the site. Only the coverage CTA sends a body, and it\nuses fetch(keepalive) for exactly that reason.\n\n`city` is validated SOFTLY on purpose: a value that is not in the\ncanonical city list is still STORED, not dropped. The point of the\ncapture is to learn where demand actually is, including spellings and\nlocalities our list does not carry yet -- discarding those would delete\nthe most interesting rows.",
         "properties": {
@@ -15572,6 +16465,129 @@
         ]
       }
     },
+    "/admin/audit-log": {
+      "get": {
+        "description": "MEH-3306: the admin audit log, newest first. `before` pages back by\n`created_at`. The stored IP is not returned: it is kept for an\ninvestigation, not for a list.",
+        "operationId": "list_audit_log_admin_audit_log_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Audit Log",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
+    "/admin/billing/overview": {
+      "get": {
+        "operationId": "admin_billing_overview_admin_billing_overview_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM (Israel month)",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[0-9]{4}-[0-9]{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM (Israel month)",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingOverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Billing Overview",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/admin/categories": {
       "get": {
         "operationId": "list_categories_admin_admin_categories_get",
@@ -15607,7 +16623,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CategoryIn"
+                "$ref": "#/components/schemas/CategoryCreate"
               }
             }
           },
@@ -17221,6 +18237,16 @@
               "title": "Recommended Review Due",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "freshness_stale",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Freshness Stale",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -17809,6 +18835,290 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/locations": {
+      "get": {
+        "operationId": "admin_list_locations_admin_producers__producer_id__locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                  },
+                  "title": "Response Admin List Locations Admin Producers  Producer Id  Locations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Locations",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_location_admin_producers__producer_id__locations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerLocationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Create Location",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/locations/{location_id}": {
+      "delete": {
+        "operationId": "admin_delete_location_admin_producers__producer_id__locations__location_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete Location",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      },
+      "put": {
+        "operationId": "admin_update_location_admin_producers__producer_id__locations__location_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerLocationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerLocationOwnerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Update Location",
+        "tags": [
+          "admin-producer-locations"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/order-settings/alcohol": {
+      "put": {
+        "description": "Mark a business as licensed to sell alcohol (or take the mark away).\n\nSapir's decision of 14/11: alcohol can be ordered only from a business an\nadmin has marked. The mark does not switch ordering on — `enabled` is the\nowner's own choice and a row created here starts with it off.",
+        "operationId": "set_alcohol_licensed_admin_producers__producer_id__order_settings_alcohol_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerOrderAlcoholIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerOrderSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Alcohol Licensed",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/owner-invite": {
       "delete": {
         "description": "Withdraw an invite that has not been accepted.\n\nClears the PII too, not only the token. The address and the name belong to\nsomeone who is not a user of the site and now never will be through this\nlink, so the row should stop holding them (MEH-2208's תיקון 13 class).\n`owner_invite_created_by` and the consent note are kept: they are the audit\nrecord of an invite that WAS sent, and deleting that is the one thing a\ncancel must not do.\n\nDeliberately NOT gated on `status == \"approved\"` — see `_load_invitable`.",
@@ -17962,6 +19272,55 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/preview-link": {
+      "post": {
+        "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
+        "operationId": "create_preview_link_admin_producers__producer_id__preview_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Preview Link",
+        "tags": [
+          "producer-draft-preview"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/products": {
       "post": {
         "operationId": "admin_create_draft_product_admin_producers__producer_id__products_post",
@@ -18068,6 +19427,74 @@
         "summary": "Admin Delete Draft Product",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/publish-with-consent": {
+      "post": {
+        "operationId": "publish_draft_with_consent_admin_producers__producer_id__publish_with_consent_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "allow_without_license",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Allow Without License",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftConsentPublishIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftConsentPublishOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Publish Draft With Consent",
+        "tags": [
+          "producer-draft-preview"
         ]
       }
     },
@@ -19478,7 +20905,7 @@
     },
     "/admin/users/{user_id}": {
       "delete": {
-        "description": "MEH-2585: hard-delete a user and her data — same cascade as the\nself-service DELETE /auth/me (services/user_deletion.py), minus the\nconfirmation email (an admin removal, often of a test account).\n\nAdmins are refused: demote first, so removing an admin is always two\ndeliberate steps and the protected super-admin can never be deleted.",
+        "description": "MEH-2585: hard-delete a user and her data — same cascade as the\nself-service POST /auth/me/delete (services/user_deletion.py), minus the\nconfirmation email (an admin removal, often of a test account).\n\nAdmins are refused: demote first, so removing an admin is always two\ndeliberate steps and the protected super-admin can never be deleted.",
         "operationId": "admin_delete_user_admin_users__user_id__delete",
         "parameters": [
           {
@@ -19962,29 +21389,6 @@
       }
     },
     "/auth/me": {
-      "delete": {
-        "description": "Delete user account and all associated data.\n\nRequired by Apple App Store Guidelines; also closes the GDPR /\nחוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who\ndeleted her account left the Producer row behind in the public\ndirectory (the /producers list, /map, and search), with reviews,\nfollowers, and page-view analytics still referencing her.\n\nNow, if the user owns a Producer, that Producer is hard-deleted\nbefore the user row. Producer-linked tables cascade via the FKs\ndefined in models.py (all have ondelete=CASCADE):\n  - ProducerCategory, DeliveryArea, Product\n  - ProducerReview, Favorite\n  - ProducerPageView, ProducerWhatsAppClick\n  - Report (on producer), Event, Experience\n\nMEH-1150: the user's ProducerReview rows on THIRD-PARTY businesses also\ncascade on the user delete. Those businesses' denormalized avg_rating /\nreviews_count (maintained only in reviews.py) are recomputed after the\ndeletion commits so they don't keep counting reviews that no longer exist.",
-        "operationId": "delete_account_auth_me_delete",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Delete Account",
-        "tags": [
-          "auth"
-        ]
-      },
       "get": {
         "description": "Return current user, enriched with producer status/rejection_reason.",
         "operationId": "get_me_auth_me_get",
@@ -20006,6 +21410,51 @@
           }
         ],
         "summary": "Get Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/me/delete": {
+      "post": {
+        "description": "Delete user account and all associated data.\n\nMEH-3248: refused for admin accounts (account_guards.assert_deletable,\nchecked first), then the caller proves she owns the account: password, or\na fresh Google/Apple id_token for an account without one\n(account_guards.verify_deletion_credentials).\n\nRequired by Apple App Store Guidelines; also closes the GDPR /\nחוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who\ndeleted her account left the Producer row behind in the public\ndirectory (the /producers list, /map, and search), with reviews,\nfollowers, and page-view analytics still referencing her.\n\nNow, if the user owns a Producer, that Producer is hard-deleted\nbefore the user row. Producer-linked tables cascade via the FKs\ndefined in models.py (all have ondelete=CASCADE):\n  - ProducerCategory, DeliveryArea, Product\n  - ProducerReview, Favorite\n  - ProducerPageView, ProducerWhatsAppClick\n  - Report (on producer), Event, Experience\n\nMEH-1150: the user's ProducerReview rows on THIRD-PARTY businesses also\ncascade on the user delete. Those businesses' denormalized avg_rating /\nreviews_count (maintained only in reviews.py) are recomputed after the\ndeletion commits so they don't keep counting reviews that no longer exist.",
+        "operationId": "delete_account_auth_me_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Account",
         "tags": [
           "auth"
         ]
@@ -20053,6 +21502,52 @@
         ]
       }
     },
+    "/auth/owner-invite/accept-existing": {
+      "post": {
+        "operationId": "accept_owner_invite_existing_auth_owner_invite_accept_existing_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteExistingAccept"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Accept Owner Invite Existing",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/owner-invite/email-code": {
       "post": {
         "description": "Send a verification code to the address she typed.\n\nTHE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —\nfor an address that is free, one that already belongs to an account, and\none whose send fails. The reason is specific: this endpoint takes an\narbitrary address from anyone holding the link, so a different answer for\n\"already registered\" would turn it into an account-existence oracle for\nany address an attacker cares to try.\n\nWhat DOES differ is invisible from here: a registered address is not\nmailed and no code is stored, so the acceptance it would lead to fails at\nthe 409 it was always going to fail at.\n\nAn invalid link still 404s — that is a fact about the LINK, which the\ncaller already holds, not about any address.",
@@ -20088,6 +21583,51 @@
           }
         },
         "summary": "Send Owner Invite Email Code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/owner-invite/email-code-existing": {
+      "post": {
+        "description": "Mail a code to the signed-in account's own address. The address is\nnot an input, so there is no existence oracle to keep closed here.",
+        "operationId": "send_owner_invite_code_existing_auth_owner_invite_email_code_existing_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteExistingCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Send Owner Invite Code Existing",
         "tags": [
           "auth"
         ]
@@ -20293,7 +21833,7 @@
     },
     "/auth/resend-verify": {
       "post": {
-        "description": "Re-send verification email. Rate-limited to 3/hour per IP.",
+        "description": "Re-send verification email. 3/hour per IP, plus 3/hour and 10/day\nper account (MEH-2906, services/resend_verify_cap.py).",
         "operationId": "resend_verify_auth_resend_verify_post",
         "responses": {
           "200": {
@@ -21229,7 +22769,7 @@
     },
     "/experiences": {
       "get": {
-        "description": "Only approved + upcoming (event_date >= today), and only from an\napproved business (MEH-1749). Past experiences drop out of the public\nfeed automatically.",
+        "description": "Only approved + upcoming (event_date >= today, or recurring —\nMEH-3250), and only from an approved business (MEH-1749). Past one-off\nexperiences drop out of the public feed automatically.",
         "operationId": "list_experiences_experiences_get",
         "parameters": [
           {
@@ -21829,6 +23369,57 @@
         ]
       }
     },
+    "/group-buys/counts": {
+      "get": {
+        "description": "MEH-3128: how many group buys each status tab would list, so the page\nhides a tab that would open on an empty state. Numbers only.",
+        "operationId": "count_group_buys_by_status_group_buys_counts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "City"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyStatusCountsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Count Group Buys By Status",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
     "/group-buys/{group_buy_id}": {
       "get": {
         "operationId": "get_group_buy_group_buys__group_buy_id__get",
@@ -22325,6 +23916,47 @@
         ]
       }
     },
+    "/page-freshness/confirm": {
+      "post": {
+        "operationId": "confirm_page_freshness_page_freshness_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFreshnessConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFreshnessConfirmOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Page Freshness",
+        "tags": [
+          "page-freshness"
+        ]
+      }
+    },
     "/producer-claim": {
       "post": {
         "operationId": "claim_producer_producer_claim_post",
@@ -22366,6 +23998,48 @@
           }
         ],
         "summary": "Claim Producer",
+        "tags": [
+          "producer-claim"
+        ]
+      }
+    },
+    "/producer-claim/new-link-request": {
+      "post": {
+        "description": "The owner opened a claim link that no longer works and asks for a new\none. Sapir's decision (14/11): the admin is told and sends the link\nherself — this route never mints a link and never returns one.\n\nDO NOT branch the response on the token. The answer is the same for a\nforged token, an unknown draft, a claimed draft and a real request, so it\ncannot be used to probe which producer ids exist (same reason as\n_LINK_INVALID above).",
+        "operationId": "request_new_claim_link_producer_claim_new_link_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerClaimPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerClaimNewLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request New Claim Link",
         "tags": [
           "producer-claim"
         ]
@@ -22453,6 +24127,49 @@
         "summary": "Producer Name Check",
         "tags": [
           "producers"
+        ]
+      }
+    },
+    "/producer-preview/{token}": {
+      "get": {
+        "description": "The draft's page payload, for whoever holds the link.\n\nThe same `ProducerDetailOut` the public page serves once the business is\nlive, so the holder sees nothing the page will not show everyone after she\nsays yes. Refused with one 404 unless the row is still an ownerless draft.",
+        "operationId": "read_draft_preview_producer_preview__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Draft Preview",
+        "tags": [
+          "producer-draft-preview"
         ]
       }
     },
@@ -23264,6 +24981,31 @@
         ]
       }
     },
+    "/producers/me/availability-confirm": {
+      "post": {
+        "description": "MEH-2697 «עדיין נכון»: the owner says her availability is still true.\n\nChanges nothing but the stamp — the state and the vacation date stay.\nREUSES: set_availability_state above — same owner gate and rate limit.",
+        "operationId": "confirm_availability_producers_me_availability_confirm_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Confirm Availability",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/availability-state": {
       "post": {
         "operationId": "set_availability_state_producers_me_availability_state_post",
@@ -23305,6 +25047,64 @@
         "summary": "Set Availability State",
         "tags": [
           "producer-management"
+        ]
+      }
+    },
+    "/producers/me/billing/summary": {
+      "get": {
+        "description": "The caller's own business only — the id comes from the session, never the URL.",
+        "operationId": "my_billing_summary_producers_me_billing_summary_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM (Israel month)",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[0-9]{4}-[0-9]{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM (Israel month)",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "My Billing Summary",
+        "tags": [
+          "billing"
         ]
       }
     },
@@ -23730,6 +25530,78 @@
         "summary": "Request Name Change",
         "tags": [
           "producer-name-requests"
+        ]
+      }
+    },
+    "/producers/me/order-settings": {
+      "get": {
+        "description": "The business's ordering settings; the defaults (off) if never saved.",
+        "operationId": "get_my_order_settings_producers_me_order_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerOrderSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get My Order Settings",
+        "tags": [
+          "product-orders"
+        ]
+      },
+      "put": {
+        "description": "Save the whole settings form. `alcohol_licensed` is not in the body and\nis never touched here — only the admin route writes it.",
+        "operationId": "put_my_order_settings_producers_me_order_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerOrderSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerOrderSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put My Order Settings",
+        "tags": [
+          "product-orders"
         ]
       }
     },
@@ -25034,6 +26906,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "summary": "List Reviews Nested",
         "tags": [
           "reviews"
@@ -25853,7 +27730,7 @@
     },
     "/rescue/orders/{order_id}/no_show": {
       "post": {
-        "description": "The business records that nobody came for the bag.\n\nOnly after `pickup_end` — before that the buyer may still be on their way,\nand a no-show is what blocks them from reserving again.",
+        "description": "The business records that nobody came for the bag — only after\n`pickup_end`: before that the buyer may still be on their way, and a\nno-show blocks reserving again. The buyer is mailed each time (MEH-3226).",
         "operationId": "mark_no_show_rescue_orders__order_id__no_show_post",
         "parameters": [
           {
@@ -26000,6 +27877,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "summary": "List Reviews",
         "tags": [
           "reviews"
@@ -26167,32 +28049,6 @@
         ]
       }
     },
-    "/search/trending": {
-      "get": {
-        "description": "Return top 5 queries that returned results, cached 1 hour.",
-        "operationId": "trending_searches_search_trending_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "title": "Response Trending Searches Search Trending Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Trending Searches",
-        "tags": [
-          "search"
-        ]
-      }
-    },
     "/stats": {
       "get": {
         "operationId": "get_stats_stats_get",
@@ -26261,7 +28117,7 @@
     },
     "/upload/image": {
       "post": {
-        "description": "Upload image to Cloudinary. Validates size and real content type.\nEnforces free plan limit (3 images) for producers.",
+        "description": "Upload image to Cloudinary. Validates size and real content type.\nThe free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).",
         "operationId": "upload_image_upload_image_post",
         "requestBody": {
           "content": {
@@ -26389,6 +28245,63 @@
           }
         ],
         "summary": "Upload Owner Photo",
+        "tags": [
+          "upload"
+        ]
+      }
+    },
+    "/upload/owner-photo/{producer_id}": {
+      "post": {
+        "description": "MEH-3338: the admin uploads the owner photo for a business she builds\non the owner's behalf. Same validation, same fixed Cloudinary slot\n(`owner_{producer_id}`, overwrite) as the owner route — the business comes\nfrom the PATH, and only an admin reaches it (403 for anyone else, the owner\nincluded: she has her own route).",
+        "operationId": "admin_upload_owner_photo_upload_owner_photo__producer_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Upload Owner Photo",
         "tags": [
           "upload"
         ]
@@ -26915,6 +28828,52 @@
         "summary": "Webhook Receive",
         "tags": [
           "webhook"
+        ]
+      }
+    },
+    "/weekly-summary/unsubscribe": {
+      "post": {
+        "description": "Stop the weekly summary email for the business named in the token.\n\nThe token is the authorization (subject = producer id, scope\n`weekly_summary_unsubscribe`), so the link works from the email without\nlogging in and can only opt out its own business. Idempotent.",
+        "operationId": "unsubscribe_weekly_summary_weekly_summary_unsubscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeeklySummaryUnsubscribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Unsubscribe Weekly Summary Weekly Summary Unsubscribe Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe Weekly Summary",
+        "tags": [
+          "marketing"
         ]
       }
     }

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import {
@@ -10,6 +11,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { X } from "@phosphor-icons/react";
 import { clamp } from "@/lib/panel-position";
 
 /**
@@ -73,29 +75,35 @@ const PLACEMENT_CLASSES = {
  * @param {object} props
  * @param {import("react").ReactElement} props.trigger — a single native
  *   element (or forwardRef component); receives onClick toggle,
- *   aria-haspopup, aria-expanded, and an id (kept if it already has one).
+ *   aria-expanded, aria-haspopup="dialog" (dialog role or sheetOnMobile only),
+ *   and an id (kept if it already has one).
  *   Its own onClick, if any, still runs first.
  * @param {import("react").ReactNode} props.children — rich content.
  * @param {"top"|"bottom"} [props.placement="bottom"]
- * @param {"tooltip"|"dialog"} [props.role="tooltip"] — per content kind.
- * @param {boolean} [props.sheetOnMobile=false] — below lg, present as a fixed
+ * @param {"tooltip"|"dialog"} [props.role="tooltip"] - per content kind.
+ * @param {boolean} [props.sheetOnMobile=false] - below lg, present as a fixed
  *   bottom sheet with backdrop + focus trap (MEH-1334), portalled to
  *   document.body (MEH-2622). Desktop unchanged.
- * @param {string} [props.contentClassName] — width/extras on the ANCHORED
+ * @param {string} [props.contentClassName] - width/extras on the ANCHORED
  *   panel only (widths like w-64 would fight the sheet's inset-x-0 stretch).
- * @param {string} [props.sheetContentClassName] — layout extras for the sheet
+ * @param {string} [props.sheetContentClassName] - layout extras for the sheet
  *   presentation (no widths).
- * @param {string} [props.contentTestId] — data-testid passthrough.
- * @param {boolean} [props.overlay=false] — MEH-1592. Render the ANCHORED panel
+ * @param {string} [props.contentTestId] - data-testid passthrough.
+ * @param {boolean} [props.overlay=false] - MEH-1592. Render the ANCHORED panel
  *   in an overlay layer (portal → document.body, `position: fixed`) positioned
  *   against the viewport instead of absolutely inside the wrapper. Use when the
  *   default in-flow panel would overlap siblings or be clipped by an ancestor's
  *   `overflow-hidden`. No effect in sheet mode (the sheet is already fixed).
- * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] — overlay
+ * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] - overlay
  *   mode only. The panel is placed so it fully clears THIS element's box
  *   (above it, flipping below when there is no room). Defaults to the trigger,
  *   which only clears the trigger itself — pass the row/container when the
  *   siblings inside it must be cleared too.
+ * @param {string} [props.closeLabel] - MEH-3271. Accessible name of the
+ *   visible ✕ the mobile SHEET shows at its top end (WCAG 2.2 2.5.7: a
+ *   non-drag, discoverable way out). No label → no ✕ (this primitive has no
+ *   translations of its own; callers pass `common.aria.close`). The anchored
+ *   and overlay panels never show it.
  */
 export default function Popover({
   trigger,
@@ -108,6 +116,7 @@ export default function Popover({
   contentTestId,
   overlay = false,
   avoidRef = null,
+  closeLabel = "",
 }) {
   const [open, setOpen] = useState(false);
   // Sheet presentation is decided ONCE per open (matchMedia at tap time) so
@@ -250,8 +259,9 @@ export default function Popover({
       // anchored popover stays a non-modal disclosure). Same Tab-loop idiom
       // as LoginPromptModal.
       if (!sheetActive || e.key !== "Tab") return;
+      // MEH-3271: a disabled control cannot take focus, so it is not a stop.
       const focusables = panelRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       if (!focusables?.length) {
         e.preventDefault();
@@ -259,10 +269,12 @@ export default function Popover({
       }
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
+      // MEH-3271: focus outside the sheet is pulled back in, both directions.
+      const outside = !panelRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
         e.preventDefault();
         first.focus();
       }
@@ -308,7 +320,13 @@ export default function Popover({
       }
       setOpen(next);
     },
-    "aria-haspopup": role === "dialog" ? "dialog" : "true",
+    // aria-haspopup="true" means "menu" to assistive tech, so a tooltip-kind
+    // panel announced itself as a menu that arrow keys could not walk. A
+    // dialog (or a panel that becomes the mobile dialog sheet) says "dialog";
+    // a plain toggletip carries aria-expanded only — the WAI-ARIA disclosure
+    // pattern.
+    "aria-haspopup":
+      role === "dialog" || sheetOnMobile ? "dialog" : undefined,
     "aria-expanded": open,
   });
 
@@ -342,16 +360,36 @@ export default function Popover({
           ? // MEH-2622: select-none + no touch-callout — on iOS a long press
             // on the sheet selected it and the page behind it, painting the
             // whole screen in the blue selection tint (Sapir's screenshots).
-            `fixed inset-x-0 bottom-0 z-[1210] block select-none [-webkit-touch-callout:none] rounded-t-xl border-t border-border bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
+            `fixed inset-x-0 bottom-0 z-popover-sheet block select-none [-webkit-touch-callout:none] rounded-t-xl border-t border-border bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
           : overlayActive
             ? // Same visual as the anchored panel; `fixed` + measured offsets
               // replace `absolute` + the placement classes. z unchanged at 800
               // (rtl.md ledger) — portalling to <body> already lifts it out of
               // the card's overflow-hidden and its stacking context.
-              `fixed z-[800] block bg-surface border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
-            : `absolute ${PLACEMENT_CLASSES[placement] ?? PLACEMENT_CLASSES.bottom} z-[800] bg-surface border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
+              `fixed z-popover block bg-surface border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
+            : `absolute ${PLACEMENT_CLASSES[placement] ?? PLACEMENT_CLASSES.bottom} z-popover bg-surface border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
       }
     >
+      {sheetActive && closeLabel ? (
+        // MEH-3271 (Sapir 18/11): a row of its own above the content, so the
+        // ✕ never covers a caller's first line whatever it renders.
+        <span className="flex justify-end -mt-2 -me-2 mb-1">
+          <button
+            type="button"
+            aria-label={closeLabel}
+            // Prefix, not suffix: E2E counts panels with
+            // [data-testid^="badge-tooltip-"], which a suffix would match.
+            data-testid={contentTestId ? `close-${contentTestId}` : undefined}
+            onClick={() => {
+              setOpen(false);
+              triggerRef.current?.focus();
+            }}
+            className="w-11 h-11 inline-flex items-center justify-center rounded-full text-text hover:bg-green-50 transition-colors"
+          >
+            <X size={18} weight="regular" aria-hidden="true" />
+          </button>
+        </span>
+      ) : null}
       {children}
     </span>
   );
@@ -367,8 +405,11 @@ export default function Popover({
       onClick={(e) => {
         e.stopPropagation();
         setOpen(false);
+        // MEH-3271: the sheet took focus on open; closing it by the backdrop
+        // used to leave focus on a node that is gone.
+        triggerRef.current?.focus();
       }}
-      className="fixed inset-0 z-[1200] bg-black/40 select-none [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]"
+      className="fixed inset-0 z-popover-sheet-scrim bg-black/40 select-none [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]"
     />
   );
 

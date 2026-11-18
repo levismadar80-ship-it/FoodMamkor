@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
@@ -28,6 +29,7 @@ import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schem
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { israelWallClockToIso, parseNaiveUtc } from "@/lib/dates";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -45,7 +47,8 @@ const NOTE_MIN_LETTERS = 3;
 const NOTE_LETTER = /[\u05d0-\u05eaa-zA-Z\u0621-\u063f\u0641-\u064a\u066e-\u066f\u0671-\u06d3]/g;
 const countLetters = (text) => (text.match(NOTE_LETTER) || []).length;
 
-function NewGroupBuyForm({ producerCity, onCreated }) {
+// MEH-2918: emailUnverified → the verify notice opens the form, before any field.
+function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
   const t = useTranslations("group_buys.dashboard.form");
   // MEH-848: shared generic error copy (collapsed from group_buys.dashboard.form.errors.generic).
   const tError = useTranslations("error");
@@ -66,7 +69,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
-  const [unverified, setUnverified] = useState(false);
+  const [unverifiedHits, setUnverifiedHits] = useState(0); // MEH-2918: 403 count, re-mounts the notice
   // MEH-2453 / MEH-2621 split (UI): pickup or delivery is required — at least one of the
   // two boxes, each with real words if filled. `noteError` names the boxes the
   // error belongs to: both when both are blank, else the one that is too short.
@@ -88,7 +91,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setUnverified(false);
+    setUnverifiedHits(0);
     const pickupNote = form.pickup_note.trim();
     const deliveryNote = form.delivery_note.trim();
     const tooShort = (text) => text !== "" && countLetters(text) < NOTE_MIN_LETTERS;
@@ -112,13 +115,15 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         price_per_unit_group: Number(form.price_per_unit_group),
         min_participants: Number(form.min_participants),
         max_participants: form.max_participants ? Number(form.max_participants) : undefined,
-        deadline: new Date(form.deadline).toISOString(),
+        // MEH-3219 B13: the field says «לפי שעון ישראל» — read it in Israel,
+        // not in the device's zone.
+        deadline: israelWallClockToIso(form.deadline),
       });
       showToast.success(t("toast_created")); // MEH-1446
       onCreated();
     } catch (err) {
       if (isUnverifiedEmailError(err)) {
-        setUnverified(true);
+        setUnverifiedHits((h) => h + 1);
       } else {
         setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
       }
@@ -132,6 +137,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
+      {emailUnverified && <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />}
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
@@ -148,8 +154,10 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
+          {/* MEH-3191: the label was a bare sibling, so the textarea had no name. */}
+          <label htmlFor="group-buy-description" className="block text-sm font-medium mb-1">{t("description_label")}</label>
           <textarea
+            id="group-buy-description"
             value={form.description}
             onChange={set("description")}
             placeholder={t("description_placeholder")}
@@ -267,10 +275,10 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
               {" *"}
             </span>
           </legend>
-          {[
+          {/** @type {Array<[string, import("react").RefObject<HTMLTextAreaElement>]>} */ ([
             ["pickup", pickupRef],
             ["delivery", deliveryRef],
-          ].map(([kind, ref]) => {
+          ]).map(([kind, ref]) => {
             const invalid = noteError?.includes(kind);
             return (
               <div key={kind} className="flex flex-col gap-1.5">
@@ -312,7 +320,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
-      {unverified && <UnverifiedEmailNotice />}
+      {unverifiedHits > 0 && !emailUnverified && <UnverifiedEmailNotice />}
       {error && <InlineMessage>{error}</InlineMessage>}
       <Button
         type="submit"
@@ -348,7 +356,9 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
   // A confirmed cancel/deliver ends in a state with no action row, so the
   // button that opened this is gone by close time; focus goes to its card.
   const cardFallback = () =>
-    document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`);
+    /** @type {HTMLElement | null} */ (
+      document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`)
+    );
 
   const { gb, action } = pending;
   const destructive = action !== "deliver";
@@ -602,6 +612,7 @@ export default function ProducerGroupBuysPage() {
         <div className="mb-8">
           <NewGroupBuyForm
             producerCity={producerCity}
+            emailUnverified={user?.email_verified === false}
             onCreated={() => {
               setShowForm(false);
               load();
@@ -639,11 +650,13 @@ export default function ProducerGroupBuysPage() {
             // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
             // nothing moves the status server-side on its own. Display only;
             // since MEH-2435 the owner closes it with «סגירת הקבוצה» below.
-            // deadline is a full UTC timestamp (form sends toISOString), so an
-            // instant compare is right here, unlike the date-only event lists.
+            // deadline is a full UTC instant (the form sends the Israel wall
+            // clock as UTC, israelWallClockToIso), so an instant compare is
+            // right here, unlike the date-only event lists.
             // It reads the device clock: a skewed clock only swaps «ביטול» and
             // «סגירה», since the server takes both as open → cancelled.
-            const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
+            // MEH-3219 B13: the server serialises it naive (no Z), so parse as UTC.
+            const deadlinePassed = gb.status === "open" && parseNaiveUtc(gb.deadline) < new Date();
             const actions = ownerActions(gb, deadlinePassed);
             const cls = deadlinePassed
               ? STATUS_CLASSES.neutral
@@ -686,13 +699,17 @@ export default function ProducerGroupBuysPage() {
                     />
                   </div>
                 </div>
+                {/* MEH-3254 (grill retro D7): how many units to prepare — a sum,
+                    never who asked (MEH-1651). «מבוקשת עד כה» while open; hidden
+                    at 0 and for a cancelled group. */}
+                <UnitsLine gb={gb} t={t} />
 
                 <div className="flex items-center justify-between text-xs text-fg-muted">
                   <span>
-                    {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
+                    {t("deadline_prefix", { date: formatEventDate(parseNaiveUtc(gb.deadline), locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                   <Link
-                    href={`/group-buys/${gb.id}`}
+                    href={`/group-buys/${gb.id}?preview=1`}
                     className="text-primary hover:underline"
                   >
                     {t("view_public")}
@@ -742,3 +759,18 @@ export default function ProducerGroupBuysPage() {
     </div>
   );
 }
+
+/** MEH-3254 (D7): the units line under the progress bar on the owner's card.
+ * @param {{ gb: { status: string, units_total?: number | null, unit?: string | null }, t: (key: string, values?: object) => string }} props */
+function UnitsLine({ gb, t }) {
+  const count = gb.units_total ?? 0;
+  if (count <= 0 || gb.status === "cancelled") return null;
+  const base = gb.status === "open" ? "units_requested" : "units_ordered";
+  const unit = gb.unit?.trim();
+  return (
+    <p data-testid="group-buy-units" className="text-xs text-fg-muted mb-2">
+      {unit ? t(`${base}_with_unit`, { count, unit }) : t(base, { count })}
+    </p>
+  );
+}
+
