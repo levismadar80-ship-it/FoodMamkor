@@ -1605,8 +1605,8 @@ DELETE /admin/home-products/{id}               admin
 
 # Users
 GET    /admin/users                            admin — search · rows carry rescue_active_no_shows + rescue_blocked (MEH-3226)
-PUT    /admin/users/{id}/role                  admin
-POST   /admin/users/{id}/block                 admin
+PUT    /admin/users/{id}/role                  admin  (409 while a business is linked — MEH-2871)
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
