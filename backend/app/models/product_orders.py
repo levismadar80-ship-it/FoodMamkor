@@ -15,7 +15,8 @@ Related:  app/models/models.py (Product.price_unit / is_orderable / in_stock /
           env.py, which imports models.py only, sees these tables), backend/alembic/versions/
           20261114_2130_d5a7c3e9f1b4_meh3218_product_orders.py (the CHECKs
           these tuples mirror), tests/test_meh3218_product_orders.py
-History:  MEH-3218 (creation; stage 1 of MEH-3216)
+History:  MEH-3218 (creation; stage 1 of MEH-3216); MEH-3262 (stage 2a:
+          producer_order_windows, slot_minutes, lead_time_hours)
 
 Lives in its own module, not in models.py, because models.py is on the
 file-size baseline and does not grow (code-execution.md §16).
@@ -32,8 +33,10 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    SmallInteger,
     String,
     Text,
+    Time,
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -68,6 +71,15 @@ PRODUCT_ORDER_ACTORS = ("customer", "business", "admin", "system")
 PRODUCT_ORDER_MAX_QTY_PER_ITEM = 99
 PRODUCT_ORDER_MAX_CUTOFF_HOURS = 168
 PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS = 24
+# MEH-3262: how long one pickup/delivery slot is, and how early an order must
+# be sent. Mirrored by the CHECKs of revision e6b9d4f1a2c7.
+PRODUCT_ORDER_SLOT_MINUTES = (30, 60, 120)
+PRODUCT_ORDER_DEFAULT_SLOT_MINUTES = 60
+PRODUCT_ORDER_MAX_LEAD_HOURS = 168
+PRODUCT_ORDER_DEFAULT_LEAD_HOURS = 24
+# Four windows a day, seven days: more than any real week needs, and the
+# bound that keeps the table from growing without limit (MEH-3022).
+PRODUCT_ORDER_MAX_WINDOWS = 28
 
 
 def _check_in(column: str, values: tuple[str, ...]) -> str:
@@ -108,6 +120,17 @@ class ProducerOrderSettings(Base):
             "min_order_agorot IS NULL OR min_order_agorot >= 0",
             name="producer_order_settings_min_order_check",
         ),
+        CheckConstraint(
+            "slot_minutes IN ({})".format(
+                ", ".join(str(m) for m in PRODUCT_ORDER_SLOT_MINUTES)
+            ),
+            name="producer_order_settings_slot_minutes_check",
+        ),
+        CheckConstraint(
+            "lead_time_hours >= 0 AND lead_time_hours <= "
+            f"{PRODUCT_ORDER_MAX_LEAD_HOURS}",
+            name="producer_order_settings_lead_time_check",
+        ),
     )
 
     producer_id = Column(
@@ -132,6 +155,18 @@ class ProducerOrderSettings(Base):
         Boolean, default=False, nullable=False, server_default=text("false")
     )
     min_order_agorot = Column(Integer, nullable=True)
+    slot_minutes = Column(
+        Integer,
+        default=PRODUCT_ORDER_DEFAULT_SLOT_MINUTES,
+        nullable=False,
+        server_default=text(str(PRODUCT_ORDER_DEFAULT_SLOT_MINUTES)),
+    )
+    lead_time_hours = Column(
+        Integer,
+        default=PRODUCT_ORDER_DEFAULT_LEAD_HOURS,
+        nullable=False,
+        server_default=text(str(PRODUCT_ORDER_DEFAULT_LEAD_HOURS)),
+    )
     alcohol_licensed = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
@@ -139,6 +174,54 @@ class ProducerOrderSettings(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     producer = relationship("Producer")
+
+
+class ProducerOrderWindow(Base):
+    """One weekly window in which a business hands orders over.
+
+    `producers.opening_hours` is free text and cannot yield a time slot, so
+    the business states its ordering windows here: a weekday, a start and an
+    end on the Israel clock, and whether the window is for pickup or delivery.
+    services/product_order_slots.py cuts these into concrete slots.
+
+    `weekday` is 0 = Sunday ... 6 = Saturday — the convention of
+    `producers.order_window` and lib/orderWindow.js, NOT `date.weekday()`.
+
+    Not the same fact as `producers.order_window` (when the owner ANSWERS
+    orders, MEH-1543): a row here is when she HANDS one over. A date closed in
+    `producers.special_hours` and her vacation close this axis too
+    (services/product_order_slots.py::ClosedDays).
+
+    Written only as a whole list (PUT replaces every row of the business),
+    capped at PRODUCT_ORDER_MAX_WINDOWS by the request schema.
+    """
+
+    __tablename__ = "producer_order_windows"
+    __table_args__ = (
+        CheckConstraint(
+            "weekday >= 0 AND weekday <= 6", name="producer_order_windows_weekday_check"
+        ),
+        CheckConstraint(
+            "end_time > start_time", name="producer_order_windows_time_check"
+        ),
+        CheckConstraint(
+            _check_in("fulfilment", PRODUCT_ORDER_FULFILMENTS),
+            name="producer_order_windows_fulfilment_check",
+        ),
+        Index("ix_producer_order_windows_producer_id", "producer_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    weekday = Column(SmallInteger, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    fulfilment = Column(String(10), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
 
 class ProductOrder(Base):

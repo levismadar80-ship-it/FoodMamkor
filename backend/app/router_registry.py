@@ -43,6 +43,7 @@ from app.routers import (
     producer_recipes,
     billing,
     product_organize,
+    product_order_offer,
     product_orders,
     rescue,
     producers,
@@ -115,6 +116,10 @@ def _register_flagged_features(app: FastAPI) -> None:
     # Every route answers 404 while PRODUCT_ORDERS_ENABLED is off (the default).
     app.include_router(product_orders.me_router)
     app.include_router(product_orders.admin_router)
+    # MEH-3262: stage 2a — the business's weekly windows, a product's ordering
+    # fields, and the public order menu. Same flag, same 404 while off.
+    app.include_router(product_order_offer.me_router)
+    app.include_router(product_order_offer.public_router)
 
 
 def register_routers(app: FastAPI) -> None:

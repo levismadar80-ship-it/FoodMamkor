@@ -27,6 +27,7 @@ from app.services.booking_cancellations import (  # MEH-2498, MEH-3227
     delist_business,
     hide_business,  # MEH-2871
 )
+from app.services.product_order_guards import refuse_delete_with_open_orders  # MEH-3262
 from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
     validate_transition,
@@ -896,6 +897,7 @@ def admin_delete_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    refuse_delete_with_open_orders(db, producer.id)  # MEH-3262
 
     # MEH-375 + MEH-510: capture every Cloudinary URL owned by this
     # producer BEFORE db.delete — the cascade detaches the relationship

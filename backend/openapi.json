@@ -4719,6 +4719,264 @@
         "title": "NewsletterUnsubscribeIn",
         "type": "object"
       },
+      "OrderMenuOut": {
+        "properties": {
+          "cancel_cutoff_hours": {
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "lead_time_hours": {
+            "title": "Lead Time Hours",
+            "type": "integer"
+          },
+          "min_order_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Agorot"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/OrderMenuProductOut"
+            },
+            "title": "Products",
+            "type": "array"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/OrderMenuSlotOut"
+            },
+            "title": "Slots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "producer_id",
+          "min_order_agorot",
+          "cancel_cutoff_hours",
+          "lead_time_hours",
+          "products",
+          "slots"
+        ],
+        "title": "OrderMenuOut",
+        "type": "object"
+      },
+      "OrderMenuProductOut": {
+        "properties": {
+          "contains_alcohol": {
+            "title": "Contains Alcohol",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "in_stock": {
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_is_estimate": {
+            "title": "Price Is Estimate",
+            "type": "boolean"
+          },
+          "price_max_agorot": {
+            "title": "Price Max Agorot",
+            "type": "integer"
+          },
+          "price_min_agorot": {
+            "title": "Price Min Agorot",
+            "type": "integer"
+          },
+          "price_unit": {
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "image_url",
+          "price_min_agorot",
+          "price_max_agorot",
+          "price_unit",
+          "price_is_estimate",
+          "in_stock",
+          "contains_alcohol"
+        ],
+        "title": "OrderMenuProductOut",
+        "type": "object"
+      },
+      "OrderMenuSlotOut": {
+        "properties": {
+          "alcohol_ok": {
+            "title": "Alcohol Ok",
+            "type": "boolean"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "fulfilment",
+          "alcohol_ok"
+        ],
+        "title": "OrderMenuSlotOut",
+        "type": "object"
+      },
+      "OrderWindowIn": {
+        "additionalProperties": false,
+        "properties": {
+          "end_time": {
+            "format": "time",
+            "title": "End Time",
+            "type": "string"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "start_time": {
+            "format": "time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "weekday": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Weekday",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time",
+          "fulfilment"
+        ],
+        "title": "OrderWindowIn",
+        "type": "object"
+      },
+      "OrderWindowOut": {
+        "properties": {
+          "end_time": {
+            "format": "time",
+            "title": "End Time",
+            "type": "string"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "start_time": {
+            "format": "time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "weekday": {
+            "title": "Weekday",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time",
+          "fulfilment"
+        ],
+        "title": "OrderWindowOut",
+        "type": "object"
+      },
+      "OrderWindowsIn": {
+        "additionalProperties": false,
+        "description": "The whole week. PUT replaces every window of the business.",
+        "properties": {
+          "windows": {
+            "items": {
+              "$ref": "#/components/schemas/OrderWindowIn"
+            },
+            "maxItems": 28,
+            "title": "Windows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "windows"
+        ],
+        "title": "OrderWindowsIn",
+        "type": "object"
+      },
+      "OrderWindowsOut": {
+        "properties": {
+          "windows": {
+            "items": {
+              "$ref": "#/components/schemas/OrderWindowOut"
+            },
+            "title": "Windows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "windows"
+        ],
+        "title": "OrderWindowsOut",
+        "type": "object"
+      },
       "OrganizerPublicOut": {
         "description": "GET /organizers/{slug}. Public fields only — no street address, no\nlicense, nothing business-shaped (no products, categories or delivery).",
         "properties": {
@@ -10600,6 +10858,12 @@
             "title": "Enabled",
             "type": "boolean"
           },
+          "lead_time_hours": {
+            "maximum": 168.0,
+            "minimum": 0.0,
+            "title": "Lead Time Hours",
+            "type": "integer"
+          },
           "min_order_agorot": {
             "anyOf": [
               {
@@ -10616,6 +10880,10 @@
           "shabbat_observant": {
             "title": "Shabbat Observant",
             "type": "boolean"
+          },
+          "slot_minutes": {
+            "title": "Slot Minutes",
+            "type": "integer"
           }
         },
         "required": [
@@ -10624,7 +10892,9 @@
           "auto_confirm_slot_cap",
           "cancel_cutoff_hours",
           "shabbat_observant",
-          "min_order_agorot"
+          "min_order_agorot",
+          "slot_minutes",
+          "lead_time_hours"
         ],
         "title": "ProducerOrderSettingsIn",
         "type": "object"
@@ -10658,6 +10928,10 @@
             "title": "Enabled",
             "type": "boolean"
           },
+          "lead_time_hours": {
+            "title": "Lead Time Hours",
+            "type": "integer"
+          },
           "min_order_agorot": {
             "anyOf": [
               {
@@ -10677,6 +10951,10 @@
           "shabbat_observant": {
             "title": "Shabbat Observant",
             "type": "boolean"
+          },
+          "slot_minutes": {
+            "title": "Slot Minutes",
+            "type": "integer"
           }
         },
         "required": [
@@ -10687,6 +10965,8 @@
           "cancel_cutoff_hours",
           "shabbat_observant",
           "min_order_agorot",
+          "slot_minutes",
+          "lead_time_hours",
           "alcohol_licensed"
         ],
         "title": "ProducerOrderSettingsOut",
@@ -13664,6 +13944,80 @@
           "product_ids"
         ],
         "title": "ProductOrderIn",
+        "type": "object"
+      },
+      "ProductOrderingIn": {
+        "additionalProperties": false,
+        "description": "The four ordering fields of one product. All required: the screen\nsaves the whole row.",
+        "properties": {
+          "contains_alcohol": {
+            "title": "Contains Alcohol",
+            "type": "boolean"
+          },
+          "in_stock": {
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "is_orderable": {
+            "title": "Is Orderable",
+            "type": "boolean"
+          },
+          "price_unit": {
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "is_orderable",
+          "in_stock",
+          "price_unit",
+          "contains_alcohol"
+        ],
+        "title": "ProductOrderingIn",
+        "type": "object"
+      },
+      "ProductOrderingOut": {
+        "properties": {
+          "contains_alcohol": {
+            "title": "Contains Alcohol",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_stock": {
+            "title": "In Stock",
+            "type": "boolean"
+          },
+          "is_orderable": {
+            "title": "Is Orderable",
+            "type": "boolean"
+          },
+          "price_unit": {
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "is_orderable",
+          "in_stock",
+          "price_unit",
+          "contains_alcohol"
+        ],
+        "title": "ProductOrderingOut",
         "type": "object"
       },
       "ProductOut": {
@@ -26626,6 +26980,77 @@
         ]
       }
     },
+    "/producers/me/order-windows": {
+      "get": {
+        "operationId": "get_my_order_windows_producers_me_order_windows_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderWindowsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get My Order Windows",
+        "tags": [
+          "product-orders"
+        ]
+      },
+      "put": {
+        "description": "Replace the business's whole week. The list is capped by the schema,\nso the table cannot grow past 28 rows a business (MEH-3022).",
+        "operationId": "put_my_order_windows_producers_me_order_windows_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderWindowsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderWindowsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put My Order Windows",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/producers/me/product-groups": {
       "get": {
         "operationId": "list_my_product_groups_producers_me_product_groups_get",
@@ -26982,6 +27407,65 @@
         "summary": "Set My Product Group",
         "tags": [
           "producer-management"
+        ]
+      }
+    },
+    "/producers/me/products/{product_id}/ordering": {
+      "put": {
+        "description": "Set one product's ordering fields. The lookup is scoped to the caller's\nown business, so another business's product is a 404, not a 403.",
+        "operationId": "put_product_ordering_producers_me_products__product_id__ordering_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOrderingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOrderingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put Product Ordering",
+        "tags": [
+          "product-orders"
         ]
       }
     },
@@ -27819,6 +28303,50 @@
         "summary": "Get Kashrut Cert",
         "tags": [
           "producers"
+        ]
+      }
+    },
+    "/producers/{producer_id}/order-menu": {
+      "get": {
+        "description": "What can be ordered from this business, and when.\n\nOne 404 for every \"no\": unknown business, a business not shown on the\nsite, a seeded test row, ordering never switched on, or switched off.",
+        "operationId": "get_order_menu_producers__producer_id__order_menu_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMenuOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Order Menu",
+        "tags": [
+          "product-orders"
         ]
       }
     },
