@@ -20,7 +20,7 @@ vi.mock("next-intl", () => ({
   useTranslations: (scope) => (key) => `${scope}.${key}`,
 }));
 
-const T = (k) => `dashboard.producer.phone_verify.${k}`;
+const T = (k) => `phone_verify.${k}`;
 
 beforeEach(() => {
   apiMock.post.mockReset();

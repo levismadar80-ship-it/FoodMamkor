@@ -436,6 +436,8 @@ def _maybe_process_optout(db: Session, message: dict[str, Any]) -> None:
 
         flipped = 0
         for user in users:
+            # MEH-3302 (D14): «הסר» withdraws WhatsApp consent as well.
+            user.whatsapp_consent_at = None  # type: ignore[assignment]
             flipped += (
                 db.query(FavoriteAlert)
                 .filter(

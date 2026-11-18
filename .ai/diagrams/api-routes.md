@@ -110,6 +110,9 @@ graph TD
     Favorites --> SavedIds[GET /users/me/saved/ids<br/>🔑 hearts cache]
     Favorites --> AddSaved[POST /users/me/saved/{type}/{id}<br/>🔑 404 unless public]
     Favorites --> DelSaved[DELETE /users/me/saved/{type}/{id}<br/>🔑 own rows only]
+    AlertPrefs[AlertPrefsPanel · WhatsApp on, phone unverified] --> UserOtp[POST /users/me/verify-phone<br/>🔑 3/10min · 3 per user and 3 per phone a day<br/>none to a number whose last message was «הסר» · MEH-3302]
+    AlertPrefs --> UserOtpConfirm[POST /users/me/verify-phone/confirm<br/>🔑 5/min · code bound to the canonical phone<br/>5 wrong guesses kill it · stamps phone_verified_at + whatsapp_consent_at]
+    UserOtpConfirm -.->|fire_alerts sends WhatsApp only when both are set| FireAlerts[fire_alerts]
 ```
 
 ## 4. Producer self-management (role=producer)

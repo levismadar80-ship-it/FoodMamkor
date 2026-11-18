@@ -4947,24 +4947,6 @@
           "close_cta": "Close"
         }
       },
-      "phone_verify": {
-        "title": "Verify your business phone",
-        "reverify_title": "Your business WhatsApp number isn't verified yet",
-        "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
-        "send_cta": "Send verification code",
-        "sending": "Sending...",
-        "resend_in": "You can resend a code in {seconds}s",
-        "code_label": "Verification code",
-        "code_placeholder": "6-digit code",
-        "confirm_cta": "Verify",
-        "confirming": "Verifying...",
-        "success": "Phone verified! Once every step is ready, press \"Send for review\" so we can get to know your business.",
-        "error_invalid": "Wrong or expired code. Please try again.",
-        "error_no_phone": "No phone number on your profile. Add one, then verify.",
-        "error_generic": "Something went wrong. Please try again.",
-        "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
-        "error_rate_limited": "Too many attempts. Please try again shortly."
-      },
       "holiday_catalog_cta": "Update the catalog →",
       "availability": {
         "heading": "Current status",
@@ -5698,7 +5680,9 @@
       "saving": "Saving…",
       "save_success_toast": "Settings updated",
       "save_error_toast": "Save error, please try again",
-      "phone_placeholder": "050-1234567"
+      "phone_placeholder": "050-1234567",
+      "whatsapp_paused": "WhatsApp updates are paused until you verify your number.",
+      "whatsapp_verify_description": "We'll send a 6-digit code to this number on WhatsApp. Once verified, updates from the businesses you saved will be sent there. You can stop any time by replying \"STOP\"."
     },
     "layout": {
       "skip_to_main": "Skip to content"
@@ -7235,5 +7219,23 @@
     "sending": "Saving…",
     "done_title": "Thanks! We marked your page as checked today.",
     "dead_title": "This link is no longer active. You can update your page from your dashboard."
+  },
+  "phone_verify": {
+    "title": "Verify your business phone",
+    "reverify_title": "Your business WhatsApp number isn't verified yet",
+    "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
+    "send_cta": "Send verification code",
+    "sending": "Sending...",
+    "resend_in": "You can resend a code in {seconds}s",
+    "code_label": "Verification code",
+    "code_placeholder": "6-digit code",
+    "confirm_cta": "Verify",
+    "confirming": "Verifying...",
+    "success": "Phone verified! Once every step is ready, press \"Send for review\" so we can get to know your business.",
+    "error_invalid": "Wrong or expired code. Please try again.",
+    "error_no_phone": "No phone number on your profile. Add one, then verify.",
+    "error_generic": "Something went wrong. Please try again.",
+    "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
+    "error_rate_limited": "Too many attempts. Please try again shortly."
   }
 }

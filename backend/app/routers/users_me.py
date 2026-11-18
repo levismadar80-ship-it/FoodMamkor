@@ -8,6 +8,7 @@ MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
 import asyncio
+from typing import cast
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -43,7 +44,14 @@ from app.rate_limit import limiter
 from app.services.account_guards import is_super_admin  # MEH-3104, MEH-3248
 from app.services import email_change_guard  # MEH-3425
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
-from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
+from app.schemas.schemas import (
+    PasswordChange,
+    ProfileUpdate,
+    UserOut,
+    UserPhoneOtpConfirmIn,
+)
+from app.services import user_phone_verify
+from app.utils.phone import canonical_il_msisdn
 from app.services.auth_emails import send_email_changed_notice, send_verify_email
 from app.services.password_policy import validate_password
 from app.utils.clock import utc_now
@@ -129,6 +137,16 @@ def _queue_email_change_mails(
         )
 
 
+def _set_phone(db: Session, user: User, phone: str | None) -> None:
+    """MEH-3302: a different number is unverified, and codes sent to the old
+    one die. A reformatted SAME number keeps its verification."""
+    before = canonical_il_msisdn(cast(str, user.phone)) if user.phone else None
+    user.phone = phone  # type: ignore[assignment]
+    after = canonical_il_msisdn(phone) if phone else None
+    if before != after:
+        user_phone_verify.on_phone_changed(db, user)
+
+
 @router.patch("", response_model=UserOut)
 @limiter.limit("10/hour")
 def update_profile(  # noqa: PLR0913 — FastAPI-injected; MEH-3425 added response for the cookie re-arm
@@ -178,7 +196,7 @@ def update_profile(  # noqa: PLR0913 — FastAPI-injected; MEH-3425 added respon
         user.city = data.city.strip() or None  # type: ignore[assignment]
 
     if "phone" in sent:
-        user.phone = data.phone  # type: ignore[assignment]
+        _set_phone(db, user, data.phone)
 
     old_email = str(user.email)
     if data.email is not None:
@@ -281,3 +299,66 @@ async def change_password(
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return None
+
+
+# ============================================================
+# MEH-3302 (D14): verify the user's phone before WhatsApp alerts go to it
+# ============================================================
+_NO_PHONE = "לא נמצא מספר טלפון בפרופיל"
+_TOO_MANY = "יותר מדי ניסיונות. נסו שוב עוד מעט."
+_BAD_CODE = "קוד שגוי או שפג תוקפו. נסו שוב."
+
+
+@router.post("/verify-phone", status_code=200, response_model=None)
+@limiter.limit("3/10minute")
+def send_user_phone_otp(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    """Send a 6-digit WhatsApp code to the user's own phone.
+
+    Caps live in the service (3/user/day, 3/phone/day); this limit is the
+    burst layer. A number that last told us «הסר» gets no code, and the
+    answer is the same «could not send» a provider failure gives, so the
+    route does not reveal what a number replied.
+    """
+    # Local import: producer_me_review imports a large router graph; the
+    # helpers are shared on purpose (one WhatsApp OTP template, one test-mode
+    # gate), not copied.
+    from app.routers.producer_me import OTP_NOT_SENT
+    from app.routers.producer_me_review import (
+        _otp_test_code_for,
+        _send_whatsapp_otp,
+    )
+
+    fixed = _otp_test_code_for(user.phone) if user.phone else None  # type: ignore[arg-type]
+    decision = user_phone_verify.prepare_send(db, user, fixed_code=fixed)
+    if decision.outcome == "no_phone":
+        raise HTTPException(status_code=400, detail=_NO_PHONE)
+    if decision.outcome == "already_verified":
+        return {"detail": "הטלפון כבר מאומת"}
+    if decision.outcome == "capped":
+        raise HTTPException(status_code=429, detail=_TOO_MANY)
+    if decision.outcome == "opted_out":
+        raise HTTPException(status_code=503, detail=OTP_NOT_SENT)
+    if fixed is None:
+        _send_whatsapp_otp(
+            user.phone,  # type: ignore[arg-type]
+            decision.code or "",
+            test_cause=bool(user.is_test),
+        )
+    return {"detail": "קוד נשלח"}
+
+
+@router.post("/verify-phone/confirm", status_code=200, response_model=None)
+@limiter.limit("5/minute")
+def confirm_user_phone_otp(
+    request: Request,
+    body: UserPhoneOtpConfirmIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    if not user_phone_verify.confirm(db, user, body.code):
+        raise HTTPException(status_code=400, detail=_BAD_CODE)
+    return {"detail": "הטלפון אומת"}

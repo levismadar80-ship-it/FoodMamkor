@@ -331,6 +331,17 @@ def make_user(
     return user
 
 
+def verify_phone(user: User) -> User:
+    """MEH-3302: WhatsApp alerts go only to a verified phone with consent.
+    Stamps both, as a successful OTP confirm does. Caller commits."""
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    user.phone_verified_at = now
+    user.whatsapp_consent_at = now
+    return user
+
+
 def make_producer(
     db,
     *,
