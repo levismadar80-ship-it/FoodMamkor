@@ -1326,6 +1326,14 @@ DELETE /producers/me/locations/{id}               producer  — delete. Cross-ow
                                                               automatically — that had no kind filter, so deleting the primary
                                                               could make a pickup point the business's navigation target.
                                                               Deleting the last row is allowed.
+GET    /admin/producers/{producer_id}/locations   admin     — MEH-3333: the same CRUD for any business, mounted on
+POST   /admin/producers/{producer_id}/locations   admin       the admin edit page (LocationsEditor basePath). Same
+PUT    /admin/producers/{producer_id}/locations/{location_id}  admin  invariants, imported from producer_me_locations.py
+DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city label, branch-only primary — also on a
+                                                              kind edit of the primary row —, single primary, city
+                                                              sync). A location of ANOTHER business under the path →
+                                                              404 (not 403); unknown business → 404. 120/hr on writes.
+                                                              No admin "sensitive edit" ping — the actor is the admin.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks

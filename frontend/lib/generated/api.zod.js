@@ -2246,6 +2246,76 @@ export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*
 
 
 /**
+ * @summary Admin List Locations
+ */
+export const adminListLocationsAdminProducersProducerIdLocationsGetResponseIsPrimaryDefault = false;
+export const adminListLocationsAdminProducersProducerIdLocationsGetResponseLocationPrecisionDefault = `exact`;
+
+export const AdminListLocationsAdminProducersProducerIdLocationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "is_primary": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListLocationsAdminProducersProducerIdLocationsGetResponseIsPrimaryDefault),
+  "kind": /*#__PURE__*/ zod.string(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location_precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminListLocationsAdminProducersProducerIdLocationsGetResponseLocationPrecisionDefault),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address \/ opening_hours \/ phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the \/producers\/me\/locations CRUD.'))
+export const AdminListLocationsAdminProducersProducerIdLocationsGetResponse = /*#__PURE__*/ zod.array(AdminListLocationsAdminProducersProducerIdLocationsGetResponseItem)
+
+
+/**
+ * @summary Admin Create Location
+ */
+export const adminCreateLocationAdminProducersProducerIdLocationsPostResponseIsPrimaryDefault = false;
+export const adminCreateLocationAdminProducersProducerIdLocationsPostResponseLocationPrecisionDefault = `exact`;
+
+export const AdminCreateLocationAdminProducersProducerIdLocationsPostResponse = /*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "is_primary": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateLocationAdminProducersProducerIdLocationsPostResponseIsPrimaryDefault),
+  "kind": /*#__PURE__*/ zod.string(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location_precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateLocationAdminProducersProducerIdLocationsPostResponseLocationPrecisionDefault),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address \/ opening_hours \/ phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the \/producers\/me\/locations CRUD.'))
+
+
+/**
+ * @summary Admin Delete Location
+ */
+export const AdminDeleteLocationAdminProducersProducerIdLocationsLocationIdDeleteResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * @summary Admin Update Location
+ */
+export const adminUpdateLocationAdminProducersProducerIdLocationsLocationIdPutResponseIsPrimaryDefault = false;
+export const adminUpdateLocationAdminProducersProducerIdLocationsLocationIdPutResponseLocationPrecisionDefault = `exact`;
+
+export const AdminUpdateLocationAdminProducersProducerIdLocationsLocationIdPutResponse = /*#__PURE__*/ zod.object({
+  "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "is_primary": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateLocationAdminProducersProducerIdLocationsLocationIdPutResponseIsPrimaryDefault),
+  "kind": /*#__PURE__*/ zod.string(),
+  "label": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location_precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateLocationAdminProducersProducerIdLocationsLocationIdPutResponseLocationPrecisionDefault),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('MEH-1421: owner-facing read of her OWN location rows. Unlike the public\nProducerLocationOut (schemas.py:414, which withholds street `address` per\nMEH-829 and trims to the map contract), the owner sees the full editable row\n(address \/ opening_hours \/ phone) in the dashboard editor. Emits the raw\n`location_precision` key (no `precision` alias) so the editor round-trips the\nsame field name it POSTs. Returned by the \/producers\/me\/locations CRUD.'))
+
+
+/**
  * Mark a business as licensed to sell alcohol (or take the mark away).
  *
  * Sapir's decision of 14/11: alcohol can be ordered only from a business an
