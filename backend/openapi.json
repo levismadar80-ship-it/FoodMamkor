@@ -752,6 +752,20 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
+      "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post",
+        "type": "object"
+      },
       "Body_upload_avatar_upload_avatar_post": {
         "properties": {
           "file": {
@@ -5913,6 +5927,17 @@
             "default": false,
             "title": "Organic Certified",
             "type": "boolean"
+          },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
           },
           "phone": {
             "anyOf": [
@@ -28209,6 +28234,63 @@
           }
         ],
         "summary": "Upload Owner Photo",
+        "tags": [
+          "upload"
+        ]
+      }
+    },
+    "/upload/owner-photo/{producer_id}": {
+      "post": {
+        "description": "MEH-3338: the admin uploads the owner photo for a business she builds\non the owner's behalf. Same validation, same fixed Cloudinary slot\n(`owner_{producer_id}`, overwrite) as the owner route — the business comes\nfrom the PATH, and only an admin reaches it (403 for anyone else, the owner\nincluded: she has her own route).",
+        "operationId": "admin_upload_owner_photo_upload_owner_photo__producer_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Upload Owner Photo",
         "tags": [
           "upload"
         ]

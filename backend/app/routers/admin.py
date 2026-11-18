@@ -369,6 +369,7 @@ def admin_create_producer(
         contact_name=data.contact_name,
         description=data.description,
         short_description=data.short_description,
+        owner_bio=data.owner_bio,  # MEH-3338
         city=data.city,
         lat=data.lat,
         lng=data.lng,
