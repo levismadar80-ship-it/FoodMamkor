@@ -130,7 +130,7 @@ def test_classify_sends_schema_and_maps_db_query():
     )
     sent = client.calls[0]
     assert sent["output_config"]["format"]["schema"] is router.ROUTE_SCHEMA
-    assert "bread" in sent["system"]
+    assert "bread" in sent["system"][0]["text"]
     assert sent["max_tokens"] == router.MAX_CLASSIFY_TOKENS
     # Single bounded attempt: no SDK retries stacked on the timeout.
     assert client.options == [{"max_retries": 0, "timeout": router.CLASSIFY_TIMEOUT_S}]
@@ -256,7 +256,8 @@ def test_live_data_hop_failure_never_breaks_chat(monkeypatch):
     assert handler is not chat.chat
     reply = handler(_request("203.0.113.11"), body)
     assert reply.reply == "שלום"
-    assert calls[0]["system"] == chat.SYSTEM_PROMPT
+    # MEH-3384: one cached block, no live block when the hop failed.
+    assert [b["text"] for b in calls[0]["system"]] == [chat.SYSTEM_PROMPT]
 
 
 def test_live_data_context_is_none_for_freeform_cap_and_tool_error(monkeypatch):

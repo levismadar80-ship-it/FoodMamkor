@@ -78,6 +78,37 @@ ROUTE_SCHEMA: dict[str, Any] = {
 }
 
 
+CACHE_CONTROL: dict[str, str] = {"type": "ephemeral"}
+
+
+def cached_text_block(text: str) -> dict[str, Any]:
+    """A system text block carrying the prompt-cache breakpoint (MEH-3384).
+
+    Everything up to and including this block is cached for ~5 minutes; the
+    next request with the same prefix reads it back instead of re-processing
+    it. A prefix under the model's minimum is sent uncached, with no error, so
+    this is safe on a short prompt too."""
+    return {"type": "text", "text": text, "cache_control": dict(CACHE_CONTROL)}
+
+
+def log_cache_usage(label: str, response: Any) -> None:
+    """Log the prompt-cache counters of one response at debug level.
+
+    Read defensively: a fake client in tests, an older SDK or a usage object
+    without the fields must never break the reply path."""
+    usage = getattr(response, "usage", None)
+    read = getattr(usage, "cache_read_input_tokens", None)
+    written = getattr(usage, "cache_creation_input_tokens", None)
+    if not isinstance(read, int) and not isinstance(written, int):
+        return
+    logger.debug(
+        "%s prompt cache: read=%s written=%s",
+        label,
+        read if isinstance(read, int) else 0,
+        written if isinstance(written, int) else 0,
+    )
+
+
 def _classifier_prompt(categories: list[dict[str, str]]) -> str:
     cats = ", ".join(f"{c['name']} ({c['slug']})" for c in categories) or "(none)"
     return (
@@ -146,9 +177,10 @@ def classify(
         response = bounded.messages.create(
             **ai_fast_request_kwargs(json_schema=ROUTE_SCHEMA),
             max_tokens=MAX_CLASSIFY_TOKENS,
-            system=_classifier_prompt(categories),
+            system=[cached_text_block(_classifier_prompt(categories))],
             messages=[{"role": "user", "content": message[:2000]}],
         )
+        log_cache_usage("chat intent router", response)
         raw = next((b.text for b in response.content if b.type == "text"), "")
         parsed = json.loads(raw) if raw else {}
     except Exception as exc:  # noqa: BLE001 — fail-open boundary, logged
@@ -158,11 +190,14 @@ def classify(
 
 
 __all__ = [
+    "CACHE_CONTROL",
     "FREEFORM",
     "ROUTE_DB",
     "ROUTE_FREEFORM",
     "ROUTE_SCHEMA",
     "RouteDecision",
+    "cached_text_block",
     "classify",
     "decision_from_parsed",
+    "log_cache_usage",
 ]
