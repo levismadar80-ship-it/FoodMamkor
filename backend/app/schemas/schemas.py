@@ -48,6 +48,12 @@ _ORDER_WINDOW_DAYS = frozenset(
 )
 _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
+# MEH-3274: the email columns request bodies write are VARCHAR(200)
+# (users.email, producers.owner_invite_email, producers.contact_email). EmailStr alone accepts up to
+# 254 chars, so a valid 201-254 char address reached Postgres and came back a
+# 500. Every request-body email caps here and gets a 422 instead.
+EMAIL_MAX_LENGTH = 200
+
 
 # MEH-1869: a day may carry several disjoint ranges (morning + evening, the
 # Israeli lunch-break and Friday/Saturday-night patterns). Capped so the editor stays a
@@ -924,6 +930,8 @@ from app.schemas.community import (  # noqa: E402
     RatingSubmit as RatingSubmit,
     ReportCreate as ReportCreate,
     ReportOut as ReportOut,
+    REVIEW_REPORT_REASONS as REVIEW_REPORT_REASONS,
+    ReviewReportCreate as ReviewReportCreate,
     UserOut as UserOut,
 )
 from app.schemas.events import (  # noqa: E402

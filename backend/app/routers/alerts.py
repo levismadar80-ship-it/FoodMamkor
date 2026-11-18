@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.rate_limit import limiter
 from app.auth import get_current_user
 from app.data.cities import city_key
-from app.database import get_db
+from app.database import end_transaction, get_db
 from app.models import AlertLog, Favorite, FavoriteAlert, Producer, User
 from app.services.producer_listing import is_business
 from app.services import user_phone_verify  # MEH-3302
@@ -302,6 +302,29 @@ def _recipient_body(
 
 
 def fire_alerts(
+    db: Session,
+    producer_id: UUID,
+    alert_type: str,
+    content: AlertContent,
+    target_cities: list[str] | None = None,
+) -> None:
+    """Background-task entry point: fan out, then give the connection back.
+
+    MEH-2889: callers hand this the REQUEST's session. The fan-out opens a
+    transaction with its query and commits only inside `_record_alert_send`,
+    so with nothing to send it returned with the transaction still open, and
+    the connection stayed checked out through every later task of the same
+    request (Resend sends included). Ending the transaction here returns it.
+    Not `db.close()`: that would detach every instance the caller still holds
+    (a test, or a later task reading `producer.id`).
+    """
+    try:
+        _fan_out_alerts(db, producer_id, alert_type, content, target_cities)
+    finally:
+        end_transaction(db)
+
+
+def _fan_out_alerts(
     db: Session,
     producer_id: UUID,
     alert_type: str,

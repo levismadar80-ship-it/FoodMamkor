@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import { buildHomeJsonLd, buildJsonLd, buildOrganizationNode } from "@/lib/seo";
 import {
-  BRAND_FOUNDER_NAME,
+  FOUNDERS,
   BRAND_NAME,
   BRAND_NAME_LATIN,
   BRAND_SAME_AS,
@@ -81,14 +81,20 @@ describe("Organization JSON-LD (MEH-2192)", () => {
     expect(org.alternateName).toBe("Mehamakor");
   });
 
-  it("names the founder as a Person, spelled exactly as the /about signature", () => {
+  it("names both founders as Persons, spelled exactly as the /about signature", () => {
     const org = buildOrganizationNode();
-    expect(org.founder).toEqual({ "@type": "Person", name: BRAND_FOUNDER_NAME });
-    // The discriminating half: the entity must agree with the page. A copy
-    // edit to the signature that forgets the constant reds here — the same
-    // "entity disagrees with the page" shape the description test guards.
-    expect(org.founder.name).toBe(he.about.signature.name);
-    expect(org.founder.name.trim().length).toBeGreaterThan(0);
+    // MEH-3323: two founders, Sapir first — derived from FOUNDERS, not restated.
+    expect(org.founder).toEqual(
+      FOUNDERS.map(({ name }) => ({ "@type": "Person", name })),
+    );
+    expect(org.founder).toHaveLength(2);
+    expect(org.founder.map((p) => p.name)).toEqual(["ספיר שנפ", "טופז שנפ"]);
+    // The discriminating half: the entity must agree with the page. The
+    // signature joins the names with the Hebrew "ו" — a copy edit that drops
+    // a founder, or a constant edit that forgets the copy, reds here.
+    const [first, second] = org.founder.map((p) => p.name);
+    expect(he.about.signature.name).toBe(`${first} ו${second}`);
+    expect(he.guides.article.founder_name).toBe(he.about.signature.name);
   });
 
   it("is NOT typed as LocalBusiness — this is a directory, not a storefront", () => {

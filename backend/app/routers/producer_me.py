@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, cast
 from uuid import UUID
 
@@ -44,9 +44,11 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services import indexnow  # MEH-2852
+from app.services import approved_edit_moderation as approved_edit  # MEH-3261
 from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.gallery_cap import assert_free_gallery_cap  # MEH-3220
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
+from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
 from app.services.submission_gate import (
     attach_upcoming_events_count,
 )
@@ -252,9 +254,9 @@ def _pending_and_approvable(db: Session, producer: Producer) -> bool:
 # declarations MEH-1508 cross-checks at approval time (the diet scopes). ONE
 # constant; the Hebrew labels live with the sender in auth_notifications.py.
 #
-# Deliberately NOT the whole writable set: description / short_description /
-# owner_bio / links change often and legitimately, and a ping that fires on
-# every copy edit is a ping the admin learns to ignore.
+# Not the whole writable set. MEH-3261 (D11) replaced the old "never ping on
+# copy edits": description / short / owner_bio / images now get their own
+# «עדכן תוכן» message + AI check (services/approved_edit_moderation.py).
 #
 # Every member is verified present in _PRODUCER_WRITABLE_FIELDS below — a name
 # that drifts out of that set would make this silently un-pingable, which is
@@ -278,8 +280,36 @@ SENSITIVE_FIELDS = frozenset(
         "vegetarian_scope",
         "gluten_free_facility",
         "whatsapp_group",
+        # MEH-3339 (review): the second number is a live public tel: link, the
+        # same reason whatsapp_group is here — a swapped one sends visitors to
+        # a different number, and it skips phone verification by design.
+        "secondary_phone",
     }
 )
+
+
+def reconcile_secondary_phone(producer: Producer, payload: dict[str, Any]) -> None:
+    """MEH-3339 (review): the number/label pair is judged on the MERGED state,
+    not on the payload alone, before the setattr loop of either PUT.
+
+    - the number ends up empty → the label is cleared with it (no orphan label
+      that a later number would resurrect);
+    - a label ends up with no number → 422.
+    So each field may travel on its own: a label-only save is fine while a
+    number is stored, and the admin form need not resend a number it did not
+    change (which would revert the owner's own edit).
+    """
+    if "secondary_phone" not in payload and "secondary_phone_label" not in payload:
+        return
+    number = payload.get("secondary_phone", producer.secondary_phone)
+    label = payload.get("secondary_phone_label", producer.secondary_phone_label)
+    if not number:
+        if "secondary_phone_label" in payload and label:
+            raise HTTPException(
+                status_code=422, detail="לתווית של הטלפון הנוסף צריך גם מספר"
+            )
+        payload["secondary_phone_label"] = None
+
 
 # MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
 # ONE voice. Both the demote arm and the delete arm of the locations CRUD are
@@ -622,7 +652,11 @@ def _resolve_top_product(
 
     product = (
         db.query(Product)
-        .filter(Product.id == new_id, Product.producer_id == producer.id)
+        .filter(
+            Product.id == new_id,
+            Product.producer_id == producer.id,
+            Product.is_draft.is_(False),  # MEH-2312: a draft is never featured
+        )
         .first()
     )
     if product is None:
@@ -653,7 +687,7 @@ def _apply_organizer_city(producer: Producer, raw: Any) -> bool:
 
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
-def update_my_producer(
+def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (second phone) each add steps; split tracked with the producer_me size baseline
     request: Request,
     data: ProducerUpdate,
     background_tasks: BackgroundTasks,
@@ -677,6 +711,7 @@ def update_my_producer(
     # they stand before the setattr loop, so the post-commit diff can tell an
     # actual change from a form resubmitting an unchanged value.
     sensitive_before = _snapshot_sensitive(producer)
+    content_before = approved_edit.snapshot_content(producer)  # MEH-3261
 
     # MEH-2137 switch — see _resolve_top_product, defined above this handler.
     _PRODUCER_WRITABLE_FIELDS = {
@@ -706,6 +741,9 @@ def update_my_producer(
         #                writer racing that write-through. The ping's new home
         #                is MEH-2073 chunk 2 (`_sync_producer_city_from_primary`).
         "phone",
+        # MEH-3339: the optional second number + label (no CTA reads them).
+        "secondary_phone",
+        "secondary_phone_label",
         "instagram",
         "website",
         "whatsapp_group",
@@ -929,7 +967,10 @@ def update_my_producer(
     _assert_keeps_a_photo(producer, payload, old_images)
     # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
     assert_free_gallery_cap(producer, payload, old_images)
+    # MEH-3261: changed public text of an APPROVED business → AI (REJECTED = 422).
+    content_ai = approved_edit.check_producer(producer, payload)
 
+    reconcile_secondary_phone(producer, payload)  # MEH-3339
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
@@ -960,6 +1001,8 @@ def update_my_producer(
 
     db.commit()
     db.refresh(producer)
+    # MEH-3258: a category write can move competitor conflicts (no-op on None).
+    recompute_after_categories_changed(db, producer.id, category_ids)
 
     # MEH-375: best-effort destroy of Cloudinary assets the producer
     # dropped from the gallery, AFTER db.commit so a constraint failure
@@ -1011,6 +1054,13 @@ def update_my_producer(
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
     _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before, actor=user)
+    approved_edit.fire_content_edit(  # MEH-3261: one «עדכן תוכן» ping per save
+        background_tasks,
+        producer,
+        approved_edit.changed_content(content_before, producer),
+        content_ai == "FLAGGED",
+        test_cause=_test_cause(producer, user),
+    )
     # MEH-2475 (review #3728): an approved organizer moving her city is the same
     # admin-visible event as a business moving its primary location (the
     # locations CRUD pings "city" through the same gate).
@@ -1072,6 +1122,8 @@ def set_availability_state(
     producer.availability_state = data.state  # type: ignore[assignment]
     producer.vacation_until = vacation_until  # type: ignore[assignment]
     producer.last_active_at = utc_now()  # type: ignore[assignment]
+    # MEH-2697: stating the availability is confirming it.
+    producer.availability_confirmed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
     return {
         "availability_state": producer.availability_state,
@@ -1079,6 +1131,28 @@ def set_availability_state(
         if producer.vacation_until
         else None,
     }
+
+
+@router.post("/availability-confirm", response_model=None)
+@limiter.limit("20/hour")
+def confirm_availability(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-2697 «עדיין נכון»: the owner says her availability is still true.
+
+    Changes nothing but the stamp — the state and the vacation date stay.
+    REUSES: set_availability_state above — same owner gate and rate limit.
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    now = datetime.now(timezone.utc)
+    producer.availability_confirmed_at = now  # type: ignore[assignment]
+    producer.last_active_at = utc_now()  # type: ignore[assignment]
+    db.commit()
+    return {"availability_confirmed_at": now.isoformat()}
 
 
 @router.get("/dashboard", response_model=None)
@@ -1172,7 +1246,12 @@ def list_my_products(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> list[ProductOut] | list[Product]:
-    return db.query(Product).filter(Product.producer_id == user.producer_id).all()
+    # MEH-2312: drafts belong to the admin import until approved.
+    return (
+        db.query(Product)
+        .filter(Product.producer_id == user.producer_id, Product.is_draft.is_(False))
+        .all()
+    )
 
 
 @router.post("/products", response_model=ProductOut, status_code=201)
@@ -1189,6 +1268,14 @@ def create_my_product(
         db.query(Product).filter(Product.producer_id == user.producer_id).count(),
         "products",
     )
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    approved_edit.check_product(  # MEH-3261
+        background_tasks,
+        producer,
+        None,
+        data.model_dump(),
+        bool(producer and _test_cause(producer, user)),
+    )
     product = Product(producer_id=user.producer_id, **data.model_dump())
     db.add(product)
     db.commit()
@@ -1198,7 +1285,6 @@ def create_my_product(
     # for new-product alerts. Wires the previously-orphaned "new_product"
     # alert_type (see _ALERT_COL in routers/alerts.py). No Linear ticket was
     # ever assigned — the original marker was a literal, unresolvable MEH-XXX.
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     producer_name = producer.name if producer else "בית העסק"
     from app.routers.alerts import AlertContent, fire_alerts
 
@@ -1219,10 +1305,11 @@ def create_my_product(
 
 @router.put("/products/{product_id}", response_model=ProductOut)
 @limiter.limit("60/hour")
-def update_my_product(
+def update_my_product(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3261 added BackgroundTasks for the flag ping
     request: Request,
     product_id: UUID,
     data: ProductUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ) -> ProductOut | Product:
@@ -1231,12 +1318,24 @@ def update_my_product(
         .filter(
             Product.id == product_id,
             Product.producer_id == user.producer_id,
+            Product.is_draft.is_(
+                False
+            ),  # MEH-2312: drafts are the admin's until approved
         )
         .first()
     )
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
-    for field, value in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    approved_edit.check_product(  # MEH-3261
+        background_tasks,
+        producer,
+        product,
+        payload,
+        bool(producer and _test_cause(producer, user)),
+    )
+    for field, value in payload.items():
         setattr(product, field, value)
     db.commit()
     db.refresh(product)
@@ -1256,6 +1355,9 @@ def delete_my_product(
         .filter(
             Product.id == product_id,
             Product.producer_id == user.producer_id,
+            Product.is_draft.is_(
+                False
+            ),  # MEH-2312: drafts are the admin's until approved
         )
         .first()
     )

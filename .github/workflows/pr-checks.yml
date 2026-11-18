@@ -483,8 +483,11 @@ jobs:
           # experiences) — 48 -> 49.
           # MEH-2903: alembic_lineage (the revisions each boot applied, written
           # only by scripts/migrate_on_boot.py) — 49 -> 50.
-          # MEH-3301: user_phone_otp_tokens (user phone verification codes) — 57 -> 58.
-          EXPECTED_TABLES=58
+          # v1.5.6 train 3: user_phone_otp_tokens (MEH-3303, #4634) +
+          # admin_passkeys, admin_recovery_codes (MEH-3305, #4782) +
+          # producer_order_windows, product_order_notifications,
+          # product_order_phone_codes (MEH-3296, #4640) — 58 -> 64.
+          EXPECTED_TABLES=64
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables

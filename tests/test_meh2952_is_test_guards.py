@@ -171,6 +171,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
     "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
     "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
+    "backend/app/routers/admin_extra.py": (
+        1,
+        "blocking the only owner hides a live business — a state transition, "
+        "test row or not (MEH-2871)",
+    ),
     "backend/app/routers/producer_me.py": (1, "the owner's own dashboard"),
     "backend/app/routers/producer_me_review.py": (1, "the owner's own dashboard"),
     "backend/app/routers/group_buys.py": (1, "the owner opening a group buy"),
@@ -181,6 +186,10 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     "backend/app/routers/reviews.py": (
         1,
         "POST review: a resource of the page itself, chunk 3",
+    ),
+    "backend/app/services/approved_edit_moderation.py": (
+        3,
+        "the owner's own save: AI check + admin ping only for an approved page",
     ),
     "backend/app/services/onboarding_followup.py": (
         1,

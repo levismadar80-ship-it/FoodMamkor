@@ -482,6 +482,7 @@ SENSITIVE_FIELD_LABELS: dict[str, str] = {
     "city": "עיר",
     "phone": "טלפון",
     "vegan_scope": "הצהרת טבעונות",
+    "secondary_phone": "טלפון נוסף",  # MEH-3339
     "vegetarian_scope": "הצהרת צמחונות",
     "gluten_free_facility": "הצהרת ללא גלוטן",
     "whatsapp_group": "קישור לעדכונים בוואטסאפ",  # MEH-2626

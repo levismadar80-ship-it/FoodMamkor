@@ -86,6 +86,14 @@ class Producer(Base):
     lat = Column(Float)
     lng = Column(Float)
     phone = Column(String(20))
+    # MEH-3339: an optional second number, shown as one quiet text line
+    # ("{label}: {number}") on the public page. Every CTA (call, WhatsApp,
+    # sticky bar), phone verification and WhatsApp notifications stay on
+    # `phone` above. Same validation as `phone` (schemas). Paired migration:
+    # c3e8a1f05d72.
+    # DO NOT wire a CTA or a notification to secondary_phone — MEH-3339.
+    secondary_phone = Column(String(20), nullable=True)
+    secondary_phone_label = Column(String(30), nullable=True)
     instagram = Column(String(100))
     website = Column(String(200))
     whatsapp_group = Column(String(300), nullable=True)  # invite link
@@ -379,8 +387,13 @@ class Producer(Base):
     # Admin-owned (MEH-530 precedent): ProducerAdminOut only, never the public
     # ProducerDetailOut/ListOut, and withheld from _PRODUCER_WRITABLE_FIELDS so
     # PUT /producers/me cannot write it — same shape as google_place_id
-    # (MEH-1490). Tests assert both. No enforcement anywhere: v1 is capture +
-    # remind only. Paired migration: c3e9a1f7b204.
+    # (MEH-1490). Tests assert both. Enforcement lives in
+    # services/verification_status.py (MEH-2520): `licence_lapsed` /
+    # `verification_is_current` drop the verified tier once this date has
+    # passed, and both the public tier and the `?verified` filter read through
+    # them. NULL means "not captured", never "lapsed", so an expired licence
+    # with no captured date stays indistinguishable (MEH-2637). Paired
+    # migration: c3e9a1f7b204.
     license_expires_at = Column(Date, nullable=True)
     # MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") captured at the
     # final registration step. `referral_source` holds an English key from
@@ -444,6 +457,12 @@ class Producer(Base):
     )
     # MEH-155: optional vacation end date — cleared automatically when past.
     vacation_until = Column(Date, nullable=True)
+    # MEH-2697: when the OWNER last said her availability is still true —
+    # tz-aware UTC. Written only by the owner (setting the state, or the
+    # «עדיין נכון» confirm route in producer_me.py). NULL = never confirmed:
+    # the public tag shows nothing, never "confirmed long ago".
+    # DO NOT stamp this from an admin edit — the tag reads «אושר ע״י בית העסק».
+    availability_confirmed_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
     opening_hours = Column(String, nullable=True)
     # MEH-1543: optional weekly ORDER-acceptance window — distinct from
@@ -610,6 +629,10 @@ class Producer(Base):
     # «אישור בוואטסאפ, 12/11». Required (non-blank) on every invite — this
     # column plus `owner_invite_created_by` IS the audit trail.
     owner_invite_consent_note = Column(Text, nullable=True)
+    # MEH-3377: an optional screenshot of that written consent (the WhatsApp
+    # «כן»), attached on «פרסום בהסכמה». A Cloudinary URL. Admin-only: it shows
+    # a private person's chat, so it is on ProducerAdminOut and no other shape.
+    consent_screenshot_url = Column(String(500), nullable=True)
     # `use_alter` + an explicit name, exactly as `top_product_id` above does,
     # and for the same reason: `users.producer_id` already points HERE, so this
     # reference closes a producers ↔ users cycle. Without the pair, SQLAlchemy
@@ -678,6 +701,12 @@ class Producer(Base):
     # which is what holds the send to EXACTLY ONE email.
     # See migration d3b7f1a92c64.
     email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # Page freshness: the monthly "is everything still correct?" email.
+    # last_confirmed_at is set when the owner presses "yes" in that email;
+    # freshness_email_sent_at is the idempotency stamp. Expand-only (ADR-007),
+    # migration a8d41c2e7f90. Sender: services/page_freshness.
+    last_confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    freshness_email_sent_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-3079: weekly summary email. opt_out is set by the signed unsubscribe
     # link; sent_at is the idempotency stamp (skip if < 6 days old). Expand-only
     # (ADR-007), migration 0cfa83f0f53e. Sender: services/weekly_owner_summary.
@@ -701,11 +730,19 @@ class Producer(Base):
     # broke 4 tests before the argument was added). The catalogue joins on the
     # child's owner column; the featured-product FK points the other way and
     # is a scalar, never a collection.
+    # MEH-2312: the relationship is the PUBLISHED catalog — an imported draft
+    # (`Product.is_draft`) is invisible to every reader that goes through
+    # `producer.products` (page, list, filters' `.any()`, counts, favorites).
+    # Drafts are reached only by explicit `query(Product)` in the admin import
+    # router. Deleting a business still removes its drafts: the FK is
+    # ON DELETE CASCADE.
+    # DO NOT drop the is_draft clause — it is the one gate in front of ~15 readers.
     products = relationship(
         "Product",
         back_populates="producer",
         cascade="all, delete-orphan",
         foreign_keys="Product.producer_id",
+        primaryjoin="and_(Producer.id == Product.producer_id, Product.is_draft.is_(False))",
     )
     delivery_areas = relationship(
         "DeliveryArea", back_populates="producer", cascade="all, delete-orphan"
@@ -1166,6 +1203,7 @@ class ProducerCategory(Base):
 # keeps working, and importing this module still registers every table on
 # `Base.metadata` and every class for string-named relationships.
 from app.models.admin_ops import (  # noqa: E402
+    AdminAuditLog as AdminAuditLog,
     AdminChecklistItem as AdminChecklistItem,
     AlembicLineage as AlembicLineage,
     CategoryRequest as CategoryRequest,

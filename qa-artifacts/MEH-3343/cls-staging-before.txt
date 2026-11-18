@@ -1,0 +1,152 @@
+control ok 0.2810
+mobile  /he                                                          0.0000 0.0000
+mobile  /he/map                                                      0.2238 0.2239
+      0.2163 div.motion-safe:animate-pulse.bg-background.w-full 256->201 h408->275
+      0.2163 button[map-near-me-pill].lg:hidden.absolute.end-4 533.046875->515.046875 h44->44
+      0.0001 button[map-near-me-pill].lg:hidden.absolute.end-4 515.046875->510.234375 h44->44
+      0.0003 button[map-key-toggle-mobile].lg:hidden.flex.absolute 262.125->265.9375 h84->84
+      0.0003 button[map-near-me-pill].lg:hidden.absolute.end-4 510.234375->504.25 h44->44
+      0.0004 button[map-key-toggle-mobile].lg:hidden.flex.absolute 265.9375->273.71875 h84->84
+mobile  /he/about                                                    0.0000 0.0000
+mobile  /he/events                                                   0.0064 0.0064
+      0.0063 button.inline-flex.items-center.gap-1.5 418->418 h44->44
+      0.0063 button.inline-flex.items-center.gap-1.5 418->418 h44->44
+      0.0000 span.font-english.italic.text-base 509->508 h24->24
+mobile  /he/experiences                                              0.0001 0.0001
+      0.0001 span.font-english.italic.text-base 509->508 h24->24
+      0.0001 span.font-english.italic.text-sm 631->630 h20->20
+mobile  /he/producers                                                0.0000 0.0000
+mobile  /he/join                                                     0.0000 0.0000
+mobile  /he/login                                                    0.5342 0.5342
+      0.4347 footer.mt-16.bg-primary-dark.text-green-50 266->0 h398->0
+      0.0328 form.grid.gap-4 341.5->381.5 h250->250
+      0.0328 div.relative 365.5->405.5 h62->62
+      0.0328 div.relative 463.5->503.5 h62->62
+      0.0328 p[login-oauth-terms].text-sm.leading-relaxed.text-fg-muted 232->272 h45.5->45.5
+      0.0328 div.relative.flex.justify-center 301.5->341.5 h16->16
+mobile  /he/register                                                 0.1233 0.1233
+      0.0465 footer.mt-16.bg-primary-dark.text-green-50 610->0 h54->0
+      0.0263 form[register-form].space-y-4 434->474 h230->190
+      0.0263 p[register-oauth-terms].text-sm.leading-relaxed.text-fg-muted 332.5->372.5 h45.5->45.5
+      0.0263 div.relative 626->0 h38->0
+      0.0263 div.relative.flex.justify-center 398->438 h16->16
+      0.0229 form[register-form].space-y-4 474->514 h190->150
+mobile  /he/producer/b331574f-e90e-48fa-be3b-c1ab1d1ec0fd            1.5815 1.5815
+      0.4911 footer.mt-16.bg-primary-dark.text-green-50 266->0 h398->0
+      0.4911 footer.mt-16.bg-primary-dark.text-green-50 0->266 h0->398
+      0.5994 footer.mt-16.bg-primary-dark.text-green-50 266->0 h398->0
+mobile  /he/organizers/golden-organizer                              0.0000 0.0000
+mobile  /he/events/1b54c6a7-0c10-4209-8c0a-eeaf429fe3dd              0.0000 0.0000
+mobile  /he/group-buys                                               0.0000 0.0000
+mobile  /he/rescue                                                   0.0371 0.0371
+      0.0371 footer.mt-16.bg-primary-dark.text-green-50 518->630 h146->34
+      0.0371 a.mb-4.inline-flex.items-center 566->0 h48->0
+mobile  /he/contact                                                  0.0000 0.0000
+mobile  /he/favorites                                                0.8722 0.8722
+      0.7801 footer.mt-16.bg-primary-dark.text-green-50 146->0 h518->0
+      0.0314 form.grid.gap-4 377.5->417.5 h250->246.5
+      0.0314 div.relative 401.5->441.5 h62->62
+      0.0314 div.relative 499.5->539.5 h62->62
+      0.0314 p[login-oauth-terms].text-sm.leading-relaxed.text-fg-muted 268->308 h45.5->45.5
+      0.0314 div.relative.flex.justify-center 337.5->377.5 h16->16
+desktop /he                                                          0.0233 0.0233
+      0.0208 section[home-category-grid].max-w-7xl.mx-auto.px-4 675.375->650 h224.625->250
+      0.0208 div.px-4.md:px-12.text-white 188->229.8125 h173.375->106.1875
+      0.0208 section[home-trust-band].bg-background.border-y.border-border 529.375->504 h122->122
+      0.0208 div[hero-chips-row].mt-3.px-4.flex 465.375->440 h48->48
+      0.0208 h1.font-headline-display.font-black.leading-tight 228->264.8125 h134.375->77
+      0.0025 nav.pointer-events-auto.w-full.justify-between 32->32 h98->98
+desktop /he/map                                                      0.0027 0.0031
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.0002 button[map-gps-button].hidden.lg:flex.absolute 768->750 h84->84
+      0.0002 button[map-key-toggle-desktop].hidden.lg:flex.absolute 712->694 h84->84
+      0.0002 svg 460->451 h48->48
+      0.0002 p.text-fg-muted.text-sm 520->511 h20->20
+      0.0002 div[map-legend].hidden.lg:block.absolute 870->852 h30->32
+desktop /he/about                                                    0.0131 0.0025
+      0.0106 section.bg-background.pb-9.md:pb-14 483.1875->455.1875 h416.8125->444.8125
+      0.0106 p[about-updated-at].mt-4.font-body-md.text-sm 407.1875->379.1875 h20->20
+      0.0106 a[about-hero-cta].mt-6.inline-flex.items-center 343.1875->315.1875 h48->48
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+desktop /he/events                                                   0.0047 0.0048
+      0.0001 #text:מה קורה קרוב לבית 184->181 h46->46
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.0022 button.inline-flex.items-center.gap-1.5 425->425 h44->44
+      0.0022 button.inline-flex.items-center.gap-1.5 425->425 h44->44
+      0.0000 span.font-english.italic.text-base 515->515 h24->24
+desktop /he/experiences                                              0.0032 0.0032
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.0006 button.inline-flex.items-center.gap-1.5 425->425 h44->44
+      0.0000 span.font-english.italic.text-base 515->515 h24->24
+      0.0000 span.font-english.italic.text-sm 659->659 h20->20
+      0.0000 span.font-english.italic.text-sm 849.5->849.5 h20->20
+desktop /he/producers                                                0.0373 0.0372
+      0.0000 #text:כל בתי העסק 155->152 h39->39
+      0.0000 div[delivery-day-row].shrink-0 270->270 h44->44
+      0.0000 div.relative.min-w-0.shrink-0 270->270 h48->48
+      0.0000 svg 165->165 h14->14
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.0347 div[producers-grid].grid.grid-cols-2.gap-3 390->454 h510->446
+desktop /he/join                                                     0.0091 0.0025
+      0.0066 div[join-photo].relative.w-full.aspect-video 465.796875->439.796875 h405->405
+      0.0066 #text:העסק שלכם. עמוד משלו 174->174 h67->67
+      0.0066 p.text-sm.text-fg-muted.mt-3 405.796875->379.796875 h20->20
+      0.0066 #text:עמוד עם התמונות והסי 259.796875->259.796875 h21->21
+      0.0066 span.inline-block 341.796875->315.796875 h52->52
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+desktop /he/login                                                    0.3035 0.3035
+      0.0000 li 877->877 h23->23
+      0.0000 li 877->877 h23->23
+      0.2935 footer.mt-16.bg-primary-dark.text-green-50 266->866 h634->34
+      0.2935 form.relative 350->0 h52->0
+      0.2935 a.mb-4.inline-flex.items-center 314->0 h48->0
+      0.0023 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+desktop /he/register                                                 0.0253 0.0253
+      0.0064 footer.mt-16.bg-primary-dark.text-green-50 846->0 h54->0
+      0.0059 form[register-form].space-y-4 450->490 h376.75->376.75
+      0.0059 div.absolute.inset-x-0.bottom-0 814.75->854.75 h85.25->45.25
+      0.0059 div.relative 642->682 h54->54
+      0.0059 p[register-oauth-terms].text-sm.leading-relaxed.text-fg-muted 348.5->388.5 h45.5->45.5
+      0.0059 div.relative.flex.justify-center 414->454 h16->16
+desktop /he/producer/b331574f-e90e-48fa-be3b-c1ab1d1ec0fd            1.8315 1.4499
+      0.3816 footer.mt-16.bg-primary-dark.text-green-50 0->266 h0->634
+      0.0000 li 877->877 h23->23
+      0.0000 li 877->877 h23->23
+      0.3816 footer.mt-16.bg-primary-dark.text-green-50 266->0 h634->0
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.3816 footer.mt-16.bg-primary-dark.text-green-50 0->266 h0->634
+desktop /he/organizers/golden-organizer                              0.0027 0.0028
+      0.0001 #text:בית עסק לדוגמה לבדיק 576->576 h21->21
+      0.0001 #text:בית עסק לדוגמה לבדיק 823->823 h18->18
+      0.0002 #text:דמו גולדן — מארגנת ש 482->479 h46->46
+      0.0002 #text:אירועים קרובים 695->692 h31->31
+      0.0002 #text:דמו גולדן — שוק יצרנ 760->757 h31->31
+      0.0002 #text:18 754->750 h62->62
+desktop /he/events/1b54c6a7-0c10-4209-8c0a-eeaf429fe3dd              0.0048 0.0047
+      0.0013 footer.mt-16.bg-primary-dark.text-green-50 0->889 h0->11
+      0.0001 #text:דמו גולדן — שוק יצרנ 407->403 h62->62
+      0.0001 svg 485->485 h14->14
+      0.0000 #text:בית עסק לדוגמה לבדיק 573->573 h21->21
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.0008 footer.mt-16.bg-primary-dark.text-green-50 889->0 h11->0
+desktop /he/group-buys                                               0.0025 0.0025
+      0.0000 ? 374->371 h18->24
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+desktop /he/rescue                                                   0.1497 0.1497
+      0.1212 footer.mt-16.bg-primary-dark.text-green-50 0->570 h0->330
+      0.0001 #text:סלי הפתעה 184->181 h46->46
+      0.0042 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.0042 div 730->762 h170->138
+      0.0008 div 762->794 h138->106
+      0.0234 footer.mt-16.bg-primary-dark.text-green-50 570->662 h330->238
+desktop /he/contact                                                  0.0026 0.0025
+      0.0002 #text:דברו איתנו 179->175 h57->57
+      0.0002 #text:למדיניות הפרטיות 845.59375->845.59375 h16->16
+      0.0025 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+desktop /he/favorites                                                0.6309 0.6309
+      0.0000 li 808->808 h44->44
+      0.0000 li 808->808 h44->44
+      0.0297 footer.mt-16.bg-primary-dark.text-green-50 197->146 h703->754
+      0.0107 div.flex.flex-col.sm:flex-row 745->777 h56->56
+      0.0107 nav.pointer-events-auto.w-full.justify-between 6->6 h98->98
+      0.0107 div 514->546 h184->184

@@ -2,6 +2,8 @@
 #
 # Module:   doc-freshness-guard.sh
 # Purpose:  warn when a watched doc's '**Last reviewed:**' date (docs/CONTEXT.md, docs/BRAND.md, docs/PROJECT_INSTRUCTIONS.md) is older than 120 days.
+#           Also warn when an Accepted ADR is dated after CONTEXT.md's review date
+#           (MEH-3407): ADRs outrank CONTEXT, so a newer one may contradict it.
 # Touches:  nothing — reads tracked files and prints.
 # Does NOT: block. WARN-ONLY: prints WARNING (surfaced by run-all.sh, MEH-1715)
 #           and exits 0. It also does not judge whether the content is still
@@ -9,7 +11,7 @@
 # Related:  scripts/docs/knowledge_freshness.py (the single implementation and
 #           its --self-test), docs/decisions/ADR-035-one-home-per-fact.md,
 #           scripts/checks/README.md (guard contract).
-# History:  MEH-2346 (creation). The rule existed in prose and lapsed with no
+# History:  MEH-2346 (creation); MEH-3407 (ADR-newer-than-review check). The rule existed in prose and lapsed with no
 #           signal: HANDOFF.md reached 13,716 lines under a "rolling 7-day"
 #           definition, CONTEXT.md went five months unreviewed.
 #

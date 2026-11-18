@@ -336,9 +336,12 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           The string below is byte-identical to HomepageMiniMap.jsx:236 —
           legal text, never translated.
           REUSES: frontend/components/HomepageMiniMap.jsx:233,236 */}
+      {/* MEH-3077: per-tile referrerPolicy — OSM 403s a tile with no Referer;
+          set on the <img>, it wins over any page-level policy. */}
       <TileLayer
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        referrerPolicy="strict-origin-when-cross-origin"
       />
       {/* MEH-1611: one pin per point of THIS business — branch → filled
           category pin, pickup / market_stand → hollow outline. When the
@@ -461,10 +464,12 @@ export default function MiniMap({
       if (!focusables?.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      // MEH-3271: focus that has left the overlay is pulled back in.
+      const outside = !overlayRef.current?.contains(document.activeElement);
+      if (event.shiftKey && (document.activeElement === first || outside)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (document.activeElement === last || outside)) {
         event.preventDefault();
         first.focus();
       }

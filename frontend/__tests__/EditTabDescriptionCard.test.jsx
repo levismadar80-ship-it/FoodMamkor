@@ -183,3 +183,17 @@ describe("DescriptionCard — error mapping preserved (MEH-1157)", () => {
     expect(alert.textContent).toContain(D.error_generate);
   });
 });
+
+describe("DescriptionCard — AI-rejected text (MEH-3261)", () => {
+  it("422 shows the server's sentence instead of the generic error", async () => {
+    const REJECTED = "הטקסט אינו עומד בהנחיות הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב.";
+    api.put.mockRejectedValueOnce({ response: { status: 422, data: { detail: REJECTED } } });
+    renderCard({ profile: { description: "ישן" } });
+    fireEvent.change(screen.getByPlaceholderText(D.desc_placeholder), {
+      target: { value: "תיאור חדש" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: D.save_cta }));
+    expect(await screen.findByText(REJECTED)).toBeInTheDocument();
+    expect(screen.queryByText(D.error_save)).toBeNull();
+  });
+});
