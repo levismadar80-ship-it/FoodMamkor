@@ -897,7 +897,7 @@ Unchanged and reused as-is: `join.eyebrow` · `join.h1` · `join.subhead` · `jo
 | return | rescue_bags | ShoppingBag | `סלי הפתעה` | `למה שנשאר בסוף היום, במחיר מוזל` — flag-gated: off → «שיחזרו לקנות» shows 3 tiles |
 | trust | verified_badge | ShieldCheck | `תג מאומת` | `אחרי בדיקה ידנית של הרישיון` |
 | trust | kashrut_verified | Certificate | `כשרות מאומתת` | `אחרי שהתעודה נבדקה` |
-| trust | editor_pick | Medal | `בחירת העורכת` | `לא עומדת למכירה` |
+| trust | editor_pick | Medal | `בחירת העורכות` | `לא עומדת למכירה` |
 | trust | reviews_contacted | Star | `ביקורות אמיתיות` | `רק ממי שפנה, ואתם מגיבים` |
 | insights | views | Eye | `צפיות` | `ל-7 ימים, 30 יום או מההתחלה` |
 | insights | contact_clicks | CursorClick | `לחיצות` | `וואטסאפ, טלפון ואתר` |

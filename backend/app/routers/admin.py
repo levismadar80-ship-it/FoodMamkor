@@ -29,6 +29,7 @@ from app.services.availability_validation import (  # MEH-2758
     validate_transition,
 )
 from app.services.producer_listing import is_business  # MEH-2459
+from app.services.page_freshness import stale_clause
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
@@ -220,7 +221,7 @@ def _recommended_review_due_clause() -> ColumnElement[bool]:
 
 
 @router.get("/producers", response_model=list[ProducerAdminOut])
-def list_producers(
+def list_producers(  # noqa: PLR0913 — FastAPI query params + Depends, one per filter
     status: str | None = Query(
         None,
         pattern="^(draft|pending|approved|rejected|inactive|all)$",
@@ -229,6 +230,8 @@ def list_producers(
     # MEH-1494 chunk B: the annual-review view. Default False so every existing
     # caller — the admin toolbar included — sees exactly the list it saw before.
     recommended_review_due: bool = Query(False),
+    # Page freshness: live pages the owner has not confirmed for 60 days.
+    freshness_stale: bool = Query(False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> list[ProducerAdminOut] | list[Producer]:
@@ -276,6 +279,8 @@ def list_producers(
         )
     if recommended_review_due:
         q = q.filter(_recommended_review_due_clause())
+    if freshness_stale:
+        q = q.filter(stale_clause())
     # MEH-2110: the review queue is worked oldest-first, because the "עד 3 ימי
     # עסקים" promise starts at submission and a business that has waited longest
     # is the one closest to breaking it. Newest-first (the old default) let an

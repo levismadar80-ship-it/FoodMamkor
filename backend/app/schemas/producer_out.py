@@ -504,6 +504,8 @@ class ProducerAdminOut(ProducerDetailOut):
     # and for every draft; the admin table renders the tooltip from
     # created_at in that case rather than showing an empty timestamp.
     submitted_for_review_at: datetime | None = None
+    # Page freshness: when the owner last pressed «כן, הכול נכון». Admin-only.
+    last_confirmed_at: datetime | None = None
     # Computed server-side (routers/admin.py) rather than derived per client,
     # so the badge and the queue ordering can never disagree about age.
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).

@@ -73,6 +73,8 @@ const RESERVED = new Set([
   "unsubscribe",
   // MEH-3248: the confirmation after an account deletion.
   "account-deleted",
+  // MEH-3393: the monthly page-freshness confirm page (/freshness/confirm).
+  "freshness",
 ]);
 
 // Real slugs are produced by backend _slugify

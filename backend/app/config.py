@@ -172,6 +172,12 @@ class Settings(BaseSettings):
     rescue_bags_enabled: bool = False
     rescue_bags_cities: str = ""
 
+    # MEH-3393: monthly page-freshness email to owners + the Sunday admin
+    # digest of pages unconfirmed for 60 days. Off until
+    # PAGE_FRESHNESS_ENABLED=true is set in Railway; confirming a link and the
+    # admin stale filter work either way.
+    page_freshness_enabled: bool = False
+
     # MEH-2890 (Sapir 10/11): the one account no admin can demote or delete.
     # It used to be a hard-coded address in admin_extra.py AND in the admin
     # users page — the owner's private mailbox, in a repo that is public.

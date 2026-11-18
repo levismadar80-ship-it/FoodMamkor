@@ -777,7 +777,8 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
     for (const pill of await card.locator("[data-badge]").all()) {
       expect(Math.abs(centre(await box(pill)) - chip), "pill and «+N» share one line").toBeLessThanOrEqual(4);
     }
-    await expect(more).toHaveAttribute("aria-haspopup", "true");
+    // sheetOnMobile popover → announced as a dialog, never as a menu ("true").
+    await expect(more).toHaveAttribute("aria-haspopup", "dialog");
     await expect(more).toHaveAttribute("aria-expanded", "false");
   });
 

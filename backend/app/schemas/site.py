@@ -299,6 +299,16 @@ class WeeklySummaryUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1, max_length=2048)
 
 
+# Page freshness: the «כן, הכול נכון» link in the monthly email.
+class PageFreshnessConfirmIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2048)
+
+
+class PageFreshnessConfirmOut(BaseModel):
+    business_name: str
+    confirmed_at: datetime
+
+
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of
 # truth for both the ContactIn validator (keys = allowed values) and the
 # router's label mapping (marketing.py imports this) — avoids the two-parallel-

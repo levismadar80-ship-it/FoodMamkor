@@ -26,6 +26,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "claim",
         # MEH-2974: owner-invite link landing page (/owner-invite/<token>).
         "owner-invite",
+        # MEH-3393: page-freshness confirm page (/freshness/confirm).
+        "freshness",
         # User/producer account routes
         "settings",
         "profile",

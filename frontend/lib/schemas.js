@@ -222,7 +222,7 @@ export const ProducerListSchema = z.object({
   // from admin-stamped `kashrut_verified_at`. Neither is read by executable
   // code, so neither is a badge input.
   has_producer_license: z.boolean().nullable().optional(),   // → license
-  is_recommended: z.boolean().nullable().optional(),         // → recommended (בחירת העורכת)
+  is_recommended: z.boolean().nullable().optional(),         // → recommended (בחירת העורכות)
   days_since_created: z.number().nullable().optional(),      // → new (חדש)
   grass_fed: z.boolean().nullable().optional(),              // → grass_fed
   reservist_owned: z.boolean().nullable().optional(),        // → reservist_owned («עסק של מילואימניקים»)
