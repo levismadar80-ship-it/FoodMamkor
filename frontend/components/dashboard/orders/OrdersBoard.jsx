@@ -53,7 +53,7 @@ function ListTabs({ lists, current, onPick }) {
           tabIndex={current === key ? 0 : -1}
           data-testid={`orders-tab-${key}`}
           onClick={() => onPick(key)}
-          className={`shrink-0 min-h-touch px-3 text-sm font-medium border-b-2 focus-ring ${
+          className={`flex-1 min-w-0 min-h-touch px-1.5 text-sm leading-tight font-medium border-b-2 focus-ring ${
             current === key ? "border-primary text-primary" : "border-transparent text-fg-muted"
           }`}
         >

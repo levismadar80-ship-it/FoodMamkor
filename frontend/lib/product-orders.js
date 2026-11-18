@@ -135,6 +135,28 @@ export function dayLabel(iso, locale = "he") {
   return `${weekday} ${Number(day)}.${Number(month)}`;
 }
 
+/**
+ * Ordering is set up once it is switched on and has a hand-over window.
+ * From then the settings cards start closed and the tab opens on the orders.
+ * @param {{ enabled?: boolean } | null} settings
+ * @param {unknown[]} windows
+ */
+export function isSetUp(settings, windows) {
+  return Boolean(settings?.enabled) && windows.length > 0;
+}
+
+/**
+ * A buyer's phone as an Israeli reads it: "972501234567" → "050-123-4567".
+ * Anything that is not an Israeli mobile in that shape stays international
+ * ("+44…"), so a foreign number is never mangled into a wrong local one.
+ * @param {string} digits — E.164 without the "+", as the API sends it
+ */
+export function localPhone(digits) {
+  const d = String(digits ?? "").replace(/\D/g, "");
+  const m = /^972(5\d)(\d{3})(\d{4})$/.exec(d);
+  return m ? `0${m[1]}-${m[2]}-${m[3]}` : `+${d}`;
+}
+
 /** Shekels typed by the owner → agorot, or null when empty / not a number. */
 export function agorotFromInput(text) {
   const clean = String(text ?? "").trim();

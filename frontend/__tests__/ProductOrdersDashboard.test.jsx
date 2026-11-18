@@ -15,14 +15,16 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn
 
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import { buttonsFor } from "@/components/dashboard/orders/OrderActions";
-import { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
-import { prefillFrom } from "@/components/dashboard/orders/OrderWindowsCard";
+import OrderSettingsCard, { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
+import OrderWindowsCard, { prefillFrom } from "@/components/dashboard/orders/OrderWindowsCard";
 import api from "@/lib/api";
 import {
   PAGE_LIMIT,
   agorotFromInput,
   groupOrders,
+  isSetUp,
   israelDay,
+  localPhone,
   loadOrders,
   rangeEnds,
   shekelsText,
@@ -157,7 +159,9 @@ describe("board: 0 / 1 / many × the four lists", () => {
     expect(card).toHaveTextContent("כולל משלוח 15 ₪");
     expect(card).toHaveTextContent("יש בהזמנה אלכוהול · לבקש תעודה מזהה במסירה");
     expect(card).toHaveTextContent("כתובת למשלוח: הרצל 1");
-    expect(within(card).getByRole("link", { name: "טלפון" })).toHaveAttribute("href", "tel:+972501234567");
+    const phone = within(card).getByRole("link", { name: "טלפון" });
+    expect(phone).toHaveAttribute("href", "tel:+972501234567");
+    expect(phone).toHaveTextContent("050-123-4567");
   });
 });
 
@@ -262,5 +266,47 @@ describe("list tabs keyboard (RTL)", () => {
     fireEvent.keyDown(waiting, { key: "ArrowLeft" });
     expect(screen.getByTestId("orders-tab-confirmed")).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "orders-tab-btn-confirmed");
+  });
+});
+
+describe("phone as the business reads it", () => {
+  it("an Israeli mobile prints in local form; anything else stays international", () => {
+    expect(localPhone("972501234567")).toBe("050-123-4567");
+    expect(localPhone("972541112233")).toBe("054-111-2233");
+    expect(localPhone("447700900123")).toBe("+447700900123");
+    expect(localPhone("97221234567")).toBe("+97221234567");
+  });
+});
+
+describe("settings cards: open until ordering is set up, closed after", () => {
+  const settings = {
+    enabled: true, auto_confirm: false, auto_confirm_cap: null, cancel_cutoff_hours: 2,
+    shabbat_observant: false, min_order_agorot: null, slot_minutes: 60, lead_time_hours: 2,
+  };
+  const win = { weekday: 0, start_time: "09:00", end_time: "12:00", fulfilment: "pickup" };
+  const wrap = (node) => render(<NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">{node}</NextIntlClientProvider>);
+
+  it("set up = on with at least one window: 0 windows no, 1 yes, many yes, off never", () => {
+    expect(isSetUp(settings, [])).toBe(false);
+    expect(isSetUp(settings, [win])).toBe(true);
+    expect(isSetUp(settings, [win, win, win])).toBe(true);
+    expect(isSetUp({ ...settings, enabled: false }, [win, win])).toBe(false);
+    expect(isSetUp(null, [win])).toBe(false);
+  });
+
+  it("closed: the title shows, the fields are folded; a tap on the title opens them", () => {
+    wrap(<><OrderSettingsCard settings={settings} onSaved={() => {}} collapsed /><OrderWindowsCard windows={[win]} orderWindow={null} collapsed /></>);
+    for (const id of ["order-settings", "order-windows"]) {
+      const card = screen.getByTestId(id);
+      expect(card).not.toHaveAttribute("open");
+      fireEvent.click(within(card).getByRole("heading"));
+      expect(card).toHaveAttribute("open");
+    }
+  });
+
+  it("open: both cards start unfolded", () => {
+    wrap(<><OrderSettingsCard settings={settings} onSaved={() => {}} /><OrderWindowsCard windows={[]} orderWindow={null} /></>);
+    expect(screen.getByTestId("order-settings")).toHaveAttribute("open");
+    expect(screen.getByTestId("order-windows")).toHaveAttribute("open");
   });
 });
