@@ -57,7 +57,7 @@ export default function WhatsappBlockedSection() {
             {rows.map((row) => (
               <tr key={row.id} className="border-t border-border">
                 <td className="px-5 py-3 font-mono text-xs" data-label={t("whatsapp_failures.columns.phone")}>{row.to_phone}</td>
-                <td className="px-5 py-3 text-xs text-fg-muted" data-label={t("whatsapp_failures.columns.kind")}>{row.kind}</td>
+                <td className="px-5 py-3 text-xs text-fg-muted break-all" data-label={t("whatsapp_failures.columns.kind")}>{row.kind}</td>
                 <td className="px-5 py-3 text-xs whitespace-pre-line break-words" data-label={t("whatsapp_failures.blocked.content")}>
                   {row.error_message || "—"}
                 </td>
