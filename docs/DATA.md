@@ -1081,7 +1081,7 @@ POST   /auth/check-password      public  — MEH-306 stateless policy preview (3
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
-PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED)
+PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); after the commit the OLD address gets a notice that the address changed (no name in the greeting; new address shown as `n***@d***.tld`; link to /contact)
 ```
 
 ### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)
@@ -2101,7 +2101,7 @@ design). No env var, no retry, no Google.
 Critical:
 - `DATABASE_URL` — Railway Postgres reference
 - `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
-- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`admin_extra.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
+- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`services/account_guards.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
 - `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
 - `ENV` — `development|staging|production`
 - `CORS_ORIGINS` — comma-separated, production MUST set explicitly
