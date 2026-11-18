@@ -50,7 +50,7 @@ export function rowProblem(row) {
 function CheckFlag({ flag }) {
   const t = useTranslations("settings.products.menu_import");
   if (!flag) return null;
-  return <span className="text-2xs font-medium text-warning-700 ms-1">{t("check")}</span>;
+  return <span className="text-2xs font-medium text-warning-700 ms-1 whitespace-nowrap">{t("check")}</span>;
 }
 
 /**
@@ -89,12 +89,12 @@ export default function MenuReviewRow({ row, onChange, onRemove }) {
       <Input size="sm" label={label("description_label", "description")} value={row.description}
         onChange={(e) => set({ description: e.target.value })} maxLength={500} />
       <div className="flex flex-wrap items-end gap-2">
-        <div className="w-24">
+        <div className="flex-1 min-w-28 max-w-40">
           <Input size="sm" type="number" inputMode="decimal" min="1"
             label={label("price_min_label", "price")} value={row.price_min}
             onChange={(e) => set({ price_min: e.target.value })} invalid={noPrice} />
         </div>
-        <div className="w-24">
+        <div className="flex-1 min-w-28 max-w-40">
           <Input size="sm" type="number" inputMode="decimal" min="1" label={t("form.price_max_label")}
             value={row.price_max} onChange={(e) => set({ price_max: e.target.value })} />
         </div>
