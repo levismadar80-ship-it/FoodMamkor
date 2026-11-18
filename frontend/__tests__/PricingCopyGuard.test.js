@@ -110,9 +110,11 @@ describe("PricingCopyGuard (MEH-3166)", () => {
   it.each([
     ["terms.sections.pricing.launch", ["noticeDays"]],
     ["terms.sections.pricing.dispute", ["disputeDays"]],
-    ["terms.sections.pricing.early", ["earlyMonths", "priceChangeDays", "subPercent"]],
+    ["terms.sections.pricing.early", ["earlyMonths", "noticeDays", "priceChangeDays", "subPercent"]],
     ["terms.sections.pricing.change", ["priceChangeDays"]],
-    ["pricing.page.early_body", ["earlyMonths", "subBagFee", "subPercent"]],
+    // MEH-3420: the launch joiner gets the subscription as a gift, so the
+    // sentence names the fee it waives and the notice before it ends.
+    ["pricing.page.early_body", ["earlyMonths", "monthly", "noticeDays", "subBagFee", "subPercent"]],
     ["pricing.page.dispute_body", ["disputeDays"]],
     ["pricing.page.change_body", ["priceChangeDays"]],
     ["pricing.page.trial_body", ["trialDays"]],
