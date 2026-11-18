@@ -383,6 +383,8 @@ files = [
     "app/services/weekly_owner_summary.py",
     "app/services/whatsapp.py",
     "app/services/whatsapp_templates.py",
+    "app/services/whatsapp_template_bodies.py",
+    "app/services/whatsapp_template_lint.py",
     "app/slug_utils.py",
     "app/startup.py",
     "app/utils/clock.py",
