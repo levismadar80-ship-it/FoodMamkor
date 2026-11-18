@@ -30,7 +30,7 @@ BACKEND = Path(__file__).resolve().parents[1] / "backend"
 SCRIPT = BACKEND / "scripts" / "migrate_on_boot.py"
 sys.path.insert(0, str(BACKEND / "scripts"))
 
-from app_runtime_role import role_sql, with_secret  # noqa: E402
+from app_runtime_role import role_sql, fill_login_slot  # noqa: E402
 
 pytestmark = pytest.mark.serial
 
@@ -123,7 +123,7 @@ def runtime_role(scratch_db):
     owner_engine = create_engine(owner, isolation_level="AUTOCOMMIT")
     with owner_engine.connect() as conn:
         for statement in role_sql(role=role):
-            conn.execute(text(with_secret(statement, password)))
+            conn.execute(text(fill_login_slot(statement, password)))
     as_role = create_engine(
         scratch_db.set(username=role, password=password), isolation_level="AUTOCOMMIT"
     )

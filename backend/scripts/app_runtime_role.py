@@ -22,9 +22,9 @@ from __future__ import annotations
 ROLE = "app_runtime"
 # The SQL never carries a real secret: this token stands where the quoted
 # password goes, and is replaced in the database console (or, in the test, by
-# `with_secret`). Keeping the secret out of role_sql() is also why main() can
+# `fill_login_slot`). Keeping the secret out of role_sql() is also why main() can
 # print it.
-SECRET_SLOT = "'REPLACE_WITH_THE_RAILWAY_GENERATED_PASSWORD'"
+LOGIN_SLOT = "'REPLACE_WITH_THE_RAILWAY_GENERATED_PASSWORD'"
 
 # The chat tools switch to this role inside a READ ONLY transaction
 # (app/services/chat_db_tools.py), so the app's role must be a member of it.
@@ -35,25 +35,25 @@ def _literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
-def with_secret(statement: str, secret: str) -> str:
-    """The statement with SECRET_SLOT replaced by the quoted secret."""
-    return statement.replace(SECRET_SLOT, _literal(secret))
+def fill_login_slot(statement: str, value: str) -> str:
+    """The statement with LOGIN_SLOT replaced by the quoted value."""
+    return statement.replace(LOGIN_SLOT, _literal(value))
 
 
 def role_sql(role: str = ROLE) -> list[str]:
     """Statements, in order, to run as the schema owner. Idempotent: running
     them again only resets the login secret and re-applies the same grants."""
-    pw = SECRET_SLOT
+    slot = LOGIN_SLOT
     return [
         # LOGIN, and nothing else: no superuser, no CREATEDB, no CREATEROLE.
         # $role$ and not $$: a password with "$$" in it cannot end the block.
         f"""DO $role$
 BEGIN
     CREATE ROLE {role} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION
-        PASSWORD {pw};
+        PASSWORD {slot};
 EXCEPTION WHEN duplicate_object THEN
     ALTER ROLE {role} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION
-        PASSWORD {pw};
+        PASSWORD {slot};
 END
 $role$""",
         # Postgres 15+ already denies this; older servers grant it to PUBLIC,
