@@ -8,7 +8,7 @@ DELETE / cascade paths can fail-open without rolling back the DB write
 
 URL shape we parse:
 
-    https://res.cloudinary.com/<cloud>/image/upload/[<transformations>/][v<digits>/]<public_id>.<ext>
+    https://res.cloudinary.com/<cloud>/image/upload/[s--<signature>--/][<transformations>/][v<digits>/]<public_id>.<ext>
 
 Anything that isn't a `res.cloudinary.com` upload URL — local
 placeholders (`/placeholder-image.png`), Google's `lh3.googleusercontent`
@@ -42,6 +42,30 @@ log = logging.getLogger("app.upload")
 
 _UPLOAD_MARKER = "/image/upload/"
 _VERSION_RE = re.compile(r"^v\d+$")
+# MEH-3319 — a SIGNED delivery URL carries one extra segment immediately after
+# the upload marker: `s--<signature>--`, where the signature is the base64url
+# alphabet. Cloudinary's canonical order is signature, then transformations,
+# then version, then the public_id.
+#
+# Nothing here emits signed URLs today, which is why this went unnoticed: the
+# segment matched neither `_TRANSFORMATION_PARAM_RE` (it has no `<letters>_`
+# prefix — `s--` is letters then dashes) nor `_VERSION_RE`, so it survived into
+# the public_id and the orphan sweep looked for `s--<sig>--/v1/...`, found
+# nothing, and reported no orphan. A silent miss, not an error.
+#
+# Both ends are anchored and BOTH markers are required, so a real folder that
+# merely starts with `s--` is never eaten — `tests/test_cloudinary_cleanup.py`
+# pins that case next to the two signed ones.
+#
+# SCOPE, stated because the rest of this comment could be read as wider than it
+# is (independent reviewer, rule 5a): this handles a signed URL of the `upload`
+# DELIVERY TYPE only. `_UPLOAD_MARKER` is `/image/upload/` and
+# `_looks_like_cloudinary_upload` rejects everything else, so a signed
+# `/image/authenticated/...` or `/image/private/...` URL still returns None —
+# the same silent miss, one delivery type over. Nothing here emits either type
+# today; widening the marker is its own change, with its own reject-list
+# question, and not this one.
+_SIGNATURE_RE = re.compile(r"^s--[A-Za-z0-9_-]+--$")
 # Cloudinary transformation segments are either comma-joined (`w_400,h_400`)
 # or a single `<param>_<value>` pair (`f_auto`). Public-id folder segments
 # we use (`mehamakor`, `avatars`) and uuid4 hex public_ids never start
@@ -80,6 +104,10 @@ def _parse_public_id_from_upload_url(url: str) -> str | None:
     idx = url.find(_UPLOAD_MARKER)
     tail = url[idx + len(_UPLOAD_MARKER) :].split("?", 1)[0].split("#", 1)[0]
     segments = tail.split("/") if tail else []
+    # Drop the optional signature segment (`s--<hash>--`), which Cloudinary
+    # puts first on a signed URL — before the transformations (MEH-3319).
+    if segments and _SIGNATURE_RE.match(segments[0]):
+        segments.pop(0)
     # Drop leading transformation segments (chained transforms appear as
     # multiple slash-separated groups: `w_400,h_400/c_fill/`).
     while segments and _is_transformation_segment(segments[0]):

@@ -13,7 +13,7 @@
   "lib/admin-producers-export.js": 16,
   "lib/admin-review-checklist.js": 10,
   "lib/category-registry.js": 8,
-  "lib/constants.js": 4,
+  "lib/constants.js": 5,
   "lib/delivery-days.js": 7,
   "lib/distance.js": 2,
   "lib/errors.js": 1,

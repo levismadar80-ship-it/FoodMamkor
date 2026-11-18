@@ -342,3 +342,27 @@ describe("FilterSheet apply footer stickiness (MEH-1945)", () => {
     expect(footerOf().className).toMatch(/safe-area-inset-bottom/);
   });
 });
+
+// MEH-3271: the Tab loop holds when focus has left the panel (a tap on the
+// scrim, an element that was removed).
+describe("FilterSheet — Tab from outside the panel (MEH-3271)", () => {
+  it("is pulled back to the first / last control", () => {
+    renderSheet();
+    const panel = document.getElementById("filter-sheet-panel");
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    try {
+      outside.focus();
+      expect(panel.contains(document.activeElement)).toBe(false); // control
+
+      fireEvent.keyDown(document, { key: "Tab" });
+      expect(panel.contains(document.activeElement)).toBe(true);
+
+      outside.focus();
+      fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+      expect(panel.contains(document.activeElement)).toBe(true);
+    } finally {
+      outside.remove();
+    }
+  });
+});

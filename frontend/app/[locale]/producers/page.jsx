@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import ProducersClient from "@/components/ProducersClient";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
-import { API_URL, SITE_URL } from "@/lib/env";
+import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
