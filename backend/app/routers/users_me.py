@@ -41,6 +41,7 @@ from app.rate_limit import limiter
 # cookie attributes — the single-source-of-truth wins. Future refactor:
 # move both helpers to app/auth_cookies.py.
 from app.services.account_guards import is_super_admin  # MEH-3104, MEH-3248
+from app.services import email_change_guard  # MEH-3425
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
 from app.services.auth_emails import send_email_changed_notice, send_verify_email
@@ -74,13 +75,17 @@ def _change_email(
         raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
     # MEH-3104: a session alone is not enough to move the account. Without
     # this, a stolen session could change the address, ask for a password
-    # reset there and take the account. Same check and copy as change_password.
-    if (
-        not current_password
-        or not user.password_hash
-        or not verify_password(current_password, user.password_hash)  # type: ignore[arg-type]
-    ):
-        raise HTTPException(status_code=403, detail="הסיסמה הנוכחית שגויה")
+    # reset there and take the account. MEH-3425: wrong passwords are capped
+    # per account, and an account with no password gets its own message.
+    # MEH-3425: lock this user's row first. Test-then-spend on the counter
+    # is two steps around a ~100 ms bcrypt; without the lock a burst of
+    # parallel wrong guesses all pass the check before any is counted.
+    db.query(User).filter(User.id == user.id).with_for_update().one()
+    email_change_guard.check_current_password(
+        user.id,  # type: ignore[arg-type]
+        user.password_hash,  # type: ignore[arg-type]
+        current_password,
+    )
     existing = db.query(User).filter(User.email == new_email).first()
     if existing and existing.id != user.id:
         raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
@@ -91,6 +96,9 @@ def _change_email(
     # MEH-3104: a reset link mailed to the old address must not outlive it.
     user.reset_token = None  # type: ignore[assignment]
     user.reset_token_expires_at = None  # type: ignore[assignment]
+    # MEH-3425: sign every other device out, as logout-all does. The caller's
+    # device gets fresh cookies in update_profile and recovers via refresh.
+    user.token_version = (user.token_version or 1) + 1  # type: ignore[assignment]
     return True
 
 
@@ -123,10 +131,11 @@ def _queue_email_change_mails(
 
 @router.patch("", response_model=UserOut)
 @limiter.limit("10/hour")
-def update_profile(
+def update_profile(  # noqa: PLR0913 — FastAPI-injected; MEH-3425 added response for the cookie re-arm
     request: Request,
     data: ProfileUpdate,
     background_tasks: BackgroundTasks,
+    response: Response,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserOut | User:
@@ -190,6 +199,10 @@ def update_profile(
 
     if email_changed:
         _queue_email_change_mails(background_tasks, user, old_email)
+        # MEH-3425: token_version moved, so re-arm THIS device only (the
+        # change_password / logout-all pattern); other devices get 401.
+        _set_refresh_cookie(response, user)
+        _set_fingerprint_cookie(response, generate_fingerprint())
 
     # MEH-375: post-commit destroy of the prior avatar when its value
     # changed, regardless of how the change happened (PATCH swap or

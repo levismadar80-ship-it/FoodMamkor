@@ -316,7 +316,7 @@ files = [
     "app/services/review_reports.py",
     "app/services/rescue_no_show.py",
     "app/services/resend_client.py",
-    "app/services/resend_verify_cap.py",
+    "app/services/resend_verify_cap.py", "app/services/email_change_guard.py",
     "app/services/retention_purge.py",
     "app/services/retired_slugs.py",
     "app/services/sanitization.py",

@@ -163,3 +163,10 @@ sequenceDiagram
         BE-->>C: Original response (transparent to user)
     end
 ```
+
+**Email change (MEH-3425).** A successful `PATCH /users/me` that changes the
+email bumps `token_version` (same effect as logout-all): every other device's
+access and refresh tokens fail the `tv` check above. The device that made the
+change gets a fresh `refresh_token` + `__Secure-Fgp` cookie in the same
+response, so its next refresh succeeds. Wrong current passwords are capped at
+5/hour per account (`services/email_change_guard.py`), under a row lock.
