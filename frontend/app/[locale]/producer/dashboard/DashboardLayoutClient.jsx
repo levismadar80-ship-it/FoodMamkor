@@ -143,8 +143,11 @@ function DashboardChromeSkeleton({ label }) {
   );
 }
 
+const MAX_BADGE = 9;
+
 /** The tab's icon; «הזמנות» carries the waiting count (MEH-3316). */
 function TabIcon({ tab, active, count }) {
+  const tAttention = useTranslations("dashboard.producer.attention");
   return (
     <span className="relative inline-flex">
       <tab.Icon size={18} weight={active ? "fill" : "regular"} aria-hidden="true" />
@@ -153,7 +156,8 @@ function TabIcon({ tab, active, count }) {
           data-testid="dashboard-orders-count"
           className="absolute -top-2 -start-3 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-xs leading-5 text-center font-bold"
         >
-          {count}
+          <span aria-hidden="true">{count > MAX_BADGE ? `${MAX_BADGE}+` : count}</span>
+          <span className="sr-only">{tAttention("orders", { count })}</span>
         </span>
       )}
     </span>

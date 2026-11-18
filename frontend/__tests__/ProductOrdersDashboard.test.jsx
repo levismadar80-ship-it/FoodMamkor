@@ -17,7 +17,17 @@ import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import { buttonsFor } from "@/components/dashboard/orders/OrderActions";
 import { toBody } from "@/components/dashboard/orders/OrderSettingsCard";
 import { prefillFrom } from "@/components/dashboard/orders/OrderWindowsCard";
-import { agorotFromInput, groupOrders, israelDay, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import api from "@/lib/api";
+import {
+  PAGE_LIMIT,
+  agorotFromInput,
+  groupOrders,
+  israelDay,
+  loadOrders,
+  rangeEnds,
+  shekelsText,
+  toPayAgorot,
+} from "@/lib/product-orders";
 
 const NOW = new Date("2026-11-19T08:00:00Z"); // Thursday 10:00 in Israel
 const hours = (n) => new Date(NOW.getTime() + n * 3600 * 1000).toISOString();
@@ -200,6 +210,8 @@ describe("settings body", () => {
   });
   it("auto-confirm without a cap, or a junk amount, is stopped before the request", () => {
     expect(toBody({ ...form, auto_confirm: true }).problem).toBe("cap_required");
+    expect(toBody({ ...form, auto_confirm: true, cap: "0" }).problem).toBe("cap_required");
+    expect(toBody({ ...form, cap: "0" }).body.auto_confirm_slot_cap).toBeNull();
     expect(toBody({ ...form, minimum: "abc" }).problem).toBe("bad_amount");
     expect(toBody({ ...form, minimum: "80" }).body.min_order_agorot).toBe(8000);
   });
@@ -213,5 +225,42 @@ describe("hand-over week prefill", () => {
       { weekday: 5, start_time: "08:00", end_time: "13:00", fulfilment: "pickup" },
     ]);
     expect(prefillFrom(null)).toEqual([]);
+  });
+});
+
+describe("loading the orders (server cap 50 a page)", () => {
+  const uuid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  it("pages every open status in full, takes the latest page of each closed one, never asks above the cap", async () => {
+    const totals = { pending: 120, change_proposed: 0, confirmed: 3, ready: 0, handed: 70, declined: 0, cancelled: 0, expired: 0, no_show: 0 };
+    api.get.mockImplementation((_url, { params }) => {
+      const total = totals[params.status];
+      const count = Math.max(0, Math.min(params.limit, total - (params.offset ?? 0)));
+      const orders = Array.from({ length: count }, (_, i) =>
+        order({ id: uuid((params.offset ?? 0) + i + 1), producer_id: uuid(999), status: params.status, created_at: NOW.toISOString() }),
+      );
+      return Promise.resolve({ data: { orders, total } });
+    });
+    const orders = await loadOrders();
+    const limits = api.get.mock.calls.map(([, { params }]) => params.limit);
+    expect(Math.max(...limits)).toBeLessThanOrEqual(PAGE_LIMIT);
+    expect(PAGE_LIMIT).toBe(50);
+    const count = (status) => orders.filter((o) => o.status === status).length;
+    expect(count("pending")).toBe(120);
+    expect(count("confirmed")).toBe(3);
+    expect(count("handed")).toBe(50);
+    const handedOffsets = api.get.mock.calls.filter(([, { params }]) => params.status === "handed" && params.limit > 1);
+    expect(handedOffsets.map(([, { params }]) => params.offset)).toEqual([20]);
+  });
+});
+
+describe("list tabs keyboard (RTL)", () => {
+  it("ArrowLeft moves to the next tab and only the current tab is in the tab order", () => {
+    renderBoard([order(), order({ status: "confirmed" })]);
+    const waiting = screen.getByTestId("orders-tab-waiting");
+    expect(waiting).toHaveAttribute("tabindex", "0");
+    expect(screen.getByTestId("orders-tab-confirmed")).toHaveAttribute("tabindex", "-1");
+    fireEvent.keyDown(waiting, { key: "ArrowLeft" });
+    expect(screen.getByTestId("orders-tab-confirmed")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "orders-tab-btn-confirmed");
   });
 });

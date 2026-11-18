@@ -27,7 +27,7 @@ import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
 import api from "@/lib/api";
-import { loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
+import { ORDERS_CHANGED_EVENT, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
 
 const Skeleton = /** @type {any} */ (SkeletonList);
 
@@ -40,7 +40,7 @@ async function loadAll() {
     loadOrders(),
     api.get("/producers/me").then((res) => res.data).catch(() => null),
   ]);
-  return { settings, windows, orders: orders.orders, orderWindow: me?.order_window ?? null };
+  return { settings, windows, orders, orderWindow: me?.order_window ?? null };
 }
 
 export default function OrdersPage() {
@@ -65,11 +65,13 @@ export default function OrdersPage() {
   };
 
   if (data && data.settings === null) notFound();
-  const replace = (/** @type {any} */ updated) =>
-    setData((/** @type {any} */ old) => ({
+  const replace = (/** @type {any} */ updated) => {
+    window.dispatchEvent(new Event(ORDERS_CHANGED_EVENT));
+    return setData((/** @type {any} */ old) => ({
       ...old,
       orders: old.orders.map((/** @type {any} */ o) => (o.id === updated.id ? updated : o)),
     }));
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6" data-testid="orders-page">

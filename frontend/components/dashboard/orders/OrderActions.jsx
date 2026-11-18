@@ -92,8 +92,13 @@ export default function OrderActions({ order, onChanged }) {
     onChanged(updated);
   };
   const press = async (/** @type {any} */ button) => {
+    if (busy) return undefined;
     setError(null);
-    if (button.dialog === "propose") setSlots(await offeredSlots(order.producer_id).catch(() => []));
+    if (button.dialog === "propose") {
+      setBusy(button.key);
+      setSlots(await offeredSlots(order.producer_id).catch(() => []));
+      setBusy(null);
+    }
     if (button.dialog) return setOpen(button.dialog);
     setBusy(button.key);
     try {

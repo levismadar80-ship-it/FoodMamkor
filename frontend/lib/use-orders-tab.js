@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { loadSettings, pendingCount } from "@/lib/product-orders";
+import { ORDERS_CHANGED_EVENT, loadSettings, pendingCount } from "@/lib/product-orders";
 
 /**
  * @param {{ enabled: boolean, refreshKey: string }} options `enabled` false
@@ -20,6 +20,12 @@ import { loadSettings, pendingCount } from "@/lib/product-orders";
  */
 export function useOrdersTab({ enabled, refreshKey }) {
   const [state, setState] = useState({ visible: false, pending: 0 });
+  const [changes, setChanges] = useState(0);
+  useEffect(() => {
+    const bump = () => setChanges((n) => n + 1);
+    window.addEventListener(ORDERS_CHANGED_EVENT, bump);
+    return () => window.removeEventListener(ORDERS_CHANGED_EVENT, bump);
+  }, []);
   useEffect(() => {
     if (!enabled) return undefined;
     let live = true;
@@ -31,6 +37,6 @@ export function useOrdersTab({ enabled, refreshKey }) {
     return () => {
       live = false;
     };
-  }, [enabled, refreshKey]);
+  }, [enabled, refreshKey, changes]);
   return state;
 }

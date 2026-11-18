@@ -28,7 +28,14 @@ import {
 
 const TZ = "Asia/Jerusalem";
 const AGOROT_PER_SHEKEL = 100;
-const LIST_LIMIT = 100;
+// The server's page cap (product_order_business.py MAX_PAGE). A bigger limit
+// answers 422 and the whole tab fails to load.
+export const PAGE_LIMIT = 50;
+// Fired after any order action, so the tab counter re-reads (use-orders-tab).
+export const ORDERS_CHANGED_EVENT = "product-orders-changed";
+// Open orders are read in full, page by page, up to this many pages each.
+const MAX_OPEN_PAGES = 10;
+const DONE_STATUSES = ["handed", "declined", "cancelled", "expired", "no_show"];
 const NOT_FOUND = 404;
 
 // The four lists of the tab (approved copy: מחכות לטיפול / מאושרות / היום /
@@ -169,10 +176,39 @@ export async function saveWindows(windows) {
 }
 
 /** @param {string} [status] */
-export async function loadOrders(status) {
-  const params = status ? { status, limit: LIST_LIMIT } : { limit: LIST_LIMIT };
+/** @param {Record<string, any>} params */
+async function ordersPage(params) {
   const { data } = await api.get("/producers/me/product-orders", { params });
   return ListBusinessOrdersProducersMeProductOrdersGetResponse.parse(data);
+}
+
+/** Every order of an open status, soonest first, paged under the cap. */
+async function allOf(/** @type {string} */ status) {
+  const orders = [];
+  for (let page = 0; page < MAX_OPEN_PAGES; page += 1) {
+    const got = await ordersPage({ status, limit: PAGE_LIMIT, offset: page * PAGE_LIMIT });
+    orders.push(...got.orders);
+    if (orders.length >= got.total || got.orders.length === 0) break;
+  }
+  return orders;
+}
+
+/** The latest page of a closed status (the list is soonest-first, so its tail). */
+async function latestOf(/** @type {string} */ status) {
+  const { total } = await ordersPage({ status, limit: 1 });
+  if (total === 0) return [];
+  const got = await ordersPage({ status, limit: PAGE_LIMIT, offset: Math.max(0, total - PAGE_LIMIT) });
+  return got.orders;
+}
+
+/**
+ * The orders the tab shows: every open one (pending, change_proposed,
+ * confirmed, ready), and the latest page of each closed status. One request
+ * per status keeps a busy business's open orders from falling off the page.
+ */
+export async function loadOrders() {
+  const lists = await Promise.all([...OPEN_STATUSES.map(allOf), ...DONE_STATUSES.map(latestOf)]);
+  return lists.flat();
 }
 
 /** How many orders wait for an answer (the tab's counter). */

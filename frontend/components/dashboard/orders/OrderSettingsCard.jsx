@@ -57,12 +57,12 @@ export function toBody(form) {
   const minimum = agorotFromInput(form.minimum);
   const cap = form.cap === "" ? null : Number(form.cap);
   if (Number.isNaN(minimum) || (cap !== null && !Number.isInteger(cap))) return { problem: "bad_amount" };
-  if (form.auto_confirm && !cap) return { problem: "cap_required" };
+  if (form.auto_confirm && !(cap && cap >= 1)) return { problem: "cap_required" };
   return {
     body: {
       enabled: form.enabled,
       auto_confirm: form.auto_confirm,
-      auto_confirm_slot_cap: cap,
+      auto_confirm_slot_cap: cap !== null && cap >= 1 ? cap : null,
       cancel_cutoff_hours: form.cancel_cutoff_hours,
       shabbat_observant: form.shabbat_observant,
       min_order_agorot: minimum,
