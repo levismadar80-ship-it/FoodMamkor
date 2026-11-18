@@ -168,6 +168,7 @@ graph TD
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
     Users --> Block[POST /admin/users/{id}/block<br/>🛡️]
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
+    AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first — the row is scheduled in get_current_user for every change by an admin account]
 
     Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
     Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]

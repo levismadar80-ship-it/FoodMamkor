@@ -790,17 +790,30 @@ async def clear_attempts(email: str):
 
 ### 17. Audit Log — מי עשה מה
 
-```sql
-CREATE TABLE audit_log (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid,
-  action text,        -- 'approve_producer', 'delete_listing', 'login'
-  target_type text,   -- 'producer', 'user', 'listing'
-  target_id uuid,
-  ip_address text,
-  created_at timestamptz DEFAULT now()
-);
-```
+**Built (MEH-3306):** table `admin_audit_log`, written by
+`backend/app/services/admin_audit.py`. One append-only row per **successful
+change made by an admin account** — who (`actor_id`), what (`action`: method +
+route template), on what (`target_type`, `target_id`), a reduced before/after
+(`details`: code-like values only, never contact details or free text), `ip`,
+`created_at`.
+
+- The write is scheduled in `get_current_user` (`backend/app/auth.py`), the one
+  place every signed-in request passes, so it covers a route gated by
+  `require_admin` and equally an owner route an admin enters by an inline role
+  check. No route carries logging code.
+- Not logged: reads, a refused request, a change that did not go through
+  (404 / 409 / 422), and telemetry sent with `get_current_user_lenient`.
+- Fail-open by design: the row is written after the response, in its own
+  transaction. A failed write is logged as an error (`admin_audit.write_failed`)
+  and never fails the admin's action. `created_at` is the insert time.
+- Read: `GET /admin/audit-log` (admin only; the IP is stored, not returned).
+- Known limits: an admin's **own** actions as a user (a favourite, her own
+  password change) are logged too, with no column that separates them from
+  admin actions — filter by `action`. `GET /admin/pages/{slug}` creates a row
+  on a GET and is therefore not logged. `POST /delivery-waitlist` uses the
+  telemetry variant and is not logged.
+- Open: no retention rule for the stored IPs yet; logins are not logged (this is
+  a log of changes).
 
 ---
 
@@ -881,6 +894,17 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **Stateless.** No table and no revocation before `exp`. The row's state is the revocation: once the draft is published, claimed, rejected or deleted, every link to it answers the same 404 as a forged one.
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only.
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
+
+## 17c. Outside production, no message reaches a real person (MEH-3402)
+
+The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by a marked row in every environment; this guard covers the row nobody marked — a staging business built from real data, or a restored production backup.
+
+- **Production** = `ENV=production` or `RAILWAY_ENVIRONMENT=production` (the same test as `config.py`). Everything else is guarded, including an unknown or empty environment name: fail-closed. A non-empty `RAILWAY_ENVIRONMENT` other than `production` wins over `ENV=production` (a staging or PR environment that copied production's variables stays guarded).
+- **Email** (`services/email.py` → `services/outbound_guard.py::route_email`): `ADMIN_EMAIL`, `CONTACT_EMAIL`, `SUPER_ADMIN_EMAIL` and their plus-aliases (`you+biz1@…`) are delivered as addressed. A single plain address only — a list (`a@x,b@y`), display name or whitespace is never allowed. Any other recipient is **redirected to `ADMIN_EMAIL`**, subject prefixed `[STAGING → ***@domain]` (masked: the subject reaches logs and Sentry), the full original recipient on the first body line, and `reply_to` dropped so a reply from the staff inbox cannot reach the real person (Sapir 18/11). No `ADMIN_EMAIL`, or the guard itself raising → not sent (fail-closed, `send_email` still never raises). Reserved test domains (`example.com`…) are still skipped before this.
+- **WhatsApp** (`services/whatsapp.py`): only `ADMIN_WHATSAPP_TO` and `OTP_TEST_NUMBERS` (digits compared, `0…` = `972…`; a `+972 0…` or `00972…` form does not match and is dropped — fail-closed). Others: not sent, nothing persisted, returns False. `OTP_TEST_NUMBERS` must therefore be numbers the team owns — any WhatsApp, not only the OTP, may reach them from staging.
+- **Push** (`services/push.py`): never outside production — a subscription is a browser, not a staff member.
+- **Newsletter** (`services/newsletter_sync.py`): Resend Contacts is the list real Broadcasts go to, so staging neither adds nor deletes contacts.
+- **A new channel** (Instagram publishing, payments, SMS) asks `outbound_guard` before its first external call. Tests: `tests/test_meh3402_outbound_guard.py`; the rest of the suite runs the guard as production via the `_outbound_guard_as_production` autouse fixture.
 
 ## 18. Skills supply chain (MEH-397)
 

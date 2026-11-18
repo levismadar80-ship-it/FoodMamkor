@@ -20,6 +20,15 @@ export const GetAnalyticsAdminAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-3306: the admin audit log, newest first. `before` pages back by
+ * `created_at`. The stored IP is not returned: it is kept for an
+ * investigation, not for a list.
+ * @summary List Audit Log
+ */
+export const ListAuditLogAdminAuditLogGetResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary Admin Billing Overview
  */
 export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/ zod.object({

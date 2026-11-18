@@ -59,6 +59,7 @@ This page links to those and does not repeat their numbers.
 |---|---|---|
 | Accounts, businesses, products, events, workshops, sign-ups, reviews, bags, group buys, billing ledger | Postgres | the only system of record |
 | Passwords | Postgres, bcrypt hash | never logged |
+| Admin audit log (who changed what, when, from which IP) | Postgres, `admin_audit_log` | append-only: one INSERT per successful change by an admin account, scheduled in `auth.get_current_user` and written by `services/admin_audit.py`; no update or delete in the code. Reduced before/after only, no names or contact details (MEH-3306) |
 | Access token (15 minutes) | browser `localStorage` | sent as a Bearer header |
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |

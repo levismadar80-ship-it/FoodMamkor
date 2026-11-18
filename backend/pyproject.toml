@@ -245,6 +245,7 @@ files = [
     "app/services/account_guards.py",
     "app/services/admin_pending_reminder.py",
     "app/services/admin_producer_emails.py",
+    "app/services/outbound_guard.py",
     "app/services/analytics.py",
     "app/services/analytics_rollup.py",
     "app/services/auth_emails.py",

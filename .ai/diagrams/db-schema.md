@@ -259,6 +259,16 @@ erDiagram
         timestamp reviewed_at "nullable until decided"
     }
 
+    admin_audit_log {
+        uuid id PK
+        uuid actor_id "NOT NULL, indexed — deliberately not a FK (MEH-3306)"
+        string action "method + route template"
+        string target_type "nullable"
+        string target_id "nullable"
+        jsonb details "nullable — reduced before/after, no PII"
+        string ip "nullable — not returned by the list route"
+        timestamptz created_at "NOT NULL DEFAULT now(), indexed — append-only"
+    }
     admin_checklist_items {
         uuid id PK
         int position "indexed; written as index*10 by the router, never accepted from the client — a client-supplied position lets two items claim one slot"

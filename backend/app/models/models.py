@@ -1171,6 +1171,7 @@ class ProducerCategory(Base):
 # keeps working, and importing this module still registers every table on
 # `Base.metadata` and every class for string-named relationships.
 from app.models.admin_ops import (  # noqa: E402
+    AdminAuditLog as AdminAuditLog,
     AdminChecklistItem as AdminChecklistItem,
     AlembicLineage as AlembicLineage,
     CategoryRequest as CategoryRequest,
