@@ -16,7 +16,7 @@
  * History:  MEH-3316 (creation; stage 4 of MEH-3216)
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -48,11 +48,21 @@ export default function OrdersPage() {
   const [data, setData] = useState(/** @type {any} */ (null));
   const [failed, setFailed] = useState(false);
 
-  const load = useCallback(() => {
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    loadAll()
+      .then((loaded) => live && setData(loaded))
+      .catch(() => live && setFailed(true));
+    return () => {
+      live = false;
+    };
+  }, [attempt]);
+  const retry = () => {
     setFailed(false);
-    loadAll().then(setData).catch(() => setFailed(true));
-  }, []);
-  useEffect(load, [load]);
+    setAttempt((n) => n + 1);
+  };
 
   if (data && data.settings === null) notFound();
   const replace = (/** @type {any} */ updated) =>
@@ -67,7 +77,7 @@ export default function OrdersPage() {
       {failed && (
         <div className="space-y-2">
           <InlineMessage tone="error" role="alert">{t("load_error")}</InlineMessage>
-          <Button variant="outlined" size="sm" onClick={load}>{t("retry")}</Button>
+          <Button variant="outlined" size="sm" onClick={retry}>{t("retry")}</Button>
         </div>
       )}
       {!data && !failed && <Skeleton count={3} testId="orders-loading" />}

@@ -41,7 +41,7 @@ function OrderFacts({ order }) {
         {t("total", { total: shekelsText(toPayAgorot(order)) })}
       </p>
       {fee > 0 && <p>{t("delivery_fee", { fee: shekelsText(fee) })}</p>}
-      {order.has_estimate && order.final_total_agorot == null && <p>{t("estimate")}</p>}
+      {order.has_estimate && (order.final_total_agorot ?? null) === null && <p>{t("estimate")}</p>}
       {order.delivery_address && <p>{t("address", { address: order.delivery_address })}</p>}
       {order.note && <p>{t("note", { note: order.note })}</p>}
       {order.age_declared && <p>{t("age")}</p>}

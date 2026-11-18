@@ -48,7 +48,7 @@ function toForm(settings) {
   return {
     ...settings,
     cap: String(settings.auto_confirm_slot_cap ?? ""),
-    minimum: settings.min_order_agorot == null ? "" : shekelsText(settings.min_order_agorot),
+    minimum: (settings.min_order_agorot ?? null) === null ? "" : shekelsText(settings.min_order_agorot),
   };
 }
 
