@@ -12,7 +12,7 @@
  *           not rendered at all.
  * Related:  app/[locale]/producer/dashboard/page.js (mounts it under the
  *           greeting).
- * History:  MEH-3108 (creation).
+ * History:  MEH-3108 (creation); MEH-3316 (on-site orders waiting, first row).
  */
 
 import { useTranslations } from "next-intl";
@@ -24,8 +24,8 @@ const SIGNUP_HREF = {
 };
 
 /**
- * The rows to show, in a fixed order: reviews, the item with the most new
- * sign-ups, funded group buys. At most 3.
+ * The rows to show, in a fixed order: orders waiting (MEH-3316), reviews, the item with the most new
+ * sign-ups, funded group buys. At most 4.
  * @param {any} attention
  * @returns {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]}
  */
@@ -33,6 +33,11 @@ function attentionRows(attention) {
   if (!attention) return [];
   /** @type {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]} */
   const rows = [];
+  // MEH-3316: orders waiting for an answer come first — they expire.
+  const orders = Number(attention.pending_orders) || 0;
+  if (orders > 0) {
+    rows.push({ key: "orders", text: ["orders", { count: orders }], cta: "orders_cta", href: "/producer/dashboard/orders" });
+  }
   const reviews = Number(attention.unreplied_reviews) || 0;
   if (reviews > 0) {
     rows.push({ key: "reviews", text: ["reviews", { count: reviews }], cta: "reviews_cta", href: "/producer/dashboard/reviews" });

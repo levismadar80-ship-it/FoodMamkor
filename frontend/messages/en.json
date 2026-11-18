@@ -4834,7 +4834,8 @@
         "insights": "Insights",
         "tools": "Tools",
         "view_page": "View page",
-        "organizer_events": "Your events"
+        "organizer_events": "Your events",
+        "orders": "Orders"
       },
       "load_error": {
         "title": "We couldn't load your dashboard",
@@ -4949,7 +4950,9 @@
         "signups": "{count, plural, one {One new sign-up for {title}} other {# new sign-ups for {title}}}",
         "signups_cta": "See the list",
         "group_buys": "{count, plural, one {A group buy reached its goal} other {# group buys reached their goal}}",
-        "group_buys_cta": "Details"
+        "group_buys_cta": "Details",
+        "orders": "{count, plural, one {One order waiting for confirmation} other {# orders waiting for confirmation}}",
+        "orders_cta": "Confirm"
       },
       "status": {
         "pending": {
@@ -5662,6 +5665,106 @@
       },
       "reviews_page": {
         "summary": "{unanswered} without a reply · {total} in total"
+      },
+      "orders": {
+        "title": "Orders",
+        "settings": {
+          "title": "Orders on the site",
+          "lead": "Customers pick products and a time on your page, and you confirm. They pay you directly. You can switch it off at any time.",
+          "enabled": "Take orders on the site",
+          "auto_confirm": "Confirm orders automatically, up to {count} per slot",
+          "auto_cap": "How many orders to confirm automatically per slot",
+          "cutoff": "Customers can cancel up to {hours} hours before the slot",
+          "cutoff_label": "Cancellation by customers",
+          "shabbat": "No orders or messages on Shabbat and holidays",
+          "min_order": "Minimum order in shekels (optional)",
+          "slot_minutes": "Length of each slot",
+          "slot_30": "Half an hour",
+          "slot_60": "An hour",
+          "slot_120": "Two hours",
+          "lead_time": "How far ahead customers must order",
+          "lead_hours": "{hours, plural, =0 {No minimum} one {An hour ahead} other {# hours ahead}}",
+          "save": "Save",
+          "saved": "Saved",
+          "cap_required": "To confirm automatically, choose how many orders per slot",
+          "bad_amount": "Write the amount in numbers"
+        },
+        "windows": {
+          "title": "When orders are handed over",
+          "lead": "The hours customers can collect or get a delivery. The slots they choose are built from these.",
+          "prefilled": "We filled this in from the hours you take orders. You can change it before saving.",
+          "empty": "No hand-over hours yet, so customers cannot order.",
+          "day": "Day",
+          "kind": "Pickup or delivery",
+          "pickup": "Pickup",
+          "delivery": "Delivery",
+          "add": "Add hours",
+          "saved": "Hours saved"
+        },
+        "tabs": {
+          "aria": "Order lists",
+          "waiting": "Waiting",
+          "confirmed": "Confirmed",
+          "today": "Today",
+          "done": "Done"
+        },
+        "empty": "No orders yet. When the first one arrives, we will let you know on WhatsApp and by email.",
+        "empty_list": "No orders here right now.",
+        "load_error": "We could not load the orders. Please try again.",
+        "retry": "Try again",
+        "card": {
+          "slot": "{kind} on {day} {from}–{until}",
+          "line": "{qty} × {name}",
+          "estimate": "Estimated price, set after weighing",
+          "total": "To pay: {total} ₪",
+          "delivery_fee": "Includes delivery {fee} ₪",
+          "address": "Delivery address: {address}",
+          "note": "Note from the customer: {note}",
+          "age": "The order has alcohol · ask for ID at hand-over",
+          "phone": "Phone",
+          "proposal_sent": "You proposed a change. Waiting for the customer.",
+          "expires": "If you do not answer by {when}, the order will be cancelled."
+        },
+        "status": {
+          "pending": "New",
+          "change_proposed": "Waiting for the customer",
+          "confirmed": "Confirmed",
+          "ready": "Ready for pickup",
+          "handed": "Handed over",
+          "declined": "Declined",
+          "cancelled": "Cancelled",
+          "expired": "Cancelled, not answered in time",
+          "no_show": "The customer did not come"
+        },
+        "actions": {
+          "confirm": "Confirm",
+          "propose": "Propose a change",
+          "decline": "Decline",
+          "ready": "Ready for pickup",
+          "handed": "Handed over",
+          "no_show": "The customer did not come",
+          "cancel": "Cancel the order",
+          "send": "Send",
+          "back": "Back",
+          "final_price": "Final price after weighing",
+          "final_price_help": "Up to {max} ₪ for the products, the amount the customer saw. For a higher amount, propose a change.",
+          "decline_title": "Why decline the order?",
+          "reason_stock": "Out of stock",
+          "reason_full": "The slot is full",
+          "reason_other": "Another reason",
+          "reason_text": "The reason, as the customer will see it",
+          "propose_title": "Propose a change to the customer",
+          "propose_slot": "Another slot (optional)",
+          "propose_same_slot": "Keep the slot",
+          "propose_total": "New amount for the products in shekels, without delivery (optional)",
+          "propose_note": "What changed, in your words",
+          "propose_needs_change": "Choose another slot or a new amount",
+          "pickup_code": "The customer's pickup code (optional)",
+          "cancel_title": "Cancel an order you already confirmed?",
+          "cancel_lead": "The customer will get a message about it.",
+          "cancel_note": "Note to the customer (optional)",
+          "failed": "That did not work. Please try again."
+        }
       }
     },
     "page_preview": {
