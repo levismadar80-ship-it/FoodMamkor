@@ -463,7 +463,7 @@ test.describe("dashboard shell — tab nav", () => {
     // נמצא» about her own page. The exception still exists at the API — it is
     // the PAGE that stopped using it. Pending now goes to the dashboard
     // preview, asserted in the cell below.
-    await expect(tabNav(page).getByRole("link", { name: "צפייה בדף" })).toHaveAttribute(
+    await expect(tabNav(page).getByRole("link", { name: "צפייה בעמוד" })).toHaveAttribute(
       "href",
       new RegExp(`/producer/${PRODUCER_ID}$`),
     );
@@ -471,7 +471,7 @@ test.describe("dashboard shell — tab nav", () => {
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await stubSession(page, { producerId: null });
     await openOverview(page);
-    await expect(tabNav(page).getByRole("link", { name: "צפייה בדף" })).toHaveCount(0);
+    await expect(tabNav(page).getByRole("link", { name: "צפייה בעמוד" })).toHaveCount(0);
   });
 
   // MEH-2916 (pilot A4): the other half of the same link. Without this cell
@@ -482,7 +482,7 @@ test.describe("dashboard shell — tab nav", () => {
   }) => {
     await stubSession(page, { status: "pending" });
     await openOverview(page);
-    await expect(tabNav(page).getByRole("link", { name: "צפייה בדף" })).toHaveAttribute(
+    await expect(tabNav(page).getByRole("link", { name: "צפייה בעמוד" })).toHaveAttribute(
       "href",
       /\/producer\/dashboard\/preview$/,
     );

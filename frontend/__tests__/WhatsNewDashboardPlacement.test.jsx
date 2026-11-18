@@ -11,6 +11,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import api from "@/lib/api";
 import ProducerDashboardPage from "@/app/[locale]/producer/dashboard/page";
+import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
 
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -148,6 +149,22 @@ describe("dashboard home — «מה חדש» and welcome placement (MEH-3200)", 
     expect(await screen.findByTestId("owner-welcome")).toBeInTheDocument();
     expect(screen.queryByTestId("whats-new-card")).toBeNull();
     expect(screen.getByTestId("whats-new-row")).toBeInTheDocument();
+  });
+
+  // MEH-3079: the profile here is incomplete, so the completeness card is on
+  // screen with its own «להשלמת העמוד» — the welcome card keeps only «סגירה».
+  it("new business with the completeness card: the welcome card has no second «complete» button", async () => {
+    profileState.value = profile({ created_at: new Date().toISOString() });
+    render(<ProducerDashboardPage />);
+    expect(await screen.findByTestId("owner-welcome")).toBeInTheDocument();
+    expect(await screen.findByRole("progressbar")).toBeInTheDocument();
+    expect(screen.queryByTestId("owner-welcome-cta")).toBeNull();
+    expect(screen.getByTestId("owner-welcome-close")).toBeInTheDocument();
+  });
+
+  it("welcome card on its own keeps its «complete» button", () => {
+    render(<OwnerWelcomeCard onClose={() => {}} />);
+    expect(screen.getByTestId("owner-welcome-cta")).toBeInTheDocument();
   });
 
   it("first moment due (part 2): its card takes the slot over «מה חדש»", async () => {

@@ -505,7 +505,7 @@ export default function ProducerDashboardPage() {
           in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
       {slotOpen &&
         (welcome.show ? (
-          <OwnerWelcomeCard onClose={welcome.dismiss} />
+          <OwnerWelcomeCard onClose={welcome.dismiss} showCta={!(completenessFirst && profile && !isOrganizer)} />
         ) : slotMoment ? (
           <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
         ) : (
@@ -730,7 +730,9 @@ export default function ProducerDashboardPage() {
           overlap (Phase 4 drops them). */}
       {/* MEH-2460: no availability states for an organizer — it takes no
           orders (ADR-036). */}
-      {!isOrganizer && (
+      {/* MEH-3079: approved only. A pending business saw a locked switch it
+          could not use or understand (new-business walkthrough 18/11). */}
+      {!isOrganizer && isApproved && (
       <div className="bg-surface border border-border rounded-lg p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
           <span id="availability-heading">{t("availability.heading")}</span>
@@ -894,7 +896,9 @@ export default function ProducerDashboardPage() {
         )
       ) : hasActivity ? (
         <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
-      ) : (
+      ) : !isApproved ? null : (
+        // MEH-3079: not while pending — its «שתפו» contradicted the
+        // share-locked line just above (new-business walkthrough 18/11).
         // MEH-2884 (placement audit item 5): ONE empty state for the numbers
         // — the activity pulse's own empty card is gone — and it carries the
         // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,

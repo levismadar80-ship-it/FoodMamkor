@@ -376,7 +376,7 @@ test.describe("edit tab — what's-this explainers", () => {
 test.describe("overview — completeness card", () => {
   const cardRoot = (page: Page) => page.getByTestId("profile-completeness-card");
   const ring = (page: Page) => cardRoot(page).getByRole("progressbar");
-  const checklist = (page: Page) => cardRoot(page).getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+  const checklist = (page: Page) => cardRoot(page).getByRole("list", { name: "התקדמות השלמת העמוד" });
 
   /** Mounts the card: status pending keeps `completenessFirst` true regardless of profile. */
   async function openOverview(page: Page, p: Record<string, unknown>) {
@@ -392,7 +392,7 @@ test.describe("overview — completeness card", () => {
   test("7/7 collapses to the single green row", async ({ page }) => {
     await openOverview(page, FULL);
     await expect(cardRoot(page)).toHaveAttribute("role", "status");
-    await expect(cardRoot(page)).toContainText("הפרופיל מלא");
+    await expect(cardRoot(page)).toContainText("העמוד מלא");
     await expect(ring(page)).toHaveCount(0);
     await expect(checklist(page)).toHaveCount(0);
   });
@@ -407,7 +407,7 @@ test.describe("overview — completeness card", () => {
     await openOverview(page, profile({ images: [] }));
     await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
     await expect(cardRoot(page)).toContainText("כמעט שם — 86% מוכן");
-    await expect(cardRoot(page)).toContainText("עוד כמה צעדים והפרופיל שלכם מוכן לקבל פניות");
+    await expect(cardRoot(page)).toContainText("עוד כמה צעדים והעמוד שלכם מוכן לקבל פניות");
     await expect(checklist(page).getByRole("listitem")).toHaveCount(7);
   });
 
@@ -415,7 +415,7 @@ test.describe("overview — completeness card", () => {
   test("three steps missing → 57% with the neutral headline", async ({ page }) => {
     await openOverview(page, profile({ images: [], products: [], phone_verified: false }));
     await expect(ring(page)).toHaveAttribute("aria-valuenow", "57");
-    await expect(cardRoot(page)).toContainText("הפרופיל שלך 57% מוכן");
+    await expect(cardRoot(page)).toContainText("העמוד שלך 57% מוכן");
     await expect(cardRoot(page)).not.toContainText("כמעט שם");
   });
 
@@ -431,8 +431,8 @@ test.describe("overview — completeness card", () => {
   test("the ring is a progressbar with the percentage, and the CTA has its own name", async ({ page }) => {
     await openOverview(page, profile({ images: [] }));
     await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
-    await expect(ring(page)).toHaveAttribute("aria-label", "השלמת פרופיל: 86%");
-    await expect(cardRoot(page).getByRole("link", { name: "השלימו את הפרופיל שלך" })).toBeVisible();
+    await expect(ring(page)).toHaveAttribute("aria-label", "השלמת העמוד: 86%");
+    await expect(cardRoot(page).getByRole("link", { name: "להשלמת העמוד שלך" })).toBeVisible();
   });
 
   // MT:MEH-1106:4 — drift D2: the threshold is 1, not 3.
@@ -443,7 +443,7 @@ test.describe("overview — completeness card", () => {
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await openOverview(page, profile({ products: [{ id: 1, name: "חלה" }] }));
-    await expect(cardRoot(page)).toContainText("הפרופיל מלא");
+    await expect(cardRoot(page)).toContainText("העמוד מלא");
   });
 
   // MT:MEH-1106:5 — drift D4: the six-way href partition as it stands today.
