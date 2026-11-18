@@ -26,6 +26,7 @@ either direction — the two `*_existing_token` tests pin exactly that.
 Every assertion here was shown red against deliberately broken product code
 and green after the revert (MEH-1619); the run links are in the PR body.
 """
+
 import uuid
 
 import pytest
@@ -64,7 +65,9 @@ def _business_owner(db, *, kind: str = "producer") -> User:
     """A self-registered owner: role=producer, linked to her Producer row.
     An organizer is the same User shape with Producer.kind="organizer"
     (ADR-036) — there is no "organizer" user role."""
-    producer = make_producer(db, name="חוות הניסוי" if kind == "producer" else "שוק גלם")
+    producer = make_producer(
+        db, name="חוות הניסוי" if kind == "producer" else "שוק גלם"
+    )
     producer.kind = kind
     owner = make_user(db, role="producer")
     owner.producer_id = producer.id
@@ -303,19 +306,12 @@ def test_admin_cannot_demote_herself(client, db):
 # -------------------------------------------------------------- finding
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "MEH-2902: promoting a business owner to admin flips role off "
-        "'producer'; require_producer gates on role alone, so every "
-        "/producers/me* 403s and the endpoint refuses role=producer, so there "
-        "is no way back. Needs a product decision."
-    ),
-    raises=KnownGap,
-)
+# MEH-2902 closed by MEH-3376 (Sapir 17/11): the change is REFUSED (409), so
+# the owner keeps her role and her dashboard. This was a strict xfail until
+# then; it is the regression test now.
 def test_promoting_a_business_owner_keeps_her_business(client, db):
-    """Outcome only, so any of MEH-2902's options turns this XPASS: refuse the
-    change, let a linked admin keep her dashboard, or restore producer."""
+    """Outcome only: after an admin tries to promote her, the owner still
+    reaches her own business."""
     admin = make_user(db, role="admin")
     owner = _business_owner(db)
     owner_headers = auth_header(owner)
