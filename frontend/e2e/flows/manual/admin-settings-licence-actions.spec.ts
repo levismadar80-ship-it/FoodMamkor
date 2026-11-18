@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Route } from "@playwright/test";
-// @ts-expect-error TS7016 — untyped JS module (the seven Phase-1 items, served by the stub)
-import { ADMIN_REVIEW_CHECKLIST } from "../../../lib/admin-review-checklist.js";
+// The seven Phase-1 items, served by the stub (MEH-2954: test data).
+import { ADMIN_REVIEW_CHECKLIST_ITEMS } from "../_admin-review-checklist-items";
 
 /**
  * Spec:     manual/admin-settings-licence-actions — MEH-1249 chunk 12c
@@ -78,7 +78,7 @@ const PRODUCER_ID = 77;
 
 type Item = { id: string | null; position: number; label: string; hint: string | null; active: boolean };
 const seed = (): Item[] =>
-  (ADMIN_REVIEW_CHECKLIST as { id: string; label: string; hint?: string }[]).map((it, i) => ({
+  ADMIN_REVIEW_CHECKLIST_ITEMS.map((it, i) => ({
     id: `11111111-1111-4111-8111-00000000000${i + 1}`,
     position: i + 1,
     label: it.label,

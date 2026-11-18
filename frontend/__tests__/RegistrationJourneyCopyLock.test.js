@@ -158,7 +158,7 @@ describe("no public copy promises a call with every business (MEH-2305)", () => 
       ),
       "utf8",
     );
-    const call = seed.split("\n").find((line) => line.includes("שיחה"));
+    const call = seed.split("\n").find((line) => /^\s*\(\d+, "שיחה/.test(line));
     expect(call, "call item moved out of the seed — revisit this guard").toBeTruthy();
     expect(call).toMatch(/רק אם/);
   });
