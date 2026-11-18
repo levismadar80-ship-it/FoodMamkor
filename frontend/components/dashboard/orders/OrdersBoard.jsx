@@ -9,7 +9,8 @@
  * Touches:  nothing — the page loads the orders; a changed order comes back
  *           through onChanged and moves list by itself (grouping is derived).
  * Related:  lib/product-orders.js (groupOrders), OrderCard.jsx
- * History:  MEH-3316 (creation; stage 4 of MEH-3216)
+ * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps («מה
+ *           להכין» above the «היום» list)
  */
 
 import { useState } from "react";
@@ -19,6 +20,7 @@ import { Basket } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 import { LIST_KEYS, groupOrders } from "@/lib/product-orders";
 import OrderCard from "./OrderCard";
+import OrderPrepList from "./OrderPrepList";
 
 const Empty = /** @type {any} */ (EmptyState);
 const PANEL_ID = "orders-panel";
@@ -78,6 +80,7 @@ export default function OrdersBoard({ orders, onChanged }) {
     <section className="space-y-3" data-testid="orders-board">
       <ListTabs lists={lists} current={current} onPick={setCurrent} />
       <div role="tabpanel" id={PANEL_ID} aria-labelledby={tabId(current)}>
+        {current === "today" && <OrderPrepList todays={shown} />}
         {shown.length === 0 ? (
           <p className="text-sm text-fg-muted py-6 text-center" data-testid="orders-empty-list">{t("empty_list")}</p>
         ) : (

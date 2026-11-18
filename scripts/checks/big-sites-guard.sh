@@ -59,7 +59,21 @@ has_section() {
   grep -qiE '^##[[:space:]]+Big sites[[:space:]]*$|^Big sites:[[:space:]]*n/a' <<<"$1"
 }
 
-# run → prints one line, returns 0 always (warn-only)
+# MEH-3176 follow-up (18/11): warn until BLOCK_FROM, block from that date — the
+# 15–18/11 audit found this line missing on most PRs while it only warned.
+BLOCK_FROM="2026-11-22"
+blocking_now() {
+  local today="${GUARD_TODAY:-$(TZ=Asia/Jerusalem date +%F)}"
+  [[ ! "$today" < "$BLOCK_FROM" ]]
+}
+release_or_bot() {  # staging → main release PRs and dependabot carry no evidence lines
+  case "${GITHUB_HEAD_REF:-}" in
+    dependabot/*) return 0 ;;
+    staging) [ "${GITHUB_BASE_REF:-}" = "main" ] && return 0 ;;
+  esac
+  return 1
+}
+# run → prints one line; returns 1 only for a missing section from BLOCK_FROM on
 run() {
   local body files ui=""
   if ! body="$(pr_body)"; then
@@ -77,6 +91,11 @@ run() {
     echo "big-sites-guard: OK — no user-facing file changed"
   elif has_section "$body"; then
     echo "big-sites-guard: OK — PR body has the Big sites section"
+  elif release_or_bot; then
+    echo "big-sites-guard: skipped — release or dependabot PR"
+  elif blocking_now; then
+    echo "big-sites-guard: FAIL (blocking since $BLOCK_FROM) — $ui changes what users see, and the PR body has no «## Big sites» section or «Big sites: n/a — <reason>» line (workflow rule 37b)"
+    return 1
   else
     echo "big-sites-guard: WARNING — $ui changes what users see, and the PR body has no «## Big sites» section or «Big sites: n/a — <reason>» line (workflow rule 37b)"
   fi
@@ -106,5 +125,5 @@ self_test() {
 }
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
-if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
+if [ "${1:-}" = "--self-test" ]; then GUARD_TODAY=2026-11-21 self_test; exit $?; fi
 run

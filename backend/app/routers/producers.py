@@ -16,7 +16,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import (
     get_current_user_lenient,
@@ -431,11 +431,14 @@ def get_producer_by_slug(
     producer = (
         db.query(Producer)
         .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
-            # so it doesn't widen the 3-way collection joinedload cartesian).
+            # MEH-3385: one SELECT per collection. Three collection
+            # joinedloads multiplied categories × products × delivery areas
+            # into one result set. Order comes from each relationship's
+            # order_by (models.py: categories by position, products by position).
+            selectinload(Producer.categories),
+            selectinload(Producer.products),
+            selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
             selectinload(Producer.locations),
             # MEH-1823: active_offer reads this collection — eager-load it here
             # or the property fires one query per producer on every list page.
@@ -495,11 +498,14 @@ def get_producer(
     producer = (
         db.query(Producer)
         .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
-            # so it doesn't widen the 3-way collection joinedload cartesian).
+            # MEH-3385: one SELECT per collection. Three collection
+            # joinedloads multiplied categories × products × delivery areas
+            # into one result set. Order comes from each relationship's
+            # order_by (models.py: categories by position, products by position).
+            selectinload(Producer.categories),
+            selectinload(Producer.products),
+            selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
             selectinload(Producer.locations),
             # MEH-1823: active_offer reads this collection — eager-load it here
             # or the property fires one query per producer on every list page.
@@ -742,7 +748,9 @@ def join_delivery_waitlist(
     producer_id: UUID,
     data: DeliveryWaitlistIn,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_lenient),
+    # MEH-1627: an ordinary form that can retry, so `_optional` (an expired
+    # token is a 401 and the client refreshes), never `_lenient`.
+    current_user: User | None = Depends(get_current_user_optional),
 ) -> DeliveryWaitlistOut:
     """«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
 

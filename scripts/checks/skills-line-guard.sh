@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Module:   skills-line-guard.sh
-# Purpose:  WARN-ONLY. A pull-request body with no `Skills:` line — workflow
+# Purpose:  WARN until 2026-11-22, then BLOCKING (BLOCK_FROM). A pull-request body with no `Skills:` line — workflow
 #           rule 43 (match the task to skills before starting, MEH-3176).
 # Touches:  nothing — reads the PR body, writes only to stdout.
 # Does NOT: judge whether the named skills were the right ones, or whether
@@ -39,6 +39,20 @@ print(pr.get("body") or "")
 ' "$ev" 2>/dev/null
 }
 
+# MEH-3176 follow-up (18/11): warn until BLOCK_FROM, block from that date — the
+# 15–18/11 audit found this line missing on most PRs while it only warned.
+BLOCK_FROM="2026-11-22"
+blocking_now() {
+  local today="${GUARD_TODAY:-$(TZ=Asia/Jerusalem date +%F)}"
+  [[ ! "$today" < "$BLOCK_FROM" ]]
+}
+release_or_bot() {  # staging → main release PRs and dependabot carry no evidence lines
+  case "${GITHUB_HEAD_REF:-}" in
+    dependabot/*) return 0 ;;
+    staging) [ "${GITHUB_BASE_REF:-}" = "main" ] && return 0 ;;
+  esac
+  return 1
+}
 # has_skills_line — reads a body on stdin; 0 when a non-empty Skills: line exists.
 has_skills_line() {
   grep -qiE '^[[:space:]]*([-*][[:space:]]+)?(\*\*)?skills:(\*\*)?[[:space:]]*(\*\*)?[[:space:]]*[^[:space:]*]'
@@ -102,7 +116,12 @@ main() {
   if [ "${1:-}" = "--self-test" ]; then cat /tmp/skills-line-guard-selftest.$$; fi
   rm -f /tmp/skills-line-guard-selftest.$$
   [ "${1:-}" = "--self-test" ] && exit 0
-  check
+  release_or_bot && { echo "skills-line-guard: skipped — release or dependabot PR"; exit 0; }
+  check; local rc=$?
+  if [ "$rc" -eq 1 ] && blocking_now; then
+    echo "skills-line-guard: FAIL (blocking since $BLOCK_FROM) — add the Skills: line to the PR body, then push or relabel to re-run."
+    exit 1
+  fi
   exit 0
 }
 

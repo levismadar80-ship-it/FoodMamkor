@@ -737,9 +737,10 @@ away on enough samples.
 
 **Test invariant:**
 `tests/test_api.py::TestLoginTimingEqualization::test_login_timing_equivalence_across_failure_modes`
-asserts `max(p95) − min(p95) < 20ms` across the 3 `/login` failure
-branches. 5 warmup + 50 measured iterations per branch; p95 via
-`statistics.quantiles`. Decorated with `@pytest.mark.flaky(reruns=2,
+asserts `max(median) − min(median) < 20ms` across the 3 `/login` failure
+branches. 5 warmup + 50 measured iterations per branch, interleaved one
+request per branch per round with the order rotated (MEH-3031; it compared
+p95s of back-to-back blocks before, which read runner noise as a spread). Decorated with `@pytest.mark.flaky(reruns=2,
 reruns_delay=1)` (MEH-647) so bcrypt timing variance on contended CI
 runners doesn't cause spurious failures — 2 reruns absorb noise; a
 third failure is a real signal worth investigating.
@@ -916,7 +917,7 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **Scope.** HS256 JWT `{producer_id, scope: "producer_draft_preview"}`, `exp` essential, 14 days (`backend/app/services/draft_preview.py`). The claim decoder refuses it and its decoder refuses a claim token; `get_current_user` refuses both.
 - **What it grants.** Reading one ownerless draft as `ProducerDetailOut`, the same shape the live page serves. It cannot claim, edit or publish.
 - **Stateless.** No table and no revocation before `exp`. The row's state is the revocation: once the draft is published, claimed, rejected or deleted, every link to it answers the same 404 as a forged one.
-- **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only.
+- **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
 
 ## 17c. Outside production, no message reaches a real person (MEH-3402)

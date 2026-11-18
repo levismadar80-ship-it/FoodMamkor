@@ -75,6 +75,13 @@ delivery_areas, categories. ‏SQLAlchemy מקבל `P × A × C` שורות ומ
 מחזיר בסדר אחר. צריך לבדוק אם הלקוח מסתמך על הסדר, וזו בדיקה שלא יכולתי להריץ
 כאן (אין pytest בסביבה הזאת). **מחכה לספיר / לכרטיס משלו.**
 
+
+**הוכרע ובוצע 17/11** (`docs/decisions/rulings-2026-11-17.md` §א12, MEH-3385): שלושת
+האוספים עברו ל-`selectinload`. הסדר מוצמד על ה-relationship
+(`Producer.products`: ‏`position` קודם, מוצרים בלי מקום בסוף), ו-
+`tests/test_meh3385_producer_detail_product_order.py` בודק את הסדר בשני ה-endpoints
+ושאף שאילתה לא מצרפת products ו-delivery_areas יחד.
+
 ### ב. ‏over-fetch ברשימה
 
 `producer_listing.py:438` טוען שורות `Product` **מלאות** לעד 100 בתי עסק, רק

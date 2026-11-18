@@ -264,3 +264,29 @@ def test_no_offer_while_the_host_tally_still_fills_the_workshop(client, db, mail
     mail.clear()
     client.post(f"/registrations/{a.cancel_token}/cancel")
     assert [m for m in mail if m[0] == "offer"] == []
+
+
+def test_a_cancel_offers_the_spot_on_a_recurring_workshop_whose_first_date_passed(
+    client, db, mail
+):
+    # The cancel must reach the database before the free places are counted.
+    # The session does not autoflush, and the only flush on this path used to
+    # be the billing void, which is skipped once the first date is past.
+    from datetime import timedelta
+
+    from app.utils.clock import israel_today
+
+    host = _owner(db)
+    ex = _experience(
+        db,
+        host,
+        max_participants=1,
+        is_recurring=True,
+        event_date=israel_today() - timedelta(days=3),
+    )
+    assert _join(client, ex, "first@example.com", waitlist=False, path="experiences").status_code == 201
+    assert _join(client, ex, "w1@example.com", path="experiences").json() == {"status": "waitlisted"}
+    mail.clear()
+    first = db.query(Registration).filter_by(email="first@example.com").one()
+    assert client.post(f"/registrations/{first.cancel_token}/cancel").status_code == 200
+    assert [m[1] for m in mail if m[0] == "offer"] == ["w1@example.com"]

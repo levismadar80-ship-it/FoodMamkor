@@ -35,6 +35,7 @@ from app.rate_limit import limiter
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import chat_db_tools, chat_intent_router
+from app.services.chat_intent_router import cached_text_block, log_cache_usage
 
 
 logger = logging.getLogger(__name__)
@@ -233,6 +234,18 @@ def _rescue_knowledge() -> str | None:
     return RESCUE_KNOWLEDGE_TEMPLATE.format(cities=", ".join(cities))
 
 
+def _system_blocks(base_prompt: str, live: str | None) -> list[dict[str, Any]]:
+    """MEH-3384 (rulings 17/11 §א9): the fixed knowledge is its own block with
+    the cache breakpoint, so every turn re-reads it from the prompt cache. The
+    live JSON (MEH-586) changes per question, so it goes AFTER the breakpoint,
+    in a block of its own — inside the cached block it would make every
+    db_query turn a cache miss."""
+    blocks: list[dict[str, Any]] = [cached_text_block(base_prompt)]
+    if live:
+        blocks.append({"type": "text", "text": live})
+    return blocks
+
+
 def _base_system_prompt() -> str:
     rescue = _rescue_knowledge()
     return f"{SYSTEM_PROMPT}\n\n{rescue}" if rescue else SYSTEM_PROMPT
@@ -376,20 +389,17 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
     # MEH-586: hybrid — a db_query turn gets the live JSON appended to the
     # fixed knowledge; everything else is the unchanged freeform flow.
     base_prompt = _base_system_prompt()  # MEH-3004
-    system_prompt = base_prompt
     try:
         live = _live_data_context(client, request, api_messages)
     except Exception as e:  # noqa: BLE001 — the hybrid hop never 500s the widget
         logger.warning("chat live-data hop failed: %s", e)
         live = None
-    if live:
-        system_prompt = f"{base_prompt}\n\n{live}"
 
     try:
         response = client.messages.create(
             **ai_fast_request_kwargs(),
             max_tokens=MAX_OUTPUT_TOKENS,
-            system=system_prompt,
+            system=_system_blocks(base_prompt, live),
             messages=api_messages,
         )
     except Exception as e:  # pragma: no cover — network/quota
@@ -397,6 +407,7 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
         return ChatResponse(
             reply="משהו השתבש בצד שלי 🌱 נסו שוב בעוד רגע. אם זה נמשך — דווחו לנו דרך טופס יצירת הקשר.",
         )
+    log_cache_usage("chat", response)
 
     # Pull the first text block out of the response.content list.
     reply = next((b.text for b in response.content if b.type == "text"), "")

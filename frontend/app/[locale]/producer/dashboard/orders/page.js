@@ -15,7 +15,8 @@
  * Related:  components/dashboard/orders/* · lib/product-orders.js ·
  *           DashboardLayoutClient.jsx (the tab) · lib/use-orders-tab.js
  * History:  MEH-3316 (creation; stage 4 of MEH-3216) · settings start closed
- *           once set up, 18/11
+ *           once set up, 18/11 · MEH-3216 gaps: the products card (its own
+ *           read, GET /producers/me/products/ordering)
  */
 
 import { useEffect, useState } from "react";
@@ -25,6 +26,7 @@ import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { SkeletonList } from "@/components/Skeleton";
+import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
@@ -93,6 +95,9 @@ export default function OrdersPage() {
       {data?.settings && (
         <>
           <OrdersBoard orders={data.orders} onChanged={replace} />
+          {/* MEH-3216 gaps: the products' two daily switches sit right under
+              the orders — «אזל כרגע» is flipped mid-day, the settings are not. */}
+          <OrderProductsCard setUp={setUp} />
           <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={setUp} />
           <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={setUp} />
         </>

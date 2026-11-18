@@ -86,7 +86,8 @@ def _drive_chat(monkeypatch, live):
     )
     body = ChatRequest(messages=[{"role": "user", "content": "מה זה סל הפתעה?"}])
     inspect.unwrap(chat.chat)(request, body)
-    return calls[0]["system"]
+    # MEH-3384: system is a list of blocks; the tests read the joined text.
+    return "\n\n".join(b["text"] for b in calls[0]["system"])
 
 
 def test_endpoint_sends_rescue_paragraph_when_pilot_on(monkeypatch):
