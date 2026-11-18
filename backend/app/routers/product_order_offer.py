@@ -124,7 +124,11 @@ def put_product_ordering(
     own business, so another business's product is a 404, not a 403."""
     product = (
         db.query(Product)
-        .filter(Product.id == product_id, Product.producer_id == _own_producer_id(user))
+        .filter(
+            Product.id == product_id,
+            Product.producer_id == _own_producer_id(user),
+            Product.is_draft.is_(False),  # MEH-2312: the owner never sees drafts
+        )
         .first()
     )
     if product is None:
@@ -170,6 +174,7 @@ def _menu_products(
 ) -> list[dict[str, Any]]:
     query = db.query(Product).filter(
         Product.producer_id == producer_id,
+        Product.is_draft.is_(False),  # MEH-2312: an unapproved draft is not public
         Product.is_orderable.is_(True),
         Product.price_min.isnot(None),
     )
