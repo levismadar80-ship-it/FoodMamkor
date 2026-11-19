@@ -168,8 +168,8 @@ class ExperienceSessionOut(BaseModel):
     time: str  # "HH:MM"
     # The owner's off-site tally for this date (public, like the workshop's
     # own participants_count) — the owner's form edits it.
-    participants_count: int = 0
-    spots_left: int | None = None
+    participants_count: int
+    spots_left: int | None
 
 
 class ExperienceCreate(BaseModel):

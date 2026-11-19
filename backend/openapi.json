@@ -3581,7 +3581,6 @@
             "type": "string"
           },
           "participants_count": {
-            "default": 0,
             "title": "Participants Count",
             "type": "integer"
           },
@@ -3603,7 +3602,9 @@
         },
         "required": [
           "date",
-          "time"
+          "time",
+          "participants_count",
+          "spots_left"
         ],
         "title": "ExperienceSessionOut",
         "type": "object"
