@@ -209,11 +209,12 @@ def void_item_registrations(db: Session, item: Any, *, kind: str) -> None:
     """Void the rows of an UPCOMING event / experience that is being deleted.
 
     Its sign-ups never take place, so they are not bookings the business got.
-    A past item keeps its rows: those sign-ups happened. Call BEFORE the
+    A past item keeps its rows: those sign-ups happened. MEH-3441: a sign-up
+    for a listed date goes by that date instead. Call BEFORE the
     delete — the registrations cascade away with the item.
     """
-    if item.event_date is None or item.event_date < israel_today():
-        return
+    today = israel_today()
+    upcoming = item.event_date is not None and item.event_date >= today
     column = (
         Registration.event_id
         if kind == "event_registration"
@@ -224,7 +225,12 @@ def void_item_registrations(db: Session, item: Any, *, kind: str) -> None:
         with db.begin_nested():
             ids = [
                 row_id
-                for (row_id,) in db.query(Registration.id).filter(column == item.id)
+                for (row_id, day) in db.query(
+                    Registration.id, Registration.session_date
+                ).filter(column == item.id)
+                # MEH-3441: a sign-up for a listed date is upcoming by its
+                # own date, whatever the workshop's first date says.
+                if (day >= today if day is not None else upcoming)
             ]
             if not ids:
                 return
