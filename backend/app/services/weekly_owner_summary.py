@@ -112,12 +112,13 @@ def unsubscribe_headers(base: str, token: str) -> dict[str, str]:
 def summary_enabled() -> bool:
     """The send gate. Default False: merging this sends nothing.
 
-    Read through `getattr`, the same way `rescue_digest.digest_enabled` reads
-    its flag: `config.py` is denied to Claude Code, so Sapir adds the field
-    `weekly_owner_summary_enabled: bool = False` from the patch in the PR body,
-    and until she does this reads False rather than raising.
+    MEH-3212: `settings.weekly_owner_summary_enabled` is a declared field
+    (config.py, added by Sapir 19/11), so the env var
+    WEEKLY_OWNER_SUMMARY_ENABLED=true now really turns the job on. Until
+    then the field did not exist, pydantic ignored the variable, and the
+    summary was off everywhere whatever the environment said.
     """
-    return bool(getattr(settings, "weekly_owner_summary_enabled", False))
+    return settings.weekly_owner_summary_enabled
 
 
 # ---------------------------------------------------------------------------

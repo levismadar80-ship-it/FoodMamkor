@@ -214,3 +214,21 @@ class TestSendEmailHeaders:
             "owner@mehamakor-mail.co.il", "s", "b", html="<p>x</p>"
         ) == "sent"
         assert resend_box[0]["headers"] == {"Content-Transfer-Encoding": "base64"}
+
+
+class TestSiteFlag:
+    def test_env_var_turns_the_summary_on(self, monkeypatch):
+        """Before the config field existed, pydantic dropped the variable and
+        the summary could never be turned on (MEH-3212)."""
+        from app.config import Settings
+
+        monkeypatch.setenv("WEEKLY_OWNER_SUMMARY_ENABLED", "true")
+        assert Settings().weekly_owner_summary_enabled is True
+        monkeypatch.setenv("WEEKLY_OWNER_SUMMARY_ENABLED", "false")
+        assert Settings().weekly_owner_summary_enabled is False
+
+    def test_gate_reads_the_field(self, monkeypatch):
+        monkeypatch.setattr(settings, "weekly_owner_summary_enabled", True)
+        assert wos.summary_enabled() is True
+        monkeypatch.setattr(settings, "weekly_owner_summary_enabled", False)
+        assert wos.summary_enabled() is False
