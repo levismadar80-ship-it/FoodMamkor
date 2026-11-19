@@ -688,11 +688,24 @@ async function gotoFixtureFeed(
  */
 async function activeCategoryFixture(page: Page): Promise<{ id: string; name: string }> {
   let seeded: unknown;
-  try {
-    const res = await page.request.get("/api/categories");
-    if (res.ok()) seeded = await res.json();
-  } catch {
-    // No backend at all (the CC sandbox) — handled as the fixture case below.
+  // MEH-3427: one non-OK answer used to drop straight to the CAT_A fixture. On
+  // staging that happened mid-deploy (run 44377981988): this read got a 5xx
+  // while the page's own SSR read, a moment later, got the real list — so the
+  // test deep-linked a fixture id the page did not hold and «נקה סינון …» never
+  // rendered. A 5xx is the backend restarting, not "no backend": ask again for
+  // a few seconds before falling back. A thrown network error (no backend at
+  // all, the CC sandbox) still falls back at once.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let status = 0;
+    try {
+      const res = await page.request.get("/api/categories");
+      status = res.status();
+      if (res.ok()) seeded = await res.json();
+    } catch {
+      break; // No backend at all — handled as the fixture case below.
+    }
+    if (seeded !== undefined || status < 500) break;
+    await page.waitForTimeout(2_000);
   }
   if (Array.isArray(seeded)) {
     // An array — even an empty one — is what `page.js:44` returns to
@@ -1402,6 +1415,12 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     await expect(cards(page)).toHaveCount(CAT_A_MEMBERS.length, FIRST_PAINT);
     await promotedChip(page, "has_delivery").click();
     await expect(promotedChip(page, "has_delivery")).toHaveAttribute("aria-pressed", "true");
+    // MEH-3427: name the precondition, so a category the page does not hold
+    // reds here with its cause instead of as a missing clear button.
+    await expect(
+      scope(page).getByRole("heading", { level: 2, name: PROD.heading_category.replace("{name}", cat.name) }),
+      `the page resolved category ${cat.id} («${cat.name}») from its own list`,
+    ).toBeVisible();
     await scope(page)
       .getByRole("button", { name: `${PROD.clear_filter} ${cat.name}` })
       .click();
