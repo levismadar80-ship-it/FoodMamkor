@@ -28,6 +28,7 @@ from app.services.booking_cancellations import (  # MEH-2498, MEH-3227
     hide_business,  # MEH-2871
 )
 from app.services.product_order_guards import refuse_delete_with_open_orders  # MEH-3262
+from app.services.admin_draft_missing import attach_draft_missing  # MEH-3409
 from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
     validate_transition,
@@ -327,6 +328,8 @@ def list_producers(  # noqa: PLR0913 — FastAPI query params + Depends, one per
         attach_badge_fields(p)
         _attach_aging(p)
     _attach_has_owner(db, results)
+    # MEH-3409: what a claimed draft still lacks (after has_owner, which it reads).
+    attach_draft_missing(db, results)
     # MEH-3408: «כפילות?» compares against every status, not the loaded page.
     attach_duplicate_signals(db, results)
     return results
