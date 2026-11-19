@@ -207,8 +207,11 @@ export default function EventDetailClient({ initialEvent = null } = {}) {
           lives in the details card's date row, not on the cover. */}
       {/* MEH-2992: one shared masthead (was a byte-identical copy per page).
           MEH-2989: no date tile on the cover — the date row carries it. */}
+      {/* MEH-3459: the owner's first photo when the event has none — the same
+          fallback the list rows and the home card use (MEH-2546), so tapping a
+          card never swaps its photo for a bare band. */}
       <EntityCover
-        imageUrl={event.image_url}
+        imageUrl={event.image_url || event.owner_image_url}
         alt={event.title}
         tone="primary"
         Icon={CatIcon}

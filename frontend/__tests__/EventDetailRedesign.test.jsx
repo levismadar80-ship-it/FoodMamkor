@@ -88,6 +88,20 @@ describe("MEH-2548 — cover", () => {
     expect(bg.startsWith('url("')).toBe(true);
   });
 
+  it("MEH-3459: no photo of its own but the owner has one → the owner's photo, as on the card", async () => {
+    await renderEvent({ image_url: null, owner_image_url: "https://res.cloudinary.com/x/image/upload/owner.jpg" });
+    expect(screen.getByTestId("event-cover").style.backgroundImage).toContain("owner.jpg");
+    expect(screen.queryByTestId("event-cover-band")).toBeNull();
+  });
+
+  it("MEH-3459: the event's own photo wins over the owner's", async () => {
+    await renderEvent({
+      image_url: "https://res.cloudinary.com/x/image/upload/e.jpg",
+      owner_image_url: "https://res.cloudinary.com/x/image/upload/owner.jpg",
+    });
+    expect(screen.getByTestId("event-cover").style.backgroundImage).toContain("e.jpg");
+  });
+
   it("a photo → the cover image", async () => {
     await renderEvent({ image_url: "https://res.cloudinary.com/x/image/upload/e.jpg" });
     expect(screen.getByTestId("event-cover").style.backgroundImage).toContain("e.jpg");

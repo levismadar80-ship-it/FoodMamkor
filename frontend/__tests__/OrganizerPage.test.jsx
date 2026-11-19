@@ -152,17 +152,39 @@ describe("MEH-2461 organizer page", () => {
     ]);
   });
 
-  it("contacts: only the channels the organizer has, WhatsApp via wa.me", async () => {
+  it("MEH-3459: contacts are the business page's ContactCard — WhatsApp button, Instagram circle, nothing unfilled", async () => {
     respond(200, ORG);
     await renderPage();
-    expect(screen.getByTestId("organizer-contact-whatsapp").getAttribute("href")).toMatch(
-      /^https:\/\/wa\.me\/972521234567/,
-    );
-    expect(screen.getByTestId("organizer-contact-instagram").getAttribute("href")).toBe(
+    expect(screen.getByTestId("contact-card")).toBeInTheDocument();
+    const primary = screen.getByTestId("primary-contact-button");
+    expect(primary.getAttribute("data-method")).toBe("whatsapp");
+    expect(primary.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/972521234567/);
+    expect(screen.getByTestId("contact-channel-instagram").getAttribute("href")).toBe(
       "https://instagram.com/gelem",
     );
-    expect(screen.queryByTestId("organizer-contact-website")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("organizer-contact-facebook")).not.toBeInTheDocument();
+    // the business card's call circle — the same number, a distinct action
+    expect(screen.getByTestId("contact-channel-phone").getAttribute("href")).toBe("tel:0521234567");
+    expect(screen.queryByTestId("contact-channel-website")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("contact-channel-facebook")).not.toBeInTheDocument();
+    // MEH-3459: no ready-made questions — they ask a business about delivery / ordering
+    expect(screen.queryByTestId("question-chips")).not.toBeInTheDocument();
+    // the old pill list is gone (one component per pattern)
+    expect(screen.queryByTestId("organizer-contact")).not.toBeInTheDocument();
+  });
+
+  it("MEH-3459: 0 channels → no contact card at all (no empty white frame)", async () => {
+    respond(200, { ...ORG, phone: null, instagram: null });
+    await renderPage();
+    expect(screen.queryByTestId("contact-card")).not.toBeInTheDocument();
+  });
+
+  it("MEH-3459: 1 secondary channel → one value row, not a lone circle (MEH-2775)", async () => {
+    respond(200, { ...ORG, phone: null, primary_contact_method: "instagram", instagram: "@gelem", website: "gelem.co.il" });
+    await renderPage();
+    expect(screen.getByTestId("primary-contact-button").getAttribute("data-method")).toBe("instagram");
+    const row = screen.getByTestId("contact-single-row");
+    expect(row.getAttribute("href")).toMatch(/^https:\/\/gelem\.co\.il/);
+    expect(row.textContent).toContain("gelem.co.il");
   });
 
   it("404 from the API → notFound()", async () => {
@@ -180,10 +202,10 @@ describe("MEH-2461 organizer page", () => {
   it("a protocol-less website / facebook becomes an https link (review #3712 F6)", async () => {
     respond(200, { ...ORG, website: "gelem.co.il", facebook: "  https://facebook.com/gelem " });
     await renderPage();
-    expect(screen.getByTestId("organizer-contact-website").getAttribute("href")).toBe(
-      "https://gelem.co.il",
+    expect(screen.getByTestId("contact-channel-website").getAttribute("href")).toMatch(
+      /^https:\/\/gelem\.co\.il/,
     );
-    expect(screen.getByTestId("organizer-contact-facebook").getAttribute("href")).toBe(
+    expect(screen.getByTestId("contact-channel-facebook").getAttribute("href")).toBe(
       "https://facebook.com/gelem",
     );
   });
@@ -286,7 +308,7 @@ describe("MEH-2461 organizer page", () => {
     expect(screen.queryByTestId("owner-card")).not.toBeInTheDocument();
   });
 
-  it("MEH-2475: the preferred channel comes first; email / group / form appear only when filled", async () => {
+  it("MEH-2475: the preferred channel is the big button; email / group / form appear only when filled", async () => {
     respond(200, {
       ...ORG,
       primary_contact_method: "email",
@@ -295,59 +317,45 @@ describe("MEH-2461 organizer page", () => {
       external_order_form: "forms.example.com/stand",
     });
     await renderPage();
-    const links = screen.getByTestId("organizer-contact").querySelectorAll("a");
-    expect(links[0].getAttribute("href")).toBe("mailto:market@example.com");
-    expect(links[0].getAttribute("data-primary")).toBe("true");
-    expect(screen.getByTestId("organizer-contact-whatsapp_group").getAttribute("href")).toBe(
-      "https://chat.whatsapp.com/AbC",
-    );
-    expect(screen.getByTestId("organizer-contact-external_order").getAttribute("href")).toBe(
+    const primary = screen.getByTestId("primary-contact-button");
+    expect(primary.getAttribute("href")).toBe("mailto:market@example.com");
+    // never twice: the primary channel has no circle of its own
+    expect(screen.queryByTestId("contact-channel-email")).not.toBeInTheDocument();
+    expect(screen.getByTestId("contact-channel-whatsapp_group")).toBeInTheDocument();
+    expect(screen.getByTestId("contact-channel-external_order").getAttribute("href")).toBe(
       "https://forms.example.com/stand",
     );
-    // WhatsApp from the phone stays available as a secondary channel
-    expect(screen.getByTestId("organizer-contact-whatsapp")).toBeInTheDocument();
   });
 
-  it("MEH-2475: phone as the preferred channel → a call link, not a WhatsApp link built from it", async () => {
+  it("MEH-2475: phone as the preferred channel → a call button, no WhatsApp link built from it", async () => {
     respond(200, { ...ORG, primary_contact_method: "phone" });
     await renderPage();
-    const call = screen.getByTestId("organizer-contact-phone");
+    const call = screen.getByTestId("primary-contact-button");
     expect(call.getAttribute("href")).toBe("tel:0521234567");
-    expect(call.getAttribute("data-primary")).toBe("true");
-    // MEH-2988: drawn as the business button — label, and no new tab for a call
-    expect(call.textContent).toBe("contact_cta.phone");
     expect(call.getAttribute("target")).toBeNull();
-    expect(screen.queryByTestId("organizer-contact-whatsapp")).not.toBeInTheDocument();
-  });
-
-  it("MEH-2988: the preferred channel is the business page's button — icon + contact_cta label", async () => {
-    respond(200, ORG);
-    await renderPage();
-    const wa = screen.getByTestId("organizer-contact-whatsapp");
-    expect(wa.getAttribute("data-primary")).toBe("true");
-    expect(wa.textContent).toBe("contact_cta.whatsapp");
-    expect(wa.querySelector("svg")).not.toBeNull();
-    expect(wa.className).toContain("btn-whatsapp");
-    // a secondary channel keeps its short pill label and no icon
-    const ig = screen.getByTestId("organizer-contact-instagram");
-    expect(ig.textContent).toBe("organizers.page.instagram");
-    expect(ig.querySelector("svg")).toBeNull();
+    expect(screen.queryByTestId("contact-channel-phone")).not.toBeInTheDocument();
+    expect(document.querySelector('a[href^="https://wa.me/"]')).toBeNull();
   });
 
   it("MEH-2988: a website primary keeps the business button's referral rules", async () => {
     respond(200, { ...ORG, primary_contact_method: "website", website: "gelem.co.il" });
     await renderPage();
-    const site = screen.getByTestId("organizer-contact-website");
-    expect(site.getAttribute("data-primary")).toBe("true");
+    const site = screen.getByTestId("primary-contact-button");
     expect(site.getAttribute("href")).toMatch(/^https:\/\/gelem\.co\.il\/?\?.*utm_source=/);
     expect(site.getAttribute("target")).toBe("_blank");
     expect(site.getAttribute("rel")).toBe("noopener");
   });
 
-  it("MEH-2988: a WhatsApp primary opens in place, as on the business page", async () => {
+  it("MEH-2991: a tap on a channel is counted for the organizer", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}"));
     respond(200, ORG);
     await renderPage();
-    expect(screen.getByTestId("organizer-contact-whatsapp").getAttribute("target")).toBeNull();
+    fireEvent.click(screen.getByTestId("contact-channel-instagram"));
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "/api/producers/o-1/contact-click",
+      expect.objectContaining({ body: JSON.stringify({ method: "instagram" }) }),
+    );
+    fetchSpy.mockRestore();
   });
 
   it("MEH-2475: the founding year shows as a quiet «since» line only when set", async () => {

@@ -6660,17 +6660,9 @@
     "page": {
       "events_heading": "Upcoming events",
       "empty": "No upcoming events right now",
-      "whatsapp": "WhatsApp",
-      "instagram": "Instagram",
-      "website": "Website",
-      "facebook": "Facebook",
       "meta_description_fallback": "{name} on Mehamakor: food markets and events.",
       "owner_heading": "Behind the events",
-      "since_prefix": "Active since",
-      "phone": "Call",
-      "email": "Email",
-      "whatsapp_group": "WhatsApp group",
-      "external_order": "Order form"
+      "since_prefix": "Active since"
     }
   },
   "qr_card": {

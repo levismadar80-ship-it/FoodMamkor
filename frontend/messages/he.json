@@ -6656,17 +6656,9 @@
     "page": {
       "events_heading": "אירועים קרובים",
       "empty": "אין אירועים קרובים כרגע",
-      "whatsapp": "וואטסאפ",
-      "instagram": "אינסטגרם",
-      "website": "אתר",
-      "facebook": "פייסבוק",
       "meta_description_fallback": "{name} במהמקור: שווקים ואירועי אוכל.",
       "owner_heading": "מאחורי האירועים",
-      "since_prefix": "פעילים מאז",
-      "phone": "התקשרו",
-      "email": "אימייל",
-      "whatsapp_group": "קבוצת וואטסאפ",
-      "external_order": "טופס הזמנה"
+      "since_prefix": "פעילים מאז"
     }
   },
   "qr_card": {

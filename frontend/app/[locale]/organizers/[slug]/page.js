@@ -15,7 +15,8 @@
  *           setRequestLocale); MEH-2475 (owner story, preferred channel first,
  *           email / WhatsApp group / order form, founding year); MEH-2547
  *           (cover + avatar masthead, EventEntryRow rows); MEH-3341 (all photos
- *           through the shared Lightbox, GalleryViewAllButton).
+ *           through the shared Lightbox, GalleryViewAllButton); MEH-3459
+ *           (contact = the business page's ContactCard, not its own pills).
  */
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
@@ -29,9 +30,10 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import { toEventEntry } from "@/lib/event-entry";
 import EventEntryRow from "@/components/EventEntryRow";
 import { OrganizerPageSchema } from "@/lib/schemas";
-import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
-import OrganizerPrimaryContact from "./OrganizerPrimaryContact";
-import OrganizerContactLink from "./OrganizerContactLink";
+// MEH-3459: the business page's contact card — primary button + the round
+// channel icons — instead of this page's own button-and-pills copy.
+import { contactHref } from "@/lib/contact-method";
+import ContactCard from "@/app/[locale]/producer/[id]/components/ContactCard";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
 import GalleryViewAllButton from "@/components/GalleryViewAllButton";
@@ -114,64 +116,11 @@ export async function generateMetadata(props) {
   };
 }
 
-// MEH-2475: every channel the organizer can fill (dashboard «קשר» group), in
-// one list. An empty field gives a null href, so 0 / 1 / many filled channels
-// render 0 / 1 / many links with no placeholder.
-// MEH-2991: the hrefs come from the one table the business page reads
-// (lib/contact-method.js contactHref) — this page used to carry its own copy.
-const CHANNEL_KEYS = [
-  "whatsapp",
-  "phone",
-  "email",
-  "instagram",
-  "website",
-  "facebook",
-  "whatsapp_group",
-  "external_order",
-];
-
-/** The channels to show, preferred first. One number backs both WhatsApp and
- *  a call: the call link appears only when phone is the preferred channel,
- *  and then the WhatsApp link built from that number does not (MEH-2475 —
- *  the page used to offer WhatsApp whatever the organizer chose). */
-function contactChannels(organizer, waMessage) {
-  const primary = getPrimaryMethod(organizer);
-  const shown = CHANNEL_KEYS.filter((key) =>
-    key === "phone" ? primary === "phone" : key === "whatsapp" ? primary !== "phone" : true,
-  )
-    .map((key) => ({ key, href: contactHref(key, organizer, waMessage), primary: key === primary }))
-    .filter((c) => c.href);
-  return [...shown.filter((c) => c.primary), ...shown.filter((c) => !c.primary)];
-}
-
-const LINK_BASE =
-  "inline-flex items-center min-h-touch px-4 rounded-full border text-sm transition focus-ring";
-
-// MEH-2988: the preferred channel is drawn like the business page's primary
-// button (icon + `contact_cta.<method>` label); the others stay quiet pills.
-function ContactLinks({ organizer, t, tCta }) {
-  // The WhatsApp prefill is the business page's `contact_cta.wa_greeting`
-  // (MEH-2753) — it was a hard-coded Hebrew copy of it here, on /en too.
-  const links = contactChannels(organizer, tCta("wa_greeting", { name: organizer.name || "" }));
-  if (links.length === 0) return null;
-  return (
-    <ul className="flex flex-wrap items-center gap-2" data-testid="organizer-contact">
-      {links.map((l) => (
-        <li key={l.key}>
-          {l.primary ? (
-            <OrganizerPrimaryContact channel={l} label={tCta(l.key)} producerId={organizer.id} />
-          ) : (
-            <OrganizerContactLink
-              channel={l}
-              label={t(l.key)}
-              producerId={organizer.id}
-              className={`${LINK_BASE} border-border text-primary hover:bg-primary/5`}
-            />
-          )}
-        </li>
-      ))}
-    </ul>
-  );
+// MEH-3459: ContactCard draws its white frame even with nothing inside, so
+// the page asks first — 0 filled channels = no card at all.
+const CHANNEL_KEYS = ["whatsapp", "phone", "email", "instagram", "website", "facebook", "whatsapp_group", "external_order"];
+function hasAnyChannel(organizer) {
+  return CHANNEL_KEYS.some((key) => contactHref(key, organizer));
 }
 
 export default async function OrganizerPage(props) {
@@ -182,7 +131,6 @@ export default async function OrganizerPage(props) {
   if (!organizer) notFound();
   const t = await getTranslations({ locale, namespace: "organizers.page" });
   const tList = await getTranslations({ locale, namespace: "events.list" });
-  const tCta = await getTranslations({ locale, namespace: "contact_cta" });
   const events = organizer.upcoming_events || [];
   const image = organizer.images?.[0];
   const initial = avatarInitial(organizer.name, "");
@@ -280,7 +228,12 @@ export default async function OrganizerPage(props) {
               {organizer.description}
             </p>
           )}
-          <ContactLinks organizer={organizer} t={t} tCta={tCta} />
+          {/* MEH-3459: the same card as the business page (MEH-2475 order:
+              the preferred channel is the big button, the rest are the
+              named circles). No ready-made questions — they ask about a
+              business's delivery and ordering. Renders nothing visible when
+              the organizer filled no channel. */}
+          {hasAnyChannel(organizer) && <ContactCard producer={organizer} questions={false} />}
         </div>
       </header>
 
