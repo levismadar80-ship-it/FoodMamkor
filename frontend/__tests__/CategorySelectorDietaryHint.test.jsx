@@ -1,12 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import CategorySelector from "@/components/CategorySelector";
+import he from "../messages/he.json";
 
 // MEH-2929 (pilot B5): «טבעוני» is a per-product flag, not a category. A search
 // for it (or its siblings) must say where it is marked, not just «not found».
 
 vi.mock("next-intl", () => ({
-  useTranslations: (scope) => (key) => (scope ? `${scope}.${key}` : key),
+  // Key paths, except the search vocabulary, which is data the logic reads.
+  useTranslations: (scope) => (key) =>
+    key === "dietary_terms" ? he.forms.category_selector.dietary_terms : scope ? `${scope}.${key}` : key,
 }));
 vi.mock("@phosphor-icons/react", () => {
   const Stub = (props) => <span {...props} />;

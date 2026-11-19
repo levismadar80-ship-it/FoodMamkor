@@ -118,9 +118,6 @@ const HOME_CARE_SLUGS = ["care", "cosmetics", "candles"];
 // so selectedIds[0] is the primary here; this component only reflects it.
 const MAX_CATEGORIES = 5;
 
-// MEH-2929: stems that mean a per-product dietary flag, not a category.
-// Lower-cased substrings matched against the trimmed query.
-const DIETARY_TERMS = ["טבעונ", "צמחונ", "גלוטן", "vegan", "vegetarian", "gluten"];
 
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");
@@ -150,7 +147,10 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
   // MEH-2929 (pilot B5): vegan / vegetarian / gluten-free are per-product flags
   // (Product.is_vegan etc.), never categories. A search for one used to land on
   // a bare «not found»; it now says where those are marked instead.
-  const dietaryQuery = q.length > 0 && DIETARY_TERMS.some((term) => q.includes(term));
+  // The stems are locale data (messages/*.json `dietary_terms`, comma list),
+  // matched as lower-cased substrings of the trimmed query.
+  const dietaryTerms = t("dietary_terms").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
+  const dietaryQuery = q.length > 0 && dietaryTerms.some((term) => q.includes(term));
 
   // EMPTY → popular-6 (expandable to all 18). QUERY → all 18 with matches
   // first; non-matches stay rendered but dimmed (never removed).
