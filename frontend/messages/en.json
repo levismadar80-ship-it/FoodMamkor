@@ -749,6 +749,7 @@
     },
     "claim": {
       "title": "Take your business page",
+      "title_named": "{name}'s page on Mehamakor",
       "description": "We prepared a page for you on Mehamakor"
     },
     "producer": {
