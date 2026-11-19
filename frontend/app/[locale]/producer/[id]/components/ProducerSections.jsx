@@ -15,6 +15,7 @@ import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
+import { hasDeliverySection } from "@/lib/quickAnswers"; // MEH-3460
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -783,9 +784,9 @@ export default function ProducerSections({
           (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
           order CTA stays tone="tertiary" so it never competes with the contact
           card's single primary CTA. */}
-      {(producer.offers_delivery ||
-        producer.delivery_areas?.length > 0 ||
-        producer.pickup_points) && (
+      {/* MEH-3460: one gate, shared with the section nav and the contact
+          card's delivery question, which jumps here. */}
+      {hasDeliverySection(producer) && (
         // MEH-1207: stable id = the anchor-nav's delivery target; scroll-mt
         // clears the sticky header + nav (same idiom as #reviews below).
         <div

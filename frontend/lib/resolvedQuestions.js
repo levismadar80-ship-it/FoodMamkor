@@ -72,7 +72,7 @@ const DUPLICATE_OF_DELIVERY = "יש משלוח?";
  * note: it used to live twice, here and in WhatsAppQuestionChips.jsx, and
  * could drift). `[עיר]` is replaced with `city` when one is given; the two
  * canonical slots (delivery / ordering) and the legacy stock wording are
- * dropped so a row never duplicates Q1 / Q2.
+ * dropped so a row never duplicates Q1 or the primary button (MEH-3460).
  *
  * @param {object|null|undefined} producer
  * @param {{ city?: string, deliveryQuestion: string, orderingQuestion: string }} opts

@@ -10,7 +10,7 @@
  * review form (reviews.py guard 3 → 403).
  *
  * The load-bearing case is the NEGATIVE one: an answer-first disclosure
- * (delivery / ordering, when buildDeliveryAnswer / buildOrderingAnswer return
+ * (delivery / ordering — ordering left in MEH-3460 — when buildDeliveryAnswer returns
  * content) opens no conversation and must NOT fire. A test that only asserted
  * "the links fire" would pass just as well against a listener bolted onto a
  * shared ancestor, which would also fire on every disclosure toggle.

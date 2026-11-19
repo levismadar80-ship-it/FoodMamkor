@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowDown, CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
@@ -60,7 +60,7 @@ import { paymentAnswer } from "@/lib/payment-info";
  *     must never vanish while any channel exists.
  *
  * Q1 and Q2 keep their answer-first disclosures untouched — they were already
- * channel-correct (Q2 reads getPrimaryContactHref through buildOrderingAnswer).
+ * channel-correct (Q2 read getPrimaryContactHref; Q2 itself left in MEH-3460).
  * Only their WhatsApp FALLBACKS move behind the new gate, because a fallback
  * that opens wa.me is a WhatsApp item like any other.
  *
@@ -88,6 +88,14 @@ import { paymentAnswer } from "@/lib/payment-info";
  * detached rule and a "שאלות נפוצות:" caption over one disclosure. The rule
  * separates the block from the button; with no button there is nothing to
  * separate from.
+ *
+ * MEH-3460 (Sapir 19/11) — NO ANSWER THAT REPEATS THE PAGE.
+ *   - Q2 «איך מזמינים?» → gone. Its answer was the primary CTA's own href, so
+ *     it could only ever repeat the button directly above it.
+ *   - Q1 delivery → a jump to #section-delivery whenever that section renders
+ *     (hasDeliverySection, the same gate the section uses). The section is the
+ *     full answer; the disclosure gave a cut copy («+ עוד 44»).
+ *   - The whole block is closed by default; the caption is the toggle.
  */
 
 // MEH-2592 C: ready-made questions are pills (like WhatsApp Business quick
@@ -429,6 +437,8 @@ function QuestionList({
   // Google retired its Business Profile Q&A in 2025). The caption she
   // already approved is the toggle — no new copy.
   const [open, setOpen] = useState(false);
+  // ContactCard mounts twice (inline + desktop sidebar): a unique panel id.
+  const panelId = useId();
   const hasMore = items.length > VISIBLE_MAX;
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
 
@@ -442,7 +452,7 @@ function QuestionList({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-controls="question-chips-panel"
+        aria-controls={panelId}
         data-testid="question-chips-toggle"
         className="inline-flex items-center gap-1.5 min-h-touch rounded font-body-md text-sm text-fg-muted hover:text-text focus-visible:ring-2 focus-visible:ring-primary"
       >
@@ -455,7 +465,7 @@ function QuestionList({
         {t("common_questions")}
       </button>
       {open && (
-        <div id="question-chips-panel" className="mt-1">
+        <div id={panelId} className="mt-1">
           <ul className="flex flex-wrap gap-2">{visible}</ul>
 
           {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
