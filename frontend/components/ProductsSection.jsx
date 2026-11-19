@@ -480,7 +480,7 @@ export default function ProductsSection({
     setEditFormErrors({});
     // MEH-2924: clearing the price stores null (ProductUpdate allows it).
     const minNum =
-      editForm.price_min === "" || editForm.price_min == null ? null : Number(editForm.price_min);
+      editForm.price_min === "" || editForm.price_min === null || editForm.price_min === undefined ? null : Number(editForm.price_min);
     const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
     setSavingEdit(true);
     setError("");
