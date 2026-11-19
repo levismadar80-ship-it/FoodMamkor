@@ -4905,6 +4905,9 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_7": {
+            "i0": "In the products card on the «Edit» tab you can now upload a photo of your menu or price list. The products fill in by themselves, so all that's left is to check and publish."
+          },
           "v1_5_1": {
             "i0": "Your dashboard home now shows «Waiting for you»: reviews you haven't answered yet and new sign-ups.",
             "i1": "You can reorder the products on your page by dragging them, and sort them into groups.",
