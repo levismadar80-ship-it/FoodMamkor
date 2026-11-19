@@ -30,10 +30,10 @@
  * CSP: script-src already allows 'unsafe-inline' (next.config.js).
  */
 
-import { PREHYDRATION_CAPTURE_KEY } from "@/lib/prehydration-capture-key";
+import { PREHYDRATION_CAPTURE_KEY, PREHYDRATION_EVENT_MARK } from "@/lib/prehydration-capture-key";
 
-export { PREHYDRATION_CAPTURE_KEY };
+export { PREHYDRATION_CAPTURE_KEY, PREHYDRATION_EVENT_MARK };
 
 // The key is written out, not interpolated: no value is spliced into code.
 // PrehydrationInputReplay.test.jsx pins it to PREHYDRATION_CAPTURE_KEY.
-export const PREHYDRATION_CAPTURE_SCRIPT = `(function(){var w=window,k="__mehPrehydrationCapture";if(w[k]||typeof WeakMap==="undefined")return;var m=new WeakMap();w[k]=m;function owned(el){var ks=Object.keys(el);for(var i=0;i<ks.length;i++){if(ks[i].indexOf("__reactProps$")===0)return true}return false}document.addEventListener("input",function(e){var t=e.target;if(!t||(t.tagName!=="INPUT"&&t.tagName!=="TEXTAREA"))return;if(owned(t)){if(e.isTrusted)m.delete(t);return}m.set(t,t.value)},true)})();`;
+export const PREHYDRATION_CAPTURE_SCRIPT = `(function(){var w=window,k="__mehPrehydrationCapture";if(w[k]||typeof WeakMap==="undefined")return;var m=new WeakMap();w[k]=m;function owned(el){var ks=Object.keys(el);for(var i=0;i<ks.length;i++){if(ks[i].indexOf("__reactProps$")===0)return true}return false}document.addEventListener("input",function(e){var t=e.target;if(!t||(t.tagName!=="INPUT"&&t.tagName!=="TEXTAREA"))return;if(owned(t)){if(e.isTrusted&&!e.__mehPrehydrationEvent)m.delete(t);return}e.__mehPrehydrationEvent=1;m.set(t,t.value)},true)})();`;

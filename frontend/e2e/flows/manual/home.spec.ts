@@ -937,15 +937,33 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
       const d = document.querySelector('[data-testid="hero-search-dropdown"]')!.getBoundingClientRect();
       const h = document.querySelector('[data-testid="home-hero"]')!.getBoundingClientRect();
       const el = document.querySelector('[data-testid="hero-search-dropdown"]') as HTMLElement;
+      const cs = getComputedStyle(el);
+      // The last pixel row of the box that is on screen. Whatever paints there
+      // must be the dropdown itself: an ancestor with overflow hidden (the hero
+      // band) would leave the hero's own pixels there instead.
+      const probeY = Math.min(d.bottom, window.innerHeight) - 2;
+      const atProbe = document.elementFromPoint(d.left + d.width / 2, probeY);
       return {
         dropBottom: d.top + d.height,
         heroBottom: h.top + h.height,
         clipped: el.scrollHeight - el.clientHeight,
+        // MEH-3164 / MEH-3431: the box is capped at max-h-[70vh] and scrolls
+        // inside past that, by design. On a 664 px viewport (iPhone 13) the 7
+        // rows are taller than 70vh, so the content scrolls — that is the cap,
+        // not a clip.
+        atCap: Math.abs(el.offsetHeight - parseFloat(cs.maxHeight)) <= 2,
+        scrolls: cs.overflowY === "auto" || cs.overflowY === "scroll",
+        bottomIsOwn: Boolean(atProbe && el.contains(atProbe)),
       };
     });
     expect(geometry.dropBottom, "the dropdown extends below the hero band").toBeGreaterThan(geometry.heroBottom);
-    // Not clipped: its painted height matches its own scroll height.
-    expect(geometry.clipped, "the dropdown renders its whole content, not a clipped slice").toBeLessThanOrEqual(1);
+    expect(geometry.bottomIsOwn, "nothing paints over the dropdown's bottom edge (no ancestor clips it)").toBe(true);
+    // Not clipped: its painted height matches its own scroll height — or it is
+    // at its 70vh cap and scrolls inside.
+    if (geometry.clipped > 1) {
+      expect(geometry.atCap, "a dropdown shorter than its content is at its max-height cap").toBe(true);
+      expect(geometry.scrolls, "a capped dropdown scrolls inside").toBe(true);
+    }
   });
 
   // MT:788:5 — no horizontal overflow. Runs on BOTH projects: the row names
