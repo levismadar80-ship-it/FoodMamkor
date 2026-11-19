@@ -15,6 +15,7 @@
 * `backend/app/routers/auth_register_producer.py` — הרשמה עצמית של בית עסק, בסיסמה וב-Google/Apple (MEH-3293).
 * `backend/app/routers/producer_claim.py` · `frontend/components/admin/ClaimLinkPanel.jsx`
 * `frontend/app/[locale]/claim/claim-metadata.js` — התצוגה המקדימה של קישור ה-claim בוואטסאפ: עם טוקן תקף היא מציגה את שם העסק ואת התמונה הראשית; טוקן שפג או בוטל, או תקלה בשרת, משאירים את הכרטיס הכללי. הטוקן לא נכתב לאף תגית (MEH-3403).
+* `backend/app/services/auth_notifications.py` — `notify_admin_draft_claimed`: וואטסאפ ומייל לאדמין כשבעלת עסק קולטת טיוטה (MEH-3410).
 * `backend/app/services/admin_draft_missing.py` · `frontend/app/[locale]/admin/producers/AdminDraftMissing.jsx` — מה חסר בטיוטה שנקלטה, ברשימת האדמין (MEH-3409).
 * `backend/app/routers/producer_draft_preview.py` · `backend/app/services/draft_preview.py` · `frontend/components/admin/DraftPreviewLinkPanel.jsx` · `frontend/components/admin/PublishWithConsentPanel.jsx` · `frontend/scripts/capture-page-video.mjs`
 * `backend/app/services/pending_nudge.py` — מיילי ההמשך לעסק שלא סיים.

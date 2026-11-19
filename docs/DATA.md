@@ -1204,7 +1204,7 @@ POST   /producer-claim                     auth   — 10/hour. Body {token, decl
                                                      user.producer_id / role="producer" / is_producer, stamps producers.declared_at + declaration_version and
                                                      users.terms_accepted_at + terms_version. Status STAYS "draft" — she completes the page and submits via
                                                      POST /producers/me/submit-for-review, so the manual approval gate is unchanged. Background: WhatsApp welcome,
-                                                     producer welcome email, risk score (same three as a self-registered draft). → {producer_id, status}.
+                                                     producer welcome email, risk score (same three as a self-registered draft), and MEH-3410 the admin's «הטיוטה של … נקלטה» alert (email + WhatsApp: business, owner name + email, city; none for is_test, none on 4xx). → {producer_id, status}.
 POST   /admin/producers/{id}/products      admin  — 60/hour. MEH-2326 (chunk D). ProductCreate → ProductOut, 201. ONLY while the draft is claimable
                                                      (draft + no owner, producer row locked FOR UPDATE); otherwise 409. No new-product alert (a draft is not public). The six diet flags (is_*) are DROPPED — they are the owner's self-declaration, set from her dashboard after the claim (Sapir, 26/10).
 DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 rule; a product of another business → 404. Image destroyed after commit. 204.
