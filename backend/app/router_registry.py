@@ -35,6 +35,7 @@ from app.routers import (
     producer_me_analytics,
     producer_me_locations,
     producer_me_review,
+    producer_me_weekly_summary,
     producer_name_check,
     producer_name_requests,
     producer_owner_invite,
@@ -71,6 +72,7 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(producer_me_analytics.router)
     app.include_router(producer_me_review.router)
     app.include_router(producer_me_locations.router)
+    app.include_router(producer_me_weekly_summary.router)  # MEH-3212
     app.include_router(menu_import.router)  # MEH-3430: /producers/me/menu-import
 
 
@@ -88,6 +90,8 @@ def _include_owner_links(app: FastAPI) -> None:
     app.include_router(producer_owner_invite.public_router)
     app.include_router(producer_owner_invite_existing.router)  # MEH-3256
     app.include_router(producer_owner_detach.router)  # MEH-3256 (D9)
+    # MEH-3212: the List-Unsubscribe one-click target of the weekly summary.
+    app.include_router(producer_me_weekly_summary.one_click_router)
     # Page freshness: the «כן, הכול נכון» link in the monthly owner email.
     app.include_router(page_freshness.router)
 

@@ -307,6 +307,19 @@ class WeeklySummaryUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1, max_length=2048)
 
 
+# MEH-3212: the owner's own switch for the weekly summary, under /producers/me.
+class WeeklySummarySettingIn(BaseModel):
+    enabled: bool
+
+
+class WeeklySummarySettingOut(BaseModel):
+    # enabled = the business gets the email (not opted out).
+    # available = the email is switched on for the site at all
+    # (WEEKLY_OWNER_SUMMARY_ENABLED); the dashboard hides the switch when not.
+    enabled: bool
+    available: bool
+
+
 # Page freshness: the «כן, הכול נכון» link in the monthly email.
 class PageFreshnessConfirmIn(BaseModel):
     token: str = Field(..., min_length=1, max_length=2048)

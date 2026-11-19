@@ -7322,6 +7322,24 @@ export const ConfirmPhoneOtpProducersMeVerifyPhoneConfirmPostResponse = /*#__PUR
 
 
 /**
+ * @summary Get Weekly Summary Setting
+ */
+export const GetWeeklySummarySettingProducersMeWeeklySummaryGetResponse = /*#__PURE__*/ zod.object({
+  "available": /*#__PURE__*/ zod.boolean(),
+  "enabled": /*#__PURE__*/ zod.boolean()
+})
+
+
+/**
+ * @summary Set Weekly Summary Setting
+ */
+export const SetWeeklySummarySettingProducersMeWeeklySummaryPatchResponse = /*#__PURE__*/ zod.object({
+  "available": /*#__PURE__*/ zod.boolean(),
+  "enabled": /*#__PURE__*/ zod.boolean()
+})
+
+
+/**
  * MEH-1288 — one random approved producer for the homepage "הפתיעו אותי"
  * button. Returns only {id, slug} (enough for the client to navigate). 404
  * when the catalog is empty — the button is render-gated on the approved
@@ -9011,3 +9029,25 @@ export const WebhookReceiveWebhookWhatsappPostResponse = /*#__PURE__*/ zod.unkno
  * @summary Unsubscribe Weekly Summary
  */
 export const UnsubscribeWeeklySummaryWeeklySummaryUnsubscribePostResponse = /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.string())
+
+
+/**
+ * A client that opens the header's URL instead of POSTing lands on the
+ * same page as the link in the email body, where the page asks nothing
+ * and POSTs on its own. This GET itself changes nothing. The target is
+ * always our own page (no open redirect); the token is only quoted into it.
+ * @summary One Click Landing
+ */
+export const OneClickLandingWeeklySummaryUnsubscribeOneClickGetResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * RFC 8058: the mail client POSTs `List-Unsubscribe=One-Click` here.
+ *
+ * The token rides in the query string because the header's URL is all the
+ * client has. Only a POST changes anything: a scanner that prefetches the
+ * URL sends a GET, and the GET below changes nothing. The form body is not
+ * read — the POST itself is the signal, and the token is the authorization.
+ * @summary One Click Unsubscribe
+ */
+export const OneClickUnsubscribeWeeklySummaryUnsubscribeOneClickPostResponse = /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.string())

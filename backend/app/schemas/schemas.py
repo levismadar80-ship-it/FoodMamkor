@@ -1100,6 +1100,8 @@ from app.schemas.site import (  # noqa: E402
     UserRoleUpdate as UserRoleUpdate,
     VacationModeState as VacationModeState,
     WeeklySummaryUnsubscribeIn as WeeklySummaryUnsubscribeIn,
+    WeeklySummarySettingIn as WeeklySummarySettingIn,
+    WeeklySummarySettingOut as WeeklySummarySettingOut,
     WhatsAppClickIn as WhatsAppClickIn,
     _CITY_URLISH_REGEX as _CITY_URLISH_REGEX,
 )

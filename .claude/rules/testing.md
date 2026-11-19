@@ -283,6 +283,15 @@ alone — an instruction like "wait for N green E2E runs" is enforced only by
 right after a push = gates still registering; retry once. Re-measure any
 as-of claim here before acting on it.
 
+**Two CI modes (MEH-3453), decided per run.** Private = the repo is private
+or the repo variable `CI_MODE=private`; public otherwise. Public: every job on
+`ubuntu-latest`, E2E as above with 4 shards on a PR (2 on staging/nightly),
+pytest and vitest 3 shards each. Private: every job on `self-hosted` (Sapir's
+PC runner), E2E only on a `run-e2e` PR, the nightly and a manual run (no E2E
+on a push to staging), WebKit weekly (Sunday 02:30 UTC), pytest and vitest 1
+shard. In private mode a PR without `run-e2e` gets no E2E job and no
+`E2E gate` job at all — that is the mode, not a broken trigger.
+
 ---
 
 ## Guarded registries — path-drift validator (MEH-1030)

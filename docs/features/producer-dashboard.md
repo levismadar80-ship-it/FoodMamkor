@@ -12,6 +12,7 @@
 * `frontend/lib/business-features.js` — הרישום שמכתיב מה קיים ואיפה זה יושב (`dashboard: { home, href }`).
 * `frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx` — מיקומים ואזורי משלוח.
 * `frontend/app/[locale]/producer/dashboard/insights/page.js` — תובנות.
+* `frontend/components/producer/WeeklySummaryToggle.jsx` — «סיכום שבועי במייל» בתחתית תובנות (MEH-3212): מתג שמחזיר את המייל אחרי הסרה. מוסתר כשהמייל כבוי לכל האתר; הטסט `frontend/__tests__/WeeklySummaryToggle.test.jsx`.
 * `backend/app/routers/producer_me.py` — כל המספרים שהלוח מציג.
 * `frontend/lib/producer-completeness.js` · `frontend/components/ProfileCompletenessCard.jsx`
 * `frontend/components/MenuImport.jsx` · `frontend/components/MenuReviewRow.jsx` · `frontend/lib/menu-image.js` — «העלו תפריט» בכרטיס המוצרים (MEH-3430): צילום או PDF של תפריט, השרת קורא אותו עם Claude (`backend/app/services/menu_reader.py`, ‏`backend/app/routers/menu_import.py`), בעלת העסק בודקת ומפרסמת. רצועה עם הסבר כשיש 0–2 מוצרים, כפתור כשיש 3 ומעלה, ושורה ב«מה מחכה לך» כשאין מוצרים בכלל. בלי `ANTHROPIC_API_KEY` הקריאה עונה 503 והמסך מציג את שורת הכישלון.
