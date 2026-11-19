@@ -23,6 +23,7 @@ from pydantic import (
 )
 
 from app.limits import MAX_PRODUCTS  # MEH-2312
+from app.schemas.product_order_offer import PriceUnit  # MEH-2936
 from app.allergens import detail_if_declared, drop_contained, normalize_allergens
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
@@ -522,6 +523,9 @@ class ProductCreate(BaseModel):
     image_url: str | None = Field(None, max_length=500)
     price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-2936: what the price is per. "unit" renders nothing next to it, so a
+    # product that never chose one looks exactly as before.
+    price_unit: PriceUnit = "unit"
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False
@@ -593,6 +597,9 @@ class ProductUpdate(BaseModel):
     image_url: str | None = Field(None, max_length=500)
     price_min: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-2936: omitted = unchanged (exclude_unset); an explicit null is a 422,
+    # never a NULL into the NOT NULL column.
+    price_unit: PriceUnit = "unit"
     # MEH-293: per-product dietary flags. Optional on update — exclude_unset
     # in producer_me.update_my_product means an unsupplied field stays put.
     is_gluten_free: bool | None = None
@@ -663,6 +670,8 @@ class ProductOut(BaseModel):
     image_url: str | None = None
     price_min: Decimal | None = None
     price_max: Decimal | None = None
+    price_unit: str  # MEH-2936: NOT NULL column, so no default (a default
+    # would add 17 generated *Default exports to api.zod.js)
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False

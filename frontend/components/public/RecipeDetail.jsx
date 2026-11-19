@@ -45,6 +45,7 @@ import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 import { MAX_SERVINGS, MIN_SERVINGS, clampServings, scaleRecipeLine } from "@/lib/recipe-scale"; // MEH-3121
 import { formatPriceRange } from "@/lib/utils";
+import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import SectionHeading from "@/components/ui/SectionHeading";
 import BackLink from "@/components/ui/BackLink";
 
@@ -377,7 +378,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                       <div className="min-w-0">
                         <p className="font-medium text-text truncate">{p.name}</p>
                         {numericPrice ? (
-                          <p className="text-sm text-accent font-medium"><span dir="ltr">{numericPrice}</span></p>
+                          <p className="text-sm text-accent font-medium"><ProductPrice product={p} /></p>
                         ) : p.price_range ? (
                           <p className="text-xs text-fg-muted">{p.price_range}</p>
                         ) : null}

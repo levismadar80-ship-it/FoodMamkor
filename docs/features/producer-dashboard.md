@@ -25,6 +25,7 @@
 * `frontend/__tests__/BusinessFeaturesRegistry.test.js` — **השומר ההפוך** (MEH-3416): כל קובץ עורך תחת `frontend/app/[locale]/producer/dashboard/edit/` רשום ב-`codeRef` של כלי, או ב-`EDITOR_FILES_WITHOUT_TOOL` עם סיבה.
 * `frontend/e2e/flows/manual/dashboard-shell.spec.ts` · `dashboard-edit.spec.ts` · `dashboard-edit-cards.spec.ts` · `dashboard-locations.spec.ts` · `dashboard-products.spec.ts` · `dashboard-trust-cards.spec.ts` · `dashboard-availability.spec.ts` · `dashboard-delivery.spec.ts` · `dashboard-vanity-share.spec.ts` (כולם תחת `frontend/e2e/flows/manual/`)
 * `tests/test_producer_me_delivery_fields.py` · `tests/test_producers_me_schema.py` · `tests/test_meh2697_availability_confirmed.py`
+* `frontend/components/ProductPriceUnitField.jsx` — «לפי מה המחיר?» בטופס המוצר, הוספה ועריכה (MEH-2936); הטסט `frontend/__tests__/ProductPriceUnit.test.jsx`.
 * `tests/test_meh3430_menu_import.py` · `frontend/__tests__/MenuImport.test.jsx` — העלאת תפריט: בדיקת הבייטים, מגבלות קבצים, 503 בלי AI, כפולים, תקרת 100 המוצרים, ומטריצת המצבים במסך.
 * `tests/test_meh3108_owner_attention.py` · `tests/test_meh3445_allergen_reminder.py` · `frontend/__tests__/OwnerAttentionCard.test.jsx` — «מה מחכה לך»: כל ספירה, ומטריצת 0 / 1 / רבים של השורות.
 

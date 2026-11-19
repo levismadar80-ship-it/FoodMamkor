@@ -36,6 +36,9 @@ _MIN_PRICE = Decimal("1")
 _MAX_PRICE = Decimal("10000")
 _NAME_MAX = 120
 _DESC_MAX = 500
+# MEH-2936: a subset of PRODUCT_PRICE_UNITS on purpose. The reading prompt
+# was measured on these three (211/212, 18/11); bottle / box are picked by
+# the owner in the review row, not guessed by the model.
 _UNITS = ("unit", "kg", "100g")
 _UNCERTAIN = ("name", "description", "price", "unit")
 

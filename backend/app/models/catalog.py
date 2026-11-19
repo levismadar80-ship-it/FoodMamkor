@@ -173,7 +173,8 @@ class Product(Base):
     # EXISTS subquery seq-scans products.
     __table_args__ = (
         CheckConstraint(
-            "price_unit IN ('unit', 'kg', '100g')", name="products_price_unit_check"
+            "price_unit IN ('unit', 'kg', '100g', 'bottle', 'box')",
+            name="products_price_unit_check",
         ),
         Index(
             "idx_products_dietary",
