@@ -13,7 +13,7 @@ Does NOT: decide capacity or visibility (routers/registrations.py does), and
 Related:  routers/registrations.py::register_for_event / ::cancel_registration;
           services/booking_cancellations.py::_active_registrations (an item
           cancelled by its business mails the waitlist too)
-History:  MEH-3314 (creation)
+History:  MEH-3314 (creation); MEH-3441 (scope: one date of a workshop)
 """
 
 from __future__ import annotations
@@ -42,24 +42,28 @@ WAITLISTED = RegistrationCreatedOut(status="waitlisted")
 
 
 def active_row(
-    db: Session, column: Any, item_id: UUID, email: str
+    db: Session, column: Any, item_id: UUID, email: str, *scope: Any
 ) -> Registration | None:
-    """Her registered or waitlisted row on this item, if any."""
+    """Her registered or waitlisted row on this item, if any. MEH-3441:
+    `scope` keeps it to one date of a workshop (one address may book two)."""
     return (
         db.query(Registration)
         .filter(
             column == item_id,
             Registration.email == email,
             Registration.status.in_(("registered", "waitlisted")),
+            *scope,
         )
         .first()
     )
 
 
-def refuse_if_waitlist_full(db: Session, column: Any, item_id: UUID) -> None:
+def refuse_if_waitlist_full(
+    db: Session, column: Any, item_id: UUID, *scope: Any
+) -> None:
     waiting = (
         db.query(func.count(Registration.id))
-        .filter(column == item_id, Registration.status == "waitlisted")
+        .filter(column == item_id, Registration.status == "waitlisted", *scope)
         .scalar()
     )
     if int(waiting or 0) >= WAITLIST_MAX:
@@ -76,18 +80,18 @@ Offer = tuple[str, RegistrantEmail, str, bool]
 
 
 def offer_places(
-    db: Session, item: Event | Experience, places: int | None
+    db: Session, item: Event | Experience, places: int | None, *scope: Any
 ) -> list[Offer]:
     """MEH-3315: offer the freed places, in list order, to every party that
     fits — a party of 4 first in line is skipped while only 1 place is free,
     and a cancelled party of 4 can be offered to more than one visitor.
     `places` None = no cap: one offer. Each row is offered once, ever."""
     if places is None:
-        one = offer_next(db, item)
+        one = offer_next(db, item, None, *scope)
         return [one[0]] if one else []
     offers: list[Offer] = []
     while places > 0:
-        found = offer_next(db, item, max_party=places)
+        found = offer_next(db, item, places, *scope)
         if found is None:
             break
         offers.append(found[0])
@@ -96,7 +100,7 @@ def offer_places(
 
 
 def offer_next(
-    db: Session, item: Event | Experience, max_party: int | None = None
+    db: Session, item: Event | Experience, max_party: int | None = None, *scope: Any
 ) -> tuple[Offer, int] | None:
     """Stamp the first waitlisted visitor not yet offered (whose party fits
     `max_party`, when given) and return what send_waitlist_offer needs (plain
@@ -112,6 +116,7 @@ def offer_next(
             Registration.status == "waitlisted",
             Registration.waitlist_offered_at.is_(None),
             *([Registration.party_size <= max_party] if max_party is not None else []),
+            *scope,  # MEH-3441: a freed place goes to the same date's list
         )
         .order_by(Registration.created_at.asc())
         .with_for_update(skip_locked=True)

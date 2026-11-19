@@ -2936,6 +2936,21 @@
             ],
             "title": "Requirements"
           },
+          "sessions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ExperienceSessionIn"
+                },
+                "maxItems": 24,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sessions"
+          },
           "title": {
             "maxLength": 300,
             "minLength": 4,
@@ -3224,6 +3239,14 @@
             ],
             "title": "Requirements"
           },
+          "sessions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExperienceSessionOut"
+            },
+            "title": "Sessions",
+            "type": "array"
+          },
           "spots_left": {
             "anyOf": [
               {
@@ -3487,6 +3510,14 @@
             ],
             "title": "Registration Url"
           },
+          "sessions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExperienceSessionOut"
+            },
+            "title": "Sessions",
+            "type": "array"
+          },
           "spots_left": {
             "anyOf": [
               {
@@ -3536,6 +3567,71 @@
           }
         },
         "title": "ExperienceModerationAction",
+        "type": "object"
+      },
+      "ExperienceSessionIn": {
+        "description": "MEH-3441: one date of a recurring workshop, as the owner's form sends\nit. Uniqueness, the future and the cap of 12 are checked on save\n(services/experience_sessions.normalise), against what is stored.",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "participants_count": {
+            "default": 0,
+            "maximum": 500.0,
+            "minimum": 0.0,
+            "title": "Participants Count",
+            "type": "integer"
+          },
+          "time": {
+            "format": "time",
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ],
+        "title": "ExperienceSessionIn",
+        "type": "object"
+      },
+      "ExperienceSessionOut": {
+        "description": "MEH-3441: a date the page offers, with its places left (None = no cap).",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "participants_count": {
+            "title": "Participants Count",
+            "type": "integer"
+          },
+          "spots_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spots Left"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time",
+          "participants_count",
+          "spots_left"
+        ],
+        "title": "ExperienceSessionOut",
         "type": "object"
       },
       "ExperienceUpdate": {
@@ -3792,6 +3888,21 @@
               }
             ],
             "title": "Requirements"
+          },
+          "sessions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ExperienceSessionIn"
+                },
+                "maxItems": 24,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sessions"
           },
           "title": {
             "anyOf": [
@@ -16457,6 +16568,30 @@
             "title": "Phone",
             "type": "string"
           },
+          "session_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Date"
+          },
+          "session_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Time"
+          },
           "waitlist": {
             "default": false,
             "title": "Waitlist",
@@ -16543,6 +16678,30 @@
           "phone": {
             "title": "Phone",
             "type": "string"
+          },
+          "session_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Date"
+          },
+          "session_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Time"
           },
           "status": {
             "title": "Status",
@@ -18510,6 +18669,14 @@
             "format": "date-time",
             "title": "Saved At",
             "type": "string"
+          },
+          "sessions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExperienceSessionOut"
+            },
+            "title": "Sessions",
+            "type": "array"
           },
           "spots_left": {
             "anyOf": [
