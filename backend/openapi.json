@@ -803,6 +803,23 @@
         "title": "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post",
         "type": "object"
       },
+      "Body_read_my_menu_producers_me_menu_import_read_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_read_my_menu_producers_me_menu_import_read_post",
+        "type": "object"
+      },
       "Body_upload_avatar_upload_avatar_post": {
         "properties": {
           "file": {
@@ -5109,6 +5126,285 @@
           "credential"
         ],
         "title": "LoginVerify",
+        "type": "object"
+      },
+      "MenuProductIn": {
+        "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
+          },
+          "is_gluten_free": {
+            "default": false,
+            "title": "Is Gluten Free",
+            "type": "boolean"
+          },
+          "is_lactose_free": {
+            "default": false,
+            "title": "Is Lactose Free",
+            "type": "boolean"
+          },
+          "is_low_carb": {
+            "default": false,
+            "title": "Is Low Carb",
+            "type": "boolean"
+          },
+          "is_no_added_sugar": {
+            "default": false,
+            "title": "Is No Added Sugar",
+            "type": "boolean"
+          },
+          "is_vegan": {
+            "default": false,
+            "title": "Is Vegan",
+            "type": "boolean"
+          },
+          "is_vegetarian": {
+            "default": false,
+            "title": "Is Vegetarian",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_max": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Max"
+          },
+          "price_min": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Price Min"
+          },
+          "price_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "price_min"
+        ],
+        "title": "MenuProductIn",
+        "type": "object"
+      },
+      "MenuPublishIn": {
+        "properties": {
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/MenuProductIn"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Products",
+            "type": "array"
+          }
+        },
+        "required": [
+          "products"
+        ],
+        "title": "MenuPublishIn",
+        "type": "object"
+      },
+      "MenuPublishOut": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          },
+          "skipped_duplicates": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Skipped Duplicates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created",
+          "skipped_duplicates"
+        ],
+        "title": "MenuPublishOut",
+        "type": "object"
+      },
+      "MenuReadOut": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/MenuRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "MenuReadOut",
+        "type": "object"
+      },
+      "MenuRow": {
+        "description": "One product as read from the menu. Nothing is saved yet.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_max": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Max"
+          },
+          "price_min": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Min"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "uncertain": {
+            "items": {
+              "enum": [
+                "name",
+                "description",
+                "price",
+                "unit"
+              ],
+              "type": "string"
+            },
+            "title": "Uncertain",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "MenuRow",
         "type": "object"
       },
       "MyProductOrderingOut": {
@@ -28542,6 +28838,98 @@
           }
         ],
         "summary": "Update My Location",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/menu-import/publish": {
+      "post": {
+        "operationId": "publish_my_menu_producers_me_menu_import_publish_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MenuPublishIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuPublishOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Publish My Menu",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/menu-import/read": {
+      "post": {
+        "operationId": "read_my_menu_producers_me_menu_import_read_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_read_my_menu_producers_me_menu_import_read_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuReadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Read My Menu",
         "tags": [
           "producer-management"
         ]

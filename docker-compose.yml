@@ -2,7 +2,8 @@ services:
   db:
     # Plain Postgres — matches Railway's stock image. Distance queries use
     # Haversine in SQL, so PostGIS is NOT required.
-    image: postgres:16
+    # MEH-2950: the same major version as CI, staging and production (18).
+    image: postgres:18
     environment:
       POSTGRES_DB: mehamakor
       POSTGRES_USER: postgres
@@ -10,7 +11,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # The 18 image keeps its cluster under /var/lib/postgresql/18/docker,
+      # so the volume mounts one level up from the old `/data` path. A new
+      # volume name, because the old `pgdata` holds a 16 cluster that 18
+      # cannot open: it is left untouched (`docker volume rm <project>_pgdata`
+      # once you no longer need that local data).
+      - pgdata18:/var/lib/postgresql
       - ./backend/init_db.sql:/docker-entrypoint-initdb.d/01-init.sql
 
   backend:
@@ -63,4 +69,4 @@ services:
       NEXT_PUBLIC_API_URL: http://backend:8000
 
 volumes:
-  pgdata:
+  pgdata18:

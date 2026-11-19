@@ -238,6 +238,7 @@ left in v1" vs "what's planned for v2".
 |---|---|---|---|
 | ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop + mobile — mobile icon-only and always shown above the BottomNav (hid on scroll-down under MEH-2499 until 4/11/2026, MEH-2664)) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
 | ✅ | v1 | Auto-moderation for `/neighbor` listings (Anthropic, fail-open) | `backend/app/services/home_product_moderation.py` |
+| ✅ | v1 | Upload a menu → product rows (MEH-3430): the owner photographs her menu or uploads a PDF on the products card, Opus 5.5 reads it (`AI_MENU_MODEL`), she checks and publishes. No key → 503 and she adds by hand | `backend/app/routers/menu_import.py`, `frontend/components/MenuImport.jsx` |
 | 📋 | v2 | AI search agent — natural-language search ("בשר grass-fed בחיפה") | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate chat widget to `claude-agent-sdk` with tool use | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate moderation pipeline to agent loop with follow-up tools | [ROADMAP.md](./ROADMAP.md) |

@@ -28,6 +28,7 @@ export const UPLOAD_TIMEOUT_MS = 120000;
 // sent. So the cap is enforced here, below Vercel's: a file above 4MB never
 // leaves the browser, and any 413 that does come back carries one Hebrew line.
 import { MAX_UPLOAD_BYTES, uploadTooLargeDetail } from "./upload-limits";
+import { prepareFormData } from "./prepare-upload";
 export { MAX_UPLOAD_BYTES, uploadTooLargeDetail };
 
 /** @param {unknown} data */
@@ -76,6 +77,17 @@ api.interceptors.request.use((config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+  }
+  return config;
+});
+
+// MEH-3400: shrink big photos before the size check above sees them. Axios
+// runs request interceptors last-registered-first, so this one, added after the
+// cap/auth interceptor, runs BEFORE it: an 8 MB camera photo leaves as a
+// ~1 MB JPEG instead of being refused. Small files and non-images pass through.
+api.interceptors.request.use(async (config) => {
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    config.data = await prepareFormData(config.data);
   }
   return config;
 });

@@ -270,6 +270,8 @@ answer. So `frontend/lib/api.js` refuses a FormData file above
 request into «הקובץ גדול מדי — מקסימום 4MB» (the existing `settings.products.errors.upload_size` string). The 6 MB and 5 MB caps above
 still guard the backend against a client that skips the browser.
 
+**Big photos are shrunk first (MEH-3400).** Before that cap, `frontend/lib/prepare-upload.js` (called from the same interceptor, and by the avatar and product forms before their own size check) re-encodes a JPEG/PNG/WebP above 1.5 MB to a JPEG with a 2000px long side, q 0.85, so an ordinary camera photo goes through instead of being refused. GIF, HEIC, non-images and any file the browser cannot decode are sent untouched and still meet the cap. The backend's magic-byte check is unchanged: the re-encoded file is a real JPEG.
+
 > **Slow bodies and buffered bytes (MEH-3297).** The cap above answers "how
 > big"; it deliberately does not answer "how slow" or "how many at once" —
 > `body_limit.py`'s own header says so and names `db_bulkhead.py` as the owner
@@ -919,6 +921,15 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **Stateless.** No table and no revocation before `exp`. The row's state is the revocation: once the draft is published, claimed, rejected or deleted, every link to it answers the same 404 as a forged one.
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
+
+## 17b-2. Menu upload → a paid model call (MEH-3430)
+
+`POST /producers/me/menu-import/read` takes owner-uploaded photos / a PDF and sends them to Anthropic. What holds it:
+- **Type by magic bytes**, never the declared Content-Type (`_media_type`, reusing `upload._sniff_image_type`); HEIC refused.
+- **Nothing is stored**: the bytes live for the request; the rows go back to the owner, who reviews every one.
+- **Text in the image is data**: the prompt says so, the output is a fixed JSON schema, `to_rows` re-shapes it, and publish re-validates every row through `ProductCreate`. The worst a crafted menu can do is produce wrong rows its own uploader sees.
+- **Cost**: 10/hour + 30/day per IP (decorator) and 30/day per business (`READS_PER_BUSINESS`, on the limiter's storage), so a new IP is not a new budget. Known gap: the PDF page count is a regex and misses pages inside compressed object streams; the per-business budget bounds the cost.
+- **Publish takes the menu fields only** (`MENU_FIELDS`): a photo URL or ingredients in the body are a 422, so neither the MEH-3247 image-ownership check nor the batch text check can be skipped.
 
 ## 17c. Outside production, no message reaches a real person (MEH-3402)
 
