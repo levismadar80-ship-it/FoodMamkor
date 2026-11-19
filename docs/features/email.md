@@ -13,14 +13,16 @@
 * `backend/app/services/email_branding.py` — הלוגו.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py` · `backend/app/services/pending_nudge.py`
 * `backend/app/services/push.py` — התראות דפדפן.
+* `backend/app/services/weekly_owner_summary.py` · `backend/app/routers/producer_me_weekly_summary.py` — הסיכום השבועי לבית העסק. כל מייל נושא `List-Unsubscribe` ו-one-click לפי RFC 8058 (`send_email(..., headers=)`), ובעלת העסק מחזירה או מפסיקה אותו במתג ב«תובנות» (MEH-3212).
 * `backend/app/services/job_heartbeat.py` — ה-heartbeat של משימות הרקע; כשל בשליחה נרשם ב-WARNING ולא נבלע.
 
-**Flags.** אין. בלי `ANTHROPIC_API_KEY` תכונות ה-AI מתדרדרות, שכבת ההזדהות לא.
+**Flags.** `WEEKLY_OWNER_SUMMARY_ENABLED` — הסיכום השבועי (כבוי עד שהשדה נוסף ל-`config.py`). בלי `ANTHROPIC_API_KEY` תכונות ה-AI מתדרדרות, שכבת ההזדהות לא.
 
 **טסטים**
 * `tests/test_meh0000_email_frame.py` — המסגרת: viewport, פלטה, ריפוד בנייד.
 * `tests/test_email_logo.py` · `tests/test_meh2164_newsletter_mobile_width.py` · `tests/test_meh2151_approval_email_cta.py`
 * `tests/test_newsletter_unsubscribe.py` · `tests/test_meh2611_newsletter_resend_sync.py` · `tests/test_meh2875_newsletter_kicker.py`
+* `tests/test_meh3079_weekly_owner_summary.py` · `tests/test_meh3212_weekly_summary_toggle.py` — הסיכום השבועי, ההסרה, המתג והכותרות.
 * `tests/test_meh3350_heartbeat_logging.py`
 
 **מזהי רישום שזה מכסה.** `email_alerts`, `onboarding_emails`.
