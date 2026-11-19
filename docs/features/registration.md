@@ -31,5 +31,6 @@
 * `frontend/__tests__/ClaimLinkPreviewMetadata.test.js`
 * `tests/test_meh3409_admin_draft_missing.py` · `frontend/__tests__/AdminDraftMissing.test.jsx`
 * `tests/test_expansion_registration.py` · `tests/test_organizer_registration.py`
+* פיילוט MEH-2913 (קטגוריות 5, רישיון לפי קטגוריה, «איך קונים» בשתי תיבות, קישור לחנות): `frontend/e2e/flows/38-register-delivery-axis.spec.ts` · `frontend/__tests__/RegisterDeliveryAxis.test.jsx` · `frontend/__tests__/CategoryStepLicenseHint.test.jsx` · `frontend/__tests__/StoreLinkForPayload.test.js` · `tests/test_meh2938_register_store_link.py` · `tests/test_producer_categories.py`
 
 **מזהי רישום שזה מכסה.** `draft_claim`, `social_signup`, `onboarding_emails`, `wa_approval`, `guides`.

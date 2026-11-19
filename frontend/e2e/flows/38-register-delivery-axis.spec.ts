@@ -86,18 +86,20 @@ async function advanceAndSubmit(page: Page): Promise<void> {
   await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
 }
 
-const OPTIONS = ["onsite", "delivery", "both"] as const;
-const EXPECTED: Record<(typeof OPTIONS)[number], { has_physical_location: boolean; offers_delivery: boolean }> = {
-  onsite: { has_physical_location: true, offers_delivery: false },
-  delivery: { has_physical_location: false, offers_delivery: true },
-  both: { has_physical_location: true, offers_delivery: true },
-};
+// MEH-2939: two checkboxes, not three radios. «גם וגם» is both boxes ticked.
+const AXES = ["onsite", "delivery"] as const;
+const CASES: { name: string; tick: (typeof AXES)[number][]; has_physical_location: boolean; offers_delivery: boolean }[] = [
+  { name: "onsite", tick: ["onsite"], has_physical_location: true, offers_delivery: false },
+  { name: "delivery", tick: ["delivery"], has_physical_location: false, offers_delivery: true },
+  { name: "both boxes", tick: ["onsite", "delivery"], has_physical_location: true, offers_delivery: true },
+];
 
 test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () => {
   test("default: no option pre-selected, no error, the areas note is shown", async ({ page }) => {
     await mockBackend(page, { body: null });
     await reachDetails(page);
-    for (const v of OPTIONS) await expect(page.getByTestId(`register-fulfilment-${v}`)).not.toBeChecked();
+    for (const v of AXES) await expect(page.getByTestId(`register-fulfilment-${v}`)).not.toBeChecked();
+    await expect(page.getByTestId("register-fulfilment-both")).toHaveCount(0);
     await expect(page.getByTestId("register-fulfilment-error")).toHaveCount(0);
     await expect(page.getByTestId("register-delivery-note")).toBeVisible();
   });
@@ -119,17 +121,17 @@ test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () =>
     await expect(page.getByTestId("register-fulfilment-error")).toHaveCount(0);
   });
 
-  for (const v of OPTIONS) {
-    test(`«${v}» reaches the POST body as its own pair of flags`, async ({ page }) => {
+  for (const c of CASES) {
+    test(`«${c.name}» reaches the POST body as its own pair of flags`, async ({ page }) => {
       const capture = { body: null as unknown };
       await mockBackend(page, capture);
       await reachDetails(page);
-      await page.getByTestId(`register-fulfilment-${v}`).check();
+      for (const v of c.tick) await page.getByTestId(`register-fulfilment-${v}`).check();
       await advanceAndSubmit(page);
       const body = capture.body as Record<string, unknown>;
       expect(body, "the register POST must have been captured").not.toBeNull();
-      expect(body.has_physical_location).toBe(EXPECTED[v].has_physical_location);
-      expect(body.offers_delivery).toBe(EXPECTED[v].offers_delivery);
+      expect(body.has_physical_location).toBe(c.has_physical_location);
+      expect(body.offers_delivery).toBe(c.offers_delivery);
       // The re-cut must not keep posting what step 2 no longer collects.
       for (const gone of ["delivery_cities", "delivery_nationwide"]) {
         expect(body, `step 2 no longer collects ${gone}`).not.toHaveProperty(gone);

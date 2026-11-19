@@ -237,6 +237,10 @@ def test_producer_register_validated_field_count():
        mode="before" validator (`_cap_delivery_meh3022`) so an over-long
        list is refused in Hebrew. 15 + 2 = 17.
 
+    6. MEH-2938 collects the shop / order-form link at registration:
+       `external_order_form` joins `website` under the same http(s) guard
+       (`_validate_contact_urls`). 17 + 1 = 18.
+
     Bumping the constant is only legitimate BECAUSE a field was added to the
     validated set; it must never be bumped to chase a red test.
 
@@ -251,7 +255,8 @@ def test_producer_register_validated_field_count():
     assert "city" in fields, sorted(fields)
     assert "terms_accepted" in fields, sorted(fields)
     assert "delivery_areas" in fields and "delivery_cities" in fields, sorted(fields)
-    assert len(fields) == 17, sorted(fields)
+    assert "external_order_form" in fields, sorted(fields)
+    assert len(fields) == 18, sorted(fields)
 
 
 def test_producer_name_is_validated_by_type_not_decorator():

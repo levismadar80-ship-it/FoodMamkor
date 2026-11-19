@@ -160,11 +160,11 @@ class TestPersona4PasswordEdgeCases:
     ):
         """Documented behaviour: the register schema (ProducerRegister) is a
         SUBSET of the producer surface. `website` IS a register field and
-        persists; owner-edit-only fields (`facebook`, `external_order_form`)
-        are NOT on ProducerRegister, so Pydantic's default extra="ignore"
-        silently drops them — the request is NOT rejected (no 422) and the
-        fields are NEVER persisted from the register body. They are set later
-        via the owner dashboard editor only.
+        persists; `facebook` is owner-edit-only and NOT on ProducerRegister, so
+        Pydantic's default extra="ignore" silently drops it — the request is
+        NOT rejected (no 422) and it is never persisted from the register body.
+        MEH-2938: `external_order_form` (the shop / order-form link) moved onto
+        ProducerRegister, so it now round-trips like `website`.
         """
         resp = client.post(
             REGISTER_URL,
@@ -173,18 +173,19 @@ class TestPersona4PasswordEdgeCases:
                 website="https://my-shop.example.com",
                 # owner-edit-only — not declared on ProducerRegister:
                 facebook="https://facebook.com/should-be-ignored",
-                external_order_form="https://forms.example.com/ignored",
+                # MEH-2938: collected at registration now.
+                external_order_form="https://forms.example.com/order",
             ),
         )
         # Accepted, NOT rejected — extra fields are ignored, not a 422.
         assert resp.status_code == 200, resp.text
 
         producer = db.query(Producer).one()
-        # in-schema field round-trips:
+        # in-schema fields round-trip:
         assert producer.website == "https://my-shop.example.com"
-        # owner-edit-only fields never made it in from the register body:
+        assert producer.external_order_form == "https://forms.example.com/order"
+        # owner-edit-only field never made it in from the register body:
         assert producer.facebook is None
-        assert producer.external_order_form is None
 
 
 # ===========================================================================
