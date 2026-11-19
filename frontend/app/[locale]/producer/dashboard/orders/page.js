@@ -62,6 +62,8 @@ export default function OrdersPage() {
     (/** @type {any[]} */ rows) => setProducts({ orderable: rows.filter((p) => p.is_orderable).length, total: rows.length }),
     [],
   );
+  // A failed products read counts as none, so the step points to «עריכה».
+  const noProducts = useCallback(() => setProducts({ orderable: 0, total: 0 }), []);
 
   useEffect(() => {
     let live = true;
@@ -111,7 +113,7 @@ export default function OrdersPage() {
           <OrdersBoard orders={data.orders} onChanged={replace} />
           {/* MEH-3216 gaps: the products' two daily switches sit right under
               the orders — «אזל כרגע» is flipped mid-day, the settings are not. */}
-          <OrderProductsCard setUp={setUp} onChange={countProducts} onError={() => setProducts({ orderable: 0, total: 0 })} />
+          <OrderProductsCard setUp={setUp} onChange={countProducts} onError={noProducts} />
           <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={setUp} />
           <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={setUp} onSaved={(saved) => setWindowsCount(saved.length)} />
         </>

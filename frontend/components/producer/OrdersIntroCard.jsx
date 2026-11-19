@@ -45,9 +45,9 @@ export default function OrdersIntroCard({ fallback = null }) {
   const t = useTranslations("dashboard.producer.orders.intro");
   const [show, setShow] = useState(/** @type {boolean | null} */ (null));
   useEffect(() => {
-    if (wasClosed()) return setShow(false);
     let live = true;
-    loadSettings()
+    // Closed before: no request, the same answer as "nothing to say".
+    (wasClosed() ? Promise.resolve(null) : loadSettings())
       .then((settings) => live && setShow(Boolean(settings) && !settings?.enabled))
       .catch(() => live && setShow(false));
     return () => {

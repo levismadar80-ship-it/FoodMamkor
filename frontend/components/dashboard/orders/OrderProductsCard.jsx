@@ -85,9 +85,9 @@ export default function OrderProductsCard({ setUp = false, initial = null, onCha
   // Decided once, on the first list: flipping the first «פתוח להזמנה באתר»
   // must not snap the card shut under her hand.
   const [startFolded, setStartFolded] = useState(/** @type {boolean | null} */ (null));
-  useEffect(() => {
-    if (products && startFolded === null) setStartFolded(setUp && products.some((p) => p.is_orderable));
-  }, [products, setUp, startFolded]);
+  // Set while rendering (React's "adjust state on a prop change"), not in an
+  // effect: it happens once, the first time the list is here.
+  if (products && startFolded === null) setStartFolded(setUp && products.some((p) => p.is_orderable));
   useEffect(() => {
     if (initial) return undefined;
     let live = true;
@@ -101,7 +101,8 @@ export default function OrderProductsCard({ setUp = false, initial = null, onCha
     return () => {
       live = false;
     };
-  }, [initial]);
+    // onError: the page passes a stable callback (useCallback).
+  }, [initial, onError]);
 
   // MEH-3216: the page's «מה חסר» checklist counts the open products.
   useEffect(() => {

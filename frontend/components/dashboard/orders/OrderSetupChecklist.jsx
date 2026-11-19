@@ -15,7 +15,7 @@
  * History:  MEH-3216 (creation; the business was not told what is missing)
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CheckCircle, Circle } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
@@ -84,9 +84,9 @@ export default function OrderSetupChecklist({
   });
   const known = orderableCount !== null;
   const missing = known && steps.some((step) => !step.done);
-  useEffect(() => {
-    if (missing) setSawMissing(true);
-  }, [missing]);
+  // Remembered while rendering, not in an effect (React's "adjust state on a
+  // prop change"): once a step was missing here, finishing it says «הכל מוכן».
+  if (missing && !sawMissing) setSawMissing(true);
   if (!known) return null;
   if (!missing) {
     if (!sawMissing) return null;
