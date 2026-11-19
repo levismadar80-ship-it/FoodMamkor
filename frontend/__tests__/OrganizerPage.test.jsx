@@ -168,8 +168,6 @@ describe("MEH-2461 organizer page", () => {
     expect(screen.queryByTestId("contact-channel-facebook")).not.toBeInTheDocument();
     // MEH-3459: no ready-made questions — they ask a business about delivery / ordering
     expect(screen.queryByTestId("question-chips")).not.toBeInTheDocument();
-    // the old pill list is gone (one component per pattern)
-    expect(screen.queryByTestId("organizer-contact")).not.toBeInTheDocument();
   });
 
   it("MEH-3459: 0 channels → no contact card at all (no empty white frame)", async () => {

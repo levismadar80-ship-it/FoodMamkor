@@ -22,13 +22,14 @@ const ALLOW = new Set(
   ].map((p) => path.join(...p.split("/"))),
 );
 // Reading the variant map, or the contact_cta labels (as a namespace or a key).
-const DRAWS_CONTACT = /ContactCtaVariants|namespace:\s*["']contact_cta["']|["'`]contact_cta\./;
+const DRAWS_CONTACT =
+  /ContactCtaVariants|namespace:\s*["']contact_cta["']|(?:use|get)Translations\(\s*["']contact_cta["']|["'`]contact_cta\./;
 
 const walk = (d) =>
   fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(d, e.name);
     if (e.isDirectory()) return e.name === "node_modules" ? [] : walk(p);
-    return /\.(js|jsx)$/.test(e.name) ? [p] : [];
+    return /\.(js|jsx|ts|tsx)$/.test(e.name) ? [p] : [];
   });
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
 // The variant map itself is the thing being read, not a reader.
@@ -42,6 +43,9 @@ describe("MEH-3459: contact channels are drawn by ContactCard's family only", ()
     // and on the shape the old organizer page used
     expect(DRAWS_CONTACT.test('getTranslations({ locale, namespace: "contact_cta" })')).toBe(true);
     expect(DRAWS_CONTACT.test('import { getCtaVariant } from "@/components/ContactCtaVariants";')).toBe(true);
+    // a plain namespace call, then t("whatsapp") (review of #4897)
+    expect(DRAWS_CONTACT.test('const tCta = useTranslations("contact_cta");')).toBe(true);
+    expect(DRAWS_CONTACT.test("await getTranslations('contact_cta')")).toBe(true);
     // RegisterNameCheck's own `contact_cta` key in another namespace is not contact drawing
     expect(DRAWS_CONTACT.test('{t("contact_cta")}')).toBe(false);
   });

@@ -586,6 +586,14 @@ front matter for the normative token bindings.
   «כל התמונות (N)» pill sits in the cover's bottom inline-END corner (the avatar
   holds the start corner) and opens the shared `Lightbox`. **0** = green band,
   **1** = cover only — no pill in either.
+- **Organizer contact = the business `ContactCard` (MEH-3459):** the organizer
+  page renders the same card as the business page — the preferred channel as the
+  big button, the others as the named circles — with `questions={false}` (no
+  ready-made questions). No card at all when the organizer filled no channel.
+- **Event cover fallback (MEH-3459):** an event without its own photo opens on
+  its owner's first photo (`owner_image_url`), the photo its card and list row
+  already show (MEH-2546); the green band only when neither exists. The share
+  preview (OG / Twitter) follows the same order.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
