@@ -16,9 +16,10 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
-import { ALLERGEN_CODES } from "@/lib/allergens";
+import ProductFacts from "@/components/public/ProductFacts";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import {
   formatPriceRange,
   getWhatsAppHref,
@@ -340,12 +341,6 @@ export default function ProductSheet({
   const chevronY = hasPhoto ? "top-1/2 -translate-y-1/2" : "bottom-2";
 
   const dietKeys = productDietKeys(product);
-  // MEH-2662: unknown codes (a list newer than this bundle) are dropped rather
-  // than rendered as a raw key.
-  const allergenCodes = (product.allergens || []).filter((c) => ALLERGEN_CODES.includes(c));
-  const hasAllergens = allergenCodes.length > 0;
-  const hasIngredients = typeof product.ingredients === "string" && product.ingredients.trim() !== "";
-
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
   // free-text price_range is DATA (MEH-1140 — never reformatted) and renders
@@ -355,7 +350,10 @@ export default function ProductSheet({
     product.price_min != null
       ? formatPriceRange(product.price_min, product.price_max)
       : null;
-  const freeTextPrice = numericPrice ? null : product.price_range || null;
+  // MEH-2924: no price at all = a seasonal price, said in words — never «₪».
+  const freeTextPrice = numericPrice
+    ? null
+    : product.price_range || t("product_price.varies");
 
   // The WhatsApp channel is the producer's phone, normalised exactly as every
   // other WA surface does it (lib/utils normalizePhone → getWhatsAppHref).
@@ -609,48 +607,13 @@ export default function ProductSheet({
               </p>
             )}
 
-            {/* MEH-2662: what the owner declared about the food. Plain text,
-                no icons or pills (pills here mean diet tags); the allergen list
-                is a sentence so it never reads as a filterable badge row. One
-                «לפי הצהרת בית העסק» line under whichever block(s) render. */}
-            {(hasIngredients || hasAllergens) && (
-              <div className="space-y-2" data-testid="product-sheet-facts">
-                {hasIngredients && (
-                  <div>
-                    <h3 className="text-xs font-medium text-fg-muted">
-                      {t("producer.detail.sections.products.facts.ingredients_heading")}
-                    </h3>
-                    <p
-                      className="whitespace-pre-line text-sm leading-relaxed text-text"
-                      data-testid="product-sheet-ingredients"
-                    >
-                      {product.ingredients}
-                    </p>
-                  </div>
-                )}
-                {hasAllergens && (
-                  <div>
-                    <h3 className="text-xs font-medium text-fg-muted">
-                      {t("producer.detail.sections.products.facts.allergens_heading")}
-                    </h3>
-                    <p className="text-sm text-text" data-testid="product-sheet-allergens">
-                      {/* One label source with the owner form on purpose: the
-                          public name must be the exact word the owner ticked. */}
-                      {allergenCodes
-                        .map((code) => t(`settings.products.form.allergen_${code}`))
-                        .join(", ")}
-                    </p>
-                  </div>
-                )}
-                <p className="text-xs text-fg-muted" data-testid="product-sheet-facts-declared">
-                  {t("producer.detail.sections.products.facts.declared_by_business")}
-                </p>
-              </div>
-            )}
+            {/* MEH-2662 · MEH-3450: what the owner declared about the food. */}
+            {/* key: a row opened on one product must not stay open on the next (paging keeps the sheet mounted). */}
+            <ProductFacts key={product.id} product={product} />
 
             {numericPrice && (
               <p className="font-medium text-accent" data-testid="product-sheet-price">
-                <span dir="ltr">{numericPrice}</span>
+                <ProductPrice product={product} />
               </p>
             )}
             {freeTextPrice && (

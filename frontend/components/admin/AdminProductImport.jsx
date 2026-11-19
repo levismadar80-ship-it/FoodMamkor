@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { PRICE_UNITS } from "@/lib/product-price";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
@@ -29,7 +30,7 @@ import {
   AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponse as DraftListSchema,
 } from "@/lib/generated/api.zod";
 
-const UNIT_KEYS = new Set(["unit", "kg", "100g"]);
+const UNIT_KEYS = new Set(PRICE_UNITS);  // MEH-2936: one list
 
 /**
  * @param {string} text
@@ -49,6 +50,7 @@ function parseRows(text) {
 /** @param {{ producerId: string }} props */
 export default function AdminProductImport({ producerId }) {
   const t = useTranslations("admin.producers.product_import");
+  const tUnit = useTranslations("price_unit");  // MEH-2936
   const [text, setText] = useState("");
   const [drafts, setDrafts] = useState(/** @type {any[] | null} */ (null));
   const [result, setResult] = useState(/** @type {any} */ (null));
@@ -205,7 +207,7 @@ export default function AdminProductImport({ producerId }) {
                 <span className="numeric" dir="ltr">
                   ₪{Number(d.price_min ?? 0)}
                 </span>{" "}
-                {t(`unit.${UNIT_KEYS.has(d.price_unit) ? d.price_unit : "unit"}`)}
+                {tUnit(UNIT_KEYS.has(d.price_unit) ? d.price_unit : "unit")}
               </span>
               <Button type="button" size="sm" variant="text" onClick={() => onDelete(d.id)} disabled={busy}>
                 {t("delete_cta")}

@@ -1,7 +1,8 @@
 """Product allergen codes (MEH-2662).
 
 The closed list a business picks from on a product: the 14 major allergens of
-the EU / Israeli food-labelling lists. Codes are English (code/DB/routes stay
+the EU / Israeli food-labelling lists, plus fava beans (פול) — Israeli labels
+must say «מכיל פול» because of G6PD deficiency (MEH-3439). Codes are English (code/DB/routes stay
 English); the Hebrew labels live in frontend messages. Self-declared by the
 business — shown on the product sheet as «לפי הצהרת בית העסק», never verified.
 """
@@ -23,6 +24,7 @@ ALLERGEN_CODES: tuple[str, ...] = (
     "mustard",
     "sulphites",
     "lupin",
+    "fava_beans",  # MEH-3439: Israel-specific, G6PD
 )
 
 _ALLOWED = frozenset(ALLERGEN_CODES)
@@ -44,3 +46,36 @@ def normalize_allergens(value: Iterable[str] | None) -> list[str] | None:
         )
     present = set(value)
     return [c for c in ALLERGEN_CODES if c in present]
+
+
+def drop_contained(
+    allergens: list[str] | None, may_contain: list[str] | None
+) -> list[str] | None:
+    """MEH-3439: remove from «עלול להכיל» every code already in «מכיל» — the
+    product cannot both contain an allergen and only maybe contain it. An
+    empty result is None, for the same reason as normalize_allergens."""
+    if not may_contain:
+        return None
+    contained = set(allergens or ())
+    rest = [c for c in may_contain if c not in contained]
+    return rest or None
+
+
+# MEH-3442: the two codes whose source must be named on a label (EU 1169/2011
+# Annex II: which cereal, which nut), and the product column that names it.
+DETAIL_COLUMNS: dict[str, str] = {"gluten": "gluten_detail", "tree_nuts": "nuts_detail"}
+
+
+def detail_if_declared(
+    code: str,
+    allergens: list[str] | None,
+    may_contain: list[str] | None,
+    detail: str | None,
+) -> str | None:
+    """MEH-3442: keep «איזה דגן?» / «איזה אגוז?» only while its code is ticked
+    in «מכיל» or «עלול להכיל» — a detail for an allergen that is no longer
+    declared would never be shown and must not come back if it is ticked
+    again later."""
+    if code in (allergens or ()) or code in (may_contain or ()):
+        return detail
+    return None

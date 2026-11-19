@@ -15,6 +15,7 @@
 * `backend/app/routers/producer_me.py` — כל המספרים שהלוח מציג.
 * `frontend/lib/producer-completeness.js` · `frontend/components/ProfileCompletenessCard.jsx`
 * `frontend/components/MenuImport.jsx` · `frontend/components/MenuReviewRow.jsx` · `frontend/lib/menu-image.js` — «העלו תפריט» בכרטיס המוצרים (MEH-3430): צילום או PDF של תפריט, השרת קורא אותו עם Claude (`backend/app/services/menu_reader.py`, ‏`backend/app/routers/menu_import.py`), בעלת העסק בודקת ומפרסמת. רצועה עם הסבר כשיש 0–2 מוצרים, כפתור כשיש 3 ומעלה, ושורה ב«מה מחכה לך» כשאין מוצרים בכלל. בלי `ANTHROPIC_API_KEY` הקריאה עונה 503 והמסך מציג את שורת הכישלון.
+* `frontend/components/producer/OwnerAttentionCard.jsx` · `backend/app/services/owner_attention.py` — «מה מחכה לך» בבית הלוח (MEH-3108): הזמנות, ביקורות, הרשמות, קבוצות רכישה, «העלו תפריט» (MEH-3430), ומוצרים שלא סומנו בהם אלרגנים (MEH-3445).
 * `frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx` — שעות הפתיחה של מיקום. «אותן שעות לכל הימים הפתוחים» מעתיק את הטווחים של היום הפתוח הראשון לכל יום אחר שמסומן כפתוח (MEH-3438). הטסט `frontend/__tests__/MEH3438LessTyping.test.jsx`.
 
 **Flags.** `PRODUCT_ORDERS_ENABLED` (צד שרת) — מדליק את לשונית «הזמנות» ואת השורה שלה בכרטיס «מה מחכה לך».
@@ -24,6 +25,8 @@
 * `frontend/__tests__/BusinessFeaturesRegistry.test.js` — **השומר ההפוך** (MEH-3416): כל קובץ עורך תחת `frontend/app/[locale]/producer/dashboard/edit/` רשום ב-`codeRef` של כלי, או ב-`EDITOR_FILES_WITHOUT_TOOL` עם סיבה.
 * `frontend/e2e/flows/manual/dashboard-shell.spec.ts` · `dashboard-edit.spec.ts` · `dashboard-edit-cards.spec.ts` · `dashboard-locations.spec.ts` · `dashboard-products.spec.ts` · `dashboard-trust-cards.spec.ts` · `dashboard-availability.spec.ts` · `dashboard-delivery.spec.ts` · `dashboard-vanity-share.spec.ts` (כולם תחת `frontend/e2e/flows/manual/`)
 * `tests/test_producer_me_delivery_fields.py` · `tests/test_producers_me_schema.py` · `tests/test_meh2697_availability_confirmed.py`
+* `frontend/components/ProductPriceUnitField.jsx` — «לפי מה המחיר?» בטופס המוצר, הוספה ועריכה (MEH-2936); הטסט `frontend/__tests__/ProductPriceUnit.test.jsx`.
 * `tests/test_meh3430_menu_import.py` · `frontend/__tests__/MenuImport.test.jsx` — העלאת תפריט: בדיקת הבייטים, מגבלות קבצים, 503 בלי AI, כפולים, תקרת 100 המוצרים, ומטריצת המצבים במסך.
+* `tests/test_meh3108_owner_attention.py` · `tests/test_meh3445_allergen_reminder.py` · `frontend/__tests__/OwnerAttentionCard.test.jsx` — «מה מחכה לך»: כל ספירה, ומטריצת 0 / 1 / רבים של השורות.
 
 **מזהי רישום שזה מכסה.** כל קבוצת `insights`, ‏`vanity_link`, ‏`qr_code`, ‏`completeness`, ‏`multi_locations`.

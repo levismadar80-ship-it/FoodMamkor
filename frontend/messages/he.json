@@ -871,8 +871,14 @@
             "no_added_sugar": "ללא סוכר מוסף"
           },
           "facts": {
+            "details_heading": "פרטים על המוצר",
             "ingredients_heading": "רכיבים",
             "allergens_heading": "אלרגנים",
+            "contains": "מכיל: {list}",
+            "may_contain": "עלול להכיל: {list}",
+            "allergens_undeclared": "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.",
+            "no_allergens": "אין במוצר אלרגנים מהרשימה",
+            "storage_heading": "אחסון ותוקף",
             "declared_by_business": "לפי הצהרת בית העסק"
           },
           "sheet_close_aria": "סגירת פרטי המוצר",
@@ -2091,12 +2097,7 @@
         "error_json": "הטקסט אינו JSON תקין.",
         "error_shape": "צריך מערך של מוצרים, או אובייקט עם rows.",
         "unknown_units": "יחידות שלא זוהו ונשמרו כ«ליחידה» — כדאי לבדוק לפני האישור: {units}",
-        "load_failed": "לא הצלחנו לטעון את הטיוטות. נסו לרענן.",
-        "unit": {
-          "unit": "ליחידה",
-          "kg": "לק״ג",
-          "100g": "ל-100 גרם"
-        }
+        "load_failed": "לא הצלחנו לטעון את הטיוטות. נסו לרענן."
       }
     },
     "users": {
@@ -5019,7 +5020,9 @@
         "orders": "{count, plural, one {הזמנה אחת מחכה לאישור} two {# הזמנות מחכות לאישור} other {# הזמנות מחכות לאישור}}",
         "orders_cta": "לאשר",
         "menu": "עוד אין מוצרים בעמוד. אפשר להעלות תפריט במקום להקליד.",
-        "menu_cta": "העלו תפריט"
+        "menu_cta": "העלו תפריט",
+        "allergens": "{count, plural, one {למוצר אחד לא סומנו אלרגנים} two {ל-# מוצרים לא סומנו אלרגנים} other {ל-# מוצרים לא סומנו אלרגנים}}",
+        "allergens_cta": "לסימון"
       },
       "status": {
         "pending": {
@@ -6065,6 +6068,7 @@
         "price_max_optional_suffix": "אופציונלי",
         "price_max_placeholder": "60",
         "price_hint": "מחיר אחיד? מלאו רק \"מ-\". טווח מחירים? מלאו גם \"עד\" (אופציונלי).",
+        "price_optional_hint": "אין מחיר קבוע? משאירים את המחיר ריק, ובעמוד יופיע «מחיר משתנה לפי עונה».",
         "diet_heading": "סימוני תזונה (אופציונלי)",
         "diet_gluten_free": "ללא גלוטן",
         "diet_vegan": "טבעוני",
@@ -6096,12 +6100,24 @@
         "allergen_mustard": "חרדל",
         "allergen_sulphites": "סולפיטים",
         "allergen_lupin": "תורמוס",
+        "allergen_fava_beans": "פול",
+        "may_contain_heading": "עלול להכיל",
+        "may_contain_helper": "סמנו מה עלול להגיע למוצר מכלים או ממשטח משותפים.",
+        "no_allergens_label": "אין במוצר אלרגנים מהרשימה",
+        "storage_label": "אחסון ותוקף",
+        "storage_placeholder": "למשל: בקירור, עד 10 ימים מיום הקנייה",
+        "gluten_detail_label": "איזה דגן?",
+        "gluten_detail_placeholder": "למשל: כוסמין",
+        "nuts_detail_label": "איזה אגוז?",
+        "nuts_detail_placeholder": "למשל: שקדים, אגוזי לוז",
         "image_label": "תמונת מוצר",
         "image_alt": "תמונה",
         "image_remove": "הסר",
         "image_upload_cta": "העלו תמונה",
         "image_replace": "החליפו תמונה",
-        "image_uploading": "בהעלאה..."
+        "image_uploading": "בהעלאה...",
+        "price_unit_label": "לפי מה המחיר?",
+        "price_unit_hint": "מופיע ליד המחיר בעמוד שלכם, למשל: 40 ₪ לק״ג"
       },
       "save_edit_cta": "שמרו שינויים",
       "save_edit_saving": "בשמירה...",
@@ -6196,13 +6212,13 @@
         "address_label": "כתובת",
         "address_placeholder": "למשל: רחוב העצמאות 12",
         "address_confirmed": "המיקום זוהה: {location}",
-        "address_unresolved": "לא הצלחנו לאתר את הכתובת — אפשר להזין קואורדינטות ידנית למטה.",
-        "place_hint_exact": "היישוב והכתובת יוצגו בעמוד שלך ובניווט.",
-        "place_hint_approximate": "רק היישוב יוצג. הכתובת המלאה לא תופיע בעמוד ולא בניווט.",
+        "address_unresolved": "לא מצאנו את הכתובת הזו. אפשר לשמור אותה כך, או להזין את המיקום המדויק בעצמכם למטה. סלי הפתעה דורשים מיקום מדויק.",
+        "place_hint_exact": "בעמוד העסק יופיע היישוב, והסיכה במפה תעמוד במיקום המדויק. את הכתובת המלאה רואים רק מי ששריינו סל הפתעה.",
+        "place_hint_approximate": "בעמוד העסק יופיע היישוב, והסיכה במפה תעמוד באזור בלבד. הכתובת המלאה לא מוצגת.",
         "lat_label": "קו רוחב",
         "lng_label": "קו אורך",
-        "more_summary": "פרטים נוספים — תווית, טלפון, שעות",
-        "coords_summary": "קואורדינטות ידניות",
+        "more_summary": "פרטים נוספים — דיוק, תווית, טלפון, שעות",
+        "coords_summary": "להזין את המיקום המדויק בעצמכם",
         "coords_hint": "לא חובה. למלא רק אם הסיכה במפה לא יושבת במקום הנכון.",
         "hours_label": "שעות",
         "hours_unreadable": "השעות שנשמרו: {value} — כדאי לבחור אותן מחדש למטה",
@@ -6775,13 +6791,13 @@
       "orders_title": "ההזמנות של היום",
       "orders_empty": "אין עדיין הזמנות להיום.",
       "publish_title": "לפרסם סלים",
-      "publish_today": "לפרסם להיום · {price} ₪",
-      "publish_tomorrow": "לפרסם {n} סלים למחר",
+      "publish_today": "{n, plural, one {לפרסם להיום · סל אחד · {price} ₪ לסל} two {לפרסם להיום · # סלים · {price} ₪ לסל} other {לפרסם להיום · # סלים · {price} ₪ לסל}}",
+      "publish_tomorrow": "{n, plural, one {לפרסם למחר · סל אחד · {price} ₪ לסל} two {לפרסם למחר · # סלים · {price} ₪ לסל} other {לפרסם למחר · # סלים · {price} ₪ לסל}}",
       "published": "הסלים פורסמו.",
       "no_location": "צריך נקודת איסוף עם כתובת מדויקת.",
       "field": {
         "qty": "כמה סלים",
-        "price": "מחיר (₪)",
+        "price": "מחיר לסל (₪)",
         "from": "איסוף מ-",
         "to": "עד",
         "cancel": "ביטול חינם עד",
@@ -6789,15 +6805,15 @@
         "cancel_hour": "שעה לפני האיסוף",
         "cancel_two_hours": "שעתיים לפני האיסוף"
       },
-      "items_title": "בדרך כלל יש בסל",
-      "items_help": "מפרידים בפסיקים. זה מה שהקונים רואים לפני שהם משריינים.",
+      "items_title": "מה בדרך כלל בסל",
+      "items_help": "מפרידים בפסיקים. זה מה שהלקוחות רואים לפני שהם משריינים סל.",
       "items_save": "לשמור",
       "items_saved": "נשמר.",
       "leftover_hint": "במקום לזרוק, אפשר למסור אותם בחינם.",
       "leftover_link": "לקבוצת מסירת אוכל בפייסבוק",
-      "needs_address": "כדי לפרסם סלים צריך כתובת איסוף מדויקת.",
+      "needs_address": "כדי לפרסם סלים צריך כתובת איסוף מדויקת. בעריכת המיקום פותחים «פרטים נוספים» ובוחרים «דיוק: מדויק».",
       "needs_address_privacy": "את הכתובת המלאה רואים רק מי ששריינו סל.",
-      "needs_address_cta": "להוספת כתובת",
+      "needs_address_cta": "לעריכת המיקום",
       "leftover_title": "{count, plural, one {לא נאסף היום: סל אחד} two {לא נאספו היום: שני סלים} other {לא נאספו היום: # סלים}}",
       "leftover_share": "לשתף בוואטסאפ",
       "leftover_donated": "סימנתי: נמסרו בחינם",
@@ -6815,7 +6831,9 @@
       "cancel_offer_one": "יש שריון אחד פעיל. נשלח לו מייל שהסל בוטל.",
       "cancel_offer_many": "יש {n} שריונים פעילים. נשלח לכולם מייל שהסל בוטל.",
       "cancel_offer_yes": "כן, לבטל",
-      "cancel_offer_no": "לא"
+      "cancel_offer_no": "לא",
+      "not_in_pilot": "סלי הפתעה עדיין לא פתוחים ב{city}. כשהם ייפתחו שם, אפשר יהיה לפרסם מכאן.",
+      "publish_suggestion": "מילאנו הצעה לפי ערב רגיל. משנים לפי מה שנשאר היום."
     },
     "counter_card": {
       "title": "סל הפתעה של מהמקור",
@@ -7528,5 +7546,15 @@
     "line": "{qty} × {name}",
     "back": "חזרה",
     "failed": "הפעולה לא הצליחה. נסו שוב."
+  },
+  "price_unit": {
+    "unit": "ליחידה",
+    "kg": "לק״ג",
+    "100g": "ל-100 גרם",
+    "bottle": "לבקבוק",
+    "box": "לארגז"
+  },
+  "product_price": {
+    "varies": "מחיר משתנה לפי עונה"
   }
 }

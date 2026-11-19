@@ -39,9 +39,11 @@ def _create(client, user, **extra):
     )
 
 
-def test_the_closed_list_has_the_14_labelling_allergens():
-    assert len(ALLERGEN_CODES) == 14
-    assert len(set(ALLERGEN_CODES)) == 14
+def test_the_closed_list_has_the_14_labelling_allergens_plus_fava():
+    # MEH-3439: the EU 14 + fava beans (Israeli «מכיל פול», G6PD).
+    assert len(ALLERGEN_CODES) == 15
+    assert len(set(ALLERGEN_CODES)) == 15
+    assert ALLERGEN_CODES[-1] == "fava_beans"
 
 
 def test_neither_field_sent_both_come_back_null(client, db):

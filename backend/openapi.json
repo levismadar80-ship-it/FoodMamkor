@@ -5304,6 +5304,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -5357,9 +5369,41 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -5406,10 +5450,24 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -5519,7 +5577,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5587,7 +5647,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -6187,7 +6249,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15092,6 +15156,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -15145,9 +15221,41 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -15174,6 +15282,9 @@
               },
               {
                 "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Price Min"
@@ -15188,11 +15299,34 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
-          "name",
-          "price_min"
+          "name"
         ],
         "title": "ProductCreate",
         "type": "object"
@@ -15598,7 +15732,7 @@
       },
       "ProductOrderingIn": {
         "additionalProperties": false,
-        "description": "The four ordering fields of one product. All required: the screen\nsaves the whole row.",
+        "description": "The ordering fields of one product. is_orderable, in_stock and\ncontains_alcohol are required: the screen saves the whole row.\n\nMEH-2936: price_unit is optional and omitted means \"keep\". The owner's\nproduct form writes it now too, so an orders tab loaded before that edit\nmust not send the old unit back over it. An explicit null is refused.",
         "properties": {
           "contains_alcohol": {
             "title": "Contains Alcohol",
@@ -15613,19 +15747,27 @@
             "type": "boolean"
           },
           "price_unit": {
-            "enum": [
-              "unit",
-              "kg",
-              "100g"
+            "anyOf": [
+              {
+                "enum": [
+                  "unit",
+                  "kg",
+                  "100g",
+                  "bottle",
+                  "box"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Price Unit",
-            "type": "string"
+            "title": "Price Unit"
           }
         },
         "required": [
           "is_orderable",
           "in_stock",
-          "price_unit",
           "contains_alcohol"
         ],
         "title": "ProductOrderingIn",
@@ -15654,7 +15796,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15696,6 +15840,17 @@
               }
             ],
             "title": "Description"
+          },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
           },
           "group_id": {
             "anyOf": [
@@ -15765,9 +15920,39 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "position": {
             "anyOf": [
@@ -15812,11 +15997,27 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "price_unit"
         ],
         "title": "ProductOut",
         "type": "object"
@@ -15848,6 +16049,18 @@
               }
             ],
             "title": "Description"
+          },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
           },
           "image_url": {
             "anyOf": [
@@ -15938,6 +16151,21 @@
             ],
             "title": "Is Vegetarian"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "anyOf": [
               {
@@ -15948,6 +16176,29 @@
               }
             ],
             "title": "Name"
+          },
+          "no_allergens": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Allergens"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -15991,6 +16242,30 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "title": "ProductUpdate",
@@ -17465,6 +17740,24 @@
           "pickup_end"
         ],
         "title": "RescueOwnerOrderOut",
+        "type": "object"
+      },
+      "RescuePilotLocationsOut": {
+        "description": "MEH-2921: which of the caller's own pickup points sit in a pilot town.\n\nIds only — the tab already holds the points themselves (with their town)\nfrom GET /producers/me/locations, so the town list is never sent.",
+        "properties": {
+          "location_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Location Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "location_ids"
+        ],
+        "title": "RescuePilotLocationsOut",
         "type": "object"
       },
       "RescueProducerSummary": {
@@ -30779,6 +31072,33 @@
           }
         ],
         "summary": "List My Orders",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/pilot-locations": {
+      "get": {
+        "description": "The caller's own pickup points whose town is in RESCUE_BAGS_CITIES.",
+        "operationId": "my_pilot_locations_producers_me_rescue_pilot_locations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescuePilotLocationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "My Pilot Locations",
         "tags": [
           "rescue"
         ]

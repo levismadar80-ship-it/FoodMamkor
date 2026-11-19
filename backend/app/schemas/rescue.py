@@ -396,3 +396,13 @@ class RescueMetricsOut(BaseModel):
     repeat_buyers: int
     # MEH-2703: owner-reported «נמסרו בחינם», summed over the window.
     bags_donated: int = 0
+
+
+class RescuePilotLocationsOut(BaseModel):
+    """MEH-2921: which of the caller's own pickup points sit in a pilot town.
+
+    Ids only — the tab already holds the points themselves (with their town)
+    from GET /producers/me/locations, so the town list is never sent.
+    """
+
+    location_ids: list[UUID]
