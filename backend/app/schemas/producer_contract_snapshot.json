@@ -239,6 +239,7 @@
       "is_no_added_sugar",
       "is_vegan",
       "is_vegetarian",
+      "may_contain",
       "name",
       "position",
       "price_max",
