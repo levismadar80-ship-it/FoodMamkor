@@ -109,6 +109,13 @@ RULES=(
   # English boilerplate that shipped once (BRAND.md §7, first bullet).
   # `[[:space:]]+` not a literal space: "home  cooks" escaped the first draft.
   $'home-cooks\thome[[:space:]]+cooks\t-\ti'
+  # Slash gender forms «מסכים/ה», «מארגן/ת», «ראה/תה» (BRAND.md §4/§9, ADR-037:
+  # a neutral plural or a rewrite, never a slash). Found 18/11 in the
+  # legacy-vs-today's-rules audit, in strings written before the rule; all 65
+  # were reworded in the same PR (Sapir approved the table 18/11). The
+  # suffix must END the word (space, punctuation or end of line follows), so
+  # «תאריך/תמונה» is not a hit. No Hebrew range class: see `(ה)?` above.
+  $'slash-gender\t/(ה|ת|תה|ית|ות)([[:space:]]|[[:punct:]]|$)\t-\t'
 )
 
 # Every candidate file, one path per line, relative to the repo root.
@@ -326,13 +333,13 @@ HEAD
 }
 
 self_test() {
-  local tmp pass=0 total=12 got
+  local tmp pass=0 total=14 got
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
   mkdir -p "$tmp/frontend/messages" "$tmp/frontend/components" \
            "$tmp/frontend/components/__tests__" "$tmp/backend/app/services"
 
-  printf '{ "a": "העסק הוא יצרן מקומי", "b": "מורשה נגישות חיצוני" }\n' > "$tmp/frontend/messages/he.json"
+  printf '{ "a": "העסק הוא יצרן מקומי", "b": "מורשה נגישות חיצוני", "c": "אני מעל גיל 18 ומסכים/ה", "d": "תאריך/תמונה" }\n' > "$tmp/frontend/messages/he.json"
   # Case 8 is anchored to a real repo file (MEH-1909): ProducerCard.jsx:841-842
   # is a two-line block comment whose SECOND line starts with prose and names
   # marketplace. A per-line comment test reports it; this corpus must not.
@@ -373,6 +380,12 @@ PYF
   _hasnt $'Card.jsx\tyatzran' \
     && { pass=$((pass+1)); echo "  ok  2  «רישיון יצרן» (the licence name) is exempt"; } \
     || echo "  FAIL 2  «רישיון יצרן» was flagged — the MEH-1264 carve-out is broken"
+  _has $'frontend/messages/he.json\tslash-gender\t/ה' \
+    && { pass=$((pass+1)); echo "  ok 13  a slash gender form «מסכים/ה» is caught"; } \
+    || echo "  FAIL 13  «מסכים/ה» was NOT caught"
+  [ "$(printf '%s\n' "$got" | grep -cF $'slash-gender')" -eq 1 ] \
+    && { pass=$((pass+1)); echo "  ok 14  «תאריך/תמונה» (two words, no suffix) is not a slash form"; } \
+    || echo "  FAIL 14  «תאריך/תמונה» was flagged as a slash form"
   _hasnt $'Card.jsx\tmarketplace' \
     && { pass=$((pass+1)); echo "  ok  3  «marketplace» inside a // comment is prose"; } \
     || echo "  FAIL 3  a comment mentioning marketplace was flagged"

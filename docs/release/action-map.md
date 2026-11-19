@@ -20,13 +20,13 @@
 | — negative cell of gated routes (401/403) | 217 | 140 | 0 | 77 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 51 | 49 | 1 | 1 | 0 |
-| Pages — public | 58 | 51 | 0 | 7 | 0 |
+| Pages — public | 59 | 52 | 0 | 7 | 0 |
 | Pages — dashboard | 21 | 17 | 0 | 4 | 0 |
 | Pages — admin | 21 | 19 | 0 | 2 | 0 |
 | State-machine rows (audit, every non-exempt section) | 45 | 40 | 1 | 3 | 1 |
 | Mandatory extra rows (§B.3) | 25 | 23 | 1 | 1 | 0 |
 
-Pages opened by a CI-run Playwright spec: **40 / 100** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
+Pages opened by a CI-run Playwright spec: **40 / 101** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
 **GAP cells in total: 100** (route positive 5 · route negative 77 · tools 1 · pages 13 · machine rows 3 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
@@ -356,20 +356,20 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 291 | GET | `/producers/me/products/ordering` | `product_order_offer.get_my_products_ordering` | business/organizer | `tests/test_meh3262_order_windows.py:531` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 5 |
 | 292 | PUT | `/producers/me/products/{product_id}/ordering` | `product_order_offer.put_product_ordering` | business/organizer | `tests/test_meh3262_order_windows.py:452` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 9 |
 | 293 | GET | `/producers/{producer_id}/order-menu` | `product_order_offer.get_order_menu` | anonymous | `tests/test_meh2312_drafts_not_orderable.py:36` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 1 |
-| 294 | POST | `/product-orders/phone-code` | `product_order_buyer.send_order_phone_code` | anonymous | `tests/test_meh3263_order_route.py:138` | n/a | — | 6 |
-| 295 | POST | `/product-orders` | `product_order_buyer.send_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:167` | n/a | — | 4 |
-| 296 | POST | `/product-orders/status` | `product_order_buyer.read_order_status` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:826` | n/a | — | 4 |
-| 297 | POST | `/product-orders/status/cancel` | `product_order_buyer.cancel_own_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:927` | n/a | — | 4 |
-| 298 | POST | `/product-orders/status/accept-change` | `product_order_buyer.accept_proposed_change` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:1076` | n/a | — | 4 |
-| 299 | GET | `/users/me/product-orders` | `product_order_buyer.list_own_orders` | registered user | `tests/test_meh3263_order_route.py:498` | `tests/test_meh3263_order_route.py:503` | — | 2 |
-| 300 | GET | `/producers/me/product-orders` | `product_order_business.list_business_orders` | business/organizer | `tests/test_meh3263_order_route.py:958` | `tests/test_meh3263_order_route.py:968` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 3 |
-| 301 | POST | `/producers/me/product-orders/{order_id}/confirm` | `product_order_business.confirm_order` | business/organizer | `tests/test_meh3263_order_route.py:1014` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 302 | POST | `/producers/me/product-orders/{order_id}/propose-change` | `product_order_business.propose_order_change` | business/organizer | `tests/test_meh3263_order_route.py:796` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 303 | POST | `/producers/me/product-orders/{order_id}/handed` | `product_order_business.hand_order_over` | business/organizer | `tests/test_meh3263_order_route.py:1121` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 304 | POST | `/producers/me/product-orders/{order_id}/no-show` | `product_order_business.report_no_show` | business/organizer | `tests/test_meh3263_order_route.py:1142` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 294 | POST | `/product-orders/phone-code` | `product_order_buyer.send_order_phone_code` | anonymous | `tests/test_meh3263_order_route.py:140` | n/a | — | 6 |
+| 295 | POST | `/product-orders` | `product_order_buyer.send_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:169` | n/a | — | 4 |
+| 296 | POST | `/product-orders/status` | `product_order_buyer.read_order_status` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:874` | n/a | — | 4 |
+| 297 | POST | `/product-orders/status/cancel` | `product_order_buyer.cancel_own_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:988` | n/a | — | 4 |
+| 298 | POST | `/product-orders/status/accept-change` | `product_order_buyer.accept_proposed_change` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:1137` | n/a | — | 4 |
+| 299 | GET | `/users/me/product-orders` | `product_order_buyer.list_own_orders` | registered user | `tests/test_meh3263_order_route.py:500` | `tests/test_meh3263_order_route.py:505` | — | 2 |
+| 300 | GET | `/producers/me/product-orders` | `product_order_business.list_business_orders` | business/organizer | `tests/test_meh3263_order_route.py:1019` | `tests/test_meh3263_order_route.py:1029` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 3 |
+| 301 | POST | `/producers/me/product-orders/{order_id}/confirm` | `product_order_business.confirm_order` | business/organizer | `tests/test_meh3263_order_route.py:1075` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 302 | POST | `/producers/me/product-orders/{order_id}/propose-change` | `product_order_business.propose_order_change` | business/organizer | `tests/test_meh3263_order_route.py:798` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 303 | POST | `/producers/me/product-orders/{order_id}/handed` | `product_order_business.hand_order_over` | business/organizer | `tests/test_meh3263_order_route.py:1182` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 304 | POST | `/producers/me/product-orders/{order_id}/no-show` | `product_order_business.report_no_show` | business/organizer | `tests/test_meh3263_order_route.py:1203` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
 | 305 | POST | `/producers/me/product-orders/{order_id}/decline` | `product_order_business.decline_order` | business/organizer | `tests/test_meh3296_order_notifications.py:210` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 306 | POST | `/producers/me/product-orders/{order_id}/ready` | `product_order_business.ready_order` | business/organizer | `tests/test_meh3263_order_route.py:1112` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 307 | POST | `/producers/me/product-orders/{order_id}/cancel` | `product_order_business.cancel_order` | business/organizer | `tests/test_meh3263_order_route.py:1156` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 306 | POST | `/producers/me/product-orders/{order_id}/ready` | `product_order_business.ready_order` | business/organizer | `tests/test_meh3263_order_route.py:1173` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 307 | POST | `/producers/me/product-orders/{order_id}/cancel` | `product_order_business.cancel_order` | business/organizer | `tests/test_meh3263_order_route.py:1217` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
 
 ### Internal routes (allowlisted — not actor actions)
 
@@ -489,6 +489,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/messages` | GAP | `frontend/__tests__/title-pattern.test.js:174` | covered |
 | `/newsletter/confirm` | GAP | GAP | GAP |
 | `/newsletter/unsubscribe` | GAP | `frontend/__tests__/title-pattern.test.js:176` | covered |
+| `/order/[id]` | GAP | `frontend/__tests__/OrderStatusPage.test.jsx:19` | covered |
 | `/organizers/[slug]` | GAP | `frontend/__tests__/OrganizerPage.test.jsx:50` | covered |
 | `/owner-invite/[token]` | `frontend/e2e/flows/46-owner-invite.spec.ts:299` | GAP | covered |
 | `/owner-invite` | GAP | GAP | GAP |

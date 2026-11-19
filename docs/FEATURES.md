@@ -85,6 +85,7 @@ left in v1" vs "what's planned for v2".
 | `/register/organizer` | Markets / events organizer sign-up (same wizard, kind=organizer) |
 | `/claim` | Claim an existing business page (after the token step) |
 | `/claim/[token]` | Claim link landing; moves the token to sessionStorage |
+| `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change. The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
 | `/owner-invite` | Accept an invite to co-manage a business (after the token step) |
 | `/owner-invite/[token]` | Owner-invite link landing |
 | `/producer/dashboard` | Dashboard home: status, next steps, availability, daily actions |
