@@ -47,7 +47,17 @@ import { assertDetailRendered, watchPageErrors } from "./_producer-fixture";
 // so a probe addressed at the PAGE's origin dies locally instead of travelling.
 // Not port 9: WebKit refuses "restricted" ports (9 = discard) before any route
 // handler runs, so page.goto hung there on the webkit project (MEH-3153).
-const DEAD_ORIGIN = "http://localhost:39009";
+//
+// MEH-3451: and NOT inside the OS ephemeral range. It was 39009, which sits in
+// Linux's 32768–60999, and the recorder below binds port 0 — so on the rare run
+// where the kernel handed the recorder 39009, the dead origin WAS the recorder:
+// every probe addressed at "the page's origin" landed in it and this test went
+// red with exactly ["/producer/p2", "/api/producers/by-slug/bad-slug"]
+// (run 44569857423, shard 2, 19/11; reproduced by pinning the recorder to 39009).
+// 29009 is below every OS's ephemeral floor (Linux 32768, macOS/Windows 49152)
+// and is on neither browser's restricted list, so port 0 can never return it.
+const DEAD_PORT = 29009;
+const DEAD_ORIGIN = `http://localhost:${DEAD_PORT}`;
 
 const ERROR_DOC =
   `<!doctype html><html id="__next_error__"><head><meta charset="utf-8"></head>` +
@@ -72,6 +82,11 @@ const test = base.extend<{ recorder: Recorder }>({
     const addr = server.address();
     if (addr === null || typeof addr === "string") {
       throw new Error(`recorder did not bind a TCP port (address=${String(addr)})`);
+    }
+    // MEH-3451: a runner whose ephemeral range was widened below 29009 could
+    // still hand us the dead port. Say so by name instead of failing as a leak.
+    if (addr.port === DEAD_PORT) {
+      throw new Error(`recorder was given the dead origin's port ${DEAD_PORT} — the test would record its own probes`);
     }
     await use({ paths, url: `http://127.0.0.1:${addr.port}` });
     await new Promise<void>((resolve) => server.close(() => resolve()));

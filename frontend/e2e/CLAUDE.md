@@ -105,6 +105,7 @@ it just silently opts out of the stub and bills real bandwidth.
 ## Other `flows/_*` helpers
 
 - `flows/_settled-field.ts` — `settledField(page, testId)` waits until exactly one React-owned copy of a field exists before it is filled (MEH-2323).
+- `flows/_layout-settled.ts` — `layoutSettled(locator)` waits until the element's box, the scroll offset and the page height are unchanged for 10 frames. Use it before a click into anything that may still be moving (a deep link that is still resolving, a card that just re-rendered): Playwright checks the click's hit target on mousedown only, so a shift between mousedown and mouseup loses the click with no error (MEH-3449).
 - `flows/_login-submit-diagnostics.ts` — `watchLoginSubmit(page)` appends to an already-failing login assertion whether `/api/auth/login` left, its status, and the form state at the click and at the failure. Asserts and waits for nothing (snapshots are capped at 2 s). Exists because the trace is `on-first-retry`, so a first-attempt flake has no trace (MEH-3154, MEH-3380). The two login blocks it watches (`flows/30-login-journey-c.spec.ts`, `flows/25-role-reachability.spec.ts`) now set `trace: "retain-on-failure"` at file level (Playwright refuses it inside a describe), so their failed first attempt keeps a trace in the `playwright-report` artifact.
 
 ## Authenticated specs — where that coverage actually runs (MEH-999)
