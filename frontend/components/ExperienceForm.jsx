@@ -39,6 +39,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
+import ExperienceSessionsField from "@/components/ExperienceSessionsField";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
 
@@ -69,10 +70,19 @@ const EMPTY = {
   requirements: "",
   is_recurring: false,
   recurring_schedule: "",
+  // MEH-3447: a recurring workshop's dates, each with its own places.
+  sessions: [],
   // MEH-2766: «איך נרשמים?» — a new workshop defaults to the on-site form.
   registration_method: "site_form",
   registration_url: "",
 };
+
+/** MEH-3447: the dates as the server takes them — filled rows only. */
+function sessionsPayload(rows) {
+  return rows
+    .filter((s) => s.date && s.time)
+    .map((s) => ({ date: s.date, time: s.time, participants_count: s.participants_count ?? 0 }));
+}
 
 function seed(initial) {
   if (!initial) return EMPTY;
@@ -99,6 +109,7 @@ function seed(initial) {
     requirements: initial.requirements ?? "",
     is_recurring: Boolean(initial.is_recurring),
     recurring_schedule: initial.recurring_schedule ?? "",
+    sessions: Array.isArray(initial.sessions) ? initial.sessions : [],
     registration_method: initial.registration_method ?? "site_form",
     registration_url: initial.registration_url ?? "",
   };
@@ -395,6 +406,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       requirements: form.requirements || null,
       is_recurring: form.is_recurring,
       recurring_schedule: form.is_recurring ? form.recurring_schedule || null : null,
+      // MEH-3447: only a recurring workshop has dates; a half-filled row is
+      // not sent. The server drops past dates and refuses bad ones (422).
+      ...(form.is_recurring ? { sessions: sessionsPayload(form.sessions) } : {}),
       registration_method: form.registration_method,
       registration_url:
         form.registration_method === "external_url" ? form.registration_url.trim() || null : null,
@@ -766,6 +780,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
               onChange={setField("recurring_schedule")}
               placeholder={t("recurring_placeholder")}
               className="text-sm"
+            />
+            <ExperienceSessionsField
+              sessions={form.sessions}
+              onChange={(sessions) => setForm((f) => ({ ...f, sessions }))}
             />
           </div>
         )}

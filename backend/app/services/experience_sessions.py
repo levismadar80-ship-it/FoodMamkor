@@ -140,11 +140,14 @@ def public_list(db: Session, ex: Experience) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     counts = taken(db, ex) if has_sessions(ex) else {}
     for s in upcoming(ex):
+        signed = counts.get(_key(s), 0)
         left = None
         if ex.max_participants is not None:
-            used = s["participants_count"] + counts.get(_key(s), 0)
+            used = s["participants_count"] + signed
             left = max(int(ex.max_participants) - used, 0)
-        out.append({**s, "spots_left": left})
+        # MEH-3447: `registered` lets the owner's form confirm before removing
+        # a date that has sign-ups. spots_left already implies it publicly.
+        out.append({**s, "spots_left": left, "registered": signed})
     return out
 
 

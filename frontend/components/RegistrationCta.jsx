@@ -41,6 +41,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "@/components/RegistrationOverlays";
 import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
+import RegistrationSessionSelect, { isFullSession, sessionKey } from "@/components/RegistrationSessionSelect";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-50";
@@ -68,11 +69,11 @@ function fieldsFrom(detail) {
   return [...new Set(fields.filter((f) => ["name", "phone", "email"].includes(f)))];
 }
 
-function SignupForm({ kind, itemId, waitlist = false, onDone }) {
+function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = [], onDone }) {
   const t = useTranslations("registration.signup");
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
-  const [form, setForm] = useState(/** @type {Record<string, string>} */ ({ name: "", phone: "", email: "", party: "1" }));
+  const [form, setForm] = useState(/** @type {Record<string, string>} */ ({ name: "", phone: "", email: "", party: "1", session: "" }));
   // MEH-3112: a signed-in visitor finds her own details already in place.
   useAccountPrefill(setForm, SIGNUP_PREFILL);
   const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
@@ -82,10 +83,15 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
   // still a way in, from the same filled form.
   const [canWait, setCanWait] = useState(false);
 
+  // MEH-3447: a workshop with dates books one; a full date is its waitlist.
+  const chosen = sessions.find((s) => sessionKey(s) === form.session);
+  const waitlist = wholeItemFull || isFullSession(chosen);
+  const hasSessions = sessions.length > 0;
+
   // The button that opened the form is gone; focus lands on the first field.
   useEffect(() => {
-    document.getElementById("signup-name")?.focus();
-  }, []);
+    document.getElementById(hasSessions ? "signup-session" : "signup-name")?.focus();
+  }, [hasSessions]);
 
   const set = (field) => (e) => {
     const { value } = e.target;
@@ -96,6 +102,7 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
   const validate = () => {
     /** @type {Record<string, string>} */
     const errs = {};
+    if (hasSessions && !chosen) errs.session = t("session_required");
     for (const f of ["name", "phone", "email"]) if (!form[f].trim()) errs[f] = t("required");
     if (!errs.name && (form.name.match(LETTERS_RE) || []).length < 2) errs.name = t("name_short");
     if (!errs.email && !EMAIL_RE.test(form.email.trim())) errs.email = t("email_invalid");
@@ -110,7 +117,7 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
-      document.getElementById(`signup-${["name", "phone", "email"].find((f) => errs[f])}`)?.focus();
+      document.getElementById(`signup-${["session", "name", "phone", "email"].find((f) => errs[f])}`)?.focus();
       return;
     }
     setSending(true);
@@ -122,6 +129,7 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
         phone: form.phone.trim(),
         email: form.email.trim(),
         party_size: Number(form.party),
+        ...(chosen ? { session_date: chosen.date, session_time: chosen.time } : {}),
         // MEH-3314: a full item takes the same fields onto its waitlist.
         ...(asWaitlist ? { waitlist: true } : {}),
       });
@@ -134,6 +142,11 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
       if (fields.length) setErrors(Object.fromEntries(fields.map((f) => [f, t(own[f])])));
       else setBanner((detail && typeof detail === "object" && !Array.isArray(detail) && detail.message) || t("generic"));
       if (detail?.code === "registration_not_enough") setCanWait(true);
+      // MEH-3447: a date that passed or was removed since the page loaded.
+      if (detail?.code === "registration_session_required") {
+        setBanner("");
+        setErrors({ session: t("session_required") });
+      }
     } finally {
       setSending(false);
     }
@@ -157,6 +170,7 @@ function SignupForm({ kind, itemId, waitlist = false, onDone }) {
           {t("waitlist_submit")}
         </button>
       )}
+      {hasSessions && <RegistrationSessionSelect sessions={sessions} value={form.session} onChange={set("session")} error={errors.session} />}
       <Input id="signup-name" label={t("name")} required autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} />
       <Input
         id="signup-phone"
@@ -273,6 +287,7 @@ function ActionLink({ action, label, testId, onClick }) {
  * @param {Function} [props.onWaitlistClick] counts the tap for the host (MEH-2991)
  * @param {string} [props.waitlistLabel]
  * @param {string} [props.barNote]     the date line beside the button on the phone bar
+ * @param {Array<{date: string, time: string, spots_left?: number | null}>} [props.sessions] MEH-3447: a recurring workshop's upcoming dates
  *
  * MEH-3043 (Sapir 13/11, option ב): the form opened and could never close.
  * Now: on a phone the sign-up button also rides a sticky bar while the inline
@@ -322,7 +337,7 @@ export default function RegistrationCta(props) {
   const formAction = action.kind === "form";
   const showBar = action.kind !== "full" && !done && !open && inlineVisible === false;
 
-  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} onDone={(waited) => setDone(waited ? "waitlisted" : "registered")} />;
+  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} sessions={props.sessions ?? []} onDone={(waited) => setDone(waited ? "waitlisted" : "registered")} />;
   const question = formAction && action.questionHref && (
     <a
       href={action.questionHref}

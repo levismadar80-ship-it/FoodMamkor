@@ -3584,6 +3584,10 @@
             "title": "Participants Count",
             "type": "integer"
           },
+          "registered": {
+            "title": "Registered",
+            "type": "integer"
+          },
           "spots_left": {
             "anyOf": [
               {
@@ -3604,7 +3608,8 @@
           "date",
           "time",
           "participants_count",
-          "spots_left"
+          "spots_left",
+          "registered"
         ],
         "title": "ExperienceSessionOut",
         "type": "object"

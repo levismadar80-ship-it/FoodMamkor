@@ -170,6 +170,9 @@ class ExperienceSessionOut(BaseModel):
     # own participants_count) — the owner's form edits it.
     participants_count: int
     spots_left: int | None
+    # MEH-3447: sign-ups on the site for this date — the owner's form asks
+    # before removing a date that has any. spots_left already implies it.
+    registered: int
 
 
 class ExperienceCreate(BaseModel):

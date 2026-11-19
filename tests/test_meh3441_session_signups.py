@@ -232,12 +232,14 @@ class TestReads:
                 "time": "10:00",
                 "participants_count": 1,
                 "spots_left": 1,
+                "registered": 1,
             },
             {
                 "date": D2.isoformat(),
                 "time": "10:00",
                 "participants_count": 0,
                 "spots_left": 3,
+                "registered": 0,
             },
         ]
         assert body["spots_left"] is None  # per date, not one pool

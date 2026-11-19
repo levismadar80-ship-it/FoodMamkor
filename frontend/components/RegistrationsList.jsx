@@ -12,20 +12,22 @@
  *           open:   loading → skeleton line; error → one line;
  *                   0 rows → «עוד אין הרשמות באתר»; 1 / many → one row each,
  *                   cancelled rows kept (struck name + «בוטלה») so she can see
- *                   who dropped out.
+ *                   who dropped out. MEH-3447: a workshop with dates groups
+ *                   them per date, titled «date, time · N רשומים».
  * Does NOT: render for items whose method isn't the on-site form (the caller
  *           decides), or let her edit / remove a sign-up (post-launch).
  * Related:  backend/app/routers/registrations.py (list_*_registrations),
  *           app/[locale]/producer/dashboard/{events,experiences}/page.js
- * History:  MEH-2766 (creation).
+ * History:  MEH-2766 (creation); MEH-3447 (grouped by date).
  */
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { formatDate } from "@/lib/format-date";
 
 /**
  * @param {object} props
@@ -35,6 +37,7 @@ import { SkeletonBlock } from "@/components/Skeleton";
  */
 export default function RegistrationsList({ kind, itemId, count = 0 }) {
   const t = useTranslations("registration.list");
+  const locale = useLocale();
   const [rows, setRows] = useState(null); // null = not loaded yet
   const [failed, setFailed] = useState(false);
 
@@ -48,8 +51,6 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
       .catch(() => setFailed(true));
   };
 
-  const waiting = (rows ?? []).filter((r) => r.status === "waitlisted");
-  const signups = (rows ?? []).filter((r) => r.status !== "waitlisted");
   const replaceRow = (row) => setRows((all) => (all ?? []).map((r) => (r.id === row.id ? row : r)));
 
   return (
@@ -74,26 +75,70 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
             {t("empty")}
           </p>
         ) : (
-          <>
-            {signups.length > 0 ? (
-              <RowList rows={signups} cancelledLabel={t("cancelled")} onMarked={replaceRow} />
-            ) : (
-              <p className="text-fg-muted" data-testid="registrations-empty">
-                {t("empty")}
-              </p>
-            )}
-            {/* MEH-3314: the waitlist sits apart from the sign-ups, in the order
-                it is offered spots (the route sorts by created_at). */}
-            {waiting.length > 0 && (
-              <div className="mt-3" data-testid="registrations-waitlist">
-                <h4 className="font-medium text-text numeric">{t("waitlist", { count: waiting.length })}</h4>
-                <RowList rows={waiting} cancelledLabel={t("cancelled")} ordered />
-              </div>
-            )}
-          </>
+          groupBySession(rows).map((g) => (
+            <section key={g.key} className={g.date ? "mt-3 first:mt-0" : undefined} data-testid="registrations-group">
+              {g.date && (
+                <h4 className="font-medium text-text numeric" data-testid="registrations-group-title">
+                  {t("session_group", {
+                    date: formatDate(g.date, locale, "long"),
+                    time: g.time,
+                    count: placesTaken(g.rows),
+                  })}
+                </h4>
+              )}
+              <Rows rows={g.rows} onMarked={replaceRow} />
+            </section>
+          ))
         )}
       </div>
     </details>
+  );
+}
+
+/**
+ * MEH-3447: a recurring workshop with dates — one group per date, in date
+ * order, and the undated rows (sign-ups from before the dates existed) last
+ * with no title. No dated row → one untitled group, today's list.
+ * @param {any[]} rows
+ */
+function groupBySession(rows) {
+  /** @type {Map<string, { key: string, date: string | null, time: string | null, rows: any[] }>} */
+  const groups = new Map();
+  for (const r of rows) {
+    const key = r.session_date ? `${r.session_date} ${r.session_time ?? ""}` : "";
+    if (!groups.has(key)) groups.set(key, { key, date: r.session_date ?? null, time: r.session_time?.slice(0, 5) ?? null, rows: [] });
+    groups.get(key)?.rows.push(r);
+  }
+  // "" (undated) sorts after every "YYYY-MM-DD …" key once flipped.
+  return [...groups.values()].sort((a, b) => (a.key && b.key ? a.key.localeCompare(b.key) : a.key ? -1 : 1));
+}
+
+/** People holding a place: registered rows, by party size (MEH-3315). */
+const placesTaken = (rows) => rows.filter((r) => r.status === "registered").reduce((n, r) => n + (r.party_size ?? 1), 0);
+
+/** The sign-ups, then the waitlist apart in the order it is offered spots. */
+function Rows({ rows, onMarked }) {
+  const t = useTranslations("registration.list");
+  const waiting = rows.filter((r) => r.status === "waitlisted");
+  const signups = rows.filter((r) => r.status !== "waitlisted");
+  return (
+    <>
+      {signups.length > 0 ? (
+        <RowList rows={signups} cancelledLabel={t("cancelled")} onMarked={onMarked} />
+      ) : (
+        <p className="text-fg-muted" data-testid="registrations-empty">
+          {t("empty")}
+        </p>
+      )}
+      {/* MEH-3314: the waitlist sits apart from the sign-ups, in the order
+          it is offered spots (the route sorts by created_at). */}
+      {waiting.length > 0 && (
+        <div className="mt-3" data-testid="registrations-waitlist">
+          <h4 className="font-medium text-text numeric">{t("waitlist", { count: waiting.length })}</h4>
+          <RowList rows={waiting} cancelledLabel={t("cancelled")} ordered />
+        </div>
+      )}
+    </>
   );
 }
 
