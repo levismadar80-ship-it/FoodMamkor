@@ -11,7 +11,6 @@ strip now runs per token (so multi-word queries get it too) and is paired
 with a ה/ת stem, in app/utils/hebrew_search.py. These tests continue to lock
 the MEH-252 behaviour as the single-token case of that design.
 """
-import pytest
 from tests.conftest import make_category, make_producer
 
 

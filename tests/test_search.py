@@ -13,7 +13,6 @@ Covers:
 """
 import uuid
 
-import pytest
 from sqlalchemy import text
 
 from app.models.models import Product
