@@ -135,3 +135,33 @@ def test_held_page_user_is_a_real_owner(client, db, monkeypatch):
         client, db, p, admin=make_user(db, role="admin", email="a2@example.com")
     )
     assert r.status_code == 409, r.text
+
+
+def test_held_page_is_not_announced_and_a_published_one_is(client, db, monkeypatch):
+    """IndexNow is told only about a page that actually went live."""
+    pinged = []
+    monkeypatch.setattr(poi.indexnow, "notify", lambda urls: pinged.append(list(urls)))
+    _record(monkeypatch, poi)
+    held, t1 = _hidden_invited_then_photo_removed(client, db)
+    assert accept_invite(client, t1).status_code == 200
+    assert pinged == []
+
+    live = make_producer(db, status="inactive", images=_PHOTO, name="מאפייה שלמה")
+    _, t2 = invite(client, db, live, email="second@example.com")
+    assert accept_invite(client, t2, email="second@example.com").status_code == 200
+    assert len(pinged) == 1
+
+
+def test_approved_page_without_a_photo_stays_live(client, db, monkeypatch):
+    """Holding applies to a HIDDEN page only: an owner accepting never takes
+    down a page that is already public."""
+    notes, mails = _record(monkeypatch, poi)
+    p = make_producer(db, status="approved", images=_PHOTO)
+    _, token = invite(client, db, p)
+    p.images = []
+    db.commit()
+
+    assert accept_invite(client, token).status_code == 200
+    assert _row(db, p).status == "approved"
+    assert notes[0][1]["missing"] == []
+    assert len([m for m in mails if m[1] == _APPROVED_SUBJECT]) == 1
