@@ -22,7 +22,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FileArrowUp } from "@phosphor-icons/react";
 import api from "@/lib/api";
-import { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL } from "@/lib/upload-limits";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { detailToMessage } from "@/lib/errors";
 import { shrinkMenuImage } from "@/lib/menu-image";
 import Button from "@/components/ui/Button";
@@ -111,7 +111,7 @@ export default function MenuImport({ productCount, onPublished, hidden = false }
     setPhase("reading");
     try {
       const fd = await buildForm(files);
-      if (!fd) throw { response: { status: 413, data: { detail: UPLOAD_TOO_LARGE_DETAIL } } };
+      if (!fd) throw { response: { status: 413, data: { detail: tp("errors.upload_size") } } };
       const res = await api.post("/producers/me/menu-import/read", fd);
       // Rule 19: parse before use; a shape we don't know is a failed read.
       const parsed = MenuReadOut.safeParse(res.data);
