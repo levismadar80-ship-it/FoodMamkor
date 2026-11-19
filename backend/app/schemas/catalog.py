@@ -544,6 +544,7 @@ class ProductCreate(BaseModel):
     storage_info: StorageInfoField | None = None
     gluten_detail: AllergenDetailField | None = None  # MEH-3442
     nuts_detail: AllergenDetailField | None = None  # MEH-3442
+    no_allergens: bool = False  # MEH-3445: «אין במוצר אלרגנים מהרשימה»
 
     @field_validator("allergens", "may_contain")
     @classmethod
@@ -579,6 +580,9 @@ class ProductCreate(BaseModel):
         self.nuts_detail = detail_if_declared(
             "tree_nuts", self.allergens, self.may_contain, self.nuts_detail
         )
+        # MEH-3445: a ticked code is a stronger claim than "none".
+        if self.allergens or self.may_contain:
+            self.no_allergens = False
         return self
 
 
@@ -608,11 +612,19 @@ class ProductUpdate(BaseModel):
     storage_info: StorageInfoField | None = None
     gluten_detail: AllergenDetailField | None = None  # MEH-3442
     nuts_detail: AllergenDetailField | None = None  # MEH-3442
+    # MEH-3445: exclude_unset → unsent stays put; null means false (the
+    # column is NOT NULL). The router clears it while a code is stored.
+    no_allergens: bool | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
+
+    @field_validator("no_allergens")
+    @classmethod
+    def _null_is_false(cls, v: bool | None) -> bool:
+        return bool(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -664,6 +676,7 @@ class ProductOut(BaseModel):
     storage_info: str | None = None  # MEH-3444
     gluten_detail: str | None = None  # MEH-3442
     nuts_detail: str | None = None  # MEH-3442
+    no_allergens: bool = False  # MEH-3445
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
 

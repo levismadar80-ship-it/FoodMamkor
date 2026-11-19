@@ -242,6 +242,7 @@
       "is_vegetarian",
       "may_contain",
       "name",
+      "no_allergens",
       "nuts_detail",
       "position",
       "price_max",

@@ -350,6 +350,8 @@ export default function ProductSheet({
     (c) => ALLERGEN_CODES.includes(c) && !allergenCodes.includes(c),
   );
   const hasMayContain = mayContainCodes.length > 0;
+  // MEH-3445: «אין במוצר אלרגנים מהרשימה» — only when no code is listed.
+  const declaredNone = !!product.no_allergens && !hasAllergens && !hasMayContain;
   // MEH-3442: «גלוטן (כוסמין)», «אגוזים (שקדים)» — the owner's detail in
   // brackets after its allergen, wherever that allergen is listed.
   const ALLERGEN_DETAIL = { gluten: product.gluten_detail, tree_nuts: product.nuts_detail };
@@ -665,7 +667,12 @@ export default function ProductSheet({
                     {t("producer.detail.sections.products.facts.may_contain", { list: allergenList(mayContainCodes) })}
                   </p>
                 )}
-                {!hasAllergens && !hasMayContain && (
+                {declaredNone && (
+                  <p className="text-sm text-text" data-testid="product-sheet-allergens-none">
+                    {t("producer.detail.sections.products.facts.no_allergens")}
+                  </p>
+                )}
+                {!hasAllergens && !hasMayContain && !declaredNone && (
                   <p className="text-sm text-text" data-testid="product-sheet-allergens-undeclared">
                     {t("producer.detail.sections.products.facts.allergens_undeclared")}
                   </p>
@@ -684,7 +691,7 @@ export default function ProductSheet({
                   </p>
                 </div>
               )}
-              {(hasIngredients || hasAllergens || hasMayContain || hasStorage) && (
+              {(hasIngredients || hasAllergens || hasMayContain || declaredNone || hasStorage) && (
                 <p className="text-xs text-fg-muted" data-testid="product-sheet-facts-declared">
                   {t("producer.detail.sections.products.facts.declared_by_business")}
                 </p>

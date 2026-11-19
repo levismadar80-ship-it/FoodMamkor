@@ -396,6 +396,7 @@ _OWNER_DECLARED_FLAGS = {
     "storage_info",  # MEH-3444
     "gluten_detail",  # MEH-3442
     "nuts_detail",  # MEH-3442
+    "no_allergens",  # MEH-3445
 }
 
 _NOT_EDITABLE = "אפשר לערוך מוצרים מהאדמין רק בטיוטה שעוד לא שויכה לבעלת העסק"

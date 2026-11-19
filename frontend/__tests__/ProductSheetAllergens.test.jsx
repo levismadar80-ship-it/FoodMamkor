@@ -145,4 +145,19 @@ describe("ProductSheet — ingredients + allergens (MEH-2662 · MEH-3439)", () =
     expect(screen.queryByTestId("product-sheet-may-contain")).toBeNull();
     expect(screen.queryByText(/pineapple/)).toBeNull();
   });
+
+  // MEH-3445: «אין במוצר אלרגנים מהרשימה» — a declaration, not a gap.
+  it("declared none: the «אין» line + declaration line, no «לא ציין»", () => {
+    renderSheet({ no_allergens: true });
+    expect(screen.getByTestId("product-sheet-allergens-none")).toHaveTextContent("אין במוצר אלרגנים מהרשימה");
+    expect(screen.queryByTestId("product-sheet-allergens-undeclared")).toBeNull();
+    expect(screen.getByTestId("product-sheet-facts-declared")).toBeInTheDocument();
+  });
+
+  it("declared none next to a listed code: the code wins, no «אין» line", () => {
+    renderSheet({ no_allergens: true, may_contain: ["sesame"] });
+    expect(screen.queryByTestId("product-sheet-allergens-none")).toBeNull();
+    expect(screen.getByTestId("product-sheet-may-contain")).toBeInTheDocument();
+  });
 });
+

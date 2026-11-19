@@ -929,6 +929,7 @@ export const listProducersAdminProducersGetResponseProductsItemIsLowCarbDefault 
 export const listProducersAdminProducersGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemIsVeganDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemIsVegetarianDefault = false;
+export const listProducersAdminProducersGetResponseProductsItemNoAllergensDefault = false;
 export const listProducersAdminProducersGetResponseProductsDefault = [];
 export const listProducersAdminProducersGetResponseProductsCountDefault = 0;
 export const listProducersAdminProducersGetResponseReportCountDefault = 0;
@@ -1093,6 +1094,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1197,6 +1199,7 @@ export const adminCreateProducerAdminProducersPostResponseProductsItemIsLowCarbD
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVeganDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVegetarianDefault = false;
+export const adminCreateProducerAdminProducersPostResponseProductsItemNoAllergensDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsDefault = [];
 export const adminCreateProducerAdminProducersPostResponseProductsCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseReportCountDefault = 0;
@@ -1361,6 +1364,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1462,6 +1466,7 @@ export const pendingProducersAdminProducersPendingGetResponseProductsItemIsLowCa
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVeganDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVegetarianDefault = false;
+export const pendingProducersAdminProducersPendingGetResponseProductsItemNoAllergensDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseProductsCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseReportCountDefault = 0;
@@ -1626,6 +1631,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1790,6 +1796,7 @@ export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLo
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemNoAllergensDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault = 0;
@@ -1954,6 +1961,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2055,6 +2063,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemI
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVeganDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVegetarianDefault = false;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemNoAllergensDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReportCountDefault = 0;
@@ -2219,6 +2228,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2538,6 +2548,7 @@ export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponse
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault = false;
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault = false;
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault = false;
+export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseNoAllergensDefault = false;
 
 export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2555,6 +2566,7 @@ export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4683,6 +4695,7 @@ export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsLowCar
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVeganDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVegetarianDefault = false;
+export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemNoAllergensDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsCountDefault = 0;
 export const readDraftPreviewProducerPreviewTokenGetResponseReportCountDefault = 0;
@@ -4818,6 +4831,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5082,6 +5096,7 @@ export const createProducerProducersPostResponseProductsItemIsLowCarbDefault = f
 export const createProducerProducersPostResponseProductsItemIsNoAddedSugarDefault = false;
 export const createProducerProducersPostResponseProductsItemIsVeganDefault = false;
 export const createProducerProducersPostResponseProductsItemIsVegetarianDefault = false;
+export const createProducerProducersPostResponseProductsItemNoAllergensDefault = false;
 export const createProducerProducersPostResponseProductsDefault = [];
 export const createProducerProducersPostResponseProductsCountDefault = 0;
 export const createProducerProducersPostResponseReportCountDefault = 0;
@@ -5217,6 +5232,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5303,6 +5319,7 @@ export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsLowCar
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVeganDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegetarianDefault = false;
+export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemNoAllergensDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault = 0;
@@ -5438,6 +5455,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5558,6 +5576,7 @@ export const getMyProducerProducersMeGetResponseProductsItemIsLowCarbDefault = f
 export const getMyProducerProducersMeGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemIsVeganDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault = false;
+export const getMyProducerProducersMeGetResponseProductsItemNoAllergensDefault = false;
 export const getMyProducerProducersMeGetResponseProductsDefault = [];
 export const getMyProducerProducersMeGetResponseProductsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReportCountDefault = 0;
@@ -5700,6 +5719,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5791,6 +5811,7 @@ export const updateMyProducerProducersMePutResponseProductsItemIsLowCarbDefault 
 export const updateMyProducerProducersMePutResponseProductsItemIsNoAddedSugarDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemIsVeganDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefault = false;
+export const updateMyProducerProducersMePutResponseProductsItemNoAllergensDefault = false;
 export const updateMyProducerProducersMePutResponseProductsDefault = [];
 export const updateMyProducerProducersMePutResponseProductsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReportCountDefault = 0;
@@ -5933,6 +5954,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6354,6 +6376,7 @@ export const setMyProductOrderProducersMeProductOrderPutResponseIsLowCarbDefault
 export const setMyProductOrderProducersMeProductOrderPutResponseIsNoAddedSugarDefault = false;
 export const setMyProductOrderProducersMeProductOrderPutResponseIsVeganDefault = false;
 export const setMyProductOrderProducersMeProductOrderPutResponseIsVegetarianDefault = false;
+export const setMyProductOrderProducersMeProductOrderPutResponseNoAllergensDefault = false;
 
 export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6371,6 +6394,7 @@ export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductOrderProducersMeProductOrderPutResponseIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductOrderProducersMeProductOrderPutResponseNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6706,6 +6730,7 @@ export const listMyProductsProducersMeProductsGetResponseIsLowCarbDefault = fals
 export const listMyProductsProducersMeProductsGetResponseIsNoAddedSugarDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVeganDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVegetarianDefault = false;
+export const listMyProductsProducersMeProductsGetResponseNoAllergensDefault = false;
 
 export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6723,6 +6748,7 @@ export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zo
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6742,6 +6768,7 @@ export const createMyProductProducersMeProductsPostResponseIsLowCarbDefault = fa
 export const createMyProductProducersMeProductsPostResponseIsNoAddedSugarDefault = false;
 export const createMyProductProducersMeProductsPostResponseIsVeganDefault = false;
 export const createMyProductProducersMeProductsPostResponseIsVegetarianDefault = false;
+export const createMyProductProducersMeProductsPostResponseNoAllergensDefault = false;
 
 export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6759,6 +6786,7 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6801,6 +6829,7 @@ export const updateMyProductProducersMeProductsProductIdPutResponseIsLowCarbDefa
 export const updateMyProductProducersMeProductsProductIdPutResponseIsNoAddedSugarDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVeganDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault = false;
+export const updateMyProductProducersMeProductsProductIdPutResponseNoAllergensDefault = false;
 
 export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6818,6 +6847,7 @@ export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE_
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6836,6 +6866,7 @@ export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsLowC
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsNoAddedSugarDefault = false;
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVeganDefault = false;
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVegetarianDefault = false;
+export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseNoAllergensDefault = false;
 
 export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6853,6 +6884,7 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setMyProductGroupProducersMeProductsProductIdGroupPutResponseNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7247,6 +7279,7 @@ export const getProducerProducersProducerIdGetResponseProductsItemIsLowCarbDefau
 export const getProducerProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
+export const getProducerProducersProducerIdGetResponseProductsItemNoAllergensDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsDefault = [];
 export const getProducerProducersProducerIdGetResponseProductsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseReportCountDefault = 0;
@@ -7382,6 +7415,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDefault),
   "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemNoAllergensDefault),
   "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

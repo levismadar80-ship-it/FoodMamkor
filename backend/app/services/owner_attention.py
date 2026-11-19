@@ -147,7 +147,7 @@ def _products(db: Session, producer_id: UUID) -> int:
 
 def _products_no_allergens(db: Session, producer_id: UUID) -> int:
     # MEH-3445: a published product where neither «מכיל» nor «עלול להכיל» is
-    # ticked — the sheet then says «בית העסק לא ציין אלרגנים» (MEH-3439).
+    # ticked, nor «אין במוצר אלרגנים מהרשימה» — the sheet then says «בית העסק לא ציין אלרגנים» (MEH-3439).
     # A draft is not on the page yet, so it is not waiting for her.
     n: Any = (
         db.query(func.count(Product.id))
@@ -156,6 +156,8 @@ def _products_no_allergens(db: Session, producer_id: UUID) -> int:
             Product.is_draft.is_(False),
             Product.allergens.is_(None),
             Product.may_contain.is_(None),
+            # «אין במוצר אלרגנים מהרשימה» is a declaration, not a gap.
+            Product.no_allergens.is_(False),
         )
         .scalar()
     )

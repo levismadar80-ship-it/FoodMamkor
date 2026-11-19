@@ -1374,6 +1374,10 @@ def update_my_product(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
                 getattr(product, column),
             ),
         )
+    # MEH-3445: «אין אלרגנים» never stands next to a ticked code — the code
+    # is the stronger claim, whichever of the two this PUT sent.
+    if product.allergens or product.may_contain:
+        product.no_allergens = False  # type: ignore[assignment]
     db.commit()
     db.refresh(product)
     return product

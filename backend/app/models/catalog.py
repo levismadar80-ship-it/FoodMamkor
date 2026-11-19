@@ -114,6 +114,13 @@ class Product(Base):
     # gluten / tree nuts; kept only while that code is declared (allergens.py).
     gluten_detail = Column(Text, nullable=True)
     nuts_detail = Column(Text, nullable=True)
+    # MEH-3445: «אין במוצר אלרגנים מהרשימה» — the owner's explicit declaration
+    # that none of the listed allergens is in the product. Distinct from NULL
+    # lists («לא ציין»). Never true while a code is in `allergens` or
+    # `may_contain` (schemas/catalog.py, producer_me.update_my_product).
+    no_allergens = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
     # MEH-3218: on-site ordering (parent MEH-3216). The PRICE stays where it
     # is: `price_min == price_max` is an exact price, a real range means the
     # final price is set at confirmation. No second price column, so one owner

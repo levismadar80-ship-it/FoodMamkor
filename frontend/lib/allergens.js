@@ -43,5 +43,20 @@ export function toggleDeclared(state, kind, code) {
   const next = toggleAllergen(state[kind], code);
   const on = next.includes(code);
   const otherList = (state[other] || []).filter((c) => !(on && c === code));
-  return /** @type {{ allergens: string[], may_contain: string[] }} */ ({ [kind]: next, [other]: otherList });
+  // MEH-3445: a ticked code ends «אין במוצר אלרגנים מהרשימה».
+  return /** @type {{ allergens: string[], may_contain: string[], no_allergens?: boolean }} */ ({
+    [kind]: next,
+    [other]: otherList,
+    ...(on ? { no_allergens: false } : {}),
+  });
+}
+
+/**
+ * MEH-3445: «אין במוצר אלרגנים מהרשימה». Turning it on clears both groups —
+ * "none" and a ticked code cannot both be true (the backend agrees).
+ * @param {{ no_allergens?: boolean }} state
+ * @returns {{ no_allergens: boolean, allergens?: string[], may_contain?: string[] }}
+ */
+export function toggleNoAllergens(state) {
+  return state.no_allergens ? { no_allergens: false } : { no_allergens: true, allergens: [], may_contain: [] };
 }

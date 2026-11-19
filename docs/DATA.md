@@ -319,7 +319,8 @@ products       (id, producer_id FK, name, description,
                 may_contain Text[] NULL,                         -- MEH-3439: «עלול להכיל» (cross-contact), same closed list; a code in allergens is dropped from it («מכיל» wins, drop_contained); NULL = not filled. Migration f1a7c3e9b2d5
                 storage_info Text NULL,                          -- MEH-3444: «אחסון ותוקף», owner free text, ≤300 chars on input, bleached; NULL = not shown. Migration b4d8e2f6a1c3
                 gluten_detail Text NULL,                         -- MEH-3442: «איזה דגן?», ≤80 chars, bleached; dropped when gluten is in neither list (detail_if_declared). Migration c9e1a5d3f7b2
-                nuts_detail Text NULL)                           -- MEH-3442: «איזה אגוז?», same rule for tree_nuts
+                nuts_detail Text NULL,                           -- MEH-3442: «איזה אגוז?», same rule for tree_nuts
+                no_allergens Boolean NOT NULL DEFAULT false)     -- MEH-3445: «אין במוצר אלרגנים מהרשימה»; never true while a code is in allergens/may_contain
 producer_offers (id, producer_id FK CASCADE, offer_type text NOT NULL,
                  threshold_value int nullable, threshold_unit text nullable,
                  headline text nullable, starts_at date nullable,

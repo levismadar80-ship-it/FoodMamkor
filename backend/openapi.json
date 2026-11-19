@@ -5240,6 +5240,11 @@
             "title": "Name",
             "type": "string"
           },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
           "nuts_detail": {
             "anyOf": [
               {
@@ -15067,6 +15072,11 @@
             "title": "Name",
             "type": "string"
           },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
           "nuts_detail": {
             "anyOf": [
               {
@@ -15736,6 +15746,11 @@
             "title": "Name",
             "type": "string"
           },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
           "nuts_detail": {
             "anyOf": [
               {
@@ -15964,6 +15979,17 @@
               }
             ],
             "title": "Name"
+          },
+          "no_allergens": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Allergens"
           },
           "nuts_detail": {
             "anyOf": [
