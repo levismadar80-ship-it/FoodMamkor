@@ -827,7 +827,8 @@ DEFAULT_SETTINGS = {
     # next /admin/settings load. Consumer-side reads happen via the
     # public `GET /holiday-mode` endpoint in main.py (holiday) and
     # `lib/friday-mode.js` on the frontend (Friday — currently localStorage
-    # + timezone rule; a public /friday-mode endpoint is TODO).
+    # + timezone rule; no public /friday-mode endpoint yet, so the admin
+    # toggle reaches only the admin's own browser — MEH-3455).
     "holiday_override_enabled": "false",
     "holiday_override_key": "",
     "friday_mode_override": "false",
