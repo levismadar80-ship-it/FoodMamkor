@@ -7,11 +7,12 @@
  *           only listens, and adds text to an error that is already thrown.
  * Related:  e2e/flows/30-login-journey-c.spec.ts (C2 wrong credentials),
  *           e2e/flows/25-role-reachability.spec.ts (return to dashboard),
- *           playwright.config.ts `trace: "on-first-retry"`.
+ *           playwright.config.ts `trace` (was "on-first-retry"; MEH-3437
+ *           made it "retain-on-first-failure").
  * History:  MEH-3154 · MEH-3380 (created).
  *
  * Why this exists: both flakes fail on the FIRST attempt and pass on the
- * retry. The trace is recorded only on the retry (`on-first-retry`), so the
+ * retry. Until MEH-3437 the trace was recorded only on the retry (`on-first-retry`), so the
  * failing attempt has no trace, and the screenshot/video sit in an artifact
  * that a Claude Code sandbox cannot download (blob storage is egress-denied,
  * measured 18/11). The job log is the one record every session can read, so

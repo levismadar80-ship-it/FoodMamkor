@@ -151,7 +151,10 @@ export default defineConfig({
     // MEH-484 — flake visibility: keep trace + video small by default,
     // capture rich evidence only when a test fails or retries.
     screenshot: "only-on-failure",
-    trace: "on-first-retry",
+    // MEH-3437: the FIRST attempt is recorded and kept only when it fails.
+    // `on-first-retry` recorded only the retry, i.e. the attempt that passed,
+    // so a flaky first-attempt red never had a trace (MEH-3154, MEH-3380).
+    trace: "retain-on-first-failure",
     video: "retain-on-failure",
     // MEH-264 — Vercel Deployment Protection returns 403 "host_not_allowed"
     // on every preview URL until requests present this bypass header.
