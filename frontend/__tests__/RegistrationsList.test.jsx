@@ -63,7 +63,7 @@ describe("RegistrationsList", () => {
     api.get.mockResolvedValue({ data: [row(1)] });
     open(renderList(1));
     await waitFor(() => expect(screen.getAllByTestId("registration-row")).toHaveLength(1));
-    expect(screen.getByText("050-0000001").closest("a")).toHaveAttribute("href", "tel:050-0000001");
+    expect(screen.getByText("050-0000001").closest("a")).toHaveAttribute("href", "tel:0500000001");
     expect(screen.getByText("r1@example.com").closest("a")).toHaveAttribute("href", "mailto:r1@example.com");
     expect(screen.queryByText(L.empty)).not.toBeInTheDocument();
   });

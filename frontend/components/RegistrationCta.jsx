@@ -33,6 +33,7 @@ import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import { telHref } from "@/lib/contact-method"; // MEH-3461: the one tel: builder
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -52,7 +53,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** @type {Record<string, import("@/lib/use-account-prefill").AccountField>} */
 const SIGNUP_PREFILL = { name: "name", phone: "phone", email: "email" };
 
-const telHref = (phone) => `tel:${String(phone).replace(/[^\d+]/g, "")}`;
 
 // MEH-3315: one sign-up for up to 10 people (the server's 1–10 rule).
 const PARTY_SIZES = Array.from({ length: 10 }, (_, i) => String(i + 1));

@@ -39,6 +39,18 @@ export function httpUrl(raw) {
 }
 
 /**
+ * MEH-3461: the ONE `tel:` builder. Separators (spaces, dashes, brackets) are
+ * dropped, so a dialler gets the digits and a leading `+`, whatever way the
+ * number was typed. Five files used to build their own, three ways.
+ * @param {string | null | undefined} raw
+ * @returns {string | null}
+ */
+export function telHref(raw) {
+  const digits = String(raw ?? "").replace(/[^\d+]/g, "");
+  return digits ? `tel:${digits}` : null;
+}
+
+/**
  * MEH-2991: the ONE table of contact hrefs, for every entity that carries the
  * business contact fields (a business, an organizer — both Producer rows).
  * The href for one channel, or null when the entity lacks the field that
@@ -62,10 +74,8 @@ export function contactHref(method, producer, waMessage = "") {
       // `contact_cta.wa_greeting`, passed in by the caller.
       return getWhatsAppHref(digits, waMessage);
     }
-    case "phone": {
-      const phone = (producer.phone || "").trim();
-      return phone ? `tel:${phone}` : null;
-    }
+    case "phone":
+      return telHref(producer.phone);
     case "website":
       return httpUrl(producer.website);
     case "email": {

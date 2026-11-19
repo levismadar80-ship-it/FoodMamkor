@@ -37,7 +37,7 @@ import ShareButton from "@/components/ShareButton";
 import GalleryViewAllButton from "@/components/GalleryViewAllButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { avatarInitial } from "@/components/ui/Avatar";
+import Avatar, { avatarInitial } from "@/components/ui/Avatar";
 import { buildOrganizerJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-3348
 
 const ROUTE = "/[locale]/organizers/[slug]";
@@ -246,13 +246,16 @@ export default async function OrganizerPage(props) {
             />
           )}
           {initial && (
-            <span
+            // MEH-3461: the shared Avatar (was a hand-drawn circle).
+            <Avatar
+              name={organizer.name}
+              fallback=""
+              size={80}
               aria-hidden="true"
               data-testid="organizer-avatar"
-              className="absolute -bottom-10 start-4 md:start-14 w-20 h-20 rounded-full bg-primary text-white font-headline-md text-3xl font-bold grid place-items-center ring-4 ring-background"
-            >
-              {initial}
-            </span>
+              className="absolute -bottom-10 start-4 md:start-14 ring-4 ring-background"
+              letterClassName="font-headline-md text-3xl font-bold"
+            />
           )}
         </div>
         <div className="px-4 pt-14 space-y-4 md:px-14">
