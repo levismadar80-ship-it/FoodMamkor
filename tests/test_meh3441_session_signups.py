@@ -67,6 +67,8 @@ def _workshop(db, **kw):
 def _join(client, ex, email, day=None, **kw):
     at = kw.get("at", "10:00")
     body = {**_signup(email=email), "waitlist": kw.get("waitlist", False)}
+    if "party_size" in kw:
+        body["party_size"] = kw["party_size"]
     if day is not None:
         body |= {"session_date": day.isoformat(), "session_time": at}
     return client.post(f"/experiences/{ex.id}/registrations", json=body)
@@ -232,15 +234,33 @@ class TestReads:
                 "time": "10:00",
                 "participants_count": 1,
                 "spots_left": 1,
+                "registered": None,
             },
             {
                 "date": D2.isoformat(),
                 "time": "10:00",
                 "participants_count": 0,
                 "spots_left": 3,
+                "registered": None,
             },
         ]
         assert body["spots_left"] is None  # per date, not one pool
+
+    def test_the_owner_sees_who_each_date_holds_and_a_stranger_does_not(
+        self, client, db, mail
+    ):
+        """MEH-3447: the owner's form asks before removing a date with people
+        on it — signed up or waiting, by party size. Nobody else sees it."""
+        host, ex = _workshop(db, max_participants=2, sessions=[_s(D1), _s(D2)])
+        assert _join(client, ex, "a@example.com", D1, party_size=2).status_code == 201
+        assert _join(client, ex, "w@example.com", D1, waitlist=True).status_code == 201
+        owner = client.get(f"/experiences/{ex.id}", headers=auth_header(host)).json()
+        assert [s["registered"] for s in owner["sessions"]] == [3, 0]
+        public = client.get(f"/experiences/{ex.id}").json()
+        assert [s["registered"] for s in public["sessions"]] == [None, None]
+        listed = client.get("/experiences").json()
+        mine = next(e for e in listed if e["id"] == str(ex.id))
+        assert [s["registered"] for s in mine["sessions"]] == [None, None]
 
     def test_the_owner_list_gives_each_sign_up_its_date(self, client, db, mail):
         host, ex = _workshop(db, max_participants=5)
