@@ -1,15 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
-// 19/11: the «שאלות נפוצות» block is closed by default; these cases test what
-// is inside it, so every render opens it first (the closed state has its own
-// test in QuestionChipsCollapsed.test.jsx).
-const render = (...args) => {
-  const result = rtlRender(...args);
-  const toggle = result.container.querySelector("[data-testid='question-chips-toggle']");
-  if (toggle) fireEvent.click(toggle);
-  return result;
-};
 
 // MEH-1146 chunk A — the editorial contact card: exactly one primary CTA,
 // ready-made question links that lead with the dynamic city delivery question
@@ -110,13 +101,14 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
     expect(screen.queryByText("פתוח להזמנות")).not.toBeInTheDocument();
   });
 
-  it("leads the ready-made questions with the dynamic city delivery question", () => {
-    render1();
-    const links = screen.getAllByTestId("question-link");
-    expect(links.length).toBeGreaterThan(0);
-    expect(links.length).toBeLessThanOrEqual(3);
-    // MEH-2602: the visitor's area, never the business's own city.
-    expect(links[0]).toHaveTextContent("אפשר משלוח לאזור שלי?");
+  // MEH-3460 (Sapir 20/11): «שאלות נפוצות» left the card for its own page
+  // section (ProducerSections). The card keeps the button and the icons.
+  it("does not render the ready-made questions any more", () => {
+    render1({ custom_questions: ["ש1", "ש2"], payment_info: { methods: ["bit"], timing: null, note: null } });
+    // control: the card itself rendered
+    expect(screen.getAllByTestId("primary-contact-button")).toHaveLength(1);
+    expect(screen.queryByTestId("question-chips")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("question-link")).not.toBeInTheDocument();
   });
 
   it("quiet icon row includes secondary channels but excludes the primary method", () => {
@@ -142,21 +134,6 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
     render1();
     expect(screen.queryByTestId("follow-button")).not.toBeInTheDocument();
     expect(screen.queryByTestId("share-button")).not.toBeInTheDocument();
-  });
-
-  // MEH-1334 chunk 2: progressive disclosure — cap visible ready-made
-  // questions at 3, reveal the rest behind "עוד שאלות" (single level).
-  it("caps ready-made questions at 3 and reveals the rest via עוד שאלות", () => {
-    // custom_questions are the only Q3+ source (MEH-2385)
-    // → a deterministic large set that forces the expander.
-    render1({ custom_questions: ["ש1", "ש2", "ש3", "ש4", "ש5"] });
-    const before = screen.getAllByTestId("question-link").length;
-    expect(before).toBeLessThanOrEqual(3);
-    const more = screen.getByTestId("more-questions");
-    fireEvent.click(more);
-    // after expanding, more items are shown and the button is gone
-    expect(screen.getAllByTestId("question-link").length).toBeGreaterThan(before);
-    expect(screen.queryByTestId("more-questions")).not.toBeInTheDocument();
   });
 
   // MEH-1334 chunk 2: desktop phone tap reveals the number inline, no dial.

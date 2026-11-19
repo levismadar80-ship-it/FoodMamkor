@@ -1203,10 +1203,12 @@ test.describe("Visual parity — MEH-991", () => {
     }
     await page.goto(`/producer/${borrowedId}`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
-    // 19/11: the «שאלות נפוצות» block is closed by default — open it first.
-    await page.locator('[data-testid="question-chips-toggle"]:visible').first().click();
+    // MEH-3460 (20/11): «שאלות נפוצות» is its own section lower on the page,
+    // not in the contact card — scroll the opened answer into the frame.
     await page.locator('[data-testid="quick-answer-toggle"]:visible').first().click();
-    await page.locator('[data-testid="quick-answer-content"]:visible').first().waitFor({ timeout: 5_000 });
+    const answer = page.locator('[data-testid="quick-answer-content"]:visible').first();
+    await answer.waitFor({ timeout: 5_000 });
+    await answer.scrollIntoViewIfNeeded();
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail-disclosure-open.png", {
       ...SHOT,

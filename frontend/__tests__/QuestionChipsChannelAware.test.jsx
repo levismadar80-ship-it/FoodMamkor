@@ -25,17 +25,8 @@
  * something did render, so an empty block cannot masquerade as a pass.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
-// 19/11: the «שאלות נפוצות» block is closed by default; these cases test what
-// is inside it, so every render opens it first (the closed state has its own
-// test in QuestionChipsCollapsed.test.jsx).
-const render = (...args) => {
-  const result = rtlRender(...args);
-  const toggle = result.container.querySelector("[data-testid='question-chips-toggle']");
-  if (toggle) fireEvent.click(toggle);
-  return result;
-};
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
@@ -113,12 +104,21 @@ const allHrefs = (container) =>
  * Both hosts are checked because getWhatsAppHref (lib/utils.js:17-25) picks
  * between them from `matchMedia` at call time — asserting only `wa.me` would
  * pass on a desktop-shaped runtime purely because the OTHER host was used.
- * The control: the fixtures below carry delivery data, so the block always
- * renders the #section-delivery jump — at least one anchor (MEH-3460).
+ * The control (MEH-3460, 20/11): the block must have rendered (its section is
+ * there), and the SAME producer re-rendered as whatsapp-primary must produce a
+ * wa.me link — so a zero here is the channel gate, not a dead locator.
  */
-function expectNoWhatsApp(container) {
+function expectNoWhatsApp(container, producer) {
+  expect(container.querySelector("#section-faq"), "the block rendered nothing — an empty pass").not.toBeNull();
+  const control = render(
+    <WhatsAppQuestionChips producer={{ ...producer, primary_contact_method: "whatsapp" }} />,
+  );
+  expect(
+    allHrefs(control.container).some((h) => h.includes("wa.me") || h.includes("web.whatsapp.com")),
+    "CONTROL: the same producer as whatsapp-primary must render a WhatsApp link",
+  ).toBe(true);
+  control.unmount();
   const hrefs = allHrefs(container);
-  expect(hrefs.length, "the block rendered nothing — an empty pass").toBeGreaterThan(0);
   for (const href of hrefs) {
     expect(href).not.toContain("wa.me");
     expect(href).not.toContain("web.whatsapp.com");
@@ -198,13 +198,18 @@ describe("whatsapp-primary", () => {
 // ============================================================
 
 describe.each(NON_WHATSAPP)("%s-primary", (method) => {
-  // offers_delivery → the #section-delivery jump renders: the anchor that
-  // keeps expectNoWhatsApp's control honest.
-  const producer = { ...baseProducer, primary_contact_method: method, offers_delivery: true };
+  // payment_info keeps the block alive (an in-page answer); the custom
+  // question is the row that WOULD be a wa.me link on a whatsapp-primary page.
+  const producer = {
+    ...baseProducer,
+    primary_contact_method: method,
+    payment_info: { methods: ["bit"], timing: null, note: null },
+    custom_questions: ["יש חלה לשבת?"],
+  };
 
   it("renders zero WhatsApp links anywhere in the block", () => {
     const { container } = render(<WhatsAppQuestionChips producer={producer} />);
-    expectNoWhatsApp(container);
+    expectNoWhatsApp(container, producer);
   });
 
   it("hides the stock question chip", () => {
@@ -213,11 +218,9 @@ describe.each(NON_WHATSAPP)("%s-primary", (method) => {
   });
 
   it("hides custom question chips too", () => {
-    const { container } = render(
-      <WhatsAppQuestionChips producer={{ ...producer, custom_questions: ["יש חלה לשבת?"] }} />,
-    );
+    const { container } = render(<WhatsAppQuestionChips producer={producer} />);
     expect(container.textContent).not.toContain("יש חלה לשבת?");
-    expectNoWhatsApp(container);
+    expectNoWhatsApp(container, producer);
   });
 
   it("hides the recipe-idea chip (its prefill is WhatsApp-locked)", () => {
@@ -228,7 +231,7 @@ describe.each(NON_WHATSAPP)("%s-primary", (method) => {
   it("renders no escalation row (MEH-3460)", () => {
     render(<WhatsAppQuestionChips producer={producer} />);
     expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
-    expect(screen.getByTestId("quick-answer-jump")).toBeInTheDocument();
+    expect(screen.getByTestId("quick-answer-toggle")).toBeInTheDocument();
   });
 });
 

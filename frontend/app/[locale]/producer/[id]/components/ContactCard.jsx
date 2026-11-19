@@ -12,7 +12,6 @@ import {
 } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
-import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
 import { instagramHandle } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
@@ -277,8 +276,9 @@ export default function ContactCard({ producer, isVacation }) {
             ProducerHeader. Do NOT re-add a note here without a claim the site
             can actually verify. */}
 
-        {/* Ready-made questions as quiet text links under the CTA. */}
-        <WhatsAppQuestionChips producer={producer} />
+        {/* MEH-3460 (Sapir 20/11): «שאלות נפוצות» left this card for its own
+            section under «משלוחים» (ProducerSections). The card keeps one job:
+            the button and the channel icons. */}
 
         {/* Secondary channels — MEH-2592 C: a four-column grid of 44px cream
             circles, each with its name under it (the existing aria strings,

@@ -16,6 +16,7 @@ import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import { hasDeliverySection } from "@/lib/quickAnswers"; // MEH-3460
+import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -803,6 +804,11 @@ export default function ProducerSections({
           />
         </div>
       )}
+
+      {/* MEH-3460 (Sapir 20/11, decision card): «שאלות נפוצות» is its own
+          section right under «משלוחים», not a block in the contact card.
+          Self-gating: renders nothing when no question is left. */}
+      <WhatsAppQuestionChips producer={producer} />
 
       {/* MEH-1875 (history — MEH-2803 below supersedes the placement): the
           weekly order schedule, immediately BEFORE the location

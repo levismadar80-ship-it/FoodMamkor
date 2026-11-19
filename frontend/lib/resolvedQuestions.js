@@ -122,8 +122,11 @@ export function resolveProducerQuestions(producer, labels) {
   const items = [];
 
   // Q1 — answered from her delivery data, else a WhatsApp row, else absent.
-  // MEH-3460: a jump to the page's delivery section counts as answered too.
-  if (delivery || hasDeliverySection(producer)) {
+  // MEH-3460 (20/11): not asked at all when the page has its «משלוח» section —
+  // the FAQ section sits right under it and the section is the answer.
+  if (hasDeliverySection(producer)) {
+    // no row: the page answers it with the section itself
+  } else if (delivery) {
     items.push({
       id: "delivery",
       label: labels.deliveryQuestion,

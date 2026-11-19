@@ -26,17 +26,8 @@
  * scrape sees everything.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
-// 19/11: the «שאלות נפוצות» block is closed by default; these cases test what
-// is inside it, so every render opens it first (the closed state has its own
-// test in QuestionChipsCollapsed.test.jsx).
-const render = (...args) => {
-  const result = rtlRender(...args);
-  const toggle = result.container.querySelector("[data-testid='question-chips-toggle']");
-  if (toggle) fireEvent.click(toggle);
-  return result;
-};
 import he from "../messages/he.json";
 
 // Resolve the real he.json copy, exactly as quickAnswers.test.js does, so both
@@ -193,7 +184,7 @@ const FIXTURES = [
   {
     // 19/11: the delivery question is a jump to #section-delivery (the
     // business in Sapir's screenshot: external order form + 48 areas).
-    name: "(i) external-order primary, delivery areas → jump row",
+    name: "(i) external-order primary, delivery section on the page → no delivery row (MEH-3460)",
     producer: {
       id: 7,
       name: "פרדס הדגמה",
@@ -203,6 +194,8 @@ const FIXTURES = [
       external_order_form: "order.example.com",
       offers_delivery: true,
       delivery_areas: [{ city: "כפר חיים" }, { city: "חדרה" }, { city: "תלמי אלעזר" }, { city: "גבעת ניל״י" }, { city: "עין שמר" }],
+      // keeps the section alive: the delivery row is gone, payment stays
+      payment_info: { methods: ["bit"], timing: null, note: null },
     },
   },
   {

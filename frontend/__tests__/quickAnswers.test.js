@@ -1,15 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render as rtlRender, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-// 19/11: the «שאלות נפוצות» block is closed by default; these cases test what
-// is inside it, so every render opens it first (the closed state has its own
-// test in QuestionChipsCollapsed.test.jsx).
-const render = (...args) => {
-  const result = rtlRender(...args);
-  const toggle = result.container.querySelector("[data-testid='question-chips-toggle']");
-  if (toggle) fireEvent.click(toggle);
-  return result;
-};
 import he from "../messages/he.json";
 import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
 
@@ -176,17 +167,15 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
   // Sapir 19/11 (screenshot, prod): «משלוחים ל: … + עוד 44» answered with a
   // cut list while the full «משלוח» section sat lower on the same page. When
   // that section renders, the question is a jump to it, not a second copy.
-  it("delivery section on the page → the question jumps to it, no cut list", () => {
-    const scrollIntoView = vi.fn();
-    const target = document.createElement("div");
-    target.id = "section-delivery";
-    target.scrollIntoView = scrollIntoView;
-    document.body.appendChild(target);
+  it("delivery section on the page → the question is not asked at all", () => {
+    // Sapir 20/11: the FAQ section sits right under «משלוחים», so the
+    // section IS the answer — no cut list, no jump, no second copy.
     render(
       <WhatsAppQuestionChips
         producer={{
           phone: PHONE,
           city: "חיפה",
+          primary_contact_method: "whatsapp",
           offers_delivery: true,
           delivery_areas: [
             { city: "חיפה", min_order: 150, delivery_day: "חמישי" },
@@ -195,17 +184,15 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
             { city: "כרמיאל" },
             { city: "צפת" },
           ],
+          // control: the block itself still renders (her own question)
+          custom_questions: ["יש חלה לשבת?"],
         }}
       />,
     );
-    const jump = screen.getByTestId("quick-answer-jump");
-    expect(jump).toHaveTextContent("אפשר משלוח לאזור שלי?");
-    expect(jump).toHaveAttribute("href", "#section-delivery");
-    expect(screen.queryByRole("button", { name: /אפשר משלוח/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId("question-link")).toHaveTextContent("יש חלה לשבת?");
+    expect(screen.queryByText(/אפשר משלוח/)).not.toBeInTheDocument();
     expect(screen.queryByText(/\+ עוד/)).not.toBeInTheDocument();
-    fireEvent.click(jump);
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    target.remove();
+    expect(screen.queryByTestId("quick-answer-jump")).not.toBeInTheDocument();
   });
 
   // Sapir 19/11: «איך מזמינים?» sat right under the «להזמנה» button and

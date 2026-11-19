@@ -1,22 +1,21 @@
 // @ts-check
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowDown, CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
+import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
 import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
-import {
-  getPrimaryContactHref,
-  isWhatsAppPrimary,
-} from "@/lib/contact-method";
+import { isWhatsAppPrimary } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
 import { paymentAnswer } from "@/lib/payment-info";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
- * Quick Answers under the primary CTA in the producer contact card.
+ * «שאלות נפוצות» — the business page's FAQ section (under «משלוחים» since
+ * 20/11; before that, a block under the primary CTA in the contact card).
  *
  * MEH-1302 reworked this from WhatsApp-only chips into an answer-first
  * disclosure: the two canonical ready-made questions that CAN be answered
@@ -94,6 +93,10 @@ import { paymentAnswer } from "@/lib/payment-info";
  *     (hasDeliverySection, the same gate the section uses). The section is the
  *     full answer; the disclosure gave a cut copy («+ עוד 44»).
  *   - The whole block is closed by default; the caption is the toggle.
+ *   - (20/11) The block left the contact card: it is its own page section
+ *     («שאלות נפוצות», #section-faq) mounted by ProducerSections right under
+ *     «משלוחים». The delivery question is not asked when that section exists
+ *     — it sits directly above. No outer toggle; each question opens alone.
  *   - (20/11) The escalation row «שאלה אחרת? צרו איתנו קשר» → gone. It
  *     opened the primary CTA's own channel, so it repeated the button too;
  *     the button and the channel icons below already are "contact us". This
@@ -134,38 +137,6 @@ function Disclosure({ question, children }) {
           {children}
         </div>
       )}
-    </li>
-  );
-}
-
-/**
- * Sapir 19/11: a question whose full answer is a section further down the same
- * page jumps there instead of answering with a cut copy («+ עוד 44»). Same
- * pill look as a Disclosure; a native `#id` link so it still works with JS
- * off, smooth-scrolled the way SectionAnchorNav scrolls (scroll-mt on the
- * section clears the sticky header + nav).
- */
-function JumpItem({ targetId, question }) {
-  const onClick = (e) => {
-    const target = document.getElementById(targetId);
-    if (!target) return; // let the native anchor do what it can
-    e.preventDefault();
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-  };
-  return (
-    <li>
-      <a
-        href={`#${targetId}`}
-        onClick={onClick}
-        data-testid="quick-answer-jump"
-        className={`${QUESTION_PILL} border-primary/15 bg-green-50 text-primary-dark hover:bg-primary/10`}
-      >
-        <ArrowDown size={16} weight="bold" aria-hidden="true" className="flex-shrink-0" />
-        {question}
-      </a>
     </li>
   );
 }
@@ -332,18 +303,17 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   const items = [];
 
-  // Q1 — delivery. When the page has its «משלוח» section, the question jumps
-  // there: the section is the full, exact answer (Sapir 19/11). Otherwise
-  // answer-first, else WhatsApp fallback.
-  if (hasDeliverySection(producer)) {
-    items.push(<JumpItem key="delivery" targetId="section-delivery" question={deliveryQ} />);
-  } else if (delivery) {
+  // Q1 — delivery. When the page has its «משלוח» section the question is not
+  // asked: this section sits right under it and the section IS the answer
+  // (Sapir 19–20/11). Otherwise answer-first, else WhatsApp fallback.
+  const deliveryOnPage = hasDeliverySection(producer);
+  if (!deliveryOnPage && delivery) {
     items.push(
       <Disclosure key="delivery" question={deliveryQ}>
         <DeliveryContent answer={delivery} t={t} />
       </Disclosure>,
     );
-  } else if (waEnabled) {
+  } else if (!deliveryOnPage && waEnabled) {
     items.push(
       <WaItem key="delivery" href={waHref(deliveryQ)} question={deliveryQ} onTrack={trackWhatsAppOpen} />,
     );
@@ -373,16 +343,7 @@ export default function WhatsAppQuestionChips({ producer }) {
   // Nothing to show at all → no block (MEH-3460: no escalation row either).
   if (items.length === 0) return null;
 
-  // MEH-2385: the top spacing exists to separate this block from the primary
-  // CTA above it (MEH-2592 C replaced the hairline with space). When
-  // PrimaryContactButton returns null (getPrimaryContactHref → null) there is
-  // nothing above to separate from — the "empty white card" Sapir photographed
-  // on demo-delivery-pickup.
-  const underCta = !!getPrimaryContactHref(producer);
-
-  return (
-    <QuestionList items={items} underCta={underCta} t={t} />
-  );
+  return <QuestionList items={items} t={t} />;
 }
 
 // MEH-1334 chunk 2: progressive-disclosure wrapper — the first VISIBLE_MAX
@@ -393,60 +354,41 @@ export default function WhatsAppQuestionChips({ producer }) {
 // tighter row rhythm) per the approved mockup.
 const VISIBLE_MAX = 3;
 
-function QuestionList({ items, underCta, t }) {
+function QuestionList({ items, t }) {
   const [expanded, setExpanded] = useState(false);
-  // Sapir 19/11: the questions took a quarter of a phone screen right under
-  // the button. Closed by default, like an FAQ accordion (Etsy's shop FAQ;
-  // Google retired its Business Profile Q&A in 2025). The caption she
-  // already approved is the toggle — no new copy.
-  const [open, setOpen] = useState(false);
-  // ContactCard mounts twice (inline + desktop sidebar): a unique panel id.
-  const panelId = useId();
   const hasMore = items.length > VISIBLE_MAX;
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
 
+  // MEH-3460 (Sapir 20/11, decision card): the questions are their own page
+  // section under «משלוחים», not a block inside the contact card. The card
+  // keeps one job (the button + the channel icons); FAQs are an extension of
+  // the page's details (Airbnb «Things to know», Etsy shop FAQ, Baymard).
+  // Each question is still closed until tapped, so no outer toggle.
   return (
-    <div
+    <section
+      id="section-faq"
       data-testid="question-chips"
-      data-under-cta={underCta ? "true" : "false"}
-      className={underCta ? "mb-4 mt-4" : "mb-4"}
+      className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls={panelId}
-        data-testid="question-chips-toggle"
-        className="inline-flex items-center gap-1.5 min-h-touch rounded font-body-md text-sm text-fg-muted hover:text-text focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        <CaretDown
-          size={16}
-          weight="bold"
-          aria-hidden="true"
-          className={`flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-        />
+      <SectionHeading size="content" className="mb-4">
         {t("common_questions")}
-      </button>
-      {open && (
-        <div id={panelId} className="mt-1">
-          <ul className="flex flex-wrap gap-2">{visible}</ul>
+      </SectionHeading>
+      <ul className="flex flex-wrap gap-2">{visible}</ul>
 
-          {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
-              ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
-          {hasMore && !expanded && (
-            <button
-              type="button"
-              onClick={() => setExpanded(true)}
-              data-testid="more-questions"
-              aria-expanded={false}
-              className={`${QUESTION_PILL} mt-2 border-primary/15 font-medium text-primary hover:bg-primary/[0.06]`}
-            >
-              <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
-              {t("more_questions")}
-            </button>
-          )}
-        </div>
+      {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
+          ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
+      {hasMore && !expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          data-testid="more-questions"
+          aria-expanded={false}
+          className={`${QUESTION_PILL} mt-2 border-primary/15 font-medium text-primary hover:bg-primary/[0.06]`}
+        >
+          <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
+          {t("more_questions")}
+        </button>
       )}
-    </div>
+    </section>
   );
 }
