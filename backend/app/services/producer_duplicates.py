@@ -39,10 +39,12 @@ def name_key(name: str | None) -> str | None:
 def phone_key(phone: str | None) -> str | None:
     """The national digits of an Israeli number, in any notation, or None.
 
-    "050-123-4567", "0501234567", "+972501234567" and "972 50 123 4567" all
+    "050-123-4567", "0501234567", "+972501234567", "00972501234567" and "972 50 123 4567" all
     give "501234567"; "04-8123456" and "+972 4 812 3456" both give "48123456".
     """
     digits = _NON_DIGIT.sub("", phone or "")
+    if digits.startswith("00"):  # 00972… is the dial-out form of +972…
+        digits = digits[2:]
     if digits.startswith("972"):
         digits = digits[3:]
     digits = digits.lstrip("0")

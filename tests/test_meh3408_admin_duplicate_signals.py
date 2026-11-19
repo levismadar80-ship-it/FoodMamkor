@@ -67,6 +67,19 @@ class TestPhoneAcrossStatuses:
         _with_phone(db, make_producer(db, name="ב", status="approved"), "+972 4 812 3456")
         assert _rows(client, admin, status="draft")[_id(draft)]["dup_phone"] is True
 
+    def test_the_00972_dial_out_form_matches_a_local_number(self, client, db):
+        admin = make_user(db, role="admin")
+        draft = _with_phone(db, make_producer(db, name="א", status="draft"), "00972501234567")
+        _with_phone(db, make_producer(db, name="ב", status="approved"), "050-123-4567")
+        assert _rows(client, admin, status="draft")[_id(draft)]["dup_phone"] is True
+
+    def test_two_short_fragments_never_match(self, client, db):
+        """Fewer than 8 national digits is a typo, not a number."""
+        admin = make_user(db, role="admin")
+        draft = _with_phone(db, make_producer(db, name="א", status="draft"), "050-12")
+        _with_phone(db, make_producer(db, name="ב", status="approved"), "05012")
+        assert _rows(client, admin, status="draft")[_id(draft)]["dup_phone"] is False
+
 
 class TestNameAcrossStatuses:
     def test_draft_named_like_a_pending_business_reads_dup_name(self, client, db):
