@@ -32,7 +32,11 @@ from sqlalchemy.orm import Session
 from app.auth import require_producer
 from app.database import get_db
 from app.models.models import Producer, Product, User
-from app.models.product_orders import ProducerOrderSettings, ProducerOrderWindow
+from app.models.product_orders import (
+    WEIGHED_PRICE_UNITS,
+    ProducerOrderSettings,
+    ProducerOrderWindow,
+)
 from app.rate_limit import limiter
 from app.routers.product_orders import (
     NO_BUSINESS_DETAIL,
@@ -177,7 +181,8 @@ def put_product_ordering(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=ORDERABLE_NEEDS_PRICE_DETAIL,
         )
-    for field, value in body.model_dump().items():
+    # MEH-2936: exclude_unset — an omitted price_unit keeps the stored one.
+    for field, value in body.model_dump(exclude_unset=True).items():
         setattr(product, field, value)
     db.commit()
     db.refresh(product)
@@ -200,7 +205,8 @@ def _menu_product(product: Product) -> dict[str, Any]:
         "price_unit": product.price_unit,
         # A weighed product is an estimate even at one price a kilo: the
         # weight is only known when the order is packed.
-        "price_is_estimate": high != low or product.price_unit != "unit",
+        "price_is_estimate": high != low
+        or product.price_unit in WEIGHED_PRICE_UNITS,  # MEH-2936
         "in_stock": product.in_stock,
         "contains_alcohol": product.contains_alcohol,
     }

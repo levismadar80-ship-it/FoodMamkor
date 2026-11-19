@@ -38,6 +38,7 @@ from app.models.models import Producer, Product, User
 from app.models.product_orders import (
     PRODUCT_ORDER_CODE_STATUSES,
     PRODUCT_ORDER_OPEN_STATUSES,
+    WEIGHED_PRICE_UNITS,
     ProducerOrderSettings,
     ProductOrder,
     ProductOrderItem,
@@ -223,7 +224,8 @@ def order_lines(
                 product_id=product.id,
                 name=product.name,
                 unit_price_agorot=max(low, high),
-                price_is_estimate=high != low or product.price_unit != "unit",
+                price_is_estimate=high != low
+                or product.price_unit in WEIGHED_PRICE_UNITS,  # MEH-2936
                 price_unit=product.price_unit,
                 qty=line.qty,
                 contains_alcohol=bool(product.contains_alcohol),
