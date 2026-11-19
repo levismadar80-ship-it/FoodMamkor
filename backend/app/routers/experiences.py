@@ -46,9 +46,11 @@ from app.schemas.schemas import (
 from app.services import billing_ledger  # MEH-3179
 from app.services import capabilities  # MEH-3180
 from app.services import indexnow  # MEH-2852
+from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.services.booking_cancellations import (  # MEH-3227
     after_item_edit,
     cancel_item_signups,
+    cancel_session_signups,
     is_test_item,
     item_state,
 )
@@ -111,6 +113,14 @@ def _serialize_host(host: User | None) -> dict[str, Any] | None:
     return out
 
 
+def _sessions_out(ex: Experience) -> list[dict[str, Any]]:
+    """MEH-3441: upcoming dates with places left; [] without dates."""
+    session = object_session(ex)
+    if session is None or not sessions_svc.has_sessions(ex):
+        return []
+    return sessions_svc.public_list(session, ex)
+
+
 def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, Any]:
     """Public shape — no private fields (address, moderation context).
     `registered` (MEH-2763) comes from one grouped query on list routes; a
@@ -132,7 +142,13 @@ def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, 
         "min_participants": ex.min_participants,
         "participants_count": ex.participants_count or 0,
         "registered_count": registered,
-        "spots_left": _compute_spots_left(ex, registered),
+        # MEH-3441: a workshop with dates has places per date, not one pool.
+        "spots_left": (
+            None
+            if sessions_svc.has_sessions(ex)
+            else _compute_spots_left(ex, registered)
+        ),
+        "sessions": _sessions_out(ex),
         "registration_method": ex.registration_method or "site_form",
         "registration_url": ex.registration_url,
         "price_per_person": ex.price_per_person,
@@ -499,6 +515,14 @@ def submit_experience(
         requirements=data.requirements,
         is_recurring=data.is_recurring,
         recurring_schedule=data.recurring_schedule,
+        # MEH-3441: dates only on a recurring workshop.
+        sessions=(
+            sessions_svc.normalise(
+                [x.model_dump() for x in data.sessions], None, data.max_participants
+            )
+            if data.is_recurring and data.sessions
+            else None
+        ),
         registration_method=data.registration_method,
         registration_url=data.registration_url,
         status="pending",
@@ -538,7 +562,14 @@ def submit_experience(
 # MEH-2763: how visitors sign up is bookkeeping too; registration_url is NOT
 # here — a new outbound link is content and goes back through moderation.
 _NON_CONTENT_FIELDS = frozenset(
-    {"is_active", "participants_count", "min_participants", "registration_method"}
+    {
+        "is_active",
+        "participants_count",
+        "min_participants",
+        "registration_method",
+        # MEH-3441: dates are scheduling, like the tally — no re-moderation.
+        "sessions",
+    }
 )
 
 # MEH-2665: the form blocks it first; this is the write-boundary twin.
@@ -573,6 +604,41 @@ def _check_method_edit(db: Session, ex: Experience, payload: dict[str, Any]) -> 
         raise HTTPException(status_code=422, detail=problem)
 
 
+def _sessions_edit(ex: Experience, payload: dict[str, Any]) -> list[Any]:
+    """MEH-3441: normalise the dates in `payload` in place (422 on a past new
+    date, a duplicate, more than 12) and return the upcoming dates it drops,
+    whose sign-ups the caller cancels."""
+    recurring = payload.get("is_recurring", ex.is_recurring)
+    if not recurring:
+        # A one-off workshop has no dates: turning recurring off removes
+        # every upcoming one (and cancels its sign-ups), and dates sent
+        # with a one-off are dropped.
+        if "sessions" in payload or "is_recurring" in payload:
+            payload["sessions"] = None
+        return sessions_svc.removed(ex.sessions, [])  # type: ignore[arg-type]
+    if "sessions" not in payload:
+        return []
+    new = sessions_svc.normalise(
+        payload["sessions"] or [],
+        ex.sessions,  # type: ignore[arg-type]
+        payload.get("max_participants", ex.max_participants),
+    )
+    payload["sessions"] = new or None
+    return sessions_svc.removed(ex.sessions, new)  # type: ignore[arg-type]
+
+
+def _experience_for_edit(
+    db: Session, experience_id: UUID, data: ExperienceUpdate
+) -> Experience | None:
+    """MEH-3441: an edit of the dates locks the row, as the sign-up path does
+    before it counts a date (registrations.py::_experience_for_signup), so a
+    sign-up cannot land on a date this edit is removing."""
+    query = db.query(Experience).filter(Experience.id == experience_id)
+    if {"sessions", "is_recurring"} & data.model_fields_set:
+        query = query.with_for_update()
+    return query.first()
+
+
 @router.put("/{experience_id}", response_model=ExperienceDetailOut)
 @limiter.limit("60/hour")  # MEH-3022
 def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
@@ -583,7 +649,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ExperienceDetailOut | dict[str, Any]:
-    ex = db.query(Experience).filter(Experience.id == experience_id).first()
+    ex = _experience_for_edit(db, experience_id, data)
     if not ex:
         raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     if ex.host_user_id != user.id:
@@ -629,9 +695,12 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
         date=payload.get("event_date", ex.event_date),
         was_date=ex.event_date,
     )
+    gone = _sessions_edit(ex, payload)  # MEH-3441
     before = item_state(ex)
     for field, value in payload.items():
         setattr(ex, field, value)
+    # MEH-3441: a removed date's sign-ups are cancelled and mailed.
+    cancel_session_signups(db, ex, gone, background_tasks, is_test_item(ex))
     # MEH-3227: cancelled → sign-ups cancelled; moved → registrants told.
     after_item_edit(db, ex, before, background_tasks, is_test_item(ex))
 
