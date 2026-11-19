@@ -290,5 +290,12 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     expect(screen.getByTestId("register-delivery-note")).toHaveTextContent(
       `${K}.fields.fulfilment.areas_note`,
     );
+    // MEH-2447: what the card will show, and where WhatsApp orders arrive.
+    expect(screen.getByTestId("register-fulfilment-hours-hint")).toHaveTextContent(
+      `${K}.fields.fulfilment.hours_hint`,
+    );
+    expect(screen.getByTestId("register-fulfilment-whatsapp-note")).toHaveTextContent(
+      `${K}.fields.fulfilment.whatsapp_note`,
+    );
   });
 });

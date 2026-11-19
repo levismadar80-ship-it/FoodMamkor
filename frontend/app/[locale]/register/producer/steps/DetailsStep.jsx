@@ -180,6 +180,14 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
               <p className="text-xs text-fg-muted text-start" data-testid="register-delivery-note">
                 {t("auth.register.producer.fields.fulfilment.areas_note")}
               </p>
+              {/* MEH-2447: say what the card will show, and that WhatsApp
+                  orders already arrive through the contact button (B11). */}
+              <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-hours-hint">
+                {t("auth.register.producer.fields.fulfilment.hours_hint")}
+              </p>
+              <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-whatsapp-note">
+                {t("auth.register.producer.fields.fulfilment.whatsapp_note")}
+              </p>
             </fieldset>
             )}
 

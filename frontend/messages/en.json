@@ -311,12 +311,14 @@
           "producer_name_label": "Business name",
           "city": "e.g. Zikhron Ya'akov",
           "fulfilment": {
-            "legend": "How do people buy from you?",
-            "onsite": "They come to us",
-            "delivery": "We deliver",
+            "legend": "How do customers get their order?",
+            "onsite": "Pickup or visit",
+            "delivery": "Delivery",
             "both": "Both",
             "required": "Pick one option",
-            "areas_note": "You set your delivery areas in the dashboard"
+            "areas_note": "You set your delivery areas in the dashboard",
+            "hours_hint": "Have opening hours? Your card will show “Buy on site”. Without hours it shows “By arrangement”. Add hours in your dashboard.",
+            "whatsapp_note": "WhatsApp orders reach you through the contact button on your page."
           },
           "city_label": "City",
           "address": "e.g. 5 Olive St., Haifa",
