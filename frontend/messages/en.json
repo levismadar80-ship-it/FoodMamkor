@@ -867,6 +867,7 @@
             "no_added_sugar": "No added sugar"
           },
           "facts": {
+            "details_heading": "Product details",
             "ingredients_heading": "Ingredients",
             "allergens_heading": "Allergens",
             "contains": "Contains: {list}",

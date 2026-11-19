@@ -16,7 +16,7 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
-import { ALLERGEN_CODES } from "@/lib/allergens";
+import ProductFacts from "@/components/public/ProductFacts";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import {
@@ -340,33 +340,6 @@ export default function ProductSheet({
   const chevronY = hasPhoto ? "top-1/2 -translate-y-1/2" : "bottom-2";
 
   const dietKeys = productDietKeys(product);
-  // MEH-2662: unknown codes (a list newer than this bundle) are dropped rather
-  // than rendered as a raw key.
-  const allergenCodes = (product.allergens || []).filter((c) => ALLERGEN_CODES.includes(c));
-  const hasAllergens = allergenCodes.length > 0;
-  // MEH-3439: «עלול להכיל» — same closed list; a code already in «מכיל» is
-  // never repeated (the backend drops it too).
-  const mayContainCodes = (product.may_contain || []).filter(
-    (c) => ALLERGEN_CODES.includes(c) && !allergenCodes.includes(c),
-  );
-  const hasMayContain = mayContainCodes.length > 0;
-  // MEH-3445: «אין במוצר אלרגנים מהרשימה» — only when no code is listed.
-  const declaredNone = !!product.no_allergens && !hasAllergens && !hasMayContain;
-  // MEH-3442: «גלוטן (כוסמין)», «אגוזים (שקדים)» — the owner's detail in
-  // brackets after its allergen, wherever that allergen is listed.
-  const ALLERGEN_DETAIL = { gluten: product.gluten_detail, tree_nuts: product.nuts_detail };
-  const allergenList = (codes) =>
-    codes
-      .map((code) => {
-        const label = t(`settings.products.form.allergen_${code}`);
-        const detail = typeof ALLERGEN_DETAIL[code] === "string" ? ALLERGEN_DETAIL[code].trim() : "";
-        return detail ? `${label} (${detail})` : label;
-      })
-      .join(", ");
-  const hasIngredients = typeof product.ingredients === "string" && product.ingredients.trim() !== "";
-  // MEH-3444: «אחסון ותוקף» — shown only when the owner wrote something.
-  const hasStorage = typeof product.storage_info === "string" && product.storage_info.trim() !== "";
-
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
   // free-text price_range is DATA (MEH-1140 — never reformatted) and renders
@@ -630,73 +603,8 @@ export default function ProductSheet({
               </p>
             )}
 
-            {/* MEH-2662: what the owner declared about the food. Plain text,
-                no icons or pills (pills here mean diet tags); the allergen list
-                is a sentence so it never reads as a filterable badge row.
-                MEH-3439: «מכיל: …» / «עלול להכיל: …», as on Israeli labels;
-                when the owner declared no allergens at all the sheet says so
-                instead of staying silent — silence reads as "none". One
-                «לפי הצהרת בית העסק» line under whatever the owner declared. */}
-            <div className="space-y-2" data-testid="product-sheet-facts">
-              {hasIngredients && (
-                <div>
-                  <h3 className="text-xs font-medium text-fg-muted">
-                    {t("producer.detail.sections.products.facts.ingredients_heading")}
-                  </h3>
-                  <p
-                    className="whitespace-pre-line text-sm leading-relaxed text-text"
-                    data-testid="product-sheet-ingredients"
-                  >
-                    {product.ingredients}
-                  </p>
-                </div>
-              )}
-              <div>
-                <h3 className="text-xs font-medium text-fg-muted">
-                  {t("producer.detail.sections.products.facts.allergens_heading")}
-                </h3>
-                {/* One label source with the owner form on purpose: the
-                    public name must be the exact word the owner ticked. */}
-                {hasAllergens && (
-                  <p className="text-sm text-text" data-testid="product-sheet-allergens">
-                    {t("producer.detail.sections.products.facts.contains", { list: allergenList(allergenCodes) })}
-                  </p>
-                )}
-                {hasMayContain && (
-                  <p className="text-sm text-text" data-testid="product-sheet-may-contain">
-                    {t("producer.detail.sections.products.facts.may_contain", { list: allergenList(mayContainCodes) })}
-                  </p>
-                )}
-                {declaredNone && (
-                  <p className="text-sm text-text" data-testid="product-sheet-allergens-none">
-                    {t("producer.detail.sections.products.facts.no_allergens")}
-                  </p>
-                )}
-                {!hasAllergens && !hasMayContain && !declaredNone && (
-                  <p className="text-sm text-text" data-testid="product-sheet-allergens-undeclared">
-                    {t("producer.detail.sections.products.facts.allergens_undeclared")}
-                  </p>
-                )}
-              </div>
-              {hasStorage && (
-                <div>
-                  <h3 className="text-xs font-medium text-fg-muted">
-                    {t("producer.detail.sections.products.facts.storage_heading")}
-                  </h3>
-                  <p
-                    className="whitespace-pre-line text-sm leading-relaxed text-text"
-                    data-testid="product-sheet-storage"
-                  >
-                    {product.storage_info}
-                  </p>
-                </div>
-              )}
-              {(hasIngredients || hasAllergens || hasMayContain || declaredNone || hasStorage) && (
-                <p className="text-xs text-fg-muted" data-testid="product-sheet-facts-declared">
-                  {t("producer.detail.sections.products.facts.declared_by_business")}
-                </p>
-              )}
-            </div>
+            {/* MEH-2662 · MEH-3450: what the owner declared about the food. */}
+            <ProductFacts product={product} />
 
             {numericPrice && (
               <p className="font-medium text-accent" data-testid="product-sheet-price">

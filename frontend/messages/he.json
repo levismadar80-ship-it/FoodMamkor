@@ -867,6 +867,7 @@
             "no_added_sugar": "ללא סוכר מוסף"
           },
           "facts": {
+            "details_heading": "פרטים על המוצר",
             "ingredients_heading": "רכיבים",
             "allergens_heading": "אלרגנים",
             "contains": "מכיל: {list}",

@@ -62,6 +62,7 @@ vi.mock("@phosphor-icons/react", () => ({
   // all pass a single product), but the module-level import must resolve.
   CaretLeft: () => <span data-testid="icon-caret-left" />,
   CaretRight: () => <span data-testid="icon-caret-right" />,
+  CaretDown: () => <span />,
 }));
 
 vi.mock("@/lib/contact-tracking", () => ({
