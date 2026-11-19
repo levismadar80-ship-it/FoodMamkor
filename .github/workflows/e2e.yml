@@ -56,6 +56,8 @@ on:
   # hours of unknown). 01:30 UTC = 03:30/04:30 Israel, outside working hours.
   # Like workflow_dispatch it bypasses the paths filter (see the e2e job's if:).
   schedule:
+    # The jobs' if: conditions match these two cron strings verbatim
+    # (github.event.schedule). Change a cron here = change it there too.
     - cron: "30 1 * * *"   # nightly Chromium suite on staging (both modes); WebKit too when public
     - cron: "30 2 * * 0"   # PRIVATE MODE only: WebKit shadow run, weekly (Sunday)
 
@@ -187,7 +189,7 @@ jobs:
     # — the paths decide. PRIVATE (the runner is Sapir's PC): only the
     # merge-train PR (label run-e2e), the nightly run and a manual run.
     if: |
-      ((!(vars.CI_MODE == 'private' || github.event.repository.private) && (needs.filter.outputs.frontend == 'true' ||
+      ((!(vars.CI_MODE == 'private' || github.event.repository.private) && github.event.schedule != '30 2 * * 0' && (needs.filter.outputs.frontend == 'true' ||
         (github.event_name == 'pull_request' && needs.filter.outputs.backend == 'true'))) ||
        contains(github.event.pull_request.labels.*.name, 'run-e2e') ||
        github.event_name == 'workflow_dispatch' ||
