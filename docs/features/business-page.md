@@ -31,7 +31,7 @@
 * `tests/test_meh3439_product_may_contain.py` · `frontend/__tests__/ProductSheetAllergens.test.jsx` — רכיבים, «מכיל», «עלול להכיל» ושורת «לא ציין» בגיליון המוצר (MEH-2662, MEH-3439).
 * `tests/test_meh3444_product_storage.py` · `frontend/__tests__/ProductSheetAllergens.test.jsx` · `frontend/__tests__/ProductsSectionAllergens.test.jsx` — «אחסון ותוקף» בגיליון המוצר ובטופס בית העסק, כולל בדיקת ה-AI בעריכה של עסק מאושר (MEH-3444).
 * `tests/test_meh3442_allergen_detail.py` — «גלוטן (כוסמין)», «אגוזים (שקדים)»: פירוט הדגן והאגוז, נשמר רק כשהאלרגן מסומן (MEH-3442).
-* `tests/test_meh3445_allergen_reminder.py` — «אין במוצר אלרגנים מהרשימה»: הצהרה מפורשת, נדחית מול כל אלרגן מסומן, ולא נספרת בתזכורת בלוח (MEH-3445).
+* `tests/test_meh3445_allergen_reminder.py` — «אין במוצר אלרגנים מהרשימה»: הצהרה מפורשת, מתבטלת כשמסומן אלרגן, ולא נספרת בתזכורת בלוח (MEH-3445).
 * `frontend/__tests__/MiddlewareProducerId404.test.js` — ‏`/producer/<id>` של עסק שלא קיים מחזיר 404 אמיתי מה-middleware (MEH-3024).
 
 **מזהי רישום שזה מכסה.** `gallery_story`, `product_details`, `top_product`, `hours`, `vacation_mode`, `primary_cta`, `wa_prefill`, `product_wa`, `faq_answers`, `wa_group`, `nav_buttons`, `similar_businesses`.

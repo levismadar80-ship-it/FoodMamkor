@@ -115,3 +115,20 @@ def test_admin_draft_product_drops_none(client, db):
     )
     assert r.status_code == 201, r.text
     assert r.json()["no_allergens"] is False
+
+
+def test_edit_form_body_declares_none_over_stored_codes(client, db):
+    # The edit form sends both lists null with no_allergens true in one PUT.
+    from conftest import auth_header
+    from test_meh2662_product_ingredients_allergens import _create
+    from test_meh2662_product_ingredients_allergens import _owner as _plain_owner
+
+    user, _ = _plain_owner(db)
+    pid = _create(client, user, allergens=["gluten"], may_contain=["sesame"]).json()["id"]
+    r = client.put(
+        f"/producers/me/products/{pid}",
+        json={"no_allergens": True, "allergens": None, "may_contain": None},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 200, r.text
+    assert (r.json()["no_allergens"], r.json()["allergens"], r.json()["may_contain"]) == (True, None, None)
