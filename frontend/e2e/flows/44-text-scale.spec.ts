@@ -114,9 +114,18 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
       for (const p of passes) {
         const tag = `${p.width}px, ${p.scale} text`;
         await page.setViewportSize({ width: p.width, height: p.height });
-        await scale(page, p.scale);
-        const r = await probe(page);
-        expect(r.rootPx, `control (${tag}): the root font size scaled`).toBe(16 * (parseFloat(p.scale) / 100));
+        // MEH-3436: on "/" one first attempt read rootPx 16 right after the
+        // write — something re-rendered <html> after it and dropped the inline
+        // style (unverified which). Re-apply until the root reads the scaled
+        // size, then keep asserting it inside the settle loop below so a reset
+        // AFTER this point cannot let the layout checks run at 100% and pass.
+        const wantPx = 16 * (parseFloat(p.scale) / 100);
+        let r: Probe = await probe(page);
+        await expect(async () => {
+          await scale(page, p.scale);
+          r = await probe(page);
+          expect(r.rootPx, `control (${tag}): the root font size scaled`).toBe(wantPx);
+        }).toPass({ timeout: SETTLE_MS });
         expect(r.controls, `control (${tag}): the probe measured controls`).toBeGreaterThan(3);
         // Settled, not sampled once — see "Settle" in the header. One attempt
         // is two probes STABLE_MS apart: the second must be clean AND equal to
@@ -130,6 +139,7 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
           const first = await probe(page);
           await page.waitForTimeout(STABLE_MS);
           const second = await probe(page);
+          expect(second.rootPx, `control (${tag}): the root font size stayed scaled`).toBe(wantPx);
           expect(second.offscreen, `control outside the viewport width (${tag})`).toEqual([]);
           expect(
             second.overflowX,

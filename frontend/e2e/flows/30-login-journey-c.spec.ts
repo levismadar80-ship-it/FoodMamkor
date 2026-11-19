@@ -259,6 +259,10 @@ async function stubSuccessfulLogin(page: Page) {
 }
 
 test.describe("MEH-215 journey C — sign in to an existing account", () => {
+  // MEH-3154: both hypotheses were measured and refuted, and the config's
+  // `on-first-retry` trace only ever records the attempt that passed. Keep the
+  // trace of a FAILED attempt here, so the next first-attempt red can be read.
+  test.use({ trace: "retain-on-failure" });
   test("C1 — the header exposes login on desktop and NOT on mobile", async ({
     page,
   }, testInfo) => {
