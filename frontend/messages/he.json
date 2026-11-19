@@ -1732,7 +1732,9 @@
           "link_sent": "קישור נשלח ב-{date}",
           "link_valid_until": "בתוקף עד {date}",
           "link_expired": "הקישור פג — צרו חדש",
-          "waiting_7_days": "ממתין 7+ ימים"
+          "waiting_7_days": "ממתין 7+ ימים",
+          "missing": "חסר: {items}",
+          "all_filled": "הכל מולא, עוד לא נשלח לבדיקה"
         },
         "photo_preview": {
           "label": "תמונות",

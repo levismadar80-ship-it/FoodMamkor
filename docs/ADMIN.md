@@ -72,6 +72,8 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 שאילתה אחת לכל הרשימה). ברירת המחדל `None`: נתיב ששכח למלא את השדה לא מציג צ'יפ ולא
 כפתור, במקום להציג טיוטה שנקלטה כאילו היא מחכה לבעלים.
 
+מתחת ל-«נקלט, בהשלמה» מופיעה שורה של מה שעוד חסר לפני שבעלת העסק יכולה לשלוח לבדיקה: «חסר: …» במילים של הצ'קליסט שלה בלוח הבקרה, או «הכל מולא, עוד לא נשלח לבדיקה» (MEH-3409). המקור: `ProducerAdminOut.draft_missing`, ממולא ב-`backend/app/services/admin_draft_missing.py` מאותה הגדרה של `submission_gate.py`; הרכיב: `frontend/app/[locale]/admin/producers/AdminDraftMissing.jsx`.
+
 בטיוטה **בלי בעלים** יש בשורה **«העתקת הודעה עם קישור»**
 (`AdminDraftClaimActions.jsx`): לחיצה אחת מנפיקה קישור (`POST
 /admin/producers/{id}/claim-link`, כמו בפאנל) ומעתיקה הודעת וואטסאפ מוכנה עם הקישור
