@@ -44,6 +44,7 @@ from app.models.models import (
     ProducerNameChangeRequest,
     ProducerRecipe,
 )
+from app.schemas.admin_block import BlockImpactOut  # MEH-3375
 from app.schemas.schemas import (
     CategoryCreate,
     CategoryIn,
@@ -61,7 +62,10 @@ from app.services.account_guards import (  # MEH-3248: moved here, re-exported
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services import indexnow  # MEH-2871
-from app.services.booking_cancellations import hide_business  # MEH-2871
+from app.services.booking_cancellations import (  # MEH-2871, MEH-3375
+    count_open_bookings,
+    hide_business,
+)
 from app.services.category_slug import resolve_unique_slug
 from app.services.rescue_no_show import (
     NO_SHOW_BLOCK_AT,
@@ -292,9 +296,14 @@ def block_user(
     # Unblocking does not put it back: an admin un-pauses it, through the
     # approval gates (admin.py toggle).
     hidden = None
+    cancelled = 0
     if target.is_blocked:
         hidden = _business_left_ownerless(db, target)
         if hidden is not None:
+            # MEH-3375: the same count the confirm showed (customers' bookings),
+            # read before the cancel. hide_business's own return counts group
+            # buys, not their people, so it is not the number she was shown.
+            cancelled = count_open_bookings(db, hidden)
             hide_business(db, hidden, background_tasks)
     db.commit()
     if hidden is not None:
@@ -303,7 +312,29 @@ def block_user(
         "detail": "Blocked toggled",
         "is_blocked": target.is_blocked,
         "business_hidden": hidden is not None,
+        "cancelled": cancelled,
     }
+
+
+@router.get("/users/{user_id}/block-impact", response_model=BlockImpactOut)
+def block_impact(
+    user_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> BlockImpactOut:
+    """MEH-3375: what blocking ``user_id`` would take down, read before the
+    admin confirms — the business that would be hidden (same rule as
+    block_user) and how many open bookings would be cancelled and mailed.
+    Reads only. Already blocked → nothing (the next click unblocks)."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    business = None if target.is_blocked else _business_left_ownerless(db, target)
+    if business is None:
+        return BlockImpactOut(business_name=None, open_bookings=0)
+    return BlockImpactOut(
+        business_name=business.name, open_bookings=count_open_bookings(db, business)
+    )
 
 
 @router.get("/audit-log", response_model=None)

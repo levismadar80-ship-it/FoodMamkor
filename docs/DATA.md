@@ -1814,7 +1814,8 @@ PUT    /admin/users/{id}/role                  admin. role=consumer **or role=ad
 GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at> [&before_id=<uuid>]. Newest first. With both, a keyset cursor on (created_at, id), so a tie on created_at at a page edge is not skipped.
                                                { items: [{ id, actor_id, actor_email, action, target_type, target_id, details, created_at }] }. actor_email is None when the account is gone.
                                                The stored IP is not returned.
-POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden, cancelled} — MEH-2871; cancelled = customers' bookings cancelled (bags + sign-ups + group-buy participants, the business's own users excluded) — the same number GET block-impact showed, MEH-3375)
+GET    /admin/users/{id}/block-impact          admin — MEH-3375, read only. { business_name, open_bookings }: the business blocking would hide (same rule as /block; null for a consumer, a co-owned business or an already-blocked user) and its open bookings — reserved bags + registered/waitlisted sign-ups + live group-buy participants, the business's own users excluded (booking_cancellations.count_open_bookings, the same filters the cancel uses).
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
