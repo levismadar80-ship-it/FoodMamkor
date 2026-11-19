@@ -15,7 +15,7 @@
  * History:  MEH-3438 (creation).
  */
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import api from "@/lib/api";
 
 /** @typedef {{ loading: boolean, source: object|null }} DuplicateSource */
@@ -24,19 +24,21 @@ import api from "@/lib/api";
  * @param {"events"|"experiences"} kind
  * @returns {DuplicateSource}
  */
-export default function useDuplicateSource(kind) {
-  // The URL is read only after mount (the server has none), and in a layout
-  // effect, before the first paint: without ?from the form shows at once with
-  // no skeleton; with it the skeleton replaces the form before anyone sees it.
-  const [state, setState] = useState(/** @type {DuplicateSource} */ ({ loading: false, source: null }));
+const noSubscribe = () => () => {};
+const readFromId = () => new URLSearchParams(window.location.search).get("from");
 
-  useLayoutEffect(() => {
-    let alive = true;
-    const fromId = new URLSearchParams(window.location.search).get("from");
+export default function useDuplicateSource(kind) {
+  // The server has no URL: its snapshot is null. On a client navigation (the
+  // «שכפול» link) the id is there on the first render, so the skeleton shows
+  // at once and an empty form never flashes.
+  const fromId = useSyncExternalStore(noSubscribe, readFromId, () => null);
+  const [result, setResult] = useState(/** @type {{ forId: string|null, source: object|null }} */ ({ forId: null, source: null }));
+
+  useEffect(() => {
     if (!fromId) return undefined;
-    setState({ loading: true, source: null });
+    let alive = true;
     const done = (/** @type {object|null} */ source) => {
-      if (alive) setState({ loading: false, source });
+      if (alive) setResult({ forId: fromId, source });
     };
     // Two literal paths, so the API contract audit can match each to its route.
     const request = kind === "events" ? api.get("/events/mine") : api.get("/experiences/mine");
@@ -52,7 +54,8 @@ export default function useDuplicateSource(kind) {
     return () => {
       alive = false;
     };
-  }, [kind]);
+  }, [fromId, kind]);
 
-  return state;
+  const settled = !fromId || result.forId === fromId;
+  return { loading: !settled, source: settled && fromId ? result.source : null };
 }
