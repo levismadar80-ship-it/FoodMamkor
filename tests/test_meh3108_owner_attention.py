@@ -80,6 +80,7 @@ def test_nothing_waiting_is_all_zero(client, db):
         "funded_group_buys": 0,
         "pending_orders": 0,
         "products": 0,
+        "products_no_allergens": 0,
     }
 
 
@@ -157,6 +158,7 @@ def test_a_failed_count_returns_an_empty_card_not_a_500(client, db, monkeypatch)
         "funded_group_buys": 0,
         "pending_orders": 0,
         "products": -1,  # MEH-3430: unknown, not zero
+        "products_no_allergens": 0,  # MEH-3445: no nag on a failed count
     }
 
 

@@ -37,6 +37,8 @@ async function openAddForm() {
 }
 
 const chip = (label) => within(screen.getByTestId("product-allergens-group")).getByRole("button", { name: label });
+// MEH-3439: the «עלול להכיל» group.
+const mayChip = (label) => within(screen.getByTestId("product-may-contain-group")).getByRole("button", { name: label });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,7 +49,7 @@ describe("allergen code list", () => {
     const py = readFileSync(resolve(__dirname, "../../backend/app/allergens.py"), "utf8");
     const block = py.slice(py.indexOf("ALLERGEN_CODES"), py.indexOf(")", py.indexOf("ALLERGEN_CODES")));
     const backend = [...block.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
-    expect(backend).toHaveLength(14);
+    expect(backend).toHaveLength(15); // MEH-3439: EU 14 + fava beans
     expect(ALLERGEN_CODES).toEqual(backend);
   });
 
@@ -65,11 +67,11 @@ describe("allergen code list", () => {
 });
 
 describe("add form", () => {
-  it("shows the ingredients field with its example and the 14 allergen chips", async () => {
+  it("shows the ingredients field with its example and the 15 allergen chips", async () => {
     await openAddForm();
     expect(screen.getByPlaceholderText(F.ingredients_placeholder)).toBeInTheDocument();
     expect(screen.getByText(F.allergens_helper)).toBeInTheDocument();
-    expect(within(screen.getByTestId("product-allergens-group")).getAllByRole("button")).toHaveLength(14);
+    expect(within(screen.getByTestId("product-allergens-group")).getAllByRole("button")).toHaveLength(15);
   });
 
   it("nothing filled → both sent as null", async () => {
@@ -148,3 +150,146 @@ describe("edit form", () => {
     );
   });
 });
+
+describe("«עלול להכיל» (MEH-3439)", () => {
+  it("shows its heading, helper and 15 chips; nothing ticked → sent as null", async () => {
+    await openAddForm();
+    expect(screen.getByText(F.may_contain_heading)).toBeInTheDocument();
+    expect(screen.getByText(F.may_contain_helper)).toBeInTheDocument();
+    expect(within(screen.getByTestId("product-may-contain-group")).getAllByRole("button")).toHaveLength(15);
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith("/producers/me/products", expect.objectContaining({ may_contain: null }));
+  });
+
+  it("many ticked are sent in canonical order", async () => {
+    await openAddForm();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(mayChip(F.allergen_sesame));
+    fireEvent.click(mayChip(F.allergen_tree_nuts));
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ may_contain: ["tree_nuts", "sesame"] }),
+    );
+  });
+
+  it("a code is in one group at a time: ticking «מכיל» un-ticks «עלול להכיל» and back", async () => {
+    await openAddForm();
+    fireEvent.click(mayChip(F.allergen_milk));
+    expect(mayChip(F.allergen_milk)).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(chip(F.allergen_milk));
+    expect(chip(F.allergen_milk)).toHaveAttribute("aria-pressed", "true");
+    expect(mayChip(F.allergen_milk)).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(mayChip(F.allergen_milk));
+    expect(chip(F.allergen_milk)).toHaveAttribute("aria-pressed", "false");
+    expect(mayChip(F.allergen_milk)).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+
+describe("«אחסון ותוקף» (MEH-3444)", () => {
+  it("shows the label and example; empty → sent as null", async () => {
+    await openAddForm();
+    expect(screen.getByLabelText(F.storage_label)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(F.storage_placeholder)).toBeInTheDocument();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith("/producers/me/products", expect.objectContaining({ storage_info: null }));
+  });
+
+  it("typed text is sent trimmed", async () => {
+    await openAddForm();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.change(screen.getByTestId("product-storage-input"), { target: { value: "  בקירור, עד 5 ימים " } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ storage_info: "בקירור, עד 5 ימים" }),
+    );
+  });
+
+  it("edit pre-fills the stored text; clearing it sends null", async () => {
+    const product = { id: 8, name: "גבינה", price_min: 40, image_url: null, storage_info: "בקירור" };
+    api.get.mockResolvedValue({ data: [product] });
+    renderSection();
+    await screen.findByText("גבינה");
+    fireEvent.click(screen.getByRole("button", { name: P.card.edit_aria_template.replace("{name}", "גבינה") }));
+    expect(screen.getByTestId("product-storage-input")).toHaveValue("בקירור");
+    api.put.mockResolvedValue({ data: { ...product, storage_info: null } });
+    fireEvent.change(screen.getByTestId("product-storage-input"), { target: { value: "" } });
+    fireEvent.click(screen.getByText(P.save_edit_cta));
+    expect(api.put).toHaveBeenCalledWith("/producers/me/products/8", expect.objectContaining({ storage_info: null }));
+  });
+});
+
+describe("«איזה דגן?» / «איזה אגוז?» (MEH-3442)", () => {
+  it("hidden until «גלוטן» or «אגוזים» is ticked; nothing ticked → both null", async () => {
+    await openAddForm();
+    expect(screen.queryByTestId("product-gluten-detail-input")).toBeNull();
+    expect(screen.queryByTestId("product-nuts-detail-input")).toBeNull();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ gluten_detail: null, nuts_detail: null }),
+    );
+  });
+
+  it("gluten in «מכיל» and nuts in «עלול להכיל» each open their field, sent trimmed", async () => {
+    await openAddForm();
+    fireEvent.click(chip(F.allergen_gluten));
+    fireEvent.click(mayChip(F.allergen_tree_nuts));
+    expect(screen.getByLabelText(F.gluten_detail_label)).toHaveAttribute("placeholder", F.gluten_detail_placeholder);
+    expect(screen.getByLabelText(F.nuts_detail_label)).toHaveAttribute("placeholder", F.nuts_detail_placeholder);
+    fireEvent.change(screen.getByTestId("product-gluten-detail-input"), { target: { value: " כוסמין " } });
+    fireEvent.change(screen.getByTestId("product-nuts-detail-input"), { target: { value: "שקדים" } });
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ gluten_detail: "כוסמין", nuts_detail: "שקדים" }),
+    );
+  });
+
+  it("unticking the code hides the field and sends null for its text", async () => {
+    await openAddForm();
+    fireEvent.click(chip(F.allergen_gluten));
+    fireEvent.change(screen.getByTestId("product-gluten-detail-input"), { target: { value: "כוסמין" } });
+    fireEvent.click(chip(F.allergen_gluten));
+    expect(screen.queryByTestId("product-gluten-detail-input")).toBeNull();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith("/producers/me/products", expect.objectContaining({ gluten_detail: null }));
+  });
+});
+
+describe("«אין במוצר אלרגנים מהרשימה» (MEH-3445)", () => {
+  const none = () => within(screen.getByTestId("product-no-allergens")).getByRole("button", { name: F.no_allergens_label });
+
+  it("off by default → sent as false; on → sent as true with both lists null", async () => {
+    await openAddForm();
+    expect(none()).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(chip(F.allergen_milk));
+    fireEvent.click(none());
+    expect(none()).toHaveAttribute("aria-pressed", "true");
+    expect(chip(F.allergen_milk)).toHaveAttribute("aria-pressed", "false");
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ no_allergens: true, allergens: null, may_contain: null }),
+    );
+  });
+
+  it("ticking a code in either group turns «אין» off", async () => {
+    await openAddForm();
+    fireEvent.click(none());
+    fireEvent.click(mayChip(F.allergen_sesame));
+    expect(none()).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(none());
+    fireEvent.click(chip(F.allergen_gluten));
+    expect(none()).toHaveAttribute("aria-pressed", "false");
+  });
+});
+

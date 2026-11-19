@@ -29,7 +29,7 @@ import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phos
 // FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
 // exactly as it renders in FilterSheet.
 import { chipIcon } from "@/lib/chip-icons";
-import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
+import { ALLERGEN_CODES, toggleDeclared, toggleNoAllergens } from "@/lib/allergens";
 import api from "@/lib/api";
 import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { prepareUpload } from "@/lib/prepare-upload";
@@ -147,7 +147,8 @@ function clearFieldError(setErrors, field) {
  *   price_min: string | number, price_max: string | number, price_unit: string,
  *   is_gluten_free: boolean, is_vegan: boolean, is_vegetarian: boolean,
  *   is_lactose_free: boolean, is_no_added_sugar: boolean,
- *   ingredients: string, allergens: string[],
+ *   ingredients: string, allergens: string[], may_contain: string[], storage_info: string,
+ *   gluten_detail: string, nuts_detail: string, no_allergens: boolean,
  * }} ProductForm
  */
 /**
@@ -177,7 +178,7 @@ export default function ProductsSection({
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [] });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -378,10 +379,14 @@ export default function ProductsSection({
         // MEH-2662: blank → null; the backend also collapses [] to null.
         ingredients: form.ingredients.trim() || null,
         allergens: form.allergens.length ? form.allergens : null,
+        may_contain: form.may_contain.length ? form.may_contain : null, // MEH-3439
+        storage_info: form.storage_info.trim() || null, // MEH-3444
+        ...detailPayload(form), // MEH-3442
+        no_allergens: !!form.no_allergens, // MEH-3445
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [] });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch (err) {
@@ -410,6 +415,11 @@ export default function ProductsSection({
       is_no_added_sugar: !!product.is_no_added_sugar,  // MEH-1934
       ingredients: product.ingredients || "",  // MEH-2662
       allergens: product.allergens || [],
+      may_contain: product.may_contain || [], // MEH-3439
+      storage_info: product.storage_info || "", // MEH-3444
+      gluten_detail: product.gluten_detail || "", // MEH-3442
+      nuts_detail: product.nuts_detail || "",
+      no_allergens: !!product.no_allergens, // MEH-3445
     });
     setError("");
     setEditFormErrors({});
@@ -504,6 +514,10 @@ export default function ProductsSection({
         // the stored value (null), rather than leaving the old one.
         ingredients: (editForm.ingredients || "").trim() || null,
         allergens: editForm.allergens?.length ? editForm.allergens : null,
+        may_contain: editForm.may_contain?.length ? editForm.may_contain : null, // MEH-3439
+        storage_info: (editForm.storage_info || "").trim() || null, // MEH-3444
+        ...detailPayload(editForm), // MEH-3442
+        no_allergens: !!editForm.no_allergens, // MEH-3445
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -764,8 +778,23 @@ export default function ProductsSection({
                   idPrefix={`edit-product-${product.id}`}
                   ingredients={editForm.ingredients || ""}
                   allergens={editForm.allergens || []}
+                  mayContain={editForm.may_contain || []}
+                  noAllergens={!!editForm.no_allergens}
                   onIngredients={(v) => setEditForm((f) => ({ ...f, ingredients: v }))}
-                  onToggleAllergen={(code) => setEditForm((f) => ({ ...f, allergens: toggleAllergen(f.allergens, code) }))}
+                  onToggle={(kind, code) => setEditForm((f) => ({ ...f, ...toggleDeclared(f, kind, code) }))}
+                  onNone={() => setEditForm((f) => ({ ...f, ...toggleNoAllergens(f) }))}
+                  tForm={tForm}
+                />
+                <AllergenDetailFields
+                  idPrefix={`edit-product-${product.id}`}
+                  form={editForm}
+                  onChange={(column, v) => setEditForm((f) => ({ ...f, [column]: v }))}
+                  tForm={tForm}
+                />
+                <StorageField
+                  idPrefix={`edit-product-${product.id}`}
+                  value={editForm.storage_info || ""}
+                  onChange={(v) => setEditForm((f) => ({ ...f, storage_info: v }))}
                   tForm={tForm}
                 />
                 <div>
@@ -1004,8 +1033,23 @@ export default function ProductsSection({
               idPrefix="new-product"
               ingredients={form.ingredients}
               allergens={form.allergens}
+              mayContain={form.may_contain}
+              noAllergens={form.no_allergens}
               onIngredients={(v) => setForm((f) => ({ ...f, ingredients: v }))}
-              onToggleAllergen={(code) => setForm((f) => ({ ...f, allergens: toggleAllergen(f.allergens, code) }))}
+              onToggle={(kind, code) => setForm((f) => ({ ...f, ...toggleDeclared(f, kind, code) }))}
+              onNone={() => setForm((f) => ({ ...f, ...toggleNoAllergens(f) }))}
+              tForm={tForm}
+            />
+            <AllergenDetailFields
+              idPrefix="new-product"
+              form={form}
+              onChange={(column, v) => setForm((f) => ({ ...f, [column]: v }))}
+              tForm={tForm}
+            />
+            <StorageField
+              idPrefix="new-product"
+              value={form.storage_info}
+              onChange={(v) => setForm((f) => ({ ...f, storage_info: v }))}
               tForm={tForm}
             />
             <div>
@@ -1208,9 +1252,13 @@ function DietDefinitions({ id, tForm }) {
 
 // MEH-2662: ingredients (free text) + allergens (closed list, chips) — what
 // the owner declares about the food. Shown on the public product sheet
-// «לפי הצהרת בית העסק». Optional; nothing chosen = nothing shown.
-function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngredients, onToggleAllergen, tForm }) {
-  const headingId = `${idPrefix}-allergens-heading`;
+// «לפי הצהרת בית העסק». Optional; nothing chosen = the sheet says so.
+// MEH-3439: a second chip group, «עלול להכיל» (cross-contact). The two groups
+// are exclusive per code — see toggleDeclared in lib/allergens.js.
+// MEH-3445: «אין במוצר אלרגנים מהרשימה» — one chip under both groups; it
+// clears them, and ticking any code clears it (lib/allergens.js).
+/** @param {{ idPrefix: string, ingredients: string, allergens: string[], mayContain: string[], noAllergens: boolean, onIngredients: (v: string) => void, onToggle: (kind: "allergens" | "may_contain", code: string) => void, onNone: () => void, tForm: (k: string) => string }} props */
+function IngredientsAllergensFields({ idPrefix, ingredients, allergens, mayContain, noAllergens, onIngredients, onToggle, onNone, tForm }) {
   return (
     <>
       <div>
@@ -1228,21 +1276,115 @@ function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngred
           className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-text focus-ring"
         />
       </div>
-      <div>
-        <p id={headingId} className="text-xs text-fg-muted mb-2">{tForm("allergens_heading")}</p>
-        <div role="group" aria-labelledby={headingId} data-testid="product-allergens-group" className="flex flex-wrap gap-2">
-          {ALLERGEN_CODES.map((code) => (
-            <DietChip
-              key={code}
-              label={tForm(`allergen_${code}`)}
-              pressed={allergens.includes(code)}
-              onToggle={() => onToggleAllergen(code)}
-            />
-          ))}
-        </div>
-        <p className="text-xs text-fg-muted mt-2">{tForm("allergens_helper")}</p>
+      <AllergenChipGroup
+        headingId={`${idPrefix}-allergens-heading`}
+        testId="product-allergens-group"
+        heading={tForm("allergens_heading")}
+        helper={tForm("allergens_helper")}
+        selected={allergens}
+        onToggle={(code) => onToggle("allergens", code)}
+        tForm={tForm}
+      />
+      <AllergenChipGroup
+        headingId={`${idPrefix}-may-contain-heading`}
+        testId="product-may-contain-group"
+        heading={tForm("may_contain_heading")}
+        helper={tForm("may_contain_helper")}
+        selected={mayContain}
+        onToggle={(code) => onToggle("may_contain", code)}
+        tForm={tForm}
+      />
+      <div data-testid="product-no-allergens">
+        <DietChip label={tForm("no_allergens_label")} pressed={noAllergens} onToggle={onNone} />
       </div>
     </>
+  );
+}
+
+// MEH-3442: «איזה דגן?» / «איזה אגוז?» — shown only while «גלוטן» / «אגוזים»
+// is ticked in either group; an unticked code sends null (the backend drops a
+// detail without its code too).
+const DETAIL_FIELDS = /** @type {const} */ ([
+  { code: "gluten", column: "gluten_detail", key: "gluten_detail" },
+  { code: "tree_nuts", column: "nuts_detail", key: "nuts_detail" },
+]);
+
+/** @param {{ allergens?: string[], may_contain?: string[] }} f @param {string} code */
+const isDeclared = (f, code) => (f.allergens || []).includes(code) || (f.may_contain || []).includes(code);
+
+/** @param {Record<string, any>} f */
+function detailPayload(f) {
+  /** @type {Record<string, string | null>} */
+  const out = {};
+  for (const d of DETAIL_FIELDS) {
+    out[d.column] = isDeclared(f, d.code) ? (f[d.column] || "").trim() || null : null;
+  }
+  return out;
+}
+
+/** @param {{ idPrefix: string, form: Record<string, any>, onChange: (column: string, v: string) => void, tForm: (k: string) => string }} props */
+function AllergenDetailFields({ idPrefix, form, onChange, tForm }) {
+  const shown = DETAIL_FIELDS.filter((d) => isDeclared(form, d.code));
+  if (shown.length === 0) return null;
+  return (
+    <>
+      {shown.map((d) => (
+        <Input
+          key={d.column}
+          id={`${idPrefix}-${d.column}`}
+          data-testid={`product-${d.column.replace("_", "-")}-input`}
+          size="sm"
+          label={tForm(`${d.key}_label`)}
+          maxLength={80}
+          value={form[d.column] || ""}
+          placeholder={tForm(`${d.key}_placeholder`)}
+          onChange={(e) => onChange(d.column, e.target.value)}
+        />
+      ))}
+    </>
+  );
+}
+
+// MEH-3444: «אחסון ותוקף» — optional free text, shown on the product sheet
+// under the allergens. Empty = not shown.
+/** @param {{ idPrefix: string, value: string, onChange: (v: string) => void, tForm: (k: string) => string }} props */
+function StorageField({ idPrefix, value, onChange, tForm }) {
+  return (
+    <div>
+      <label htmlFor={`${idPrefix}-storage`} className="text-xs text-fg-muted mb-1 block">
+        {tForm("storage_label")}
+      </label>
+      <textarea
+        id={`${idPrefix}-storage`}
+        data-testid="product-storage-input"
+        rows={2}
+        maxLength={300}
+        value={value}
+        placeholder={tForm("storage_placeholder")}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-text focus-ring"
+      />
+    </div>
+  );
+}
+
+/** @param {{ headingId: string, testId: string, heading: string, helper: string, selected: string[], onToggle: (code: string) => void, tForm: (k: string) => string }} props */
+function AllergenChipGroup({ headingId, testId, heading, helper, selected, onToggle, tForm }) {
+  return (
+    <div>
+      <p id={headingId} className="text-xs text-fg-muted mb-2">{heading}</p>
+      <div role="group" aria-labelledby={headingId} data-testid={testId} className="flex flex-wrap gap-2">
+        {ALLERGEN_CODES.map((code) => (
+          <DietChip
+            key={code}
+            label={tForm(`allergen_${code}`)}
+            pressed={selected.includes(code)}
+            onToggle={() => onToggle(code)}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-fg-muted mt-2">{helper}</p>
+    </div>
   );
 }
 

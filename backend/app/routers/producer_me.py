@@ -7,6 +7,7 @@ from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.allergens import DETAIL_COLUMNS, detail_if_declared, drop_contained
 from app.limits import enforce_cap
 from app.auth import require_producer
 from app.database import get_db
@@ -1363,6 +1364,30 @@ def update_my_product(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
         )
     for field, value in payload.items():
         setattr(product, field, value)
+    # MEH-3439: the schema only sees the body; a PUT carrying one of the two
+    # lists can still overlap the other one stored on the row. «מכיל» wins.
+    if "allergens" in payload or "may_contain" in payload:
+        product.may_contain = drop_contained(  # type: ignore[assignment]
+            cast(list[str] | None, product.allergens),
+            cast(list[str] | None, product.may_contain),
+        )
+    # MEH-3442: against the stored row too — a PUT that unticks «גלוטן»
+    # without sending gluten_detail must still drop the detail.
+    for code, column in DETAIL_COLUMNS.items():
+        setattr(
+            product,
+            column,
+            detail_if_declared(
+                code,
+                cast(list[str] | None, product.allergens),
+                cast(list[str] | None, product.may_contain),
+                getattr(product, column),
+            ),
+        )
+    # MEH-3445: «אין אלרגנים» never stands next to a ticked code — the code
+    # is the stronger claim, whichever of the two this PUT sent.
+    if product.allergens or product.may_contain:
+        product.no_allergens = False  # type: ignore[assignment]
     db.commit()
     db.refresh(product)
     return product

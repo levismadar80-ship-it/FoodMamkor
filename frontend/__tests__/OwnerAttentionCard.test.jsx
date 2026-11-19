@@ -106,4 +106,38 @@ describe("OwnerAttentionCard (MEH-3108)", () => {
       unmount();
     }
   });
+
+  // MEH-3445: products whose sheet says «בית העסק לא ציין אלרגנים».
+  it("1 unmarked product: singular row, links to the products group", () => {
+    renderCard({ ...none, products: 1, products_no_allergens: 1 });
+    const row = screen.getByTestId("owner-attention-allergens");
+    expect(row).toHaveTextContent("למוצר אחד לא סומנו אלרגנים");
+    expect(within(row).getByRole("link", { name: "לסימון" })).toHaveAttribute(
+      "href",
+      "/producer/dashboard/edit?group=products#products",
+    );
+  });
+
+  it("many unmarked products: plural row, after the other rows", () => {
+    renderCard({ ...none, unreplied_reviews: 1, products: 7, products_no_allergens: 3 });
+    expect(screen.getByTestId("owner-attention-allergens")).toHaveTextContent("ל-3 מוצרים לא סומנו אלרגנים");
+    const keys = screen.getAllByRole("listitem").map((li) => li.dataset.testid);
+    expect(keys).toEqual(["owner-attention-reviews", "owner-attention-allergens"]);
+  });
+
+  it("0 unmarked, a missing count or an organizer: no allergens row", () => {
+    for (const [att, org] of [
+      [{ ...none, products: 2, products_no_allergens: 0 }, false],
+      [{ ...none, products: 2 }, false],
+      [{ ...none, products: 2, products_no_allergens: 2 }, true],
+    ]) {
+      const { container, unmount } = render(
+        <NextIntlClientProvider locale="he" messages={he}>
+          <OwnerAttentionCard attention={att} isOrganizer={org} />
+        </NextIntlClientProvider>,
+      );
+      expect(container.innerHTML).toBe("");
+      unmount();
+    }
+  });
 });

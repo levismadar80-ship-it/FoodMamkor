@@ -871,8 +871,14 @@
             "no_added_sugar": "No added sugar"
           },
           "facts": {
+            "details_heading": "Product details",
             "ingredients_heading": "Ingredients",
             "allergens_heading": "Allergens",
+            "contains": "Contains: {list}",
+            "may_contain": "May contain: {list}",
+            "allergens_undeclared": "The business has not listed allergens. If you have a sensitivity, ask before ordering.",
+            "no_allergens": "None of the listed allergens",
+            "storage_heading": "Storage and shelf life",
             "declared_by_business": "As declared by the business"
           },
           "sheet_close_aria": "Close product details",
@@ -5018,7 +5024,9 @@
         "orders": "{count, plural, one {One order waiting for confirmation} other {# orders waiting for confirmation}}",
         "orders_cta": "Confirm",
         "menu": "No products on your page yet. You can upload a menu instead of typing.",
-        "menu_cta": "Upload a menu"
+        "menu_cta": "Upload a menu",
+        "allergens": "{count, plural, one {One product has no allergens marked} other {# products have no allergens marked}}",
+        "allergens_cta": "Mark them"
       },
       "status": {
         "pending": {
@@ -6096,6 +6104,16 @@
         "allergen_mustard": "Mustard",
         "allergen_sulphites": "Sulphites",
         "allergen_lupin": "Lupin",
+        "allergen_fava_beans": "Fava beans",
+        "may_contain_heading": "May contain",
+        "may_contain_helper": "Mark what may reach the product from shared tools or surfaces.",
+        "no_allergens_label": "None of the listed allergens",
+        "storage_label": "Storage and shelf life",
+        "storage_placeholder": "e.g.: refrigerated, up to 10 days from purchase",
+        "gluten_detail_label": "Which cereal?",
+        "gluten_detail_placeholder": "e.g.: spelt",
+        "nuts_detail_label": "Which nut?",
+        "nuts_detail_placeholder": "e.g.: almonds, hazelnuts",
         "image_label": "Product image",
         "image_alt": "Photo",
         "image_remove": "Remove",

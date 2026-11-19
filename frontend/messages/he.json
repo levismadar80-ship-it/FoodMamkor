@@ -871,8 +871,14 @@
             "no_added_sugar": "ללא סוכר מוסף"
           },
           "facts": {
+            "details_heading": "פרטים על המוצר",
             "ingredients_heading": "רכיבים",
             "allergens_heading": "אלרגנים",
+            "contains": "מכיל: {list}",
+            "may_contain": "עלול להכיל: {list}",
+            "allergens_undeclared": "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.",
+            "no_allergens": "אין במוצר אלרגנים מהרשימה",
+            "storage_heading": "אחסון ותוקף",
             "declared_by_business": "לפי הצהרת בית העסק"
           },
           "sheet_close_aria": "סגירת פרטי המוצר",
@@ -5014,7 +5020,9 @@
         "orders": "{count, plural, one {הזמנה אחת מחכה לאישור} two {# הזמנות מחכות לאישור} other {# הזמנות מחכות לאישור}}",
         "orders_cta": "לאשר",
         "menu": "עוד אין מוצרים בעמוד. אפשר להעלות תפריט במקום להקליד.",
-        "menu_cta": "העלו תפריט"
+        "menu_cta": "העלו תפריט",
+        "allergens": "{count, plural, one {למוצר אחד לא סומנו אלרגנים} two {ל-# מוצרים לא סומנו אלרגנים} other {ל-# מוצרים לא סומנו אלרגנים}}",
+        "allergens_cta": "לסימון"
       },
       "status": {
         "pending": {
@@ -6092,6 +6100,16 @@
         "allergen_mustard": "חרדל",
         "allergen_sulphites": "סולפיטים",
         "allergen_lupin": "תורמוס",
+        "allergen_fava_beans": "פול",
+        "may_contain_heading": "עלול להכיל",
+        "may_contain_helper": "סמנו מה עלול להגיע למוצר מכלים או ממשטח משותפים.",
+        "no_allergens_label": "אין במוצר אלרגנים מהרשימה",
+        "storage_label": "אחסון ותוקף",
+        "storage_placeholder": "למשל: בקירור, עד 10 ימים מיום הקנייה",
+        "gluten_detail_label": "איזה דגן?",
+        "gluten_detail_placeholder": "למשל: כוסמין",
+        "nuts_detail_label": "איזה אגוז?",
+        "nuts_detail_placeholder": "למשל: שקדים, אגוזי לוז",
         "image_label": "תמונת מוצר",
         "image_alt": "תמונה",
         "image_remove": "הסר",

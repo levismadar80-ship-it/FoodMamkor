@@ -5304,6 +5304,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -5357,9 +5369,41 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -5412,6 +5456,18 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -15100,6 +15156,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -15153,9 +15221,41 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -15211,6 +15311,18 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -15729,6 +15841,17 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "group_id": {
             "anyOf": [
               {
@@ -15797,9 +15920,39 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "position": {
             "anyOf": [
@@ -15848,6 +16001,17 @@
           "price_unit": {
             "title": "Price Unit",
             "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -15885,6 +16049,18 @@
               }
             ],
             "title": "Description"
+          },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
           },
           "image_url": {
             "anyOf": [
@@ -15975,6 +16151,21 @@
             ],
             "title": "Is Vegetarian"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "anyOf": [
               {
@@ -15985,6 +16176,29 @@
               }
             ],
             "title": "Name"
+          },
+          "no_allergens": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Allergens"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -16040,6 +16254,18 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "title": "ProductUpdate",
