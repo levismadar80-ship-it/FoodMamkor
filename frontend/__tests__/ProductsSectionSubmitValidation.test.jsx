@@ -45,9 +45,14 @@ beforeEach(() => {
 });
 
 describe("ProductsSection — submit validation (MEH-1809)", () => {
-  it("empty submit shows the name AND price errors together, not one at a time", async () => {
+  // MEH-2924: the price is optional now, so the two-errors-at-once case is
+  // built from «עד» without «מ-» — still a price error, still beside the name.
+  it("submit shows the name AND price errors together, not one at a time", async () => {
     await openAddForm();
 
+    fireEvent.change(document.getElementById("new-product-price-max"), {
+      target: { value: "40" },
+    });
     fireEvent.click(screen.getByText(P.add_submit_cta));
 
     // BOTH visible in the same render — the whole point of the change.
@@ -81,6 +86,9 @@ describe("ProductsSection — submit validation (MEH-1809)", () => {
   it("fixing a field clears only that field's error; the other one stays", async () => {
     await openAddForm();
 
+    fireEvent.change(document.getElementById("new-product-price-max"), {
+      target: { value: "40" },
+    });
     fireEvent.click(screen.getByText(P.add_submit_cta));
     expect(screen.getByText(E.name_required)).toBeInTheDocument();
 
@@ -109,5 +117,36 @@ describe("ProductsSection — submit validation (MEH-1809)", () => {
       "/producers/me/products",
       expect.objectContaining({ name: "לחם מחמצת", price_min: 20 }),
     );
+  });
+});
+
+describe("ProductsSection — no fixed price (MEH-2924)", () => {
+  it("a product with no price saves, and posts price_min: null", async () => {
+    await openAddForm();
+    api.post.mockResolvedValue({ data: { id: 2, name: "תפוזי עונה", price_min: null } });
+
+    fireEvent.change(document.getElementById("new-product-name"), {
+      target: { value: "תפוזי עונה" },
+    });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+
+    expect(screen.queryByText(E.price_required)).not.toBeInTheDocument();
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ name: "תפוזי עונה", price_min: null, price_max: null }),
+    );
+  });
+
+  it("the form says what an empty price does", async () => {
+    await openAddForm();
+    expect(screen.getByText(P.form.price_optional_hint)).toBeInTheDocument();
+  });
+
+  it("the owner's list shows «מחיר משתנה לפי עונה», never ₪ or 0", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 3, name: "תפוזי עונה", price_min: null, price_max: null }] });
+    renderSection();
+    const row = (await screen.findByText("תפוזי עונה")).closest("li") ?? document.body;
+    expect(row).toHaveTextContent(he.product_price.varies);
+    expect(row.textContent).not.toMatch(/₪|\b0\b/);
   });
 });

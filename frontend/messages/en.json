@@ -6064,6 +6064,7 @@
         "price_max_optional_suffix": "optional",
         "price_max_placeholder": "60",
         "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
+        "price_optional_hint": "No fixed price? Leave the price empty and your page will say «Price varies by season».",
         "diet_heading": "Dietary tags (optional)",
         "diet_gluten_free": "Gluten-free",
         "diet_vegan": "Vegan",
@@ -7536,5 +7537,8 @@
     "100g": "per 100 g",
     "bottle": "per bottle",
     "box": "per box"
+  },
+  "product_price": {
+    "varies": "Price varies by season"
   }
 }
