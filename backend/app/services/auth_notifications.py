@@ -745,6 +745,7 @@ def notify_admin_owner_invite_accepted(
     owner_email: str,
     published: bool,
     test_cause: bool = False,
+    missing: list[str] | None = None,
 ) -> None:
     """Ping admin (WhatsApp + email) that an owner accepted the invite an
     admin sent her — she set a password, signed the terms and the licensing
@@ -762,6 +763,10 @@ def notify_admin_owner_invite_accepted(
     WhatsApp raise cannot skip the email. Fire-and-forget: runs as a
     BackgroundTask and swallows-and-logs any failure (MEH-977 — observable,
     never breaks the 200 she already got).
+
+    MEH-3268: `missing` is set when a hidden page was HELD — she is the owner
+    now, but the page lost its photo or licence after the invite went out and
+    stayed hidden. The admin is the one who can fix it, so she is told what.
     """
     if test_cause:  # MEH-2952: before preflight / the send — no error log
         return _skip_test_cause("notify_admin_owner_invite_accepted", None)
@@ -771,11 +776,15 @@ def notify_admin_owner_invite_accepted(
     # REUSES the MEH-1051 sanitizer (one flattener per file, MEH-271).
     safe_name = _sanitize_wa_param(producer_name)
     safe_email = _sanitize_wa_param(owner_email)
-    headline = (
-        f"✅ {safe_name} אישרה את הדף — והדף עלה לאוויר"
-        if published
-        else f"✅ {safe_name} אישרה את הדף וקיבלה גישה"
-    )
+    if published:
+        headline = f"✅ {safe_name} אישרה את הדף — והדף עלה לאוויר"
+    elif missing:
+        headline = (
+            f"⚠️ {safe_name} אישרה את הדף וקיבלה גישה, אבל הדף לא עלה לאוויר."
+            f" חסר: {', '.join(missing)}"
+        )
+    else:
+        headline = f"✅ {safe_name} אישרה את הדף וקיבלה גישה"
     subject = f"מהמקור - {safe_name} אישרה את ההזמנה"
     message = (
         f"{headline}\n"

@@ -113,7 +113,10 @@ from app.schemas.schemas import (
     ProducerClaimPreviewOut,
     Token,
 )
-from app.services.invite_gate import assert_invitable_content  # MEH-3246
+from app.services.invite_gate import (  # MEH-3246
+    assert_invitable_content,
+    content_gaps,
+)
 from app.services import indexnow  # MEH-2852
 from app.services.email import send_email
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
@@ -756,18 +759,38 @@ def _verify_email_code(
         raise HTTPException(status_code=422, detail=_BAD_CODE)
 
 
+def _accept_plan(db: Session, producer: Producer) -> tuple[bool, list[str]]:
+    """MEH-3268: does this acceptance publish the page, and if it does not,
+    what is missing. Returns `(publishes, held_gaps)`.
+
+    The invite was only SENT for a complete page (MEH-3246), but an admin edit
+    can remove the photo or the licence number before the owner clicks. She
+    cannot fix that from the accept page, so a 422 would strand her: she is
+    linked as the owner and the page stays hidden, and the admin is told what
+    is missing. `held_gaps` is empty unless a HIDDEN page is being held — an
+    already-approved page is not taken down by its owner accepting.
+    """
+    hidden = bool(producer.status == _HIDDEN_STATUS)
+    gaps = content_gaps(db, producer) if hidden else []
+    return hidden and not gaps, gaps
+
+
 def _claim_invite(
     db: Session,
     producer_id: UUID,
     token: str,
     now: datetime,
-    farmer_stamp: dict[str, Any],
+    stamp: dict[str, Any],
 ) -> int:
     """The one conditional UPDATE that spends an invite (MEH-1820). Shared by
     `/accept` (new account) and `/accept-existing` (MEH-3256, signed-in
     account) so the claim — and every column it clears — has ONE owner.
     Returns the affected-row count; 0 means another request won or the link
-    died. The comments inside are the original `/accept` ones."""
+    died. The comments inside are the original `/accept` ones.
+
+    `stamp` is the extra columns this claim writes, by attribute name: the
+    grower line (MEH-3137) and, when the acceptance publishes, `status`
+    (MEH-3268, `_accept_plan`)."""
     affected: int = (
         db.query(Producer)
         .filter(
@@ -788,15 +811,13 @@ def _claim_invite(
                 # both NULL) — this is the moment it becomes signed.
                 Producer.declared_at: now,
                 Producer.declaration_version: DECLARATION_VERSION,
-                # MEH-3137: {} unless a grower category needed the line.
-                **{getattr(Producer, k): v for k, v in farmer_stamp.items()},
-                # v3: the page goes live in the SAME statement that claims the
-                # token. Set unconditionally rather than only when the row
-                # read `inactive`: both invitable statuses END at `approved`,
-                # so writing the end state needs no read to be still true —
-                # which is the whole point of doing it here and not after a
-                # second SELECT.
-                Producer.status: _LIVE_STATUS,
+                # MEH-3137: the grower line, when a category needed it.
+                # v3 / MEH-3268: `status` rides here when the acceptance
+                # publishes, so the page goes live in the SAME statement that
+                # claims the token. A page held for a missing photo or licence
+                # gets no status write and stays `inactive`; an approved page
+                # needs none.
+                **{getattr(Producer, k): v for k, v in stamp.items()},
                 # The code is spent with the token. Nothing may be accepted
                 # twice, and a code left behind would outlive the invite it
                 # belonged to.
@@ -921,7 +942,19 @@ async def accept_owner_invite(
     # belt-and-braces — the read above is NOT under a lock, so its answer is
     # already stale by the time we get here, and this clause is the only one
     # whose verdict counts.
-    claimed = _claim_invite(db, producer.id, body.token, now, farmer_stamp)  # type: ignore[arg-type]
+    # Whether this acceptance PUBLISHES the page, read before the claim so its
+    # answer decides the claim's `status` write. Only a real transition
+    # announces: an already-approved business's URL did not change, and pinging
+    # it would claim a change that did not happen. MEH-3268: a hidden page
+    # that lost its photo or licence is held, not published.
+    published, held_gaps = _accept_plan(db, producer)
+    claimed = _claim_invite(
+        db,
+        producer.id,  # type: ignore[arg-type]
+        body.token,
+        now,
+        farmer_stamp | ({"status": _LIVE_STATUS} if published else {}),
+    )
     if not claimed:
         db.rollback()
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
@@ -959,11 +992,6 @@ async def accept_owner_invite(
     # `admin_id`.
     p_id, p_name, p_slug = producer.id, producer.name, producer.slug
     p_is_test = bool(producer.is_test)
-    # Whether this acceptance PUBLISHED the page, read before the UPDATE's
-    # end state can be refreshed into the session. Only a real transition
-    # announces: an already-approved business's URL did not change, and
-    # pinging it would claim a change that did not happen.
-    published = producer.status == _HIDDEN_STATUS
     # Computed here for the same reason the three lines above are: after the
     # commit this row is expired, and `producer_urls` reads slug, kind and
     # is_test. It returns [] by itself for a test row (MEH-2952).
@@ -999,8 +1027,9 @@ async def accept_owner_invite(
         notify_admin_owner_invite_accepted,
         p_name,  # type: ignore[arg-type]
         user.email,  # type: ignore[arg-type]
-        published,  # type: ignore[arg-type]
+        published,
         test_cause=p_test,
+        missing=held_gaps,
     )
 
     # The business is already approved, so the one email that is TRUE for her
@@ -1010,14 +1039,16 @@ async def accept_owner_invite(
     # Deliberately NOT sent: the welcome mail (it tells a new business to go
     # finish its profile — hers is finished and live) and the WhatsApp
     # template (one parameter, no buttons, and nothing here to say).
-    background_tasks.add_task(
-        send_email,
-        user.email,  # type: ignore[arg-type]
-        "ברוכים הבאים למהמקור",
-        _producer_approved_body(p_name, p_slug),  # type: ignore[arg-type]
-        html=_producer_approved_html(p_name, p_slug),  # type: ignore[arg-type]
-        test_cause=p_test,
-    )
+    # MEH-3268: and not for a held page — that email says the page is visible.
+    if not held_gaps:
+        background_tasks.add_task(
+            send_email,
+            user.email,  # type: ignore[arg-type]
+            "ברוכים הבאים למהמקור",
+            _producer_approved_body(p_name, p_slug),  # type: ignore[arg-type]
+            html=_producer_approved_html(p_name, p_slug),  # type: ignore[arg-type]
+            test_cause=p_test,
+        )
 
     # The same session login issues, so she lands in the dashboard signed in
     # rather than at a login form she has no muscle memory for.
