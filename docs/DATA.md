@@ -1290,13 +1290,16 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      declaration_version + owner_invite_accepted_at, and INSERTs the user (role="producer", producer_id, is_producer,
                                                      email_verified=true, password_changed_at, terms_accepted_at + terms_version). The email being taken in between is
                                                      caught by the unique index and rolls the claim back with it → 409, zero writes, link still live.
-                                                     v3, in the same UPDATE: the three code columns are cleared, and status is set to "approved" — unconditionally, since both
-                                                     invitable statuses end there, so the end state needs no read to still be true. IndexNow is pinged only when the row WAS
-                                                     hidden (an already-approved page's URL did not change). After the commit the admin is notified
+                                                     v3, in the same UPDATE: the three code columns are cleared, and a hidden page is set to "approved" — the publish.
+                                                     MEH-3268: a hidden page that lost its photo, or the licence number its category needs, after the invite went out
+                                                     (services/invite_gate.py content_gaps) is HELD — the owner is linked, status stays "inactive", no 422 (she cannot
+                                                     fix it from this page). An already-approved page gets no status write. IndexNow is pinged only when the page was
+                                                     published. After the commit the admin is notified
                                                      (notify_admin_owner_invite_accepted — WhatsApp + email through the existing family, no new env var), with `published`
-                                                     distinguishing the two outcomes.
+                                                     distinguishing the outcomes and `missing` naming what a held page lacks.
                                                      Issues the same access token + refresh/fingerprint cookies as /auth/login. Background: the EXISTING
-                                                     business-approved email (the two builders in services/admin_producer_emails.py, by import) — no welcome mail, no WhatsApp template.
+                                                     business-approved email (the two builders in services/admin_producer_emails.py, by import) — no welcome mail, no WhatsApp template;
+                                                     not sent for a held page (that email says the page is visible). /accept-existing follows the same rule.
 ```
 ### Producers (`app/routers/producers.py`, `producer_me.py` + `producer_me_analytics.py`, `producer_me_review.py`, `producer_me_locations.py`)
 

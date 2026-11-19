@@ -67,8 +67,9 @@ from app.services.account_guards import is_super_admin
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.routers.producer_owner_invite import (
     _ALREADY_OWNED,
-    _HIDDEN_STATUS,
     _LINK_INVALID,
+    _LIVE_STATUS,
+    _accept_plan,
     _claim_invite,
     _has_owner,
     _live_invite,
@@ -217,12 +218,15 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
     if _has_owner(db, producer.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_ALREADY_OWNED)
 
-    published = bool(producer.status == _HIDDEN_STATUS)
+    # MEH-3268: a hidden page that lost its photo or licence is held, not
+    # published — the same rule as `/accept`, from the same helper.
+    published, held_gaps = _accept_plan(db, producer)
     p_id, p_name, p_slug = producer.id, producer.name, producer.slug
     p_test = bool(producer.is_test or locked.is_test)
     p_urls = indexnow.producer_urls(producer)
 
-    if not _claim_invite(db, producer.id, body.token, now, farmer_stamp):  # type: ignore[arg-type]
+    stamp = farmer_stamp | ({"status": _LIVE_STATUS} if published else {})
+    if not _claim_invite(db, producer.id, body.token, now, stamp):  # type: ignore[arg-type]
         db.rollback()
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
 
@@ -254,15 +258,18 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
         u_email,  # type: ignore[arg-type]
         published,
         test_cause=p_test,
+        missing=held_gaps,
     )
-    background_tasks.add_task(
-        send_email,
-        u_email,  # type: ignore[arg-type]
-        "ברוכים הבאים למהמקור",
-        _producer_approved_body(p_name, p_slug),  # type: ignore[arg-type]
-        html=_producer_approved_html(p_name, p_slug),  # type: ignore[arg-type]
-        test_cause=p_test,
-    )
+    # MEH-3268: that email says the page is visible, so a held page skips it.
+    if not held_gaps:
+        background_tasks.add_task(
+            send_email,
+            u_email,  # type: ignore[arg-type]
+            "ברוכים הבאים למהמקור",
+            _producer_approved_body(p_name, p_slug),  # type: ignore[arg-type]
+            html=_producer_approved_html(p_name, p_slug),  # type: ignore[arg-type]
+            test_cause=p_test,
+        )
 
     db.refresh(locked)
     fp = generate_fingerprint()
