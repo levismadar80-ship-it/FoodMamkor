@@ -153,7 +153,9 @@ async function openAt(page: Page, anchor: string): Promise<void> {
   await expect(card(page, anchor), `control: #${anchor} never came on screen — every assertion here is void`).toBeVisible({ timeout: 15_000 });
   // MEH-3449: the deep link is still settling (group switch, collapsing
   // sections, smooth scroll) — a click into a moving card can be lost without
-  // an error (flows/_layout-settled.ts).
+  // an error (flows/_layout-settled.ts). The resolver's last navigation
+  // puts the card's group in the URL; wait for it, then for quiet.
+  await expect(page).toHaveURL(/[?&]group=/);
   await layoutSettled(card(page, anchor));
 }
 

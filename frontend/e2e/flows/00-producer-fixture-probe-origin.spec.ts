@@ -86,6 +86,7 @@ const test = base.extend<{ recorder: Recorder }>({
     // MEH-3451: a runner whose ephemeral range was widened below 29009 could
     // still hand us the dead port. Say so by name instead of failing as a leak.
     if (addr.port === DEAD_PORT) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
       throw new Error(`recorder was given the dead origin's port ${DEAD_PORT} — the test would record its own probes`);
     }
     await use({ paths, url: `http://127.0.0.1:${addr.port}` });

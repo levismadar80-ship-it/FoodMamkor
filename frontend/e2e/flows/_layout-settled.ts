@@ -1,7 +1,7 @@
 import type { Locator } from "@playwright/test";
 
 /**
- * Module:   _scroll-settled
+ * Module:   _layout-settled
  * Purpose:  Wait until a deep-linked card has stopped moving — for specs that
  *           land on `/producer/dashboard/edit#<anchor>` and then click in it.
  * Does NOT: assert anything. It is a readiness gate, not a check.
@@ -29,7 +29,9 @@ import type { Locator } from "@playwright/test";
  *
  * HOW. The element's viewport box, the scroll offset and the document height,
  * unchanged for `frames` consecutive animation frames. Ten frames (~160 ms)
- * outlasts the gap between two of the steps above.
+ * outlasts the gap between two of the steps above. It detects quiet, not "the
+ * deep link finished": callers that open a deep link first wait for the URL to
+ * carry `?group=` (the resolver's last navigation), then for quiet.
  */
 export async function layoutSettled(target: Locator, frames = 10): Promise<void> {
   await target.evaluate(
@@ -37,14 +39,18 @@ export async function layoutSettled(target: Locator, frames = 10): Promise<void>
       new Promise<void>((resolve, reject) => {
         let last = "";
         let same = 0;
-        const deadline = performance.now() + 10_000;
+        // A timer, not a check inside tick: rAF stops on a hidden page, and the
+        // gate must then fail by name instead of waiting out the test timeout.
+        const timer = setTimeout(() => reject(new Error(`layout still moving after 10 s (last ${last})`)), 10_000);
         const tick = () => {
           const r = el.getBoundingClientRect();
-          const sig = `${r.top}|${r.height}|${window.scrollY}|${document.documentElement.scrollHeight}`;
+          const sig = `${r.top}|${r.left}|${r.height}|${r.width}|${window.scrollY}|${document.documentElement.scrollHeight}`;
           same = sig === last ? same + 1 : 0;
           last = sig;
-          if (same >= n) return resolve();
-          if (performance.now() > deadline) return reject(new Error(`layout still moving after 10 s (last ${sig})`));
+          if (same >= n) {
+            clearTimeout(timer);
+            return resolve();
+          }
           requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
