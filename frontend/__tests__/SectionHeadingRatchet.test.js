@@ -67,6 +67,7 @@ const ALLOWED = {
   "components/producer/FirstMomentCard.jsx": 1, // owner card title (MEH-3200 part 2, dashboard home)
   "components/producer/OwnerWelcomeCard.jsx": 1, // owner card title (MEH-3200, dashboard home)
   "components/producer/WhatsNewCard.jsx": 1, // owner card title (MEH-3200, dashboard home)
+  "components/producer/OrdersIntroCard.jsx": 1, // owner card title (MEH-3216, dashboard home)
   "components/ProducersClient.jsx": 2, // empty-state titles
   "components/RecipeForm.jsx": 1, // form title
   "components/RegistrationOverlays.jsx": 1, // sign-up sheet title (MEH-3043)

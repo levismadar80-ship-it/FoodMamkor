@@ -311,12 +311,14 @@
           "producer_name_label": "Business name",
           "city": "e.g. Zikhron Ya'akov",
           "fulfilment": {
-            "legend": "How do people buy from you?",
-            "onsite": "They come to us",
-            "delivery": "We deliver",
+            "legend": "How do customers get their order?",
+            "onsite": "Pickup or visit",
+            "delivery": "Delivery",
             "both": "Both",
             "required": "Pick one option",
-            "areas_note": "You set your delivery areas in the dashboard"
+            "areas_note": "You set your delivery areas in the dashboard",
+            "hours_hint": "Have opening hours? Your card will show “Buy on site”. Without hours it shows “By arrangement”. Add hours in your dashboard.",
+            "whatsapp_note": "WhatsApp orders reach you through the contact button on your page."
           },
           "city_label": "City",
           "address": "e.g. 5 Olive St., Haifa",
@@ -1321,7 +1323,10 @@
         "fulfillment_required": "Fill in pickup or delivery",
         "submitting": "Creating...",
         "submit": "Create group buy",
-        "toast_created": "Group buy created and open for joining"
+        "toast_created": "Group buy created and open for joining",
+        "prefill_label": "Fill from an existing product",
+        "prefill_placeholder": "Choose a product",
+        "prefill_helper": "The name and regular price fill in, and you can change them."
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {
@@ -2140,7 +2145,15 @@
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
         "confirm": "Confirm",
-        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone."
+        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone.",
+        "block": "Block {name}? They won't be able to sign in until the block is lifted.",
+        "block_business": "Block {name}? The business “{business}” will be hidden from the site.",
+        "block_none": "It has no open bookings.",
+        "block_one": "One open booking will be cancelled, and the customer will get an email.",
+        "block_many": "{count} open bookings will be cancelled, and each customer will get an email.",
+        "block_restore": "Lifting the block doesn't bring the business back. Restore it with «Activate» on the businesses page.",
+        "block_submit": "Block",
+        "block_impact_error": "We couldn't check for open bookings. Try again."
       },
       "pagination": {
         "page_size": "Rows per page",
@@ -2151,7 +2164,8 @@
       "rescue": {
         "blocked_badge": "Blocked from bags ({count} no-shows)",
         "cleared": "Block released"
-      }
+      },
+      "blocked_hidden": "The account is blocked and the business is hidden."
     },
     "recipes": {
       "title": "Business recipes",
@@ -5614,7 +5628,9 @@
         "action_delete": "Delete",
         "action_error": "Action failed. Please try again.",
         "delete_confirm": "Delete the event \"{title}\"? This cannot be undone.",
-        "badge_past": "Ended"
+        "badge_past": "Ended",
+        "action_duplicate": "Duplicate",
+        "copied_from": "Details copied from \"{title}\". Just pick a date."
       },
       "manage_experiences": {
         "heading": "My experiences",
@@ -5640,7 +5656,9 @@
         "status_changes_requested": "Changes requested",
         "badge_past": "Ended",
         "signed_up_label": "Signed up so far",
-        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left"
+        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left",
+        "action_duplicate": "Duplicate",
+        "copied_from": "Details copied from \"{title}\". Just pick a date."
       },
       "name_change": {
         "heading": "Change business name",
@@ -5743,7 +5761,8 @@
           "business_id": "Business or company number",
           "business_id_help": "Shown to customers on the order form, as the law requires.",
           "business_id_required": "To take orders on the site, fill in your business number.",
-          "business_id_format": "A business or company number has 9 digits."
+          "business_id_format": "A business or company number has 9 digits.",
+          "commission": "Orders through the site carry a commission according to your plan. <link>Details in the terms</link>."
         },
         "windows": {
           "title": "When orders are handed over",
@@ -5830,6 +5849,20 @@
         "prep": {
           "title": "What to prepare",
           "line": "{count} × {name}"
+        },
+        "intro": {
+          "title": "New: pre-orders from your page",
+          "body": "Customers pick products and a pickup or delivery time, and send you a request. You confirm from your dashboard, and they pay you directly.",
+          "cta": "Set up orders",
+          "later": "Not now"
+        },
+        "checklist": {
+          "title": "What's missing to take orders",
+          "business_id": "Business or company number",
+          "windows": "Hand-over hours",
+          "product": "At least one product open for ordering",
+          "enabled": "Turn on \"Take orders on the site\"",
+          "done": "All set. Customers can order from your page."
         }
       }
     },
@@ -6184,7 +6217,8 @@
         "precision_helper": "Exact — customers see a pin at the full location; Approximate — a pin in the area only, without an address.",
         "precision_exact": "Exact",
         "precision_approximate": "Approximate",
-        "primary_label": "Primary location"
+        "primary_label": "Primary location",
+        "hours_copy_all": "Same hours for all open days"
       },
       "save_cta": "Save",
       "saving": "Saving…",
@@ -7451,7 +7485,8 @@
   "phone_verify": {
     "title": "Verify your business phone",
     "reverify_title": "Your business WhatsApp number isn't verified yet",
-    "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
+    "description": "Tap «Send verification code» and we will send a 6-digit code to the business number's WhatsApp. Verification is one of the steps before sending for review.",
+    "code_sent": "We sent a code to the business number's WhatsApp.",
     "send_cta": "Send verification code",
     "sending": "Sending...",
     "resend_in": "You can resend a code in {seconds}s",
