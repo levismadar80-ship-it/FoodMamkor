@@ -62,6 +62,7 @@ from app.services.analytics import (
 )
 from app.services.farmer_declaration import farmer_declaration_stamp  # MEH-3137
 from app.services.license_validation import ensure_license_for_categories
+from app.services.product_order_menu import attach_takes_site_orders
 from app.services.producer_listing import (
     MAX_CITIES_PER_QUERY,
     build_producers_query,
@@ -479,6 +480,7 @@ def get_producer_by_slug(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
     # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
     result.kashrut_certs = [
         KashrutCertRef(badge_code=c.badge_code)
@@ -546,6 +548,7 @@ def get_producer(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
     # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
     result.kashrut_certs = [
         KashrutCertRef(badge_code=c.badge_code)

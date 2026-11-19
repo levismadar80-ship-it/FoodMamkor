@@ -16,7 +16,7 @@
 
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
-| API routes (actor actions) | 297 | 284 | 8 | 5 | 0 |
+| API routes (actor actions) | 298 | 285 | 8 | 5 | 0 |
 | — negative cell of gated routes (401/403) | 217 | 140 | 0 | 77 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 51 | 49 | 1 | 1 | 0 |
@@ -348,7 +348,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 283 | PUT | `/producers/me/rescue/offers/{offer_id}/donated` | `rescue.set_donated` | business/organizer · flag: rescue | `tests/test_meh2703_rescue_donated.py:82` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
 | 284 | GET | `/producers/me/rescue/typical-items` | `rescue.get_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:78` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 5 |
 | 285 | PUT | `/producers/me/rescue/typical-items` | `rescue.set_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:68` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 7 |
-| 286 | GET | `/producers/me/order-settings` | `product_orders.get_my_order_settings` | business/organizer | `tests/test_meh3216_business_id.py:63` | `tests/test_meh3218_product_orders.py:421` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:84` | 3 |
+| 286 | GET | `/producers/me/order-settings` | `product_orders.get_my_order_settings` | business/organizer | `tests/test_meh3216_business_id.py:65` | `tests/test_meh3218_product_orders.py:421` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:84` | 3 |
 | 287 | PUT | `/producers/me/order-settings` | `product_orders.put_my_order_settings` | business/organizer | `tests/test_meh3216_business_id.py:25` | `tests/test_meh3218_product_orders.py:419` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:84` | 5 |
 | 288 | PUT | `/admin/producers/{producer_id}/order-settings/alcohol` | `product_orders.set_alcohol_licensed` | admin | `tests/test_meh3218_product_orders.py:453` | `tests/test_meh3218_product_orders.py:444` | — | 5 |
 | 289 | GET | `/producers/me/order-windows` | `product_order_offer.get_my_order_windows` | business/organizer | `tests/test_meh3262_order_windows.py:310` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 5 |
@@ -358,18 +358,19 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 293 | GET | `/producers/{producer_id}/order-menu` | `product_order_offer.get_order_menu` | anonymous | `tests/test_meh2312_drafts_not_orderable.py:36` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 1 |
 | 294 | POST | `/product-orders/phone-code` | `product_order_buyer.send_order_phone_code` | anonymous | `tests/test_meh3263_order_route.py:145` | n/a | — | 6 |
 | 295 | POST | `/product-orders` | `product_order_buyer.send_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:174` | n/a | — | 4 |
-| 296 | POST | `/product-orders/status` | `product_order_buyer.read_order_status` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:879` | n/a | — | 4 |
-| 297 | POST | `/product-orders/status/cancel` | `product_order_buyer.cancel_own_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:993` | n/a | — | 4 |
-| 298 | POST | `/product-orders/status/accept-change` | `product_order_buyer.accept_proposed_change` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:1142` | n/a | — | 4 |
-| 299 | GET | `/users/me/product-orders` | `product_order_buyer.list_own_orders` | registered user | `tests/test_meh3263_order_route.py:505` | `tests/test_meh3263_order_route.py:510` | — | 2 |
-| 300 | GET | `/producers/me/product-orders` | `product_order_business.list_business_orders` | business/organizer | `tests/test_meh3263_order_route.py:1024` | `tests/test_meh3263_order_route.py:1034` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 3 |
-| 301 | POST | `/producers/me/product-orders/{order_id}/confirm` | `product_order_business.confirm_order` | business/organizer | `tests/test_meh3263_order_route.py:1080` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 302 | POST | `/producers/me/product-orders/{order_id}/propose-change` | `product_order_business.propose_order_change` | business/organizer | `tests/test_meh3263_order_route.py:803` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 303 | POST | `/producers/me/product-orders/{order_id}/handed` | `product_order_business.hand_order_over` | business/organizer | `tests/test_meh3263_order_route.py:1187` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 304 | POST | `/producers/me/product-orders/{order_id}/no-show` | `product_order_business.report_no_show` | business/organizer | `tests/test_meh3263_order_route.py:1208` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 305 | POST | `/producers/me/product-orders/{order_id}/decline` | `product_order_business.decline_order` | business/organizer | `tests/test_meh3296_order_notifications.py:210` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 306 | POST | `/producers/me/product-orders/{order_id}/ready` | `product_order_business.ready_order` | business/organizer | `tests/test_meh3263_order_route.py:1178` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 307 | POST | `/producers/me/product-orders/{order_id}/cancel` | `product_order_business.cancel_order` | business/organizer | `tests/test_meh3263_order_route.py:1222` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 296 | POST | `/product-orders/quote` | `product_order_buyer.quote_order_route` | anonymous | `tests/test_meh3216_order_quote.py:27` | n/a | — | 4 |
+| 297 | POST | `/product-orders/status` | `product_order_buyer.read_order_status` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:887` | n/a | — | 4 |
+| 298 | POST | `/product-orders/status/cancel` | `product_order_buyer.cancel_own_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:1001` | n/a | — | 4 |
+| 299 | POST | `/product-orders/status/accept-change` | `product_order_buyer.accept_proposed_change` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:1150` | n/a | — | 4 |
+| 300 | GET | `/users/me/product-orders` | `product_order_buyer.list_own_orders` | registered user | `tests/test_meh3263_order_route.py:513` | `tests/test_meh3263_order_route.py:518` | — | 2 |
+| 301 | GET | `/producers/me/product-orders` | `product_order_business.list_business_orders` | business/organizer | `tests/test_meh3263_order_route.py:1032` | `tests/test_meh3263_order_route.py:1042` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 3 |
+| 302 | POST | `/producers/me/product-orders/{order_id}/confirm` | `product_order_business.confirm_order` | business/organizer | `tests/test_meh3263_order_route.py:1088` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 303 | POST | `/producers/me/product-orders/{order_id}/propose-change` | `product_order_business.propose_order_change` | business/organizer | `tests/test_meh3263_order_route.py:811` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 304 | POST | `/producers/me/product-orders/{order_id}/handed` | `product_order_business.hand_order_over` | business/organizer | `tests/test_meh3263_order_route.py:1195` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 305 | POST | `/producers/me/product-orders/{order_id}/no-show` | `product_order_business.report_no_show` | business/organizer | `tests/test_meh3263_order_route.py:1216` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 306 | POST | `/producers/me/product-orders/{order_id}/decline` | `product_order_business.decline_order` | business/organizer | `tests/test_meh3296_order_notifications.py:210` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 307 | POST | `/producers/me/product-orders/{order_id}/ready` | `product_order_business.ready_order` | business/organizer | `tests/test_meh3263_order_route.py:1186` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 308 | POST | `/producers/me/product-orders/{order_id}/cancel` | `product_order_business.cancel_order` | business/organizer | `tests/test_meh3263_order_route.py:1230` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
 
 ### Internal routes (allowlisted — not actor actions)
 
@@ -396,7 +397,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 |---|---|---|---|---|---|---|---|
 | `gallery_story` | page | live | — | n/a | `frontend/__tests__/OwnerCard.test.jsx:14` | n/a | covered |
 | `product_details` | page | live | — | n/a | `frontend/__tests__/DietDefinitions.test.jsx:31` | n/a | covered |
-| `top_product` | page | live | — | n/a | `frontend/__tests__/ProducerHoursSection.test.jsx:53` | n/a | covered |
+| `top_product` | page | live | — | n/a | `frontend/__tests__/OrderCartRows.test.jsx:76` | n/a | covered |
 | `hours` | page | live | — | n/a | `frontend/__tests__/LocationHoursField.test.jsx:15` | n/a | covered |
 | `vacation_mode` | page | live | — | n/a | `frontend/__tests__/ProducerHeaderAlertsReentry.test.jsx:101` | n/a | covered |
 | `map_precision` | page | live | — | n/a | `frontend/__tests__/producerPoints.test.js:2` | n/a | covered |
@@ -409,7 +410,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `onboarding_emails` | page | live | — | `tests/test_meh1965_email_copy_contract.py:82` (imports module) | n/a | n/a | covered |
 | `vanity_link` | found | live | — | n/a | `frontend/__tests__/Dashboard1025Banner.test.jsx:14` | `frontend/e2e/flows/22-register-personas.spec.ts:232` | covered |
 | `discovery` | found | live | — | n/a | `frontend/__tests__/DietLandingPage.test.jsx:88` | GAP | covered |
-| `similar_businesses` | found | live | — | n/a | `frontend/__tests__/ProducerHoursSection.test.jsx:53` | n/a | covered |
+| `similar_businesses` | found | live | — | n/a | `frontend/__tests__/OrderCartRows.test.jsx:76` | n/a | covered |
 | `share_cards` | found | live | — | n/a | `frontend/__tests__/ReviewCardLayout.test.jsx:3` | n/a | covered |
 | `qr_code` | found | live | `/producer/dashboard/qr-card` | n/a | `frontend/__tests__/BusinessQr.test.js:9` | GAP | covered |
 | `structured_data` | found | live | — | n/a | `frontend/__tests__/BusinessQr.test.js:8` | n/a | covered |

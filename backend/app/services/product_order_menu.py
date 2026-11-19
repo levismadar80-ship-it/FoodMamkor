@@ -19,6 +19,7 @@ from typing import Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models.models import Producer
 from app.models.product_orders import (
     PRODUCT_ORDER_OPEN_STATUSES,
@@ -80,6 +81,23 @@ def takes_orders(producer: Producer | None, row: ProducerOrderSettings | None) -
         and row.enabled
         and row.business_id_number
     )
+
+
+def attach_takes_site_orders(db: Session, result: Any, producer: Producer) -> None:
+    """Set `takes_site_orders` on a business page payload.
+
+    The same answer as the menu route, so the page never offers «הוספה» on a
+    business whose menu would 404. With the site flag off (its default) no
+    query runs at all.
+    """
+    if not getattr(settings, "product_orders_enabled", False):
+        return
+    row = (
+        db.query(ProducerOrderSettings)
+        .filter(ProducerOrderSettings.producer_id == producer.id)
+        .first()
+    )
+    result.takes_site_orders = takes_orders(producer, row)
 
 
 def offered_slots(
