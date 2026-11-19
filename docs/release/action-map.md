@@ -16,7 +16,7 @@
 
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
-| API routes (actor actions) | 297 | 284 | 8 | 5 | 0 |
+| API routes (actor actions) | 298 | 285 | 8 | 5 | 0 |
 | — negative cell of gated routes (401/403) | 217 | 140 | 0 | 77 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 51 | 49 | 1 | 1 | 0 |
@@ -258,7 +258,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 183 | PATCH | `/producers/me/recipes/{recipe_id}` | `producer_recipes.update_my_recipe` | business/organizer | `tests/test_indexnow.py:724` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 11 |
 | 184 | DELETE | `/producers/me/recipes/{recipe_id}` | `producer_recipes.delete_my_recipe` | business/organizer | `tests/test_indexnow.py:757` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 10 |
 | 185 | GET | `/producers/{slug}/recipes` | `producer_recipes.list_public_recipes` | anonymous | `tests/test_meh2952_is_test_exclusion.py:432` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 1 |
-| 186 | GET | `/producers/{slug}/recipes/{recipe_id}` | `producer_recipes.get_public_recipe` | anonymous | `tests/test_producer_recipes.py:412` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 1 |
+| 186 | GET | `/producers/{slug}/recipes/{recipe_id}` | `producer_recipes.get_public_recipe` | anonymous | `tests/test_meh3342_recipe_old_slug.py:49` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 1 |
 | 187 | GET | `/admin/recipes` | `admin_recipes.admin_list_recipes` | admin | `tests/test_meh997_e2e_journeys.py:190` | `tests/test_meh997_e2e_journeys.py:647` | e2e-mock `frontend/e2e/flows/manual/admin-recipes-kebab.spec.ts:166` | 3 |
 | 188 | GET | `/admin/recipes/pending` | `admin_recipes.admin_list_pending_recipes` | admin | `tests/test_meh997_e2e_journeys.py:186` | `tests/test_meh997_e2e_journeys.py:648` | — | 3 |
 | 189 | POST | `/admin/recipes/{recipe_id}/approve` | `admin_recipes.approve_recipe` | admin | `tests/test_indexnow.py:527` | `tests/test_expansion_admin_authz.py:39` (table row) | — | 9 |
@@ -358,18 +358,19 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 293 | GET | `/producers/{producer_id}/order-menu` | `product_order_offer.get_order_menu` | anonymous | `tests/test_meh2312_drafts_not_orderable.py:36` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 1 |
 | 294 | POST | `/product-orders/phone-code` | `product_order_buyer.send_order_phone_code` | anonymous | `tests/test_meh3263_order_route.py:140` | n/a | — | 6 |
 | 295 | POST | `/product-orders` | `product_order_buyer.send_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:169` | n/a | — | 4 |
-| 296 | POST | `/product-orders/status` | `product_order_buyer.read_order_status` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:874` | n/a | — | 4 |
-| 297 | POST | `/product-orders/status/cancel` | `product_order_buyer.cancel_own_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:988` | n/a | — | 4 |
-| 298 | POST | `/product-orders/status/accept-change` | `product_order_buyer.accept_proposed_change` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:1137` | n/a | — | 4 |
-| 299 | GET | `/users/me/product-orders` | `product_order_buyer.list_own_orders` | registered user | `tests/test_meh3263_order_route.py:500` | `tests/test_meh3263_order_route.py:505` | — | 2 |
-| 300 | GET | `/producers/me/product-orders` | `product_order_business.list_business_orders` | business/organizer | `tests/test_meh3263_order_route.py:1019` | `tests/test_meh3263_order_route.py:1029` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 3 |
-| 301 | POST | `/producers/me/product-orders/{order_id}/confirm` | `product_order_business.confirm_order` | business/organizer | `tests/test_meh3263_order_route.py:1075` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 302 | POST | `/producers/me/product-orders/{order_id}/propose-change` | `product_order_business.propose_order_change` | business/organizer | `tests/test_meh3263_order_route.py:798` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 303 | POST | `/producers/me/product-orders/{order_id}/handed` | `product_order_business.hand_order_over` | business/organizer | `tests/test_meh3263_order_route.py:1182` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 304 | POST | `/producers/me/product-orders/{order_id}/no-show` | `product_order_business.report_no_show` | business/organizer | `tests/test_meh3263_order_route.py:1203` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 305 | POST | `/producers/me/product-orders/{order_id}/decline` | `product_order_business.decline_order` | business/organizer | `tests/test_meh3296_order_notifications.py:210` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 306 | POST | `/producers/me/product-orders/{order_id}/ready` | `product_order_business.ready_order` | business/organizer | `tests/test_meh3263_order_route.py:1173` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
-| 307 | POST | `/producers/me/product-orders/{order_id}/cancel` | `product_order_business.cancel_order` | business/organizer | `tests/test_meh3263_order_route.py:1217` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 296 | POST | `/product-orders/quote` | `product_order_buyer.quote_order_route` | anonymous | `tests/test_meh3216_order_quote.py:27` | n/a | — | 4 |
+| 297 | POST | `/product-orders/status` | `product_order_buyer.read_order_status` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:882` | n/a | — | 4 |
+| 298 | POST | `/product-orders/status/cancel` | `product_order_buyer.cancel_own_order` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:996` | n/a | — | 4 |
+| 299 | POST | `/product-orders/status/accept-change` | `product_order_buyer.accept_proposed_change` | anonymous (optional auth) | `tests/test_meh3263_order_route.py:1145` | n/a | — | 4 |
+| 300 | GET | `/users/me/product-orders` | `product_order_buyer.list_own_orders` | registered user | `tests/test_meh3263_order_route.py:508` | `tests/test_meh3263_order_route.py:513` | — | 2 |
+| 301 | GET | `/producers/me/product-orders` | `product_order_business.list_business_orders` | business/organizer | `tests/test_meh3263_order_route.py:1027` | `tests/test_meh3263_order_route.py:1037` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 3 |
+| 302 | POST | `/producers/me/product-orders/{order_id}/confirm` | `product_order_business.confirm_order` | business/organizer | `tests/test_meh3263_order_route.py:1083` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 303 | POST | `/producers/me/product-orders/{order_id}/propose-change` | `product_order_business.propose_order_change` | business/organizer | `tests/test_meh3263_order_route.py:806` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 304 | POST | `/producers/me/product-orders/{order_id}/handed` | `product_order_business.hand_order_over` | business/organizer | `tests/test_meh3263_order_route.py:1190` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 305 | POST | `/producers/me/product-orders/{order_id}/no-show` | `product_order_business.report_no_show` | business/organizer | `tests/test_meh3263_order_route.py:1211` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 306 | POST | `/producers/me/product-orders/{order_id}/decline` | `product_order_business.decline_order` | business/organizer | `tests/test_meh3296_order_notifications.py:210` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 307 | POST | `/producers/me/product-orders/{order_id}/ready` | `product_order_business.ready_order` | business/organizer | `tests/test_meh3263_order_route.py:1181` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
+| 308 | POST | `/producers/me/product-orders/{order_id}/cancel` | `product_order_business.cancel_order` | business/organizer | `tests/test_meh3263_order_route.py:1225` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
 
 ### Internal routes (allowlisted — not actor actions)
 
@@ -396,7 +397,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 |---|---|---|---|---|---|---|---|
 | `gallery_story` | page | live | — | n/a | `frontend/__tests__/OwnerCard.test.jsx:14` | n/a | covered |
 | `product_details` | page | live | — | n/a | `frontend/__tests__/DietDefinitions.test.jsx:31` | n/a | covered |
-| `top_product` | page | live | — | n/a | `frontend/__tests__/ProducerHoursSection.test.jsx:53` | n/a | covered |
+| `top_product` | page | live | — | n/a | `frontend/__tests__/OrderCartRows.test.jsx:76` | n/a | covered |
 | `hours` | page | live | — | n/a | `frontend/__tests__/LocationHoursField.test.jsx:15` | n/a | covered |
 | `vacation_mode` | page | live | — | n/a | `frontend/__tests__/ProducerHeaderAlertsReentry.test.jsx:101` | n/a | covered |
 | `map_precision` | page | live | — | n/a | `frontend/__tests__/producerPoints.test.js:2` | n/a | covered |
@@ -409,7 +410,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `onboarding_emails` | page | live | — | `tests/test_meh1965_email_copy_contract.py:82` (imports module) | n/a | n/a | covered |
 | `vanity_link` | found | live | — | n/a | `frontend/__tests__/Dashboard1025Banner.test.jsx:14` | `frontend/e2e/flows/22-register-personas.spec.ts:232` | covered |
 | `discovery` | found | live | — | n/a | `frontend/__tests__/DietLandingPage.test.jsx:88` | GAP | covered |
-| `similar_businesses` | found | live | — | n/a | `frontend/__tests__/ProducerHoursSection.test.jsx:53` | n/a | covered |
+| `similar_businesses` | found | live | — | n/a | `frontend/__tests__/OrderCartRows.test.jsx:76` | n/a | covered |
 | `share_cards` | found | live | — | n/a | `frontend/__tests__/ReviewCardLayout.test.jsx:3` | n/a | covered |
 | `qr_code` | found | live | `/producer/dashboard/qr-card` | n/a | `frontend/__tests__/BusinessQr.test.js:9` | GAP | covered |
 | `structured_data` | found | live | — | n/a | `frontend/__tests__/BusinessQr.test.js:8` | n/a | covered |
@@ -575,7 +576,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 1 | `rejected` → `pending` | producer_me_review.py:506 | `POST /producers/me/request-review` | `tests/test_api.py:2394` | — |
 | 1 | `pending`/`rejected` → `approved` | admin_decisions.py:146, producer_approval.py:122 | `POST /admin/producers/{producer_id}/approve` | `tests/test_admin_approval_transitions.py:121` | — |
 | 1 | `pending`/`approved` → `rejected` | admin_decisions.py:300 | `POST /admin/producers/{producer_id}/reject` | `tests/test_admin_approval_transitions.py:398` | — |
-| 1 | `approved` ⇄ `inactive` | admin.py:810 | `POST /admin/producers/{producer_id}/toggle-status` | `tests/test_admin_approval_transitions.py:38` | nearest function — audit line may have drifted |
+| 1 | `approved` ⇄ `inactive` | admin.py:810 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | nearest function — audit line may have drifted |
 | 1 | `pending` → `pending` + feedback | — | `POST /admin/producers/{producer_id}/request-changes` | `tests/test_changes_requested_whatsapp.py:59` | — |
 | 1 | any → any via admin PUT | admin.py:655 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |
 | 2 | ∅ → `open` | group_buys.py:396 | `DELETE /group-buys/{group_buy_id}/commit` | `tests/test_group_buys_api.py:249` | a DELETE handler for a non-delete transition — audit line may be off |

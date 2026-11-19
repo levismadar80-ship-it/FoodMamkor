@@ -36,12 +36,15 @@ from app.schemas.product_order_buy import (
     BuyerRefIn,
     OrderCreatedOut,
     OrderCreateIn,
+    OrderQuoteIn,
+    OrderQuoteOut,
     PhoneCodeIn,
 )
 from app.services import product_order_actions as actions
 from app.services import product_order_phone as phone_codes
 from app.services import whatsapp
 from app.services.product_order_create import create_order, token_hash
+from app.services.product_order_quote import quote_order
 from app.services.product_order_menu import takes_orders
 from app.services.product_order_state import Actor
 from app.services.product_order_views import buyer_view, buyer_view_expired
@@ -134,6 +137,20 @@ def send_order(
     created = create_order(db, body, user)
     _private(response)
     return {**buyer_view(db, created.order), "status_token": created.status_token}
+
+
+@router.post("/product-orders/quote", response_model=OrderQuoteOut, dependencies=_GATE)
+@limiter.limit("60/minute")
+def quote_order_route(
+    request: Request,
+    response: Response,
+    body: OrderQuoteIn,
+    db: Session = Depends(get_db),
+) -> Any:
+    """MEH-3216 stage 5c: the goods, the delivery fee and the total before
+    the buyer sends. Writes nothing; refuses as the order route would."""
+    _private(response)
+    return quote_order(db, body)
 
 
 def _own_order(db: Session, body: BuyerRefIn, user: User | None) -> ProductOrder:

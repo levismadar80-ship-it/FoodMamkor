@@ -6088,6 +6088,81 @@
         "title": "OrderMenuSlotOut",
         "type": "object"
       },
+      "OrderQuoteIn": {
+        "additionalProperties": false,
+        "description": "What the order sheet asks before it sends (MEH-3216 stage 5c): the\npicks, how she gets them, and her city for a delivery. No price.",
+        "properties": {
+          "delivery_city": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery City"
+          },
+          "fulfilment": {
+            "enum": [
+              "pickup",
+              "delivery"
+            ],
+            "title": "Fulfilment",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderLineIn"
+            },
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "items",
+          "fulfilment"
+        ],
+        "title": "OrderQuoteIn",
+        "type": "object"
+      },
+      "OrderQuoteOut": {
+        "properties": {
+          "delivery_fee_agorot": {
+            "title": "Delivery Fee Agorot",
+            "type": "integer"
+          },
+          "has_estimate": {
+            "title": "Has Estimate",
+            "type": "boolean"
+          },
+          "subtotal_agorot": {
+            "title": "Subtotal Agorot",
+            "type": "integer"
+          },
+          "total_agorot": {
+            "title": "Total Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "subtotal_agorot",
+          "delivery_fee_agorot",
+          "total_agorot",
+          "has_estimate"
+        ],
+        "title": "OrderQuoteOut",
+        "type": "object"
+      },
       "OrderWindowIn": {
         "additionalProperties": false,
         "properties": {
@@ -8755,6 +8830,11 @@
             ],
             "title": "Submitted For Review At"
           },
+          "takes_site_orders": {
+            "default": false,
+            "title": "Takes Site Orders",
+            "type": "boolean"
+          },
           "top_product_id": {
             "anyOf": [
               {
@@ -10604,6 +10684,11 @@
               }
             ],
             "title": "Story Card Url"
+          },
+          "takes_site_orders": {
+            "default": false,
+            "title": "Takes Site Orders",
+            "type": "boolean"
           },
           "top_product_id": {
             "anyOf": [
@@ -13077,6 +13162,11 @@
               }
             ],
             "title": "Story Card Url"
+          },
+          "takes_site_orders": {
+            "default": false,
+            "title": "Takes Site Orders",
+            "type": "boolean"
           },
           "top_product_id": {
             "anyOf": [
@@ -31362,6 +31452,48 @@
           }
         },
         "summary": "Send Order Phone Code",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/product-orders/quote": {
+      "post": {
+        "description": "MEH-3216 stage 5c: the goods, the delivery fee and the total before\nthe buyer sends. Writes nothing; refuses as the order route would.",
+        "operationId": "quote_order_route_product_orders_quote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderQuoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderQuoteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Quote Order Route",
         "tags": [
           "product-orders"
         ]
