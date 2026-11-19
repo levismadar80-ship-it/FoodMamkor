@@ -41,16 +41,18 @@ import {
 } from "@/lib/order-sheet";
 
 const QUOTE_DELAY_MS = 400;
+const CONFLICT = 409;
 
 /**
  * @param {{
  *   producer: any,
  *   menu: import("@/lib/order-cart").OrderMenu,
  *   picks: Record<string, number>,
+ *   onStale?: () => void,
  *   onClose: () => void,
  * }} props
  */
-export default function OrderSheet({ producer, menu, picks, onClose }) {
+export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onClose }) {
   const t = useTranslations("producer.detail.order_sheet");
   const locale = useLocale();
   const router = useRouter();
@@ -69,7 +71,10 @@ export default function OrderSheet({ producer, menu, picks, onClose }) {
     age: false,
   }));
   const [key] = useState(newOrderKey);
-  const [quote, setQuote] = useState(/** @type {any} */ (null));
+  // The quote together with the request it answers: a total is shown, and
+  // «שליחת הבקשה» enabled, only when it answers what is on the form now — a
+  // pickup total must never stand in for a delivery (fresh review of #4837).
+  const [answer, setAnswer] = useState(/** @type {{ body: string, quote: any } | null} */ (null));
   const [error, setError] = useState(/** @type {string | null} */ (null));
   // Kept apart from `error`: a quote that arrives after a failed send must
   // not wipe the send's message.
@@ -80,7 +85,10 @@ export default function OrderSheet({ producer, menu, picks, onClose }) {
 
   const slots = slotsFor(menu, form.fulfilment, hasAlcohol);
   const delivery = form.fulfilment === "delivery";
-  useQuote(producer.id, picks, form.fulfilment, form.city, setQuote, setQuoteError);
+  const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment: form.fulfilment, city: form.city }));
+  const needsCity = delivery && !form.city.trim();
+  useQuote(needsCity ? null : body, setAnswer, setQuoteError, onStale);
+  const quote = answer && answer.body === body ? answer.quote : null;
 
   const submit = async (/** @type {any} */ e) => {
     e.preventDefault();
@@ -92,7 +100,9 @@ export default function OrderSheet({ producer, menu, picks, onClose }) {
       );
       router.push(href);
     } catch (err) {
-      setError(detailToMessage(/** @type {any} */ (err)?.response?.data?.detail) || t("failed"));
+      const res = /** @type {any} */ (err)?.response;
+      setError(detailToMessage(res?.data?.detail) || t("failed"));
+      if (res?.status === CONFLICT) onStale();
       setBusy(false);
     }
   };
@@ -141,7 +151,7 @@ export default function OrderSheet({ producer, menu, picks, onClose }) {
       {quoteError && <InlineMessage tone="error" className="mt-3">{quoteError}</InlineMessage>}
       {error && <InlineMessage tone="error" className="mt-3">{error}</InlineMessage>}
       <div className="mt-5 flex gap-3">
-        <Button type="submit" disabled={busy || slots.length === 0} data-testid="order-sheet-send" className="flex-1">
+        <Button type="submit" disabled={busy || slots.length === 0 || !quote} data-testid="order-sheet-send" className="flex-1">
           {busy && <ButtonSpinner />}
           {t("send")}
         </Button>
@@ -151,19 +161,26 @@ export default function OrderSheet({ producer, menu, picks, onClose }) {
   );
 }
 
-/** The quote, re-read when the picks, the way or the city change. */
-function useQuote(producerId, picks, fulfilment, city, setQuote, setError) {
-  const body = JSON.stringify(quoteBody({ producerId, picks, fulfilment, city }));
+/**
+ * The quote for `body` (null: nothing to ask yet, e.g. a delivery with no
+ * city). A 409 may mean a pick sold out since the page loaded, so the menu is
+ * read again; the picks then drop it and the body changes.
+ */
+function useQuote(body, setAnswer, setError, onStale) {
   useEffect(() => {
-    if (fulfilment === "delivery" && !city.trim()) return undefined;
+    if (!body) return undefined;
     let live = true;
     const timer = setTimeout(() => {
       quoteOrder(JSON.parse(body))
-        .then((q) => { if (live) { setQuote(q); setError(null); } })
-        .catch((err) => { if (live) { setQuote(null); setError(detailToMessage(err?.response?.data?.detail)); } });
+        .then((quote) => { if (live) { setAnswer({ body, quote }); setError(null); } })
+        .catch((err) => {
+          if (!live) return;
+          setError(detailToMessage(err?.response?.data?.detail));
+          if (err?.response?.status === CONFLICT) onStale();
+        });
     }, QUOTE_DELAY_MS);
     return () => { live = false; clearTimeout(timer); };
-  }, [body, fulfilment, city, setQuote, setError]);
+  }, [body, setAnswer, setError, onStale]);
 }
 
 function Lines({ picks, byId }) {
@@ -182,7 +199,7 @@ function Lines({ picks, byId }) {
 function Totals({ quote, delivery, t }) {
   if (!quote) return null;
   return (
-    <div className="mt-4 space-y-1 text-sm" data-testid="order-sheet-totals">
+    <div className="mt-4 space-y-1 text-sm" role="status" data-testid="order-sheet-totals">
       {delivery && <p className="text-fg-muted">{t("delivery_fee", { fee: shekelsText(quote.delivery_fee_agorot) })}</p>}
       <p className="font-bold text-text">
         {t(quote.has_estimate ? "total_estimate" : "total", { total: shekelsText(quote.total_agorot) })}

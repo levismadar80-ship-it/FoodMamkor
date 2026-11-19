@@ -81,10 +81,10 @@ describe("order-sheet helpers", () => {
   });
 });
 
-function renderSheet(picks = { [BREAD]: 2 }, producer = { id: PRODUCER, payment_info: { methods: ["bit", "cash"] } }) {
+function renderSheet(picks = { [BREAD]: 2 }, producer = { id: PRODUCER, payment_info: { methods: ["bit", "cash"] } }, onStale = () => {}) {
   return render(
     <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
-      <OrderSheet producer={producer} menu={MENU} picks={picks} onClose={() => {}} />
+      <OrderSheet producer={producer} menu={MENU} picks={picks} onStale={onStale} onClose={() => {}} />
     </NextIntlClientProvider>,
   );
 }
@@ -132,6 +132,34 @@ describe("OrderSheet", () => {
     const sent = vi.mocked(api.post).mock.calls.find(([url]) => url === "/product-orders")[1];
     expect(sent).toMatchObject({ slot_start: "2026-11-20T08:00:00Z", code: "123456", customer_name: "דנה לוי" });
     expect(sent).not.toHaveProperty("total_agorot");
+  });
+
+  it("never shows a pickup total for a delivery, and sends only after the matching total", async () => {
+    vi.mocked(api.post).mockImplementation(async (url, body) =>
+      body.fulfilment === "delivery"
+        ? { data: { ...QUOTE, delivery_fee_agorot: 3000, total_agorot: 8600 } }
+        : { data: QUOTE },
+    );
+    renderSheet();
+    expect(await screen.findByText("סך הכול: 56 ₪")).toBeTruthy();
+    expect(screen.getByTestId("order-sheet-send").disabled).toBe(false);
+    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    // No city yet: no total at all, and no sending.
+    expect(screen.queryByTestId("order-sheet-totals")).toBeNull();
+    expect(screen.getByTestId("order-sheet-send").disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
+    expect(await screen.findByText("סך הכול: 86 ₪")).toBeTruthy();
+    expect(screen.getByText("משלוח: 30 ₪")).toBeTruthy();
+    expect(api.post).toHaveBeenLastCalledWith("/product-orders/quote", expect.objectContaining({ delivery_city: "חיפה" }));
+    expect(screen.getByTestId("order-sheet-send").disabled).toBe(false);
+  });
+
+  it("reads the menu again when the server says a pick is gone", async () => {
+    const onStale = vi.fn();
+    vi.mocked(api.post).mockRejectedValue({ response: { status: 409, data: { detail: "אחד המוצרים כבר לא זמין להזמנה. צריך לעדכן את ההזמנה" } } });
+    renderSheet(undefined, undefined, onStale);
+    expect(await screen.findByText("אחד המוצרים כבר לא זמין להזמנה. צריך לעדכן את ההזמנה")).toBeTruthy();
+    expect(onStale).toHaveBeenCalled();
   });
 
   it("shows the server's Hebrew refusal and stays open", async () => {

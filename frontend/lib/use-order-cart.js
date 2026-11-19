@@ -24,10 +24,14 @@ import { keepOrderable, loadOrderMenu, pickedCount, pickedTotalAgorot, setQty } 
  *   byId: Map<string, MenuProduct>,
  *   picks: Record<string, number>,
  *   change: (id: string, qty: number) => void,
+ *   reload: () => void,
  *   count: number,
  *   totalAgorot: number,
  * }} OrderCart
  */
+
+/** @type {Record<string, number>} */
+const NO_PICKS = Object.freeze({});
 
 /**
  * @param {{ id?: string, takes_site_orders?: boolean } | null | undefined} producer
@@ -38,12 +42,16 @@ export function useOrderCart(producer) {
   const takesOrders = Boolean(producer?.takes_site_orders);
   const [menu, setMenu] = useState(/** @type {OrderMenu | null} */ (null));
   const [picks, setPicks] = useState(/** @type {Record<string, number>} */ ({}));
+  // Bumped to read the menu again: the order sheet does it when the server
+  // says a pick is no longer orderable, so the sold-out line drops out of the
+  // picks and the page shows «אזל להיום» (fresh review of #4837).
+  const [generation, setGeneration] = useState(0);
+  const reload = useCallback(() => setGeneration((n) => n + 1), []);
 
   useEffect(() => {
-    if (!producerId || !takesOrders) {
-      setMenu(null);
-      return undefined;
-    }
+    // Nothing to read: what is returned below is empty while the business
+    // takes no orders, so no state is reset here.
+    if (!producerId || !takesOrders) return undefined;
     let live = true;
     loadOrderMenu(producerId).then((loaded) => {
       if (!live) return;
@@ -53,19 +61,22 @@ export function useOrderCart(producer) {
     return () => {
       live = false;
     };
-  }, [producerId, takesOrders]);
+  }, [producerId, takesOrders, generation]);
 
-  const byId = useMemo(() => new Map((menu?.products ?? []).map((p) => [p.id, p])), [menu]);
+  const open = takesOrders ? menu : null;
+  const shown = open ? picks : NO_PICKS;
+  const byId = useMemo(() => new Map((open?.products ?? []).map((p) => [p.id, p])), [open]);
   const change = useCallback((/** @type {string} */ id, /** @type {number} */ qty) => {
     setPicks((current) => setQty(current, { id, qty }));
   }, []);
 
   return {
-    menu,
+    menu: open,
     byId,
-    picks,
+    picks: shown,
     change,
-    count: pickedCount(picks),
-    totalAgorot: menu ? pickedTotalAgorot(picks, menu.products) : 0,
+    reload,
+    count: pickedCount(shown),
+    totalAgorot: open ? pickedTotalAgorot(shown, open.products) : 0,
   };
 }
