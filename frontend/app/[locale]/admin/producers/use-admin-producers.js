@@ -263,9 +263,14 @@ export function useAdminProducers() {
   const annotated = data.producers.map((p) => ({
     ...p,
     _completeness: producerCompleteness(p),
+    // MEH-3408: the server compares name and phone against every business in
+    // every status (GET /admin/producers dup_name / dup_phone), so a draft's
+    // self-registered twin is seen under the «טיוטות» filter too. City stays a
+    // loaded-rows comparison: it is the weak axis.
     _dup: {
-      name: nameCounts[_norm(p.name)] > 1,
+      name: nameCounts[_norm(p.name)] > 1 || p.dup_name === true,
       city: cityCounts[_norm(p.city)] > 1,
+      phone: p.dup_phone === true,
     },
   }));
   const incompleteCount = annotated.filter((p) => p._completeness.priority !== "green").length;

@@ -1646,7 +1646,8 @@
           "dedup": "Duplicate?",
           "dedup_name_title": "Same name as another producer — check whether it's a duplicate.",
           "dedup_city_title": "Same city as another producer — check whether it's a duplicate.",
-          "dedup_both_title": "Same name and city as another producer — check whether it's a duplicate."
+          "dedup_both_title": "Same name and city as another producer — check whether it's a duplicate.",
+          "dedup_phone_title": "Same phone as another producer — check whether it's a duplicate."
         },
         "actions": {
           "approve_short": "✓ Approve",
