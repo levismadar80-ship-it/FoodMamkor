@@ -41,7 +41,14 @@ log = logging.getLogger(__name__)
 PRODUCER_TEXT_FIELDS = ("description", "short_description", "owner_bio")
 # A product's public text.
 # MEH-3444: storage_info is public text too («אחסון ותוקף»).
-PRODUCT_TEXT_FIELDS = ("name", "description", "ingredients", "storage_info", "gluten_detail", "nuts_detail")
+PRODUCT_TEXT_FIELDS = (
+    "name",
+    "description",
+    "ingredients",
+    "storage_info",
+    "gluten_detail",
+    "nuts_detail",
+)
 
 # Order here is the order in the admin message.
 CONTENT_FIELD_LABELS: dict[str, str] = {

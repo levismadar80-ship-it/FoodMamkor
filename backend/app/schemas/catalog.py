@@ -573,8 +573,12 @@ class ProductCreate(BaseModel):
     def _contains_wins(self) -> Self:
         self.may_contain = drop_contained(self.allergens, self.may_contain)
         # MEH-3442: a detail without its declared code is dropped.
-        self.gluten_detail = detail_if_declared("gluten", self.allergens, self.may_contain, self.gluten_detail)
-        self.nuts_detail = detail_if_declared("tree_nuts", self.allergens, self.may_contain, self.nuts_detail)
+        self.gluten_detail = detail_if_declared(
+            "gluten", self.allergens, self.may_contain, self.gluten_detail
+        )
+        self.nuts_detail = detail_if_declared(
+            "tree_nuts", self.allergens, self.may_contain, self.nuts_detail
+        )
         return self
 
 

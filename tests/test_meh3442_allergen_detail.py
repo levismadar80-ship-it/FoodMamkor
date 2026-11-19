@@ -7,7 +7,8 @@ Related:  backend/app/allergens.py detail_if_declared · alembic c9e1a5d3f7b2.
 Cells:    detail with its code in «מכיל» / in «עלול להכיל» → stored · detail
           without its code → dropped · PUT that unticks the code (lists only)
           → dropped from the stored row · PUT unset keeps · over 80 → 422 ·
-          admin draft drops · approved business edit AI-checked.
+          admin draft drops · approved business edit AI-checked · detail-only
+          PUT follows the stored lists · moving the code keeps it · bleach.
 """
 from unittest.mock import patch
 
@@ -79,3 +80,45 @@ def test_approved_business_edit_is_ai_checked(client, db):
         r = client.put(f"/producers/me/products/{pid}", json={"gluten_detail": "כוסמין"}, headers=auth_header(user))
     assert r.status_code == 200, r.text
     ai.assert_called_once_with({"gluten_detail": "כוסמין"}, "product_content")
+
+
+def test_put_detail_only_follows_the_stored_lists(client, db):
+    # The code is stored only in «עלול להכיל»: a detail-only PUT is kept.
+    user, _ = _owner(db)
+    pid = _create(client, user, may_contain=["tree_nuts"]).json()["id"]
+    r = client.put(f"/producers/me/products/{pid}", json={"nuts_detail": "אגוזי לוז"}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    assert r.json()["nuts_detail"] == "אגוזי לוז"
+    # No gluten stored anywhere: a detail-only PUT is dropped.
+    r = client.put(f"/producers/me/products/{pid}", json={"gluten_detail": "כוסמין"}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    assert r.json()["gluten_detail"] is None
+    assert db.get(Product, pid).gluten_detail is None
+
+
+def test_moving_the_code_between_lists_keeps_the_detail(client, db):
+    user, _ = _owner(db)
+    pid = _create(client, user, allergens=["gluten"], gluten_detail="כוסמין").json()["id"]
+    r = client.put(
+        f"/producers/me/products/{pid}",
+        json={"allergens": None, "may_contain": ["gluten"]},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["gluten_detail"] == "כוסמין"
+    r = client.put(f"/producers/me/products/{pid}", json={"may_contain": None}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    assert r.json()["gluten_detail"] is None
+
+
+def test_nuts_detail_over_80_chars_is_422(client, db):
+    user, _ = _owner(db)
+    r = _create(client, user, allergens=["tree_nuts"], nuts_detail="א" * 81)
+    assert r.status_code == 422, r.text
+
+
+def test_markup_is_bleached(client, db):
+    user, _ = _owner(db)
+    r = _create(client, user, allergens=["gluten"], gluten_detail="<b>כוסמין</b>")
+    assert r.status_code == 201, r.text
+    assert r.json()["gluten_detail"] == "כוסמין"
