@@ -34,6 +34,8 @@ import he from "../../messages/he.json";
 const SYNTHETIC = 12;
 const MOBILE_ROWS = 6;
 const DESKTOP_ROWS = 8;
+/** `DEMO_SLUG` in backend/scripts/seed_demo_business.py. */
+const DEMO_SLUG = "ruach-hasadeh";
 
 type Product = { id: string; name: string; image_url: string | null; price_min: number };
 
@@ -68,7 +70,15 @@ const showAll = (n: number) =>
 let producer: FeedProducer;
 
 test.beforeAll(async ({ request }) => {
-  producer = await pickProducer(request, { label: "any approved business", matches: () => true });
+  // MEH-3435: "any approved business" picked the lowest id in the feed, which
+  // can be a business another spec creates and removes mid-run — the detail
+  // fetch then answered 404. The seeded demo business (DEMO_SLUG in
+  // backend/scripts/seed_demo_business.py, seeded by
+  // scripts/e2e/start-local-backend.sh and on staging) is never removed.
+  producer = await pickProducer(request, {
+    label: `the seeded demo business (slug ${DEMO_SLUG})`,
+    matches: (p) => p.slug === DEMO_SLUG,
+  });
 });
 
 test.describe("MEH-3021 — long product list collapses", () => {
