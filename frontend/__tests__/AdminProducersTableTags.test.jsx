@@ -100,3 +100,37 @@ describe("Admin ProducerTags — ✡ follows verified kashrut (MEH-2521)", () =>
     ).toHaveLength(1);
   });
 });
+
+// MEH-3408: «כפילות?» also lights up for a shared phone, computed by the
+// server over every status. Each case reads the badge's title KEY (the mock
+// translator returns it), so a missing phone branch reads a different key —
+// or no badge at all — and goes red.
+function dedupTitle(dup) {
+  const { container } = render(<ProducerTags producer={{ _dup: dup }} />);
+  const tag = container.querySelector('[aria-label="admin.producers.table.tags.dedup"]');
+  return tag ? tag.getAttribute("title") : null;
+}
+
+describe("Admin ProducerTags — «כפילות?» (MEH-1421 + MEH-3408)", () => {
+  it("shared phone only → the badge, titled with the phone title", () => {
+    expect(dedupTitle({ name: false, city: false, phone: true })).toBe(
+      "admin.producers.table.tags.dedup_phone_title",
+    );
+  });
+
+  it("shared phone AND name → the phone title wins", () => {
+    expect(dedupTitle({ name: true, city: true, phone: true })).toBe(
+      "admin.producers.table.tags.dedup_phone_title",
+    );
+  });
+
+  it("shared name only (e.g. the server's dup_name) → the name title", () => {
+    expect(dedupTitle({ name: true, city: false, phone: false })).toBe(
+      "admin.producers.table.tags.dedup_name_title",
+    );
+  });
+
+  it("nothing shared → no badge", () => {
+    expect(dedupTitle({ name: false, city: false, phone: false })).toBeNull();
+  });
+});
