@@ -28,6 +28,7 @@ import Dialog from "@/components/ui/Dialog";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import GroupBuyProductPicker from "@/components/GroupBuyProductPicker";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { israelWallClockToIso, parseNaiveUtc } from "@/lib/dates";
 
@@ -167,6 +168,12 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
           />
         </div>
 
+        {/* MEH-3438: fill name + regular price from a product she already has. */}
+        <GroupBuyProductPicker
+          onPick={({ name, regularPrice }) =>
+            setForm((prev) => ({ ...prev, product_name: name, price_per_unit_regular: regularPrice }))
+          }
+        />
         <Input
           label={t("product_name_label")}
           value={form.product_name}

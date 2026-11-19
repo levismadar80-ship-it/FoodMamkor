@@ -1807,6 +1807,20 @@ against the target DB. The script **refuses** any target URL containing
 the substring `production` (case-insensitive) or matching `$DATABASE_URL_PRODUCTION`
 when set — production restore is a manual operation, not a script invocation.
 
+**Personal details are replaced after every restore (MEH-3406).** Right after
+`pg_restore`, the script runs `scripts/anonymize_restored_db.sql` in one
+transaction: emails become `user-<id>@example.com` (a reserved domain that
+`send_email` skips), phones become `+97250000xxxx`, names and street
+addresses are replaced or cleared, and codes, push endpoints, raw WhatsApp
+traffic and admin passkeys are deleted. Every account is rewritten, the
+seeded demo logins too, so re-seed them after a restore to staging. Columns a
+dump older than the newest migration does not have are skipped and logged,
+not failed on. Then it counts what survived and
+exits `4` if any real email, phone or push endpoint is left — in that case drop the
+target database. `--keep-pii` skips this, only when typed, and logs a
+warning. `tests/test_restore_anonymize.py` fails when a new email / phone /
+address-like column is neither handled in the SQL nor exempted with a reason.
+
 ```bash
 # Set R2 creds in your shell (no DATABASE_URL needed; the target is an arg)
 export $(grep -v '^DATABASE_URL=' .env.staging | xargs)
@@ -1819,7 +1833,7 @@ createdb mehamakor_dr_test
 
 # Restore the most recent backup
 python scripts/restore_from_backup.py --latest postgresql://localhost/mehamakor_dr_test
-# Expect: exit 0, row counts table for producers/users/categories/cities
+# Expect: exit 0, "Anonymized" + eight "…: 0" lines, then row counts for producers/users/categories/cities
 
 # Or restore a specific file
 python scripts/restore_from_backup.py mehamakor_production_20260507T230000Z.dump \

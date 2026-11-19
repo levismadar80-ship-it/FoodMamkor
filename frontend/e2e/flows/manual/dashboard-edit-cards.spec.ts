@@ -1,5 +1,14 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 
+// MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
+// Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
+// and the fake token draws a 401 that logs the page out. 404 = ordering off.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+});
+
 /**
  * Spec:     manual/dashboard-edit-cards — MEH-1249 chunk 11c of 12 (edit half)
  * Purpose:  Convert the CONVERT-verdict rows of the remaining edit-tab sections
@@ -442,6 +451,10 @@ test.describe("overview — completeness card", () => {
     await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
+    // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
+    await page.route("**/producers/me/order-settings", (r) =>
+      r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+    );
     await openOverview(page, profile({ products: [{ id: 1, name: "חלה" }] }));
     await expect(cardRoot(page)).toContainText("העמוד מלא");
   });
