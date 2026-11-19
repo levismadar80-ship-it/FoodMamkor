@@ -8,6 +8,8 @@
 * `frontend/app/[locale]/p/[slug]/` — קישור קצר.
 * `frontend/app/[locale]/business-gone/` — בית עסק שהוסר.
 
+**404 אמיתי (MEH-3024).** ‏`/producer/<id>` של בית עסק שלא קיים, או שעדיין לא אושר, עונה 404 אמיתי מה-middleware ולא 200 עם «לא נמצא». בעלת עסק שעוד לא אושר לא מגיעה לשם: «צפייה בדף» בתפריט החשבון ובכרטיסי העריכה שולח אותה ל-`/producer/dashboard/preview`, כמו הקישור בראש לוח הבקרה.
+
 **קבצים מרכזיים**
 * `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` — כותרת, מצב חופשה.
 * `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, קבוצת WhatsApp.

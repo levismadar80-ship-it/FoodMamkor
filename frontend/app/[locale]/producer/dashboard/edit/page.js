@@ -922,7 +922,7 @@ function EditPageInner() {
         >
           {/* MEH-1306: back-link to the public products section — lives in the
               expanded body (the header is a <button>; no nested interactives). */}
-          <ViewOnPageLink producerId={profile.id} anchor="section-products" />
+          <ViewOnPageLink producerId={profile.id} status={profile.status} anchor="section-products" />
           {/* MEH-2094: the top-product choice lives in the product row now.
               Same onSave patch shape every other card here uses, so the
               pricing completeness check (:627) and the accordion summary
