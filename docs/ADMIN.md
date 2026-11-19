@@ -33,6 +33,7 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 /admin/producers/{id}/claim-link` → קישור `/claim/<token>` לתוקף 14 יום + כפתור
 העתקה. כל לחיצה מנפיקה טוקן חדש (stateless, בלי כתיבה ל-DB). טיוטה שכבר שויכה
 עדיין מציגה את הפאנל — השרת עונה 409 וההודעה שלו מוצגת כמו שהיא.
+כשבעלת העסק קולטת את הטיוטה, נשלחת לאדמין הודעת וואטסאפ ומייל: מי קלטה, איזה עסק, העיר וקישור ל-`/admin/producers` (MEH-3410, `notify_admin_draft_claimed` ב-`backend/app/services/auth_notifications.py`).
 
 **קישור תצוגה מקדימה + פרסום בהסכמה (MEH-3377).** בעמוד העריכה של טיוטה **בלי בעלים**
 מופיעים שני פאנלים נוספים. **«קישור תצוגה מקדימה»** (`components/admin/DraftPreviewLinkPanel.jsx`):

@@ -338,7 +338,6 @@ def notify_admin_claim_link_requested(
         logger.error(f"[NOTIFY] Claim-link request email FAILED for '{safe_name}': {e}")
 
 
-
 def notify_admin_draft_claimed(
     producer_name: str,
     owner_name: str | None,
@@ -387,6 +386,7 @@ def notify_admin_draft_claimed(
             send_email(settings.admin_email, subject, message, test_cause=test_cause)
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(f"[NOTIFY] Draft-claimed email FAILED for '{safe_name}': {e}")
+
 
 def notify_admin_producer_resubmit(
     producer_name: str,
