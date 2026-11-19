@@ -28,6 +28,7 @@ graph LR
     App[FastAPI app] --> Auth[auth.router<br/>/auth/*]
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router + producer_me_analytics.router · producer_me_review.router · producer_me_locations.router<br/>/producers/me/* (one prefix, four files by area, MEH-3266)]
+    App --> MenuImport[menu_import.router<br/>/producers/me/menu-import/read POST · /publish POST<br/>MEH-3430 read a menu with Claude, nothing saved; publish the reviewed rows]
     App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
     App --> Billing[billing.router<br/>/producers/me/billing/summary · /admin/billing/overview<br/>MEH-3181 read-only monthly count of bookings — nothing is charged]
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim/new-link-request (MEH-3122: lapsed link, tells the admin only) · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]

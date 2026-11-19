@@ -14,6 +14,7 @@
 * `frontend/app/[locale]/producer/dashboard/insights/page.js` — תובנות.
 * `backend/app/routers/producer_me.py` — כל המספרים שהלוח מציג.
 * `frontend/lib/producer-completeness.js` · `frontend/components/ProfileCompletenessCard.jsx`
+* `frontend/components/MenuImport.jsx` · `frontend/components/MenuReviewRow.jsx` · `frontend/lib/menu-image.js` — «העלו תפריט» בכרטיס המוצרים (MEH-3430): צילום או PDF של תפריט, השרת קורא אותו עם Claude (`backend/app/services/menu_reader.py`, ‏`backend/app/routers/menu_import.py`), בעלת העסק בודקת ומפרסמת. רצועה עם הסבר כשיש 0–2 מוצרים, כפתור כשיש 3 ומעלה, ושורה ב«מה מחכה לך» כשאין מוצרים בכלל. בלי `ANTHROPIC_API_KEY` הקריאה עונה 503 והמסך מציג את שורת הכישלון.
 
 **Flags.** `PRODUCT_ORDERS_ENABLED` (צד שרת) — מדליק את לשונית «הזמנות» ואת השורה שלה בכרטיס «מה מחכה לך».
 
@@ -22,5 +23,6 @@
 * `frontend/__tests__/BusinessFeaturesRegistry.test.js` — **השומר ההפוך** (MEH-3416): כל קובץ עורך תחת `frontend/app/[locale]/producer/dashboard/edit/` רשום ב-`codeRef` של כלי, או ב-`EDITOR_FILES_WITHOUT_TOOL` עם סיבה.
 * `frontend/e2e/flows/manual/dashboard-shell.spec.ts` · `dashboard-edit.spec.ts` · `dashboard-edit-cards.spec.ts` · `dashboard-locations.spec.ts` · `dashboard-products.spec.ts` · `dashboard-trust-cards.spec.ts` · `dashboard-availability.spec.ts` · `dashboard-delivery.spec.ts` · `dashboard-vanity-share.spec.ts` (כולם תחת `frontend/e2e/flows/manual/`)
 * `tests/test_producer_me_delivery_fields.py` · `tests/test_producers_me_schema.py` · `tests/test_meh2697_availability_confirmed.py`
+* `tests/test_meh3430_menu_import.py` · `frontend/__tests__/MenuImport.test.jsx` — העלאת תפריט: בדיקת הבייטים, מגבלות קבצים, 503 בלי AI, כפולים, תקרת 100 המוצרים, ומטריצת המצבים במסך.
 
 **מזהי רישום שזה מכסה.** כל קבוצת `insights`, ‏`vanity_link`, ‏`qr_code`, ‏`completeness`, ‏`multi_locations`.
