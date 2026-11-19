@@ -7479,7 +7479,8 @@
   "phone_verify": {
     "title": "Verify your business phone",
     "reverify_title": "Your business WhatsApp number isn't verified yet",
-    "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
+    "description": "Tap «Send verification code» and we will send a 6-digit code to the business number's WhatsApp. Verification is one of the steps before sending for review.",
+    "code_sent": "We sent a code to the business number's WhatsApp.",
     "send_cta": "Send verification code",
     "sending": "Sending...",
     "resend_in": "You can resend a code in {seconds}s",
