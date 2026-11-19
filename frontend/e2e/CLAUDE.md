@@ -104,6 +104,7 @@ it just silently opts out of the stub and bills real bandwidth.
 
 ## Other `flows/_*` helpers
 
+- `flows/_unstubbed-me-guard.ts` — installed by the `_cloudinary-stub` fixture, so every importing spec has it. A call to `/api/producers/me` or `/api/producers/me/**` that carries a fake (non-JWT) token and that no `page.route` of the spec answered fails the test at once, naming the method, URL and spec (MEH-2957). Before it, such a call reached the real backend, drew a 401, and api.js ended the session, so the test failed later on an unrelated locator. A real login (a JWT, storageState or API login) passes through untouched. A spec route registered later always wins, so adding the stub is the whole fix.
 - `flows/_settled-field.ts` — `settledField(page, testId)` waits until exactly one React-owned copy of a field exists before it is filled (MEH-2323).
 - `flows/_login-submit-diagnostics.ts` — `watchLoginSubmit(page)` appends to an already-failing login assertion whether `/api/auth/login` left, its status, and the form state at the click and at the failure. Asserts and waits for nothing (snapshots are capped at 2 s). Exists because the trace is `on-first-retry`, so a first-attempt flake has no trace (MEH-3154, MEH-3380). The two login blocks it watches (`flows/30-login-journey-c.spec.ts`, `flows/25-role-reachability.spec.ts`) now set `trace: "retain-on-failure"` at file level (Playwright refuses it inside a describe), so their failed first attempt keeps a trace in the `playwright-report` artifact.
 
