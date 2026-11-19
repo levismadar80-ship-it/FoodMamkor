@@ -580,7 +580,9 @@ function EmptyState({ tab, t }) {
   const Icon = isExp ? CookingPot : CalendarX;
   return (
     <div data-testid="events-empty-dataset" className="flex flex-col items-center text-center px-6 py-16">
-      <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
+      {/* MEH-3466: the shared ui/EmptyState disc (green-50, w-20, size md) —
+          the three «מה קורה» tabs show one empty look, not two. */}
+      <div className="grid place-items-center w-20 h-20 rounded-full bg-green-50 text-primary" aria-hidden="true">
         <Icon size={32} />
       </div>
       {/* MEH-858 F4: empty-state title is h2 (was h4) — only heading under the
