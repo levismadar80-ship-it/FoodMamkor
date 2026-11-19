@@ -3,7 +3,8 @@
 **מה הם עושים.** בית עסק מפרסם אירוע או סדנה עם תאריך, שעה ומקום; מבקרות נרשמות באתר, מקבלות אישור במייל וקישור ביטול, ובית העסק מקבל הודעה על כל הרשמה.
 
 **Routes**
-* `frontend/app/[locale]/events/` · `frontend/app/[locale]/events/[id]/`
+* `frontend/app/[locale]/(whats-on)/` — ‏`/events` ו-`/experiences` הם שני דפים של מסך אחד: ה-layout המשותף (`frontend/app/[locale]/(whats-on)/layout.js`) מציג את `EventsClient` פעם אחת, והלשונית נגזרת מהכתובת בלבד. מעבר לשונית הוא `router.push` אמיתי (MEH-3463). השומר: `frontend/__tests__/NoHandWrittenRouteChangeGuard.test.js`.
+* `frontend/app/[locale]/events/[id]/`
 * `frontend/app/[locale]/producer/dashboard/events/` ‏(+ `new`, `[id]/edit`)
 * `frontend/app/[locale]/registration/[token]/` — ביטול הרשמה דרך הקישור במייל.
 

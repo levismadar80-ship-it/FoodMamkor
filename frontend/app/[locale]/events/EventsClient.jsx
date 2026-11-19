@@ -3,10 +3,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
-// MEH-2245: the tab is the ROUTE (/events vs /experiences). MEH-2980: a tab
-// switch rewrites that route in place (history.pushState, keeping any /en
-// prefix) instead of navigating; usePathname follows Back / Forward.
-import { usePathname } from "@/i18n/navigation";
+// MEH-2245: the tab is the ROUTE (/events vs /experiences). MEH-3463: the URL
+// is the ONLY source of the tab — read through usePathname; a switch is a real
+// router.push, and the shared (whats-on)/layout.js keeps this screen mounted.
+import { usePathname, useRouter } from "@/i18n/navigation";
 import {
   ArrowCounterClockwise,
   ArrowRight,
@@ -76,23 +76,29 @@ const categoriesFor = (tab, values) => {
   return [...new Set(values)].filter((k) => known.has(k));
 };
 
-// MEH-2245: one hub behind two routes. `initialTab` is decided by the route
-// that mounts this component (/events → "events", /experiences →
-// "experiences") — never by a ?tab= query. The old query-string deep-link
-// 308s to /experiences in next.config.js redirects().
-export default function EventsPage({ initialTab = "events", titles = null }) {
+// MEH-2245: one hub behind two routes. MEH-3463: rendered once by
+// app/[locale]/(whats-on)/layout.js; the tab comes from the URL. `initialTab`
+// is only the fallback for a path that names no tab (unit tests render on "/").
+export default function EventsPage({ initialTab = "events" }) {
   const t = useTranslations("events.list");
   const tErr = useTranslations("error");
   const tCat = useTranslations("events.categories");
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
-  // MEH-2980: the route (pathname) is the tab — read it so Back / Forward
-  // across an in-place switch land on the right tab.
+  const router = useRouter();
+  // MEH-3463: the URL decides the tab. Before, the tab was component state
+  // kept in step with the URL by an in-place history.pushState plus two sync
+  // paths (usePathname and popstate, MEH-2980 / MEH-3090), and Next could show
+  // one URL with the other page's tree — on a phone the screen came out half
+  // events, half experiences (20/11). One source cannot disagree with itself.
   const pathname = usePathname();
-  // MEH-2980: the PATH wins over the prop. After an in-place switch, Next
-  // keeps the first route's tree in that history entry, so a Back from some
-  // other page can restore /events with the /experiences page mounted.
-  const [tab, setTab] = useState(() => tabFromPath(pathname) || initialTab);
+  const pathTab = tabFromPath(pathname);
+  // The tab tapped while the router is still on its way there — so the row,
+  // the hero and the list answer on the tap's own tick (MEH-2245). It is
+  // dropped as soon as the URL moves, whichever way it moved.
+  const [pending, setPending] = useState(/** @type {null | {tab: string, from: string | null}} */ (null));
+  if (pending && pending.from !== pathTab) setPending(null);
+  const tab = (pending && pending.tab) || pathTab || initialTab;
   // View mode — list (default) vs calendar. Independent of tab; applies
   // to whichever data set (events / experiences) is loaded.
   const [view, setView] = useState("list");
@@ -110,132 +116,55 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // MEH-3124: the categories that have at least one result for {tab, city},
   // read from a category-less list. cats === null = unknown → all chips show.
   const [present, setPresent] = useState({ tab: null, city: null, cats: null });
-  // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
-  // URL on mount. A URL category is accepted only when it
-  // belongs to the initial tab's vocabulary, so a cross-tab share link can't
-  // silently filter to zero rows.
-  // MEH-2847: categories are MULTI-select, the /producers behaviour (MEH-1465,
-  // ProducersClient.jsx:227): an ARRAY of category keys, OR on the server,
-  // carried as repeated ?category=A&category=B. An old single-value link
-  // (?category=X) hydrates the same way (getAll → ["X"]). Each value is
-  // checked against the vocabulary on its own, so one bad value is dropped
-  // without dropping the good ones; duplicates collapse.
-  // MEH-2984: read from window.location in a mount effect, NOT useSearchParams.
-  // useSearchParams forced a <Suspense> in both pages and, to keep the H1 in
-  // the server HTML, `force-dynamic` (MEH-2878) — and a force-dynamic route
-  // cannot be prefetched, so arriving from /group-buys or /rescue streamed the
-  // whole-page loader. Without it both pages are ISR like /group-buys.
-  // `urlReady` holds the first fetch (and the URL writer) until the filters
-  // are read, so a deep link still costs exactly one request.
+  // MEH-1085 (DISC-08): city + category are deep-linkable. MEH-2847: categories
+  // are MULTI-select (ProducersClient.jsx:227), carried as repeated
+  // ?category=A&category=B; each value is checked against the tab's vocabulary
+  // on its own, so a cross-tab link can't silently filter to zero rows.
+  // MEH-2984: read from window.location in an effect, NOT useSearchParams —
+  // that would force a <Suspense> and drop the H1 from the static HTML.
   const [city, setCity] = useState("");
   const [categories, setCategories] = useState([]);
   // MEH-3118: date shortcut — null | "today" | "tomorrow" | "weekend". One at
   // a time; filters the rows already loaded (no refetch).
   const [when, setWhen] = useState(null);
-  const [urlReady, setUrlReady] = useState(false);
+  // MEH-3463: the tab whose filters have been read from its URL. Until it
+  // equals `tab`, nothing is fetched or written, so every arrival (first
+  // load, Back, Forward) costs exactly one request, with the URL's filters.
+  const [readTab, setReadTab] = useState(/** @type {string | null} */ (null));
+  const urlReady = readTab === tab;
   useEffect(() => {
+    if (readTab === tab) return;
     const p = new URLSearchParams(window.location.search);
     setCity(p.get("city") || "");
-    setCategories(categoriesFor(tabFromPath(window.location.pathname) || tab, p.getAll("category")));
-    setUrlReady(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setCategories(categoriesFor(tab, p.getAll("category")));
+    setWhen(null);
+    if (readTab !== null) setView("list"); // a tab change starts on the list
+    setReadTab(tab);
+  }, [tab, readTab]);
 
-  // Reset filters when switching tabs — the two tabs have different
-  // category vocabularies, so keeping a cross-tab category would
-  // silently filter to zero rows. The URL-sync effect below mirrors the
-  // reset into the query string.
-  // MEH-2245: each tab owns its URL (/events, /experiences).
-  // MEH-2980: the switch happens IN PLACE. It used to be router.push, and the
-  // two pages are separate force-dynamic routes under [locale], so every tab
-  // tap streamed app/[locale]/loading.js over the WHOLE page (hero, tabs and
-  // list gone for ~450 ms on a phone, measured on staging), then remounted
-  // this component and fetched the list a second time. Now the URL is written
-  // with the native history.pushState, which Next (>= 14.1) folds into its
-  // router — usePathname follows it and Back / Forward still work — without a
-  // server round trip. Deep links and refreshes still hit the real route, so
-  // each page keeps its own metadata; only document.title is set here.
-  // DO NOT go back to router.push / <Link> navigation for these two tabs —
-  // e2e/flows/46-hub-tab-switch.spec.ts reds on the loading flash (MEH-2980).
-  const applyTab = (next) => {
-    setTab(next);
+  // A tab tap: the filters belong to the old tab's vocabulary, so they reset
+  // here (and the URL writer below mirrors that), then the router moves the
+  // URL. scroll:false — the reader stays where the tab row is.
+  // DO NOT write the URL by hand (history.pushState) — that is the MEH-3463 bug.
+  const switchTab = (next) => {
+    if (next === tab) return;
+    setPending({ tab: next, from: pathTab });
     setCategories(clearCategories);
     setWhen(null);
     setCity("");
-    // The old remount reset the view; keep that (MEH-2980 AC: states unchanged).
     setView("list");
+    setReadTab(next);
+    router.push(`/${next}`, { scroll: false });
   };
 
-  const switchTab = (next) => {
-    if (next === tab) return;
-    applyTab(next);
-    const current = window.location.pathname;
-    const path = /\/(events|experiences)\/?$/.test(current)
-      ? current.replace(/\/(events|experiences)\/?$/, `/${next}`)
-      : `/${next}`;
-    window.history.pushState(null, "", path);
-    if (titles?.[next]) document.title = titles[next];
-  };
-
-  // MEH-2980: Back / Forward across an in-place switch. The pathname moves
-  // without this component remounting, so the tab follows it here.
-  // - Read window.location, not the hook value: usePathname lags our own
-  //   pushState (Next applies it in a transition), so on a quick A→B→A the
-  //   hook can still say B while the URL already says A.
-  // - On a history move the URL is the truth for the filters too: the entry
-  //   may carry ?city= / ?category= that the reset never saw (Back to
-  //   /events?city=X must filter by X, not show the city in the bar only).
-  // - MEH-3090: `pathname` alone is not enough. Next folds our pushState into
-  //   its router in a transition, so the hook can miss the move to the other
-  //   tab entirely; Back then changes no pathname it ever saw and the tab
-  //   stayed put (E2E 46-hub-tab-switch:114, 20 s on a loaded runner). A
-  //   popstate listener reads the URL at the event itself. `tabRef` holds the
-  //   tab this sync last applied, so the listener and the effect running for
-  //   the same move apply it once (one list fetch per Back, as MEH-2980 pins).
-  const tabRef = useRef(tab);
-  // Not assigned during render: an interrupted or transition render holding
-  // the old tab could reset the ref after the sync set it (reviewer, #4800).
+  // MEH-1085 (DISC-08): single URL writer — the query string mirrors
+  // {city, category}, so filters survive refresh/share. Shallow
+  // history.replaceState of the CURRENT entry's query only; the path is the
+  // router's. Not while a tab switch is on its way (the entry is still the old
+  // tab's) and not before the URL's own filters have been read.
   useEffect(() => {
-    tabRef.current = tab;
-  }, [tab]);
-  const syncFromUrlRef = useRef(null);
-  // Set in an effect, not during render (react-hooks/refs); it runs before
-  // the effects below that call it, in declaration order.
-  useEffect(() => {
-    syncFromUrlRef.current = () => {
-      const urlTab = tabFromPath(window.location.pathname);
-      if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
-      if (!urlTab || urlTab === tabRef.current) return;
-      tabRef.current = urlTab;
-      const p = new URLSearchParams(window.location.search);
-      setTab(urlTab);
-      setView("list");
-      setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
-      setCity(p.get("city") || "");
-      setCategories(categoriesFor(urlTab, p.getAll("category")));
-    };
-  });
-  useEffect(() => {
-    syncFromUrlRef.current();
-  }, [pathname]);
-  useEffect(() => {
-    const onPop = () => syncFromUrlRef.current();
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
-  // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
-  // {city, category}, so filters survive refresh/share and the switchTab
-  // reset clears them from the URL too — a cross-tab category is never
-  // resurrected. Shallow history.replaceState, NOT router.replace: a Next
-  // navigation from here would remount the page and reset client state — the
-  // E2E calendar toggle caught exactly that. replaceState keeps it a pure URL
-  // mirror (and preserves the locale-prefixed pathname on /en).
-  // MEH-2245: `tab` is no longer written — the route carries it.
-  // MEH-2984: not before the mount effect has read the URL — the first commit
-  // still holds empty filters and would wipe a deep link's query.
-  useEffect(() => {
-    if (!urlReady) return;
+    if (!urlReady || pending) return;
+    if (pathTab && pathTab !== tab) return;
     const p = new URLSearchParams();
     if (city) p.set("city", city);
     // MEH-2847: one ?category= per selected key — the /producers format.
@@ -244,8 +173,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     const current = window.location.search.replace(/^\?/, "");
     if (qs === current) return;
     const path = window.location.pathname;
-    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
-  }, [urlReady, city, categories]);
+    // Keep Next's own history state on the entry (it restores the tree on Back).
+    window.history.replaceState(window.history.state, "", qs ? `${path}?${qs}` : path);
+  }, [urlReady, pending, pathTab, tab, city, categories]);
 
   useEffect(() => {
     if (!urlReady) return; // MEH-2984: one request, with the URL's filters
@@ -286,6 +216,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     }
   };
 
+  // MEH-3463: rows still belong to the previous tab (or to no filters yet)
+  // until this tab's URL filters are read — show the skeleton, never them.
+  const busy = loading || !urlReady;
   const isExp = tab === "experiences";
   // Backward-compatibility alias so the render code keeps using `events`
   // even when the tab is experiences.
@@ -385,7 +318,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const filtersActive = Boolean(city || categories.length || when);
   // MEH-2396: an error is not a zero. Neither zero surface may render on a
   // failed load, or the page claims a dataset it never received.
-  const isZero = !loading && !loadError && events.length === 0;
+  const isZero = !busy && !loadError && events.length === 0;
   const datasetEmpty = isZero && !filtersActive;
   const filteredToZero = isZero && filtersActive;
 
@@ -405,7 +338,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // loaded rows, so no request; unknown while loading or after a failure →
   // every shortcut (fail open).
   const whenCounts = useMemo(() => {
-    if (loading || loadError) return null;
+    if (busy || loadError) return null;
     const today = israelToday();
     return Object.fromEntries(
       WHEN_KEYS.map((k) => [
@@ -413,7 +346,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
         rows.filter((row) => matchesWhen(row.event_date, k, today)).length,
       ]),
     );
-  }, [rows, loading, loadError]);
+  }, [rows, busy, loadError]);
   const gatedChips = dropZeroChips({ chips: shownChips, counts: whenCounts, active: [...activeChipKeys] });
   // «הכל» alone filters nothing — then the row is not drawn at all.
   const showChipRow = gatedChips.some((c) => c.key !== "all");
@@ -523,7 +456,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
 
       {/* Feed */}
       <section className="max-w-5xl mx-auto px-4 pt-4 pb-16">
-        {loading ? (
+        {busy ? (
           <SkeletonRows srLabel={isExp ? t("loading_experiences") : t("loading_events")} />
         ) : loadError ? (
           <LoadError tErr={tErr} onRetry={load} />

@@ -5,7 +5,9 @@ import type { Page } from "@playwright/test";
 // to router.push between two force-dynamic routes, so app/[locale]/loading.js
 // replaced the WHOLE page (hero + tabs + list) for a beat, the hub remounted,
 // and the list was fetched twice — the flash in Sapir's 12/11 screen
-// recording. The switch now rewrites the URL in place (history.pushState).
+// recording. MEH-3463: both routes now sit under one layout
+// (app/[locale]/(whats-on)/layout.js) that renders the hub once, and the
+// switch is a real router.push — the URL is the only source of the tab.
 //
 // What this pins, without any wall-clock budget (testing.md, MEH-2972):
 //   1. the hub DOM survives the switch — a marker set on the tab row before
