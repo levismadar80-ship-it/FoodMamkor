@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent, waitFor } from "@testing-library/react";
+
+// 19/11: the «שאלות נפוצות» block is closed by default; these cases test what
+// is inside it, so every render opens it first (the closed state has its own
+// test in QuestionChipsCollapsed.test.jsx).
+const render = (...args) => {
+  const result = rtlRender(...args);
+  const toggle = result.container.querySelector("[data-testid='question-chips-toggle']");
+  if (toggle) fireEvent.click(toggle);
+  return result;
+};
 import he from "../messages/he.json";
-import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
 
 // MEH-1302 — Quick Answers. Two layers under test:
-//   1. pure answer logic (buildDeliveryAnswer / buildOrderingAnswer) — every branch
+//   1. pure answer logic (buildDeliveryAnswer / hasDeliverySection) — every branch
 //   2. WhatsAppQuestionChips rendering — disclosure vs WhatsApp routing, no-phone edge
 
 // ── next-intl: resolve real he.json copy so assertions read the shipped strings.
@@ -20,7 +30,7 @@ vi.mock("next-intl", () => ({
 // Phosphor icons → inert spans.
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub };
 });
 
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
@@ -130,55 +140,17 @@ describe("buildDeliveryAnswer (MEH-1302)", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("buildOrderingAnswer (MEH-1302)", () => {
-  it("whatsapp (explicit or default) → { kind: whatsapp }", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "whatsapp" })).toEqual({ kind: "whatsapp" });
-    expect(buildOrderingAnswer({})).toEqual({ kind: "whatsapp" });
+describe("hasDeliverySection — the business page's own delivery-section gate", () => {
+  it("true for offers_delivery, delivery_areas rows or pickup_points", () => {
+    expect(hasDeliverySection({ offers_delivery: true })).toBe(true);
+    expect(hasDeliverySection({ delivery_areas: [{ city: "חדרה" }] })).toBe(true);
+    expect(hasDeliverySection({ pickup_points: "שוק" })).toBe(true);
   });
 
-  it("external_order with a form → external link", () => {
-    expect(
-      buildOrderingAnswer({ primary_contact_method: "external_order", external_order_form: "order.co.il" }),
-    ).toEqual({ kind: "external_order", href: "https://order.co.il" });
-  });
-
-  it("external_order without a form → null", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "external_order" })).toBeNull();
-  });
-
-  it("phone → tel href + display phone", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "phone", phone: PHONE })).toEqual({
-      kind: "phone",
-      href: `tel:${PHONE}`,
-      phone: PHONE,
-    });
-  });
-
-  it("phone without a number → null", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "phone" })).toBeNull();
-  });
-
-  it("website / instagram / facebook / email → channel link", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "website", website: "shop.co.il" })).toEqual({
-      kind: "website",
-      href: "https://shop.co.il",
-    });
-    expect(buildOrderingAnswer({ primary_contact_method: "instagram", instagram: "@handle" })).toEqual({
-      kind: "instagram",
-      href: "https://instagram.com/handle",
-    });
-    expect(buildOrderingAnswer({ primary_contact_method: "facebook", facebook: "fb.com/page" })).toEqual({
-      kind: "facebook",
-      href: "https://fb.com/page",
-    });
-    expect(buildOrderingAnswer({ primary_contact_method: "email", contact_email: "a@b.co.il" })).toEqual({
-      kind: "email",
-      href: "mailto:a@b.co.il",
-    });
-  });
-
-  it("null producer → null", () => {
-    expect(buildOrderingAnswer(null)).toBeNull();
+  it("false with none of them (nationwide flag alone, pickup-only, null)", () => {
+    expect(hasDeliverySection({ delivery_nationwide: true })).toBe(false);
+    expect(hasDeliverySection({ offers_delivery: false, has_physical_location: true })).toBe(false);
+    expect(hasDeliverySection(null)).toBe(false);
   });
 });
 
@@ -201,12 +173,21 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     expect(screen.getByText("כן! משלוחים לכל הארץ")).toBeInTheDocument();
   });
 
-  it("delivery_areas → cities + '+ עוד N' + min/day sub-line", () => {
+  // Sapir 19/11 (screenshot, prod): «משלוחים ל: … + עוד 44» answered with a
+  // cut list while the full «משלוח» section sat lower on the same page. When
+  // that section renders, the question is a jump to it, not a second copy.
+  it("delivery section on the page → the question jumps to it, no cut list", () => {
+    const scrollIntoView = vi.fn();
+    const target = document.createElement("div");
+    target.id = "section-delivery";
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
     render(
       <WhatsAppQuestionChips
         producer={{
           phone: PHONE,
           city: "חיפה",
+          offers_delivery: true,
           delivery_areas: [
             { city: "חיפה", min_order: 150, delivery_day: "חמישי" },
             { city: "עכו", min_order: 200 },
@@ -217,12 +198,20 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
         }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /אפשר משלוח/ }));
-    expect(screen.getByText(/משלוחים ל: חיפה, עכו, נהריה, כרמיאל \+ עוד 1/)).toBeInTheDocument();
-    expect(screen.getByText(/מינימום 150₪ · ימי משלוח: חמישי/)).toBeInTheDocument();
+    const jump = screen.getByTestId("quick-answer-jump");
+    expect(jump).toHaveTextContent("אפשר משלוח לאזור שלי?");
+    expect(jump).toHaveAttribute("href", "#section-delivery");
+    expect(screen.queryByRole("button", { name: /אפשר משלוח/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/\+ עוד/)).not.toBeInTheDocument();
+    fireEvent.click(jump);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    target.remove();
   });
 
-  it("ordering via external_order → disclosure with the order-form link", () => {
+  // Sapir 19/11: «איך מזמינים?» sat right under the «להזמנה» button and
+  // answered with the same link. The answer was built FROM the button
+  // (getPrimaryContactHref), so it could only ever repeat it.
+  it("never asks «איך מזמינים?» — the button above already answers it", () => {
     render(
       <WhatsAppQuestionChips
         producer={{
@@ -230,14 +219,13 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
           city: "חיפה",
           primary_contact_method: "external_order",
           external_order_form: "order.example.com",
+          delivery_nationwide: true,
         }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /איך מזמינים/ }));
-    expect(screen.getByText(/מזמינים דרך טופס ההזמנות/)).toBeInTheDocument();
-    const link = screen.getByRole("link", { name: "למעבר" });
-    expect(link).toHaveAttribute("href", "https://order.example.com");
-    expect(link).toHaveAttribute("target", "_blank");
+    expect(screen.queryByText(/איך מזמינים/)).not.toBeInTheDocument();
+    // positive control: the block itself rendered
+    expect(screen.getByRole("button", { name: /אפשר משלוח/ })).toBeInTheDocument();
   });
 
   it("no delivery data → Q1 falls back to a WhatsApp link", () => {
@@ -269,7 +257,7 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
         }}
       />,
     );
-    expect(screen.getAllByTestId("quick-answer-toggle")).toHaveLength(2); // delivery + ordering
+    expect(screen.getAllByTestId("quick-answer-toggle")).toHaveLength(1); // delivery only (ordering = the button)
     expect(screen.queryByTestId("question-link")).not.toBeInTheDocument();
     const escalation = screen.getByTestId("escalation-link");
     expect(escalation).toHaveAttribute("href", "https://order.example.com");

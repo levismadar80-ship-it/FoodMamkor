@@ -3,9 +3,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
+import { ArrowDown, CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
-import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
 import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
 import {
   getPrimaryContactHref,
@@ -26,8 +26,10 @@ import { paymentAnswer } from "@/lib/payment-info";
  * the dynamic stock question, any custom questions, and an "another question?"
  * escalation stay WhatsApp deep-links.
  *
- *   Q1  "אפשר משלוח ל{city}?"  → buildDeliveryAnswer disclosure, else WA link
- *   Q2  "איך מזמינים?"          → buildOrderingAnswer disclosure, else WA link
+ *   Q1  "אפשר משלוח ל{city}?"  → jump to #section-delivery when the page has
+ *                                 it (19/11), else buildDeliveryAnswer
+ *                                 disclosure, else WA link
+ *   Q2  "איך מזמינים?"          → REMOVED 19/11: it repeated the primary CTA
  *   Q3+ custom (owner-written)  → WhatsApp (MEH-2385: category stock set no longer renders)
  *   Escalation "שאלה אחרת?"     → the business's PRIMARY channel
  *
@@ -126,6 +128,38 @@ function Disclosure({ question, children }) {
   );
 }
 
+/**
+ * Sapir 19/11: a question whose full answer is a section further down the same
+ * page jumps there instead of answering with a cut copy («+ עוד 44»). Same
+ * pill look as a Disclosure; a native `#id` link so it still works with JS
+ * off, smooth-scrolled the way SectionAnchorNav scrolls (scroll-mt on the
+ * section clears the sticky header + nav).
+ */
+function JumpItem({ targetId, question }) {
+  const onClick = (e) => {
+    const target = document.getElementById(targetId);
+    if (!target) return; // let the native anchor do what it can
+    e.preventDefault();
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  };
+  return (
+    <li>
+      <a
+        href={`#${targetId}`}
+        onClick={onClick}
+        data-testid="quick-answer-jump"
+        className={`${QUESTION_PILL} border-primary/15 bg-green-50 text-primary-dark hover:bg-primary/10`}
+      >
+        <ArrowDown size={16} weight="bold" aria-hidden="true" className="flex-shrink-0" />
+        {question}
+      </a>
+    </li>
+  );
+}
+
 // MEH-3035 chunk 3: «איך משלמים?» — what the business entered in its
 // dashboard («איך משלמים לך?»), as text under ONE Wallet line icon (design
 // option א, Sapir 13/11: per-method icons live only in the dashboard picker).
@@ -219,41 +253,6 @@ function DeliveryContent({ answer, t }) {
   }
 }
 
-/** Render the ordering descriptor into localized disclosure content. */
-function OrderingContent({ answer, t }) {
-  if (answer.kind === "whatsapp") return <p>{t("ordering_whatsapp")}</p>;
-  if (answer.kind === "phone") {
-    return (
-      <p>
-        {t("ordering_phone_prefix")}{" "}
-        <a href={answer.href} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
-          {answer.phone}
-        </a>
-      </p>
-    );
-  }
-  const textKey = {
-    external_order: "ordering_external_order",
-    website: "ordering_website",
-    instagram: "ordering_instagram",
-    facebook: "ordering_facebook",
-    email: "ordering_email",
-  }[answer.kind];
-  return (
-    <p>
-      {t(textKey)}{" "}
-      <a
-        href={answer.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
-      >
-        {t("ordering_link_label")}
-      </a>
-    </p>
-  );
-}
-
 export default function WhatsAppQuestionChips({ producer }) {
   const t = useTranslations("whatsapp.question_chips");
   const { city: visitorCity } = useUserCity();
@@ -287,9 +286,12 @@ export default function WhatsAppQuestionChips({ producer }) {
   const deliveryQ = visitorCity
     ? t("delivery_to_city", { city: visitorCity })
     : t("delivery_to_my_area");
+  // «איך מזמינים?» is no longer asked (Sapir 19/11): its answer was built
+  // from the primary CTA's own href, so it only ever repeated the button right
+  // above it. The label is still resolved — an owner's custom question with
+  // the same wording is dropped as a duplicate of that button.
   const orderingQ = t("ordering_q");
   const delivery = buildDeliveryAnswer(producer);
-  const ordering = buildOrderingAnswer(producer);
 
   // MEH-1524: every prefill that opens a chat with a specific business ends
   // with a source line on its own final line, so the owner sees the referral
@@ -339,8 +341,12 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   const items = [];
 
-  // Q1 — delivery: answer-first, else WhatsApp fallback (today's behaviour).
-  if (delivery) {
+  // Q1 — delivery. When the page has its «משלוח» section, the question jumps
+  // there: the section is the full, exact answer (Sapir 19/11). Otherwise
+  // answer-first, else WhatsApp fallback.
+  if (hasDeliverySection(producer)) {
+    items.push(<JumpItem key="delivery" targetId="section-delivery" question={deliveryQ} />);
+  } else if (delivery) {
     items.push(
       <Disclosure key="delivery" question={deliveryQ}>
         <DeliveryContent answer={delivery} t={t} />
@@ -349,21 +355,6 @@ export default function WhatsAppQuestionChips({ producer }) {
   } else if (waEnabled) {
     items.push(
       <WaItem key="delivery" href={waHref(deliveryQ)} question={deliveryQ} onTrack={trackWhatsAppOpen} />,
-    );
-  }
-
-  // Q2 — ordering: answer-first. A WhatsApp-method answer only makes sense
-  // with a phone; without one it collapses to the WA fallback (also gated on
-  // a phone), so it simply drops out.
-  if (ordering && (ordering.kind !== "whatsapp" || digits)) {
-    items.push(
-      <Disclosure key="ordering" question={orderingQ}>
-        <OrderingContent answer={ordering} t={t} />
-      </Disclosure>,
-    );
-  } else if (!ordering && waEnabled) {
-    items.push(
-      <WaItem key="ordering" href={waHref(orderingQ)} question={orderingQ} onTrack={trackWhatsAppOpen} />,
     );
   }
 
@@ -433,6 +424,11 @@ function QuestionList({
   t,
 }) {
   const [expanded, setExpanded] = useState(false);
+  // Sapir 19/11: the questions took a quarter of a phone screen right under
+  // the button. Closed by default, like an FAQ accordion (Etsy's shop FAQ;
+  // Google retired its Business Profile Q&A in 2025). The caption she
+  // already approved is the toggle — no new copy.
+  const [open, setOpen] = useState(false);
   const hasMore = items.length > VISIBLE_MAX;
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
 
@@ -442,42 +438,61 @@ function QuestionList({
       data-under-cta={underCta ? "true" : "false"}
       className={underCta ? "mb-4 mt-4" : "mb-4"}
     >
-      <p className="text-sm mb-2 font-body-md text-fg-muted">{t("common_questions")}</p>
-      <ul className="flex flex-wrap gap-2">{visible}</ul>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="question-chips-panel"
+        data-testid="question-chips-toggle"
+        className="inline-flex items-center gap-1.5 min-h-touch rounded font-body-md text-sm text-fg-muted hover:text-text focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <CaretDown
+          size={16}
+          weight="bold"
+          aria-hidden="true"
+          className={`flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+        {t("common_questions")}
+      </button>
+      {open && (
+        <div id="question-chips-panel" className="mt-1">
+          <ul className="flex flex-wrap gap-2">{visible}</ul>
 
-      {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
-          ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
-      {hasMore && !expanded && (
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          data-testid="more-questions"
-          aria-expanded={false}
-          className={`${QUESTION_PILL} mt-2 border-primary/15 font-medium text-primary hover:bg-primary/[0.06]`}
-        >
-          <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
-          {t("more_questions")}
-        </button>
-      )}
+          {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
+              ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
+          {hasMore && !expanded && (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              data-testid="more-questions"
+              aria-expanded={false}
+              className={`${QUESTION_PILL} mt-2 border-primary/15 font-medium text-primary hover:bg-primary/[0.06]`}
+            >
+              <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
+              {t("more_questions")}
+            </button>
+          )}
 
-      {/* Escalation — the contact channel itself, so it renders whenever ANY
-          channel resolves (MEH-2154). WhatsApp-primary keeps the greeting
-          template; other channels get the primary CTA's own href. tel: and
-          mailto: must NOT carry target="_blank" — a new tab that immediately
-          hands off to the OS leaves a blank window behind on mobile. */}
-      {escalationHref && (
-        <a
-          href={escalationHref}
-          {...(escalationExternal
-            ? { target: "_blank", rel: "noopener noreferrer" }
-            : {})}
-          onClick={escalationOnTrack ?? undefined}
-          data-testid="escalation-link"
-          className={`${QUESTION_PILL} mt-2 border-border text-fg-muted hover:bg-background`}
-        >
-          <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
-          {t("escalation")}
-        </a>
+          {/* Escalation — the contact channel itself, so it renders whenever ANY
+              channel resolves (MEH-2154). WhatsApp-primary keeps the greeting
+              template; other channels get the primary CTA's own href. tel: and
+              mailto: must NOT carry target="_blank" — a new tab that immediately
+              hands off to the OS leaves a blank window behind on mobile. */}
+          {escalationHref && (
+            <a
+              href={escalationHref}
+              {...(escalationExternal
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : {})}
+              onClick={escalationOnTrack ?? undefined}
+              data-testid="escalation-link"
+              className={`${QUESTION_PILL} mt-2 border-border text-fg-muted hover:bg-background`}
+            >
+              <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
+              {t("escalation")}
+            </a>
+          )}
+        </div>
       )}
     </div>
   );

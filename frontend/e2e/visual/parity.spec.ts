@@ -1203,8 +1203,10 @@ test.describe("Visual parity — MEH-991", () => {
     }
     await page.goto(`/producer/${borrowedId}`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
-    await page.locator('[data-testid="quick-answer-toggle"]').first().click();
-    await page.locator('[data-testid="quick-answer-content"]').first().waitFor({ timeout: 5_000 });
+    // 19/11: the «שאלות נפוצות» block is closed by default — open it first.
+    await page.locator('[data-testid="question-chips-toggle"]:visible').first().click();
+    await page.locator('[data-testid="quick-answer-toggle"]:visible').first().click();
+    await page.locator('[data-testid="quick-answer-content"]:visible').first().waitFor({ timeout: 5_000 });
     await settle(page);
     await expect(page).toHaveScreenshot("producer-detail-disclosure-open.png", {
       ...SHOT,

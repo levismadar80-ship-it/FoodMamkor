@@ -77,6 +77,20 @@ const waHrefLocator = (page: Page, testid: string, visibleOnly = false) =>
     .locator(`[data-testid="${testid}"]${visibleOnly ? ":visible" : ""}`)
     .and(page.locator(WA_HREF_SELECTOR));
 
+/**
+ * 19/11: «שאלות נפוצות» is closed by default, so the chips are not in the DOM
+ * until its caption is tapped. Opens the VISIBLE copy (ContactCard mounts
+ * twice) and retries the tap until React owns the button — a tap before
+ * hydration does nothing.
+ */
+const openQuestions = async (page: Page) => {
+  const toggle = page.locator('[data-testid="question-chips-toggle"]:visible').first();
+  await expect(async () => {
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true", { timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+};
+
 const baseURL =
   process.env.PLAYWRIGHT_BASE_URL || process.env.TEST_URL || "http://localhost:3000";
 
@@ -219,6 +233,7 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     // wa.me would find 0 here after hydration — and then every 0 below would
     // be worthless in exactly the way this control exists to catch.
     await page.goto(url("sdot-zahav"), { waitUntil: "domcontentloaded" });
+    await openQuestions(page);
     const controlChips = waHrefLocator(page, "question-link").or(
       waHrefLocator(page, "escalation-link")
     );
@@ -234,7 +249,11 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
       // Wait for hydration (the CTA becomes visible only then) so the zero
       // below is asserted on the FINAL DOM, not the SSR snapshot. The edge
       // row renders no CTA by design, so it has nothing to wait on.
-      if (hrefPrefix !== null) await expect(visibleCta(page)).toHaveCount(1);
+      if (hrefPrefix !== null) {
+        await expect(visibleCta(page)).toHaveCount(1);
+        // Open the block, or the zero below would hold on a closed block too.
+        await openQuestions(page);
+      }
       const stray = waHrefLocator(page, "question-link").or(
         waHrefLocator(page, "escalation-link")
       );
@@ -270,6 +289,7 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
 
     // CONTROL: the whatsapp-primary page must fire one.
     await page.goto(url("sdot-zahav"), { waitUntil: "domcontentloaded" });
+    await openQuestions(page);
     // `:visible` because the question chips are inside ContactCard, which is
     // mounted twice (see the header note) — `.first()` alone resolves to the
     // display:none copy and the click times out. The href form is no longer

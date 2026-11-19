@@ -10,7 +10,17 @@
  * both, and only its class list differs.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+
+// 19/11: the «שאלות נפוצות» block is closed by default; these cases test what
+// is inside it, so every render opens it first (the closed state has its own
+// test in QuestionChipsCollapsed.test.jsx).
+const render = (...args) => {
+  const result = rtlRender(...args);
+  const toggle = result.container.querySelector("[data-testid='question-chips-toggle']");
+  if (toggle) fireEvent.click(toggle);
+  return result;
+};
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {

@@ -26,7 +26,17 @@
  * scrape sees everything.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+
+// 19/11: the «שאלות נפוצות» block is closed by default; these cases test what
+// is inside it, so every render opens it first (the closed state has its own
+// test in QuestionChipsCollapsed.test.jsx).
+const render = (...args) => {
+  const result = rtlRender(...args);
+  const toggle = result.container.querySelector("[data-testid='question-chips-toggle']");
+  if (toggle) fireEvent.click(toggle);
+  return result;
+};
 import he from "../messages/he.json";
 
 // Resolve the real he.json copy, exactly as quickAnswers.test.js does, so both
@@ -42,7 +52,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub };
 });
 
 vi.mock("@/lib/contact-tracking", () => ({
@@ -82,7 +92,7 @@ function renderedLabels(container) {
   const more = screen.queryByTestId("more-questions");
   if (more) fireEvent.click(more);
   const rows = container.querySelectorAll(
-    "[data-testid='quick-answer-toggle'],[data-testid='question-link'],[data-testid='escalation-link']",
+    "[data-testid='quick-answer-toggle'],[data-testid='quick-answer-jump'],[data-testid='question-link'],[data-testid='escalation-link']",
   );
   // MEH-2634: a wa.me chip renders the question PLUS a " (וואטסאפ)"
   // destination suffix. That suffix is presentation local to the chip row —
@@ -182,6 +192,21 @@ const FIXTURES = [
     },
   },
   {
+    // 19/11: the delivery question is a jump to #section-delivery (the
+    // business in Sapir's screenshot: external order form + 48 areas).
+    name: "(i) external-order primary, delivery areas → jump row",
+    producer: {
+      id: 7,
+      name: "פרדס הדגמה",
+      city: "פרדס חנה כרכור",
+      phone: "0501234567",
+      primary_contact_method: "external_order",
+      external_order_form: "order.example.com",
+      offers_delivery: true,
+      delivery_areas: [{ city: "כפר חיים" }, { city: "חדרה" }, { city: "תלמי אלעזר" }, { city: "גבעת ניל״י" }, { city: "עין שמר" }],
+    },
+  },
+  {
     name: "(h) email-primary, payment timing only (MEH-3035)",
     producer: {
       id: 6,
@@ -218,7 +243,7 @@ describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", 
         return n;
       },
     );
-    expect(counts.length).toBe(7); // (a) (b) (c) (e) (c2) (g) (h)
+    expect(counts.length).toBe(8); // (a) (b) (c) (e) (c2) (g) (h) (i)
     for (const n of counts) expect(n).toBeGreaterThan(0);
   });
 
@@ -248,8 +273,8 @@ describe("the annotations the dashboard renders", () => {
 
     // Q1 is answered from her own delivery data — never a chip.
     expect(byId.delivery).toMatchObject({ answered: true, channel: null });
-    // Q2 likewise, via getPrimaryContactHref.
-    expect(byId.ordering).toMatchObject({ answered: true, channel: null });
+    // «איך מזמינים?» is gone (19/11): it only repeated the primary CTA.
+    expect(byId.ordering).toBeUndefined();
     // The escalation carries the channel it will actually open.
     expect(byId.escalation).toMatchObject({ answered: false, channel: "email" });
     // …and no WhatsApp-only rows survive for a non-WhatsApp business.
@@ -282,7 +307,7 @@ describe("the annotations the dashboard renders", () => {
     expect(customCount).toBe(0);
     // The stock question is gone from the public block, so the live list is
     // exactly the two answered rows + the escalation — nothing she never wrote.
-    expect(items.map((i) => i.source)).toEqual(["delivery", "ordering", "escalation"]);
+    expect(items.map((i) => i.source)).toEqual(["delivery", "escalation"]);
     expect(items.some((i) => i.source === "category")).toBe(false);
   });
 });

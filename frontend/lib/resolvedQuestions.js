@@ -51,7 +51,7 @@
  * filter does not work, which the dashboard must reflect rather than correct.
  */
 import { normalizePhone } from "@/lib/utils";
-import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer } from "@/lib/quickAnswers";
 import { paymentAnswer } from "@/lib/payment-info";
 import {
   getPrimaryContactHref,
@@ -120,7 +120,6 @@ export function resolveProducerQuestions(producer, labels) {
   const waEnabled = isWhatsAppPrimary(producer) && !!digits;
   const method = getPrimaryMethod(producer);
   const delivery = buildDeliveryAnswer(producer);
-  const ordering = buildOrderingAnswer(producer);
 
   const custom = (producer?.custom_questions || []).filter(Boolean);
   const usesCustom = custom.length > 0;
@@ -147,28 +146,9 @@ export function resolveProducerQuestions(producer, labels) {
     });
   }
 
-  // Q2 — a "whatsapp" ordering answer needs a number to be worth showing; the
-  // component drops it otherwise rather than showing an answer that says
-  // "message her" with nowhere to send.
-  if (ordering && (ordering.kind !== "whatsapp" || digits)) {
-    items.push({
-      id: "ordering",
-      label: labels.orderingQuestion,
-      answered: true,
-      channel: null,
-      source: "ordering",
-    });
-  } else if (!ordering && waEnabled) {
-    items.push({
-      id: "ordering",
-      label: labels.orderingQuestion,
-      answered: false,
-      channel: "whatsapp",
-      source: "ordering",
-    });
-  }
+  // «איך מזמינים?» is no longer a row (19/11): it repeated the primary CTA.
 
-  // MEH-3035: «איך משלמים?» — answered from her payment_info, after Q2 and
+  // MEH-3035: «איך משלמים?» — answered from her payment_info, after Q1 and
   // before her custom questions, exactly where the page puts it.
   if (paymentAnswer(producer?.payment_info)) {
     items.push({

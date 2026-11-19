@@ -95,10 +95,11 @@ describe("live list — what the page is actually showing", () => {
     await openQuestionsCard();
 
     const items = await screen.findAllByTestId("live-question-item");
-    // MEH-2385: delivery + ordering + escalation. The category stock question
+    // MEH-2385: delivery + escalation (ordering left 19/11 — it repeated the
+    // primary CTA). The category stock question
     // no longer renders on the public page, so it must not be listed here
     // either — the list's whole purpose is to be the page.
-    expect(items.length).toBe(3);
+    expect(items.length).toBe(2);
     expect(screen.getByTestId("live-questions-list").textContent).not.toContain(
       "אילו לחמים יש השבוע?",
     );
