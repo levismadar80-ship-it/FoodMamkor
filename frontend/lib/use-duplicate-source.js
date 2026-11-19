@@ -48,7 +48,9 @@ export default function useDuplicateSource(kind) {
         // The date is the one thing a repeat never shares; the id would make
         // the form think it is editing. A recurring experience keeps its
         // schedule text on purpose: a weekly workshop repeats as a weekly one.
-        done(row ? { ...row, id: undefined, event_date: "" } : null);
+        // MEH-3447: its listed dates are dates too, and carry the source's
+        // sign-up counts — a copy starts with none.
+        done(row ? { ...row, id: undefined, event_date: "", sessions: [] } : null);
       })
       .catch(() => done(null));
     return () => {
