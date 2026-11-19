@@ -20,13 +20,13 @@ import api from "@/lib/api";
 
 /** @typedef {{ loading: boolean, source: object|null }} DuplicateSource */
 
+const noSubscribe = () => () => {};
+const readFromId = () => new URLSearchParams(window.location.search).get("from");
+
 /**
  * @param {"events"|"experiences"} kind
  * @returns {DuplicateSource}
  */
-const noSubscribe = () => () => {};
-const readFromId = () => new URLSearchParams(window.location.search).get("from");
-
 export default function useDuplicateSource(kind) {
   // The server has no URL: its snapshot is null. On a client navigation (the
   // «שכפול» link) the id is there on the first render, so the skeleton shows
