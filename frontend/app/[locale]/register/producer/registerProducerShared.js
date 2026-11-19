@@ -15,7 +15,7 @@ export const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 
 // `onsite` is the schema default (has_physical_location: true,
 // offers_delivery: false, schemas.py:957-958), so a visitor who never
 // touches the radio still posts a coherent shape.
-export const FULFILMENT_OPTIONS = [
+const FULFILMENT_OPTIONS = [
   { value: "onsite", has_physical_location: true, offers_delivery: false },
   { value: "delivery", has_physical_location: false, offers_delivery: true },
   { value: "both", has_physical_location: true, offers_delivery: true },
