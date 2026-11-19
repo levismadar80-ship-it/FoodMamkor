@@ -8509,6 +8509,23 @@ export const AdminUploadOwnerPhotoUploadOwnerPhotoProducerIdPostResponse = /*#__
 
 
 /**
+ * MEH-3456: the admin uploads or replaces the photo of ANY business's
+ * product — a live page or an ownerless draft — from the admin edit page.
+ *
+ * Same validation as every other image route (read_validated_image) and the
+ * same storage as /upload/image (the uploader's own folder, MEH-3247). The
+ * product comes from the PATH and only an admin reaches it: 403 for anyone
+ * else, the owner included (she sets her photos through PUT
+ * /producers/me/products/{id}). The admin audit row is written by
+ * get_current_user for every admin POST (services/admin_audit.py), targeting
+ * `product_id`. Only this one column changes: no other product field is in
+ * the request.
+ * @summary Admin Upload Product Image
+ */
+export const AdminUploadProductImageUploadProductImageProductIdPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Update the current user's name and/or email.
  *
  * - Name is trimmed and must be non-empty.

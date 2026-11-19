@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import AdminProductImport from "@/components/admin/AdminProductImport";
 import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
+import AdminProductImagesPanel from "@/components/admin/AdminProductImagesPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
@@ -105,6 +106,11 @@ export default function EditProducerPage() {
           draft; once she has claimed it the server answers 409, shown verbatim. */}
       {producer.status === "draft" && (
         <DraftProductsPanel producerId={id} initialProducts={producer.products || []} />
+      )}
+      {/* MEH-3456: any other status (Sandra's page is live) gets the same
+          photo button per product; the draft panel above already carries it. */}
+      {producer.status !== "draft" && (
+        <AdminProductImagesPanel initialProducts={producer.products || []} />
       )}
       {/* MEH-2325: only a draft can be handed to its owner. ProducerAdminOut
           carries no owner id, so a draft she has already claimed still shows

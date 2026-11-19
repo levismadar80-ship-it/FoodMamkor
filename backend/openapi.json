@@ -828,6 +828,20 @@
         "title": "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post",
         "type": "object"
       },
+      "Body_admin_upload_product_image_upload_product_image__product_id__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_product_image_upload_product_image__product_id__post",
+        "type": "object"
+      },
       "Body_read_my_menu_producers_me_menu_import_read_post": {
         "properties": {
           "files": {
@@ -33500,6 +33514,63 @@
           }
         ],
         "summary": "Admin Upload Owner Photo",
+        "tags": [
+          "upload"
+        ]
+      }
+    },
+    "/upload/product-image/{product_id}": {
+      "post": {
+        "description": "MEH-3456: the admin uploads or replaces the photo of ANY business's\nproduct — a live page or an ownerless draft — from the admin edit page.\n\nSame validation as every other image route (read_validated_image) and the\nsame storage as /upload/image (the uploader's own folder, MEH-3247). The\nproduct comes from the PATH and only an admin reaches it: 403 for anyone\nelse, the owner included (she sets her photos through PUT\n/producers/me/products/{id}). The admin audit row is written by\nget_current_user for every admin POST (services/admin_audit.py), targeting\n`product_id`. Only this one column changes: no other product field is in\nthe request.",
+        "operationId": "admin_upload_product_image_upload_product_image__product_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_product_image_upload_product_image__product_id__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Upload Product Image",
         "tags": [
           "upload"
         ]
