@@ -250,7 +250,7 @@ test.describe("products card — add form validation", () => {
     await stubEdit(page, [product({ id: 1, name: "חלה" })], writes, { postDelayMs: 1_200 });
     await openProducts(page);
     await openAddForm(page);
-    const submit = addForm(page).getByRole("button", { name: /^(הוסיפו מוצר|בהוספה\.\.\.)$/ });
+    const submit = addForm(page).getByRole("button", { name: /^(הוסיפו מוצר|בהוספה…)$/ });
     await expect(submit).toHaveText("הוסיפו מוצר");
     await addForm(page).getByLabel("שם המוצר").fill("טסט-קופי");
     await addForm(page).getByLabel(/^מחיר מ-/).fill("12");

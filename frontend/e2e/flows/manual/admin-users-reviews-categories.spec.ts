@@ -579,7 +579,7 @@ test.describe("/admin/users — the role kebab", () => {
     // weak thing to match on and would not tell a busy dialog from a typo.
     await openKebab(row);
     await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
-    const submit = roleDialog(page).getByRole("button", { name: /אישור|\.\.\./ });
+    const submit = roleDialog(page).getByRole("button", { name: /אישור|…/ });
     await submit.click();
     await expect(submit, "the PUT is still open").toBeDisabled();
     await page.keyboard.press("Escape");
