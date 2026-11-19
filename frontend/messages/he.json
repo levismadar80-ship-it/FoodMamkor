@@ -1318,7 +1318,10 @@
         "fulfillment_required": "יש למלא איסוף או משלוח",
         "submitting": "ביצירה...",
         "submit": "צרו קבוצת רכישה",
-        "toast_created": "קבוצת הרכישה נוצרה ופתוחה להצטרפות"
+        "toast_created": "קבוצת הרכישה נוצרה ופתוחה להצטרפות",
+        "prefill_label": "מילוי ממוצר קיים",
+        "prefill_placeholder": "בחירת מוצר",
+        "prefill_helper": "השם והמחיר הרגיל יתמלאו לבד, ואפשר לשנות אותם."
       },
       "status_deadline_passed": "המועד עבר",
       "actions": {
@@ -5604,7 +5607,9 @@
         "action_delete": "מחיקה",
         "action_error": "הפעולה נכשלה. נסו שוב.",
         "delete_confirm": "למחוק את האירוע \"{title}\"? הפעולה בלתי הפיכה.",
-        "badge_past": "הסתיים"
+        "badge_past": "הסתיים",
+        "action_duplicate": "שכפול",
+        "copied_from": "הפרטים הועתקו מ«{title}». נשאר לבחור תאריך."
       },
       "manage_experiences": {
         "heading": "החוויות שלי",
@@ -5630,7 +5635,9 @@
         "status_changes_requested": "נדרשים תיקונים",
         "badge_past": "הסתיימה",
         "signed_up_label": "כמה כבר נרשמו",
-        "signed_up_hint": "מופיע בדף החוויה כשנשארו 3 מקומות או פחות"
+        "signed_up_hint": "מופיע בדף החוויה כשנשארו 3 מקומות או פחות",
+        "action_duplicate": "שכפול",
+        "copied_from": "הפרטים הועתקו מ«{title}». נשאר לבחור תאריך."
       },
       "name_change": {
         "heading": "שינוי שם העסק",
@@ -6171,7 +6178,8 @@
         "precision_helper": "מדויק — הלקוחות יראו סיכה במיקום המלא; משוער — סיכה באזור בלבד, בלי כתובת",
         "precision_exact": "מדויק",
         "precision_approximate": "משוער",
-        "primary_label": "מיקום ראשי"
+        "primary_label": "מיקום ראשי",
+        "hours_copy_all": "אותן שעות לכל הימים הפתוחים"
       },
       "save_cta": "שמרו",
       "saving": "בשמירה...",

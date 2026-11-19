@@ -36,8 +36,12 @@ vi.mock("@/lib/toast", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({ Leaf: () => null }));
 vi.mock("@/components/ExperienceForm", () => ({
-  default: ({ cancelHref }) => <form data-testid="experience-form" data-cancel={cancelHref} />,
+  default: ({ cancelHref, initial }) => (
+    <form data-testid="experience-form" data-cancel={cancelHref} data-initial-title={initial?.title ?? ""} data-initial-date={initial ? initial.event_date : "none"} />
+  ),
 }));
+const apiGet = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/api", () => ({ default: { get: apiGet } }));
 
 import NewExperiencePage from "@/app/[locale]/producer/dashboard/experiences/new/page";
 
@@ -96,5 +100,26 @@ describe("/producer/dashboard/experiences/new (MEH-2249)", () => {
 
     expect(pushMock).not.toHaveBeenCalled();
     expect(screen.queryByTestId("experience-form")).toBeNull();
+  });
+
+  // MEH-3438: «שכפול» lands here with ?from=<id>.
+  it("?from=<own id>: the form opens seeded, date cleared, with the copied-from line", async () => {
+    authState = { user: { id: "u1", role: "producer" }, loading: false };
+    window.history.replaceState(null, "", "/?from=x1");
+    apiGet.mockResolvedValue({ data: [{ id: "x1", title: "סיור במטע", event_date: "2099-03-01" }] });
+    wrap();
+    const form = await screen.findByTestId("experience-form");
+    expect(apiGet).toHaveBeenCalledWith("/experiences/mine");
+    expect(form).toHaveAttribute("data-initial-title", "סיור במטע");
+    expect(form).toHaveAttribute("data-initial-date", "");
+    expect(screen.getByTestId("duplicate-note")).toHaveTextContent("הפרטים הועתקו מ«סיור במטע». נשאר לבחור תאריך.");
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("no ?from: an empty form and no copied-from line", () => {
+    authState = { user: { id: "u1", role: "producer" }, loading: false };
+    wrap();
+    expect(screen.getByTestId("experience-form")).toHaveAttribute("data-initial-date", "none");
+    expect(screen.queryByTestId("duplicate-note")).toBeNull();
   });
 });

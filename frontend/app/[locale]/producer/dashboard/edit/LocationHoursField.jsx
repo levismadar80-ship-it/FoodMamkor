@@ -113,6 +113,18 @@ export default function LocationHoursField({
         idx === i && canAddRange(d) ? { ...d, ranges: [...d.ranges, nextRange(d.ranges[d.ranges.length - 1])] } : d,
       ),
     );
+  // MEH-3438: «אותן שעות לכל הימים הפתוחים» — the first open day's ranges go
+  // to every OTHER day already marked open. A closed day stays closed (Friday
+  // and Saturday usually differ), so the owner ticks the days first. Shown only
+  // with 2+ open days: with 0 or 1 there is nowhere to copy to.
+  const openIdx = days.reduce((acc, d, idx) => (d.open ? [...acc, idx] : acc), []);
+  const sourceIdx = openIdx.length >= 2 ? openIdx[0] : -1;
+  const copyToOpenDays = () =>
+    commit(
+      days.map((d, idx) =>
+        d.open && idx !== sourceIdx ? { ...d, ranges: days[sourceIdx].ranges.map((r) => ({ ...r })) } : d,
+      ),
+    );
   const removeRange = (i, rangeIdx) =>
     commit(
       days.map((d, idx) =>
@@ -203,6 +215,16 @@ export default function LocationHoursField({
                     >
                       <Plus size={12} weight="bold" aria-hidden="true" />
                       {t("add_range")}
+                    </button>
+                  )}
+                  {i === sourceIdx && (
+                    <button
+                      type="button"
+                      onClick={copyToOpenDays}
+                      data-testid="location-hours-copy-all"
+                      className="inline-flex min-h-touch items-center self-start text-xs font-medium text-primary transition hover:text-primary-dark"
+                    >
+                      {tForm("hours_copy_all")}
                     </button>
                   )}
                 </div>

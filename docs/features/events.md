@@ -12,6 +12,7 @@
 * `backend/app/services/registration_emails.py` — מיילי ההרשמה (אישור, בעלים, ביטול, תזכורת MEH-3312, רשימת המתנה והצעת מקום MEH-3314).
 * `frontend/app/[locale]/events/EventsClient.jsx`
 * `frontend/components/RegistrationOverlays.jsx` — פס ההרשמה.
+* `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת האירועים פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ברשימה של העסק עצמו, `/events/mine` (MEH-3438). הטסט `frontend/__tests__/MEH3438LessTyping.test.jsx`.
 
 **Flags.** אין.
 

@@ -12,7 +12,7 @@
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { CalendarPlus, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
+import { CalendarPlus, PencilSimple, Copy, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -169,6 +169,16 @@ export default function ManageEventsPage() {
                   >
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
+                  </Link>
+                  {/* MEH-3438: a repeat starts from this one, date cleared. */}
+                  <Link
+                    href={`/producer/dashboard/events/new?from=${ev.id}`}
+                    aria-label={`${t("action_duplicate")} — ${ev.title}`}
+                    data-testid={`duplicate-${ev.id}`}
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
+                  >
+                    <Copy size={16} aria-hidden="true" />
+                    {t("action_duplicate")}
                   </Link>
                   {!past && (
                   <button

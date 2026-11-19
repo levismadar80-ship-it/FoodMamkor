@@ -29,6 +29,8 @@ vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: stableUser, loadi
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
 const post = vi.fn();
+// MEH-3438: the products the «מילוי ממוצר קיים» picker reads; empty by default.
+const productsData = vi.hoisted(() => ({ list: [] }));
 vi.mock("@/lib/api", () => ({
   default: {
     get: (url) =>
@@ -36,7 +38,9 @@ vi.mock("@/lib/api", () => ({
         data:
           url === "/producers/me/dashboard"
             ? { producer: { id: "p1", city: "חדרה", status: "approved" } }
-            : [],
+            : url === "/producers/me/products"
+              ? productsData.list
+              : [],
       }),
     post: (...a) => post(...a),
     patch: vi.fn(),
@@ -60,6 +64,7 @@ async function openForm() {
 }
 
 beforeEach(() => {
+  productsData.list = [];
   post.mockReset();
   post.mockResolvedValue({ data: { id: "new" } });
 });
@@ -177,5 +182,25 @@ describe("deadline is read in Israel time", () => {
     fireEvent.submit(form);
     await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
     expect(post.mock.calls[0][1].deadline).toBe("2099-01-01T10:00:00.000Z");
+  });
+});
+
+// MEH-3438: a product she already has fills the name and the regular price.
+describe("fill from an existing product", () => {
+  it("0 products: no picker on the form", async () => {
+    await openForm();
+    expect(screen.queryByTestId("group-buy-product-picker")).toBeNull();
+  });
+
+  it("a pick fills name + regular price, and both stay editable", async () => {
+    productsData.list = [{ id: "p9", name: "גבינת עיזים", price_min: "38.50" }];
+    await openForm();
+    fireEvent.change(await screen.findByTestId("group-buy-product-picker"), { target: { value: "p9" } });
+    const name = screen.getByLabelText(new RegExp(`${F}.product_name_label`));
+    const regular = screen.getByLabelText(new RegExp(`${F}.price_regular_label`));
+    expect(name).toHaveValue("גבינת עיזים");
+    expect(regular).toHaveValue(38.5);
+    fireEvent.change(name, { target: { value: "גבינת עיזים קטנה" } });
+    expect(name).toHaveValue("גבינת עיזים קטנה");
   });
 });

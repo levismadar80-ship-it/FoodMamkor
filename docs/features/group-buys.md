@@ -13,6 +13,7 @@
 **קבצים מרכזיים**
 * `backend/app/routers/group_buys.py` — כל המסלולים. שימו לב להערה על `selectinload`: היא שייכת למסלולי הרשימה ולא ל-`_status_tab_query`, כי מסלול ה-`/counts` חולק את אותה שאילתה ורק סופר.
 * `frontend/app/[locale]/group-buys/GroupBuysClient.jsx`
+* `frontend/components/GroupBuyProductPicker.jsx` — «מילוי ממוצר קיים» בטופס היצירה: בחירה ממלאת את שם המוצר ואת המחיר הרגיל. כשאין לעסק מוצרים, הרשימה לא מוצגת (MEH-3438). הטסט `frontend/__tests__/GroupBuyFulfillmentRequired.test.jsx`.
 
 **Flags.** אין.
 

@@ -15,6 +15,7 @@
 * `backend/app/routers/producer_me.py` — כל המספרים שהלוח מציג.
 * `frontend/lib/producer-completeness.js` · `frontend/components/ProfileCompletenessCard.jsx`
 * `frontend/components/MenuImport.jsx` · `frontend/components/MenuReviewRow.jsx` · `frontend/lib/menu-image.js` — «העלו תפריט» בכרטיס המוצרים (MEH-3430): צילום או PDF של תפריט, השרת קורא אותו עם Claude (`backend/app/services/menu_reader.py`, ‏`backend/app/routers/menu_import.py`), בעלת העסק בודקת ומפרסמת. רצועה עם הסבר כשיש 0–2 מוצרים, כפתור כשיש 3 ומעלה, ושורה ב«מה מחכה לך» כשאין מוצרים בכלל. בלי `ANTHROPIC_API_KEY` הקריאה עונה 503 והמסך מציג את שורת הכישלון.
+* `frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx` — שעות הפתיחה של מיקום. «אותן שעות לכל הימים הפתוחים» מעתיק את הטווחים של היום הפתוח הראשון לכל יום אחר שמסומן כפתוח (MEH-3438). הטסט `frontend/__tests__/MEH3438LessTyping.test.jsx`.
 
 **Flags.** `PRODUCT_ORDERS_ENABLED` (צד שרת) — מדליק את לשונית «הזמנות» ואת השורה שלה בכרטיס «מה מחכה לך».
 

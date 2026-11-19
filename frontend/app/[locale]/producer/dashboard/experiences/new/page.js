@@ -8,6 +8,8 @@ import Seed from "@/components/brand/Seed";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import ExperienceForm from "@/components/ExperienceForm";
+import useDuplicateSource from "@/lib/use-duplicate-source";
+import { SkeletonForm } from "@/components/Skeleton";
 
 // MEH-2249: experience creation moved here from the public /experiences/new.
 // Creation now sits beside the list and the edit page it belongs with, and the
@@ -23,6 +25,9 @@ export default function NewExperiencePage() {
   const tCrumb = useTranslations("sweep_tail.event_new");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  // MEH-3438: «שכפול» lands here with ?from=<id>; the form opens pre-filled.
+  const tDup = useTranslations("dashboard.producer.manage_experiences");
+  const dup = useDuplicateSource("experiences");
 
   // Duplicate role guard, mirroring the sibling edit page
   // (producer/dashboard/experiences/[id]/edit/page.js:35-40). The real UX gate
@@ -62,7 +67,16 @@ export default function NewExperiencePage() {
       </h1>
       <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
-      <ExperienceForm mode="create" onSuccess={handleSuccess} cancelHref={LIST_HREF} emailUnverified={user?.email_verified === false} />
+      {dup.source && (
+        <p className="text-sm text-text bg-green-50 rounded-md px-4 py-3 mb-6" role="status" data-testid="duplicate-note">
+          {tDup("copied_from", { title: dup.source.title })}
+        </p>
+      )}
+      {dup.loading ? (
+        <SkeletonForm />
+      ) : (
+        <ExperienceForm mode="create" initial={dup.source} onSuccess={handleSuccess} cancelHref={LIST_HREF} emailUnverified={user?.email_verified === false} />
+      )}
     </div>
   );
 }

@@ -1318,7 +1318,10 @@
         "fulfillment_required": "Fill in pickup or delivery",
         "submitting": "Creating...",
         "submit": "Create group buy",
-        "toast_created": "Group buy created and open for joining"
+        "toast_created": "Group buy created and open for joining",
+        "prefill_label": "Fill from an existing product",
+        "prefill_placeholder": "Choose a product",
+        "prefill_helper": "The name and regular price fill in, and you can change them."
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {
@@ -5608,7 +5611,9 @@
         "action_delete": "Delete",
         "action_error": "Action failed. Please try again.",
         "delete_confirm": "Delete the event \"{title}\"? This cannot be undone.",
-        "badge_past": "Ended"
+        "badge_past": "Ended",
+        "action_duplicate": "Duplicate",
+        "copied_from": "Details copied from \"{title}\". Just pick a date."
       },
       "manage_experiences": {
         "heading": "My experiences",
@@ -5634,7 +5639,9 @@
         "status_changes_requested": "Changes requested",
         "badge_past": "Ended",
         "signed_up_label": "Signed up so far",
-        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left"
+        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left",
+        "action_duplicate": "Duplicate",
+        "copied_from": "Details copied from \"{title}\". Just pick a date."
       },
       "name_change": {
         "heading": "Change business name",
@@ -6175,7 +6182,8 @@
         "precision_helper": "Exact — customers see a pin at the full location; Approximate — a pin in the area only, without an address.",
         "precision_exact": "Exact",
         "precision_approximate": "Approximate",
-        "primary_label": "Primary location"
+        "primary_label": "Primary location",
+        "hours_copy_all": "Same hours for all open days"
       },
       "save_cta": "Save",
       "saving": "Saving…",
