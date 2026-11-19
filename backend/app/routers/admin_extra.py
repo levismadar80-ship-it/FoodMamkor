@@ -282,7 +282,7 @@ def block_user(
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
-        raise HTTPException(status_code=400, detail="Cannot block yourself")
+        raise HTTPException(status_code=400, detail="אי אפשר לחסום את החשבון שלך")
     target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
     admin_audit.note(user, after={"is_blocked": bool(target.is_blocked)})
     # MEH-2871 (Sapir 18/11): blocking the only owner of a live business takes
@@ -506,7 +506,7 @@ def update_category(
     """
     cat = db.query(Category).filter(Category.id == category_id).first()
     if not cat:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(status_code=404, detail="הקטגוריה לא נמצאה")
 
     # Emoji-only edits skip both guards — nothing about the licensing lookup or
     # the UNIQUE constraint depends on the emoji.
@@ -551,7 +551,7 @@ def delete_category(
 ) -> dict[str, Any]:
     cat = db.query(Category).filter(Category.id == category_id).first()
     if not cat:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(status_code=404, detail="הקטגוריה לא נמצאה")
     # MEH-1456 chunk 2b: a seeded row is not deletable from here even when the
     # MEH-1297 count below is zero — an empty system category is still the
     # taxonomy's, and removing it is a migration. Ordered first so the admin is

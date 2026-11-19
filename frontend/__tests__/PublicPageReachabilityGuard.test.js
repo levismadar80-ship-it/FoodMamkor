@@ -113,6 +113,7 @@ const ROUTES = {
   "/messages": { kind: "noindex" },
   "/newsletter/confirm": { kind: "noindex" }, // MEH-3300
   "/newsletter/unsubscribe": { kind: "noindex" },
+  "/order/[id]": { kind: "noindex" },
   "/owner-invite": { kind: "noindex" },
   "/owner-invite/[token]": { kind: "noindex" },
   "/recommend": { kind: "noindex" },

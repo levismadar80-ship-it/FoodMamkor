@@ -77,6 +77,13 @@ const DRAFT_PREVIEW_PATH_ENCODED = new RegExp(
   "gi",
 );
 
+// MEH-3216 stage 5a: the buyer's order link, /order/<id>#t=<token>. The token
+// is a bearer credential for that one order (read it, cancel it), and it stays
+// in location.href while the page is open, so every event from the page would
+// carry it. token_urlsafe: [A-Za-z0-9_-], 20..100 characters.
+const ORDER_LINK_TOKEN = /([#&]t=)[\w-]{20,100}/g;
+const ORDER_LINK_TOKEN_ENCODED = /(%23t%3D)[\w-]{20,100}/gi;
+
 export function stashClaimToken(token) {
   try {
     window.sessionStorage.setItem(STORAGE_KEY, token);
@@ -180,7 +187,9 @@ export function redactClaimPath(value) {
     .replace(OWNER_INVITE_PATH, "$1/[token]")
     .replace(OWNER_INVITE_PATH_ENCODED, "$1%2F[token]")
     .replace(DRAFT_PREVIEW_PATH, "$1/[token]")
-    .replace(DRAFT_PREVIEW_PATH_ENCODED, "$1%2F[token]");
+    .replace(DRAFT_PREVIEW_PATH_ENCODED, "$1%2F[token]")
+    .replace(ORDER_LINK_TOKEN, "$1[token]")
+    .replace(ORDER_LINK_TOKEN_ENCODED, "$1[token]");
 }
 
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and

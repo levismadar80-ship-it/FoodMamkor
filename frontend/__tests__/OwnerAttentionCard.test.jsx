@@ -86,4 +86,24 @@ describe("OwnerAttentionCard (MEH-3108)", () => {
     renderCard({ ...none, pending_orders: 1 });
     expect(screen.getByTestId("owner-attention-orders")).toHaveTextContent("הזמנה אחת מחכה לאישור");
   });
+
+  // MEH-3430: no products yet → «העלו תפריט», for a business, never an organizer.
+  it("0 products: the menu row, linking to the products card", () => {
+    renderCard({ ...none, products: 0 });
+    const row = screen.getByTestId("owner-attention-menu");
+    expect(row).toHaveTextContent(he.dashboard.producer.attention.menu);
+    expect(within(row).getByRole("link", { name: "העלו תפריט" })).toHaveAttribute("href", "/producer/dashboard/edit#products");
+  });
+
+  it("products, a failed count (-1) or an organizer: no menu row", () => {
+    for (const [att, org] of [[{ ...none, products: 3 }, false], [{ ...none, products: -1 }, false], [{ ...none, products: 0 }, true]]) {
+      const { container, unmount } = render(
+        <NextIntlClientProvider locale="he" messages={he}>
+          <OwnerAttentionCard attention={att} isOrganizer={org} />
+        </NextIntlClientProvider>,
+      );
+      expect(container.innerHTML).toBe("");
+      unmount();
+    }
+  });
 });

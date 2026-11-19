@@ -85,13 +85,14 @@ left in v1" vs "what's planned for v2".
 | `/register/organizer` | Markets / events organizer sign-up (same wizard, kind=organizer) |
 | `/claim` | Claim an existing business page (after the token step) |
 | `/claim/[token]` | Claim link landing; moves the token to sessionStorage |
+| `/order/[id]` | A buyer's on-site order: status, hand-over time and place, pickup code, what to pay, cancel or accept a proposed change. The link in every order message, token after `#t=`; noindex, no-referrer; 404 while `PRODUCT_ORDERS_ENABLED` is off (MEH-3216 stage 5a) |
 | `/owner-invite` | Accept an invite to co-manage a business (after the token step) |
 | `/owner-invite/[token]` | Owner-invite link landing |
 | `/producer/dashboard` | Dashboard home: status, next steps, availability, daily actions |
 | `/producer/dashboard/edit` | Edit the business page (details, photos, products, locations, delivery, payment methods, hours) |
 | `/producer/dashboard/preview` | See the page before approval |
 | `/producer/dashboard/insights` | Views, WhatsApp clicks, searches, cities, followers |
-| `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, ordering settings, weekly hand-over hours; a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
+| `/producer/dashboard/orders` | «הזמנות» on-site orders: four lists and every action, each product's «פתוח להזמנה באתר» / «אזל כרגע» switches, «מה להכין» on the today list, «וואטסאפ ללקוח» on each card, ordering settings with one cap per slot, weekly hand-over hours (both folded once ordering is on with a window); a tab with a waiting-count. Exists only while the server has `PRODUCT_ORDERS_ENABLED` (its settings route 404 → no tab, page 404) (MEH-3316) |
 | `/producer/dashboard/whats-new` | «מה חדש» release notes for business owners |
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
@@ -237,6 +238,7 @@ left in v1" vs "what's planned for v2".
 |---|---|---|---|
 | ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop + mobile — mobile icon-only and always shown above the BottomNav (hid on scroll-down under MEH-2499 until 4/11/2026, MEH-2664)) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
 | ✅ | v1 | Auto-moderation for `/neighbor` listings (Anthropic, fail-open) | `backend/app/services/home_product_moderation.py` |
+| ✅ | v1 | Upload a menu → product rows (MEH-3430): the owner photographs her menu or uploads a PDF on the products card, Opus 5.5 reads it (`AI_MENU_MODEL`), she checks and publishes. No key → 503 and she adds by hand | `backend/app/routers/menu_import.py`, `frontend/components/MenuImport.jsx` |
 | 📋 | v2 | AI search agent — natural-language search ("בשר grass-fed בחיפה") | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate chat widget to `claude-agent-sdk` with tool use | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate moderation pipeline to agent loop with follow-up tools | [ROADMAP.md](./ROADMAP.md) |

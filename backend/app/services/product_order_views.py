@@ -4,11 +4,12 @@ Purpose:  Turn an order row into what its two readers may see: the buyer
           (opened with a token: phone masked, no street address, the pickup
           code only while it is usable) and the business (the full contact
           details it needs to hand the order over, never the pickup code).
-Touches:  Reads product_orders and its lines; reads the business name.
-          Writes nothing.
+Touches:  Reads product_orders and its lines; reads the business name and,
+          for a confirmed pickup, its primary location. Writes nothing.
 Does NOT: decide who may read — the routes resolve the order first.
 Related:  app/schemas/product_order_buy.py (BuyerOrderOut, BusinessOrderOut)
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3216 stage 5a
+          (pickup_address for the buyer's status page)
 """
 
 from datetime import UTC, datetime, timedelta
@@ -16,6 +17,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.models.catalog import ProducerLocation
 from app.models.models import Producer
 from app.models.product_orders import PRODUCT_ORDER_CODE_STATUSES, ProductOrder
 from app.services.product_order_actions import buyer_can_cancel, cutoff_hours
@@ -86,12 +88,41 @@ def _common(order: ProductOrder) -> dict[str, Any]:
     }
 
 
+def pickup_address(db: Session, order: ProductOrder) -> str | None:
+    """Where to pick a confirmed order up: the business's primary location,
+    as public as she made it. An `approximate` location gives the city only
+    (a home business that keeps her street off the site keeps it off here
+    too; the buyer can ask her). None for a delivery, or before the order is
+    confirmed."""
+    if order.fulfilment != "pickup" or order.status not in PRODUCT_ORDER_CODE_STATUSES:
+        return None
+    loc = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == order.producer_id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        # Deterministic if a business ever ends up with two primary rows.
+        .order_by(ProducerLocation.created_at, ProducerLocation.id)
+        .first()
+    )
+    if loc is None:
+        return None
+    # Legacy untyped model: read the columns as plain values.
+    address: str | None = loc.address  # type: ignore[assignment]
+    city: str | None = loc.city  # type: ignore[assignment]
+    if loc.location_precision != "exact" or not address:
+        return city or None
+    return ", ".join(part for part in (address, city) if part)
+
+
 def buyer_view(db: Session, order: ProductOrder) -> dict[str, Any]:
     name = db.query(Producer.name).filter(Producer.id == order.producer_id).scalar()
     usable = order.status in PRODUCT_ORDER_CODE_STATUSES
     return {
         **_common(order),
         "producer_name": name or "",
+        "pickup_address": pickup_address(db, order),
         "phone_masked": mask_phone(str(order.customer_phone)),
         "pickup_code": order.pickup_code if usable else None,
         "can_cancel": buyer_can_cancel(order, cutoff_hours(db, order), utc_now()),

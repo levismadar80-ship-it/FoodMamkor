@@ -10,7 +10,8 @@
  * Related:  app/[locale]/producer/dashboard/preview/PreviewClient.jsx (the only
  *           provider), producer/[id]/components/ProducerHeader.jsx (hides
  *           favourite + share), components/ImageGallery.jsx (hides the hero
- *           heart), producer/[id]/components/StickyContactBar.jsx and
+ *           heart), components/SaveButton.jsx (hides the event / experience /
+ *           recipe heart, MEH-2969), producer/[id]/components/StickyContactBar.jsx and
  *           ContactCard.jsx (contact stays visible, stops acting).
  * History:  MEH-2916 (C4 — the A4 regression; Sapir's ruling 11/11).
  */

@@ -185,7 +185,7 @@ the gate sits in front of it.
 | `row-menu` | 800 | 1 | `components/admin/AdminRowMenu.jsx` | admin table row menu |
 | `popover` | 800 | 2 | `components/ui/Popover.jsx` | Popover desktop panel (fixed and absolute forms) |
 | `map-sheet` | 600 | 1 | `components/MapBottomSheet.jsx` | map bottom sheet |
-| `sticky-bar` | 598 | 2 | `producer/[id]/components/StickyContactBar.jsx` · `components/RegistrationOverlays.jsx` | sticky contact bar — just under the sheet; MEH-3043 the event / workshop sign-up bar, same tier (it sits above the BottomNav pill spatially, not by z) |
+| `sticky-bar` | 598 | 3 | `producer/[id]/components/StickyContactBar.jsx` · `components/RegistrationOverlays.jsx` · `components/public/OrderBar.jsx` | sticky contact bar — just under the sheet; MEH-3043 the event / workshop sign-up bar, same tier (it sits above the BottomNav pill spatially, not by z); MEH-3216 the order bar, which takes the contact bar's place once a product is picked |
 | `map-picked-card` | 598 | 1 | `map/components/MobileSheetSelectedCard.jsx` | phone map: picked-business card above the sheet's top edge — under the sheet (600) so a dragged sheet covers it, above the markers (400) (MEH-3119) |
 | `dev-badge` | 2 | 1 | `app/[locale]/dev/components/page.jsx` | dev playground card badge |
 | `decor` | 1 | 2 | `about/AboutClient.jsx` · `about/process/AboutProcessClient.jsx` | decorative texture overlay |

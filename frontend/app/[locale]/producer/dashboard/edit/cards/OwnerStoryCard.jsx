@@ -11,7 +11,7 @@
  *           its own file; the per-change history is in the comments below.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { useTranslations } from "next-intl";
 import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -41,6 +41,7 @@ const OWNER_BIO_MAX = 300;
 // Exported for isolation tests (EditTabOwnerStoryCard.test.jsx) — see CategoriesCard.
 export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.owner_story");
+  const bioId = useId(); // MEH-3351: ties the visible label to its textarea
   const [bio, setBio] = useState(profile.owner_bio || "");
   const [savedBio, setSavedBio] = useState(profile.owner_bio || "");
   // MEH-1385 addendum (MEH-1392 F2): contact_name was public-read on OwnerCard
@@ -199,12 +200,13 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       {/* Bio — locked spec label (bio_label) + 300 counter. */}
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
-          <label className="text-sm font-medium">{t("bio_label")}</label>
+          <label htmlFor={bioId} className="text-sm font-medium">{t("bio_label")}</label>
           <span className="text-2xs text-fg-muted">{t("bio_where")}</span>
         </div>
         <textarea
           value={bio}
           onChange={(e) => { setBio(e.target.value.slice(0, OWNER_BIO_MAX)); setSaved(false); }}
+          id={bioId}
           placeholder={t("bio_placeholder")}
           className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm resize-none h-24 focus-ring"
           dir="auto"

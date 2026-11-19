@@ -79,6 +79,7 @@ def test_nothing_waiting_is_all_zero(client, db):
         "new_signups": [],
         "funded_group_buys": 0,
         "pending_orders": 0,
+        "products": 0,
     }
 
 
@@ -155,6 +156,7 @@ def test_a_failed_count_returns_an_empty_card_not_a_500(client, db, monkeypatch)
         "new_signups": [],
         "funded_group_buys": 0,
         "pending_orders": 0,
+        "products": -1,  # MEH-3430: unknown, not zero
     }
 
 
@@ -182,3 +184,18 @@ def test_pending_orders_count_only_while_ordering_is_on(client, db, monkeypatch)
     assert _attention(client, owner)["pending_orders"] == 0
     monkeypatch.setattr(orders_module, "product_orders_enabled", lambda: True)
     assert _attention(client, owner)["pending_orders"] == 2
+
+
+def test_products_counts_this_business_only(client, db):
+    # MEH-3430: the «העלו תפריט» row shows on 0.
+    from app.models import Product
+    from tests.conftest import make_producer
+
+    owner = _owner(db, email="att-prod@example.com")
+    other = make_producer(db)
+    db.add(Product(producer_id=other.id, name="של אחרת", price_min=10))
+    db.commit()
+    assert _attention(client, owner)["products"] == 0
+    db.add(Product(producer_id=owner.producer_id, name="לחם", price_min=20))
+    db.commit()
+    assert _attention(client, owner)["products"] == 1

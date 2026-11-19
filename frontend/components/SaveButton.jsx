@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
+import { usePreviewMode } from "@/lib/preview-mode";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import {
@@ -46,6 +47,7 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
   const t = useTranslations("favorites.button");
   const tError = useTranslations("error");
   const { user } = useAuth();
+  const isPreview = usePreviewMode();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -138,6 +140,10 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
     typeof window !== "undefined"
       ? window.location.pathname + window.location.search
       : "/";
+
+  // MEH-2969: a visitor control, hidden in the owner's preview like the
+  // business heart and share (Sapir 11/11, MEH-2916). After every hook.
+  if (isPreview) return null;
 
   return (
     <>

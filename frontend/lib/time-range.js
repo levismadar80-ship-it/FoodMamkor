@@ -6,7 +6,7 @@
  * Does NOT: isolate direction — callers render the result inside
  *           `<span dir="ltr">`, because the en dash (bidi class ON) between two
  *           numbers in an RTL paragraph otherwise resolves RTL and the range
- *           reads «15:00–09:30» (review #3717). Precedent: OpeningHours.jsx.
+ *           reads «15:00–09:30» (review #3717). Precedent: OpeningHours.jsx (deleted in MEH-2810).
  * History:  MEH-2469 (creation).
  */
 

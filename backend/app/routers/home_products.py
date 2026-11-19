@@ -132,7 +132,7 @@ def submit_rating(
     if not click:
         raise HTTPException(status_code=404, detail="קישור דירוג לא תקין")
     if click.rated:
-        raise HTTPException(status_code=400, detail="Already rated")
+        raise HTTPException(status_code=400, detail="כבר דירגתם את המוצר הזה")
 
     rating = HomeProductRating(
         click_id=click.id,
@@ -195,13 +195,13 @@ def get_home_product(
 ) -> HomeProductOut | dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
-        raise HTTPException(status_code=404, detail="Home product not found")
+        raise HTTPException(status_code=404, detail="המוצר לא נמצא")
     # MEH-386 (BOLA): hidden/deactivated listings must not be visible to public.
     # Owner and admin may still view them (e.g. owner sees why their listing was hidden).
     is_owner = viewer is not None and viewer.id == hp.user_id
     is_admin = viewer is not None and getattr(viewer, "role", None) == "admin"
     if (not hp.is_active or hp.is_hidden) and not (is_owner or is_admin):
-        raise HTTPException(status_code=404, detail="Home product not found")
+        raise HTTPException(status_code=404, detail="המוצר לא נמצא")
     return _enrich_home_product(hp, db)
 
 
@@ -288,11 +288,11 @@ def update_home_product(
 ) -> HomeProductOut | dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
-        raise HTTPException(status_code=404, detail="Home product not found")
+        raise HTTPException(status_code=404, detail="המוצר לא נמצא")
     # SECURITY FIX (IDOR): allow owner OR admin. Prior check only allowed
     # owner, which was inconsistent with CLAUDE.md rule #5.
     if hp.user_id != user.id and user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not your listing")
+        raise HTTPException(status_code=403, detail="אפשר לערוך רק מוצרים שפרסמתם")
     payload = data.model_dump(exclude_unset=True)
 
     # MEH-375: snapshot both photo + images BEFORE mutation so we can
@@ -343,10 +343,10 @@ def deactivate_home_product(
 ) -> dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
-        raise HTTPException(status_code=404, detail="Home product not found")
+        raise HTTPException(status_code=404, detail="המוצר לא נמצא")
     # SECURITY FIX (IDOR): owner OR admin may deactivate (CLAUDE.md rule #5).
     if hp.user_id != user.id and user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not your listing")
+        raise HTTPException(status_code=403, detail="אפשר לערוך רק מוצרים שפרסמתם")
     hp.is_active = False  # type: ignore[assignment]
     db.commit()
     return {"detail": "Listing deactivated"}
@@ -362,7 +362,7 @@ def log_whatsapp_click(
 ) -> dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
-        raise HTTPException(status_code=404, detail="Home product not found")
+        raise HTTPException(status_code=404, detail="המוצר לא נמצא")
     click = HomeProductWhatsAppClick(
         user_id=user.id,
         home_product_id=product_id,

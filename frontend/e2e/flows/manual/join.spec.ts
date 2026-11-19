@@ -644,7 +644,13 @@ test.describe("manual › /join (MEH-995)", () => {
         return ev;
       });
       expect(t.lit, "the header never lit up").toBeDefined();
-      expect(t.lit!, "the header waited for the shelf to stop").toBeLessThan(t.stop!);
+      // MEH-2978: <= the stop frame, not strictly before it. On a loaded runner
+      // the smooth scroll spans only a few long frames, so the frame in which
+      // the card crosses the centre can also be the last frame that moved —
+      // lit === stop, red once on run 43216127793 with no code change. The
+      // regression this guards (lighting only after a quiet period) lands at
+      // stop + 1 or later however long the frames are, so it still reds.
+      expect(t.lit!, "the header waited for the shelf to stop").toBeLessThanOrEqual(t.stop!);
       expect(t.panel, "the panel never followed the swipe").toBeDefined();
       expect(t.panel! - t.stop!, "the panel lagged the stop (frames)").toBeLessThanOrEqual(PANEL_LAG_FRAMES);
     });

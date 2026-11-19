@@ -276,7 +276,7 @@ def business_propose_change(  # noqa: PLR0913 — one argument per proposal fiel
         slot = next(
             (
                 s
-                for s in offered_slots(db, producer, row, now, lead_time_hours=0)
+                for s in offered_slots(db, producer, row, now, as_business=True)
                 if s.start == slot_start
                 and s.fulfilment == order.fulfilment
                 and (s.alcohol_ok or not has_alcohol)

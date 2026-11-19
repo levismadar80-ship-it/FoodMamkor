@@ -35,7 +35,7 @@ const CASES = [
   ["settings phone", "app/[locale]/settings/page.jsx", 'id="profile-phone"', { type: "tel", autoComplete: "tel" }],
   ["alerts phone", "components/AlertPrefsPanel.jsx", "value={phoneInput}", { type: "tel", autoComplete: "tel" }],
   ["footer newsletter email", "components/Footer.jsx", 'id="footer-newsletter-email"', { type: "email", autoComplete: "email" }],
-  ["admin lead phone", "app/[locale]/admin/outreach/page.jsx", 'outreach.modal_add.phone_placeholder', { type: "tel" }],
+  ["admin lead phone", "app/[locale]/admin/outreach/page.jsx", 'placeholder={t("outreach.modal_add.phone_placeholder")}', { type: "tel" }],
 ];
 
 describe("form fields open the right keyboard and offer saved details (MEH-3127)", () => {
@@ -47,6 +47,6 @@ describe("form fields open the right keyboard and offer saved details (MEH-3127)
   });
 
   it("the admin lead phone does NOT offer her own number (it's the business's)", () => {
-    expect(element("app/[locale]/admin/outreach/page.jsx", "outreach.modal_add.phone_placeholder")).not.toContain("autoComplete");
+    expect(element("app/[locale]/admin/outreach/page.jsx", 'placeholder={t("outreach.modal_add.phone_placeholder")}')).not.toContain("autoComplete");
   });
 });

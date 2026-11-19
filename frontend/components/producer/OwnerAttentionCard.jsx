@@ -12,7 +12,9 @@
  *           not rendered at all.
  * Related:  app/[locale]/producer/dashboard/page.js (mounts it under the
  *           greeting).
- * History:  MEH-3108 (creation); MEH-3316 (on-site orders waiting, first row).
+ * History:  MEH-3108 (creation); MEH-3316 (on-site orders waiting, first row);
+ *           MEH-3430 (no products yet → upload a menu, last row; not for an
+ *           organizer, who has no catalog).
  */
 
 import { useTranslations } from "next-intl";
@@ -25,11 +27,12 @@ const SIGNUP_HREF = {
 
 /**
  * The rows to show, in a fixed order: orders waiting (MEH-3316), reviews, the item with the most new
- * sign-ups, funded group buys. At most 4.
+ * sign-ups, funded group buys, no products yet (MEH-3430). At most 5.
  * @param {any} attention
+ * @param {boolean} [isOrganizer]
  * @returns {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]}
  */
-function attentionRows(attention) {
+function attentionRows(attention, isOrganizer = false) {
   if (!attention) return [];
   /** @type {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]} */
   const rows = [];
@@ -55,13 +58,18 @@ function attentionRows(attention) {
   if (funded > 0) {
     rows.push({ key: "group_buys", text: ["group_buys", { count: funded }], cta: "group_buys_cta", href: "/producer/dashboard/group-buys" });
   }
+  // MEH-3430: exactly 0 — the backend sends -1 when the count failed, and an
+  // old backend sends nothing; neither must tell her she has no products.
+  if (!isOrganizer && attention.products === 0) {
+    rows.push({ key: "menu", text: ["menu", {}], cta: "menu_cta", href: "/producer/dashboard/edit#products" });
+  }
   return rows;
 }
 
-/** @param {{ attention: any }} props */
-export default function OwnerAttentionCard({ attention }) {
+/** @param {{ attention: any, isOrganizer?: boolean }} props */
+export default function OwnerAttentionCard({ attention, isOrganizer = false }) {
   const t = useTranslations("dashboard.producer.attention");
-  const rows = attentionRows(attention);
+  const rows = attentionRows(attention, isOrganizer);
   if (rows.length === 0) return null;
   return (
     <section

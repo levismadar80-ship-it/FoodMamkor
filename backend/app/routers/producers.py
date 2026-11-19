@@ -16,7 +16,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import (
     get_current_user_lenient,
@@ -62,6 +62,7 @@ from app.services.analytics import (
 )
 from app.services.farmer_declaration import farmer_declaration_stamp  # MEH-3137
 from app.services.license_validation import ensure_license_for_categories
+from app.services.product_order_menu import attach_takes_site_orders
 from app.services.producer_listing import (
     MAX_CITIES_PER_QUERY,
     build_producers_query,
@@ -431,11 +432,14 @@ def get_producer_by_slug(
     producer = (
         db.query(Producer)
         .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
-            # so it doesn't widen the 3-way collection joinedload cartesian).
+            # MEH-3385: one SELECT per collection. Three collection
+            # joinedloads multiplied categories × products × delivery areas
+            # into one result set. Order comes from each relationship's
+            # order_by (models.py: categories by position, products by position).
+            selectinload(Producer.categories),
+            selectinload(Producer.products),
+            selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
             selectinload(Producer.locations),
             # MEH-1823: active_offer reads this collection — eager-load it here
             # or the property fires one query per producer on every list page.
@@ -476,6 +480,7 @@ def get_producer_by_slug(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
     # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
     result.kashrut_certs = [
         KashrutCertRef(badge_code=c.badge_code)
@@ -495,11 +500,14 @@ def get_producer(
     producer = (
         db.query(Producer)
         .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
-            # so it doesn't widen the 3-way collection joinedload cartesian).
+            # MEH-3385: one SELECT per collection. Three collection
+            # joinedloads multiplied categories × products × delivery areas
+            # into one result set. Order comes from each relationship's
+            # order_by (models.py: categories by position, products by position).
+            selectinload(Producer.categories),
+            selectinload(Producer.products),
+            selectinload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT).
             selectinload(Producer.locations),
             # MEH-1823: active_offer reads this collection — eager-load it here
             # or the property fires one query per producer on every list page.
@@ -540,6 +548,7 @@ def get_producer(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+    attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
     # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
     result.kashrut_certs = [
         KashrutCertRef(badge_code=c.badge_code)
@@ -711,7 +720,7 @@ def record_contact_click(
     10/minute per IP consistent with whatsapp-click.
     """
     if data.method not in _VALID_CONTACT_METHODS:
-        raise HTTPException(status_code=422, detail="method לא חוקי")
+        raise HTTPException(status_code=422, detail="סוג הפנייה לא תקין")
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
     # MEH-2156: owner/admin clicks are not audience, so they are not logged.
@@ -742,7 +751,9 @@ def join_delivery_waitlist(
     producer_id: UUID,
     data: DeliveryWaitlistIn,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_lenient),
+    # MEH-1627: an ordinary form that can retry, so `_optional` (an expired
+    # token is a 401 and the client refreshes), never `_lenient`.
+    current_user: User | None = Depends(get_current_user_optional),
 ) -> DeliveryWaitlistOut:
     """«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
 

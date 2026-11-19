@@ -262,7 +262,7 @@ def get_event(
         .first()
     )
     if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     # MEH-1161: a pending/rejected producer's event is not consented-to-public.
     # Strangers get 404 (not 403) so the UUID can't be used to enumerate queue
     # state — REUSES: backend/app/routers/producers.py:210-217 (MEH-254) and
@@ -272,7 +272,7 @@ def get_event(
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == event.producer_id
         if not (is_admin or is_owner):
-            raise HTTPException(status_code=404, detail="Event not found")
+            raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     return _serialize(event)
 
 
@@ -296,7 +296,7 @@ def create_event(
             },
         )
     if not user.producer_id:
-        raise HTTPException(status_code=403, detail="Producer account required")
+        raise HTTPException(status_code=403, detail="הפעולה זמינה רק לחשבון של בית עסק")
     # MEH-3224 (D6): a past date would publish a dead event and fire the
     # new-event alert to every follower.
     refuse_past_date(data.event_date)
@@ -416,12 +416,12 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
 ) -> EventOut:
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     # MEH-1001: 404 (not 403) on cross-owner access so a stranger can't
     # confirm another producer's event exists. Stays owner-only — admin
     # management lives on admin endpoints (REUSES producer_recipes.py:203-206).
     if event.producer_id != user.producer_id:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
 
     changes = data.model_dump(exclude_unset=True)
     # MEH-3224 (D6): moving an event INTO the past is refused; an edit that
@@ -517,13 +517,13 @@ def delete_event(
 ) -> dict[str, Any]:
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     is_owner = user.producer_id == event.producer_id
     is_admin = getattr(user, "role", None) == "admin"
     # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
     # event's existence isn't leaked. Admin-override preserved (admin → 200).
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404, detail="האירוע לא נמצא")
     # MEH-2852: read before the delete — the page goes with the row.
     was_public = indexnow.is_public_owner(event.producer)
     # MEH-3227: registrants are told before the cascade removes their rows.

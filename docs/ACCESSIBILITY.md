@@ -88,6 +88,7 @@ The net lives at `frontend/e2e/flows/12-axe-a11y.spec.ts`. It loads 6 routes
 `critical` / `serious`** axe violations (WCAG 2a/2aa/21a/21aa tags). `moderate`/
 `minor` violations are logged to the console (for triage) but do NOT fail the
 run — the standing MODERATE backlog is tracked in the audit doc, not gated.
+The extended block (MEH-921) adds the public guest routes, and since 19/11 (MEH-3351) also the launch pages `/join` and `/join/pricing`. `/rescue` is not scanned: the E2E build runs with the rescue flag off, so the page is a 404 there.
 
 ### Local (against a local dev server)
 

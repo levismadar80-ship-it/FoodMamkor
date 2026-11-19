@@ -18,6 +18,20 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
+# MEH-3176 follow-up (18/11): warn until BLOCK_FROM, block from that date — the
+# 15–18/11 audit found this line missing on most PRs while it only warned.
+BLOCK_FROM="2026-11-22"
+blocking_now() {
+  local today="${GUARD_TODAY:-$(TZ=Asia/Jerusalem date +%F)}"
+  [[ ! "$today" < "$BLOCK_FROM" ]]
+}
+release_or_bot() {  # staging → main release PRs and dependabot carry no evidence lines
+  case "${GITHUB_HEAD_REF:-}" in
+    dependabot/*) return 0 ;;
+    staging) [ "${GITHUB_BASE_REF:-}" = "main" ] && return 0 ;;
+  esac
+  return 1
+}
 critical_files() {
   # The paths in [tool.mutmut] only_mutate, prefixed backend/.
   python3 -I - <<'PY'
@@ -73,6 +87,11 @@ if [ -z "$hit" ]; then
   echo "mutation-guard: OK — no money-or-permissions file changed"
 elif grep -qiE '^##[[:space:]]+Mutation[[:space:]]*$|^Mutation:[[:space:]]*n/a' <<<"$body"; then
   echo "mutation-guard: OK — PR body has the Mutation section"
+elif release_or_bot; then
+  echo "mutation-guard: skipped — release or dependabot PR"
+elif blocking_now; then
+  echo "mutation-guard: FAIL (blocking since $BLOCK_FROM) — $hit is in the mutation set, and the PR body has no «## Mutation» section or «Mutation: n/a — <reason>» line (testing.md, MEH-3295)"
+  exit 1
 else
   echo "mutation-guard: WARNING — $hit is in the mutation set, and the PR body has no «## Mutation» section (paste what bash scripts/mutation/run.sh printed) or «Mutation: n/a — <reason>» line (testing.md, MEH-3295)"
 fi

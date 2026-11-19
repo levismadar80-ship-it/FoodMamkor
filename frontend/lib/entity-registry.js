@@ -136,6 +136,9 @@ export const NON_ENTITY_ROUTES = {
   // MEH-3377. A signed, expiring read of a draft that is not public yet; the
   // entity it shows gets its own page (/[slug]) only once it is published.
   "app/[locale]/draft-preview/[token]": "read-only preview link for an unpublished draft",
+  // MEH-3216 stage 5a. One buyer's private order (noindex), opened by the
+  // token in the link; not a public entity page.
+  "app/[locale]/order/[id]": "private order status page for one buyer",
   "app/[locale]/p/[slug]": "redirect stub to /[slug] (MEH-2099)",
   "app/[locale]/producers/[category]/[region]": "listing page, not one entity",
   "app/[locale]/producers/diet/[dietSlug]": "listing page, not one entity",

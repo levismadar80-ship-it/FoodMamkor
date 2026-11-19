@@ -168,7 +168,7 @@ export function ContactChannelsCard({
       {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
       {/* MEH-1306: back-link to the public contact-card section. */}
-      <ViewOnPageLink producerId={profile?.id} anchor="section-contact" />
+      <ViewOnPageLink producerId={profile?.id} status={profile?.status} anchor="section-contact" />
 
       <div className="space-y-3">
         <Input type="tel" inputMode="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}

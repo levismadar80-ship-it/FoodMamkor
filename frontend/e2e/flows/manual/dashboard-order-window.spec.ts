@@ -1,6 +1,15 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { MAX_ORDER_RANGES_PER_DAY, nextOrderRange } from "../../../lib/order-window";
 
+// MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
+// Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
+// and the fake token draws a 401 that logs the page out. 404 = ordering off.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+});
+
 /**
  * Spec:     manual/dashboard-order-window — MEH-1249 chunk 11e of 12
  * Purpose:  Convert the CONVERT-verdict rows of the order-window card
@@ -185,7 +194,13 @@ test.describe("order-window card — several ranges per day", () => {
     await stubEdit(page);
     await openWindow(page);
     expect(MAX_ORDER_RANGES_PER_DAY, "control: the cap this test observes").toBe(3);
-    for (let n = 1; n < MAX_ORDER_RANGES_PER_DAY; n++) await addRange(page, 0).click();
+    // MEH-3434: wait for each new row before the next click. Two back-to-back
+    // clicks left only two rows once; with a wait per click a lost click and a
+    // re-seed that wipes an added row fail on different lines.
+    for (let n = 1; n < MAX_ORDER_RANGES_PER_DAY; n++) {
+      await addRange(page, 0).click();
+      await expect(from(page, SUN, n + 1), `row ${n + 1} after click ${n}`).toBeVisible();
+    }
     await expect(from(page, SUN, MAX_ORDER_RANGES_PER_DAY)).toBeVisible();
     await expect(addRange(page, 0)).toHaveCount(0);
     await expect(removeBtns(page)).toHaveCount(MAX_ORDER_RANGES_PER_DAY);
@@ -196,7 +211,9 @@ test.describe("order-window card — several ranges per day", () => {
     await stubEdit(page);
     await openWindow(page);
     await addRange(page, 0).click();
+    await expect(from(page, SUN, 2)).toBeVisible(); // MEH-3434: same double-click shape as the cap test
     await addRange(page, 0).click();
+    await expect(from(page, SUN, 3)).toBeVisible();
     await from(page, SUN, 3).fill("18:00");
     await to(page, SUN, 3).fill("21:00");
 

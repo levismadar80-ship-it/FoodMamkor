@@ -8,6 +8,13 @@
 #             rule 38 — UI change → a `Self-check:` line (or `## Self-check`) in the body
 #             rule 22 — Hebrew added to he.json → a `Copy approved:` line in the body
 #             rule 40 — frontend/ or backend/app change → the `run-e2e` label
+#             rule 5a — frontend/ or backend/app change → a `Reviewer:` line
+#                       (the fresh reviewer subagent ran and what it found)
+#             ADR-016 — RED change (backend/alembic/versions/, backend/app/auth.py,
+#                       backend/app/routers/upload.py) → the `Reviewer:` line
+#                       names Fable, or says Fable was refused (testing.md)
+#             security.md — backend/app/routers/ or auth.py change → a
+#                       `Security review:` line (the built-in /security-review)
 # Touches:  nothing — reads the PR event (body, labels) and the diff; stdout only.
 # Does NOT: check that the evidence is true: that the screenshots were read,
 #           that the self-check was done, that the approval is real. It makes
@@ -24,6 +31,10 @@
 #           22, 23, 38, 40.
 # History:  MEH-3176 follow-up, 18/11/2026 — inventory of memory-only rules;
 #           these four were the top risks a mechanical check can reach.
+#           18/11 later: the 15–18/11 audit found 32 router PRs merged without
+#           /security-review and 19 RED PRs naming no Fable reviewer, and the
+#           retroactive review then found real bugs (#4811–#4813) — so the
+#           reviewer and security-review lines joined the same switch.
 #
 # Overrides for the self-test: PR_EVIDENCE_BODY, PR_EVIDENCE_LABELS (one per
 # line), PR_EVIDENCE_FILES (one per line), PR_EVIDENCE_HE_ADDED, PR_EVIDENCE_TODAY.
@@ -107,8 +118,15 @@ answered() {
   grep -qiE "^[[:space:]]*([-*][[:space:]]+)?(\*\*)?$1:(\*\*)?[[:space:]]*(\*\*)?[[:space:]]*[^[:space:]*]|^#{2,3}[[:space:]]+$1[[:space:]]*\$" <<<"$2"
 }
 
+# reviewed BODY — a `Reviewer:` line, or a heading that names a reviewer
+# (`## Fresh reviewer (rule 5a)`, `## Independent review`): the shapes PR
+# bodies used 15–18/11.
+reviewed() {
+  answered "Reviewer" "$1" || grep -qiE "^#{2,3}[[:space:]].*(reviewer|independent review)" <<<"$1"
+}
+
 check() {
-  local body labels files rc he ui="" code="" qa=0 missing=()
+  local body labels files rc he ui="" code="" router="" red="" qa=0 missing=()
   body="$(pr_body)"; rc=$?
   if [ "$rc" -eq 1 ]; then echo "pr-evidence-guard: skipped — not a pull request"; return 0; fi
   [ "$rc" -eq 3 ] && missing+=("this is a pull_request event but its payload could not be read")
@@ -128,6 +146,8 @@ check() {
       is_ui_file "$f" && ui="$f"
       case "$f" in frontend/*|backend/app/*) code="$f" ;; esac
       case "$f" in qa-artifacts/*) qa=$((qa + 1)) ;; esac
+      case "$f" in backend/app/routers/*|backend/app/auth.py) router="$f" ;; esac
+      case "$f" in backend/alembic/versions/*|backend/app/auth.py|backend/app/routers/upload.py) red="$f" ;; esac
     done <<<"$files"
     he="$(he_added)"; rc=$?
     [ "$rc" -eq 2 ] && missing+=("could not read the $HE_FILE diff")
@@ -140,6 +160,14 @@ check() {
     fi
     if [ -n "$code" ]; then
       grep -qxF "run-e2e" <<<"$labels" || missing+=("rule 40: $code changed but the PR has no run-e2e label")
+      reviewed "$body" || missing+=("rule 5a: $code changed but no 'Reviewer:' line (the fresh reviewer subagent: model + what it found)")
+    fi
+    if [ -n "$red" ] && reviewed "$body" \
+       && ! grep -iE "^([[:space:]]*([-*][[:space:]]+)?(\*\*)?Reviewer:|#{2,3}[[:space:]].*review).*fable" <<<"$body" >/dev/null; then
+      missing+=("RED tier: $red changed but the 'Reviewer:' line does not name Fable (or say Fable was refused and Opus ran)")
+    fi
+    if [ -n "$router" ]; then
+      answered "Security review" "$body" || missing+=("security.md: $router changed but no 'Security review:' line (/security-review findings, or 'no findings')")
     fi
   fi
   if [ "${#missing[@]}" -eq 0 ]; then echo "pr-evidence-guard: OK"; return 0; fi
@@ -162,7 +190,7 @@ self_test() {
     if [ "$got" = "$2" ]; then echo "  [ok] $1 → $got"; else echo "  [XX] $1 → $got, expected $2"; status=1; fi
   }
   local ui=$'frontend/components/Header.jsx\nqa-artifacts/MEH-1/a-375.webp\nqa-artifacts/MEH-1/a-1440.webp'
-  local good=$'Self-check: 1-5 done\nCopy approved: thread 18/11'
+  local good=$'Self-check: 1-5 done\nCopy approved: thread 18/11\nReviewer: Sonnet, no findings'
   local he='+  "x": "שלום",'
   echo "pr-evidence-guard --self-test"
   run_case "docs-only PR, empty body"           PASS ""      ""        "docs/README.md" ""
@@ -171,17 +199,26 @@ self_test() {
   run_case "UI change, one screenshot"          FAIL "$good" "run-e2e" $'frontend/components/Header.jsx\nqa-artifacts/MEH-1/a.webp' ""
   run_case "UI change, no Self-check line"      FAIL "Copy approved: x" "run-e2e" "$ui" ""
   run_case "UI change, empty Self-check:"       FAIL $'Self-check:\n' "run-e2e" "$ui" ""
-  run_case "Self-check as a heading"            PASS $'## Self-check\n1. green' "run-e2e" "$ui" ""
+  run_case "Self-check as a heading"            PASS $'## Self-check\n1. green\nReviewer: x' "run-e2e" "$ui" ""
   run_case "UI change, no run-e2e label"        FAIL "$good" "bug"     "$ui" ""
-  run_case "test-only frontend change, label"   PASS ""      "run-e2e" "frontend/__tests__/A.test.js" ""
+  run_case "test-only frontend change, label"   PASS "Reviewer: x" "run-e2e" "frontend/__tests__/A.test.js" ""
   run_case "backend change, no label"           FAIL ""      ""        "backend/app/main.py" ""
-  run_case "Hebrew added, no Copy approved"     FAIL "Self-check: ok" "run-e2e" "$ui" "$he"
+  run_case "backend change, label + reviewer"   PASS "Reviewer: Sonnet, none" "run-e2e" "backend/app/main.py" ""
+  run_case "backend change, no Reviewer line"   FAIL ""      "run-e2e" "backend/app/main.py" ""
+  run_case "router change, no Security review"  FAIL "Reviewer: Sonnet" "run-e2e" "backend/app/routers/search.py" ""
+  run_case "router change, Security review"     PASS $'Reviewer: Sonnet\nSecurity review: no findings' "run-e2e" "backend/app/routers/search.py" ""
+  run_case "migration, reviewer not Fable"      FAIL "Reviewer: Sonnet" "run-e2e" $'backend/alembic/versions/a.py\nbackend/app/models/x.py' ""
+  run_case "migration, Fable reviewer"          PASS "Reviewer: Fable, 1 finding fixed" "run-e2e" $'backend/alembic/versions/a.py\nbackend/app/models/x.py' ""
+  run_case "auth.py, Fable refused + Opus"      PASS $'Reviewer: Opus (Fable refused)\nSecurity review: none' "run-e2e" "backend/app/auth.py" ""
+  run_case "reviewer as a heading"              PASS $'## Fresh reviewer (rule 5a)\nNo findings' "run-e2e" "backend/app/main.py" ""
+  run_case "Fable named elsewhere, not Reviewer" FAIL $'Reviewer: Sonnet\nWe skipped Fable' "run-e2e" "backend/alembic/versions/a.py" ""
+  run_case "Hebrew added, no Copy approved"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" "$he"
   run_case "Hebrew added, Copy approved"        PASS "$good" "run-e2e" "$ui" "$he"
-  run_case "English-only he.json change"        PASS "Self-check: ok" "run-e2e" "$ui" '+  "id": "x",'
+  run_case "English-only he.json change"        PASS $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" '+  "id": "x",'
   PR_EVIDENCE_HEAD=staging PR_EVIDENCE_BASE=main run_case "release PR staging → main skipped" PASS "" "" "$ui" "$he"
   PR_EVIDENCE_HEAD=staging PR_EVIDENCE_BASE=staging run_case "head named staging into staging still checked" FAIL "" "" "backend/app/main.py" ""
   PR_EVIDENCE_HEAD=dependabot/npm/x run_case "dependabot PR skipped" PASS "" "" "frontend/package-lock.json" ""
-  run_case "he.json line moved, not new"            PASS "Self-check: ok" "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "שלום",'
+  run_case "he.json line moved, not new"            PASS $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "שלום",'
   run_case "he.json line changed = new copy"        FAIL "Self-check: ok" "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "להתראות",'
   CASE_TODAY="2026-11-21" run_case "before BLOCK_FROM only warns" PASS "" "" "backend/app/main.py" ""
   local got; got="$(GITHUB_HEAD_REF= GITHUB_BASE_REF= GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/nonexistent PR_EVIDENCE_TODAY="$BLOCK_FROM" \

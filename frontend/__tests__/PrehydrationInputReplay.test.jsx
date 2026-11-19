@@ -17,7 +17,7 @@ import * as React19 from "next/dist/compiled/react";
 import { renderToString as render19 } from "next/dist/compiled/react-dom/server.browser";
 import { hydrateRoot as hydrate19 } from "next/dist/compiled/react-dom/client";
 import { replayPrehydrationInput, startPrehydrationCapture, stopPrehydrationCapture, onEarlyInput, SETTLE_MS } from "@/lib/replay-prehydration-input";
-import { PREHYDRATION_CAPTURE_KEY, PREHYDRATION_CAPTURE_SCRIPT } from "@/lib/prehydration-capture-inline";
+import { PREHYDRATION_CAPTURE_KEY, PREHYDRATION_CAPTURE_SCRIPT, PREHYDRATION_EVENT_MARK } from "@/lib/prehydration-capture-inline";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -409,5 +409,57 @@ describe("prehydration <head> capture script (MEH-3164)", () => {
     React19.act(() => root.unmount());
     container.remove();
     window[key] = saved;
+  });
+
+  // MEH-3164 (19/11): the shape measured on WebKit. ONE trusted keystroke:
+  // the head script hears it while the field is unowned, React then hydrates
+  // the field synchronously inside the same dispatch (owned, emptied), and
+  // the module's listener behind React's hears the very same event. It must
+  // not read it as "she typed after hydration".
+  it("keeps the capture when React hydrates the field inside the keystroke's own dispatch", () => {
+    expect(PREHYDRATION_CAPTURE_SCRIPT).toContain(PREHYDRATION_EVENT_MARK);
+    const key = PREHYDRATION_CAPTURE_KEY;
+    const saved = window[key];
+    const real = document.addEventListener;
+    let headListener;
+    delete window[key];
+    document.addEventListener = (type, fn) => {
+      headListener = fn;
+    };
+    try {
+      new Function(PREHYDRATION_CAPTURE_SCRIPT)();
+    } finally {
+      document.addEventListener = real;
+    }
+    const map = window[key];
+    const input = document.createElement("input");
+    input.value = "לחם";
+    const keystroke = { target: input, isTrusted: true };
+    headListener(keystroke); // field not owned yet: captured, event marked
+    expect(keystroke[PREHYDRATION_EVENT_MARK]).toBe(1);
+    input["__reactProps$test"] = { value: "" }; // sync hydration in the same dispatch
+    input.value = "";
+    headListener(keystroke); // the same event again: the mark keeps the capture
+    expect(map.get(input)).toBe("לחם");
+    headListener({ target: input, isTrusted: true }); // control: a new keystroke wins
+    expect(map.has(input)).toBe(false);
+    window[key] = saved;
+  });
+
+  it("the module drops a capture only for an unmarked trusted event on an owned field", () => {
+    const input = document.createElement("input");
+    input.type = "text";
+    document.body.append(input);
+    input.value = "לחם";
+    const first = { target: input, isTrusted: true };
+    onEarlyInput(first); // unowned: remembered, and the event is marked
+    expect(first[PREHYDRATION_EVENT_MARK]).toBe(1);
+    input["__reactProps$test"] = { value: "", onChange: () => {} };
+    input.value = "";
+    onEarlyInput(first); // same event after sync hydration: capture kept
+    expect(window[PREHYDRATION_CAPTURE_KEY].get(input)).toBe("לחם");
+    onEarlyInput({ target: input, isTrusted: true }); // a new keystroke after hydration
+    expect(window[PREHYDRATION_CAPTURE_KEY].has(input)).toBe(false);
+    input.remove();
   });
 });

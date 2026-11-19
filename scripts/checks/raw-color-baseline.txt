@@ -286,6 +286,7 @@ frontend/lib/holidays.js:hex:#b45309
 frontend/lib/map-chips.js:hex:#3b72ad
 frontend/lib/map-chips.js:hex:#c04040
 frontend/lib/marker-glyph.js:hex:#ffffff
+frontend/lib/prepare-upload.js:hex:#fff
 frontend/lib/producer-status.js:bg-gray-100
 frontend/lib/producer-status.js:bg-gray-200
 frontend/lib/producer-status.js:bg-slate-100

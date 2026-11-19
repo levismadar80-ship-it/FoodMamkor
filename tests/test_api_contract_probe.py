@@ -160,7 +160,7 @@ def test_cross_env_counts_served_vs_missing_404_as_drift(monkeypatch, capsys):
     def answer(_m, url):
         if "/events/0" in url:
             if url.startswith(STAGING):
-                return (404, {"detail": "Event not found"})
+                return (404, {"detail": "האירוע לא נמצא"})
             return ROUTING_404
         return (200, [])
 

@@ -214,7 +214,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
       {/* MEH-1306: back-link to the public gallery section. */}
-      <ViewOnPageLink producerId={profile?.id} anchor="section-images" />
+      <ViewOnPageLink producerId={profile?.id} status={profile?.status} anchor="section-images" />
 
       {/* MEH-1352: the free-plan cap was invisible until the 403 on the 4th
           upload. Show X/cap upfront; numeric span is dir="ltr" so the bidi

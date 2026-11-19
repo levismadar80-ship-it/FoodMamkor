@@ -31,8 +31,9 @@ new router:
   **Default to `_optional`.** `_lenient` exists for exactly one situation:
   the caller physically cannot retry — fire-and-forget telemetry sent via
   `navigator.sendBeacon` / `fetch(keepalive:true)` as the tab unloads, which
-  has no response handler, so a 401 loses the event outright. Only the two
-  click-tracking endpoints in `producers.py` qualify. Reaching for `_lenient`
+  has no response handler, so a 401 loses the event outright. Only the three
+  beacon endpoints in `producers.py` qualify: whatsapp-click, contact-click and
+  `/producers/{id}/view` (MEH-2159). Reaching for `_lenient`
   to quiet a 401 anywhere else re-creates the MEH-1627 bug: an expired token
   silently downgrades a logged-in user to anonymous, and the handler then
   takes its anonymous branch — which is how a producer upgrade turned into an

@@ -736,3 +736,18 @@ class TestHostConfirmStatus:
         )
         db.expire_all()
         assert _entries(db, p.id)[0].host_confirmed_at is not None
+
+
+def test_an_expired_token_is_a_401_not_an_anonymous_signup(client, db):
+    """MEH-1627: the waitlist form can retry, so it takes the three-state
+    `_optional` contract. An expired token must answer 401 (the client
+    refreshes and retries) instead of silently becoming anonymous, which
+    would drop the signed-in test account's mail suppression (MEH-2952)."""
+    p = make_producer(db)
+    r = client.post(
+        f"/producers/{p.id}/delivery-waitlist",
+        json={"email": "w@example.com", "city": "חיפה"},
+        headers={"Authorization": "Bearer not-a-real-token"},
+    )
+    assert r.status_code == 401, r.text
+    assert _entries(db, p.id) == []

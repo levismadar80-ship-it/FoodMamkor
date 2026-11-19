@@ -1171,6 +1171,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_admin_new_business_suggestion",
         "send_email",
     ): (1, NONE, "same"),
+    # MEH-3410: an owner claimed a draft — admin WhatsApp + email.
+    ("services/auth_notifications.py", "notify_admin_draft_claimed", "send_text"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test or user.is_test",
+    ),
+    ("services/auth_notifications.py", "notify_admin_draft_claimed", "send_email"): (
+        1,
+        BUS,
+        "same",
+    ),
     ("services/auth_notifications.py", "notify_admin_new_producer", "send_template"): (
         1,
         BUS,

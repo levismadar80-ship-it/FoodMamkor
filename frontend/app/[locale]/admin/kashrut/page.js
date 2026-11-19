@@ -383,6 +383,7 @@ export default function AdminKashrutPage() {
               value={revokeNotes}
               onChange={(e) => setRevokeNotes(e.target.value)}
               placeholder={t("kashrut.revoke_modal.placeholder")}
+              aria-labelledby="kashrut-revoke-title"
               className="w-full border rounded-sm p-3 text-sm resize-none h-24 focus-ring"
             />
             <div className="flex gap-3 mt-4">
@@ -415,6 +416,7 @@ export default function AdminKashrutPage() {
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               placeholder={t("kashrut.reject_modal.placeholder")}
+              aria-labelledby="kashrut-reject-title"
               className="w-full border rounded-sm p-3 text-sm resize-none h-24 focus-ring"
             />
             <div className="flex gap-3 mt-4">

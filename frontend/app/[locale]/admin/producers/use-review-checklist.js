@@ -13,8 +13,8 @@
  *           approval: the confirm dialog is soft, exactly as in Phase 1.
  * Related:  ./AdminReviewChecklist.jsx (presentation),
  *           backend/app/routers/admin_checklist.py (the four endpoints),
- *           frontend/lib/admin-review-checklist.js (Phase 1 constant — now the
- *           migration's seed; only the title + confirm copy are still read).
+ *           frontend/lib/admin-review-checklist.js (the confirm-copy helper;
+ *           the Phase 1 item array is gone, MEH-2954 — the items are rows).
  * History:  MEH-1396 (creation, static + session-local);
  *           MEH-1399 (items from API, ticks persisted);
  *           MEH-2175 (soft confirm fails closed when the list is unknown;

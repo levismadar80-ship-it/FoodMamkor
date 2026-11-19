@@ -140,9 +140,20 @@ describe("the business fetch", () => {
 
 describe("moving to another group", () => {
   it("drops the previous business before the next one loads", async () => {
-    const { rerender } = render(<GroupBuyDetailClient id="gb-1" />);
+    const { rerender, container } = render(<GroupBuyDetailClient id="gb-1" />);
     // Control: the first business's checker is on screen.
     await screen.findByTestId("delivery-checker");
+    // MEH-3023: record every DOM state, not only the one the final assertion
+    // happens to read. The old code committed gb-2 beside p-1's checker for
+    // one frame and cleared it in an effect; findByText could land on that
+    // frame or the next, so the end-state check alone was flaky.
+    const overlaps = [];
+    const observer = new MutationObserver(() => {
+      if (container.textContent.includes("רפת הגליל") && container.querySelector('[data-testid="delivery-checker"]')) {
+        overlaps.push(true);
+      }
+    });
+    observer.observe(container, { childList: true, subtree: true, characterData: true });
     // The second group belongs to another business whose fetch never settles.
     get.mockImplementation((url) => {
       if (url === "/group-buys/gb-2") {
@@ -153,6 +164,9 @@ describe("moving to another group", () => {
     });
     rerender(<GroupBuyDetailClient id="gb-2" />);
     await screen.findByText(by("רפת הגליל"));
+    await act(async () => {});
+    observer.disconnect();
+    expect(overlaps).toHaveLength(0);
     expect(screen.queryByTestId("delivery-checker")).toBeNull();
   });
 });

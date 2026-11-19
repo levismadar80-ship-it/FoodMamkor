@@ -16,7 +16,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, X } from "@phosphor-icons/react";
+import { CaretDown, Plus, X } from "@phosphor-icons/react";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -75,8 +75,8 @@ function WindowRow({ row, onChange, onRemove }) {
   );
 }
 
-/** @param {{ windows: any[], orderWindow: any }} props */
-export default function OrderWindowsCard({ windows, orderWindow }) {
+/** @param {{ windows: any[], orderWindow: any, collapsed?: boolean }} props — collapsed: see OrderSettingsCard */
+export default function OrderWindowsCard({ windows, orderWindow, collapsed = false }) {
   const t = useTranslations("dashboard.producer.orders.windows");
   const tHours = useTranslations("dashboard.producer.order_window");
   const prefilled = windows.length === 0 ? prefillFrom(orderWindow) : [];
@@ -96,8 +96,15 @@ export default function OrderWindowsCard({ windows, orderWindow }) {
   };
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 space-y-3" data-testid="order-windows">
-      <h2 className="font-bold text-lg text-text">{t("title")}</h2>
+    <details
+      open={!collapsed}
+      className="group rounded-lg border border-border bg-surface p-4 space-y-3"
+      data-testid="order-windows"
+    >
+      <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
+        <h2 className="font-bold text-lg text-text">{t("title")}</h2>
+        <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+      </summary>
       <p className="text-sm text-fg-muted">{t("lead")}</p>
       {prefilled.length > 0 && <InlineMessage tone="info">{t("prefilled")}</InlineMessage>}
       {rows.length === 0 && <p className="text-sm text-fg-muted">{t("empty")}</p>}
@@ -116,6 +123,6 @@ export default function OrderWindowsCard({ windows, orderWindow }) {
       </div>
       {state.error && <InlineMessage tone="error">{state.error}</InlineMessage>}
       {state.saved && <InlineMessage tone="success">{t("saved")}</InlineMessage>}
-    </section>
+    </details>
   );
 }

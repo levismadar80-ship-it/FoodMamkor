@@ -50,7 +50,7 @@ SHOWN FAILING (MEH-1619), with what the existing 27-test suite in
       the commit — the shape a status-only test cannot see
       MINE: patch-changes-nothing                  OLD: 27 passed
   R3  the refusal names the case: "Recipe belongs to another business"
-      for a foreign row, "Recipe not found" for a missing one
+      for a foreign row, "המתכון לא נמצא" for a missing one
       MINE: 404-no-leak                            OLD: 27 passed
   R4  `_validate_product_ids` stops filtering by owner (`foreign = []`)
       MINE: cross-owner-product                    OLD: 1 failed

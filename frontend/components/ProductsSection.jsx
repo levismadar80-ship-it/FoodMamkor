@@ -13,7 +13,8 @@
  *           settings/page.jsx and mounted in the edit tab — was defined but
  *           never rendered); MEH-1809 (unified submit validation: all field
  *           errors computed together, rendered inline via ui/Input, focus to
- *           the first invalid field — replaced the one-at-a-time setError chain).
+ *           the first invalid field — replaced the one-at-a-time setError chain);
+ *           MEH-3430 (mounts MenuImport — upload a menu, review, publish).
  */
 "use client";
 
@@ -31,11 +32,13 @@ import { chipIcon } from "@/lib/chip-icons";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import api from "@/lib/api";
 import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
+import { prepareUpload } from "@/lib/prepare-upload";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
+import MenuImport from "@/components/MenuImport";
 import ProductOrganizer from "@/components/ProductOrganizer";
 import { orderProducts } from "@/lib/product-order";
 import Input from "@/components/ui/Input";
@@ -285,8 +288,11 @@ export default function ProductsSection({
   }, [products, onCountChange]);
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    // MEH-3400: a big camera photo is shrunk first, so the size check below
+    // only refuses what still is too large after that.
+    const file = await prepareUpload(picked);
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
       setError(tErr("upload_type"));
@@ -409,8 +415,11 @@ export default function ProductsSection({
   };
 
   const handleEditImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    // MEH-3400: a big camera photo is shrunk first, so the size check below
+    // only refuses what still is too large after that.
+    const file = await prepareUpload(picked);
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
       setError(tErr("upload_type"));
@@ -578,6 +587,16 @@ export default function ProductsSection({
           allows one per card when it covers every field, which it does here —
           name, description and price all surface in the same public list. */}
       <p className="text-xs text-fg-muted mb-3">{t("where")}</p>
+
+      {/* MEH-3430: «העלו תפריט» — a strip at 0–2 products, a button at 3+.
+          Steps aside while a product form is open; a review in progress stays. */}
+      {products && !loadError && (
+        <MenuImport
+          productCount={products.length}
+          hidden={adding || editingId !== null}
+          onPublished={() => setReloadKey((k) => k + 1)}
+        />
+      )}
 
       {/* MEH-2094: the toggle's own guidance line (MEH-1539 principle 4 — a
           dashboard field states what it is AND where it appears). With zero

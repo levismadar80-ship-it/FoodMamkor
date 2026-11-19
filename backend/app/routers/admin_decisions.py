@@ -377,7 +377,7 @@ def request_producer_changes(
     """
     feedback = (body.feedback or "").strip()
     if not feedback:
-        raise HTTPException(status_code=400, detail="feedback is required")
+        raise HTTPException(status_code=400, detail="יש לכתוב משוב")
 
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:

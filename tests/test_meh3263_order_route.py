@@ -22,6 +22,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.exc import IntegrityError
 
+from app.models.catalog import ProducerLocation
 from app.models.models import DeliveryArea, Product, User
 from app.models.product_orders import (
     PRODUCT_ORDER_CODE_STATUSES,
@@ -39,6 +40,7 @@ from app.services import product_order_actions as actions
 from app.services import product_order_create as create_module
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
+from app.services import product_order_views as views
 from app.services.product_order_views import BUYER_VIEW_AFTER_CLOSE, mask_phone
 from app.utils.clock import utc_now
 from tests.conftest import auth_header, make_producer, make_user
@@ -56,6 +58,7 @@ REVISION = (
 PHONE = "050-123-4567"
 PHONE_STORED = "972501234567"
 OTHER_PHONE = "0529876543"
+THIRD_PHONE = "0541112233"
 
 
 @pytest.fixture
@@ -84,7 +87,12 @@ class Shop:
         )
         self.owner.producer_id = self.producer.id
         self.owner.is_producer = True
-        fields = {"enabled": True, "lead_time_hours": 0, "cancel_cutoff_hours": 2}
+        fields = {
+            "enabled": True,
+            "lead_time_hours": 0,
+            "cancel_cutoff_hours": 2,
+            "business_id_number": "512345678",
+        }
         fields.update(settings)
         db.add(ProducerOrderSettings(producer_id=self.producer.id, **fields))
         self.bread = Product(
@@ -200,6 +208,14 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
         client.post(
             "/product-orders",
             json=valid_order_payload(shop, "2026-11-20T10:00:00Z", "123456"),
+        ),
+        client.post(
+            "/product-orders/quote",
+            json={
+                "producer_id": shop.id,
+                "items": [{"product_id": str(shop.bread.id), "qty": 1}],
+                "fulfilment": "pickup",
+            },
         ),
         client.post("/product-orders/status", json=ref),
         client.post("/product-orders/status/cancel", json=ref),
@@ -732,13 +748,16 @@ def test_a_delivery_order_stores_the_city_the_fee_and_the_address(
 def test_auto_confirm_fills_a_slot_up_to_the_cap_and_no_further(
     client, db, flag_on, sent
 ):
+    # MEH-3216 gaps: the cap is the business's one cap per slot, so the order
+    # past it is not left pending; the slot is gone (see the manual case below).
     shop = Shop(db, auto_confirm=True, auto_confirm_slot_cap=1)
     slot = slot_of(client, shop)
     first = send(client, shop, sent, slot_start=slot).json()
-    second = send(client, shop, sent, slot_start=slot, phone=OTHER_PHONE).json()
-    assert (first["status"], second["status"]) == ("confirmed", "pending")
+    second = send(client, shop, sent, slot_start=slot, phone=OTHER_PHONE)
+    assert first["status"] == "confirmed"
+    assert second.status_code == 409
+    assert second.json()["detail"] == create_module.SLOT_GONE_DETAIL
     assert len(first["pickup_code"]) == 4 and first["final_total_agorot"] == 5600
-    assert second["pickup_code"] is None
     events = (
         db.query(ProductOrderEvent)
         .filter_by(order_id=uuid.UUID(first["id"]))
@@ -751,12 +770,125 @@ def test_auto_confirm_fills_a_slot_up_to_the_cap_and_no_further(
     ]
 
 
+def _menu_starts(client, shop) -> set[str]:
+    menu = client.get(f"/producers/{shop.id}/order-menu").json()
+    return {s["start"] for s in menu["slots"] if s["fulfilment"] == "pickup"}
+
+
+def test_the_slot_cap_holds_for_orders_confirmed_by_hand_too(client, db, flag_on, sent):
+    """«עד כמה הזמנות בכל מועד (לא חובה)»: with auto-confirm off, the cap
+    still closes a slot once it holds that many live orders."""
+    shop = Shop(db, auto_confirm=False, auto_confirm_slot_cap=2)
+    slot = slot_of(client, shop)
+    first = send(client, shop, sent, slot_start=slot)
+    assert first.json()["status"] == "pending"
+    assert slot in _menu_starts(client, shop)  # 1 of 2: still offered
+    send(client, shop, sent, slot_start=slot, phone=OTHER_PHONE)
+    assert slot not in _menu_starts(client, shop)  # 2 of 2: full
+    third = send(client, shop, sent, slot_start=slot, phone=THIRD_PHONE)
+    assert third.status_code == 409
+    assert third.json()["detail"] == create_module.SLOT_GONE_DETAIL
+
+
+def test_a_cancelled_order_gives_its_place_in_the_slot_back(client, db, flag_on, sent):
+    shop = Shop(db, auto_confirm=False, auto_confirm_slot_cap=1)
+    slot = slot_of(client, shop)
+    order_id = send(client, shop, sent, slot_start=slot).json()["id"]
+    assert slot not in _menu_starts(client, shop)
+    order = db.get(ProductOrder, uuid.UUID(order_id))
+    order.status = "cancelled"
+    db.commit()
+    assert slot in _menu_starts(client, shop)
+
+
+def test_the_business_may_propose_a_slot_past_her_own_cap(client, db, flag_on, sent):
+    shop = Shop(db, auto_confirm=False, auto_confirm_slot_cap=1)
+    full = slot_of(client, shop, nth=1)
+    other = slot_of(client, shop, nth=2)
+    send(client, shop, sent, slot_start=full)
+    moved = send(client, shop, sent, slot_start=other, phone=OTHER_PHONE).json()
+    assert full not in _menu_starts(client, shop)
+    res = client.post(
+        f"/producers/me/product-orders/{moved['id']}/propose-change",
+        json={"slot_start": full, "note": "נשאר מקום אצלי"},
+        headers=shop.headers,
+    )
+    assert res.status_code == 200, res.text
+
+
+def test_without_a_cap_a_slot_never_fills(client, db, flag_on, sent):
+    shop = Shop(db, auto_confirm=False, auto_confirm_slot_cap=None)
+    slot = slot_of(client, shop)
+    send(client, shop, sent, slot_start=slot)
+    send(client, shop, sent, slot_start=slot, phone=OTHER_PHONE)
+    assert slot in _menu_starts(client, shop)
+
+
 def test_an_estimated_price_is_never_confirmed_automatically(client, db, flag_on, sent):
     shop = Shop(db, auto_confirm=True, auto_confirm_slot_cap=5)
     res = send(
         client, shop, sent, items=[{"product_id": str(shop.cheese.id), "qty": 1}]
     )
     assert res.json()["status"] == "pending"
+
+
+# --- MEH-3216 stage 5a: where to pick up -------------------------------------
+
+
+def _primary(db, shop, **fields):
+    db.query(ProducerLocation).filter_by(producer_id=shop.producer.id).delete()
+    db.add(
+        ProducerLocation(
+            producer_id=shop.producer.id, kind="branch", is_primary=True, **fields
+        )
+    )
+    db.commit()
+
+
+def test_a_confirmed_pickup_names_the_public_address(client, db, flag_on):
+    shop = Shop(db)
+    _primary(db, shop, address="הרצל 12", city="רחובות", location_precision="exact")
+    order = stored_order(db, shop, status="confirmed", pickup_code="4821")
+    assert views.pickup_address(db, order) == "הרצל 12, רחובות"
+
+
+def test_an_approximate_location_gives_the_city_only(client, db, flag_on):
+    shop = Shop(db)
+    _primary(
+        db, shop, address="הרצל 12", city="רחובות", location_precision="approximate"
+    )
+    order = stored_order(db, shop, status="ready", pickup_code="4821")
+    assert views.pickup_address(db, order) == "רחובות"
+
+
+@pytest.mark.parametrize(
+    ("status", "fulfilment"),
+    [("pending", "pickup"), ("change_proposed", "pickup"), ("confirmed", "delivery")],
+)
+def test_no_address_before_confirmation_or_for_a_delivery(
+    client, db, flag_on, status, fulfilment
+):
+    shop = Shop(db)
+    _primary(db, shop, address="הרצל 12", city="רחובות", location_precision="exact")
+    order = stored_order(db, shop, status=status, fulfilment=fulfilment)
+    assert views.pickup_address(db, order) is None
+
+
+def test_the_status_page_carries_the_address_once_confirmed(client, db, flag_on):
+    shop = Shop(db)
+    _primary(db, shop, address="הרצל 12", city="רחובות", location_precision="exact")
+    token = "a" * 43
+    order = stored_order(
+        db, shop, "pending", status_token_hash=create_module.token_hash(token)
+    )
+    before = client.post("/product-orders/status", json={"token": token}).json()
+    order.status, order.pickup_code = "confirmed", "4821"
+    db.commit()
+    after = client.post("/product-orders/status", json={"token": token}).json()
+    assert (before["pickup_address"], after["pickup_address"]) == (
+        None,
+        "הרצל 12, רחובות",
+    )
 
 
 # --- the buyer follows her order ----------------------------------------------

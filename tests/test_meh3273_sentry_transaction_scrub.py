@@ -158,6 +158,15 @@ def test_real_app_trace_carries_no_token_anywhere(db):
     [
         (f"/register/producer/prefill/{TOKEN}", "/register/producer/prefill/[token]"),
         (f"/home-products/rate/{TOKEN}", "/home-products/rate/[token]"),
+        # MEH-2974 class: the 14-day draft-preview link (#4732) is a JWT path.
+        (
+            "/producer-preview/eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln-X_y",
+            "/producer-preview/[token]",
+        ),
+        (
+            "https://x.example/he/draft-preview/eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln-X_y",
+            "https://x.example/he/draft-preview/[token]",
+        ),
         (f"https://x.example/he/verify-email?token={TOKEN}&a=1", "https://x.example/he/verify-email?token=[token]&a=1"),
         (f"lang=he&reset_token={TOKEN}", "lang=he&reset_token=[token]"),
         # 40-char floor: a build artifact is left alone.

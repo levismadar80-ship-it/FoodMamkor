@@ -330,8 +330,10 @@ function producer(
     // MEH-2131: `open_for_orders_now` is the OTHER runtime-gated axis — the sheet
     // withholds it below OPEN_NOW_CHIP_MIN (5) declared windows, and again when
     // no business is open at the current clock. An all-week 00:00-23:59 window on
-    // every row satisfies both, whatever time the suite runs at, so the sheet
-    // offers the full home axis set instead of a time-of-day-dependent subset.
+    // every row satisfies both for 1,439 minutes a day. NOT the last one: close
+    // is exclusive (orderWindow.js `minutes < r.closeMin`), so at 23:59 Israel
+    // every row reads closed and the chip leaves the DOM — the 21:59 UTC red on
+    // PR #4811. A test that asserts this chip freezes the clock (MEH-2767).
     // Day keys come from lib/orderWindow.js, not from literals.
     order_window: Object.fromEntries(
       (ORDER_DAY_KEYS as string[]).map((d) => [d, [{ open: "00:00", close: "23:59" }]]),
@@ -686,11 +688,24 @@ async function gotoFixtureFeed(
  */
 async function activeCategoryFixture(page: Page): Promise<{ id: string; name: string }> {
   let seeded: unknown;
-  try {
-    const res = await page.request.get("/api/categories");
-    if (res.ok()) seeded = await res.json();
-  } catch {
-    // No backend at all (the CC sandbox) — handled as the fixture case below.
+  // MEH-3427: one non-OK answer used to drop straight to the CAT_A fixture. On
+  // staging that happened mid-deploy (run 44377981988): this read got a 5xx
+  // while the page's own SSR read, a moment later, got the real list — so the
+  // test deep-linked a fixture id the page did not hold and «נקה סינון …» never
+  // rendered. A 5xx is the backend restarting, not "no backend": ask again for
+  // a few seconds before falling back. A thrown network error (no backend at
+  // all, the CC sandbox) still falls back at once.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let status = 0;
+    try {
+      const res = await page.request.get("/api/categories");
+      status = res.status();
+      if (res.ok()) seeded = await res.json();
+    } catch {
+      break; // No backend at all — handled as the fixture case below.
+    }
+    if (seeded !== undefined || status < 500) break;
+    await page.waitForTimeout(2_000);
   }
   if (Array.isArray(seeded)) {
     // An array — even an empty one — is what `page.js:44` returns to
@@ -935,15 +950,44 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
       const d = document.querySelector('[data-testid="hero-search-dropdown"]')!.getBoundingClientRect();
       const h = document.querySelector('[data-testid="home-hero"]')!.getBoundingClientRect();
       const el = document.querySelector('[data-testid="hero-search-dropdown"]') as HTMLElement;
+      const cs = getComputedStyle(el);
+      // The last pixel row of the box that is on screen. Whatever paints there
+      // must be the dropdown itself: an ancestor with overflow hidden (the hero
+      // band) would leave the hero's own pixels there instead. Page chrome that
+      // is position:fixed (BottomNav, cookie banner, chat launcher) floats over
+      // everything at the viewport bottom by design, so it is skipped: the
+      // first IN-FLOW element under the point is the one that counts.
+      const probeY = Math.min(d.bottom, window.innerHeight) - 2;
+      const inFixedLayer = (n: Element | null): boolean => {
+        for (let a = n; a && a !== el; a = a.parentElement) {
+          if (getComputedStyle(a).position === "fixed") return true;
+        }
+        return false;
+      };
+      const atProbe = document
+        .elementsFromPoint(d.left + d.width / 2, probeY)
+        .find((n) => el.contains(n) || !inFixedLayer(n));
       return {
         dropBottom: d.top + d.height,
         heroBottom: h.top + h.height,
         clipped: el.scrollHeight - el.clientHeight,
+        // MEH-3164 / MEH-3431: the box is capped at max-h-[70vh] and scrolls
+        // inside past that, by design. On a 664 px viewport (iPhone 13) the 7
+        // rows are taller than 70vh, so the content scrolls — that is the cap,
+        // not a clip.
+        atCap: Math.abs(el.offsetHeight - parseFloat(cs.maxHeight)) <= 2,
+        scrolls: cs.overflowY === "auto" || cs.overflowY === "scroll",
+        bottomIsOwn: Boolean(atProbe && el.contains(atProbe)),
       };
     });
     expect(geometry.dropBottom, "the dropdown extends below the hero band").toBeGreaterThan(geometry.heroBottom);
-    // Not clipped: its painted height matches its own scroll height.
-    expect(geometry.clipped, "the dropdown renders its whole content, not a clipped slice").toBeLessThanOrEqual(1);
+    expect(geometry.bottomIsOwn, "nothing paints over the dropdown's bottom edge (no ancestor clips it)").toBe(true);
+    // Not clipped: its painted height matches its own scroll height — or it is
+    // at its 70vh cap and scrolls inside.
+    if (geometry.clipped > 1) {
+      expect(geometry.atCap, "a dropdown shorter than its content is at its max-height cap").toBe(true);
+      expect(geometry.scrolls, "a capped dropdown scrolls inside").toBe(true);
+    }
   });
 
   // MT:788:5 — no horizontal overflow. Runs on BOTH projects: the row names
@@ -1210,6 +1254,9 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     // runner needs `gotoFixtureFeed` rather than a bare `gotoHome`. Without it
     // the backend's catalog gates `no_added_sugar` off and the loop below asks
     // for a toggle that was never rendered — the CI failure, verbatim.
+    // `open_for_orders_now` is clock-gated (see the fixture's order_window): freeze
+    // the clock inside the window, or the suite reds for one minute a day.
+    await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
     await gotoFixtureFeed(page, "/", PRODUCERS);
     await filtersButton(page).click();
     const panel = sheetPanel(page);
@@ -1368,6 +1415,12 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     await expect(cards(page)).toHaveCount(CAT_A_MEMBERS.length, FIRST_PAINT);
     await promotedChip(page, "has_delivery").click();
     await expect(promotedChip(page, "has_delivery")).toHaveAttribute("aria-pressed", "true");
+    // MEH-3427: name the precondition, so a category the page does not hold
+    // reds here with its cause instead of as a missing clear button.
+    await expect(
+      scope(page).getByRole("heading", { level: 2, name: PROD.heading_category.replace("{name}", cat.name) }),
+      `the page resolved category ${cat.id} («${cat.name}») from its own list`,
+    ).toBeVisible();
     await scope(page)
       .getByRole("button", { name: `${PROD.clear_filter} ${cat.name}` })
       .click();

@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -22,6 +23,8 @@ import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
 import StickyContactBar from "./components/StickyContactBar";
+import OrderBar from "@/components/public/OrderBar";
+import { useOrderCart } from "@/lib/use-order-cart";
 import { useLazyReviews } from "./hooks/useLazyReviews";
 import { useProducerData } from "./hooks/useProducerData";
 import { useStickyBar } from "./hooks/useStickyBar";
@@ -29,6 +32,10 @@ import { buildShareUrl, categoryListingHref, getRenderableImages } from "./lib/p
 import { getSectionNavItems } from "./lib/section-nav";
 import { isOnVacation } from "@/lib/availability";
 import BackLink from "@/components/ui/BackLink";
+
+// MEH-3216 stage 5c: loaded only when a buyer opens it, so a business page
+// that takes no orders carries none of the form's code.
+const OrderSheet = dynamic(() => import("@/components/public/OrderSheet"), { ssr: false });
 
 // Layout effect on the client, plain effect on the server (no layout there).
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -70,6 +77,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const sectionRefs = useRef({});
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
   const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
+  // MEH-3216 stage 5b: the buyer's picks, shared by the product rows and the
+  // order bar. Reads the menu only for a business that takes orders.
+  const orderCart = useOrderCart(producer);
+  const [orderSheetOpen, setOrderSheetOpen] = useState(false);
 
   // MEH-1693: the post-save AlertPrefsPanel is owned HERE, not by either heart.
   // The page has two hearts on different surfaces — the hero overlay circle
@@ -137,7 +148,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   // matching -mx-4 — change the two together. MEH-2592: so does the
   // OtherBusinesses band.
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6" data-testid="producer-detail-root">
+    <div
+      // MEH-3216 stage 5b: room under the last row for the order bar, which
+      // shows on every width (the contact bar is phone-only and IO-driven).
+      className={`max-w-6xl mx-auto px-4 pt-6 ${orderCart.count > 0 ? "pb-24" : "pb-6"}`}
+      data-testid="producer-detail-root"
+    >
       {/* MEH-1209: owner-only edit entry — renders above the h1 (which lives in
           the Tinted Masthead for imageless profiles and in ProducerHeader
           otherwise), in-flow, above the fold. Self-gates on ownership; a
@@ -277,6 +293,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             reviewsVisible={reviewsVisible}
             isOwner={user?.producer_id === producer.id}
             onReviewsTotalChange={setReviewsCount}
+            orderCart={orderCart}
           />
         </div>
 
@@ -293,12 +310,32 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         nearbyProducers={nearbyProducers}
       />
 
-      {/* StickyContactBar — mobile only, IO-driven, always mounted. */}
-      <StickyContactBar
-        producer={producer}
-        isVacation={isVacation}
-        isBarVisible={isBarVisible}
-      />
+      {/* StickyContactBar — mobile only, IO-driven. MEH-3216 stage 5b: once
+          the buyer picked a product, the order bar takes its place and keeps
+          the contact button beside it as a round icon. */}
+      {orderCart.count > 0 ? (
+        <OrderBar
+          producer={producer}
+          count={orderCart.count}
+          totalAgorot={orderCart.totalAgorot}
+          onOpen={() => setOrderSheetOpen(true)}
+        />
+      ) : (
+        <StickyContactBar
+          producer={producer}
+          isVacation={isVacation}
+          isBarVisible={isBarVisible}
+        />
+      )}
+      {orderSheetOpen && orderCart.menu && orderCart.count > 0 && (
+        <OrderSheet
+          producer={producer}
+          menu={orderCart.menu}
+          picks={orderCart.picks}
+          onStale={orderCart.reload}
+          onClose={() => setOrderSheetOpen(false)}
+        />
+      )}
     </div>
   );
 }

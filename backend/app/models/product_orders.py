@@ -109,6 +109,10 @@ def _check_in(column: str, values: tuple[str, ...]) -> str:
     return "{} IN ({})".format(column, ", ".join(f"'{v}'" for v in values))
 
 
+# MEH-3216: the CHECK on business_id_number (the revision repeats it).
+BUSINESS_ID_PATTERN = "^[0-9]{9}$"
+
+
 class ProducerOrderSettings(Base):
     """One row per business: whether it takes orders on its page, and how.
 
@@ -150,6 +154,11 @@ class ProducerOrderSettings(Base):
             f"{PRODUCT_ORDER_MAX_LEAD_HOURS}",
             name="producer_order_settings_lead_time_check",
         ),
+        # MEH-3216: nine digits or nothing (the route normalises the input).
+        CheckConstraint(
+            f"business_id_number IS NULL OR business_id_number ~ '{BUSINESS_ID_PATTERN}'",
+            name="producer_order_settings_business_id_check",
+        ),
     )
 
     producer_id = Column(
@@ -189,6 +198,10 @@ class ProducerOrderSettings(Base):
     alcohol_licensed = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-3216: «מספר עוסק או ח״פ», shown to buyers on the order form. Without
+    # it the business cannot switch ordering on (schemas/product_orders.py)
+    # and takes_orders() answers no.
+    business_id_number = Column(String(9), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

@@ -193,7 +193,7 @@ export function buildPageUrl(producer) {
 //
 // MEH-1870: the parsing itself is NO LONGER copied here. It used to be, with
 // the stated reason that the parser lived in the client component
-// OpeningHours.jsx — but MEH-826 had already extracted it to lib/hours.js,
+// OpeningHours.jsx (deleted in MEH-2810) — but MEH-826 had already extracted it to lib/hours.js,
 // which is pure (no React, no next-intl), so the reason was stale and what
 // remained was two owners of one grammar. Extending the grammar for split
 // hours would have silently dropped every split day from the JSON-LD, because

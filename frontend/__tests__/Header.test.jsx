@@ -352,11 +352,23 @@ describe("Header", () => {
   });
 
   describe("avatar dropdown — role-specific items (MEH-39)", () => {
+    // MEH-3024: /producer/<id> is a real 404 until approval, so an unapproved
+    // owner's «צפייה בדף» goes to the dashboard preview (same rule as the
+    // dashboard header link, MEH-2916).
+    it.each(["draft", "pending", undefined])("producer with status %s: «צפייה בדף» → dashboard preview", (status) => {
+      userRef.current = { id: "u1", name: "מיה", role: "producer", producer_id: "p-42", producer_status: status };
+      render(<Header />);
+      fireEvent.click(screen.getByLabelText("תפריט — מיה"));
+      expect(screen.getByText("צפייה בדף").closest("a").getAttribute("href")).toBe(
+        "/producer/dashboard/preview",
+      );
+    });
+
     // MEH-1226: dashboard leads the producer menu; the profile row points at
     // the PUBLIC business page (/producer/[id], from user.producer_id), not the
     // dashboard or settings. Order: dashboard → profile → settings.
     it("producer: dashboard first, profile → public /producer/[id], settings → /settings", () => {
-      userRef.current = { id: "u1", name: "מיה", role: "producer", producer_id: "p-42" };
+      userRef.current = { id: "u1", name: "מיה", role: "producer", producer_id: "p-42", producer_status: "approved" };
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — מיה"));
       expect(screen.queryByText("ממשק אדמין")).toBeNull();

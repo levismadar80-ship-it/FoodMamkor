@@ -27,8 +27,9 @@ export const UPLOAD_TIMEOUT_MS = 120000;
 // measured on staging 18/11) before the backend's Hebrew 413 (#4725) can be
 // sent. So the cap is enforced here, below Vercel's: a file above 4MB never
 // leaves the browser, and any 413 that does come back carries one Hebrew line.
-import { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL } from "./upload-limits";
-export { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL };
+import { MAX_UPLOAD_BYTES, uploadTooLargeDetail } from "./upload-limits";
+import { prepareFormData } from "./prepare-upload";
+export { MAX_UPLOAD_BYTES, uploadTooLargeDetail };
 
 /** @param {unknown} data */
 function oversizedUpload(data) {
@@ -46,11 +47,13 @@ api.interceptors.request.use((config) => {
   if (oversizedUpload(config.data)) {
     // Shaped like an axios response error so every caller's existing
     // `err.response?.data?.detail` path shows the Hebrew line.
-    return Promise.reject(
-      Object.assign(new Error("upload too large"), {
-        config,
-        response: { status: 413, data: { detail: UPLOAD_TOO_LARGE_DETAIL } },
-      }),
+    return uploadTooLargeDetail().then((detail) =>
+      Promise.reject(
+        Object.assign(new Error("upload too large"), {
+          config,
+          response: { status: 413, data: { detail } },
+        }),
+      ),
     );
   }
   if (
@@ -74,6 +77,17 @@ api.interceptors.request.use((config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+  }
+  return config;
+});
+
+// MEH-3400: shrink big photos before the size check above sees them. Axios
+// runs request interceptors last-registered-first, so this one, added after the
+// cap/auth interceptor, runs BEFORE it: an 8 MB camera photo leaves as a
+// ~1 MB JPEG instead of being refused. Small files and non-images pass through.
+api.interceptors.request.use(async (config) => {
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    config.data = await prepareFormData(config.data);
   }
   return config;
 });
@@ -143,8 +157,10 @@ api.interceptors.response.use(
       typeof FormData !== "undefined" &&
       error.config?.data instanceof FormData
     ) {
-      error.response.data = { detail: UPLOAD_TOO_LARGE_DETAIL };
-      return Promise.reject(error);
+      return uploadTooLargeDetail().then((detail) => {
+        error.response.data = { detail };
+        return Promise.reject(error);
+      });
     }
 
     // MEH-1627: the exact-match allowlist wins over the prefix skip-list.

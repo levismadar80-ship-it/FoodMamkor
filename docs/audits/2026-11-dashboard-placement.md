@@ -62,13 +62,13 @@ share the width (no scroll, no overflow, MEH-2429). **No tab lights up on
 | 1 | «שלום {name}» | always | 460-474 |
 | 2 | «לצפייה בעמוד שלך» | `producer.slug` — **never** (§0) | 479 |
 | 3-7 | Status banners: changes requested · draft submit · pending · rejected · inactive | by status | 496-594 |
-| 8 | ProfileCompletenessCard «הפרופיל שלך X% מוכן» | not approved or incomplete | 601 |
+| 8 | ProfileCompletenessCard «הפרופיל שלך X% מוכן» (since MEH-3079: «העמוד שלך X% מוכן») | not approved or incomplete | 601 |
 | 9 | Holiday hint → `/edit#products` | 14 days before a holiday | 615-640 |
 | 10 | «הלינק שלי» (copy + «שתפו») | slug + complete + approved — **never** (§0) | 648 |
 | 11 | «קוד QR לעמוד שלכם» → `/qr-card` | same — **never** (§0) | 668 |
 | 12 | «ערכת שיתוף» (story card ~480 px tall + review card) | approved | 678 |
-| 13 | «מצב נוכחי» availability switch | always (disabled until approved) | 686-783 |
-| 14 | KPI strip 7 days / zero «צפיות וקליקים» | analytics loaded | 804-834 |
+| 13 | «מצב נוכחי» availability switch | approved only (MEH-3079, 18/11; was always, disabled until approved) | 686-783 |
+| 14 | KPI strip 7 days / zero «צפיות וקליקים» | analytics loaded; the zero card approved only (MEH-3079, 18/11) | 804-834 |
 | 15 | «פעילות אחרונה» | analytics loaded | 839 |
 
 The comment at `page.js:440-446` says an approved business should see

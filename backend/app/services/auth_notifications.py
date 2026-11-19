@@ -338,6 +338,56 @@ def notify_admin_claim_link_requested(
         logger.error(f"[NOTIFY] Claim-link request email FAILED for '{safe_name}': {e}")
 
 
+def notify_admin_draft_claimed(
+    producer_name: str,
+    owner_name: str | None,
+    owner_email: str | None,
+    city: str | None,
+    test_cause: bool = False,
+) -> None:
+    """MEH-3410: the owner of a draft the admin prepared took it over through
+    the claim link. Tell the admin at once, by WhatsApp and email, so she can
+    follow up while the owner is still on the page — until now the first
+    signal was the submit, days later or never.
+
+    REUSES: notify_admin_claim_link_requested above — same WhatsApp + email
+    pair, per-channel guards, fire-and-forget. Copy approved by Sapir (MEH-3410).
+    """
+    if test_cause:
+        _skip_test_cause("notify_admin_draft_claimed", None)
+        return
+    # Every field here is typed by someone outside Mehamakor — flatten each so
+    # a crafted value cannot add a line (e.g. a fake link) to the message.
+    safe_name = _sanitize_wa_param(producer_name) or "ללא שם"
+    safe_owner = _sanitize_wa_param(owner_name) if owner_name else ""
+    safe_email = _sanitize_wa_param(owner_email) if owner_email else ""
+    safe_city = (_sanitize_wa_param(city) if city else "") or "לא צוין"
+    subject = f"מהמקור - הטיוטה של {safe_name} נקלטה"
+    message = (
+        f"הטיוטה של {safe_name} נקלטה."
+        f"\nמי קלט: {safe_owner} ({safe_email})"
+        f"\nעיר: {safe_city}"
+        f"\nלאדמין: {settings.frontend_url}/admin/producers"
+    )
+    try:
+        if settings.admin_whatsapp_to:
+            if not send_text(
+                settings.admin_whatsapp_to, message, test_cause=test_cause
+            ):
+                logger.warning(
+                    f"[WHATSAPP] Draft-claimed alert NOT delivered for '{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(f"[NOTIFY] Draft-claimed WhatsApp FAILED for '{safe_name}': {e}")
+    try:
+        if settings.admin_email:
+            send_email(settings.admin_email, subject, message, test_cause=test_cause)
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(f"[NOTIFY] Draft-claimed email FAILED for '{safe_name}': {e}")
+
+
 def notify_admin_producer_resubmit(
     producer_name: str,
     city: str | None,
@@ -745,6 +795,7 @@ def notify_admin_owner_invite_accepted(
     owner_email: str,
     published: bool,
     test_cause: bool = False,
+    missing: list[str] | None = None,
 ) -> None:
     """Ping admin (WhatsApp + email) that an owner accepted the invite an
     admin sent her — she set a password, signed the terms and the licensing
@@ -762,6 +813,10 @@ def notify_admin_owner_invite_accepted(
     WhatsApp raise cannot skip the email. Fire-and-forget: runs as a
     BackgroundTask and swallows-and-logs any failure (MEH-977 — observable,
     never breaks the 200 she already got).
+
+    MEH-3268: `missing` is set when a hidden page was HELD — she is the owner
+    now, but the page lost its photo or licence after the invite went out and
+    stayed hidden. The admin is the one who can fix it, so she is told what.
     """
     if test_cause:  # MEH-2952: before preflight / the send — no error log
         return _skip_test_cause("notify_admin_owner_invite_accepted", None)
@@ -771,11 +826,15 @@ def notify_admin_owner_invite_accepted(
     # REUSES the MEH-1051 sanitizer (one flattener per file, MEH-271).
     safe_name = _sanitize_wa_param(producer_name)
     safe_email = _sanitize_wa_param(owner_email)
-    headline = (
-        f"✅ {safe_name} אישרה את הדף — והדף עלה לאוויר"
-        if published
-        else f"✅ {safe_name} אישרה את הדף וקיבלה גישה"
-    )
+    if published:
+        headline = f"✅ {safe_name} אישרה את הדף — והדף עלה לאוויר"
+    elif missing:
+        headline = (
+            f"⚠️ {safe_name} אישרה את הדף וקיבלה גישה, אבל הדף לא עלה לאוויר."
+            f" חסר: {', '.join(missing)}"
+        )
+    else:
+        headline = f"✅ {safe_name} אישרה את הדף וקיבלה גישה"
     subject = f"מהמקור - {safe_name} אישרה את ההזמנה"
     message = (
         f"{headline}\n"

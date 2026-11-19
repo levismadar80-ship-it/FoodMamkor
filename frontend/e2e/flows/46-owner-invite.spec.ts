@@ -353,19 +353,18 @@ test.describe("owner invite", () => {
     // card's «עסק inactive לא חוזר מאף endpoint ציבורי לפני הקבלה» at the
     // surface a person would actually reach it from.
     //
-    // Not the document status: /producer/<uuid> answers 200 with the not-found
-    // page for ANY missing business (measured on production 13/11, browser and
-    // Googlebot user agents alike), so a status check here never passed and
-    // said nothing about «hidden». What a stranger can actually tell apart is
-    // asserted instead: the public API refuses the id, and the page shows the
-    // not-found copy and none of the business.
+    // MEH-3024: /producer/<uuid> of a business the public API refuses now
+    // answers a real 404 from middleware.js, rendered by the site-wide
+    // not-found page (app/global-not-found.js), the same one /<slug> uses.
+    // Before it answered 200 with the business-page not-found copy (measured
+    // on production 13/11), so the status said nothing about «hidden».
     const api = await page.request.get(`/api/producers/${business.id}`);
     expect(api.status(), "the public API must not return a hidden business").toBe(404);
-    await page.goto(`/he/producer/${business.id}`);
-    await expect(page.locator("#main-content h1")).toHaveText(
-      he.errors.producer_not_found.heading,
-      { timeout: 15_000 },
-    );
+    const res = await page.goto(`/he/producer/${business.id}`);
+    expect(res?.status(), "a hidden business answers a real 404").toBe(404);
+    await expect(page.locator("#main-content h1")).toHaveText(he.errors.not_found.heading, {
+      timeout: 15_000,
+    });
     await expect(page.getByText(business.name)).toHaveCount(0);
   });
 

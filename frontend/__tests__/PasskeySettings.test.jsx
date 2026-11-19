@@ -84,6 +84,27 @@ describe("PasskeySettings", () => {
     await waitFor(() => expect(screen.queryByTestId("passkey-codes")).toBeNull());
   });
 
+  it("adding signs other devices out: the new token is stored, and the codes survive a failed reload", async () => {
+    // MEH-3305: register/verify bumps token_version and returns this device's
+    // new token. If the reload after it fails anyway, the one-time codes
+    // must still be on screen: the server keeps only their hashes.
+    localStorage.removeItem("token");
+    api.get.mockResolvedValueOnce({ data: state([]) }).mockRejectedValue(new Error("network"));
+    api.post.mockImplementation(async (url) => {
+      if (url === "/auth/passkey/register/options") return { data: { ticket: "t", options: {} } };
+      return {
+        data: { passkey: row(1), recovery_codes: ["AAAAA-BBBBB"], access_token: "new-token" },
+      };
+    });
+    render(<PasskeySettings />);
+    fireEvent.change(await screen.findByLabelText("הסיסמה של החשבון"), { target: { value: "example-pw-123456789" } });
+    fireEvent.click(screen.getByTestId("passkey-add"));
+    expect(await screen.findByTestId("passkey-codes")).toHaveTextContent("AAAAA-BBBBB");
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId("passkey-codes")).toHaveTextContent("AAAAA-BBBBB");
+    expect(localStorage.getItem("token")).toBe("new-token");
+  });
+
   it("removing with a passkey asks the device; a typed code is sent instead of it", async () => {
     api.get.mockResolvedValue({ data: state([row(1), row(2)]) });
     api.post.mockImplementation(async (url) =>

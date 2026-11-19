@@ -178,6 +178,7 @@ erDiagram
         int slot_minutes "MEH-3262: 30|60|120, default 60"
         int lead_time_hours "MEH-3262: 0..168, default 24"
         boolean alcohol_licensed "admin only"
+        string business_id_number "MEH-3216: 9 digits, required to take orders"
         timestamp created_at
         timestamp updated_at
     }

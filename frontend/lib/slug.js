@@ -38,6 +38,8 @@ const RESERVED = new Set([
   "verify-email",
   // MEH-2324: the owner-claim page.
   "claim",
+  // MEH-3216 stage 5a: the buyer's order status page /order/[id].
+  "order",
   // MEH-2974: the owner-invite page — the approved-business sibling of
   // /claim, and reserved for the same two reasons: a business whose slug is
   // "owner-invite" would collide with it, and `isProducerDetail` would

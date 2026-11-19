@@ -48,6 +48,24 @@ describe("ViewOnPageLink (MEH-1306)", () => {
     expect(link.textContent).toContain(VIEW_LABEL);
   });
 
+  // MEH-3024: /producer/<id> is a real 404 until approval, so an unapproved
+  // owner's link goes to the dashboard preview.
+  it.each(["draft", "pending", "rejected"])("sends a %s business to the dashboard preview", (status) => {
+    wrap(<ViewOnPageLink producerId={42} anchor="section-products" status={status} />);
+    expect(screen.getByTestId("view-on-page-section-products")).toHaveAttribute(
+      "href",
+      "/producer/dashboard/preview",
+    );
+  });
+
+  it("keeps the public section link for an approved business", () => {
+    wrap(<ViewOnPageLink producerId={42} anchor="section-products" status="approved" />);
+    expect(screen.getByTestId("view-on-page-section-products")).toHaveAttribute(
+      "href",
+      "/producer/42#section-products",
+    );
+  });
+
   it("renders nothing without a producer id (no dead link)", () => {
     const { container } = wrap(<ViewOnPageLink anchor="section-products" />);
     expect(container.querySelector("a")).toBeNull();

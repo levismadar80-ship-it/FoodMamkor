@@ -422,6 +422,11 @@ class ProducerDetailOut(ProducerListOut):
 
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
+    # MEH-3216 stage 5b: whether the page may offer «הוספה» on its products.
+    # Set by the route (services/product_order_menu.attach_takes_site_orders),
+    # never read off the row: it folds in the site flag and the business's own
+    # switch, so the page asks for the order menu only when it exists.
+    takes_site_orders: bool = False
     created_at: datetime | None = None
     # MEH-1291: public freshness signal ("עודכן לאחרונה"). Nullable — NULL for
     # producers never edited since the Chunk A migration (a3f1c9d2e4b7 added the
@@ -524,6 +529,17 @@ class ProducerAdminOut(ProducerDetailOut):
     # CLOSED — the UI renders neither chip nor action for a non-boolean —
     # instead of reporting a claimed draft as ownerless.
     has_owner: bool | None = None
+    # MEH-3409: for a draft its owner claimed, the submission requirement
+    # codes still missing (submission_gate.py: image / product / category /
+    # location / phone_verified, or the organizer set). [] = ready, waiting
+    # for her to press «שליחה לבדיקה». None = not a claimed draft, or a route
+    # that did not hydrate it (services/admin_draft_missing.py). Admin-only.
+    draft_missing: list[str] | None = None
+    # MEH-3408: another business, in ANY status, shares this row's name / phone.
+    # Hydrated by GET /admin/producers only (services/producer_duplicates.py),
+    # in one query; every other route leaves them False (no badge). Admin-only.
+    dup_name: bool = False
+    dup_phone: bool = False
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None

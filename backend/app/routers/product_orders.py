@@ -79,6 +79,7 @@ def _defaults(producer_id: Any) -> dict[str, Any]:
         "slot_minutes": PRODUCT_ORDER_DEFAULT_SLOT_MINUTES,
         "lead_time_hours": PRODUCT_ORDER_DEFAULT_LEAD_HOURS,
         "alcohol_licensed": False,
+        "business_id_number": None,
     }
 
 

@@ -252,13 +252,24 @@ let finalConfig = withNextIntl(nextConfig);
 // configured. This keeps dev/CI builds working without the package.
 if (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN) {
   try {
-    const { withSentryConfig } = require("@sentry/nextjs");
+    // @sentry/nextjs 11 moved withSentryConfig to the /config entry point; the
+    // old import returned undefined and the catch below skipped the wrap.
+    const { withSentryConfig } = require("@sentry/nextjs/config");
     finalConfig = withSentryConfig(finalConfig, {
       silent: true,
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
       widenClientFileUpload: true,
-      disableLogger: true,
+      // @sentry/nextjs 11 removed `disableLogger` and ignores it silently, so
+      // the SDK's debug logging came back into the browser bundle and v1.5.6
+      // went over the Lighthouse script budget. This is its v11 replacement.
+      bundleSizeOptimizations: {
+        excludeDebugStatements: true,
+        // Replay never records an iframe or a shadow root here: the site has
+        // neither (grep attachShadow / <iframe> in app, components, lib).
+        excludeReplayIframe: true,
+        excludeReplayShadowDom: true,
+      },
       // MEH-2976: browser events go through our own origin (/monitoring →
       // Sentry ingest, a Next rewrite) instead of *.ingest.sentry.io, which
       // iOS content blockers and tracker protection block. middleware.js

@@ -36,7 +36,7 @@
  * own (flag-gated) enableHydrationChangeEvent does the same at hydration commit.
  */
 
-import { PREHYDRATION_CAPTURE_KEY } from "@/lib/prehydration-capture-key";
+import { PREHYDRATION_CAPTURE_KEY, PREHYDRATION_EVENT_MARK } from "@/lib/prehydration-capture-key";
 
 const TEXT_TYPES = new Set(["", "text", "email", "search", "tel", "url", "password"]);
 
@@ -85,6 +85,7 @@ function reactProps(el) {
 /** Exported for tests only: jsdom cannot dispatch a trusted event. */
 export function onEarlyInput(event) {
   if (!reactProps(event.target)) {
+    event[PREHYDRATION_EVENT_MARK] = 1;
     remember(event.target);
     return;
   }
@@ -92,7 +93,14 @@ export function onEarlyInput(event) {
   // hydration — her new text wins over anything captured. An UNTRUSTED one is
   // React re-dispatching a held keystroke as a clone onto the field hydration
   // just emptied (MEH-3164); dropping the capture on it lost the text.
-  if (event.isTrusted) forget(event.target);
+  //
+  // MEH-3164 (19/11): a trusted event can ALSO be the pre-hydration keystroke
+  // itself. React 19 hydrates the blocked target synchronously inside that
+  // dispatch, so a listener behind React's sees it owned and emptied. The
+  // <head> script (or this listener, if it ran first) marked such an event
+  // while the field was still unowned. Measured on WebKit, local production
+  // build: 5 of 6 /producers loads lost the text this way.
+  if (event.isTrusted && !event[PREHYDRATION_EVENT_MARK]) forget(event.target);
 }
 
 /**

@@ -749,6 +749,7 @@
     },
     "claim": {
       "title": "Take your business page",
+      "title_named": "{name}'s page on Mehamakor",
       "description": "We prepared a page for you on Mehamakor"
     },
     "producer": {
@@ -974,6 +975,47 @@
           "fri": "Friday",
           "sat": "Saturday"
         }
+      },
+      "order_cart": {
+        "open_line": "You can order on the site",
+        "add": "Add",
+        "add_one": "One more: {name}",
+        "remove_one": "One less: {name}",
+        "sold_out": "Sold out today",
+        "estimate": "About {price} ₪ · the final price is set on weighing",
+        "alcohol": "18+ only. You will be asked to show ID at pickup.",
+        "bar": "Order · {count, plural, one {# item} two {# items} other {# items}} · {total} ₪"
+      },
+      "order_sheet": {
+        "title": "Your order",
+        "how": "How would you like to get it?",
+        "pickup": "Pickup",
+        "delivery": "Delivery",
+        "when": "When suits you?",
+        "when_pick": "Choose a time",
+        "slot": "{day}, {from}–{until}",
+        "no_slots": "No times are open right now. You can ask the business on WhatsApp.",
+        "city": "City",
+        "address": "Delivery address",
+        "name": "Full name",
+        "phone": "Mobile phone · we send a verification code to it",
+        "send_code": "Send code",
+        "send_code_again": "Send a new code",
+        "code": "Verification code",
+        "code_sent": "We sent a code on WhatsApp to this number.",
+        "code_failed": "We couldn't send a code. Please try again in a moment.",
+        "note": "Note to the business (optional)",
+        "age": "I am 18 or older",
+        "delivery_fee": "Delivery: ₪{fee}",
+        "total": "Total: ₪{total}",
+        "total_estimate": "Total, approximately: ₪{total}",
+        "payment_line": "You pay the business directly: {methods}. No payment on the site.",
+        "cancel_line": "You can cancel or change until {cutoff}.",
+        "seller_line": "Seller: {name} · Business no. {number}{city, select, none {} other { · {city}}}",
+        "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
+        "send": "Send the request",
+        "close": "Close",
+        "failed": "The request was not sent. Please try again."
       }
     },
     "card": {
@@ -1646,7 +1688,8 @@
           "dedup": "Duplicate?",
           "dedup_name_title": "Same name as another producer — check whether it's a duplicate.",
           "dedup_city_title": "Same city as another producer — check whether it's a duplicate.",
-          "dedup_both_title": "Same name and city as another producer — check whether it's a duplicate."
+          "dedup_both_title": "Same name and city as another producer — check whether it's a duplicate.",
+          "dedup_phone_title": "Same phone as another producer — check whether it's a duplicate."
         },
         "actions": {
           "approve_short": "✓ Approve",
@@ -1690,7 +1733,9 @@
           "link_sent": "Link sent on {date}",
           "link_valid_until": "Valid until {date}",
           "link_expired": "The link expired — create a new one",
-          "waiting_7_days": "Waiting 7+ days"
+          "waiting_7_days": "Waiting 7+ days",
+          "missing": "Missing: {items}",
+          "all_filled": "All filled in, not sent for review yet"
         },
         "photo_preview": {
           "label": "Photos",
@@ -2752,7 +2797,7 @@
           "steps": [
             "“Waiting N business days”: how long the request has waited.",
             "“Resubmission #N”: the owner fixed and resubmitted.",
-            "“Duplicate?”: same name or city as another business. Check before approving.",
+            "“Duplicate?”: same name, city or phone as another business, in any status. Check before approving.",
             "“Licence pending”: a licence-required category with no number.",
             "“Organizer”: a markets and events organizer, not a business.",
             "“Low / medium / high risk”: an automatic estimate. The decision is yours."
@@ -4860,6 +4905,9 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_7": {
+            "i0": "In the products card on the «Edit» tab you can now upload a photo of your menu or price list. The products fill in by themselves, so all that's left is to check and publish."
+          },
           "v1_5_1": {
             "i0": "Your dashboard home now shows «Waiting for you»: reviews you haven't answered yet and new sign-ups.",
             "i1": "You can reorder the products on your page by dragging them, and sort them into groups.",
@@ -4927,8 +4975,7 @@
       "states": {
         "zero_activity_title": "Views and clicks",
         "zero_activity": "No views or clicks yet — share your page to get started",
-        "share_locked": "You'll be able to share soon — let's finish approval and details first",
-        "availability_disabled": "You'll be able to update availability once the business is approved and published"
+        "share_locked": "You'll be able to share soon — let's finish approval and details first"
       },
       "changes_requested": {
         "title": "One detail left to complete",
@@ -4952,7 +4999,9 @@
         "group_buys": "{count, plural, one {A group buy reached its goal} other {# group buys reached their goal}}",
         "group_buys_cta": "Details",
         "orders": "{count, plural, one {One order waiting for confirmation} other {# orders waiting for confirmation}}",
-        "orders_cta": "Confirm"
+        "orders_cta": "Confirm",
+        "menu": "No products on your page yet. You can upload a menu instead of typing.",
+        "menu_cta": "Upload a menu"
       },
       "status": {
         "pending": {
@@ -5673,7 +5722,7 @@
           "lead": "Customers pick products and a time on your page, and you confirm. They pay you directly. You can switch it off at any time.",
           "enabled": "Take orders on the site",
           "auto_confirm": "Confirm orders automatically, up to {count} per slot",
-          "auto_cap": "How many orders to confirm automatically per slot",
+          "slot_cap": "Up to how many orders per slot (optional)",
           "cutoff": "Customers can cancel up to {hours} hours before the slot",
           "cutoff_label": "Cancellation by customers",
           "shabbat": "No orders or messages on Shabbat and holidays",
@@ -5687,7 +5736,11 @@
           "save": "Save",
           "saved": "Saved",
           "cap_required": "To confirm automatically, choose how many orders per slot",
-          "bad_amount": "Write the amount in numbers"
+          "bad_amount": "Write the amount in numbers",
+          "business_id": "Business or company number",
+          "business_id_help": "Shown to customers on the order form, as the law requires.",
+          "business_id_required": "To take orders on the site, fill in your business number.",
+          "business_id_format": "A business or company number has 9 digits."
         },
         "windows": {
           "title": "When orders are handed over",
@@ -5723,7 +5776,8 @@
           "age": "The order has alcohol · ask for ID at hand-over",
           "phone": "Phone",
           "proposal_sent": "You proposed a change. Waiting for the customer.",
-          "expires": "If you do not answer by {when}, the order will be cancelled."
+          "expires": "If you do not answer by {when}, the order will be cancelled.",
+          "whatsapp": "WhatsApp the customer"
         },
         "status": {
           "pending": "New",
@@ -5764,6 +5818,15 @@
           "cancel_lead": "The customer will get a message about it.",
           "cancel_note": "Note to the customer (optional)",
           "failed": "That did not work. Please try again."
+        },
+        "products": {
+          "title": "Products",
+          "orderable": "Open for ordering on the site",
+          "sold_out": "Sold out for now"
+        },
+        "prep": {
+          "title": "What to prepare",
+          "line": "{count} × {name}"
         }
       }
     },
@@ -6054,6 +6117,18 @@
         "title": "A product with this name already exists. Continue?",
         "confirm": "Add product",
         "cancel": "Cancel"
+      },
+      "menu_import": {
+        "button": "Upload a menu",
+        "strip_title": "Have a menu or price list?",
+        "strip_body": "Take a photo and we'll fill in the products. You just check and publish.",
+        "reading": "Reading the menu…",
+        "found": "We found {count} products. Check them before publishing.",
+        "check": "Worth checking",
+        "no_price": "No price found. Add a price to publish.",
+        "publish": "Publish {count} products",
+        "failed": "We couldn't read the menu. Try a straighter, sharper photo, or add products by hand.",
+        "cap": "Up to 100 products per page. Choose which ones to publish."
       }
     },
     "locations": {
@@ -7127,6 +7202,10 @@
         "tile_title": "Delivery check",
         "tile_line": "\"Do you deliver to my city?\""
       },
+      "product_orders": {
+        "label": "Pre-orders from your page",
+        "tip": "Customers pick products and a pickup or delivery time, and send a request. You confirm, suggest a change or decline from your dashboard. They pay you directly."
+      },
       "wa_group": {
         "label": "A WhatsApp group for updates from your business"
       },
@@ -7380,5 +7459,29 @@
     "error_generic": "Something went wrong. Please try again.",
     "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
     "error_rate_limited": "Too many attempts. Please try again shortly."
+  },
+  "order_status": {
+    "title": "Your order",
+    "sent": "Request sent. {business_name} will confirm soon.",
+    "waiting": "We'll message you as soon as there's an answer. If there's no answer by {deadline}, the request is cancelled.",
+    "confirmed": "Order confirmed",
+    "when_pickup": "Pickup on {day}, {from}–{until} · {address}",
+    "when_pickup_no_address": "Pickup on {day}, {from}–{until}",
+    "when_delivery": "Delivery on {day}, {from}–{until}",
+    "proposal": "The business suggests a change",
+    "accept": "Works for me",
+    "cancel": "Cancel the order",
+    "ready": "Your order is ready for pickup",
+    "code": "Say this code at the counter",
+    "to_pay": "To pay the business: ₪{total}",
+    "declined": "The business can't fill this order.",
+    "cancelled": "Your order from {business_name} was cancelled.",
+    "expired": "The business didn't answer in time, so the request was cancelled. You were not charged.",
+    "handed": "Handed over. Enjoy.",
+    "cancel_confirm": "Cancel the order? The business will be notified.",
+    "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
+    "line": "{qty} × {name}",
+    "back": "Back",
+    "failed": "That didn't work. Please try again."
   }
 }

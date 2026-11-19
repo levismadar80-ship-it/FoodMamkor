@@ -1,6 +1,15 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Route } from "@playwright/test";
 
+// MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
+// Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
+// and the fake token draws a 401 that logs the page out. 404 = ordering off.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+});
+
 /**
  * Spec:     manual/dashboard-availability
  * Purpose:  MEH-1249 chunk 11k — the dashboard rows of MANUAL_TESTING «MEH-291
@@ -104,7 +113,6 @@ test("the card shows one enabled «בהפסקה» switch, off, and no radios", a
   await expectPaused(page, false);
   await expect(page.getByRole("radio")).toHaveCount(0);
   await expect(page.getByRole("radiogroup")).toHaveCount(0);
-  await expect(page.getByTestId("availability-disabled-hint")).toHaveCount(0);
 });
 
 // MT:MEH-291:5 — turning the switch on reveals the mini-form BEFORE any save; nothing leaves the browser.

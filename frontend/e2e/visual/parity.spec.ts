@@ -1303,6 +1303,10 @@ test.describe("Visual parity — MEH-991", () => {
   // The replacement (393x1747, -60px: the no-pill clearance is 12px where the
   // pill's was 72px) was opened and reviewed by eye before merge, not taken on
   // the bot's word: the pill is absent and the submit button is unobstructed.
+  // MEH-3351 (18/11): regenerated again after the consent line was reworded
+  // («גיל 18 ומעלה, והסכמה»). The change sat inside the 2% tolerance, so the
+  // old PNGs were deleted first to force a fresh write; both new ones (393x1787,
+  // 1440x1781) were opened and read: they show the new line, layout unchanged.
   test("register", async ({ page }) => {
     await preparePage(page);
     await page.goto("/register");
