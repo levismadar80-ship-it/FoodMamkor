@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import { useTranslations } from "next-intl";
 import EmailLinkUnsubscribe from "@/components/EmailLinkUnsubscribe";
 
 /**
@@ -11,10 +12,11 @@ import EmailLinkUnsubscribe from "@/components/EmailLinkUnsubscribe";
  * @param {{ token: string }} props
  */
 export default function UnsubscribeClient({ token }) {
+  const t = useTranslations("newsletter_unsubscribe");
   return (
     <EmailLinkUnsubscribe
       token={token}
-      namespace="newsletter_unsubscribe"
+      t={t}
       endpoint="/newsletter/unsubscribe"
     />
   );

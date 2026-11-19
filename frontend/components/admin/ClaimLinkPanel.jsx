@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
 
@@ -22,10 +23,11 @@ import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
  * own user gesture, which Safari needs (same reason as RequestReviewCard).
  */
 export default function ClaimLinkPanel({ producerId }) {
+  const t = useTranslations("admin.producers.claim");
   return (
     <AdminLinkPanel
       mint={() => api.post(`/admin/producers/${producerId}/claim-link`)}
-      namespace="admin.producers.claim"
+      t={t}
       testid="claim-link"
     />
   );

@@ -15,8 +15,9 @@ const INVALID_LINK_STATUSES = new Set([400, 422]);
 /**
  * Module:   EmailLinkUnsubscribe
  * Purpose:  The one landing for an «unsubscribe» link in an email: newsletter,
- *           delivery waitlist, weekly owner summary. Each page passes its copy
- *           namespace and endpoint; the behaviour is the same everywhere.
+ *           delivery waitlist, weekly owner summary. Each page passes a translator
+ *           bound to its namespace (a literal, so ClientMessagesScope can see it)
+ *           and its endpoint; the behaviour is the same everywhere.
  * Touches:  POST <endpoint> { token } — idempotent on the backend.
  * Does NOT: confirm a sign-up (newsletter/confirm is a button CLICK, never on
  *           mount — ConfirmClient.jsx), or know what list it removes from.
@@ -39,14 +40,13 @@ const INVALID_LINK_STATUSES = new Set([400, 422]);
  *
  * @param {{
  *   token: string,
- *   namespace: string,
+ *   t: (key: string, values?: object) => string,
  *   endpoint: string,
  *   successCta?: { href: string, labelKey: string },
  *   retryTestid?: string,
  * }} props
  */
-export default function EmailLinkUnsubscribe({ token, namespace, endpoint, successCta, retryTestid }) {
-  const t = useTranslations(namespace);
+export default function EmailLinkUnsubscribe({ token, t, endpoint, successCta, retryTestid }) {
   const tErr = useTranslations("error");
   // no token → straight to the invalid state (nothing to unsubscribe).
   const [status, setStatus] = useState(token ? "loading" : "invalid");

@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
@@ -17,7 +17,7 @@ import Input from "@/components/ui/Input";
  *           business and lets her copy it: the owner-claim link
  *           (ClaimLinkPanel) and the read-only preview link
  *           (DraftPreviewLinkPanel) are this one panel with a different
- *           endpoint, copy namespace and test-id prefix (MEH-3464).
+ *           endpoint, translator (bound to its copy namespace) and test-id prefix (MEH-3464).
  * Touches:  whatever `mint` posts (each wrapper names its own endpoint, so the
  *           static API-contract audit can read it) — stateless, no DB write.
  * Does NOT: send the link anywhere (the admin pastes it herself), or decide
@@ -29,10 +29,9 @@ import Input from "@/components/ui/Input";
  * Mint on click, copy on a second click: the clipboard write stays inside its
  * own user gesture, which Safari needs (same reason as RequestReviewCard).
  *
- * @param {{ mint: () => Promise<{ data: unknown }>, namespace: string, testid: string }} props
+ * @param {{ mint: () => Promise<{ data: unknown }>, t: (key: string, values?: object) => string, testid: string }} props
  */
-export default function AdminLinkPanel({ mint, namespace, testid }) {
-  const t = useTranslations(namespace);
+export default function AdminLinkPanel({ mint, t, testid }) {
   const locale = useLocale();
   const [link, setLink] = useState(null);
   const [error, setError] = useState(null);

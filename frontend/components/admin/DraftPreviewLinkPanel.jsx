@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
 
@@ -22,10 +23,11 @@ import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
  * own user gesture, which Safari needs.
  */
 export default function DraftPreviewLinkPanel({ producerId }) {
+  const t = useTranslations("admin.producers.draft_preview");
   return (
     <AdminLinkPanel
       mint={() => api.post(`/admin/producers/${producerId}/preview-link`)}
-      namespace="admin.producers.draft_preview"
+      t={t}
       testid="draft-preview-link"
     />
   );
