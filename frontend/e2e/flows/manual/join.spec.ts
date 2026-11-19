@@ -318,8 +318,18 @@ test.describe("manual › /join (MEH-995)", () => {
       });
       await gotoJoin(page);
       const scrollHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+      const step = Math.round(size.height / 2);
+      // MEH-3454: each step below may legitimately take up to its two 2 s polls,
+      // so the walk's own worst case is steps × 4 s — 64 s for the 16 steps at
+      // 390px (measured locally), more than the 45 s default. The CI failure
+      // was a TEST timeout inside scrollTo, not a poll failure, so every poll
+      // up to then had passed inside its bound: the walk ran out of the shared
+      // budget. The budget is now sized from the bounds the walk declares; no
+      // poll bound is loosened and no step is skipped.
+      const steps = Math.floor(scrollHeight / step) + 1;
+      test.setTimeout(test.info().timeout + steps * 2 * 2_000);
       let sawBar = false;
-      for (let y = 0; y <= scrollHeight; y += Math.round(size.height / 2)) {
+      for (let y = 0; y <= scrollHeight; y += step) {
         await page.evaluate((top) => window.scrollTo(0, top), y);
         // Gate on settled state, not a timer: the count must come down to <= 1.
         await expect.poll(() => visibleJoinCtas(page), { timeout: 2_000 }).toBeLessThanOrEqual(1);
