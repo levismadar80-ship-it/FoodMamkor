@@ -220,6 +220,8 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<{ items: () =
   await page.route("**/admin/reports/*/dismiss", async (r) => { rec(r, writes); await sleep(postDelayMs); return json(r, { detail: "Report closed", status: "dismissed" }); });
   await page.route("**/admin/producers/*/toggle-status", async (r) => { rec(r, writes); await sleep(postDelayMs); return json(r, { ok: true }); });
   await page.route((u) => /\/api\/admin\/users\/?$/.test(u.pathname), (r) => json(r, users));
+  // MEH-3375: «חסום» opens a confirm that first reads the block's impact.
+  await page.route("**/admin/users/*/block-impact", (r) => json(r, { business_name: null, open_bookings: 0 }));
   await page.route("**/admin/users/*/block", async (r) => { rec(r, writes); await sleep(postDelayMs); return json(r, { ok: true }); });
 
   return { items: () => items };
@@ -566,15 +568,25 @@ test.describe("double-submit protection — reports and users", () => {
     await expect(dialog).toHaveCount(0);
   });
 
-  // MT:MEH-228:2 — /admin/users: «חסום» once per double click.
-  test("/admin/users — a double click on «חסום» fires one block", async ({ page }) => {
+  // MT:MEH-228:2 — /admin/users: «לחסום» (the confirm, MEH-3375) once per double click.
+  test("/admin/users — a double click on the block confirm fires one block", async ({ page }) => {
     const writes: Rec[] = [];
     await stubAdmin(page, { users: USERS, postDelayMs: 1_200, writes });
     await page.goto("/admin/users");
     await expect(page.getByRole("heading", { name: "משתמשים" }), "control: the users page never rendered").toBeVisible({ timeout: 15_000 });
     const row = page.locator("tbody tr").filter({ has: page.getByText("דנה לוי", { exact: true }) });
     await expect(row).toHaveCount(1);
-    await expectSingleFire(page, row.getByRole("button", { name: "חסום", exact: true }), () => posts(writes, "/block").length, 1, "the second click must not block twice");
+    await row.getByRole("button", { name: "חסום", exact: true }).click();
+    // MEH-3375: the first click only opens the confirm; the double click moves to it.
+    const confirm = page.getByTestId("block-confirm-submit");
+    await expect(confirm).toBeEnabled();
+    expect(posts(writes, "/block"), "«חסום» alone must not block").toHaveLength(0);
+    await confirm.dblclick();
+    await expect(confirm).toBeDisabled();
+    await expect.poll(() => posts(writes, "/block").length).toBe(1);
+    const extra = await expect.poll(() => posts(writes, "/block").length, { timeout: 1_500 }).toBeGreaterThan(1).then(() => true).catch(() => false);
+    expect(extra, "the second click must not block twice").toBe(false);
     expect(posts(writes, "/block")[0].url).toBe("/admin/users/u-1/block");
+    await expect(page.getByTestId("block-confirm"), "the confirm closes once the block lands").toHaveCount(0);
   });
 });

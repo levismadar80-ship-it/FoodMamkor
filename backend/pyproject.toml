@@ -397,6 +397,7 @@ files = [
     "app/utils/sql.py",
     "app/routers/admin_passkey.py",
     "app/schemas/admin_passkey.py",
+    "app/schemas/admin_block.py",
     "app/services/admin_passkey.py",
 ]
 explicit_package_bases = true
