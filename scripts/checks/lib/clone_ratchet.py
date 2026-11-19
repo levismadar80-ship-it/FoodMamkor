@@ -147,6 +147,8 @@ def main(argv: list[str]) -> int:
     if grown:
         print("clone-ratchet: code copied between files (8+ lines the same). Use the existing one,")
         print("or extract a shared helper / component; see frontend/components/CLAUDE.md.")
+        print("A renamed or moved file shows up as a new pair: run with --update-baseline")
+        print("and say so in the PR body.")
         for line in grown:
             print(f"  NEW  {line}")
         return 1

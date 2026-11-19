@@ -9,6 +9,7 @@
 
 **קבצים מרכזיים**
 * `backend/app/services/email.py` — ‏`send_email()`. נכשל פתוח בלי `RESEND_API_KEY`.
+* `frontend/components/EmailLinkUnsubscribe.jsx` — דף הנחיתה האחד של כל קישור «הסרה» במייל (ניוזלטר, רשימת המתנה, סיכום שבועי): שולח את הטוקן ב-POST בטעינה, «נסו שוב» על 429/5xx/רשת, והטוקן יורד מכתובת הדף (MEH-3464).
 * `backend/app/services/registration_emails.py` — המסגרת המשותפת (`_shell`) של כל מייל HTML, ו-`_button`.
 * `backend/app/services/email_branding.py` — הלוגו.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py` · `backend/app/services/pending_nudge.py`
