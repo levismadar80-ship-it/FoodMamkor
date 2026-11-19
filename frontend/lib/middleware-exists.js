@@ -26,7 +26,10 @@ const TIMEOUT_MS = 3000;
  * MEH-3336: the only slug a `slug_moved` 404 may send us to — plain Latin, so
  * a hostile body can never turn the 301 into an off-site or path-escape jump.
  */
-export const MOVED_SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SLUG_CHARS = /^[a-z0-9-]+$/;
+/** @param {string} slug — Latin words joined by single hyphens, as minted since MEH-3336. */
+const isMovedSlugShape = (slug) =>
+  SLUG_CHARS.test(slug) && !slug.startsWith("-") && !slug.endsWith("-") && !slug.includes("--");
 
 /**
  * The business's current slug from a `slug_moved` 404 body, else null.
@@ -36,7 +39,7 @@ export const MOVED_SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export async function movedSlugOf(res) {
   try {
     const d = (await res.json())?.detail;
-    if (d?.code === "slug_moved" && typeof d.slug === "string" && MOVED_SLUG_SHAPE.test(d.slug)) {
+    if (d?.code === "slug_moved" && typeof d.slug === "string" && isMovedSlugShape(d.slug)) {
       return d.slug;
     }
   } catch {
