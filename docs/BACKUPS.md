@@ -70,7 +70,10 @@ docker run --rm -d --name mm_restore_drill \
   -p 5433:5432 postgres:18
 # 18, the version production runs (MEH-2950). A dump from pg_dump 17+ starts
 # with `SET transaction_timeout = 0;`, which 15 and 16 reject — an older drill
-# DB reports errors even when the backup is fine.
+# DB reports errors even when the backup is fine. The pg_restore client in
+# step 2 must be 17+ too (an older one rejects the dump's header); without one
+# on the host, run it inside the container: `docker exec -i mm_restore_drill
+# pg_restore --no-owner --no-acl -U postgres -d mehamakor_drill < <file>.dump`.
 
 # 2. שחזרי את ה-dump מ-§2 ל-DB הזמני.
 export DRILL_URL="postgresql://postgres:postgres@localhost:5433/mehamakor_drill"
