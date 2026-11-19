@@ -51,6 +51,9 @@ async function readSamples(page) {
 // user only ever sees one, so every locator and the marker address the
 // visible row; nothing here asserts how many hidden copies exist.
 const liveHub = (page: Page) => page.locator(HUB).filter({ visible: true });
+// MEH-3090: a hidden copy of the hub carries its own #events-city (empty), so
+// a bare #events-city can resolve to two inputs (strict-mode red, 375).
+const cityInput = (page: Page) => page.locator("#events-city").filter({ visible: true });
 
 async function openHub(page: Page, path: string) {
   await page.goto(path);
@@ -114,7 +117,7 @@ for (const locale of ["he", "en"] as const) {
   test(`${locale}: Back restores the filters the URL carries`, async ({ page }) => {
     const city = "חיפה";
     const hub = await openHub(page, `${prefix}/events?city=${encodeURIComponent(city)}`);
-    await expect(page.locator("#events-city")).toHaveValue(city);
+    await expect(cityInput(page)).toHaveValue(city);
 
     await hub.locator('[data-tab-value="experiences"]').click();
     await expect(page).toHaveURL(new RegExp(`${prefix}/experiences$`));
@@ -126,7 +129,7 @@ for (const locale of ["he", "en"] as const) {
     await expect(page).toHaveURL(new RegExp(`${prefix}/events\\?city=`));
     await expect(hub.locator('[data-tab-value="events"]')).toHaveAttribute("aria-selected", "true");
     // The address bar and the list agree: the city filter is back in state.
-    await expect(page.locator("#events-city")).toHaveValue(city);
+    await expect(cityInput(page)).toHaveValue(city);
   });
 
   test(`${locale}: leaving the hub and coming Back lands on the tab the URL names`, async ({ page }) => {

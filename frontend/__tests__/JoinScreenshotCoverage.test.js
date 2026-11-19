@@ -68,6 +68,9 @@ const NO_VISUAL = new Set([
   "demand_cities",
   "drop_point_hosts",
   "completeness",
+  // MEH-3216: the demo business on /join has no order bar yet; a shot follows
+  // once a real business turns ordering on.
+  "product_orders",
 ]);
 
 describe("the shot list against the tool registry", () => {
