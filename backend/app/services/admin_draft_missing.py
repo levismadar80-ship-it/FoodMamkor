@@ -40,7 +40,9 @@ def attach_draft_missing(db: Session, producers: Sequence[Any]) -> None:
     ]
     if not claimed:
         return
-    organizer_ids = [p.id for p in claimed if getattr(p, "kind", "producer") == "organizer"]
+    organizer_ids = [
+        p.id for p in claimed if getattr(p, "kind", "producer") == "organizer"
+    ]
     counts: dict[Any, int] = {}
     if organizer_ids:
         rows = (
