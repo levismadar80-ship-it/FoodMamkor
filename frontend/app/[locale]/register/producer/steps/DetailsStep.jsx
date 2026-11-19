@@ -181,10 +181,15 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                 {t("auth.register.producer.fields.fulfilment.areas_note")}
               </p>
               {/* MEH-2447: say what the card will show, and that WhatsApp
-                  orders already arrive through the contact button (B11). */}
-              <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-hours-hint">
-                {t("auth.register.producer.fields.fulfilment.hours_hint")}
-              </p>
+                  orders already arrive through the contact button (B11).
+                  The hours hint only once a choice with a place to come to
+                  is picked: a delivery-only card never shows «קנייה במקום»
+                  (has_physical_location=false → sells_on_site false). */}
+              {(fulfilment === "onsite" || fulfilment === "both") && (
+                <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-hours-hint">
+                  {t("auth.register.producer.fields.fulfilment.hours_hint")}
+                </p>
+              )}
               <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-whatsapp-note">
                 {t("auth.register.producer.fields.fulfilment.whatsapp_note")}
               </p>
