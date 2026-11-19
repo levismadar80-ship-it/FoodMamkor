@@ -281,6 +281,7 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), adminListExperiencesAdminExperiencesGetResponseSessionsDefault),
@@ -342,6 +343,7 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), approveExperienceAdminExperiencesExperienceIdApprovePostResponseSessionsDefault),
@@ -402,6 +404,7 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseSessionsDefault),
@@ -462,6 +465,7 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseSessionsDefault),
@@ -3996,6 +4000,7 @@ export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.objec
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), listExperiencesExperiencesGetResponseSessionsDefault),
@@ -4062,6 +4067,7 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), submitExperienceExperiencesPostResponseSessionsDefault),
@@ -4141,6 +4147,7 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), listMyExperiencesExperiencesMineGetResponseSessionsDefault),
@@ -4221,6 +4228,7 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), getExperienceExperiencesExperienceIdGetResponseSessionsDefault),
@@ -4281,6 +4289,7 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), updateExperienceExperiencesExperienceIdPutResponseSessionsDefault),
@@ -8781,6 +8790,7 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "sessions": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "date": /*#__PURE__*/ zod.iso.date(),
   "participants_count": /*#__PURE__*/ zod.int(),
+  "registered": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "spots_left": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "time": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3441: a date the page offers, with its places left (None = no cap).'))), getSavedUsersMeSavedGetResponseExperiencesItemSessionsDefault),

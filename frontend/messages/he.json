@@ -3190,6 +3190,12 @@
       "field_requirements_placeholder": "סינר, נעליים סגורות, יכולת עמידה של שעתיים...",
       "is_recurring": "החוויה חוזרת (שבועי / חודשי)",
       "recurring_placeholder": "לדוגמה: כל יום שישי 9:00–12:00",
+      "sessions_title": "מועדים",
+      "sessions_hint": "הוסיפו כל מועד בנפרד. לכל מועד יש מקומות משלו, לפי מספר המשתתפים שהגדרתם.",
+      "sessions_add": "הוספת מועד",
+      "sessions_remove": "הסרת המועד",
+      "sessions_max": "אפשר להוסיף עד 12 מועדים קדימה.",
+      "sessions_remove_confirm": "{count, plural, one {במועד הזה רשומה אדם אחד. ההסרה תבטל את ההרשמה, ויישלח מייל.} two {במועד הזה רשומים # אנשים. ההסרה תבטל את ההרשמה שלהם, והם יקבלו מייל.} other {במועד הזה רשומים # אנשים. ההסרה תבטל את ההרשמה שלהם, והם יקבלו מייל.}}",
       "cancel": "ביטול",
       "submitting": "בשליחה...",
       "cannot_publish": "לא ניתן לפרסם",
@@ -6957,7 +6963,8 @@
       "attendance": "האם הגיעו",
       "attended": "הגיעו",
       "no_show": "לא הגיעו",
-      "attendance_error": "לא הצלחנו לשמור. נסו שוב."
+      "attendance_error": "לא הצלחנו לשמור. נסו שוב.",
+      "session_group": "{date}, {time} · {count} רשומים"
     },
     "cta": {
       "signup_experience": "הרשמה לסדנה",
@@ -6986,7 +6993,12 @@
       "generic": "משהו נתקע. נסו שוב.",
       "waitlist_submit": "הצטרפות לרשימת ההמתנה",
       "waitlist_success": "נכנסתם לרשימת ההמתנה. אם יתפנה מקום, נשלח אימייל עם קישור להרשמה.",
-      "party_size": "כמה אנשים"
+      "party_size": "כמה אנשים",
+      "session": "מועד",
+      "session_placeholder": "בחרו מועד",
+      "session_option": "{date}, {time}",
+      "session_full": "{date}, {time} · מלא",
+      "session_required": "בחרו מועד."
     },
     "cancel": {
       "title": "ביטול הרשמה ל-\"{title}\"",
