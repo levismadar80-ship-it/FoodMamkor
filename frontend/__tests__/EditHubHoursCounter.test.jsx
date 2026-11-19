@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
@@ -29,10 +29,12 @@ const BASE = {
 const progress = (done, total) =>
   he.dashboard.producer.edit_accordion.hub_progress.replace("{done}", done).replace("{total}", total);
 
-function mountWith(profile) {
-  api.get.mockImplementation((url) =>
-    url === "/producers/me" ? Promise.resolve({ data: profile }) : Promise.resolve({ data: [] }),
-  );
+function mountWith(profile, liveLocations = profile.locations) {
+  api.get.mockImplementation((url) => {
+    if (url === "/producers/me") return Promise.resolve({ data: profile });
+    if (url === "/producers/me/locations") return Promise.resolve({ data: liveLocations });
+    return Promise.resolve({ data: [] });
+  });
   render(
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
       <EditPage />
@@ -57,5 +59,12 @@ describe("location tile agrees with the hours checklist (MEH-2930)", () => {
     mountWith(profile);
     const tile = await screen.findByTestId("hub-card-location");
     expect(tile).toHaveTextContent(progress(2, 2));
+  });
+
+  it("hours saved in the locations editor move the tile without a reload", async () => {
+    const stale = { ...BASE, locations: [{ id: 1, is_primary: true, opening_hours: "" }] };
+    mountWith(stale, [{ id: 1, is_primary: true, opening_hours: "א-ה 08:00-16:00" }]);
+    const tile = await screen.findByTestId("hub-card-location");
+    await waitFor(() => expect(tile).toHaveTextContent(progress(2, 2)));
   });
 });

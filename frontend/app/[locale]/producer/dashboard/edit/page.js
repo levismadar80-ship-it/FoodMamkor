@@ -618,8 +618,9 @@ function EditPageInner() {
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
     // MEH-2930: the locations card counts as done once the business has store
-    // hours — the same test the checklist runs (lib/producer-completeness.js).
-    locations: Boolean(resolveStoreHours(profile)),
+    // hours — the same test the checklist runs (lib/producer-completeness.js) —
+    // read off the editor's live list, so saving hours there moves the tile.
+    locations: Boolean(resolveStoreHours({ ...profile, locations: currentLocations })),
   };
 
   // MEH-2155: the accordion header needs the same resolution the card body
