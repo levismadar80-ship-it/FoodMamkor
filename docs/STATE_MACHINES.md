@@ -86,6 +86,7 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |
+| inactive → approved | the owner, accepting an owner invite | `routers/producer_owner_invite.py` `accept_owner_invite`, `routers/producer_owner_invite_existing.py` `accept_owner_invite_existing` (both via `_accept_plan`) | the invite-time gates (`services/invite_gate.py`) re-checked: a missing photo or required licence keeps it `inactive`, owner still linked (MEH-3268) |
 | approved → inactive | admin blocks the only owner | `routers/admin_extra.py` `block_user` → `hide_business` | a co-owner who can sign in keeps it up |
 | any → (status via plain edit) | — | refused in `routers/admin.py` | — |
 | deleted | admin / owner's account deletion | `routers/admin.py`, `services/user_deletion.py` | `delist_business` first |

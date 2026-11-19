@@ -11,7 +11,7 @@ Does NOT: send anything (the per-event emails live in content_notifications
           the frontend renders the counts.
 Related:  backend/app/routers/producer_me.py `dashboard` (the only caller) ·
           frontend/components/producer/OwnerAttentionCard.jsx.
-History:  MEH-3108 (creation).
+History:  MEH-3108 (creation); MEH-3430 (product count for the menu row).
 """
 
 import logging
@@ -22,7 +22,14 @@ from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Event, Experience, Producer, ProducerReview, Registration
+from app.models import (
+    Event,
+    Experience,
+    Producer,
+    Product,
+    ProducerReview,
+    Registration,
+)
 from app.models.models import GroupBuy
 from app.utils.clock import utc_now
 from app.services.review_conflicts import conflict_free  # MEH-3258
@@ -44,6 +51,7 @@ class OwnerAttention(TypedDict):
     new_signups: list[SignupItem]
     funded_group_buys: int
     pending_orders: int
+    products: int  # MEH-3430: 0 → the «העלו תפריט» row
 
 
 def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
@@ -125,6 +133,16 @@ def _pending_orders(db: Session, producer_id: UUID) -> int:
     return int(n or 0)
 
 
+def _products(db: Session, producer_id: UUID) -> int:
+    # MEH-3430: a business with no products yet gets the menu-upload row.
+    n: Any = (
+        db.query(func.count(Product.id))
+        .filter(Product.producer_id == producer_id)
+        .scalar()
+    )
+    return int(n or 0)
+
+
 def owner_attention(
     db: Session, producer_id: UUID, host_user_id: Any
 ) -> OwnerAttention:
@@ -144,6 +162,8 @@ def owner_attention(
             "new_signups": [],
             "funded_group_buys": 0,
             "pending_orders": 0,
+            # Unknown, not zero: a failed count must not tell her she has none.
+            "products": -1,
         }
 
 
@@ -153,4 +173,5 @@ def _counts(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention
         "new_signups": _new_signups(db, producer_id, host_user_id),
         "funded_group_buys": _funded_group_buys(db, producer_id),
         "pending_orders": _pending_orders(db, producer_id),
+        "products": _products(db, producer_id),
     }

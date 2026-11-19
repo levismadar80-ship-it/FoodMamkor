@@ -4952,7 +4952,9 @@
         "group_buys": "{count, plural, one {A group buy reached its goal} other {# group buys reached their goal}}",
         "group_buys_cta": "Details",
         "orders": "{count, plural, one {One order waiting for confirmation} other {# orders waiting for confirmation}}",
-        "orders_cta": "Confirm"
+        "orders_cta": "Confirm",
+        "menu": "No products on your page yet. You can upload a menu instead of typing.",
+        "menu_cta": "Upload a menu"
       },
       "status": {
         "pending": {
@@ -6064,6 +6066,18 @@
         "title": "A product with this name already exists. Continue?",
         "confirm": "Add product",
         "cancel": "Cancel"
+      },
+      "menu_import": {
+        "button": "Upload a menu",
+        "strip_title": "Have a menu or price list?",
+        "strip_body": "Take a photo and we'll fill in the products. You just check and publish.",
+        "reading": "Reading the menu…",
+        "found": "We found {count} products. Check them before publishing.",
+        "check": "Worth checking",
+        "no_price": "No price found. Add a price to publish.",
+        "publish": "Publish {count} products",
+        "failed": "We couldn't read the menu. Try a straighter, sharper photo, or add products by hand.",
+        "cap": "Up to 100 products per page. Choose which ones to publish."
       }
     },
     "locations": {
@@ -7390,5 +7404,29 @@
     "error_generic": "Something went wrong. Please try again.",
     "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
     "error_rate_limited": "Too many attempts. Please try again shortly."
+  },
+  "order_status": {
+    "title": "Your order",
+    "sent": "Request sent. {business_name} will confirm soon.",
+    "waiting": "We'll message you as soon as there's an answer. If there's no answer by {deadline}, the request is cancelled.",
+    "confirmed": "Order confirmed",
+    "when_pickup": "Pickup on {day}, {from}–{until} · {address}",
+    "when_pickup_no_address": "Pickup on {day}, {from}–{until}",
+    "when_delivery": "Delivery on {day}, {from}–{until}",
+    "proposal": "The business suggests a change",
+    "accept": "Works for me",
+    "cancel": "Cancel the order",
+    "ready": "Your order is ready for pickup",
+    "code": "Say this code at the counter",
+    "to_pay": "To pay the business: ₪{total}",
+    "declined": "The business can't fill this order.",
+    "cancelled": "Your order from {business_name} was cancelled.",
+    "expired": "The business didn't answer in time, so the request was cancelled. You were not charged.",
+    "handed": "Handed over. Enjoy.",
+    "cancel_confirm": "Cancel the order? The business will be notified.",
+    "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
+    "line": "{qty} × {name}",
+    "back": "Back",
+    "failed": "That didn't work. Please try again."
   }
 }

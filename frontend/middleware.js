@@ -5,7 +5,7 @@ import { isOwnerPreview } from "./lib/owner-preview";
 import { routing } from "./i18n/routing";
 import { isSlugShaped, decodeSlugParam } from "./lib/slug";
 import { DIET_PAGE_MIN, getDietPage, isDietPageBacked } from "./lib/diet-pages";
-import { recipeExists, regionCellExists } from "./lib/middleware-exists"; // MEH-2977 siblings
+import { movedSlugOf, recipeExists, regionCellExists } from "./lib/middleware-exists"; // MEH-2977 siblings
 import staticRoutes from "./lib/static-routes.json";
 
 /**
@@ -190,20 +190,11 @@ async function dietPageExists(slug) {
 
 // MEH-3336: { moved: "<slug>" } for a renamed business, else false. Only a
 // Latin slug is followed — the backend mints nothing else since MEH-3336, and
-// it keeps a crafted body from steering the redirect anywhere odd.
-const MOVED_SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
+// it keeps a crafted body from steering the redirect anywhere odd. The shape
+// check lives in lib/middleware-exists.js (MEH-3342: recipes share it).
 async function movedSlugFrom(res) {
-  try {
-    const body = await res.json();
-    const d = body?.detail;
-    if (d?.code === "slug_moved" && typeof d.slug === "string" && MOVED_SLUG_SHAPE.test(d.slug)) {
-      return { moved: d.slug };
-    }
-  } catch {
-    // Not JSON — a plain miss.
-  }
-  return false;
+  const slug = await movedSlugOf(res);
+  return slug ? { moved: slug } : false;
 }
 
 async function producerExists(url) {

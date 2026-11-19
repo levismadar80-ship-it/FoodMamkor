@@ -19,6 +19,9 @@ Who calls it:
   - `moved_to`                      — GET /producers/by-slug (MEH-3336): a
     renamed business's old slug → 404 {code: slug_moved, slug}, which the
     middleware turns into a 301.
+  - `moved_to`                      — GET /producers/{slug}/recipes/{id}
+    (MEH-3342, `producer_recipes._resolve_producer_by_slug`): the same
+    slug_moved 404, given only when the recipe is live at the new slug.
 
 A new writer of `producers.slug` MUST take its value from
 `_ensure_unique_slug`: that call is the only place a tombstone is honoured,

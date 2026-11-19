@@ -6122,6 +6122,33 @@ export const UpdateMyLocationProducersMeLocationsLocationIdPutResponse = /*#__PU
 
 
 /**
+ * @summary Publish My Menu
+ */
+export const PublishMyMenuProducersMeMenuImportPublishPostResponse = /*#__PURE__*/ zod.object({
+  "created": /*#__PURE__*/ zod.int(),
+  "skipped_duplicates": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+})
+
+
+/**
+ * @summary Read My Menu
+ */
+export const readMyMenuProducersMeMenuImportReadPostResponseRowsItemPriceUnitDefault = `unit`;
+
+export const ReadMyMenuProducersMeMenuImportReadPostResponse = /*#__PURE__*/ zod.object({
+  "rows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['unit', 'kg', '100g']), readMyMenuProducersMeMenuImportReadPostResponseRowsItemPriceUnitDefault),
+  "section": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "uncertain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.enum(['name', 'description', 'price', 'unit'])))
+}).check(/*#__PURE__*/ zod.describe('One product as read from the menu. Nothing is saved yet.')))
+})
+
+
+/**
  * The owner's own history — so she can see a request is still pending.
  * @summary List Own Name Change Requests
  */
@@ -7561,6 +7588,7 @@ export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.string(),
@@ -7613,6 +7641,7 @@ export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.string(),
@@ -7652,6 +7681,7 @@ export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.string(),
@@ -7691,6 +7721,7 @@ export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.string(),
@@ -8513,6 +8544,7 @@ export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.ob
 })),
   "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.string(),
