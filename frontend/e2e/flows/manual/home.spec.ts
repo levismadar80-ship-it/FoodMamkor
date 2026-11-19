@@ -940,9 +940,20 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
       const cs = getComputedStyle(el);
       // The last pixel row of the box that is on screen. Whatever paints there
       // must be the dropdown itself: an ancestor with overflow hidden (the hero
-      // band) would leave the hero's own pixels there instead.
+      // band) would leave the hero's own pixels there instead. Page chrome that
+      // is position:fixed (BottomNav, cookie banner, chat launcher) floats over
+      // everything at the viewport bottom by design, so it is skipped: the
+      // first IN-FLOW element under the point is the one that counts.
       const probeY = Math.min(d.bottom, window.innerHeight) - 2;
-      const atProbe = document.elementFromPoint(d.left + d.width / 2, probeY);
+      const inFixedLayer = (n: Element | null): boolean => {
+        for (let a = n; a && a !== el; a = a.parentElement) {
+          if (getComputedStyle(a).position === "fixed") return true;
+        }
+        return false;
+      };
+      const atProbe = document
+        .elementsFromPoint(d.left + d.width / 2, probeY)
+        .find((n) => el.contains(n) || !inFixedLayer(n));
       return {
         dropBottom: d.top + d.height,
         heroBottom: h.top + h.height,
