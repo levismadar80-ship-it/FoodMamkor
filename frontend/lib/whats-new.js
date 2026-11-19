@@ -38,6 +38,9 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.7 (19/11): AI menu import in the products card (MEH-3430, #4833,
+  // Launch tier ב׳). Line approved by Sapir word for word.
+  { version: "1.5.7", key: "v1_5_7", date: "2026-11-19", items: 1 },
   // 1.5.6 (18/11): admin draft preview link + publish with consent (MEH-3377),
   // security and stability fixes. The owner-facing pieces (monthly freshness
   // email, surprise-bag email) sit behind flags that default to off, so
