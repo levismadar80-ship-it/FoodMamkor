@@ -188,7 +188,7 @@ sequenceDiagram
 **`token_version` (tv) is the kill switch.** Every access and refresh token carries the user's
 `token_version`; a mismatch is the «tv drift» 401 above. Bumping it retires every session the
 account holds at once. Writers: `POST /auth/logout-all-devices`, owner-invite accept on an existing account
-(MEH-3256 D8), an email change (`PATCH /users/me`, MEH-3425), and admin «ניתוק בעלים» (`POST /admin/producers/{id}/detach-owner`, MEH-3256 D9).
+(MEH-3256 D8), an email change (`PATCH /users/me`, MEH-3425), an admin adding a passkey (`POST /auth/passkey/register/verify`, MEH-3305), and admin «ניתוק בעלים» (`POST /admin/producers/{id}/detach-owner`, MEH-3256 D9).
 
 **Email change (MEH-3425).** A successful `PATCH /users/me` that changes the
 email bumps `token_version` (same effect as logout-all): every other device's

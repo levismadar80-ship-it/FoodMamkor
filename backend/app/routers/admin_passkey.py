@@ -12,7 +12,8 @@ Does NOT:  Decide WHEN a sign-in needs the second step — that is
            passkeys: every route acts on the signed-in account only.
 Related:   services/admin_passkey.py (ceremonies, tickets, codes),
            routers/auth.py _set_refresh_cookie / _set_fingerprint_cookie.
-History:   MEH-3305 (creation).
+History:   MEH-3305 (creation); MEH-3305 follow-up: adding a passkey signs
+           every other session out (token_version bump).
 """
 
 from uuid import UUID
@@ -166,6 +167,7 @@ def register_options(
 @limiter.limit("10/minute")
 def register_verify(
     request: Request,
+    response: Response,
     data: RegisterVerify,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -182,6 +184,10 @@ def register_verify(
         detail = _CAP if str(exc) == "cap" else _FAILED
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
     codes = pk.new_recovery_codes(db, user) if first else None
+    # MEH-3305: a new passkey is a new way into the account, so every session
+    # opened before it ends (as logout-all and an email change do, MEH-3425).
+    # In the same commit as the row: no passkey without the sign-out.
+    user.token_version = (user.token_version or 1) + 1  # type: ignore[assignment]
     try:
         db.commit()
     except IntegrityError:
@@ -189,6 +195,11 @@ def register_verify(
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_FAILED)
     db.refresh(row)
+    db.refresh(user)
+    # This device stays signed in: fresh cookies, and its next request
+    # recovers through /auth/refresh like the email-change path.
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, generate_fingerprint())
     return Registered(passkey=_out(row), recovery_codes=codes)
 
 

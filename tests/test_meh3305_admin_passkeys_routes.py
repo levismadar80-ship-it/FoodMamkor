@@ -188,7 +188,21 @@ def _enroll(client, user, device=None) -> tuple[SoftAuthenticator, dict, list]:
         headers=h,
     )
     assert r.status_code == 200, r.text
-    return device, h, r.json()["recovery_codes"]
+    # Adding a passkey ends every session, this one too until it refreshes
+    # (the browser does that on its next 401). Carry it over the same way.
+    return device, _carry_over(client, r), r.json()["recovery_codes"]
+
+
+def _carry_over(client, response) -> dict:
+    """The session after a token_version bump: /auth/refresh with the new
+    cookies the response set (the refresh cookie is path-scoped to /api/auth,
+    so it travels by hand), and the new fingerprint kept on the client."""
+    refreshed = client.post(
+        "/auth/refresh",
+        cookies={"refresh_token": response.cookies.get("refresh_token")},
+    )
+    assert refreshed.status_code == 200, refreshed.text
+    return _h(refreshed.json()["access_token"])
 
 
 def _second_step(client, user):
@@ -328,6 +342,7 @@ def test_a_password_change_kills_an_open_ticket(client, db, passkeys_on):
     device, _x, _c = _enroll(client, admin)
     _r, body = _second_step(client, admin)
     user = db.query(User).filter_by(id=admin.id).one()
+    db.refresh(user)  # enrolling moved token_version on the server side
     user.token_version = (user.token_version or 1) + 1
     db.commit()
     r = client.post(
@@ -537,3 +552,56 @@ def test_a_code_used_as_step_up_is_spent(client, db, passkeys_on):
         "/auth/passkey/recovery-codes", json={"recovery_code": codes[2]}, headers=h
     )
     assert r.status_code == 403
+
+
+def test_adding_a_passkey_signs_every_other_device_out(client, db, passkeys_on):
+    """A new passkey is a new way into an admin account, so every session
+    opened before it ends, as logout-all and an email change do (MEH-3425).
+    The device that added it gets fresh cookies and stays signed in."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    admin = make_user(db, role="admin")
+    other_device = TestClient(app, base_url="https://testserver")
+    other = _h(_token(other_device, admin).json()["access_token"])
+    assert other_device.get("/auth/me", headers=other).status_code == 200
+    version = admin.token_version
+
+    device = SoftAuthenticator()
+    h = _session(client, admin)
+    r = client.post(
+        "/auth/passkey/register/options", json={"password": PASSWORD}, headers=h
+    )
+    body = r.json()
+    r = client.post(
+        "/auth/passkey/register/verify",
+        json={
+            "ticket": body["ticket"],
+            "credential": device.create(body["options"]),
+            "name": "הטלפון",
+        },
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+
+    db.refresh(admin)
+    assert admin.token_version == version + 1
+    assert other_device.get("/auth/me", headers=other).status_code == 401
+    # The caller's own device: the new cookies carry it over. The refresh
+    # cookie is scoped to /api/auth, so it travels here by hand.
+    new_refresh = r.cookies.get("refresh_token")
+    new_fp = r.cookies.get("__Secure-Fgp")
+    assert new_refresh and new_fp
+    fresh = TestClient(app, base_url="https://testserver")
+    refreshed = fresh.post(
+        "/auth/refresh",
+        cookies={"refresh_token": new_refresh, "__Secure-Fgp": new_fp},
+    )
+    assert refreshed.status_code == 200, refreshed.text
+    me = fresh.get(
+        "/auth/me",
+        headers=_h(refreshed.json()["access_token"]),
+        cookies={"__Secure-Fgp": refreshed.cookies.get("__Secure-Fgp") or new_fp},
+    )
+    assert me.status_code == 200 and me.json()["email"] == admin.email
