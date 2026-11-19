@@ -56,6 +56,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -204,15 +205,106 @@ def run_pg_restore(local_path: Path, target_url: str) -> bool:
     return True
 
 
+_UPDATE_RE = re.compile(r"^UPDATE (\w+) SET\s*$")
+_DELETE_RE = re.compile(r"^DELETE FROM (\w+);\s*$")
+_ASSIGN_RE = re.compile(r"^    (\w+) = (.+?)[,;]?\s*$")
+
+
+def effective_sql(sql: str, existing: set[tuple[str, str]]) -> tuple[str, list[str]]:
+    """MEH-3406: the anonymization SQL minus what the restored schema lacks.
+
+    A dump older than a migration has no column that migration added, and a
+    plain UPDATE naming it would fail the whole transaction. The PII in a
+    column that does not exist is not in the dump either, so the assignment
+    is dropped and reported. Relies on the file's format contract (one
+    statement per table, one assignment per line), which
+    tests/test_restore_anonymize.py checks against the real file.
+    Returns (sql, skipped) — skipped as "table.column" / "table".
+    """
+    tables = {t for t, _ in existing}
+    out: list[str] = []
+    skipped: list[str] = []
+    lines = sql.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if m := _DELETE_RE.match(line):
+            if m.group(1) in tables:
+                out.append(line)
+            else:
+                skipped.append(m.group(1))
+            i += 1
+            continue
+        if not (m := _UPDATE_RE.match(line)):
+            out.append(line)
+            i += 1
+            continue
+        table = m.group(1)
+        i += 1
+        kept: list[str] = []
+        where: str | None = None
+        while i < len(lines):
+            body = lines[i]
+            if a := _ASSIGN_RE.match(body):
+                col = a.group(1)
+                if (table, col) in existing:
+                    kept.append(f"    {col} = {a.group(2)}")
+                else:
+                    skipped.append(f"{table}.{col}")
+                i += 1
+                if body.rstrip().endswith(";"):
+                    break
+                continue
+            if body.startswith("WHERE"):
+                where = body.rstrip().rstrip(";")
+                i += 1
+            break
+        if table not in tables:
+            skipped.append(table)
+            continue
+        if not kept:
+            continue
+        out.append(f"UPDATE {table} SET")
+        out.append(",\n".join(kept) + ("" if where else ";"))
+        if where:
+            out.append(where + ";")
+    return "\n".join(out) + "\n", skipped
+
+
+def existing_columns(target_url: str) -> set[tuple[str, str]] | None:
+    """Every (table, column) in the target's public schema; None if unreadable."""
+    sql = (
+        "SELECT table_name || '.' || column_name FROM information_schema.columns "
+        "WHERE table_schema = 'public'"
+    )
+    try:
+        result = subprocess.run(
+            ["psql", target_url, "-X", "-tAc", sql],
+            check=True, capture_output=True, text=True, timeout=60,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        log.error("could not read the restored schema: %s", exc)
+        return None
+    pairs = set()
+    for row in result.stdout.split():
+        table, _, col = row.partition(".")
+        pairs.add((table, col))
+    return pairs
+
+
 def run_anonymize(target_url: str) -> bool:
     """MEH-3406: run the anonymization SQL in a single transaction."""
-    cmd = [
-        "psql", target_url, "-X", "--single-transaction",
-        "-v", "ON_ERROR_STOP=1", "-q", "-f", str(ANONYMIZE_SQL),
-    ]
+    existing = existing_columns(target_url)
+    if not existing:
+        log.error("anonymization did not run: the restored schema is empty or unreadable")
+        return False
+    sql, skipped = effective_sql(ANONYMIZE_SQL.read_text(encoding="utf-8"), existing)
+    for name in skipped:
+        log.warning("  not in this dump's schema, skipped: %s", name)
+    cmd = ["psql", target_url, "-X", "--single-transaction", "-v", "ON_ERROR_STOP=1", "-q", "-f", "-"]
     log.info("Anonymizing personal details (%s)", ANONYMIZE_SQL.name)
     try:
-        subprocess.run(cmd, check=True, timeout=ANONYMIZE_TIMEOUT_SEC)
+        subprocess.run(cmd, check=True, timeout=ANONYMIZE_TIMEOUT_SEC, input=sql, text=True)
     except subprocess.CalledProcessError as exc:
         log.error("anonymization exited %d — nothing was changed (one transaction)", exc.returncode)
         return False
@@ -228,6 +320,9 @@ SURVIVOR_QUERIES = (
     ("users off @example.com", "SELECT count(*) FROM users WHERE email NOT ILIKE '%@example.com'"),
     ("contact_messages off @example.com", "SELECT count(*) FROM contact_messages WHERE email NOT ILIKE '%@example.com'"),
     ("newsletter off @example.com", "SELECT count(*) FROM newsletter_subscribers WHERE email NOT ILIKE '%@example.com'"),
+    ("users with a real phone", "SELECT count(*) FROM users WHERE phone IS NOT NULL AND phone NOT LIKE '+97250000%'"),
+    ("registrations off @example.com", "SELECT count(*) FROM registrations WHERE email NOT ILIKE '%@example.com'"),
+    ("producers' contact email", "SELECT count(*) FROM producers WHERE contact_email IS NOT NULL AND contact_email NOT ILIKE '%@example.com'"),
     ("push endpoints", "SELECT count(*) FROM favorite_alerts WHERE push_subscription IS NOT NULL"),
     ("inbound WhatsApp", "SELECT count(*) FROM inbound_messages"),
 )
@@ -313,21 +408,24 @@ def main(argv: list[str] | None = None) -> int:
         if not verify_dump_integrity(local_path):
             return EXIT_RESTORE_FAILED
 
-        if not run_pg_restore(local_path, args.target_database_url):
-            return EXIT_RESTORE_FAILED
+        restored = run_pg_restore(local_path, args.target_database_url)
 
         if args.keep_pii:
             log.warning("--keep-pii: real personal details were restored and kept")
-        else:
-            if not (
-                run_anonymize(args.target_database_url)
-                and verify_anonymized(args.target_database_url)
-            ):
-                log.error(
-                    "The target now holds REAL personal details. Drop that "
-                    "database before anyone uses it."
-                )
-                return EXIT_ANONYMIZE_FAILED
+        # MEH-3406: a failed pg_restore usually leaves most tables loaded (it
+        # runs without --exit-on-error), so it is anonymized too.
+        elif not (
+            run_anonymize(args.target_database_url)
+            and verify_anonymized(args.target_database_url)
+        ):
+            log.error(
+                "The target now holds REAL personal details. Drop that "
+                "database before anyone uses it."
+            )
+            return EXIT_RESTORE_FAILED if not restored else EXIT_ANONYMIZE_FAILED
+
+        if not restored:
+            return EXIT_RESTORE_FAILED
 
         log.info("Restore OK — verifying row counts:")
         print_row_counts(args.target_database_url)

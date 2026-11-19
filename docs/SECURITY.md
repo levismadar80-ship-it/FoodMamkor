@@ -925,10 +925,12 @@ A third signed link next to the claim link and the owner invite, and the weakest
 
 ## 17b-1. A restored backup carries no real people (MEH-3406)
 
-A production dump restored anywhere else (staging, a DR drill, a laptop) is one more copy of the database to protect (Privacy Protection Law, amendment 13). So `scripts/restore_from_backup.py` runs `scripts/anonymize_restored_db.sql` right after `pg_restore`, in one transaction, and then fails closed (exit 4) if any real email or push endpoint survived.
+A production dump restored anywhere else (staging, a DR drill, a laptop) is one more copy of the database to protect (Privacy Protection Law, amendment 13). So `scripts/restore_from_backup.py` runs `scripts/anonymize_restored_db.sql` right after `pg_restore`, in one transaction, and then fails closed (exit 4) if any real email, phone, push endpoint or inbound WhatsApp message survived.
 - **Replaced:** emails → `…@example.com`, phones → `+97250000xxxx`, names, street addresses, osek numbers, invite and status tokens, IP hashes, audit details, order notes.
 - **Deleted:** OTP codes, admin passkeys and recovery codes, inbound/outbound WhatsApp, no-show tombstones, push subscriptions.
-- **Kept on purpose:** what a business published (name, pickup points, reviews). Each kept column is listed with its reason in `tests/test_restore_anonymize.py:EXEMPT`; that test fails on a new PII-shaped column with no entry either way.
+- **Kept on purpose:** what a business published (name, bio, pickup points, visible reviews). Each kept column is listed with its reason in `tests/test_restore_anonymize.py:EXEMPT`; that test fails on a new PII-shaped column with no entry either way, and on an entry whose column is gone.
+- **Accepted risk:** "published" means submitted for publication, so a pending or rejected business keeps its name and bio on the copy. Hidden or flagged review texts are cleared. Decided 19/11, while production holds no real businesses.
+- **Older dumps:** a column the dump does not have yet is skipped and logged, never a failed restore. Every account is rewritten, the demo logins too; re-seed them on staging.
 - `--keep-pii` is explicit only. The production-target refusal is unchanged.
 
 ## 17b-2. Menu upload → a paid model call (MEH-3430)

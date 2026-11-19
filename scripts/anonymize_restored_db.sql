@@ -21,8 +21,15 @@
 --     at the start of a line;
 --   * every assignment on its own line, `    <column> = <expr>,`.
 --
--- Rows already on a reserved test domain (@example.com — the seeded demo
--- accounts) are left alone, so staging logins keep working after a restore.
+-- Every row is rewritten, including any already on @example.com: pg_restore
+-- --clean replaces the whole users table with production's, where the demo
+-- seed never ran, so nothing worth keeping is there. Re-seed the demo
+-- accounts after a restore (docs/DEPLOYMENT.md «Staging QA auth fixtures»).
+--
+-- Schema lag: restore_from_backup.py drops any assignment or statement whose
+-- column or table the restored schema does not have yet (a dump older than a
+-- migration) and logs each one. The PII in a column that does not exist is
+-- not in the dump either.
 --
 -- Fake phone: '+97250000' + 4 digits from md5(id). 13 characters, fits every
 -- phone column (String(20)/String(30)), passes the phone validator
@@ -40,8 +47,7 @@ UPDATE users SET
     apple_id = NULL,
     avatar_url = NULL,
     reset_token = NULL,
-    email_verify_token = NULL
-WHERE email NOT ILIKE '%@example.com';
+    email_verify_token = NULL;
 
 UPDATE producers SET
     contact_name = CASE WHEN contact_name IS NULL THEN NULL ELSE 'איש קשר ' || left(id::text, 8) END,
@@ -58,12 +64,18 @@ UPDATE producers SET
     owner_invite_consent_note = NULL,
     consent_screenshot_url = NULL,
     admin_notes = NULL,
-    payment_info = NULL;
+    payment_info = NULL,
+    producer_license_number = NULL,
+    rejection_reason = NULL,
+    requested_changes = NULL,
+    risk_reasoning = NULL,
+    referral_source_other = NULL;
 
 UPDATE producer_order_settings SET
     business_id_number = NULL;
 
 UPDATE producer_locations SET
+    address = NULL,
     phone = CASE WHEN phone IS NULL THEN NULL ELSE '+97250000' || lpad((('x' || substr(md5(id::text), 1, 4))::bit(16)::int % 10000)::text, 4, '0') END;
 
 -- ── Things people sent us ──────────────────────────────────────────────────
@@ -99,6 +111,7 @@ UPDATE outreach_leads SET
     phone = CASE WHEN phone IS NULL THEN NULL ELSE '+97250000' || lpad((('x' || substr(md5(id::text), 1, 4))::bit(16)::int % 10000)::text, 4, '0') END,
     suggested_by_name = NULL,
     suggested_by_email = NULL,
+    suggestion_reason = NULL,
     notes = NULL,
     prefill_token = NULL;
 
@@ -108,6 +121,23 @@ UPDATE product_orders SET
     delivery_address = NULL,
     note = NULL,
     status_token_hash = NULL;
+
+UPDATE experiences SET
+    address = NULL;
+
+UPDATE reports SET
+    reason = NULL;
+
+UPDATE producer_name_change_requests SET
+    reason = NULL;
+
+UPDATE rescue_reviews SET
+    photo_url = NULL;
+
+-- A hidden or flagged review was never public; a published one is.
+UPDATE producer_reviews SET
+    body = NULL
+WHERE is_hidden IS TRUE OR ai_moderation_status = 'FLAGGED';
 
 UPDATE product_order_events SET
     note = NULL;

@@ -5,7 +5,9 @@ Purpose:  Guard scripts/anonymize_restored_db.sql (MEH-3406): it covers every
           column, and after it runs no real email, phone or push endpoint is
           left. Also the restore script's wiring: anonymize by default,
           `--keep-pii` only when typed, fail closed.
-Touches:  The test database only (the SQL runs inside the test's transaction).
+Touches:  The test database only. The SQL commits on a raw connection; that is
+          safe because every xdist worker has its own database and the
+          autouse _clean_tables fixture truncates between tests.
 Related:  scripts/restore_from_backup.py:run_anonymize / verify_anonymized
 History:  MEH-3406 (creation).
 """
@@ -20,7 +22,7 @@ from pathlib import Path
 import pytest
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import JSON, LargeBinary, String, Text, text
+from sqlalchemy import ARRAY, JSON, LargeBinary, String, Text, text
 
 from app.database import Base, engine
 from app.models import ContactMessage, FavoriteAlert, NewsletterSubscriber, PhoneOtpToken
@@ -37,7 +39,7 @@ PII_NAME = re.compile(
     r"(email|phone|whatsapp|address|street|zip|(^|_)ip($|_)|ip_hash|"
     r"(^|_)name($|_)|token|(^|_)code($|_)|code_hash|password|google_id|apple_id|"
     r"avatar|message|(^|_)body$|note|comment|push|business_id|endpoint|"
-    r"instagram|facebook|payment_info)"
+    r"instagram|facebook|payment_info|reason|license|bio|query|photo)"
 )
 
 # Matched the pattern, deliberately left as is. Every entry says why.
@@ -51,21 +53,17 @@ EXEMPT: dict[str, str] = {
     "producers.rejection_reason_code": "admin enum, no personal data",
     "producers.primary_contact_method": "enum (whatsapp/phone/…), no value",
     "producers.recommended_note": "editorial note, public",
-    "producers.whatsapp_clicks": "a counter",
     "producer_locations.label": "public pickup point label",
-    "producer_locations.address": "public pickup point the business published",
     "products.name": "public product name",
     "product_order_items.name": "product name snapshot",
     "categories.name": "category",
     "cities.name_he": "city",
-    "events.address": "public event venue",
-    "experiences.address": "public experience venue",
     "group_buys.product_name": "public listing",
     "group_buys.fulfillment_note": "public listing text",
     "group_buys.pickup_note": "public listing text",
     "group_buys.delivery_note": "public listing text",
     "home_products.location_notes": "public listing text",
-    "producer_reviews.body": "published review text",
+    "producer_reviews.body": "published review text (hidden/flagged ones are cleared by the SQL's WHERE)",
     "home_product_ratings.comment": "published rating text",
     "rescue_reviews.comment": "published review text",
     "static_pages.body": "site content",
@@ -77,18 +75,25 @@ EXEMPT: dict[str, str] = {
     "producer_name_change_requests.admin_notes": "admin note about a business name",
     "kashrut_badge_requests.badge_code": "kashrut body code",
     "kashrut_badge_requests.notes": "about a certificate",
-    "admin_passkeys.name": "table is deleted",
     "admin_checklist_items.label": "admin UI text",
     "producer_recipes.moderation_notes": "moderation note about a recipe",
-    "inbound_messages.meta_message_id": "table is deleted",
-    "outbound_messages.meta_message_id": "table is deleted",
-    "outbound_messages.error_message": "table is deleted",
     "rescue_orders.pickup_code": "4-digit code for a finished pickup, not personal",
     "product_orders.pickup_code": "pickup code for a past order, not personal",
     "product_orders.proposal_note": "the business's own text",
     "product_orders.idempotency_key": "random key, no personal data",
     "outreach_leads.instagram": "a business's public profile",
+    "producers.owner_bio": "the owner's bio as written for her public page",
+    "home_products.photo": "the listing's public photo",
+    "retired_slugs.reason": "why a URL slug was retired, admin text about a page",
+    "search_queries.query": "a search string with no user link",
+    "experiences.moderation_reason": "moderation verdict about a listing",
+    "experiences.rejection_reason": "admin text about a listing",
+    "home_products.moderation_reason": "moderation verdict about a listing",
 }
+# Accepted risk, stated in docs/SECURITY.md §17b-1: "public" above means what
+# the row's owner submitted FOR publication. A pending or rejected business
+# keeps its name and bio on a restored copy; prod had no real businesses when
+# this was decided (19/11).
 
 
 def _parse_sql(sql: str) -> tuple[dict[str, dict[str, str]], set[str]]:
@@ -115,7 +120,8 @@ UPDATES, DELETES = _parse_sql(SQL)
 
 def test_parser_reads_the_real_file():
     """Self-test against the real file: if the format contract broke, the
-    inventory test below would pass on an empty parse."""
+    inventory test would fail on everything at once and say nothing useful;
+    this names the cause."""
     assert UPDATES["users"]["email"].startswith("'user-'")
     assert "password_hash" in UPDATES["users"]
     assert "outbound_messages" in DELETES
@@ -125,7 +131,7 @@ def test_parser_reads_the_real_file():
 def _holds_text(col) -> bool:
     """Timestamps, flags and counters named like PII (email_verified,
     whatsapp_clicks) hold nothing personal; only text-like columns can."""
-    return isinstance(col.type, (String, Text, JSON, LargeBinary)) or "INET" in str(col.type)
+    return isinstance(col.type, (String, Text, JSON, LargeBinary, ARRAY)) or "INET" in str(col.type)
 
 
 def _pii_columns():
@@ -255,9 +261,11 @@ def test_after_running_no_real_email_phone_or_push_survives(db):
     assert real.email == f"user-{real.id}@example.com"
     assert "רותי" not in real.name
     assert real.password_hash is None
-    # The seeded demo account keeps working after a restore.
-    assert demo.email == "demo-owner@example.com"
-    assert demo.password_hash == demo_hash
+    # Every account is rewritten, the demo ones too: they are re-seeded after
+    # a restore (docs/DEPLOYMENT.md §D). An email-domain exemption would let a
+    # real person who signs up with an @example.com-looking address keep it.
+    assert demo.email == f"user-{demo.id}@example.com"
+    assert demo.password_hash != demo_hash
 
     _run_sql()  # idempotent: a second run is harmless
     db.refresh(real)
@@ -318,3 +326,94 @@ def test_verify_fails_closed_when_psql_is_missing(monkeypatch):
 
     monkeypatch.setattr(mod.subprocess, "run", boom)
     assert mod.verify_anonymized("postgresql://localhost/dr") is False
+
+
+def test_every_exempt_key_is_a_live_column():
+    """A stale EXEMPT key (renamed column, deleted table) hides nothing, but it
+    makes the list read as more coverage than it is."""
+    tables = Base.metadata.tables
+    for key in EXEMPT:
+        table, _, col = key.partition(".")
+        assert table in tables and col in tables[table].c, key
+        assert table not in DELETES, f"{key}: table is deleted anyway"
+        # A column rewritten only for some rows (an UPDATE with WHERE) is
+        # exempt for the rest, so it may sit in both lists.
+        partial = re.search(rf"^UPDATE {table} SET\n(?:    .*\n)+WHERE ", SQL, re.M)
+        assert partial or col not in UPDATES.get(table, {}), f"{key}: also rewritten"
+
+
+# ── Schema lag: a dump older than the newest migration ─────────────────────
+
+
+def _existing_from_models() -> set[tuple[str, str]]:
+    return {(t.name, c.name) for t in Base.metadata.tables.values() for c in t.columns}
+
+
+def test_effective_sql_keeps_everything_on_a_current_schema():
+    mod = _load_restore_module()
+    sql, skipped = mod.effective_sql(SQL, _existing_from_models())
+    assert skipped == []
+    updates, deletes = _parse_sql(sql)
+    assert updates == UPDATES
+    assert deletes == DELETES
+
+
+def test_effective_sql_drops_a_column_the_dump_does_not_have(db):
+    mod = _load_restore_module()
+    existing = _existing_from_models() - {("producer_order_settings", "business_id_number")}
+    existing -= {("users", "apple_id")}
+    existing = {p for p in existing if p[0] != "admin_recovery_codes"}
+    sql, skipped = mod.effective_sql(SQL, existing)
+    assert "producer_order_settings.business_id_number" in skipped
+    assert "users.apple_id" in skipped
+    assert "admin_recovery_codes" in skipped
+    assert "business_id_number" not in sql
+    assert "apple_id" not in sql
+    assert "admin_recovery_codes" not in sql
+    assert "UPDATE users SET" in sql  # the rest of the statement survives
+    # And what is left is valid SQL on a real schema.
+    raw = engine.raw_connection()
+    try:
+        with raw.cursor() as cur:
+            cur.execute(sql)
+        raw.rollback()
+    finally:
+        raw.close()
+
+
+def test_effective_sql_keeps_a_where_clause():
+    mod = _load_restore_module()
+    sql, _ = mod.effective_sql(SQL, _existing_from_models())
+    assert "UPDATE producer_reviews SET\n    body = NULL\nWHERE is_hidden IS TRUE" in sql
+
+
+def test_run_anonymize_fails_when_the_schema_cannot_be_read(monkeypatch):
+    mod = _load_restore_module()
+    monkeypatch.setattr(mod, "existing_columns", lambda url: None)
+    assert mod.run_anonymize("postgresql://localhost/dr") is False
+
+
+def test_run_anonymize_fails_when_psql_fails(monkeypatch):
+    import subprocess
+
+    mod = _load_restore_module()
+    monkeypatch.setattr(mod, "existing_columns", lambda url: _existing_from_models())
+
+    def fail(*a, **k):
+        raise subprocess.CalledProcessError(3, "psql")
+
+    monkeypatch.setattr(mod.subprocess, "run", fail)
+    assert mod.run_anonymize("postgresql://localhost/dr") is False
+
+
+def test_a_failed_pg_restore_is_still_anonymized(restore, monkeypatch):
+    monkeypatch.setattr(restore, "run_pg_restore", lambda *a: restore.calls.append("restore") or False)
+    assert restore.main(["x.dump", "postgresql://localhost/dr"]) == restore.EXIT_RESTORE_FAILED
+    assert restore.calls == ["restore", "anonymize", "verify"]
+
+
+def test_the_production_url_env_is_refused(restore, monkeypatch):
+    url = "postgresql://u:p@db.internal:5432/mehamakor"
+    monkeypatch.setenv("DATABASE_URL_PRODUCTION", url)
+    assert restore.main(["x.dump", url]) == restore.EXIT_CONFIG_ERROR
+    assert restore.calls == []
