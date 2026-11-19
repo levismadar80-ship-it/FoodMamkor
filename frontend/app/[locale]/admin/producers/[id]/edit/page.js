@@ -63,6 +63,16 @@ export default function EditProducerPage() {
       .finally(() => setFetching(false));
   }, [id, user, reloadKey]);
 
+  // MEH-3456: after drafts are approved the page re-reads the producer
+  // without the skeleton, so the import panel keeps its result line and only
+  // the product lists pick up the new rows.
+  const refreshProducts = () => {
+    api
+      .get(`/admin/producers/${id}`)
+      .then((r) => setProducer(r.data))
+      .catch(() => {});  // the import panel already reported its own success
+  };
+
   if (loading || !user || fetching) {
     return (
       <SkeletonForm fields={6} label={t("common.loading")} className="max-w-4xl mx-auto px-4 py-12" />
@@ -110,7 +120,12 @@ export default function EditProducerPage() {
       {/* MEH-3456: any other status (Sandra's page is live) gets the same
           photo button per product; the draft panel above already carries it. */}
       {producer.status !== "draft" && (
-        <AdminProductImagesPanel initialProducts={producer.products || []} />
+        <AdminProductImagesPanel
+          // A new product list (after approving drafts) remounts it, so it
+          // never shows a stale list.
+          key={(producer.products || []).map((p) => p.id).join(",")}
+          initialProducts={producer.products || []}
+        />
       )}
       {/* MEH-2325: only a draft can be handed to its owner. ProducerAdminOut
           carries no owner id, so a draft she has already claimed still shows
@@ -172,7 +187,7 @@ export default function EditProducerPage() {
       )}
       {/* MEH-2312: catalog import from the business's existing store → drafts
           the admin approves. Any status: Sandra's page is approved and live. */}
-      <AdminProductImport producerId={String(id)} />
+      <AdminProductImport producerId={String(id)} onApproved={refreshProducts} />
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );

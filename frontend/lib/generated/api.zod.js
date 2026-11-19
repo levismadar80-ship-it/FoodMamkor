@@ -8520,6 +8520,12 @@ export const AdminUploadOwnerPhotoUploadOwnerPhotoProducerIdPostResponse = /*#__
  * get_current_user for every admin POST (services/admin_audit.py), targeting
  * `product_id`. Only this one column changes: no other product field is in
  * the request.
+ *
+ * Any product of any business, an import draft (`is_draft`) included: the
+ * admin may set a photo before she approves the draft. The stored URL lives
+ * in the ADMIN's folder, so the owner keeps it on this product (grandfathered
+ * by image_ownership) but cannot reuse that URL on another product or in her
+ * gallery (403, MEH-3247) — she uploads her own copy for that.
  * @summary Admin Upload Product Image
  */
 export const AdminUploadProductImageUploadProductImageProductIdPostResponse = /*#__PURE__*/ zod.unknown()

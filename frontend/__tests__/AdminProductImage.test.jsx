@@ -61,6 +61,14 @@ describe("AdminProductImagesPanel", () => {
     expect(within(rows[0]).queryByTestId("admin-product-image-thumb")).toBeNull();
   });
 
+  it("1 product with a photo: replace label + thumbnail", () => {
+    wrap(<AdminProductImagesPanel initialProducts={[peach]} />);
+    const rows = screen.getAllByTestId("admin-product-images-row");
+    expect(rows).toHaveLength(1);
+    expect(within(rows[0]).getByText(O.photo_replace_cta)).toBeTruthy();
+    expect(within(rows[0]).getByTestId("admin-product-image-thumb")).toBeTruthy();
+  });
+
   it("many, mixed: replace + thumbnail only where a photo exists", () => {
     wrap(<AdminProductImagesPanel initialProducts={[plum, peach]} />);
     const [r1, r2] = screen.getAllByTestId("admin-product-images-row");
@@ -124,6 +132,31 @@ describe("edit page", () => {
     wrap(<EditProducerPage />);
     expect(await screen.findByTestId("admin-product-images-panel")).toBeTruthy();
     expect(screen.queryByTestId("draft-products-panel")).toBeNull();
+  });
+
+  it("approving imported drafts refreshes the photo panel without a reload", async () => {
+    let products = [];
+    api.get.mockImplementation((url) => {
+      if (url === "/admin/producers/p-9")
+        return Promise.resolve({ data: { id: "p-9", name: "סנדרה", status: "approved", products } });
+      if (url === "/admin/producers/p-9/product-drafts")
+        return Promise.resolve({ data: products.length ? [] : [{ id: "11111111-1111-4111-8111-111111111111", name: "שזיף", price_unit: "unit", price_min: "18" }] });
+      return Promise.resolve({ data: [] });
+    });
+    api.post.mockImplementation((url) => {
+      if (url.endsWith("/product-drafts/approve")) {
+        products = [plum];
+        return Promise.resolve({ data: { approved: 1 } });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    wrap(<EditProducerPage />);
+    expect(screen.queryByTestId("admin-product-images-panel")).toBeNull();
+    const label = he.admin.producers.product_import.approve_all_cta.split("(")[0].trim();
+    const approve = await screen.findByRole("button", { name: new RegExp(`^${label}`) });
+    fireEvent.click(approve);
+    expect(await screen.findByTestId("admin-product-images-panel")).toBeTruthy();
+    expect(screen.getAllByTestId("admin-product-images-row")).toHaveLength(1);
   });
 
   it("draft page: the button sits in the draft panel, the live panel is absent", async () => {

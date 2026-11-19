@@ -394,6 +394,12 @@ async def admin_upload_product_image(
     get_current_user for every admin POST (services/admin_audit.py), targeting
     `product_id`. Only this one column changes: no other product field is in
     the request.
+
+    Any product of any business, an import draft (`is_draft`) included: the
+    admin may set a photo before she approves the draft. The stored URL lives
+    in the ADMIN's folder, so the owner keeps it on this product (grandfathered
+    by image_ownership) but cannot reuse that URL on another product or in her
+    gallery (403, MEH-3247) — she uploads her own copy for that.
     """
     product = db.query(Product).filter(Product.id == product_id).first()
     if product is None:
@@ -408,7 +414,10 @@ async def admin_upload_product_image(
     if old_image_url and old_image_url != url:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(
+        # MEH-2551: the SDK is sync — off the event loop like every other
+        # Cloudinary call in this file (this route is `async def`).
+        await asyncio.to_thread(
+            destroy_image,
             old_image_url,  # type: ignore[arg-type]
             context="upload.admin_upload_product_image old image",
             db=db,  # MEH-3247: skips an asset another row still uses

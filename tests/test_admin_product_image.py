@@ -178,3 +178,63 @@ def test_the_upload_leaves_one_admin_audit_row_on_the_product(client, db):
     assert rows[0].actor_id == admin.id
     assert rows[0].action == "POST /upload/product-image/{product_id}"
     assert (rows[0].target_type, rows[0].target_id) == ("product", str(p.id))
+
+
+# --- the real destroy path: after the commit, and never a shared asset --------
+
+SHARED = "https://res.cloudinary.com/demo/image/upload/v1/mehamakor/u/abc/old.jpg"
+
+
+def _real_destroy(monkeypatch):
+    """The real destroy_image, with Cloudinary 'configured' and its SDK call
+    recorded instead of sent."""
+    import cloudinary.uploader
+
+    from app.config import settings
+
+    calls = []
+    monkeypatch.setattr(settings, "cloudinary_cloud_name", "demo")
+    monkeypatch.setattr(
+        cloudinary.uploader,
+        "destroy",
+        lambda public_id, **kw: calls.append(public_id) or {"result": "ok"},
+    )
+    return calls
+
+
+def _upload_with_cloudinary_stubbed(client, db, monkeypatch, product):
+    import cloudinary.uploader
+
+    monkeypatch.setattr(
+        cloudinary.uploader,
+        "upload",
+        lambda *a, **kw: {
+            "secure_url": "https://res.cloudinary.com/demo/image/upload/v2/mehamakor/u/adm/new.jpg"
+        },
+    )
+    return client.post(_url(product.id), files=_jpg(), headers=auth_header(_admin(db)))
+
+
+def test_a_single_use_old_image_is_destroyed_after_the_commit(client, db, monkeypatch):
+    # destroy_image skips an asset some row still references. Had the destroy
+    # run BEFORE the commit, this product would still reference it and nothing
+    # would be destroyed — so a destroy here proves the order.
+    calls = _real_destroy(monkeypatch)
+    p = _product(db, make_producer(db), image_url=SHARED)
+    resp = _upload_with_cloudinary_stubbed(client, db, monkeypatch, p)
+    assert resp.status_code == 200, resp.text
+    assert calls == ["mehamakor/u/abc/old"]
+
+
+def test_an_old_image_another_product_still_uses_is_not_destroyed(
+    client, db, monkeypatch
+):
+    calls = _real_destroy(monkeypatch)
+    producer = make_producer(db)
+    p = _product(db, producer, name="שזיף", image_url=SHARED)
+    _product(db, producer, name="אפרסק", image_url=SHARED)
+    resp = _upload_with_cloudinary_stubbed(client, db, monkeypatch, p)
+    assert resp.status_code == 200, resp.text
+    db.refresh(p)
+    assert p.image_url.endswith("/new.jpg")
+    assert calls == []

@@ -2151,6 +2151,9 @@ POST /upload/product-image/{product_id}  admin — MEH-3456: the admin uploads o
                                  writes products.image_url, destroys the old image after commit.
                                  Non-admin (owner included) → 403; unknown product → 404. 60/hr.
                                  Logged in admin_audit_log (target product). Returns {url}.
+                                 Any product, an import draft included. The URL sits in the admin's
+                                 folder: the owner keeps it on that product (grandfathered) but cannot
+                                 reuse it on another product or her gallery (403, MEH-3247).
 ```
 
 > **Destroying an old photo (MEH-3247).** Every post-commit cleanup
