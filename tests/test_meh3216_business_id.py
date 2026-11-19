@@ -55,6 +55,8 @@ def test_ordering_off_may_be_saved_without_a_business_number(client, db, flag_on
         ("12345678", "012345678"),
         # pasted from a Hebrew document: an RLM, a non-breaking hyphen, a no-break space
         ("\u200f51\u2011234567\u00a08", "512345678"),
+        # zero-width space and BOM, which some editors leave in a copy
+        ("\ufeff5123\u200b45678", "512345678"),
     ],
 )
 def test_the_number_is_stored_as_nine_digits(client, db, flag_on, typed, stored):

@@ -39,7 +39,7 @@ const BUSINESS_ID_SHORT = 8;
 /** What she typed → nine digits, null when blank, or NaN when it is not a number. */
 export function businessIdFromInput(typed) {
   // Spaces, dashes of every kind and the direction marks a Hebrew paste carries.
-  const digits = String(typed ?? "").replace(/[\s\-\u2010-\u2015\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
+  const digits = String(typed ?? "").replace(/[\s\-\u2010-\u2015\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b\ufeff]/g, "");
   if (!digits) return null;
   if (!/^[0-9]+$/.test(digits) || digits.length < BUSINESS_ID_SHORT || digits.length > BUSINESS_ID_DIGITS) return Number.NaN;
   return digits.padStart(BUSINESS_ID_DIGITS, "0");

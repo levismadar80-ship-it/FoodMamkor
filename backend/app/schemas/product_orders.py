@@ -46,7 +46,7 @@ _BUSINESS_ID_SHORT = (
 # Spaces (incl. no-break), dashes of every kind and the invisible direction
 # marks a paste from a Hebrew document carries.
 _BUSINESS_ID_SEPARATORS = re.compile(
-    r"[\s\-\u2010-\u2015\u200e\u200f\u202a-\u202e\u2066-\u2069]"
+    r"[\s\-\u2010-\u2015\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b\ufeff]"
 )
 _BUSINESS_ID_SHAPE = re.compile(
     rf"[0-9]{{{_BUSINESS_ID_SHORT},{BUSINESS_ID_DIGITS}}}"

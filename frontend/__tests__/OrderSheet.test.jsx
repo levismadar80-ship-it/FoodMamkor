@@ -115,7 +115,7 @@ describe("OrderSheet", () => {
     const { unmount } = renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: "רחובות" });
     expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מספר עוסק 512345678 · רחובות");
     unmount();
-    renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: null });
+    renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: " " });
     expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מספר עוסק 512345678");
   });
 

@@ -215,7 +215,7 @@ function Disclosures({ producer, menu, deadline, locale, t }) {
       {/* MEH-3216: the seller's identity before the order, as distance selling requires.
           The city only: the street address stays private (MEH-829). */}
       <p data-testid="order-sheet-seller">
-        {t("seller_line", { name: producer?.name ?? "", number: menu.business_id_number, city: producer?.city || "none" })}
+        {t("seller_line", { name: producer?.name ?? "", number: menu.business_id_number, city: producer?.city?.trim() || "none" })}
       </p>
       {methods.length > 0 && <PaymentLine methods={methods} t={t} />}
       {deadline && <p>{t("cancel_line", { cutoff: `${dayLabel(deadline, locale)} ${hhmm(deadline)}` })}</p>}

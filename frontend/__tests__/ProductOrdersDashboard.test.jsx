@@ -240,6 +240,7 @@ describe("businessIdFromInput", () => {
     expect(businessIdFromInput("1234567890")).toBeNaN();
     expect(businessIdFromInput("51234567x")).toBeNaN();
     expect(businessIdFromInput("\u200f51\u2011234567\u00a08")).toBe("512345678"); // a paste from a Hebrew document
+    expect(businessIdFromInput("\ufeff5123\u200b45678")).toBe("512345678"); // zero-width space and BOM
     expect(businessIdFromInput("١٢٣٤٥٦٧٨٩")).toBeNaN(); // non-ASCII digits: the server's CHECK is [0-9]
   });
 });
