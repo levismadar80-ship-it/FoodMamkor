@@ -402,9 +402,32 @@ def delete_my_recipe(
 # ---------- Public read (no auth) ----------
 
 
-def _resolve_producer_by_slug(db: Session, slug: str) -> Producer:
+def _published_recipe(
+    db: Session, producer_id: Any, recipe_id: UUID
+) -> ProducerRecipe | None:
+    return (
+        db.query(ProducerRecipe)
+        .options(joinedload(ProducerRecipe.products))
+        .filter(
+            ProducerRecipe.id == recipe_id,
+            ProducerRecipe.producer_id == producer_id,
+            ProducerRecipe.published.is_(True),
+            ProducerRecipe.moderation_status == "approved",
+        )
+        .first()
+    )
+
+
+def _resolve_producer_by_slug(
+    db: Session, slug: str, recipe_id: UUID | None = None
+) -> Producer:
     """REUSES: producers.py:143 — slug + status='approved' filter.
-    404 instead of 403 to avoid leaking pending/rejected producers."""
+    404 instead of 403 to avoid leaking pending/rejected producers.
+
+    MEH-3342: with ``recipe_id``, slug_moved is answered only when that
+    recipe is published under the business the old slug now points at —
+    an unknown, unpublished or foreign id stays a plain 404, so the old
+    slug never 301s a reader to a page that is not there."""
     producer = (
         db.query(Producer)
         .filter(Producer.slug == slug, is_business())  # MEH-2459
@@ -415,6 +438,14 @@ def _resolve_producer_by_slug(db: Session, slug: str) -> Producer:
         # contract as producers.py by-slug (MEH-3336): still a 404, carrying
         # the current slug so the page edge (middleware.js) can 301.
         new_slug = retired_slugs.moved_to(db, slug)
+        if new_slug and recipe_id is not None:
+            owner = (
+                db.query(Producer)
+                .filter(Producer.slug == new_slug, is_business())
+                .first()
+            )
+            if owner is None or not _published_recipe(db, owner.id, recipe_id):
+                new_slug = None
         if new_slug:
             raise HTTPException(
                 status_code=404,
@@ -468,18 +499,8 @@ def get_public_recipe(
     recipe_id: UUID,
     db: Session = Depends(get_db),
 ) -> ProducerRecipeOut | dict[str, Any]:
-    producer = _resolve_producer_by_slug(db, slug)
-    recipe = (
-        db.query(ProducerRecipe)
-        .options(joinedload(ProducerRecipe.products))
-        .filter(
-            ProducerRecipe.id == recipe_id,
-            ProducerRecipe.producer_id == producer.id,
-            ProducerRecipe.published.is_(True),
-            ProducerRecipe.moderation_status == "approved",
-        )
-        .first()
-    )
+    producer = _resolve_producer_by_slug(db, slug, recipe_id)
+    recipe = _published_recipe(db, producer.id, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="המתכון לא נמצא")
     return _serialize(recipe)

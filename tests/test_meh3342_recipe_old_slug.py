@@ -61,3 +61,43 @@ def test_an_unknown_business_slug_is_still_a_plain_404(client, db):
     resp = client.get(f"/producers/never-existed/recipes/{recipe.id}")
     assert resp.status_code == 404
     assert isinstance(resp.json()["detail"], str)
+
+
+def _renamed_bakery(client, db):
+    producer = make_producer(db)
+    producer.slug = "old-bakery"
+    db.commit()
+    recipe = _recipe(db, producer)
+    _rename(client, db, producer, "new-bakery")
+    return producer, recipe
+
+
+def test_a_foreign_recipe_id_under_the_old_slug_is_a_plain_404(client, db):
+    # The old slug must not 301 a reader to a page that 404s at the new one.
+    _renamed_bakery(client, db)
+    other = make_producer(db, name="מאפיית השכנים")
+    foreign = _recipe(db, other)
+    resp = client.get(f"/producers/old-bakery/recipes/{foreign.id}")
+    assert resp.status_code == 404
+    assert isinstance(resp.json()["detail"], str)
+
+
+def test_an_unpublished_recipe_under_the_old_slug_is_a_plain_404(client, db):
+    # Same answer as an unknown id: the redirect does not reveal drafts.
+    _, recipe = _renamed_bakery(client, db)
+    recipe.published = False
+    db.commit()
+    resp = client.get(f"/producers/old-bakery/recipes/{recipe.id}")
+    assert resp.status_code == 404
+    assert isinstance(resp.json()["detail"], str)
+
+
+def test_a_live_business_on_the_old_slug_wins_over_the_redirect(client, db):
+    _renamed_bakery(client, db)
+    newcomer = make_producer(db, name="מאפייה חדשה")
+    newcomer.slug = "old-bakery"
+    db.commit()
+    theirs = _recipe(db, newcomer)
+    resp = client.get(f"/producers/old-bakery/recipes/{theirs.id}")
+    assert resp.status_code == 200
+    assert resp.json()["id"] == str(theirs.id)
