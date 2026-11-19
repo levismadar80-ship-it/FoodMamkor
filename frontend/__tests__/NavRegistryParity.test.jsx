@@ -162,7 +162,9 @@ const STATES = {
     role: "consumer",
   },
   producer: {
-    user: { name: "רות לוי", role: "producer", producer_id: "p-42" },
+    // MEH-3024: approved, so «צפייה בדף» takes the registry's public href;
+    // an unapproved owner's preview redirect is covered in Header.test.jsx.
+    user: { name: "רות לוי", role: "producer", producer_id: "p-42", producer_status: "approved" },
     signedIn: true,
     role: "producer",
     producerId: "p-42",

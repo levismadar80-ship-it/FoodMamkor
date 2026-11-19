@@ -8093,6 +8093,20 @@
             ],
             "title": "Distance Km"
           },
+          "draft_missing": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Missing"
+          },
           "dup_name": {
             "default": false,
             "title": "Dup Name",

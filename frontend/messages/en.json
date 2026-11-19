@@ -1733,7 +1733,9 @@
           "link_sent": "Link sent on {date}",
           "link_valid_until": "Valid until {date}",
           "link_expired": "The link expired — create a new one",
-          "waiting_7_days": "Waiting 7+ days"
+          "waiting_7_days": "Waiting 7+ days",
+          "missing": "Missing: {items}",
+          "all_filled": "All filled in, not sent for review yet"
         },
         "photo_preview": {
           "label": "Photos",

@@ -265,7 +265,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       {/* MEH-1116: card chrome + heading live in the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted">{t("intro")}</p>
       {/* MEH-1306: back-link to the public description section. */}
-      <ViewOnPageLink producerId={profile?.id} anchor="section-bio" />
+      <ViewOnPageLink producerId={profile?.id} status={profile?.status} anchor="section-bio" />
 
       {/* Hero: the description IS the product. Always visible, prefilled. */}
       <div className="space-y-1.5">

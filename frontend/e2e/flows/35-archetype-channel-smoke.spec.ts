@@ -249,9 +249,22 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
   test("beacon :: whatsapp-click fires on wa.me items and on nothing else", async ({
     page,
   }) => {
+    // MEH-3431: one control miss in 920 runs (mobile, ×20). The beacon is
+    // navigator.sendBeacon for an anonymous visitor, and a page-level route
+    // does not always see a beacon (Playwright attributes some to no page).
+    // Count at the CONTEXT, from both the route and the request event, keyed
+    // by request so one beacon is one entry. A beacon the browser never sends
+    // is still 0 here, so the control keeps its teeth.
+    const seen = new Set<object>();
     const beacons: string[] = [];
-    await page.route("**/api/producers/*/whatsapp-click", (route) => {
-      beacons.push(route.request().url());
+    const record = (req: { url(): string }) => {
+      if (!/\/api\/producers\/[^/]+\/whatsapp-click/.test(req.url()) || seen.has(req)) return;
+      seen.add(req);
+      beacons.push(req.url());
+    };
+    page.context().on("request", record);
+    await page.context().route("**/api/producers/*/whatsapp-click", (route) => {
+      record(route.request());
       return route.fulfill({ status: 204, body: "" });
     });
 

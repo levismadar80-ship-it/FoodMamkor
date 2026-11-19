@@ -143,6 +143,7 @@ export function CustomQuestionsCard({
           own title. The editing affordance follows it. */}
       <ViewOnPageLink
         producerId={profile?.id}
+        status={profile?.status}
         anchor="section-contact"
         testId="view-on-page-questions"
       />

@@ -155,7 +155,9 @@ def _has_location(producer: Producer) -> bool:
     )
 
 
-def submission_missing_items(producer: Producer) -> list[str]:
+def submission_missing_items(
+    producer: Producer, *, upcoming_events: int | None = None
+) -> list[str]:
     """The requirement codes this producer has NOT satisfied, in canonical
     order. An empty list means "ready to submit".
 
@@ -166,7 +168,7 @@ def submission_missing_items(producer: Producer) -> list[str]:
     the admin queue, which is the bug this whole ticket exists to remove.
     """
     if getattr(producer, "kind", "producer") == "organizer":
-        return _organizer_missing_items(producer)
+        return _organizer_missing_items(producer, upcoming_events)
 
     missing: list[str] = []
 
@@ -233,7 +235,9 @@ def attach_upcoming_events_count(producer: Producer) -> None:
         producer.upcoming_events_count = upcoming_events_count(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
 
 
-def _organizer_missing_items(producer: Producer) -> list[str]:
+def _organizer_missing_items(
+    producer: Producer, upcoming_events: int | None = None
+) -> list[str]:
     """MEH-2460: the organizer gate — photo, description, ≥1 upcoming event,
     verified WhatsApp. Same fail-closed shape as the business gate above; the
     phone requirement stays because the approval gate (admin.py, MEH-2121)
@@ -245,7 +249,11 @@ def _organizer_missing_items(producer: Producer) -> list[str]:
     description = (producer.description or "").strip()
     if not description or description in DEFAULT_PRODUCER_DESCRIPTIONS:
         missing.append(ORGANIZER_MISSING_DESCRIPTION)
-    if upcoming_events_count(producer) < 1:
+    # MEH-3409: a list caller passes the count it batched for every row, so
+    # the admin drafts list stays one query; everyone else reads it here.
+    if upcoming_events is None:
+        upcoming_events = upcoming_events_count(producer)
+    if upcoming_events < 1:
         missing.append(ORGANIZER_MISSING_EVENT)
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)
