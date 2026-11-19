@@ -529,6 +529,12 @@ class ProducerAdminOut(ProducerDetailOut):
     # CLOSED — the UI renders neither chip nor action for a non-boolean —
     # instead of reporting a claimed draft as ownerless.
     has_owner: bool | None = None
+    # MEH-3409: for a draft its owner claimed, the submission requirement
+    # codes still missing (submission_gate.py: image / product / category /
+    # location / phone_verified, or the organizer set). [] = ready, waiting
+    # for her to press «שליחה לבדיקה». None = not a claimed draft, or a route
+    # that did not hydrate it (services/admin_draft_missing.py). Admin-only.
+    draft_missing: list[str] | None = None
     # MEH-3408: another business, in ANY status, shares this row's name / phone.
     # Hydrated by GET /admin/producers only (services/producer_duplicates.py),
     # in one query; every other route leaves them False (no badge). Admin-only.
