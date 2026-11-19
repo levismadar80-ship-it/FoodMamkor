@@ -7198,6 +7198,10 @@
         "tile_title": "Delivery check",
         "tile_line": "\"Do you deliver to my city?\""
       },
+      "product_orders": {
+        "label": "Pre-orders from your page",
+        "tip": "Customers pick products and a pickup or delivery time, and send a request. You confirm, suggest a change or decline from your dashboard. They pay you directly."
+      },
       "wa_group": {
         "label": "A WhatsApp group for updates from your business"
       },

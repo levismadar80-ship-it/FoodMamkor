@@ -96,6 +96,11 @@ export const BUSINESS_FEATURES = [
   { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },
   { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx"] },
   { id: "delivery_checker", group: "contact", status: "live", tile: { icon: "Truck" }, codeRef: ["frontend/components/DeliveryChecker.jsx"] },
+  // MEH-3216: on-site ordering («בקשת הזמנה»). he/en copy approved word for word
+  // by Sapir 19/11. 'soon' until PRODUCT_ORDERS_ENABLED is on in production
+  // (the flag is server-only, so /join cannot read it); the PR that turns it on
+  // flips this to 'live'.
+  { id: "product_orders", group: "contact", status: "soon", tip: true, codeRef: ["frontend/components/public/OrderSheet.jsx", "frontend/components/dashboard/orders/OrderSettingsCard.jsx", "backend/app/routers/product_order_buyer.py"] },
   { id: "wa_group", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "nav_buttons", group: "contact", status: "live", tile: { icon: "NavigationArrow" }, codeRef: ["frontend/components/NavAppGlyphs.jsx"] },
   { id: "save_share", group: "contact", status: "live", codeRef: ["frontend/components/ShareButton.jsx", "frontend/app/[locale]/favorites/FavoritesClient.jsx"] },

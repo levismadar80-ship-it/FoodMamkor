@@ -68,6 +68,9 @@ const NO_VISUAL = new Set([
   "demand_cities",
   "drop_point_hosts",
   "completeness",
+  // MEH-3216: on-site ordering is off in production, so the demo shows no
+  // order bar. Gets a shot when the flag goes on and the entry turns live.
+  "product_orders",
 ]);
 
 describe("the shot list against the tool registry", () => {
