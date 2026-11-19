@@ -20,7 +20,7 @@ concurrency:
 jobs:
   probe:
     name: Probe /, /api/health/readiness and the OSM map tiles
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 5
     env:
       HOME_URL: https://mehamakor.co.il/

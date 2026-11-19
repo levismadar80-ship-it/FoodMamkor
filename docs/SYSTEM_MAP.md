@@ -32,7 +32,7 @@ This page links to those and does not repeat their numbers.
 | Backend | FastAPI. One process holds the API, the rate limiter's counters and the scheduler. | Railway · `backend/app/` |
 | Database | PostgreSQL. Schema changes only through Alembic. | Railway · `backend/alembic/versions/` |
 | Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email, the monthly billing-start signal (1st of the month, email to the admin, MEH-3413) and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled, and (production only) a 30-minute check that emails the admin when one of those jobs has no recent success (MEH-3332 — last success in `admin_settings` `job_ok:<slug>`; Sentry's $0 plan monitors only the watchdog). | `backend/app/startup.py` |
-| CI | GitHub Actions: the two required gates, E2E, uptime probe, backup-restore check. | `.github/workflows/` |
+| CI | GitHub Actions: the two required gates, E2E, uptime probe, backup-restore check. Two modes per run (MEH-3453): public repo → GitHub-hosted `ubuntu-latest`; private repo or repo variable `CI_MODE=private` → one `self-hosted` runner on Sapir's PC, with E2E only on `run-e2e` PRs + nightly and 1 test shard. | `.github/workflows/` |
 
 ## What talks to what
 
@@ -110,3 +110,6 @@ inventory.
    limits; scaling out needs both moved out of process first.
 9. **The Postgres volume.** 0.5 GB. Far from full today; the analytics tables
    are what grow.
+10. **CI in private mode.** With the repo private (or `CI_MODE=private`), every
+    job queues on one self-hosted runner on Sapir's PC (MEH-3453). With the PC
+    off nothing runs, and the two required gates stay pending.
