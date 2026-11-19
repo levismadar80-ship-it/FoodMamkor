@@ -466,7 +466,8 @@ registrations (
   reminder_sent_at,                              -- MEH-3312
   waitlist_offered_at,                           -- MEH-3314: the one offer email went out
   party_size smallint DEFAULT 1 CHECK 1..10,     -- MEH-3315: places this sign-up takes
-  attendance NULL|attended|no_show               -- MEH-3315: the owner's note, blocks nothing
+  attendance NULL|attended|no_show,              -- MEH-3315: the owner's note, blocks nothing
+  session_date date NULL, session_time time NULL -- MEH-3440: the workshop date this sign-up is for; NULL = no date. CHECK: a date only with experience_id, a time only with a date
 )
 ```
 
@@ -606,6 +607,7 @@ experiences (
 
   event_date date NOT NULL, event_time time, duration_minutes int,
   is_recurring bool, recurring_schedule text,
+  sessions jsonb NULL,               -- MEH-3440: [{date, time, participants_count}] a recurring workshop's dates; NULL/[] = one pool of places
 
   location_type: home|public,        -- producer_farm lives on Event
   city, address text,                -- address PRIVATE — redacted from public list
@@ -1093,6 +1095,15 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > first waitlisted visitor not yet offered, once, with the item link; the spot
 > is not held. Re-submitting the form with the same email promotes her row.
 > Service: `app/services/registration_waitlist.py`.
+>
+> **MEH-3440 — a recurring workshop's dates (2026-11-19, stage 1 of MEH-3264).**
+> Migration `f2c8a4d6e9b1` adds `experiences.sessions` (JSONB, a list of
+> `{date, time, participants_count}`), `registrations.session_date` +
+> `session_time`, and the index `ix_registrations_experience_session`. All
+> nullable, no backfill, nothing reads them yet: a workshop with no dates keeps
+> one pool of places. Columns, not a table, because `EXPECTED_TABLES` lives in
+> a workflow file CC cannot write; the 12-date cap and one-row-per-date are
+> enforced by the API (stage 2).
 >
 > **MEH-3315 — party size and attendance (2026-11-18).** Migration
 > `d4a6b8c0e2f1` adds `registrations.party_size` (1–10, default 1) and
