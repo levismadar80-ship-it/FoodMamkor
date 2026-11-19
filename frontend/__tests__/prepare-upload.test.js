@@ -30,14 +30,21 @@ const okAdapter = () =>
 
 let canvasSize;
 let bitmapSpy;
+let drawCalls;
 
 beforeEach(() => {
   canvasSize = null;
+  drawCalls = [];
   bitmapSpy = vi.fn(async () => ({ width: 4000, height: 3000, close: vi.fn() }));
   vi.stubGlobal("createImageBitmap", bitmapSpy);
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function () {
     canvasSize = { width: this.width, height: this.height };
-    return { fillRect: vi.fn(), drawImage: vi.fn(), fillStyle: "" };
+    const ctx = {
+      fillStyle: "",
+      fillRect: vi.fn(() => drawCalls.push(`fill:${ctx.fillStyle}`)),
+      drawImage: vi.fn(() => drawCalls.push("draw")),
+    };
+    return ctx;
   });
   vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((cb, type) => {
     cb(new Blob([new Uint8Array(SHRUNK_BYTES)], { type }));
@@ -62,6 +69,43 @@ describe("prepareUpload through lib/api.js (MEH-3400)", () => {
     expect(sent.size).toBe(SHRUNK_BYTES);
     expect(sent.name).toBe("IMG_0001.jpg");
     expect(canvasSize).toEqual({ width: 2000, height: 1500 });
+    // A portrait phone photo stays upright, and a transparent PNG gets a white ground.
+    expect(bitmapSpy).toHaveBeenCalledWith(expect.any(File), { imageOrientation: "from-image" });
+    expect(drawCalls).toEqual(["fill:#fff", "draw"]);
+  });
+
+  it("keeps every other field, their order and the caller's Content-Type", async () => {
+    const adapter = okAdapter();
+    const fd = new FormData();
+    fd.append("producer_id", "42");
+    fd.append("file", photo(8 * MB));
+    fd.append("file", photo(300 * 1024, "image/png", "small.png"));
+    fd.append("caption", "שולחן שבת");
+    await api.post("/upload/image", fd, { adapter, headers: { "Content-Type": "multipart/form-data" } });
+
+    const sent = adapter.mock.calls[0][0].data;
+    expect(sent).toBeInstanceOf(FormData);
+    expect([...sent.keys()]).toEqual(["producer_id", "file", "file", "caption"]);
+    expect(sent.get("producer_id")).toBe("42");
+    expect(sent.get("caption")).toBe("שולחן שבת");
+    const [big, small] = sent.getAll("file");
+    expect(big.size).toBe(SHRUNK_BYTES);
+    expect(small.name).toBe("small.png");
+    expect(small.size).toBe(300 * 1024);
+  });
+
+  it("a photo the form already tried to shrink is not decoded again by the interceptor", async () => {
+    HTMLCanvasElement.prototype.toBlob.mockImplementation((cb, type) => {
+      cb(new Blob([new Uint8Array(3 * MB)], { type }));
+    });
+    const { prepareUpload } = await import("../lib/prepare-upload.js");
+    const picked = await prepareUpload(photo(2 * MB, "image/png", "logo.png"));
+    const adapter = okAdapter();
+    const fd = new FormData();
+    fd.append("file", picked);
+    await api.post("/upload/image", fd, { adapter });
+    expect(bitmapSpy).toHaveBeenCalledTimes(1);
+    expect(sentFile(adapter)).toBe(picked);
   });
 
   it("a 500KB photo is sent unchanged, without being decoded", async () => {

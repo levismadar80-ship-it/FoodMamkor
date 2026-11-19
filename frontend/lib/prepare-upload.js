@@ -22,6 +22,13 @@ export const RESIZE_ABOVE_BYTES = 1.5 * 1024 * 1024;
 export const MAX_EDGE_PX = 2000;
 const JPEG_QUALITY = 0.85;
 const RESIZABLE = new Set(["image/jpeg", "image/png", "image/webp"]);
+/**
+ * Files already tried and kept as they were. The form calls prepareUpload and
+ * the api.js interceptor calls it again on the same File — without this a big
+ * photo that could not be shrunk would be decoded twice.
+ * @type {WeakSet<Blob>}
+ */
+const kept = new WeakSet();
 
 /**
  * @param {number} w
@@ -44,6 +51,18 @@ export function fitWithin(w, h) {
  */
 export async function prepareUpload(file) {
   if (!file || !RESIZABLE.has(file.type) || file.size <= RESIZE_ABOVE_BYTES) return file;
+  if (kept.has(file)) return file;
+  const out = await shrink(file);
+  if (out === file) kept.add(file);
+  return out;
+}
+
+/**
+ * @template {Blob} T
+ * @param {T} file
+ * @returns {Promise<T | File>}
+ */
+async function shrink(file) {
   if (typeof createImageBitmap !== "function" || typeof document === "undefined") return file;
   let bitmap;
   try {
