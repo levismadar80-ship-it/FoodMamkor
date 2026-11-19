@@ -82,6 +82,38 @@ class TestDraftMissingOnTheDraftsList:
         assert "upcoming_event" not in rows[str(with_event.id)]["draft_missing"]
         assert "upcoming_event" in rows[str(without.id)]["draft_missing"]
 
+    def test_organizer_draft_with_only_a_past_or_an_inactive_event_still_asks_for_one(
+        self, client, db
+    ):
+        admin = make_user(db, role="admin")
+        past = make_producer(db, status="draft", name="מארגנת עם אירוע שעבר")
+        inactive = make_producer(db, status="draft", name="מארגנת עם אירוע כבוי")
+        for o in (past, inactive):
+            o.kind = "organizer"
+            _own(db, o)
+        db.add_all(
+            [
+                Event(
+                    producer_id=past.id,
+                    title="שוק שהיה",
+                    event_date=israel_today() - timedelta(days=1),
+                    category="שוק",
+                    is_active=True,
+                ),
+                Event(
+                    producer_id=inactive.id,
+                    title="שוק שבוטל",
+                    event_date=israel_today() + timedelta(days=7),
+                    category="שוק",
+                    is_active=False,
+                ),
+            ]
+        )
+        db.commit()
+        rows = _drafts(client, admin)
+        assert "upcoming_event" in rows[str(past.id)]["draft_missing"]
+        assert "upcoming_event" in rows[str(inactive.id)]["draft_missing"]
+
     def test_organizer_event_lookup_is_one_query_at_one_draft_and_at_four(self, client, db):
         admin = make_user(db, role="admin")
         first = make_producer(db, status="draft", name="מארגנת 0")
