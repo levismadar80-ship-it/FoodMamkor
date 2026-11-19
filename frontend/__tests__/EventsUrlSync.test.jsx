@@ -36,11 +36,12 @@ const nav = vi.hoisted(() => {
     emit: () => listeners.forEach((l) => l()),
   };
 });
-const pushMock = vi.fn((href) => {
+const routerPush = (href) => {
   const prefix = /^\/en(\/|$)/.test(window.location.pathname) ? "/en" : "";
   window.history.pushState(null, "", `${prefix}${href}`);
   nav.emit();
-});
+};
+const pushMock = vi.fn(routerPush);
 vi.mock("@/i18n/navigation", async () => {
   const React = await import("react");
   return {
@@ -244,7 +245,8 @@ describe("/events city + category URL sync (MEH-1131 / DISC-08)", () => {
 // in-place switch showed one URL with the other page's tree, 20/11).
 describe("/events ↔ /experiences route-as-tab (MEH-2245 · MEH-3463)", () => {
   beforeEach(() => {
-    pushMock.mockClear();
+    pushMock.mockReset();
+    pushMock.mockImplementation(routerPush);
   });
 
   it("clicking the experiences tab routes to /experiences and the whole screen follows", async () => {
@@ -281,6 +283,46 @@ describe("/events ↔ /experiences route-as-tab (MEH-2245 · MEH-3463)", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("events.list.title");
     expect(screen.getByRole("link", { name: /events\.list\.add_event/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /events\.list\.submit_experience/ })).toBeNull();
+  });
+
+  it("Back to /events?city=X restores the city and fetches once, already filtered", async () => {
+    const { default: api } = await import("@/lib/api");
+    setUrl("/experiences");
+    render(<EventsClient />);
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    api.get.mockClear();
+    replaceSpy.mockClear();
+
+    window.history.pushState(null, "", `/events?city=${encodeURIComponent(CITY)}`);
+    act(() => nav.emit());
+
+    await waitFor(() => expect(cityInput()).toHaveValue(CITY));
+    await new Promise((r) => setTimeout(r, 50));
+    const listCalls = api.get.mock.calls.filter(([url]) => url === "/events");
+    expect(listCalls).toHaveLength(1);
+    expect(listCalls[0][1].params).toEqual({ city: CITY });
+    expect(api.get.mock.calls.filter(([url]) => url === "/experiences")).toEqual([]);
+    // The entry's query survived (the writer did not wipe it before it was read).
+    expect(new URLSearchParams(window.location.search).get("city")).toBe(CITY);
+  });
+
+  it("a quick A→B→A while the router is slow ends on A and keeps writing filters", async () => {
+    setUrl("/events");
+    render(<EventsClient />);
+    const queued = [];
+    pushMock.mockImplementation((href) => queued.push(href)); // the router has not landed yet
+
+    fireEvent.click(screen.getByRole("tab", { name: EXPERIENCES_TAB }));
+    expect(screen.getByRole("tab", { name: EXPERIENCES_TAB })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "events.list.tab_events" }));
+    expect(screen.getByRole("tab", { name: "events.list.tab_events" })).toHaveAttribute("aria-selected", "true");
+    expect(queued).toEqual(["/experiences", "/events"]);
+
+    // Nothing is left pending on the tab the URL already names: a filter is
+    // still mirrored to the address bar.
+    replaceSpy.mockClear();
+    fireEvent.change(cityInput(), { target: { value: CITY } });
+    await waitFor(() => expect(lastReplaceParams(replaceSpy)?.get("city")).toBe(CITY));
   });
 
   it("never writes the route by hand (no history.pushState from the component)", () => {

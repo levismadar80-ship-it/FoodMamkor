@@ -97,7 +97,9 @@ export default function EventsPage({ initialTab = "events" }) {
   // the hero and the list answer on the tap's own tick (MEH-2245). It is
   // dropped as soon as the URL moves, whichever way it moved.
   const [pending, setPending] = useState(/** @type {null | {tab: string, from: string | null}} */ (null));
-  if (pending && pending.from !== pathTab) setPending(null);
+  // Dropped once the URL has arrived (or moved anywhere else), so it can never
+  // outlive the navigation it stands in for (reviewer, MEH-3463: A→B→A).
+  if (pending && (pending.from !== pathTab || pending.tab === pathTab)) setPending(null);
   const tab = (pending && pending.tab) || pathTab || initialTab;
   // View mode — list (default) vs calendar. Independent of tab; applies
   // to whichever data set (events / experiences) is loaded.
@@ -148,7 +150,9 @@ export default function EventsPage({ initialTab = "events" }) {
   // DO NOT write the URL by hand (history.pushState) — that is the MEH-3463 bug.
   const switchTab = (next) => {
     if (next === tab) return;
-    setPending({ tab: next, from: pathTab });
+    // Back to the tab the URL already names (a quick A→B→A): nothing is
+    // pending — the URL is right — only the B push has to be overridden.
+    setPending(next === pathTab ? null : { tab: next, from: pathTab });
     setCategories(clearCategories);
     setWhen(null);
     setCity("");

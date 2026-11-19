@@ -3,7 +3,7 @@
 **מה הן עושות.** ביקור מאורח אצל בית העסק — סיור, טעימה, סדנה חוזרת. אותה זרימת הרשמה כמו אירוע, עם קטגוריה משלה ומודרציה של AI על התיאור.
 
 **Routes**
-* `frontend/app/[locale]/experiences/` · `frontend/app/[locale]/experiences/[id]/`
+* `frontend/app/[locale]/(whats-on)/experiences/` (לשונית בתוך `frontend/app/[locale]/(whats-on)/layout.js`, MEH-3463) · `frontend/app/[locale]/experiences/[id]/`
 * `frontend/app/[locale]/producer/dashboard/experiences/` ‏(+ `new`, `[id]/edit`)
 * `frontend/app/[locale]/admin/experiences/`
 
