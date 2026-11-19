@@ -91,7 +91,7 @@ export default function OrderCard({ order, onChanged }) {
       <OrderFacts order={order} />
       <div className="flex flex-wrap items-center gap-x-4">
         <a
-          href={telHref(`+${order.customer_phone}`) ?? undefined}
+          href={(order.customer_phone && telHref(`+${order.customer_phone}`)) || undefined}
           dir="ltr"
           className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary focus-ring rounded-sm"
           aria-label={t("phone")}

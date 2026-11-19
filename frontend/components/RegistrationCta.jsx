@@ -53,7 +53,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** @type {Record<string, import("@/lib/use-account-prefill").AccountField>} */
 const SIGNUP_PREFILL = { name: "name", phone: "phone", email: "email" };
 
-
 // MEH-3315: one sign-up for up to 10 people (the server's 1–10 rule).
 const PARTY_SIZES = Array.from({ length: 10 }, (_, i) => String(i + 1));
 
