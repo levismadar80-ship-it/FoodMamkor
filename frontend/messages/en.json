@@ -2093,12 +2093,7 @@
         "error_json": "The text is not valid JSON.",
         "error_shape": "Expected an array of products, or an object with rows.",
         "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
-        "load_failed": "Couldn't load the drafts. Try refreshing.",
-        "unit": {
-          "unit": "per unit",
-          "kg": "per kg",
-          "100g": "per 100 g"
-        }
+        "load_failed": "Couldn't load the drafts. Try refreshing."
       }
     },
     "users": {
@@ -6106,7 +6101,9 @@
         "image_remove": "Remove",
         "image_upload_cta": "Upload photo",
         "image_replace": "Replace photo",
-        "image_uploading": "Uploading…"
+        "image_uploading": "Uploading…",
+        "price_unit_label": "Price per",
+        "price_unit_hint": "Shown next to the price on your page, e.g. ₪40 per kg"
       },
       "save_edit_cta": "Save changes",
       "save_edit_saving": "Saving…",
@@ -7527,5 +7524,12 @@
     "line": "{qty} × {name}",
     "back": "Back",
     "failed": "That didn't work. Please try again."
+  },
+  "price_unit": {
+    "unit": "per unit",
+    "kg": "per kg",
+    "100g": "per 100 g",
+    "bottle": "per bottle",
+    "box": "per box"
   }
 }

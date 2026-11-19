@@ -16,6 +16,7 @@
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים.
 * `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון.
+* `frontend/components/ProductPrice.jsx` · `frontend/lib/product-price.js` — המחיר עם היחידה («80₪ לבקבוק», MEH-2936). המחיר ב-span של `dir="ltr"`, היחידה אחריו ומחוץ לו. התוויות ב-namespace ‏`price_unit`, שנשלח לכל דף.
 * `frontend/lib/hours.js` — פענוח שעות ומצב «פתוח עכשיו».
 * `frontend/lib/contact-method.js` — הבעלים היחיד של «מה הכפתור הראשי ולאן הוא מוביל».
 * `backend/app/routers/producers.py` — הפרט; `backend/app/services/producer_listing.py` — הרשימה.
@@ -30,6 +31,7 @@
 * `tests/test_meh2602_producer_page_lists.py` · `tests/test_producer_contract_snapshot.py`
 * `tests/test_meh3439_product_may_contain.py` · `frontend/__tests__/ProductSheetAllergens.test.jsx` — רכיבים, «מכיל», «עלול להכיל» ושורת «לא ציין» בגיליון המוצר (MEH-2662, MEH-3439).
 * `tests/test_meh3444_product_storage.py` · `frontend/__tests__/ProductSheetAllergens.test.jsx` · `frontend/__tests__/ProductsSectionAllergens.test.jsx` — «אחסון ותוקף» בגיליון המוצר ובטופס בית העסק, כולל בדיקת ה-AI בעריכה של עסק מאושר (MEH-3444).
+* `tests/test_meh2936_product_unit.py` · `frontend/__tests__/ProductPriceUnit.test.jsx` — **השומר** של יחידת המחיר: רשימה אחת בשרת, בסכמות ובצד הלקוח, התווית מגיעה לדף ציבורי, ובקבוק/ארגז לא הופכים מחיר להערכה (MEH-2936).
 * `frontend/__tests__/MiddlewareProducerId404.test.js` — ‏`/producer/<id>` של עסק שלא קיים מחזיר 404 אמיתי מה-middleware (MEH-3024).
 
 **מזהי רישום שזה מכסה.** `gallery_story`, `product_details`, `top_product`, `hours`, `vacation_mode`, `primary_cta`, `wa_prefill`, `product_wa`, `faq_answers`, `wa_group`, `nav_buttons`, `similar_businesses`.

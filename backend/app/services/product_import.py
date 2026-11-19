@@ -34,8 +34,9 @@ from app.schemas.catalog import (
 )
 
 # Source unit words → our closed set (models/product_orders.py
-# PRODUCT_PRICE_UNITS). mypips shows "ליחידה" / "למארז" / "לק"ג". A package is
-# priced per unit here; anything unknown is per unit too (the row is kept).
+# PRODUCT_PRICE_UNITS). mypips shows "ליחידה" / "למארז" / "לק"ג". A package
+# («מארז») is priced per unit here; a box («ארגז») and a bottle are their own
+# units since MEH-2936; anything unknown is per unit too (the row is kept).
 _UNIT_MAP: dict[str, str] = {
     "unit": "unit",
     "יחידה": "unit",
@@ -53,6 +54,13 @@ _UNIT_MAP: dict[str, str] = {
     "100g": "100g",
     "100 גרם": "100g",
     "ל-100 גרם": "100g",
+    # MEH-2936: bottle / box are their own units now.
+    "bottle": "bottle",
+    "בקבוק": "bottle",
+    "לבקבוק": "bottle",
+    "box": "box",
+    "ארגז": "box",
+    "לארגז": "box",
 }
 
 _PRICE_NOISE = re.compile(r"[₪\s]|ש\"ח|ש״ח")

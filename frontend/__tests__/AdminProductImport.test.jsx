@@ -41,7 +41,7 @@ describe("AdminProductImport (MEH-2312)", () => {
     wrap();
     const items = await screen.findAllByRole("listitem");
     expect(items).toHaveLength(1);
-    expect(items[0]).toHaveTextContent(T.unit.kg);
+    expect(items[0]).toHaveTextContent(he.price_unit.kg);
   });
 
   it("a failed load says so (not «no drafts»)", async () => {
