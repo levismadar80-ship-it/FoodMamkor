@@ -45,5 +45,5 @@ export function productUnitLabel(product, tUnit) {
  * @returns {string | null}
  */
 export function productNumericPrice(product) {
-  return product.price_min != null ? formatPriceRange(product.price_min, product.price_max) || null : null;
+  return product.price_min !== null && product.price_min !== undefined ? formatPriceRange(product.price_min, product.price_max) || null : null;
 }
