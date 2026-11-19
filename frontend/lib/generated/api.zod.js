@@ -3070,6 +3070,19 @@ export const BlockUserAdminUsersUserIdBlockPostResponse = /*#__PURE__*/ zod.unkn
 
 
 /**
+ * MEH-3375: what blocking ``user_id`` would take down, read before the
+ * admin confirms — the business that would be hidden (same rule as
+ * block_user) and how many open bookings would be cancelled and mailed.
+ * Reads only. Already blocked → nothing (the next click unblocks).
+ * @summary Block Impact
+ */
+export const BlockImpactAdminUsersUserIdBlockImpactGetResponse = /*#__PURE__*/ zod.object({
+  "business_name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "open_bookings": /*#__PURE__*/ zod.int()
+})
+
+
+/**
  * @summary User Favorites
  */
 export const UserFavoritesAdminUsersUserIdFavoritesGetResponse = /*#__PURE__*/ zod.unknown()

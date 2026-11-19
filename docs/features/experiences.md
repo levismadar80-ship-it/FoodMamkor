@@ -13,6 +13,7 @@
 * `backend/app/services/experience_sessions.py` — מועדים של סדנה חוזרת (MEH-3441): עד 12 קדימה, ומקומות, המתנה ורישום כפול לכל מועד. סדנה חוזרת בלי מועדים נשארת מאגר מקומות אחד.
 * `frontend/components/ExperienceSessionsField.jsx` — «מועדים» בתוך «החוויה חוזרת» בטופס בעלת העסק (MEH-3447): שורה לכל מועד, הסרת מועד עם נרשמות שואלת קודם.
 * `frontend/components/RegistrationSessionSelect.jsx` — «מועד», השדה הראשון בטופס ההרשמה (MEH-3447). מועד מלא נשאר לבחירה והופך לרשימת ההמתנה של אותו מועד. רשימת הנרשמות בלוח הבקרה (`frontend/components/RegistrationsList.jsx`) מקובצת לפי מועד. שומר: `frontend/__tests__/ExperienceSessionsUi.test.jsx`.
+* `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת החוויות פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ב-`/experiences/mine` (MEH-3438). הטסט `frontend/__tests__/NewExperienceDashboardPage.test.jsx`.
 
 **Flags.** אין.
 

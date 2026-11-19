@@ -391,6 +391,18 @@ class TestReviewRound1:
         assert _active(db, "a@example.com") == [(D1, "cancelled")]
         assert [to for k, to, _ in mail] == ["a@example.com"]
 
+    def test_the_pre_block_count_leaves_a_past_date_out(self, client, db, mail):
+        """MEH-3375 x MEH-3441: the admin is shown the set the block cancels,
+        and the cancel leaves a past date alone — so the count does too."""
+        from app.models.models import Producer
+        from app.services.booking_cancellations import count_open_bookings
+
+        host, ex = _workshop(db, max_participants=5)
+        _reg(db, ex, "past@example.com", israel_today() - timedelta(days=7))
+        assert _join(client, ex, "a@example.com", D1).status_code == 201
+        producer = db.get(Producer, host.producer_id)
+        assert count_open_bookings(db, producer) == 1
+
     def test_an_undated_cancel_offers_no_place_to_a_dated_waitlist(
         self, client, db, mail
     ):
