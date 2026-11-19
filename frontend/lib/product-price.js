@@ -31,7 +31,7 @@ export function showsUnit(unit) {
  * unknown value. Kept apart from the price because the price renders inside a
  * dir="ltr" span (MEH-1140) and a Hebrew label inside it would be reordered.
  * @param {{ price_unit?: string | null }} product
- * @param {(key: string) => string} tUnit — `admin.producers.product_import.unit`
+ * @param {(key: string) => string} tUnit — the `price_unit` namespace
  * @returns {string | null}
  */
 export function productUnitLabel(product, tUnit) {

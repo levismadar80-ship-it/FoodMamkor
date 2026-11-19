@@ -14,13 +14,14 @@ import api from "@/lib/api";
 import ProductsSection from "@/components/ProductsSection";
 import ProductPrice from "@/components/ProductPrice";
 import { PRICE_UNITS } from "@/lib/product-price";
+import { rootClientMessages } from "@/lib/client-messages";
 
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 
 const P = he.settings.products;
-const U = he.admin.producers.product_import.unit;
+const U = he.price_unit;
 
 const withIntl = (ui) => (
   <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
@@ -36,8 +37,8 @@ describe("labels", () => {
   it("every unit has a Hebrew and an English label", () => {
     expect(PRICE_UNITS).toEqual(["unit", "kg", "100g", "bottle", "box"]);
     for (const u of PRICE_UNITS) {
-      expect(he.admin.producers.product_import.unit[u], u).toBeTruthy();
-      expect(en.admin.producers.product_import.unit[u], u).toBeTruthy();
+      expect(he.price_unit[u], u).toBeTruthy();
+      expect(en.price_unit[u], u).toBeTruthy();
     }
     expect(U.bottle).toBe("לבקבוק");
     expect(U.box).toBe("לארגז");
@@ -70,6 +71,18 @@ describe("public price", () => {
   it("an unknown or missing unit prints no label", () => {
     renderPrice({ price_min: 40, price_unit: "crate" });
     expect(screen.queryByTestId("product-price-unit")).toBeNull();
+  });
+
+  it("the label reaches a public page: the root provider ships it (review 19/11)", () => {
+    // The business page, product sheet and recipe page sit under the ROOT
+    // provider, which leaves route-scoped namespaces out. Rendering with the
+    // full catalog would hide a label read from one of those.
+    render(
+      <NextIntlClientProvider locale="he" messages={rootClientMessages(he)} onError={() => {}}>
+        <p data-testid="price"><ProductPrice product={{ price_min: 80, price_unit: "bottle" }} /></p>
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("product-price-unit").textContent.trim()).toBe("לבקבוק");
   });
 
   it("no numeric price renders nothing", () => {

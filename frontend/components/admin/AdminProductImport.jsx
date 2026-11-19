@@ -50,6 +50,7 @@ function parseRows(text) {
 /** @param {{ producerId: string }} props */
 export default function AdminProductImport({ producerId }) {
   const t = useTranslations("admin.producers.product_import");
+  const tUnit = useTranslations("price_unit");  // MEH-2936
   const [text, setText] = useState("");
   const [drafts, setDrafts] = useState(/** @type {any[] | null} */ (null));
   const [result, setResult] = useState(/** @type {any} */ (null));
@@ -206,7 +207,7 @@ export default function AdminProductImport({ producerId }) {
                 <span className="numeric" dir="ltr">
                   ₪{Number(d.price_min ?? 0)}
                 </span>{" "}
-                {t(`unit.${UNIT_KEYS.has(d.price_unit) ? d.price_unit : "unit"}`)}
+                {tUnit(UNIT_KEYS.has(d.price_unit) ? d.price_unit : "unit")}
               </span>
               <Button type="button" size="sm" variant="text" onClick={() => onDelete(d.id)} disabled={busy}>
                 {t("delete_cta")}

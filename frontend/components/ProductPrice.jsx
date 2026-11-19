@@ -15,7 +15,7 @@ import { productNumericPrice, productUnitLabel } from "@/lib/product-price";
  * @param {{ product: { price_min?: number | string | null, price_max?: number | string | null, price_unit?: string | null } }} props
  */
 export default function ProductPrice({ product }) {
-  const tUnit = useTranslations("admin.producers.product_import.unit");
+  const tUnit = useTranslations("price_unit");
   const price = productNumericPrice(product);
   if (!price) return null;
   const unit = productUnitLabel(product, tUnit);

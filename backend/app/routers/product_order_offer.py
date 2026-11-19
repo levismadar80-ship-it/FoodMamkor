@@ -181,7 +181,8 @@ def put_product_ordering(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=ORDERABLE_NEEDS_PRICE_DETAIL,
         )
-    for field, value in body.model_dump().items():
+    # MEH-2936: exclude_unset — an omitted price_unit keeps the stored one.
+    for field, value in body.model_dump(exclude_unset=True).items():
         setattr(product, field, value)
     db.commit()
     db.refresh(product)

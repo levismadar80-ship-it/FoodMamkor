@@ -269,6 +269,7 @@ export const DraftProductSchema = z.object({
   name: z.string().min(1),
   price_min: z.union([z.string(), z.number()]).nullable().optional(),
   price_max: z.union([z.string(), z.number()]).nullable().optional(),
+  price_unit: z.string().optional(), // MEH-2936: the draft list prints it
 });
 
 // MEH-2435 (chunk 3): GET /producers/me/group-buys → list[GroupBuyOut], read by

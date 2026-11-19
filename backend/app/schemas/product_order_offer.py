@@ -95,15 +95,26 @@ class OrderWindowsOut(BaseModel):
 
 
 class ProductOrderingIn(BaseModel):
-    """The four ordering fields of one product. All required: the screen
-    saves the whole row."""
+    """The ordering fields of one product. is_orderable, in_stock and
+    contains_alcohol are required: the screen saves the whole row.
+
+    MEH-2936: price_unit is optional and omitted means "keep". The owner's
+    product form writes it now too, so an orders tab loaded before that edit
+    must not send the old unit back over it. An explicit null is refused."""
 
     model_config = ConfigDict(extra="forbid")
 
     is_orderable: bool
     in_stock: bool
-    price_unit: PriceUnit
+    price_unit: PriceUnit | None = None
     contains_alcohol: bool
+
+    @field_validator("price_unit")
+    @classmethod
+    def _no_null_unit(cls, value: str | None) -> str | None:
+        if value is None:
+            raise ValueError("price_unit cannot be null")
+        return value
 
 
 class ProductOrderingOut(BaseModel):

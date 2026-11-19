@@ -187,3 +187,19 @@ def test_the_admin_import_reads_bottle_and_box(raw, unit):
     from app.services.product_import import _unit
 
     assert _unit(raw)[0] == unit
+
+
+def test_the_orders_tab_switch_does_not_send_an_old_unit_back(client, db, flag_on):
+    """Review 19/11: the product form and the orders tab both write the row.
+    A sold-out toggle without price_unit keeps the unit the form saved."""
+    owner, producer = _owner(db)
+    product = Product(producer_id=producer.id, name="שמן", price_min=60, price_unit="bottle")
+    db.add(product)
+    db.commit()
+    url = f"/producers/me/products/{product.id}/ordering"
+    body = {"is_orderable": True, "in_stock": False, "contains_alcohol": False}
+    res = client.put(url, json=body, headers=auth_header(owner))
+    assert res.status_code == 200, res.text
+    db.refresh(product)
+    assert (product.in_stock, product.price_unit) == (False, "bottle")
+    assert client.put(url, json={**body, "price_unit": None}, headers=auth_header(owner)).status_code == 422

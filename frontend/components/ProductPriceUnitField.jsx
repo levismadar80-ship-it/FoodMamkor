@@ -19,8 +19,8 @@ import { PRICE_UNITS } from "@/lib/product-price";
  */
 export default function ProductPriceUnitField({ id, value, onChange }) {
   const tForm = useTranslations("settings.products.form");
-  // One home for the unit labels: the menu import already uses this namespace.
-  const tUnit = useTranslations("admin.producers.product_import.unit");
+  // MEH-2936: one home for the unit labels, shipped to every page (root provider).
+  const tUnit = useTranslations("price_unit");
   const current = value && PRICE_UNITS.includes(value) ? value : "unit";
   return (
     <Select

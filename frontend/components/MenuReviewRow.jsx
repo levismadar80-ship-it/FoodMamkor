@@ -59,7 +59,7 @@ function CheckFlag({ flag }) {
  */
 export default function MenuReviewRow({ row, onChange, onRemove }) {
   const t = useTranslations("settings.products");
-  const tUnit = useTranslations("admin.producers.product_import.unit");
+  const tUnit = useTranslations("price_unit");
   const unsure = (/** @type {string} */ f) => row.uncertain.includes(f);
   const set = (/** @type {Partial<MenuDraftRow>} */ patch) => onChange(row.key, patch);
   const problem = rowProblem(row);
