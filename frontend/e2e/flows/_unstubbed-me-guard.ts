@@ -47,12 +47,12 @@ const JWT = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const UNSTUBBED_STATUS = 599;
 
 /** True when the Authorization header carries a Bearer token that is not a JWT. */
-export function isFakeBearer(authorization: string | undefined): boolean {
+function isFakeBearer(authorization: string | undefined): boolean {
   const m = /^Bearer\s+(.+)$/.exec(authorization || "");
   return !!m && !JWT.test(m[1].trim());
 }
 
-export function unstubbedMessage(method: string, url: string, specFile: string): string {
+function unstubbedMessage(method: string, url: string, specFile: string): string {
   const { pathname, search } = new URL(url);
   return (
     `Unstubbed call from a fake-token spec: ${method} ${pathname}${search}\n` +
