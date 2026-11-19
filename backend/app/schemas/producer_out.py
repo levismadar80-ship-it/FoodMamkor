@@ -529,6 +529,11 @@ class ProducerAdminOut(ProducerDetailOut):
     # CLOSED — the UI renders neither chip nor action for a non-boolean —
     # instead of reporting a claimed draft as ownerless.
     has_owner: bool | None = None
+    # MEH-3408: another business, in ANY status, shares this row's name / phone.
+    # Hydrated by GET /admin/producers only (services/producer_duplicates.py),
+    # in one query; every other route leaves them False (no badge). Admin-only.
+    dup_name: bool = False
+    dup_phone: bool = False
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None

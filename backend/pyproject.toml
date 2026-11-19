@@ -336,6 +336,7 @@ files = [
     "app/services/pending_nudge.py",
     "app/services/phone_reverify.py",
     "app/services/producer_approval.py",
+    "app/services/producer_duplicates.py",
     "app/services/producer_insights.py",
     "app/services/producer_listing.py",
     "app/services/producer_queries.py",
