@@ -38,8 +38,9 @@ export default function useDuplicateSource(kind) {
     const done = (/** @type {object|null} */ source) => {
       if (alive) setState({ loading: false, source });
     };
-    api
-      .get(`/${kind}/mine`)
+    // Two literal paths, so the API contract audit can match each to its route.
+    const request = kind === "events" ? api.get("/events/mine") : api.get("/experiences/mine");
+    request
       .then((r) => {
         const row = Array.isArray(r.data) ? r.data.find((x) => String(x.id) === fromId) : null;
         // The date is the one thing a repeat never shares; the id would make
