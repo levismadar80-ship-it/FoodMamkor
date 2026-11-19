@@ -3424,6 +3424,7 @@ export const RegisterOptionsAuthPasskeyRegisterOptionsPostResponse = /*#__PURE__
  * @summary Register Verify
  */
 export const RegisterVerifyAuthPasskeyRegisterVerifyPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "passkey": /*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "id": /*#__PURE__*/ zod.uuid(),

@@ -17,7 +17,7 @@
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
 | API routes (actor actions) | 298 | 285 | 8 | 5 | 0 |
-| — negative cell of gated routes (401/403) | 217 | 140 | 0 | 77 | 0 |
+| — negative cell of gated routes (401/403) | 217 | 141 | 0 | 76 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 51 | 49 | 1 | 1 | 0 |
 | Pages — public | 59 | 52 | 0 | 7 | 0 |
@@ -28,7 +28,7 @@
 
 Pages opened by a CI-run Playwright spec: **40 / 101** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 100** (route positive 5 · route negative 77 · tools 1 · pages 13 · machine rows 3 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 99** (route positive 5 · route negative 76 · tools 1 · pages 13 · machine rows 3 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -40,7 +40,7 @@ Score: see «Risk score» at the end. Routes whose verdict is not `covered` or w
 | 2 | 13 | `POST /admin/producers/{producer_id}/owner-invite` | admin | sends email/WhatsApp, no test, no 401/403 test | pos GAP · neg GAP |
 | 3 | 12 | `DELETE /admin/producers/{producer_id}/owner-invite` | admin | delete, no test, no 401/403 test | pos GAP · neg GAP |
 | 4 | 12 | `POST /admin/settings/test/{service}` | admin | site-wide settings, only weak, no 401/403 test | pos weak `tests/test_meh2899_admin_service_test.py:90` (path literal) · neg GAP |
-| 5 | 12 | `POST /auth/passkey/step-up/options` | admin | auth, only weak, no 401/403 test | pos weak `tests/test_meh3305_admin_passkeys_routes.py:280` (no success asserted) · neg GAP |
+| 5 | 12 | `POST /auth/passkey/step-up/options` | admin | auth, only weak, no 401/403 test | pos weak `tests/test_meh3305_admin_passkeys_routes.py:282` (no success asserted) · neg GAP |
 | 6 | 12 | `POST /producers/me/verify-phone` | business/organizer | auth, sends email/WhatsApp, no 401/403 test | pos `tests/test_meh2122_otp_send_failure.py:35` · neg GAP |
 | 7 | 11 | [negative] a rejected business acting (business mutation → 403/409) | — | negative row on `business mutations` | GAP |
 | 8 | 11 | `PATCH /producers/me/recipes/{recipe_id}` | business/organizer | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_indexnow.py:724` · neg GAP |
@@ -53,19 +53,19 @@ Score: see «Risk score» at the end. Routes whose verdict is not `covered` or w
 | 15 | 10 | `DELETE /producers/me/products/{product_id}` | business/organizer | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_product_image.py:109` · neg GAP |
 | 16 | 10 | `DELETE /producers/me/recipes/{recipe_id}` | business/organizer | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_indexnow.py:757` · neg GAP |
 | 17 | 10 | `PATCH /group-buys/{group_buy_id}/status` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_group_buys_api.py:1455` · neg GAP |
-| 18 | 10 | `POST /auth/passkey/register/verify` | admin | auth, no 401/403 test | pos `tests/test_meh3305_admin_passkeys_routes.py:181` · neg GAP |
-| 19 | 10 | `POST /producers/me/verify-phone/confirm` | business/organizer | auth, no 401/403 test | pos `tests/test_meh2231_otp_test_numbers.py:113` · neg GAP |
-| 20 | 10 | `POST /producers/{producer_id}/report` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_integrity_constraints.py:41` · neg GAP |
-| 21 | 10 | `PUT /admin/settings` | admin | site-wide settings, no 401/403 test | pos `tests/test_admin_settings_persistence.py:14` · neg GAP |
-| 22 | 10 | `PUT /reviews/{review_id}/reply` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2381_review_edited_after_hidden.py:174` · neg GAP |
-| 23 | 9 | `DELETE /events/{event_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_events_cross_owner.py:99` · neg GAP |
-| 24 | 9 | `DELETE /experiences/{experience_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_experiences.py:1040` · neg GAP |
-| 25 | 9 | `DELETE /reviews/{review_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2348_review_hide_sticky.py:84` · neg GAP |
-| 26 | 9 | `GET /admin/group-buys` | admin | no test, no 401/403 test | pos GAP · neg GAP |
-| 27 | 9 | `GET /admin/users/{user_id}/favorites` | admin | no test, no 401/403 test | pos GAP · neg GAP |
-| 28 | 9 | `PATCH /admin/group-buys/{group_buy_id}/status` | admin | sends email/WhatsApp, no 401/403 test | pos `tests/test_group_buys_api.py:1596` · neg GAP |
-| 29 | 9 | `POST /admin/producers/{producer_id}/detach-owner` | admin | only weak, no 401/403 test | pos weak `tests/test_meh3256_detach_owner.py:39` (no success asserted) · neg GAP |
-| 30 | 9 | `POST /auth/logout-all-devices` | registered user | auth, no 401/403 test | pos `tests/test_api.py:4532` · neg GAP |
+| 18 | 10 | `POST /producers/me/verify-phone/confirm` | business/organizer | auth, no 401/403 test | pos `tests/test_meh2231_otp_test_numbers.py:113` · neg GAP |
+| 19 | 10 | `POST /producers/{producer_id}/report` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_integrity_constraints.py:41` · neg GAP |
+| 20 | 10 | `PUT /admin/settings` | admin | site-wide settings, no 401/403 test | pos `tests/test_admin_settings_persistence.py:14` · neg GAP |
+| 21 | 10 | `PUT /reviews/{review_id}/reply` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2381_review_edited_after_hidden.py:174` · neg GAP |
+| 22 | 9 | `DELETE /events/{event_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_events_cross_owner.py:99` · neg GAP |
+| 23 | 9 | `DELETE /experiences/{experience_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_experiences.py:1040` · neg GAP |
+| 24 | 9 | `DELETE /reviews/{review_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2348_review_hide_sticky.py:84` · neg GAP |
+| 25 | 9 | `GET /admin/group-buys` | admin | no test, no 401/403 test | pos GAP · neg GAP |
+| 26 | 9 | `GET /admin/users/{user_id}/favorites` | admin | no test, no 401/403 test | pos GAP · neg GAP |
+| 27 | 9 | `PATCH /admin/group-buys/{group_buy_id}/status` | admin | sends email/WhatsApp, no 401/403 test | pos `tests/test_group_buys_api.py:1596` · neg GAP |
+| 28 | 9 | `POST /admin/producers/{producer_id}/detach-owner` | admin | only weak, no 401/403 test | pos weak `tests/test_meh3256_detach_owner.py:39` (no success asserted) · neg GAP |
+| 29 | 9 | `POST /auth/logout-all-devices` | registered user | auth, no 401/403 test | pos `tests/test_api.py:4532` · neg GAP |
+| 30 | 9 | `POST /producers/me/product-orders/{order_id}/cancel` | business/organizer | object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh3263_order_route.py:1230` · neg GAP |
 
 ## API routes
 
@@ -89,14 +89,14 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 14 | POST | `/auth/me/delete` | `auth.delete_account` | registered user | `tests/test_account_deletion_cascade.py:40` | `tests/test_meh3248_account_delete_safeguards.py:47` | — | 9 |
 | 15 | POST | `/auth/register/producer` | `auth_register_producer.register_producer` | anonymous (optional auth) | `tests/test_admin_delete_producer.py:46` | n/a | e2e-mock `frontend/e2e/flows/18-producer-register-wizard.spec.ts:41` | 9 |
 | 16 | POST | `/auth/register/producer/oauth` | `auth_register_producer.register_producer_oauth` | anonymous | `tests/test_email_verified_creation_paths.py:131` | n/a | e2e-mock `frontend/e2e/flows/10-producer-oauth-409.spec.ts:44` | 7 |
-| 17 | GET | `/auth/passkey` | `admin_passkey.list_passkeys` | admin | `tests/test_meh3305_admin_passkeys_routes.py:367` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:187` | 8 |
-| 18 | POST | `/auth/passkey/step-up/options` | `admin_passkey.step_up_options` | admin | weak `tests/test_meh3305_admin_passkeys_routes.py:280` (no success asserted) | GAP | — | 12 |
-| 19 | POST | `/auth/passkey/register/options` | `admin_passkey.register_options` | admin | `tests/test_meh3305_admin_passkeys_routes.py:176` | `tests/test_meh3305_admin_passkeys_routes.py:247` | — | 8 |
-| 20 | POST | `/auth/passkey/register/verify` | `admin_passkey.register_verify` | admin | `tests/test_meh3305_admin_passkeys_routes.py:181` | GAP | — | 10 |
-| 21 | POST | `/auth/passkey/{passkey_id}/delete` | `admin_passkey.delete_passkey` | admin | `tests/test_meh3305_admin_passkeys_routes.py:390` | `tests/test_meh3305_admin_passkeys_routes.py:387` | — | 8 |
-| 22 | POST | `/auth/passkey/recovery-codes` | `admin_passkey.regenerate_codes` | admin | `tests/test_meh3305_admin_passkeys_routes.py:529` | `tests/test_meh3305_admin_passkeys_routes.py:539` | — | 8 |
-| 23 | POST | `/auth/passkey/login/verify` | `admin_passkey.login_verify` | anonymous | `tests/test_meh3305_admin_passkeys_routes.py:229` | n/a | — | 7 |
-| 24 | POST | `/auth/passkey/login/recovery` | `admin_passkey.login_recovery` | anonymous | `tests/test_meh3305_admin_passkeys_routes.py:344` | n/a | — | 7 |
+| 17 | GET | `/auth/passkey` | `admin_passkey.list_passkeys` | admin | `tests/test_meh3305_admin_passkeys_routes.py:370` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:187` | 8 |
+| 18 | POST | `/auth/passkey/step-up/options` | `admin_passkey.step_up_options` | admin | weak `tests/test_meh3305_admin_passkeys_routes.py:282` (no success asserted) | GAP | — | 12 |
+| 19 | POST | `/auth/passkey/register/options` | `admin_passkey.register_options` | admin | `tests/test_meh3305_admin_passkeys_routes.py:176` | `tests/test_meh3305_admin_passkeys_routes.py:249` | — | 8 |
+| 20 | POST | `/auth/passkey/register/verify` | `admin_passkey.register_verify` | admin | `tests/test_meh3305_admin_passkeys_routes.py:181` | `tests/test_meh3305_admin_passkeys_routes.py:578` | — | 8 |
+| 21 | POST | `/auth/passkey/{passkey_id}/delete` | `admin_passkey.delete_passkey` | admin | `tests/test_meh3305_admin_passkeys_routes.py:393` | `tests/test_meh3305_admin_passkeys_routes.py:390` | — | 8 |
+| 22 | POST | `/auth/passkey/recovery-codes` | `admin_passkey.regenerate_codes` | admin | `tests/test_meh3305_admin_passkeys_routes.py:532` | `tests/test_meh3305_admin_passkeys_routes.py:542` | — | 8 |
+| 23 | POST | `/auth/passkey/login/verify` | `admin_passkey.login_verify` | anonymous | `tests/test_meh3305_admin_passkeys_routes.py:231` | n/a | — | 7 |
+| 24 | POST | `/auth/passkey/login/recovery` | `admin_passkey.login_recovery` | anonymous | `tests/test_meh3305_admin_passkeys_routes.py:347` | n/a | — | 7 |
 | 25 | GET | `/cities` | `cities.list_cities` | anonymous | `tests/test_meh1343_cities_canonical_source.py:23` | n/a | e2e-mock `frontend/e2e/flows/38-register-delivery-axis.spec.ts:39` | 1 |
 | 26 | GET | `/producer-name-check` | `producer_name_check.producer_name_check` | anonymous | `tests/test_meh3086_name_check.py:26` | n/a | e2e-mock `frontend/e2e/flows/manual/admin-producer-form-licence.spec.ts:222` | 1 |
 | 27 | GET | `/producers/me` | `producer_me.get_my_producer` | business/organizer | `tests/test_api.py:4062` | `tests/test_api.py:4071` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:193` | 3 |
@@ -348,7 +348,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 283 | PUT | `/producers/me/rescue/offers/{offer_id}/donated` | `rescue.set_donated` | business/organizer · flag: rescue | `tests/test_meh2703_rescue_donated.py:82` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 9 |
 | 284 | GET | `/producers/me/rescue/typical-items` | `rescue.get_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:78` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 5 |
 | 285 | PUT | `/producers/me/rescue/typical-items` | `rescue.set_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:68` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 7 |
-| 286 | GET | `/producers/me/order-settings` | `product_orders.get_my_order_settings` | business/organizer | `tests/test_meh3216_business_id.py:65` | `tests/test_meh3218_product_orders.py:421` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:84` | 3 |
+| 286 | GET | `/producers/me/order-settings` | `product_orders.get_my_order_settings` | business/organizer | `tests/test_meh3216_business_id.py:67` | `tests/test_meh3218_product_orders.py:421` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:84` | 3 |
 | 287 | PUT | `/producers/me/order-settings` | `product_orders.put_my_order_settings` | business/organizer | `tests/test_meh3216_business_id.py:25` | `tests/test_meh3218_product_orders.py:419` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:84` | 5 |
 | 288 | PUT | `/admin/producers/{producer_id}/order-settings/alcohol` | `product_orders.set_alcohol_licensed` | admin | `tests/test_meh3218_product_orders.py:453` | `tests/test_meh3218_product_orders.py:444` | — | 5 |
 | 289 | GET | `/producers/me/order-windows` | `product_order_offer.get_my_order_windows` | business/organizer | `tests/test_meh3262_order_windows.py:310` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:505` | 5 |
