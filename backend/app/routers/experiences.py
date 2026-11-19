@@ -113,12 +113,13 @@ def _serialize_host(host: User | None) -> dict[str, Any] | None:
     return out
 
 
-def _sessions_out(ex: Experience) -> list[dict[str, Any]]:
-    """MEH-3441: upcoming dates with places left; [] without dates."""
+def _sessions_out(ex: Experience, *, owner: bool = False) -> list[dict[str, Any]]:
+    """MEH-3441: upcoming dates with places left; [] without dates.
+    `owner` adds each date's people (MEH-3447) — detail shape only."""
     session = object_session(ex)
     if session is None or not sessions_svc.has_sessions(ex):
         return []
-    return sessions_svc.public_list(session, ex)
+    return sessions_svc.public_list(session, ex, owner=owner)
 
 
 def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, Any]:
@@ -165,6 +166,7 @@ def _serialize_detail(ex: Experience, registered: int | None = None) -> dict[str
     this to the owner or to an admin."""
     return {
         **_serialize_list(ex, registered),
+        "sessions": _sessions_out(ex, owner=True),
         "address": ex.address,
         "requirements": ex.requirements,
         "lat": ex.lat,
@@ -418,6 +420,8 @@ def get_experience(
         payload["moderation_suggestion"] = None
         payload["admin_feedback"] = None
         payload["rejection_reason"] = None
+        # MEH-3447: how many people each date holds is the owner's to see.
+        payload["sessions"] = _sessions_out(ex)
         # MEH-1417: for a HOME experience the address is a host's
         # residence, so the coords must go too — MEH-1404's MiniMap
         # draws a precise pin from lat/lng and would otherwise leak

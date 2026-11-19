@@ -10,7 +10,10 @@
  * States:   0 dates → the hint and «הוספת מועד» only; 1 / many → one row
  *           each (date · time · ×). 12 rows → the add button gives way to
  *           «אפשר להוסיף עד 12 מועדים קדימה.». Removing a date with sign-ups
- *           asks first (Dialog); one without removes at once.
+ *           asks first (Dialog); one without removes at once. A date with
+ *           people on it is locked (no in-place move that would cancel them
+ *           silently). A row with only a date or only a time → «בחרו מועד.»
+ *           on submit (ExperienceForm validates, this shows it).
  * Does NOT: validate past / duplicate dates (the server answers 422 with the
  *           approved copy, shown by ExperienceForm), or save anything — it
  *           edits the list the form sends as `sessions`.
@@ -24,23 +27,37 @@ import { X, Plus } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-3022: the server keeps at most 12 upcoming dates.
 export const SESSION_MAX = 12;
 
-/** @typedef {{ date: string, time: string, participants_count?: number, registered?: number }} Session */
+/** @typedef {{ date: string, time: string, participants_count?: number, registered?: number | null }} Session */
+
+/** A row with only its date or only its time — saving would drop it. */
+export const isHalfSession = (/** @type {Session} */ s) => Boolean(s.date) !== Boolean(s.time);
 
 /**
- * @param {{ sessions: Session[], onChange: (next: Session[]) => void }} props
+ * @param {{ sessions: Session[], onChange: (next: Session[]) => void, invalid?: boolean }} props
  */
-export default function ExperienceSessionsField({ sessions, onChange }) {
+export default function ExperienceSessionsField({ sessions, onChange, invalid = false }) {
   const t = useTranslations("experiences.new");
+  // The approved «בחרו מועד.» (MEH-3264 copy table) — one owner for the line.
+  const tSignup = useTranslations("registration.signup");
   const [asking, setAsking] = useState(/** @type {number | null} */ (null));
 
   const edit = (i, field) => (e) => onChange(sessions.map((s, j) => (j === i ? { ...s, [field]: e.target.value } : s)));
   const drop = (i) => onChange(sessions.filter((_, j) => j !== i));
   const remove = (i) => ((sessions[i].registered ?? 0) > 0 ? setAsking(i) : drop(i));
   const full = sessions.length >= SESSION_MAX;
+  // A date with people on it is not edited in place: moving it would cancel
+  // them all without the question the × asks (MEH-3447 review). Remove it
+  // (that asks) and add the new date.
+  const held = (s) => (s.registered ?? 0) > 0;
+  // The id is there before submit too: the form focuses it in the same tick
+  // it sets the error, before this re-renders.
+  const firstHalf = sessions.findIndex(isHalfSession);
+  const label = (key, i) => (sessions.length > 1 ? `${t(key)} ${i + 1}` : t(key));
 
   return (
     <div className="mt-3 space-y-2" data-testid="experience-sessions">
@@ -49,27 +66,33 @@ export default function ExperienceSessionsField({ sessions, onChange }) {
       {sessions.map((s, i) => (
         <div key={i} className="flex items-center gap-2" data-testid="experience-session-row">
           <Input
+            id={i === firstHalf && !s.date ? "experience-session-incomplete" : undefined}
             type="date"
             size="sm"
             inline
-            aria-label={t("field_date")}
+            aria-label={label("field_date", i)}
+            aria-invalid={invalid && isHalfSession(s) && !s.date ? true : undefined}
             value={s.date}
             onChange={edit(i, "date")}
+            disabled={held(s)}
             className="flex-1 min-w-0"
           />
           <Input
+            id={i === firstHalf && s.date ? "experience-session-incomplete" : undefined}
             type="time"
             size="sm"
             inline
-            aria-label={t("field_time")}
+            aria-label={label("field_time", i)}
+            aria-invalid={invalid && isHalfSession(s) && !s.time ? true : undefined}
             value={s.time}
             onChange={edit(i, "time")}
+            disabled={held(s)}
             className="w-28"
           />
           <button
             type="button"
             onClick={() => remove(i)}
-            aria-label={t("sessions_remove")}
+            aria-label={label("sessions_remove", i)}
             className="w-11 h-11 shrink-0 flex items-center justify-center rounded-md border border-border text-fg-muted hover:bg-background focus-ring"
             data-testid="experience-session-remove"
           >
@@ -77,6 +100,11 @@ export default function ExperienceSessionsField({ sessions, onChange }) {
           </button>
         </div>
       ))}
+      {invalid && firstHalf >= 0 && (
+        <InlineMessage size="xs" data-testid="experience-sessions-incomplete">
+          {tSignup("session_required")}
+        </InlineMessage>
+      )}
       {full ? (
         <p className="text-xs text-fg-muted" data-testid="experience-sessions-full">
           {t("sessions_max")}

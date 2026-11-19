@@ -71,6 +71,7 @@ function fieldsFrom(detail) {
 
 function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = [], onDone }) {
   const t = useTranslations("registration.signup");
+  const tCta = useTranslations("registration.cta");
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState(/** @type {Record<string, string>} */ ({ name: "", phone: "", email: "", party: "1", session: "" }));
@@ -171,6 +172,12 @@ function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = 
         </button>
       )}
       {hasSessions && <RegistrationSessionSelect sessions={sessions} value={form.session} onChange={set("session")} error={errors.session} />}
+      {/* MEH-3447: why the button now says waitlist — the line a full item shows. */}
+      {isFullSession(chosen) && (
+        <p className="text-sm font-semibold text-text" data-testid="registration-session-full">
+          {tCta("full")}
+        </p>
+      )}
       <Input id="signup-name" label={t("name")} required autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} />
       <Input
         id="signup-phone"

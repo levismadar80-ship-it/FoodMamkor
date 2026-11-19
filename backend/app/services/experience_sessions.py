@@ -134,20 +134,45 @@ def taken(db: Session, ex: Experience) -> dict[Key, int]:
     return {(d, t): int(n) for d, t, n in rows}
 
 
-def public_list(db: Session, ex: Experience) -> list[dict[str, Any]]:
+def _people(db: Session, ex: Experience) -> dict[Key, int]:
+    """{(date, time): people a removal of that date would cancel} — signed
+    up or waiting, by party size (MEH-3447)."""
+    rows = (
+        db.query(
+            Registration.session_date,
+            Registration.session_time,
+            func.sum(Registration.party_size),
+        )
+        .filter(
+            Registration.experience_id == ex.id,
+            Registration.status.in_(("registered", "waitlisted")),
+            Registration.session_date.isnot(None),
+        )
+        .group_by(Registration.session_date, Registration.session_time)
+        .all()
+    )
+    return {(d, t): int(n) for d, t, n in rows}
+
+
+def public_list(
+    db: Session, ex: Experience, *, owner: bool = False
+) -> list[dict[str, Any]]:
     """What the page shows: each upcoming date and its places left (None =
-    no cap). The owner's off-site tally of a date shares its cap."""
+    no cap). The owner's off-site tally of a date shares its cap.
+    MEH-3447: `registered` — the people a removal would cancel, signed up or
+    waiting — goes to the owner / an admin only (her form asks before
+    removing such a date); everyone else gets None."""
     out: list[dict[str, Any]] = []
     counts = taken(db, ex) if has_sessions(ex) else {}
+    people = _people(db, ex) if owner and has_sessions(ex) else {}
     for s in upcoming(ex):
         signed = counts.get(_key(s), 0)
         left = None
         if ex.max_participants is not None:
             used = s["participants_count"] + signed
             left = max(int(ex.max_participants) - used, 0)
-        # MEH-3447: `registered` lets the owner's form confirm before removing
-        # a date that has sign-ups. spots_left already implies it publicly.
-        out.append({**s, "spots_left": left, "registered": signed})
+        affected = people.get(_key(s), 0) if owner else None
+        out.append({**s, "spots_left": left, "registered": affected})
     return out
 
 

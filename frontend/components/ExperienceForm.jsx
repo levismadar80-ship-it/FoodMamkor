@@ -39,7 +39,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
-import ExperienceSessionsField from "@/components/ExperienceSessionsField";
+import ExperienceSessionsField, { isHalfSession } from "@/components/ExperienceSessionsField";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
 
@@ -133,6 +133,7 @@ const EXPERIENCE_FIELD_ORDER = [
   "price_per_person",
   "max_participants",
   "min_participants",
+  "sessions",
   "registration_url",
 ];
 
@@ -149,6 +150,8 @@ const EXPERIENCE_FIELD_ID = {
   price_per_person: "experience-price",
   max_participants: "experience-max-participants",
   min_participants: "experience-min-participants",
+  // MEH-3447: the first empty half of an incomplete date row.
+  sessions: "experience-session-incomplete",
   registration_url: "registration_url",
 };
 
@@ -185,6 +188,9 @@ function validateExperienceForm(f, t, tReg) {
   // comes from our own upload endpoint now, and an upload failure sets
   // fieldErrors.image_url directly from handleImageUpload.
   if (!f.event_date) errors.event_date = t("error_date_required");
+  // MEH-3447: a date row with only its date or only its time would be dropped
+  // on save; the field shows «בחרו מועד.» on it instead.
+  if (f.is_recurring && (f.sessions ?? []).some(isHalfSession)) errors.sessions = "incomplete";
   // MEH-2013: both are labelled `*` and neither was enforced anywhere. city
   // additionally gates /experiences' city filter, so a city-less experience
   // is invisible on the main discovery axis.
@@ -783,7 +789,11 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             />
             <ExperienceSessionsField
               sessions={form.sessions}
-              onChange={(sessions) => setForm((f) => ({ ...f, sessions }))}
+              invalid={Boolean(fieldErrors.sessions)}
+              onChange={(sessions) => {
+                setForm((f) => ({ ...f, sessions }));
+                setFieldErrors((errs) => (errs.sessions ? { ...errs, sessions: undefined } : errs));
+              }}
             />
           </div>
         )}

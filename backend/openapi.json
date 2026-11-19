@@ -3585,8 +3585,15 @@
             "type": "integer"
           },
           "registered": {
-            "title": "Registered",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registered"
           },
           "spots_left": {
             "anyOf": [

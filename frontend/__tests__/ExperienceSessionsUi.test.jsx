@@ -73,7 +73,7 @@ describe("ExperienceSessionsField — the owner's dates", () => {
     unmount();
     field([date("2026-12-07"), date("2026-12-14", { time: "18:30" })]);
     expect(rows()).toHaveLength(2);
-    expect(within(rows()[1]).getByLabelText(N.field_time).value).toBe("18:30");
+    expect(within(rows()[1]).getByLabelText(`${N.field_time} 2`).value).toBe("18:30");
   });
 
   it("«הוספת מועד» adds an empty row", () => {
@@ -101,6 +101,22 @@ describe("ExperienceSessionsField — the owner's dates", () => {
     fireEvent.click(screen.getByTestId("experience-session-remove"));
     fireEvent.click(screen.getByTestId("experience-session-remove-yes"));
     expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it("a date with people on it is locked; one without stays editable", () => {
+    field([date("2026-12-07", { registered: 2 }), date("2026-12-14", { registered: 0 })]);
+    const [held, free] = rows();
+    expect(within(held).getByLabelText(`${N.field_date} 1`)).toBeDisabled();
+    expect(within(held).getByLabelText(`${N.field_time} 1`)).toBeDisabled();
+    expect(within(free).getByLabelText(`${N.field_date} 2`)).not.toBeDisabled();
+  });
+
+  it("each row's controls are told apart by number once there are two", () => {
+    const { unmount } = field([date("2026-12-07")]);
+    expect(screen.getByLabelText(N.field_date)).toBeInTheDocument();
+    unmount();
+    field([date("2026-12-07"), date("2026-12-14")]);
+    expect(screen.getByRole("button", { name: `${N.sessions_remove} 2` })).toBeInTheDocument();
   });
 
   it(`${SESSION_MAX} dates → no add button, the cap line instead`, () => {
@@ -134,6 +150,17 @@ describe("ExperienceForm — sends the dates", () => {
     fireEvent.click(screen.getByTestId("experience-session-add"));
     const body = await save();
     expect(body.sessions).toEqual([{ date: "2026-12-07", time: "10:00", participants_count: 2 }]);
+  });
+
+  it("a row with a date and no time blocks the save: «בחרו מועד.» and focus on the time", () => {
+    editForm({ is_recurring: true, sessions: [date("2026-12-07")] });
+    fireEvent.click(screen.getByTestId("experience-session-add"));
+    const second = screen.getAllByTestId("experience-session-row")[1];
+    fireEvent.change(within(second).getByLabelText(`${N.field_date} 2`), { target: { value: "2026-12-21" } });
+    fireEvent.click(screen.getByRole("button", { name: N.save_cta }));
+    expect(api.put).not.toHaveBeenCalled();
+    expect(screen.getByTestId("experience-sessions-incomplete").textContent).toBe(S.session_required);
+    expect(document.activeElement).toBe(within(second).getByLabelText(`${N.field_time} 2`));
   });
 
   it("a one-off workshop shows no dates and sends none", async () => {
@@ -208,8 +235,10 @@ describe("RegistrationCta — «מועד» on a workshop with dates", () => {
     api.post.mockResolvedValue({ data: { status: "waitlisted" } });
     openForm();
     expect(screen.getByTestId("registration-submit").textContent).not.toBe(S.waitlist_submit);
+    expect(screen.queryByTestId("registration-session-full")).toBeNull();
     fireEvent.change(select(), { target: { value: "2026-12-14 10:00" } });
     expect(screen.getByTestId("registration-submit").textContent).toBe(S.waitlist_submit);
+    expect(screen.getByTestId("registration-session-full").textContent).toBe(C.full);
     fill();
     fireEvent.click(screen.getByTestId("registration-submit"));
     await waitFor(() => expect(api.post).toHaveBeenCalled());
