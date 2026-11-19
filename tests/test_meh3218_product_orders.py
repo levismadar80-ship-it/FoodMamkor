@@ -229,7 +229,10 @@ def test_revision_check_literals_match_the_model_tuples():
     units = re.search(r'_UNITS = "(.*?)"', source)
     assert statuses and units
     assert quoted(statuses.group(1)) == PRODUCT_ORDER_STATUSES
-    assert quoted(units.group(1)) == PRODUCT_PRICE_UNITS
+    # MEH-2936 widened the units in revision c7e2a9d4f1b8: this revision's
+    # literal is the original three, the tuple's first three, in order.
+    # tests/test_meh2936_product_unit.py pins the newer revision to the tuple.
+    assert quoted(units.group(1)) == PRODUCT_PRICE_UNITS[:3]
     for values, needle in (
         (PRODUCT_ORDER_FULFILMENTS, "fulfilment IN ("),
         (PRODUCT_ORDER_PAYMENT_STATUSES, "payment_status IN ("),

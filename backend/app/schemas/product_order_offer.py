@@ -26,7 +26,9 @@ WINDOW_ENDS_BEFORE_START_DETAIL = "שעת הסיום צריכה להיות אח�
 WINDOWS_OVERLAP_DETAIL = "יש שני חלונות זמן חופפים באותו יום"
 
 Fulfilment = Literal["pickup", "delivery"]
-PriceUnit = Literal["unit", "kg", "100g"]
+# MEH-2936: equal to models.product_orders.PRODUCT_PRICE_UNITS
+# (tests/test_meh2936_product_unit.py compares them).
+PriceUnit = Literal["unit", "kg", "100g", "bottle", "box"]
 
 
 class OrderWindowIn(BaseModel):

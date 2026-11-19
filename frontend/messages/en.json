@@ -2088,7 +2088,9 @@
         "unit": {
           "unit": "per unit",
           "kg": "per kg",
-          "100g": "per 100 g"
+          "100g": "per 100 g",
+          "bottle": "per bottle",
+          "box": "per box"
         }
       }
     },
@@ -6064,7 +6066,9 @@
         "image_remove": "Remove",
         "image_upload_cta": "Upload photo",
         "image_replace": "Replace photo",
-        "image_uploading": "Uploading…"
+        "image_uploading": "Uploading…",
+        "price_unit_label": "Price per",
+        "price_unit_hint": "Shown next to the price on your page, e.g. ₪40 per kg"
       },
       "save_edit_cta": "Save changes",
       "save_edit_saving": "Saving…",

@@ -2088,7 +2088,9 @@
         "unit": {
           "unit": "ליחידה",
           "kg": "לק״ג",
-          "100g": "ל-100 גרם"
+          "100g": "ל-100 גרם",
+          "bottle": "לבקבוק",
+          "box": "לארגז"
         }
       }
     },
@@ -6060,7 +6062,9 @@
         "image_remove": "הסר",
         "image_upload_cta": "העלו תמונה",
         "image_replace": "החליפו תמונה",
-        "image_uploading": "בהעלאה..."
+        "image_uploading": "בהעלאה...",
+        "price_unit_label": "לפי מה המחיר?",
+        "price_unit_hint": "מופיע ליד המחיר בעמוד שלכם, למשל: 40 ₪ לק״ג"
       },
       "save_edit_cta": "שמרו שינויים",
       "save_edit_saving": "בשמירה...",

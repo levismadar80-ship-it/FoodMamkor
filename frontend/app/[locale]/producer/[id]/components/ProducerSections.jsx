@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPriceRange, isPriceLabel } from "@/lib/utils";
+import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -475,7 +476,7 @@ export default function ProducerSections({
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
                 {signatureNumericPrice ? (
-                  <p className="text-gold-deep font-bold mt-1"><span dir="ltr">{signatureNumericPrice}</span></p>
+                  <p className="text-gold-deep font-bold mt-1"><ProductPrice product={signatureProduct} /></p>
                 ) : signatureFreeTextPrice ? (
                   <p className="text-gold-deep font-bold mt-1">{signatureFreeTextPrice}</p>
                 ) : null}
@@ -593,7 +594,7 @@ export default function ProducerSections({
                           the ₪-suffixed numeric amount is bidi-isolated so RTL
                           flow can't render "35₪" as "₪35". */}
                       {numericPrice && (
-                        <p className="text-accent font-medium mt-1"><span dir="ltr">{numericPrice}</span></p>
+                        <p className="text-accent font-medium mt-1"><ProductPrice product={product} /></p>
                       )}
                       {freeTextPrice && (
                         <p className="text-accent font-medium mt-1">{freeTextPrice}</p>

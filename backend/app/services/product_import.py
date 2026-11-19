@@ -53,6 +53,13 @@ _UNIT_MAP: dict[str, str] = {
     "100g": "100g",
     "100 גרם": "100g",
     "ל-100 גרם": "100g",
+    # MEH-2936: bottle / box are their own units now.
+    "bottle": "bottle",
+    "בקבוק": "bottle",
+    "לבקבוק": "bottle",
+    "box": "box",
+    "ארגז": "box",
+    "לארגז": "box",
 }
 
 _PRICE_NOISE = re.compile(r"[₪\s]|ש\"ח|ש״ח")

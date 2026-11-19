@@ -5258,7 +5258,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5371,7 +5373,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5439,7 +5443,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -6039,7 +6045,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15028,6 +15036,18 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
           }
         },
         "required": [
@@ -15456,7 +15476,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15494,7 +15516,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15652,6 +15676,11 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "title": "Price Unit",
+            "type": "string"
           }
         },
         "required": [
@@ -15831,6 +15860,18 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
           }
         },
         "title": "ProductUpdate",

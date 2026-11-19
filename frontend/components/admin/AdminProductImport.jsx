@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { PRICE_UNITS } from "@/lib/product-price";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
@@ -29,7 +30,7 @@ import {
   AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponse as DraftListSchema,
 } from "@/lib/generated/api.zod";
 
-const UNIT_KEYS = new Set(["unit", "kg", "100g"]);
+const UNIT_KEYS = new Set(PRICE_UNITS);  // MEH-2936: one list
 
 /**
  * @param {string} text

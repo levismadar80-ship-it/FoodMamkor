@@ -17,8 +17,9 @@ import { useTranslations } from "next-intl";
 import { Trash } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import { PRICE_UNITS } from "@/lib/product-price";
 
-const UNITS = ["unit", "kg", "100g"];
+const UNITS = PRICE_UNITS;  // MEH-2936: one list
 const MIN_PRICE = 1;
 const MAX_PRICE = 10000; // backend ProductCreate: 1 – 10,000 ₪
 
