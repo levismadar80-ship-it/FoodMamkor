@@ -52,7 +52,6 @@ class TestProducerSearch:
         assert "חוות הגדי" in names
         assert "מאפיית השחר" not in names
 
-    @pytest.mark.skip(reason="product-name search not implemented on GET /producers — tracked in MEH-394")
     def test_matches_product_name(self, client, db):
         producer = make_producer(db, name="חקלאי הצפון", city="קריית שמונה")
         product = Product(
@@ -64,13 +63,13 @@ class TestProducerSearch:
         db.add(product)
         db.commit()
 
-        make_producer(db, name="עסק ללא שמן", city="באר שבע")
+        make_producer(db, name="מאפיית הדרום", city="באר שבע")
 
         resp = client.get("/producers?q=שמן")
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
         assert "חקלאי הצפון" in names
-        assert "עסק ללא שמן" not in names
+        assert "מאפיית הדרום" not in names
 
     def test_does_not_return_pending_producers(self, client, db):
         make_producer(db, name="עסק ממתין", city="ראשון לציון", status="pending")

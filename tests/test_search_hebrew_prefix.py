@@ -64,7 +64,6 @@ def test_search_preserves_multi_word_queries_literally(client, db):
     assert "חווה אורגנית" in names
 
 
-@pytest.mark.skip(reason="DB isolation issue — feature covered by 4 other tests in this file. Investigate post-launch if regression observed. Tracked in MEH-394 follow-up notes.")
 def test_search_existing_plural_still_works(client, db):
     """Regression: ILIKE's native substring match (singular inside
     plural) is unchanged by MEH-252."""
