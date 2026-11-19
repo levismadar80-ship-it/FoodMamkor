@@ -920,6 +920,15 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
 
+## 17b-2. Menu upload → a paid model call (MEH-3430)
+
+`POST /producers/me/menu-import/read` takes owner-uploaded photos / a PDF and sends them to Anthropic. What holds it:
+- **Type by magic bytes**, never the declared Content-Type (`_media_type`, reusing `upload._sniff_image_type`); HEIC refused.
+- **Nothing is stored**: the bytes live for the request; the rows go back to the owner, who reviews every one.
+- **Text in the image is data**: the prompt says so, the output is a fixed JSON schema, `to_rows` re-shapes it, and publish re-validates every row through `ProductCreate`. The worst a crafted menu can do is produce wrong rows its own uploader sees.
+- **Cost**: 10/hour + 30/day per IP (decorator) and 30/day per business (`READS_PER_BUSINESS`, on the limiter's storage), so a new IP is not a new budget. Known gap: the PDF page count is a regex and misses pages inside compressed object streams; the per-business budget bounds the cost.
+- **Publish takes the menu fields only** (`MENU_FIELDS`): a photo URL or ingredients in the body are a 422, so neither the MEH-3247 image-ownership check nor the batch text check can be skipped.
+
 ## 17c. Outside production, no message reaches a real person (MEH-3402)
 
 The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by a marked row in every environment; this guard covers the row nobody marked — a staging business built from real data, or a restored production backup.

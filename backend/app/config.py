@@ -354,6 +354,14 @@ WATCHDOG_LOOKBACK_MINUTES: int = 30
 AI_FAST_MODEL = "claude-haiku-5-5"
 
 
+# MEH-3430: the menu reader (owner uploads a menu photo/PDF → product rows).
+# Opus, not the fast tier: in the accuracy test (synthetic Hebrew menus, clean
+# and bad-photo) Opus read 211/212 names and every price; Haiku moved prices
+# to the wrong line on a blurred photo without flagging them. A module
+# constant, not a Settings field, for the same reason as AI_FAST_MODEL.
+AI_MENU_MODEL = "claude-opus-5-5"
+
+
 #: A JSON Schema object for structured outputs (MEH-2351).
 JsonSchema = dict[str, object]
 

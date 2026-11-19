@@ -43,6 +43,7 @@ from app.routers import (
     producer_recipes,
     billing,
     product_organize,
+    menu_import,
     product_order_business,
     product_order_buyer,
     product_order_offer,
@@ -69,6 +70,7 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(producer_me_analytics.router)
     app.include_router(producer_me_review.router)
     app.include_router(producer_me_locations.router)
+    app.include_router(menu_import.router)  # MEH-3430: /producers/me/menu-import
 
 
 def _include_owner_links(app: FastAPI) -> None:
