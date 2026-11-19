@@ -132,8 +132,15 @@ DEMO_PRODUCER = {
         "נועה לביא, דור שני למאפייה. למדה אפייה בצרפת, חזרה לזכרון יעקב "
         "ופתחה מאפייה קטנה שבה כל לחם עולה לתנור באותו בוקר שבו הוא נמכר."
     ),
+    # MEH-2794 (19/11): mehamakor/demo/ruach-hasadeh-owner was never uploaded
+    # (staging /_next/image → 404, while ruach-hasadeh-hero → 200), so the owner
+    # card showed a broken image. It reuses the hero, which exists; the seed
+    # coverage contract (check_seed_coverage.py "owner_card/photo") needs a
+    # value here. Safe against cleanup: producer_me.py:981 destroys only URLs
+    # that leave BOTH images[] and the owner photo, and the hero stays in
+    # images[]. DO NOT point this at an asset nobody uploaded.
     "owner_photo_url": (
-        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-owner"
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
     ),
     # MEH-1706 §2 item 3 — order_window (MEH-1543 column, MEH-1869 value shape).
     # CANONICAL shape is a LIST of ranges per day (schemas.py:87-118); the legacy

@@ -143,6 +143,33 @@ describe("Edit-tab ImagesCard (isolation)", () => {
     );
     expect(onSave).toHaveBeenCalledWith({ images: ["https://cdn/a.jpg"] });
   });
+
+  // MEH-2926: the auto-save after an upload said «נשמר» for 3 s inside a
+  // disabled button, and owners missed it. Now a status line under the grid
+  // says it and stays until the next change.
+  it("an upload's auto-save shows a lasting «נשמר» line, cleared by the next change", async () => {
+    const { container } = renderCard(["https://cdn/a.jpg"]);
+    fireEvent.change(container.querySelector('input[type="file"]'), {
+      target: { files: [new File(["x"], "b.png", { type: "image/png" })] },
+    });
+    const line = await screen.findByTestId("images-saved");
+    expect(line).toHaveTextContent(I.saved);
+    expect(line).toHaveAttribute("role", "status");
+    await new Promise((r) => setTimeout(r, 3200));
+    expect(screen.getByTestId("images-saved")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: I.remove_aria })[1]);
+    expect(screen.queryByTestId("images-saved")).toBeNull();
+  }, 8000);
+
+  it("a failed auto-save shows the error and no «נשמר»", async () => {
+    api.put.mockRejectedValueOnce({ response: { status: 500 } });
+    const { container } = renderCard(["https://cdn/a.jpg"]);
+    fireEvent.change(container.querySelector('input[type="file"]'), {
+      target: { files: [new File(["x"], "b.png", { type: "image/png" })] },
+    });
+    await screen.findByText(I.save_error);
+    expect(screen.queryByTestId("images-saved")).toBeNull();
+  });
 });
 
 // MEH-1352: free-plan cap surfaced in the UI (X/3 counter + full-state zone).
