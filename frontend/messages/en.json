@@ -4928,6 +4928,11 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_8": {
+            "i0": "Products can now be priced per bottle or per box, saved without a price, and given allergens, «may contain» and storage and shelf life.",
+            "i1": "For a workshop that repeats, customers pick a date when they sign up.",
+            "i2": "Less typing: you can duplicate an event or experience, and start a buying group straight from a product."
+          },
           "v1_5_7": {
             "i0": "In the products card on the «Edit» tab you can now upload a photo of your menu or price list. The products fill in by themselves, so all that's left is to check and publish."
           },
