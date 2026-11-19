@@ -122,6 +122,7 @@ class OwnerNewEmail:
     spots_left: int | None  # None = no cap → the line is left out
     manage_url: str
     party_size: int = 1  # MEH-3315: a «כמה אנשים» line when above 1
+    session_text: str = ""  # MEH-3441: «המועד: 04.12.2026, 10:00», when booked by date
 
 
 def send_owner_new_registration(
@@ -132,6 +133,8 @@ def send_owner_new_registration(
     lines = [("שם", m.name), ("טלפון", m.phone), ("אימייל", m.email)]
     if m.party_size > 1:
         lines.append(("כמה אנשים", str(m.party_size)))
+    if m.session_text:
+        lines.append(("המועד", m.session_text))
     spots = f"נשארו {m.spots_left} מקומות" if m.spots_left is not None else ""
 
     body = (
