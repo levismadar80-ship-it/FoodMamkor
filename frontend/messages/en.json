@@ -3615,7 +3615,7 @@
       "no_results_prefix": "Can't find your category?",
       "no_results_cta": "Tell us →",
       "dietary_hint": "Vegan, vegetarian and gluten-free aren't chosen here — you mark them on each product separately, in the «Products» section of the «Edit» tab.",
-      "dietary_terms": "vegan,vegetarian,gluten,טבעונ,צמחונ,גלוטן",
+      "dietary_terms": "vegan,vegetarian,gluten",
       "show_more": "{count, plural, one {Show 1 more category} other {Show {count} more categories}}",
       "show_less": "Show less"
     }
