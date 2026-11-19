@@ -369,7 +369,14 @@ class ProducerRegister(BaseModel):
     @field_validator("referral_source_other")
     @classmethod
     def _sanitize_referral_source_other(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=120)
+        cleaned = sanitize_text(v, max_length=120)
+        # MEH-2937: an empty answer stays allowed (the field is optional, and the
+        # client sends "" when the choice is not "other"); a supplied one must
+        # clear the ≥3-letter floor, so the admin column never shows «אחר: ט».
+        # REUSES: backend/app/schemas/catalog.py:219 (_optional_label_letters)
+        if cleaned is None or cleaned.strip() == "":
+            return None
+        return _min_letters_validator(cleaned)
 
     @field_validator("category_ids")
     @classmethod

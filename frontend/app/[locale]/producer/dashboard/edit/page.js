@@ -272,6 +272,8 @@ function EditPageInner() {
   // (/producers/me joins products), then kept live by ProductsSection's
   // onCountChange as the owner adds/removes inside the card.
   const [productsCount, setProductsCount] = useState(null);
+  // MEH-2937: LocationsEditor reports its live list here (null until it loads).
+  const [liveLocations, setLiveLocations] = useState(null);
 
   // MEH-2207: the LIVE primary contact channel, as selected in the contact
   // card's form — not the saved value. Seeded from the profile so the notice
@@ -466,6 +468,9 @@ function EditPageInner() {
   // the summaries above compute (no producer-completeness import, no fetch).
   // Falls through to null when nothing is missing → no marker at all.
   const productsForMarker = productsCount ?? profile.products?.length ?? 0;
+  // MEH-2937: the live list from LocationsEditor, else the mount-time profile.
+  const currentLocations = liveLocations ?? profile.locations ?? [];
+  const locationCount = currentLocations.length;
   const nextStepKey =
     (profile.images?.length ?? 0) === 0
       ? "images"
@@ -1047,14 +1052,15 @@ function EditPageInner() {
           title={tLoc("section_heading")}
           summary={
             // MEH-2430: was a bare number ("10"); now "N מיקומים".
-            profile.locations?.length
-              ? tLoc("count_summary", { count: profile.locations.length })
+            // MEH-2937: the editor's live list wins over the mount-time profile.
+            locationCount
+              ? tLoc("count_summary", { count: locationCount })
               : tLoc("empty_title")
           }
           open={openKey === "locations"}
           onToggle={() => toggleKey("locations")}
         >
-          <LocationsEditor />
+          <LocationsEditor onLocationsChange={setLiveLocations} />
         </EditAccordionCard>
 
         {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
