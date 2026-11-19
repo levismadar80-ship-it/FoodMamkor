@@ -7,7 +7,12 @@ import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-import api, { MAX_UPLOAD_BYTES, UPLOAD_TOO_LARGE_DETAIL } from "../lib/api.js";
+import api, { MAX_UPLOAD_BYTES } from "../lib/api.js";
+import he from "../messages/he.json";
+
+// The approved line itself, read from the catalogue (not from the module
+// under test, so a wrong key in upload-limits.js goes red here).
+const UPLOAD_TOO_LARGE_DETAIL = he.settings.products.errors.upload_size;
 
 const MB = 1024 * 1024;
 

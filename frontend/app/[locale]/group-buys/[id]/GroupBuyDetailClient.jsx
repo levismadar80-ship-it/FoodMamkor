@@ -103,7 +103,10 @@ export default function GroupBuyDetailClient({ id }) {
   // MEH-2453: the business's delivery data, for «מגיעים אלייך?». Null until
   // fetched and valid; on any failure the checker simply stays away. (The
   // «מאת {name}» link to its page is MEH-2472's and needs no fetch.)
-  const [producer, setProducer] = useState(null);
+  // MEH-3023: stored with the id it was fetched for, and read only while that
+  // id is still the group's — so the render that shows another group can never
+  // carry the previous business's checker, whenever the effect below runs.
+  const [producerEntry, setProducerEntry] = useState(null);
   // MEH-2544: a photo url that fails to load falls back to the cart tile.
   const [failedHero, setFailedHero] = useState(null);
 
@@ -129,10 +132,11 @@ export default function GroupBuyDetailClient({ id }) {
   // MEH-2453: once per business, not on the 30-second refresh above — the
   // delivery areas do not move while someone reads the page.
   const producerId = gb?.producer_id;
+  const producer = producerEntry && producerEntry.id === producerId ? producerEntry.data : null;
   useEffect(() => {
     // Drop the previous business first: if this instance is reused for another
     // group, its link and checker must not sit beside the new group meanwhile.
-    setProducer(null);
+    setProducerEntry(null);
     if (!producerId) return undefined;
     let alive = true;
     api
@@ -147,10 +151,10 @@ export default function GroupBuyDetailClient({ id }) {
             extra: { producerId, issues: parsed.error.issues },
           });
         }
-        if (alive) setProducer(parsed.success ? parsed.data : null);
+        if (alive) setProducerEntry(parsed.success ? { id: producerId, data: parsed.data } : null);
       })
       .catch(() => {
-        if (alive) setProducer(null);
+        if (alive) setProducerEntry(null);
       });
     return () => {
       alive = false;

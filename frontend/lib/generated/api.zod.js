@@ -6664,6 +6664,24 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
 
 
 /**
+ * The caller's own products with their ordering fields, in the order her
+ * business page shows them. Bounded by the products cap (limits.py).
+ * @summary Get My Products Ordering
+ */
+export const GetMyProductsOrderingProducersMeProductsOrderingGetResponse = /*#__PURE__*/ zod.object({
+  "products": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "has_price": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "is_orderable": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g'])
+}).check(/*#__PURE__*/ zod.describe('One of the owner\'s own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.')))
+})
+
+
+/**
  * @summary Delete My Product
  */
 export const DeleteMyProductProducersMeProductsProductIdDeleteResponse = /*#__PURE__*/ zod.void()

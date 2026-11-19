@@ -6,7 +6,7 @@
  * Touches:  Nothing — pure Intl, no I/O, no network.
  * Does NOT: own clock-time decisions (day-of-week / hour-of-day). Those are
  *           `lib/orderWindow.js` (`israelNowParts`) and
- *           `components/OpeningHours.jsx` (`todayIndex`). This module is the
+ *           `components/OpeningHours.jsx (deleted in MEH-2810)` (`todayIndex`). This module is the
  *           *date* primitive only.
  * Related:  backend/app/utils/clock.py (`israel_today` — the server half of
  *           this same clock), frontend/lib/orderWindow.js:57 (the Intl idiom).

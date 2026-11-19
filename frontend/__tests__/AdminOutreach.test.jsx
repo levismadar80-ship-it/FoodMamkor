@@ -197,6 +197,19 @@ describe("AdminOutreachPage", () => {
     expect(screen.getByPlaceholderText(/שם העסק/)).toBeInTheDocument();
   });
 
+  // MEH-3351: every field in the add-lead modal has an accessible name, not
+  // only a placeholder (which a screen reader may skip and which vanishes on typing).
+  it("every field in the add-lead modal has an accessible name", async () => {
+    render(<AdminOutreachPage />);
+    await waitFor(() => screen.getByText("+ ליד חדש"));
+    fireEvent.click(screen.getByText("+ ליד חדש"));
+    const fields = screen.getByRole("dialog").querySelectorAll("input:not([type=hidden]), textarea");
+    expect(fields.length).toBe(7);
+    for (const f of fields) {
+      expect(f.getAttribute("aria-label") || f.labels?.length, f.outerHTML).toBeTruthy();
+    }
+  });
+
   it('"תסריט שיחה" opens the script modal', async () => {
     render(<AdminOutreachPage />);
     // Phone icon replaces the 📞 emoji — probe on the text label only.

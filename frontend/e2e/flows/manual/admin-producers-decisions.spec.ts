@@ -1,9 +1,8 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Route } from "@playwright/test";
-// The seven Phase-1 items, imported so the stub serves the labels and hints the
-// checklist ships with rather than a second copy. Plain-JS module, no .d.ts.
-// @ts-expect-error TS7016 — untyped JS module
-import { ADMIN_REVIEW_CHECKLIST } from "../../../lib/admin-review-checklist.js";
+// The seven Phase-1 items the stub serves (MEH-2954: test data, the product
+// reads them from the database).
+import { ADMIN_REVIEW_CHECKLIST_ITEMS } from "../_admin-review-checklist-items";
 
 /**
  * Spec:     manual/admin-producers-decisions — MEH-1249 chunk 12b
@@ -132,7 +131,7 @@ const PRESETS = [
 
 type Item = { id: string; position: number; label: string; hint: string | null; active: boolean };
 /** The seven Phase-1 items as AdminChecklistItemOut rows. */
-const ITEMS: Item[] = (ADMIN_REVIEW_CHECKLIST as { id: string; label: string; hint?: string }[]).map((it, i) => ({
+const ITEMS: Item[] = ADMIN_REVIEW_CHECKLIST_ITEMS.map((it, i) => ({
   id: `11111111-1111-4111-8111-00000000000${i + 1}`,
   position: i + 1,
   label: it.label,

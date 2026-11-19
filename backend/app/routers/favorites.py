@@ -114,7 +114,7 @@ def remove_favorite(
         .first()
     )
     if not fav:
-        raise HTTPException(status_code=404, detail="Not in favorites")
+        raise HTTPException(status_code=404, detail="בית העסק לא נמצא במועדפים")
     db.delete(fav)
     # MEH-3222 (B6): alerts require a favorite (alerts.py set_alert_prefs
     # refuses without one). Unfavoriting used to leave the FavoriteAlert row,

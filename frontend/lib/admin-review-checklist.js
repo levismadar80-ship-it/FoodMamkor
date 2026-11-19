@@ -1,11 +1,9 @@
 // @ts-check
 /**
  * Module:   admin-review-checklist
- * Purpose:  Static config for the pre-approval review checklist an admin runs
- *           before approving a pending producer (MEH-1396, Phase 1). Moves the
- *           per-document verification knowledge out of docs/VERIFICATION.md §2
- *           and in front of the admin at approval time.
- * Touches:  nothing — pure data + one copy helper. No API, no DB, no persistence.
+ * Purpose:  The one copy helper of the pre-approval review checklist: which
+ *           approve-confirm message to show (MEH-2175).
+ * Touches:  nothing — one pure function. No API, no DB, no persistence.
  * Does NOT: gate approval. This is a SOFT checklist; ticks never block the
  *           request. The hard gates (photo 422 / license 422) stay server-side
  *           and are surfaced by use-admin-producers.js:122 — untouched here.
@@ -13,51 +11,18 @@
  * Related:  frontend/app/[locale]/admin/producers/AdminReviewChecklist.jsx,
  *           frontend/app/[locale]/admin/producers/use-review-checklist.js,
  *           docs/VERIFICATION.md §2 (source of the items).
- * History:  MEH-1396 (creation).
+ * History:  MEH-1396 (creation); MEH-3170 (copy moved to messages);
+ *           MEH-2954 (the dead 7-item array deleted).
  *
  * MEH-3170: the rendered copy (the heading above the items and the
  * approve-confirm dialog) lives in messages/{he,en}.json under
- * `admin.producers.review.*`. What stays here is the 7-item seed below, which
- * is data, not rendered copy.
+ * `admin.producers.review.*`.
+ *
+ * DO NOT add the checklist items back here — MEH-2954. They live in the
+ * `admin_checklist_items` table (MEH-1399), seeded by migration d4a9c31e6f82
+ * and edited by the admin in /admin/settings. An array here is a second owner
+ * that nothing reads: editing it changes nothing in the product.
  */
-
-// The 7 review items. `id` is a stable session-state key (never rendered);
-// `label` + optional `hint` are the admin-facing Hebrew copy. Source: §2 of
-// docs/VERIFICATION.md (per-document-type admin checklist), condensed into a
-// single pre-approval pass.
-export const ADMIN_REVIEW_CHECKLIST = [
-  {
-    id: "basics",
-    label: "פרטים בסיסיים תקינים",
-    hint: "שם, עיר, טלפון, קטגוריות, תיאור ברמת מגזין",
-  },
-  {
-    id: "photos",
-    label: "תמונות שייכות לעסק ואיכותיות",
-    hint: "חשד לתמונת סטוק — בדקי חיפוש הפוך",
-  },
-  {
-    id: "license",
-    label: "רישיון הוצלב מול מאגר משרד הבריאות",
-    hint: "שם תואם, מספר תואם, תוקף בתוקף",
-  },
-  {
-    id: "kosher",
-    label: "כשרות: תעודה נבדקה (אם הוצהרה)",
-  },
-  {
-    id: "signals",
-    label: "סימני חיים: אתר / אינסטגרם / גוגל תואמים לעסק",
-  },
-  {
-    id: "call",
-    label: "שיחה קצרה בוצעה (רק אם risk גבוה או ספק)",
-  },
-  {
-    id: "decision",
-    label: "החלטה מנומקת: אישור / השלמה / דחייה",
-  },
-];
 
 /**
  * Approve-confirm dialog message (soft warning shown when items remain

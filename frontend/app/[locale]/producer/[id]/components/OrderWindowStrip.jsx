@@ -13,7 +13,7 @@
  * Related:  frontend/lib/orderWindow.js (getOrderWindowStatus +
  *           getOrderWindowRanges — read-only here),
  *           components/ProducerHeader.jsx (the status branch this complements),
- *           components/OpeningHours.jsx (the card container this block matches).
+ *           components/OpeningHours.jsx (deleted in MEH-2810) (the card container this block matches).
  * History:  MEH-1546 — chunk 3/3 of the order-window feature.
  *           MEH-1691 — the default-export weekly strip was deleted. It restated
  *           the order window a second time, as an unheaded, uncontained line
@@ -111,7 +111,7 @@ const DAY_LABEL_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 /**
  * "09:00–14:00, 16:00–19:00" — an en-dash inside a range, a comma between
- * ranges. REUSES: components/OpeningHours.jsx:36 (identical grammar, so the two
+ * ranges. REUSES: components/OpeningHours.jsx:36 (deleted in MEH-2810) (identical grammar, so the two
  * cards in the same visual family read the same way).
  *
  * Rendered as one `whitespace-nowrap` span PER RANGE rather than as a single
@@ -218,7 +218,7 @@ export function OrderWindowScheduleBlock({
     // MEH-2803: one labelled SET inside ProducerHoursSection's «שעות» section —
     // the section owns the heading; this owns its label and its card.
     <div data-testid="hours-set" data-set={setKey}>
-      {/* The Info-card container (same classes as components/OpeningHours.jsx);
+      {/* The Info-card container (same classes as components/OpeningHours.jsx (deleted in MEH-2810));
           since MEH-2809 both hours sets render through this one card. */}
       <div
         className="border border-border rounded-md bg-surface overflow-hidden"
