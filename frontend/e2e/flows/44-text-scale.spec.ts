@@ -120,7 +120,7 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
         // size, then keep asserting it inside the settle loop below so a reset
         // AFTER this point cannot let the layout checks run at 100% and pass.
         const wantPx = 16 * (parseFloat(p.scale) / 100);
-        let r: Probe = await probe(page);
+        let r!: Probe;
         await expect(async () => {
           await scale(page, p.scale);
           r = await probe(page);
