@@ -11,7 +11,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { CROSS_STEP_REQUIRED, STEP } from "../registerProducerShared";
-import { formatHebrewQuotedList } from "@/lib/license-required-categories";
+import { formatQuotedList } from "@/lib/license-required-categories";
 
 /** @param {Record<string, any>} props */
 export default function CategoryStep({ categories, categoriesFailed, fieldErrors, form, licenseCategoryNames = [], licenseOptionalExpanded, licensePending, licenseRequired, licenseRequiredError, licenseWarning, loadCategories, numberedTitle, requestFocus, runRequiredGate, set, setAndSave, setError, setLicenseOptionalExpanded, setLicensePending, setLicenseRequiredError, setShowCategoryModal, setStep, setStepError, t, toggleCategory }) {
@@ -79,7 +79,9 @@ export default function CategoryStep({ categories, categoriesFailed, fieldErrors
           <p className="text-xs text-fg-muted mb-2 text-start" data-testid="register-license-required-hint">
             {t("auth.register.producer.fields.license_required_hint", {
               count: licenseCategoryNames.length,
-              names: formatHebrewQuotedList(licenseCategoryNames),
+              names: formatQuotedList(licenseCategoryNames, (rest, last) =>
+                t("auth.register.producer.fields.license_names_last", { rest, last }),
+              ),
             })}
           </p>
           {/* MEH-951: "what is this" extension after the required hint. */}

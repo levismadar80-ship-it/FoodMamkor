@@ -199,6 +199,7 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                 inputMode="url"
                 label={t("auth.register.producer.fields.external_order_form_label")}
                 placeholder="https://"
+                maxLength={500}
                 value={form.external_order_form || ""}
                 onChange={(e) => {
                   const v = e.target.value;

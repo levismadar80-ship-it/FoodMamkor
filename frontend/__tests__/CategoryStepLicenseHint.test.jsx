@@ -11,7 +11,7 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import he from "../messages/he.json";
 import CategoryStep from "@/app/[locale]/register/producer/steps/CategoryStep";
 import {
-  formatHebrewQuotedList,
+  formatQuotedList,
   licenseRequiringCategoryNames,
 } from "@/lib/license-required-categories";
 
@@ -92,10 +92,11 @@ describe("licence hint names the category (MEH-2928)", () => {
   });
 });
 
-describe("formatHebrewQuotedList", () => {
-  it("joins with ו on the last item, no space", () => {
-    expect(formatHebrewQuotedList(["א"])).toBe("«א»");
-    expect(formatHebrewQuotedList(["א", "ב"])).toBe("«א» ו«ב»");
-    expect(formatHebrewQuotedList(["א", "ב", "ג"])).toBe("«א», «ב» ו«ג»");
+describe("formatQuotedList", () => {
+  const he = (rest, last) => `${rest} ו${last}`;
+  it("joins the last item with the caller's join (he: ו, no space)", () => {
+    expect(formatQuotedList(["א"], he)).toBe("«א»");
+    expect(formatQuotedList(["א", "ב"], he)).toBe("«א» ו«ב»");
+    expect(formatQuotedList(["א", "ב", "ג"], he)).toBe("«א», «ב» ו«ג»");
   });
 });

@@ -74,16 +74,18 @@ export function licenseRequiringCategoryNames(allCategories, selectedIds) {
 }
 
 /**
- * MEH-2928: «א», «ב» ו«ג» — the Hebrew list form the licence hint interpolates.
- * The conjunction ו attaches to the last item with no space.
+ * MEH-2928: «א», «ב» ו«ג» — the list form the licence hint interpolates.
+ * The last-item join comes from messages (`license_names_last`), so the
+ * conjunction is copy in he.json / en.json, not a literal here.
  *
  * @param {string[]} names
+ * @param {(rest: string, last: string) => string} joinLast
  * @returns {string}
  */
-export function formatHebrewQuotedList(names) {
+export function formatQuotedList(names, joinLast) {
   const quoted = names.map((n) => `«${n}»`);
   if (quoted.length <= 1) return quoted.join("");
-  return `${quoted.slice(0, -1).join(", ")} ו${quoted[quoted.length - 1]}`;
+  return joinLast(quoted.slice(0, -1).join(", "), quoted[quoted.length - 1]);
 }
 
 /**

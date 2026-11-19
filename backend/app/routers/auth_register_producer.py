@@ -169,9 +169,10 @@ async def register_producer(
             detail="חובה להזין כתובת אתר עבור אמצעי הקשר הנבחר",
         )
     # MEH-296 3d: instagram has a ProducerRegister field → presence-check it.
-    # facebook/external_order have NO ProducerRegister field (the producer
-    # sets those later via the dashboard editor), so they pass without a
-    # presence check rather than 422-ing a value the form can't collect.
+    # facebook has NO ProducerRegister field (set later in the dashboard), so
+    # it passes without a presence check. external_order_form is collected at
+    # registration since MEH-2938, but optional; the method still passes
+    # without a presence check, as before.
     if method == "instagram" and not (data.instagram or "").strip():
         raise HTTPException(
             status_code=422,

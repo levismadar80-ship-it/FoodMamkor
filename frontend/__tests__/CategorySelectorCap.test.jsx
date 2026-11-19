@@ -3,10 +3,10 @@
  * MEH-2925: the cap is 5 (was 3).
  *
  * Pins the three new behaviors on the register-flow picker:
- *   1. A 4th pick is blocked once 3 are selected (non-selected cards disabled,
+ *   1. A 6th pick is blocked once 5 are selected (non-selected cards disabled,
  *      onChange not fired) — while already-selected cards stay togglable.
  *   2. The first-selected category (selectedIds[0]) carries the "ראשית" badge.
- *   3. The live N/3 counter reflects the selection count.
+ *   3. The live N/5 counter reflects the selection count.
  *
  * Uses the real NextIntlClientProvider + he.json so the "{count}/{max}" counter
  * interpolates (the lightweight fall-through mock in CategorySelector.test.jsx

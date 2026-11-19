@@ -320,6 +320,18 @@ describe("MEH-2938 — the online-store link is collected at registration", () =
     expect(body.external_order_form).toBe("https://shop.example.com");
   });
 
+  it("a bare domain gets https:// so the server's guard does not fail the signup", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.change(screen.getByTestId("register-external-order"), {
+      target: { value: "myshop.co.il/store" },
+    });
+    const body = await advanceAndSubmit();
+    expect(body.external_order_form).toBe("https://myshop.co.il/store");
+  });
+
   it("left empty, it posts null", async () => {
     await renderWizard();
     await fillAccountToDetails();

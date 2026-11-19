@@ -23,6 +23,7 @@ import {
   STEP_NAME,
   safeResumeStep,
   EMPTY_FORM,
+  storeLinkForPayload,
 } from "./registerProducerShared";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
@@ -656,7 +657,7 @@ function RegisterProducerPageBody({ routeKind }) {
         producer_license_number: isOrganizer ? "" : form.producer_license_number,
         // MEH-2938: optional store / order-form link; empty → null (the
         // server's scheme guard treats "" the same, this keeps the body clean).
-        external_order_form: (!isOrganizer && (form.external_order_form || "").trim()) || null,
+        external_order_form: isOrganizer ? null : storeLinkForPayload(form.external_order_form),
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,

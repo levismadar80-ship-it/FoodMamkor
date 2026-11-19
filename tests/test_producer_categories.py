@@ -35,7 +35,7 @@ def _create_payload(category_ids: list[int]) -> dict:
 
 
 class TestCategoryCap:
-    """MEH-1297 — the ≤3 Pydantic cap on POST /producers."""
+    """MEH-1297 — the Pydantic category cap on POST /producers (5 since MEH-2925)."""
 
     def test_six_categories_422(self, client, db):
         """MEH-2925: 6 → 422 with the Hebrew message."""

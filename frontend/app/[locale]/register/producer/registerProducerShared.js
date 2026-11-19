@@ -56,6 +56,23 @@ export function fulfilmentBooleans(value) {
   };
 }
 
+/**
+ * MEH-2938: the store link as the register POST sends it. The wizard has no
+ * <form>, so type="url" checks nothing, and «myshop.co.il» used to reach the
+ * server's http(s) guard and fail the whole signup on its last step. A bare
+ * domain gets «https://» in front (what browsers do with it in the address
+ * bar); any other scheme is left alone for the server to refuse.
+ * @param {string | null | undefined} value
+ * @returns {string | null}
+ */
+export function storeLinkForPayload(value) {
+  const v = (value || "").trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return v;
+  return `https://${v.replace(/^\/+/, "")}`;
+}
+
 export const STEP_NAME = {
   [STEP.ACCOUNT]: "account",
   [STEP.DETAILS]: "details",

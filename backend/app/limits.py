@@ -43,7 +43,7 @@ MAX_PRODUCT_GROUPS = 20
 MAX_GALLERY_IMAGES = 20
 MAX_DELIVERY_CITIES = 300
 # Safety ceiling for lists whose real, friendlier cap lives in a validator
-# (category_ids ≤ 3, custom_questions ≤ 5) or that only an admin sends. Set
+# (category_ids ≤ MAX_PRODUCER_CATEGORIES = 5 since MEH-2925, custom_questions ≤ 5) or that only an admin sends. Set
 # ABOVE the validator's cap on purpose: pydantic checks max_length before an
 # after-validator runs, so a ceiling equal to the cap would replace the
 # validator's Hebrew sentence with pydantic's English one.

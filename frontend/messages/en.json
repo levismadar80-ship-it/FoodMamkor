@@ -342,6 +342,7 @@
           "external_order_form_label": "Your online shop or order form (link)",
           "license_required_label": "Producer license number (required)",
           "license_required_hint": "{count, plural, one {The category {names} requires a production licence from the Ministry of Health} other {The categories {names} require a production licence from the Ministry of Health}}",
+          "license_names_last": "{rest} and {last}",
           "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it in your dashboard. Your business goes live once we have the number.",
           "license_pending_optin_label": "I don't have a license number yet",
           "license_pending_optin_hint": "You can complete registration now. Your business will be approved and go live only after we receive your license number.",

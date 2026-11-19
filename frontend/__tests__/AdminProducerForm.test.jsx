@@ -72,12 +72,15 @@ describe("Admin ProducerForm (focus retention)", () => {
   });
 
   // MEH-1297: category cap-3 + primary badge in the admin form.
-  it("caps categories at 3: a 4th checkbox is disabled once 3 are checked", async () => {
+  // MEH-2925: the cap is 5 (was 3).
+  it("caps categories at 5: a 6th checkbox is disabled once 5 are checked", async () => {
     api.get.mockResolvedValue({
       data: [
         { id: 1, name: "חלב וגבינות" },
         { id: 2, name: "לחמים ואפייה" },
         { id: 3, name: "בשר" },
+        { id: 5, name: "דגים" },
+        { id: 6, name: "דבש" },
         { id: 4, name: "שמנים" },
       ],
     });
@@ -89,8 +92,11 @@ describe("Admin ProducerForm (focus retention)", () => {
     fireEvent.click(await box("חלב וגבינות"));
     fireEvent.click(await box("לחמים ואפייה"));
     fireEvent.click(await box("בשר"));
+    expect(await box("שמנים")).not.toBeDisabled();
+    fireEvent.click(await box("דגים"));
+    fireEvent.click(await box("דבש"));
 
-    // The 4th (unchecked) category is now disabled; the checked ones are not.
+    // The 6th (unchecked) category is now disabled; the checked ones are not.
     expect(await box("שמנים")).toBeDisabled();
     expect(await box("בשר")).not.toBeDisabled();
     // First-selected carries the "ראשית" badge.
