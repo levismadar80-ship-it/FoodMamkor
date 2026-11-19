@@ -118,6 +118,10 @@ const HOME_CARE_SLUGS = ["care", "cosmetics", "candles"];
 // so selectedIds[0] is the primary here; this component only reflects it.
 const MAX_CATEGORIES = 5;
 
+// MEH-2929: stems that mean a per-product dietary flag, not a category.
+// Lower-cased substrings matched against the trimmed query.
+const DIETARY_TERMS = ["טבעונ", "צמחונ", "גלוטן", "vegan", "vegetarian", "gluten"];
+
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");
   const [query, setQuery] = useState("");
@@ -143,6 +147,10 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   const matched = q ? ordered.filter(isMatch) : [];
   const noResults = q.length > 0 && matched.length === 0;
+  // MEH-2929 (pilot B5): vegan / vegetarian / gluten-free are per-product flags
+  // (Product.is_vegan etc.), never categories. A search for one used to land on
+  // a bare «not found»; it now says where those are marked instead.
+  const dietaryQuery = q.length > 0 && DIETARY_TERMS.some((term) => q.includes(term));
 
   // EMPTY → popular-6 (expandable to all 18). QUERY → all 18 with matches
   // first; non-matches stay rendered but dimmed (never removed).
@@ -212,6 +220,12 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           dir="rtl"
         />
       </div>
+
+      {dietaryQuery ? (
+        <p className="text-xs text-fg-muted mt-1 mb-2" data-testid="category-dietary-hint">
+          {t("dietary_hint")}
+        </p>
+      ) : null}
 
       {noResults ? (
         <p className="text-xs text-fg-muted mt-1">
