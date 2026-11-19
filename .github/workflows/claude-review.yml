@@ -43,7 +43,7 @@ concurrency:
 jobs:
   review:
     name: Adversarial review (calibration)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     # MEH-925: never run on a draft PR — only on ready-for-review. Every push
     # to an open draft otherwise re-runs the Anthropic action (~11% of monthly

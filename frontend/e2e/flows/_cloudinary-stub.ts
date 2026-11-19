@@ -12,7 +12,9 @@
  *           URL in the app is built here) · frontend/components/ImageWithFallback.jsx
  *           (the shared next/image wrapper most producer/product imagery goes
  *           through) · frontend/e2e/CLAUDE.md (MEH-1968 stub-vs-mock taxonomy)
- * History:  MEH-1925 (creation, bandwidth-cut chunk).
+ * History:  MEH-1925 (creation, bandwidth-cut chunk); MEH-2957 (also installs
+ *           _unstubbed-me-guard — an unstubbed /producers/me call from a
+ *           fake-token spec now fails the test with its URL).
  *
  * ── WHY TWO INTERCEPTION TARGETS, NOT ONE ───────────────────────────────────
  * A naive `page.route("**\/res.cloudinary.com/**", ...)` only catches requests
@@ -66,6 +68,7 @@
  */
 import { appendFileSync } from "node:fs";
 import { test as base, expect, type Page, type Locator, type Route } from "@playwright/test";
+import { guardUnstubbedMe } from "./_unstubbed-me-guard";
 
 const STUB_ENABLED = process.env.E2E_CLOUDINARY_STUB !== "0";
 const COUNT_FILE = process.env.E2E_CLOUDINARY_COUNT || "";
@@ -100,7 +103,10 @@ async function fulfillPlaceholder(route: Route): Promise<void> {
 // how Playwright is told this OVERRIDES the built-in fixture rather than
 // declaring a new one that shadows it.
 export const test = base.extend({
-  page: async ({ page }, use) => {
+  page: async ({ page }, use, testInfo) => {
+    // MEH-2957: registered first, so every page.route a spec adds wins over it —
+    // it only sees a /producers/me call nobody stubbed. See _unstubbed-me-guard.ts.
+    await guardUnstubbedMe(page, testInfo.file.replace(/^.*\/e2e\//, "e2e/"));
     await page.route("**/res.cloudinary.com/**", async (route) => {
       record("direct", STUB_ENABLED ? "stub" : "pass", route.request().url());
       if (STUB_ENABLED) await fulfillPlaceholder(route);

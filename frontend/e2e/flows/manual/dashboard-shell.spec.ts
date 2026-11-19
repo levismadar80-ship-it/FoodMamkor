@@ -238,6 +238,13 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
   await page.route("**/producers/me/order-settings", (r) =>
     r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
   );
+  // MEH-3212: the approved insights tab mounts WeeklySummaryToggle, which reads
+  // GET /producers/me/weekly-summary. Unstubbed, the fake token draws a 401 once
+  // WEEKLY_OWNER_SUMMARY_ENABLED is on, and api.js ends the session (the MEH-3446 class).
+  // available:false = the server's answer while the flag is off: the card stays hidden.
+  await page.route("**/producers/me/weekly-summary", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ enabled: true, available: false }) }),
+  );
   // The tools tab's share kit (components/producer/FeedPostCanvas.jsx) reads the
   // business's products on mount; unstubbed, the fake token draws a 401 and api.js
   // ends the session (seen locally: the click landed on /login).

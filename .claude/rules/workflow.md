@@ -582,7 +582,9 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     the `✘` lines — never "E2E gate: success". **A gate that aggregated a
     SKIPPED run is not evidence**: `Playwright E2E` skips on a feature PR whose
     paths it does not cover and that lacks the label (MEH-2956), and an
-    `E2E gate` run that predates MEH-2956 reports `success` either way. Read per-JOB conclusions, not the run's (a cancelled shadow job makes
+    `E2E gate` run that predates MEH-2956 reports `success` either way. In
+    private CI mode (testing.md «Two CI modes», MEH-3453) the label is also
+    what starts the run at all; the shard count is 4 on a public PR, 2 else. Read per-JOB conclusions, not the run's (a cancelled shadow job makes
     the run read `cancelled`). Rule 39 = when a red may be passed; this = there
     must be a run at all.
 41. **Nothing merges to staging while staging is red — any session, any PR
