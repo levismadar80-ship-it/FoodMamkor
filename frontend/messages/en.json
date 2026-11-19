@@ -2137,7 +2137,15 @@
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
         "confirm": "Confirm",
-        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone."
+        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone.",
+        "block": "Block {name}? They won't be able to sign in until the block is lifted.",
+        "block_business": "Block {name}? The business “{business}” will be hidden from the site.",
+        "block_none": "It has no open bookings.",
+        "block_one": "One open booking will be cancelled, and the customer will get an email.",
+        "block_many": "{count} open bookings will be cancelled, and each customer will get an email.",
+        "block_restore": "Lifting the block doesn't bring the business back. Restore it with «Activate» on the businesses page.",
+        "block_submit": "Block",
+        "block_impact_error": "We couldn't check for open bookings. Try again."
       },
       "pagination": {
         "page_size": "Rows per page",
@@ -2148,7 +2156,8 @@
       "rescue": {
         "blocked_badge": "Blocked from bags ({count} no-shows)",
         "cleared": "Block released"
-      }
+      },
+      "blocked_hidden": "The account is blocked and the business is hidden."
     },
     "recipes": {
       "title": "Business recipes",

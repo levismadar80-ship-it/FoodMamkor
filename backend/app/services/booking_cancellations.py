@@ -21,7 +21,8 @@ Related:  services/group_buy_delist.py::cancel_live_group_buys (MEH-2498,
           the precedent) · routers/rescue.py::cancel_offer (the business's
           own bag cancel) · routers/registrations.py (the confirmation email
           these mirror).
-History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants)
+History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants);
+          MEH-3375 (count_open_bookings, the pre-block count)
 """
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ from app.models import (
 )
 from app.services import billing_ledger
 from app.services.email import send_email
-from app.services.group_buy_delist import cancel_live_group_buys
+from app.services.group_buy_delist import cancel_live_group_buys, count_live_commits
 from app.services.registration_emails import (
     RegistrantEmail,
     send_registrant_cancelled,
@@ -100,6 +101,10 @@ def _message(
     )
 
 
+# MEH-3314: a waitlisted visitor is told the item is off too.
+_ACTIVE_SIGNUP = ("registered", "waitlisted")
+
+
 def _active_registrations(
     db: Session, column: Any, ids: list[Any]
 ) -> list[Registration]:
@@ -108,7 +113,7 @@ def _active_registrations(
     return (
         db.query(Registration)
         # MEH-3314: a waitlisted visitor is told the item is off too.
-        .filter(column.in_(ids), Registration.status.in_(("registered", "waitlisted")))
+        .filter(column.in_(ids), Registration.status.in_(_ACTIVE_SIGNUP))
         .with_for_update()
         .all()
     )
@@ -144,6 +149,74 @@ def _cancel_and_queue(
 # ---------- 1. the site takes a business off ----------
 
 
+# MEH-3375: the cancel and the admin's pre-block count share these filters, so
+# the number she is shown is the set the block cancels. DO NOT copy a filter
+# into count_open_bookings — change it here.
+def _live_offers_query(db: Session, producer: Producer) -> Any:
+    """Active rescue bags of ``producer`` whose pickup has not ended."""
+    return (
+        db.query(RescueOffer)
+        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
+        .filter(
+            ProducerLocation.producer_id == producer.id,
+            RescueOffer.status == "active",
+            RescueOffer.pickup_end > utc_now(),
+        )
+    )
+
+
+def _upcoming_items(
+    db: Session, producer: Producer
+) -> tuple[list[Event], list[Experience]]:
+    """Events of ``producer`` from today on, and experiences its owner hosts
+    from today on (a recurring one whatever its first date, MEH-2871)."""
+    today = israel_today()
+    events = (
+        db.query(Event)
+        .filter(Event.producer_id == producer.id, Event.event_date >= today)
+        .all()
+    )
+    experiences = (
+        db.query(Experience)
+        .join(User, Experience.host_user_id == User.id)
+        .filter(User.producer_id == producer.id)
+        # MEH-2871: a recurring experience is live past its first date.
+        .filter(or_(Experience.event_date >= today, Experience.is_recurring.is_(True)))
+        .all()
+    )
+    return events, experiences
+
+
+def count_open_bookings(db: Session, producer: Producer) -> int:
+    """MEH-3375: how many bookings taking ``producer`` off would cancel —
+    reserved bags, sign-ups (registered or waitlisted) and group-buy
+    participants. Reads only; shown to the admin before she blocks the owner."""
+    offer_ids = [o.id for o in _live_offers_query(db, producer).all()]
+    bags = 0
+    if offer_ids:
+        bags = (
+            db.query(RescueOrder)
+            .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
+            .count()
+        )
+    events, experiences = _upcoming_items(db, producer)
+    signups = 0
+    for column, ids in (
+        (Registration.event_id, [e.id for e in events]),
+        (Registration.experience_id, [x.id for x in experiences]),
+    ):
+        if ids:
+            signups += (
+                db.query(Registration)
+                .filter(
+                    column.in_(ids),
+                    Registration.status.in_(_ACTIVE_SIGNUP),
+                )
+                .count()
+            )
+    return bags + signups + count_live_commits(db, producer)
+
+
 def _cancel_live_bags(
     db: Session, producer: Producer, background_tasks: BackgroundTasks
 ) -> int:
@@ -151,17 +224,7 @@ def _cancel_live_bags(
     reservations; one email per buyer. Rows are locked as cancel_offer locks
     them, so a reservation landing at the same instant cannot slip past."""
     now = utc_now()
-    offers = (
-        db.query(RescueOffer)
-        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
-        .filter(
-            ProducerLocation.producer_id == producer.id,
-            RescueOffer.status == "active",
-            RescueOffer.pickup_end > now,
-        )
-        .with_for_update(of=RescueOffer)
-        .all()
-    )
+    offers = _live_offers_query(db, producer).with_for_update(of=RescueOffer).all()
     if not offers:
         return 0
     offer_ids = [o.id for o in offers]
@@ -197,20 +260,7 @@ def _cancel_upcoming_signups(
     """Sign-ups to this business's events, and to experiences its owner
     hosts, from today on → cancelled, one email each. A recurring experience
     counts whatever its first date (MEH-2871)."""
-    today = israel_today()
-    events = (
-        db.query(Event)
-        .filter(Event.producer_id == producer.id, Event.event_date >= today)
-        .all()
-    )
-    experiences = (
-        db.query(Experience)
-        .join(User, Experience.host_user_id == User.id)
-        .filter(User.producer_id == producer.id)
-        # MEH-2871: a recurring experience is live past its first date.
-        .filter(or_(Experience.event_date >= today, Experience.is_recurring.is_(True)))
-        .all()
-    )
+    events, experiences = _upcoming_items(db, producer)
     by_event = {e.id: e for e in events}
     by_ex = {x.id: x for x in experiences}
     name = str(producer.name or "")

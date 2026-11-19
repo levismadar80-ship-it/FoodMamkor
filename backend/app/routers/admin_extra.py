@@ -61,7 +61,10 @@ from app.services.account_guards import (  # MEH-3248: moved here, re-exported
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services import indexnow  # MEH-2871
-from app.services.booking_cancellations import hide_business  # MEH-2871
+from app.services.booking_cancellations import (  # MEH-2871, MEH-3375
+    count_open_bookings,
+    hide_business,
+)
 from app.services.category_slug import resolve_unique_slug
 from app.services.rescue_no_show import (
     NO_SHOW_BLOCK_AT,
@@ -292,10 +295,11 @@ def block_user(
     # Unblocking does not put it back: an admin un-pauses it, through the
     # approval gates (admin.py toggle).
     hidden = None
+    cancelled = 0
     if target.is_blocked:
         hidden = _business_left_ownerless(db, target)
         if hidden is not None:
-            hide_business(db, hidden, background_tasks)
+            cancelled = hide_business(db, hidden, background_tasks)
     db.commit()
     if hidden is not None:
         indexnow.schedule(background_tasks, indexnow.producer_urls(hidden))
@@ -303,6 +307,27 @@ def block_user(
         "detail": "Blocked toggled",
         "is_blocked": target.is_blocked,
         "business_hidden": hidden is not None,
+        "cancelled": cancelled,
+    }
+
+
+@router.get("/users/{user_id}/block-impact", response_model=None)
+def block_impact(
+    user_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3375: what blocking ``user_id`` would take down, read before the
+    admin confirms — the business that would be hidden (same rule as
+    block_user) and how many open bookings would be cancelled and mailed.
+    Reads only. Already blocked → nothing (the next click unblocks)."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    business = None if target.is_blocked else _business_left_ownerless(db, target)
+    return {
+        "business_name": business.name if business is not None else None,
+        "open_bookings": count_open_bookings(db, business) if business is not None else 0,
     }
 
 

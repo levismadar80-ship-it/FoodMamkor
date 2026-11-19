@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useAdminAction } from "@/lib/use-admin-action";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
+import BlockUserConfirm from "@/components/admin/BlockUserConfirm";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
@@ -33,6 +34,9 @@ export default function AdminUsersPage() {
   const [expanded, setExpanded] = useState(null);
   const [favorites, setFavorites] = useState({});
   const [confirm, setConfirm] = useState(null); // { userId, userName, userEmail?, action: "promote"|"demote"|"delete" }
+  // MEH-3375: the user an admin is about to block; the confirm shows what the
+  // block takes down (business + open bookings) before the click.
+  const [blockTarget, setBlockTarget] = useState(null);
   // MEH-1046: client-side pagination — slice the already-fetched array. The
   // search/role filters are SERVER-side (load() query params), so `users` is
   // already the filtered result set. Page resets on filter change only, not
@@ -82,7 +86,9 @@ export default function AdminUsersPage() {
 
   const toggleBlock = (id) =>
     run(`block:${id}`, async () => {
-      await api.post(`/admin/users/${id}/block`);
+      const r = await api.post(`/admin/users/${id}/block`);
+      if (r.data?.business_hidden) showToast.success(t("users.blocked_hidden"));
+      setBlockTarget(null);
       load();
     });
 
@@ -260,7 +266,8 @@ export default function AdminUsersPage() {
                       <div className="flex items-center gap-2">
                         {/* Routine action stays inline */}
                         <button
-                          onClick={() => toggleBlock(u.id)}
+                          // MEH-3375: unblocking stays one click; blocking asks first.
+                          onClick={() => (u.is_blocked ? toggleBlock(u.id) : setBlockTarget(u))}
                           disabled={isBusy(`block:${u.id}`)}
                           className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
                             u.is_blocked
@@ -386,6 +393,14 @@ export default function AdminUsersPage() {
           The copies were improved and the original was not, so a screen reader
           announced nothing here and the 12e spec had to reach this modal
           through its Hebrew copy while reaching the other two by role. */}
+      {blockTarget && (
+        <BlockUserConfirm
+          user={blockTarget}
+          busy={isBusy(`block:${blockTarget.id}`)}
+          onConfirm={() => toggleBlock(blockTarget.id)}
+          onClose={() => setBlockTarget(null)}
+        />
+      )}
       {confirm && (
         // MEH-3096: the shared Dialog owns overlay, focus trap and Escape;
         // Escape / overlay click stay guarded while the change is in flight.
