@@ -6,7 +6,7 @@
  * body, and the week prefilled from producers.order_window. Rendered with the
  * real he.json, so missing keys and ICU plurals are read, not mocked.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
@@ -107,6 +107,14 @@ describe("money", () => {
 });
 
 describe("board: 0 / 1 / many × the four lists", () => {
+  // MEH-3458: OrdersBoard reads the real clock for «היום»; the orders are built
+  // from NOW. Freeze Date at NOW or the test goes red on the Israel day NOW+30h.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => vi.useRealTimers());
+
   it("0 orders: the approved empty state, no tabs", () => {
     renderBoard([]);
     expect(screen.getByText("עוד אין הזמנות. כשתגיע הראשונה, נודיע לכם בוואטסאפ ובמייל.")).toBeInTheDocument();
