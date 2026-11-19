@@ -314,7 +314,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           the buyer picked a product, the order bar takes its place and keeps
           the contact button beside it as a round icon. */}
       {orderCart.count > 0 ? (
-        <OrderBar
+        !orderSheetOpen && <OrderBar
           producer={producer}
           count={orderCart.count}
           totalAgorot={orderCart.totalAgorot}
