@@ -1,7 +1,7 @@
 """meh3439_product_may_contain
 
 Revision ID: f1a7c3e9b2d5
-Revises: e3b9d1f7a2c4
+Revises: f2c8a4d6e9b1
 Create Date: 2026-11-19 14:00:00.000000+00:00
 
 MEH-3439: «עלול להכיל» — allergens that may reach a product from shared tools
@@ -18,7 +18,7 @@ No new table → EXPECTED_TABLES unchanged.
 
 downgrade() drops the column; anything owners ticked since is lost.
 
-Chained on e3b9d1f7a2c4 (MEH-3216, staging head on 19/11).
+Chained on f2c8a4d6e9b1 (MEH-3440, staging head after #4859, 19/11).
 """
 
 from typing import Sequence, Union
@@ -29,7 +29,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "f1a7c3e9b2d5"
-down_revision: Union[str, None] = "e3b9d1f7a2c4"
+down_revision: Union[str, None] = "f2c8a4d6e9b1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
