@@ -923,6 +923,14 @@ A third signed link next to the claim link and the owner invite, and the weakest
 - **It sits in the address bar** for as long as the page is open, unlike the claim token, which is moved to sessionStorage. So `lib/claim-token.js` redacts `/draft-preview/<jwt>` and `/producer-preview/<jwt>` from Sentry, Speed Insights and analytics events, and the page is `noindex` with `referrer: no-referrer`. The backend logs ids only, and `_URL_TOKEN_PATTERNS` in `backend/app/utils/pii.py` redacts both paths from backend Sentry events and access-log URLs (before 18/11 it did not: the `/producer-preview/<jwt>` request path reached Sentry).
 - **Publishing is a separate admin action** (`POST /admin/producers/{id}/publish-with-consent`) and needs a written consent note; the link plays no part in it. An optional screenshot of that consent is stored as a URL (`producers.consent_screenshot_url`): the schema accepts only an `https://res.cloudinary.com/…/image/upload/…` URL, so the admin page never links elsewhere under an "approval" label, and the field is on `ProducerAdminOut` only — it shows a private person's chat. The image itself sits in Cloudinary under an unguessable id, like every uploaded image: whoever holds the URL can open it.
 
+## 17b-1. A restored backup carries no real people (MEH-3406)
+
+A production dump restored anywhere else (staging, a DR drill, a laptop) is one more copy of the database to protect (Privacy Protection Law, amendment 13). So `scripts/restore_from_backup.py` runs `scripts/anonymize_restored_db.sql` right after `pg_restore`, in one transaction, and then fails closed (exit 4) if any real email or push endpoint survived.
+- **Replaced:** emails → `…@example.com`, phones → `+97250000xxxx`, names, street addresses, osek numbers, invite and status tokens, IP hashes, audit details, order notes.
+- **Deleted:** OTP codes, admin passkeys and recovery codes, inbound/outbound WhatsApp, no-show tombstones, push subscriptions.
+- **Kept on purpose:** what a business published (name, pickup points, reviews). Each kept column is listed with its reason in `tests/test_restore_anonymize.py:EXEMPT`; that test fails on a new PII-shaped column with no entry either way.
+- `--keep-pii` is explicit only. The production-target refusal is unchanged.
+
 ## 17b-2. Menu upload → a paid model call (MEH-3430)
 
 `POST /producers/me/menu-import/read` takes owner-uploaded photos / a PDF and sends them to Anthropic. What holds it:

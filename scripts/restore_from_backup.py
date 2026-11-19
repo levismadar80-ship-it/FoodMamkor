@@ -28,6 +28,15 @@ Exit codes:
   1 — pg_restore failed
   2 — R2 download failed (or `--latest` found no objects)
   3 — config error / safety guard refused / target unreachable
+  4 — anonymization failed, or real emails / push endpoints survived it
+
+Personal details (MEH-3406):
+  After pg_restore, scripts/anonymize_restored_db.sql replaces every
+  email, phone, name and address with a fake value and deletes codes,
+  push endpoints and raw WhatsApp traffic, in ONE transaction. Then a
+  check counts what survived (emails off @example.com, push endpoints)
+  and exits 4 if anything did. `--keep-pii` skips both — explicit only,
+  never the default, and logged as a warning.
 
 Safety guard:
   Refuses if target_database_url contains 'production' (case-insensitive)
@@ -56,6 +65,12 @@ EXIT_OK = 0
 EXIT_RESTORE_FAILED = 1
 EXIT_DOWNLOAD_FAILED = 2
 EXIT_CONFIG_ERROR = 3
+EXIT_ANONYMIZE_FAILED = 4
+
+# MEH-3406: the SQL lives next to this script; tests/test_restore_anonymize.py
+# guards that it covers every PII-shaped column in the models.
+ANONYMIZE_SQL = Path(__file__).resolve().parent / "anonymize_restored_db.sql"
+ANONYMIZE_TIMEOUT_SEC = 600
 
 PG_RESTORE_TIMEOUT_SEC = 1800  # 30 min — restore can be slower than dump
 
@@ -189,6 +204,57 @@ def run_pg_restore(local_path: Path, target_url: str) -> bool:
     return True
 
 
+def run_anonymize(target_url: str) -> bool:
+    """MEH-3406: run the anonymization SQL in a single transaction."""
+    cmd = [
+        "psql", target_url, "-X", "--single-transaction",
+        "-v", "ON_ERROR_STOP=1", "-q", "-f", str(ANONYMIZE_SQL),
+    ]
+    log.info("Anonymizing personal details (%s)", ANONYMIZE_SQL.name)
+    try:
+        subprocess.run(cmd, check=True, timeout=ANONYMIZE_TIMEOUT_SEC)
+    except subprocess.CalledProcessError as exc:
+        log.error("anonymization exited %d — nothing was changed (one transaction)", exc.returncode)
+        return False
+    except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
+        log.error("anonymization did not run: %s", exc)
+        return False
+    log.info("Anonymized — checking nothing real survived:")
+    return True
+
+
+# Each query must return 0 after a successful anonymization.
+SURVIVOR_QUERIES = (
+    ("users off @example.com", "SELECT count(*) FROM users WHERE email NOT ILIKE '%@example.com'"),
+    ("contact_messages off @example.com", "SELECT count(*) FROM contact_messages WHERE email NOT ILIKE '%@example.com'"),
+    ("newsletter off @example.com", "SELECT count(*) FROM newsletter_subscribers WHERE email NOT ILIKE '%@example.com'"),
+    ("push endpoints", "SELECT count(*) FROM favorite_alerts WHERE push_subscription IS NOT NULL"),
+    ("inbound WhatsApp", "SELECT count(*) FROM inbound_messages"),
+)
+
+
+def verify_anonymized(target_url: str) -> bool:
+    """MEH-3406: fail closed — a count we cannot read is a failure."""
+    ok = True
+    for label, sql in SURVIVOR_QUERIES:
+        try:
+            result = subprocess.run(
+                ["psql", target_url, "-X", "-tAc", sql],
+                check=True, capture_output=True, text=True, timeout=60,
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
+            log.error("  %s: check could not run (%s)", label, exc)
+            ok = False
+            continue
+        count = result.stdout.strip()
+        if count != "0":
+            log.error("  %s: %s rows survived", label, count)
+            ok = False
+        else:
+            log.info("  %s: 0", label)
+    return ok
+
+
 def print_row_counts(target_url: str) -> None:
     """Best-effort row-count summary. Logs warning if psql/tables missing."""
     for table in ROW_COUNT_TABLES:
@@ -211,6 +277,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     group.add_argument("--latest", action="store_true", help="Use most recent backup")
     group.add_argument("filename", nargs="?", help="Specific backup filename")
     p.add_argument("target_database_url", help="Restore destination")
+    # MEH-3406: never the default. A restore keeps real people's details
+    # only when someone types this.
+    p.add_argument(
+        "--keep-pii", action="store_true",
+        help="Skip anonymization and keep real personal details (explicit only)",
+    )
     return p.parse_args(argv)
 
 
@@ -243,6 +315,19 @@ def main(argv: list[str] | None = None) -> int:
 
         if not run_pg_restore(local_path, args.target_database_url):
             return EXIT_RESTORE_FAILED
+
+        if args.keep_pii:
+            log.warning("--keep-pii: real personal details were restored and kept")
+        else:
+            if not (
+                run_anonymize(args.target_database_url)
+                and verify_anonymized(args.target_database_url)
+            ):
+                log.error(
+                    "The target now holds REAL personal details. Drop that "
+                    "database before anyone uses it."
+                )
+                return EXIT_ANONYMIZE_FAILED
 
         log.info("Restore OK — verifying row counts:")
         print_row_counts(args.target_database_url)
