@@ -23,8 +23,9 @@ import SectionHeading from "@/components/ui/SectionHeading";
  * the dynamic stock question and any custom questions stay WhatsApp
  * deep-links (the "another question?" escalation left 20/11, see MEH-3460).
  *
- *   Q1  "אפשר משלוח ל{city}?"  → jump to #section-delivery when the page has
- *                                 it (19/11), else buildDeliveryAnswer
+ *   Q1  "אפשר משלוח ל{city}?"  → not asked when the page has its «משלוח»
+ *                                 section (20/11: this section sits right
+ *                                 under it), else buildDeliveryAnswer
  *                                 disclosure, else WA link
  *   Q2  "איך מזמינים?"          → REMOVED 19/11: it repeated the primary CTA
  *   Q3+ custom (owner-written)  → WhatsApp (MEH-2385: category stock set no longer renders)
@@ -50,7 +51,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
  *   - (the category stock rows and the recipe-idea chip of MEH-1462 no longer
  *     exist at all — MEH-2385 cut the block to Q1 / Q2 / owner questions /
  *     escalation, so there is nothing channel-specific left to gate there)
- *   - escalation "שאלה אחרת?"        → **still rendered**, pointed at the
+ *   - escalation "שאלה אחרת?"        → (then) still rendered, pointed at the
  *     primary channel via getPrimaryContactHref. MEH-1538's lock is that the
  *     ready-made questions have no off switch; this ticket ROUTES them, it does
  *     not turn anything off, so the one row that is the contact channel itself
@@ -78,7 +79,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
  *   - Q3+ owner `custom_questions`  → still rendered. She wrote them herself
  *     and there is no off switch for them (MEH-1538 lock, unchanged).
  *   - recipe-idea row (MEH-1462)    → gone; "שאלה אחרת?" covers it.
- *   - escalation "שאלה אחרת?"       → unchanged.
+ *   - escalation "שאלה אחרת?"       → unchanged (then; removed in MEH-3460).
  *
  * The hairline above the block is also conditional now: a producer with no
  * primary CTA (no channel resolves) used to get a card that opened with a
@@ -320,8 +321,8 @@ export default function WhatsAppQuestionChips({ producer }) {
   }
 
   // MEH-3035: «איך משלמים?» — answer-first, from her dashboard. No WhatsApp
-  // fallback when unset: the question simply does not appear (the escalation
-  // row still covers it), so a business that said nothing is not shown asking.
+  // fallback when unset: the question simply does not appear (the button
+  // and the channel icons cover it), so a business that said nothing is not shown asking.
   const payment = paymentAnswer(producer?.payment_info);
   if (payment) {
     items.push(

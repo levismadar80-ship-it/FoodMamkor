@@ -57,8 +57,8 @@ vi.mock("@phosphor-icons/react", () => {
     Receipt: Stub,
     WhatsappLogo: Stub,
     Bell: Stub, // MEH-2626: the «עדכונים» channel icon (module-scope in CHANNELS)
-    // MEH-1168 P1: WhatsAppQuestionChips (a real child here) now renders a
-    // ChatCircle glyph before each question link.
+    // MEH-1168 P1 / MEH-1302: stubs from when WhatsAppQuestionChips was a
+    // child of the card (it left in MEH-3460); harmless, kept for any reuse.
     ChatCircle: Stub,
     // MEH-1302: the same child now renders answer-first disclosures with a
     // CaretDown toggle — stub it too or the real child errors on an undefined

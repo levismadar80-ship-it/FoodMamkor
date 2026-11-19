@@ -287,9 +287,12 @@ export default function ContactCard({ producer, isVacation }) {
         {showChannelRow && (
           <div
             className={
+              // MEH-3460 (Sapir 20/11, option ב): no hairline. It separated the
+              // button from the questions block; with the questions gone from
+              // the card, the button and the channels read as one unit.
               single
-                ? "flex flex-col gap-1 mt-4 pt-3 border-t border-border"
-                : "grid grid-cols-4 gap-x-1 gap-y-3 mt-4 pt-4 border-t border-border"
+                ? "flex flex-col gap-1 mt-4"
+                : "grid grid-cols-4 gap-x-1 gap-y-3 mt-5"
             }
             // MEH-3191: no list roles — a listitem role on an <a> replaces the
             // link role (axe aria-allowed-role), so a screen reader lost "link".

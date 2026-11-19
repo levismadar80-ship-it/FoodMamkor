@@ -72,8 +72,9 @@ const labelsFor = () => ({
  * Every question label the component put on screen, in render order.
  *
  * Reads the row types the component emits — the disclosure buttons, the
- * WhatsApp chips, and the escalation anchor (the recipe anchor stays in the
- * selector so its return would surface as a mismatch, MEH-2385) — and strips
+ * WhatsApp chips — plus the retired jump, escalation and recipe anchors, kept in
+ * the selector so a return of any of them surfaces as a mismatch (MEH-2385,
+ * MEH-3460) — and strips
  * nothing else,
  * so a row the helper forgets shows up as a length mismatch rather than being
  * quietly skipped.
@@ -298,7 +299,7 @@ describe("the annotations the dashboard renders", () => {
     expect(usesCustom).toBe(false);
     expect(customCount).toBe(0);
     // The stock question is gone from the public block, so the live list is
-    // exactly the two answered rows + the escalation — nothing she never wrote.
+    // exactly the rows the page shows — nothing she never wrote.
     expect(items.map((i) => i.source)).toEqual(["delivery"]);
     expect(items.some((i) => i.source === "category")).toBe(false);
   });

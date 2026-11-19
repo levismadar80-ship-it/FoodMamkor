@@ -90,9 +90,9 @@ export function buildDeliveryAnswer(producer) {
 /**
  * Does the business page render its «משלוח» section (`#section-delivery`)?
  * The ONE copy of that gate: ProducerSections renders the section on it,
- * section-nav.js shows the «משלוח» pill on it, and WhatsAppQuestionChips turns
- * the delivery question into a jump to the section on it (Sapir 19/11: a cut
- * «+ עוד 44» list beside the full section was a worse second copy).
+ * section-nav.js shows the «משלוח» pill on it, and WhatsAppQuestionChips does
+ * not ask the delivery question on it — the FAQ section sits right under the
+ * delivery section, which is the full answer (Sapir 19–20/11).
  *
  * @param {object|null|undefined} producer
  * @returns {boolean}
