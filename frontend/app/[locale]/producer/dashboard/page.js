@@ -509,8 +509,6 @@ export default function ProducerDashboardPage() {
           <OwnerWelcomeCard onClose={welcome.dismiss} showCta={!(completenessFirst && profile && !isOrganizer)} />
         ) : slotMoment ? (
           <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
-        ) : isOrganizer ? (
-          <WhatsNewCard />
         ) : (
           // MEH-3216: on-site ordering, once, before «חדש במהמקור».
           <OrdersIntroCard fallback={<WhatsNewCard />} />

@@ -54,6 +54,17 @@ export function setupSteps({
   ];
 }
 
+/**
+ * A step's card can start folded (the page folds them once set up). A hash
+ * jump does not open a closed <details>, so open it before the jump.
+ * @param {string} href
+ */
+function openCard(href) {
+  if (!href.startsWith("#")) return;
+  const card = document.getElementById(href.slice(1));
+  if (card instanceof HTMLDetailsElement) card.open = true;
+}
+
 /** @param {{ settings: any, windowsCount: number, orderableCount: number | null, hasProducts?: boolean }} props */
 export default function OrderSetupChecklist({
   settings,
@@ -118,6 +129,7 @@ export default function OrderSetupChecklist({
             >
               <Go
                 href={step.href}
+                onClick={() => openCard(step.href)}
                 className="flex items-center gap-2 min-h-touch text-text focus-ring rounded-sm"
               >
                 {step.done ? (

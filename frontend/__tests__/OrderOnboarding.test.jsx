@@ -24,6 +24,8 @@ vi.mock("@/i18n/navigation", () => ({
 import OrderSetupChecklist, { setupSteps } from "@/components/dashboard/orders/OrderSetupChecklist";
 import OrdersIntroCard, { ORDERS_INTRO_KEY } from "@/components/producer/OrdersIntroCard";
 import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
+import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
+import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import api from "@/lib/api";
 
 const wrap = (ui) => (
@@ -157,5 +159,44 @@ describe("OrderSettingsCard commission line", () => {
     const line = screen.getByTestId("orders-commission");
     expect(line.textContent).toBe("על הזמנות דרך האתר חלה עמלה לפי המסלול שלכם. הפרטים בתקנון.");
     expect(line.querySelector("a").getAttribute("href")).toBe("/terms#pricing");
+  });
+});
+
+describe("OrderSetupChecklist jump", () => {
+  it("opens a folded card before jumping to it", () => {
+    render(
+      wrap(
+        <>
+          <OrderSetupChecklist settings={settings()} windowsCount={0} orderableCount={0} />
+          <details id="order-windows" data-testid="folded">
+            <summary>x</summary>
+          </details>
+        </>,
+      ),
+    );
+    expect(screen.getByTestId("folded").open).toBe(false);
+    fireEvent.click(screen.getByText(t.checklist.windows));
+    expect(screen.getByTestId("folded").open).toBe(true);
+  });
+});
+
+describe("the cards tell the page what changed (checklist wiring)", () => {
+  it("OrderProductsCard reports its rows, and a failed read", async () => {
+    const onChange = vi.fn();
+    render(wrap(<OrderProductsCard initial={[{ id: "a", name: "חלה", is_orderable: true, in_stock: true }]} onChange={onChange} />));
+    expect(onChange).toHaveBeenCalledWith([expect.objectContaining({ id: "a", is_orderable: true })]);
+    const onError = vi.fn();
+    api.get.mockRejectedValueOnce(new Error("down"));
+    render(wrap(<OrderProductsCard onChange={() => {}} onError={onError} />));
+    await waitFor(() => expect(onError).toHaveBeenCalled());
+  });
+
+  it("OrderWindowsCard hands the saved week to the page", async () => {
+    const onSaved = vi.fn();
+    const win = { weekday: 0, start_time: "09:00", end_time: "12:00", fulfilment: "pickup" };
+    api.put.mockResolvedValueOnce({ data: { windows: [win] } });
+    render(wrap(<OrderWindowsCard windows={[win]} orderWindow={null} onSaved={onSaved} />));
+    fireEvent.click(screen.getByTestId("order-windows-save"));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith([expect.objectContaining({ weekday: 0 })]));
   });
 });

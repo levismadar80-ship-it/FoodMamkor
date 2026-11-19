@@ -73,12 +73,12 @@ function ProductRow({ product, onSaved }) {
 }
 
 /**
- * @param {{ setUp?: boolean, initial?: any[] | null, onChange?: (products: any[]) => void }} props
+ * @param {{ setUp?: boolean, initial?: any[] | null, onChange?: (products: any[]) => void, onError?: () => void }} props
  *   setUp: ordering is on with a window — the card then starts folded, but
  *   only once at least one product is open for ordering (otherwise this card
  *   is the next thing she has to do). `initial` skips the read (tests).
  */
-export default function OrderProductsCard({ setUp = false, initial = null, onChange = undefined }) {
+export default function OrderProductsCard({ setUp = false, initial = null, onChange = undefined, onError = undefined }) {
   const t = useTranslations("dashboard.producer.orders");
   const [products, setProducts] = useState(/** @type {any[] | null} */ (initial));
   const [failed, setFailed] = useState(false);
@@ -93,7 +93,11 @@ export default function OrderProductsCard({ setUp = false, initial = null, onCha
     let live = true;
     loadProductsOrdering()
       .then((rows) => live && setProducts(rows))
-      .catch(() => live && setFailed(true));
+      .catch(() => {
+        if (!live) return;
+        setFailed(true);
+        onError?.();
+      });
     return () => {
       live = false;
     };
