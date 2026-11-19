@@ -15,7 +15,9 @@ const flat = (o, p = "") =>
 export const normalize = (s) =>
   s
     .replace(/\.\.\./g, "…")
-    .replace(/(?<=[א-ת])"(?=[א-ת])/g, "״")
+    // An acronym mark between two Hebrew letters — ASCII ", curly quotes, or a
+    // geresh where gershayim belongs (ט׳ו) — all read as the one gershayim.
+    .replace(/(?<=[א-ת])["“”׳](?=[א-ת])/g, "״")
     .replace(/[.!]+(\s*✓)?$/, "$1");
 
 // Same words, different jobs: a field's placeholder vs its error, a page
@@ -47,10 +49,11 @@ describe("MEH-3462: one spelling per Hebrew string", () => {
       ["a", "בטעינה..."], ["b", "בטעינה…"],
       ["c", "נשמר"], ["d", "נשמר."],
       ["e", "הועתק ✓"], ["f", "הועתק! ✓"],
-      ["g", 'ט"ו בשבט'], ["h", "ט״ו בשבט"],
+      ["g", 'ט"ו בשבט'], ["h", "ט״ו בשבט"], ["g2", "ט׳ו בשבט"],
       ["i", "בבדיקה"], ["j", "בבדיקה…"], // a status and a loading line: different words
     ];
     expect(variantGroups(rows)).toHaveLength(4);
+    expect(normalize("ט׳ו בשבט")).toBe(normalize('ט"ו בשבט')); // geresh-for-gershayim merges
     expect(variantGroups(entries.slice(0, 0))).toEqual([]);
     expect(entries.length).toBeGreaterThan(1000); // the file really loaded
   });
