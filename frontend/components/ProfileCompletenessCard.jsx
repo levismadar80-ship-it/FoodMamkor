@@ -280,6 +280,10 @@ export default function ProfileCompletenessCard({ producer, footer = null }) {
   const percent = Math.round((doneCount / steps.length) * 100);
   const isComplete = doneCount === steps.length;
   const firstTodo = steps.find((s) => !s.done);
+  // MEH-2926: once the page is sent for review, «השלב הבא: …» is no longer
+  // true — the next step is ours. The pending banner above says so; the
+  // checklist stays so she can still improve the page while she waits.
+  const awaitingReview = producer.status === "pending";
 
   // Complete → collapse to a single confirmation line (the card never fully
   // disappears, per the locked design decision).
@@ -374,8 +378,8 @@ export default function ProfileCompletenessCard({ producer, footer = null }) {
 
           {/* Top remaining step emphasized as the primary next-step. Box = faint
               primary tint via opacity (REUSES: KashrutBadgeStrip.jsx:53). */}
-          {firstTodo && (
-            <div className="mt-4 bg-primary/5 border border-primary/20 rounded-md p-4">
+          {firstTodo && !awaitingReview && (
+            <div data-testid="completeness-next-step" className="mt-4 bg-primary/5 border border-primary/20 rounded-md p-4">
               <p className="text-sm text-text">
                 <span className="font-semibold">{t("next_step_prefix")}</span>{" "}
                 {t(`steps.${firstTodo.key}`)}

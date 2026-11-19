@@ -406,6 +406,16 @@ export default function ProducerDashboardPage() {
   const hasActivity =
     (analytics?.profile_views?.total ?? 0) > 0 ||
     (analytics?.whatsapp_clicks?.total ?? 0) > 0;
+  // MEH-2926: submit-for-review flips BOTH reads of the business. `data`
+  // (/auth/me's producer) drives the banners; `profile` (/producers/me)
+  // drives the completeness card. Flipping only `data` left the card on the
+  // old state. Same two objects as before — no third copy.
+  const markSubmitted = () => {
+    setData((prev) =>
+      prev ? { ...prev, producer: { ...prev.producer, status: "pending" } } : prev,
+    );
+    setProfile((prev) => (prev ? { ...prev, status: "pending" } : prev));
+  };
   const isApproved = producer.status === "approved";
 
   // MEH-2759: the switch reads ON while vacation is saved OR selected-but-not-
@@ -533,13 +543,7 @@ export default function ProducerDashboardPage() {
       {producer.status === "draft" && isOrganizer && (
         <DraftSubmitBanner
           producer={profile}
-          onSubmitted={() =>
-            setData((prev) =>
-              prev
-                ? { ...prev, producer: { ...prev.producer, status: "pending" } }
-                : prev,
-            )
-          }
+          onSubmitted={markSubmitted}
           onPhoneVerified={() =>
             setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
           }
@@ -664,13 +668,7 @@ export default function ProducerDashboardPage() {
               <DraftSubmitBanner
                 variant="actions"
                 producer={profile}
-                onSubmitted={() =>
-                  setData((prev) =>
-                    prev
-                      ? { ...prev, producer: { ...prev.producer, status: "pending" } }
-                      : prev,
-                  )
-                }
+                onSubmitted={markSubmitted}
                 onPhoneVerified={() =>
                   setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
                 }

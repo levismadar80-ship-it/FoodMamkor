@@ -181,8 +181,15 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
         <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
         {userFlow ? title : reverify ? t("reverify_title") : t("title")}
       </p>
+      {/* MEH-2926: «נשלח קוד» only once a code has actually gone out. Before
+          the tap the line says what the tap will do. */}
       {!reverify && (
         <p className="text-xs text-fg-muted mb-3">{userFlow ? description : t("description")}</p>
+      )}
+      {codeSent && !userFlow && (
+        <p role="status" data-testid="phone-verify-code-sent" className="text-xs text-text mb-3">
+          {t("code_sent")}
+        </p>
       )}
 
       {/* MEH-1103: send + confirm gain min-h-touch (WCAG 2.5.5). */}
