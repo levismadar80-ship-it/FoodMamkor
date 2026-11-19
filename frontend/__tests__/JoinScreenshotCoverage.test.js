@@ -68,8 +68,8 @@ const NO_VISUAL = new Set([
   "demand_cities",
   "drop_point_hosts",
   "completeness",
-  // MEH-3216: on-site ordering is off in production, so the demo shows no
-  // order bar. Gets a shot when the flag goes on and the entry turns live.
+  // MEH-3216: the demo business on /join has no order bar yet; a shot follows
+  // once a real business turns ordering on.
   "product_orders",
 ]);
 

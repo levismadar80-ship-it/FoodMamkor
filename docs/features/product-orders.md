@@ -4,7 +4,7 @@
 
 **Flags.** שרת בלבד: `product_orders_enabled`, נקרא דרך `getattr(settings, "product_orders_enabled", False)` ב-`backend/app/routers/product_orders.py`. כשהוא כבוי כל route עונה 404, ולכן גם הלשונית בלוח הבקרה ודף ההזמנה של הלקוחה נעלמים. אין flag בחזית. כבוי ב-production.
 
-**ברישום הכלים** (`frontend/lib/business-features.js`): `product_orders`, במצב `soon` עד שה-flag נדלק ב-production.
+**ברישום הכלים** (`frontend/lib/business-features.js`): `product_orders`, פעיל. ה-flag נדלק ב-production מיד אחרי הגרסה שכוללת אותו, וכל בית עסק מדליק הזמנות בעצמו מלוח הבקרה.
 
 **Routes**
 * `frontend/app/[locale]/producer/dashboard/orders/` — לשונית «הזמנות» של בית העסק (פירוט ב-[לוח הבקרה](./producer-dashboard.md)).
