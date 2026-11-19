@@ -168,9 +168,11 @@ function RowList({ rows, cancelledLabel, ordered = false, onMarked = undefined }
               )}
             </span>
             <span className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
-              <a href={telHref(r.phone) ?? undefined} dir="ltr" className="underline underline-offset-2 numeric">
-                {r.phone}
-              </a>
+              {r.phone && (
+                <a href={telHref(r.phone) ?? undefined} dir="ltr" className="underline underline-offset-2 numeric">
+                  {r.phone}
+                </a>
+              )}
               <a href={`mailto:${r.email}`} dir="ltr" className="underline underline-offset-2 break-all">
                 {r.email}
               </a>
