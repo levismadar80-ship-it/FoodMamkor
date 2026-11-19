@@ -74,6 +74,7 @@ def test_put_unset_keeps_and_null_clears(client, db):
         json={"allergens": ["tree_nuts"], "may_contain": ["tree_nuts", "eggs"]},
         headers=auth_header(user),
     )
+    assert r.status_code == 200, r.text
     assert r.json()["may_contain"] == ["eggs"]
     r = client.put(f"/producers/me/products/{pid}", json={"may_contain": None}, headers=auth_header(user))
     assert r.status_code == 200, r.text
@@ -90,3 +91,17 @@ def test_admin_draft_product_drops_may_contain(client, db):
     )
     assert r.status_code == 201, r.text
     assert r.json()["may_contain"] is None
+
+
+def test_put_with_one_list_drops_the_overlap_with_the_stored_other(client, db):
+    # The schema sees only the body; the router must check the stored row.
+    user, _ = _owner(db)
+    pid = _create(client, user, may_contain=["milk", "eggs"]).json()["id"]
+    r = client.put(f"/producers/me/products/{pid}", json={"allergens": ["milk"]}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    assert r.json()["may_contain"] == ["eggs"]
+    r = client.put(f"/producers/me/products/{pid}", json={"may_contain": ["milk", "sesame"]}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    assert r.json()["allergens"] == ["milk"]
+    assert r.json()["may_contain"] == ["sesame"]
+    assert db.get(Product, pid).may_contain == ["sesame"]

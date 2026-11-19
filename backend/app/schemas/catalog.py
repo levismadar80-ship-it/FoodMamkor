@@ -520,7 +520,7 @@ class ProductCreate(BaseModel):
     ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
     allergens: list[str] | None = Field(
         None, max_length=50
-    )  # 14 codes + headroom for dupes
+    )  # 15 codes + headroom for dupes
     # MEH-3439: «עלול להכיל», same closed list and cap.
     may_contain: list[str] | None = Field(None, max_length=50)
 
@@ -573,7 +573,7 @@ class ProductUpdate(BaseModel):
     ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
     allergens: list[str] | None = Field(
         None, max_length=50
-    )  # 14 codes + headroom for dupes
+    )  # 15 codes + headroom for dupes
     # MEH-3439: «עלול להכיל», same closed list and cap.
     may_contain: list[str] | None = Field(None, max_length=50)
 

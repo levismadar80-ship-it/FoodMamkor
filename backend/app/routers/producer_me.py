@@ -7,6 +7,7 @@ from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.allergens import drop_contained
 from app.limits import enforce_cap
 from app.auth import require_producer
 from app.database import get_db
@@ -1353,6 +1354,10 @@ def update_my_product(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     )
     for field, value in payload.items():
         setattr(product, field, value)
+    # MEH-3439: the schema only sees the body; a PUT carrying one of the two
+    # lists can still overlap the other one stored on the row. «מכיל» wins.
+    if "allergens" in payload or "may_contain" in payload:
+        product.may_contain = drop_contained(product.allergens, product.may_contain)
     db.commit()
     db.refresh(product)
     return product
