@@ -969,6 +969,26 @@ deploys, which is exactly the opposite of what we want.
 The workflow at [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
 runs Playwright tests against each PR's Vercel preview URL.
 
+### Two CI modes — public / private (MEH-3453)
+
+Every job in `.github/workflows/` picks its runner per run. **Private** = the
+repo is private, or the repo variable `CI_MODE` is `private` (Settings →
+Secrets and variables → Actions → Variables); **public** otherwise.
+
+| | Public | Private |
+|---|---|---|
+| Runner | `ubuntu-latest` | `self-hosted` (the runner on Sapir's PC) |
+| E2E on a PR | by paths or `run-e2e`, 4 shards | only with `run-e2e`, 2 shards |
+| E2E on push to staging | yes, 2 shards | none |
+| Nightly 01:30 UTC | Chromium + WebKit | Chromium |
+| WebKit | nightly | weekly, Sunday 02:30 UTC |
+| pytest / vitest | 3 shards each | 1 shard each |
+
+In private mode a red staging is seen only by the nightly run, so
+`Staging health` (rule 41) can lag a staging break by up to a day. The jobs'
+`if:` conditions match the two cron strings verbatim: changing a cron in
+`e2e.yml` means changing the conditions that name it.
+
 ### Staging QA auth fixtures (MEH-1241 · MEH-1528)
 
 Playwright can drive a logged-in **producer**, **consumer**, and **admin**
