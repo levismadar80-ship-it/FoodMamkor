@@ -41,7 +41,9 @@ from app.schemas.schemas import (
 # a too-long text is a 422, not a silent cut; the bleach then mirrors
 # SanitizedDescriptionField. REUSES: schemas.py SanitizedAddressField order.
 StorageInfoField = Annotated[
-    str, Field(max_length=300), AfterValidator(lambda v: sanitize_text(v, max_length=300))
+    str,
+    Field(max_length=300),
+    AfterValidator(lambda v: sanitize_text(v, max_length=300)),
 ]
 
 
