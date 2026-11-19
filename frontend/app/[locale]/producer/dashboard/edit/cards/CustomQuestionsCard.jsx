@@ -106,7 +106,6 @@ export function CustomQuestionsCard({
     deliveryQuestion: tChips("delivery_to_my_area"),
     orderingQuestion: tChips("ordering_q"),
     paymentQuestion: tChips("payment_q"),
-    escalationQuestion: tChips("escalation"),
   });
 
   // Nothing to save when every input is blank AND nothing is stored — the save

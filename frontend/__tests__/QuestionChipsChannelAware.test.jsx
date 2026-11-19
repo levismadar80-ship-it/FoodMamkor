@@ -51,8 +51,6 @@ vi.mock("next-intl", () => ({
       // MEH-3170: the wa.me suffix is catalog copy now; asserted against he.json below.
       wa_suffix: " (וואטסאפ)",
       source_line: "הגעתי דרך מהמקור",
-      escalation: "שאלה אחרת? צרו איתנו קשר",
-      escalation_email_subject: "שאלה דרך מהמקור",
     };
     return map[key] ?? key;
   },
@@ -71,7 +69,7 @@ vi.mock("@/lib/contact-tracking", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub, Wallet: Stub };
 });
 
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
@@ -102,21 +100,8 @@ const baseProducer = {
   external_order_form: "order.shikma.example.com",
 };
 
-/** The seven values of primary_contact_method + the href each must escalate to. */
-const CHANNELS = [
-  { method: "whatsapp", escalationHref: null /* asserted separately, byte-exact */ },
-  { method: "phone", escalationHref: `tel:${PHONE}` },
-  { method: "website", escalationHref: "https://shikma.example.com" },
-  {
-    method: "email",
-    escalationHref: `mailto:hi@shikma.example.com?subject=${encodeURIComponent("שאלה דרך מהמקור")}`,
-  },
-  { method: "instagram", escalationHref: "https://instagram.com/shikma" },
-  { method: "facebook", escalationHref: "https://facebook.com/shikma" },
-  { method: "external_order", escalationHref: "https://order.shikma.example.com" },
-];
-
-const NON_WHATSAPP = CHANNELS.filter((c) => c.method !== "whatsapp");
+const METHODS = ["whatsapp", "phone", "website", "email", "instagram", "facebook", "external_order"];
+const NON_WHATSAPP = METHODS.filter((m) => m !== "whatsapp");
 
 /** Every href rendered inside the block, whatever element carries it. */
 const allHrefs = (container) =>
@@ -128,6 +113,8 @@ const allHrefs = (container) =>
  * Both hosts are checked because getWhatsAppHref (lib/utils.js:17-25) picks
  * between them from `matchMedia` at call time — asserting only `wa.me` would
  * pass on a desktop-shaped runtime purely because the OTHER host was used.
+ * The control: the fixtures below carry delivery data, so the block always
+ * renders the #section-delivery jump — at least one anchor (MEH-3460).
  */
 function expectNoWhatsApp(container) {
   const hrefs = allHrefs(container);
@@ -144,21 +131,19 @@ beforeEach(() => {
 });
 
 // ============================================================
-// whatsapp-primary — the regression half: nothing may change
+// whatsapp-primary — the regression half
 // ============================================================
 
-describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", () => {
+describe("whatsapp-primary", () => {
   const wa = { ...baseProducer, primary_contact_method: "whatsapp" };
 
   // MEH-2385: the category stock question no longer renders on any channel.
-  // Positive control alongside the negative: the escalation row must still be
-  // a wa.me link, so an empty render cannot pass as "stock hidden".
+  // Positive control: the fixture has no delivery data, so Q1 renders as a
+  // wa.me fallback chip — an empty render cannot pass as "stock hidden".
   it("does not render the category stock question (MEH-2385)", () => {
     const { container } = render(<WhatsAppQuestionChips producer={wa} />);
     expect(container.textContent).not.toContain("אילו לחמים יש השבוע?");
-    // (The fixture has no delivery data, so Q1 still renders as a wa.me
-    // fallback chip — that row is MEH-1302 behaviour and stays.)
-    expect(screen.getByTestId("escalation-link").getAttribute("href")).toContain("wa.me");
+    expect(screen.getByTestId("question-link").getAttribute("href")).toContain("wa.me");
   });
 
   it("renders custom questions as WhatsApp links", () => {
@@ -172,24 +157,25 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     expect(container.textContent).not.toContain("אילו לחמים יש השבוע?");
   });
 
-  it("escalates through WhatsApp on the greeting alone — never the link label (MEH-2603)", () => {
-    render(<WhatsAppQuestionChips producer={wa} />);
-    const href = decodeURIComponent(screen.getByTestId("escalation-link").getAttribute("href"));
-    // The label is what the customer taps; it must not become what the
-    // business receives. Asserted separately so a failure names the cause.
-    expect(href).not.toContain("שאלה אחרת");
-    expect(href).toBe(`https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה,\n\nהגעתי דרך מהמקור`);
+  // MEH-3460 (Sapir 20/11): «שאלה אחרת? צרו איתנו קשר» opened the same chat
+  // as the primary button above the block. Gone on every channel.
+  it("renders no «שאלה אחרת?» escalation row (MEH-3460)", () => {
+    const { container } = render(<WhatsAppQuestionChips producer={wa} />);
+    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
+    expect(container.textContent).not.toContain("שאלה אחרת");
+    // positive control: the block rendered its Q1 chip
+    expect(screen.getByTestId("question-link")).toBeInTheDocument();
   });
 
   it("renders no recipe-idea row, even on WhatsApp (MEH-2385)", () => {
     render(<WhatsAppQuestionChips producer={wa} />);
     expect(screen.queryByTestId("recipe-idea-link")).not.toBeInTheDocument();
-    expect(screen.getByTestId("escalation-link")).toBeInTheDocument();
+    expect(screen.getByTestId("question-link")).toBeInTheDocument();
   });
 
-  it("still fires both attribution calls on a WhatsApp escalation", () => {
+  it("fires both attribution calls on a WhatsApp chip", () => {
     render(<WhatsAppQuestionChips producer={wa} />);
-    fireEvent.click(screen.getByTestId("escalation-link"));
+    fireEvent.click(screen.getByTestId("question-link"));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
     expect(markWhatsAppClickedLocal).toHaveBeenCalledTimes(1);
   });
@@ -204,16 +190,17 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
       <WhatsAppQuestionChips producer={{ ...noMethod, custom_questions: ["יש חלה לשבת?"] }} />,
     );
     expect(screen.getByText(`יש חלה לשבת?${WA_SUFFIX}`).closest("a").getAttribute("href")).toContain("wa.me");
-    expect(screen.getByTestId("escalation-link").getAttribute("href")).toContain("wa.me");
   });
 });
 
 // ============================================================
-// the other six channels — zero wa.me, escalation alive
+// the other six channels — zero wa.me
 // ============================================================
 
-describe.each(NON_WHATSAPP)("$method-primary", ({ method, escalationHref }) => {
-  const producer = { ...baseProducer, primary_contact_method: method };
+describe.each(NON_WHATSAPP)("%s-primary", (method) => {
+  // offers_delivery → the #section-delivery jump renders: the anchor that
+  // keeps expectNoWhatsApp's control honest.
+  const producer = { ...baseProducer, primary_contact_method: method, offers_delivery: true };
 
   it("renders zero WhatsApp links anywhere in the block", () => {
     const { container } = render(<WhatsAppQuestionChips producer={producer} />);
@@ -238,16 +225,10 @@ describe.each(NON_WHATSAPP)("$method-primary", ({ method, escalationHref }) => {
     expect(screen.queryByTestId("recipe-idea-link")).not.toBeInTheDocument();
   });
 
-  it("keeps the escalation row, pointed at the primary channel", () => {
+  it("renders no escalation row (MEH-3460)", () => {
     render(<WhatsAppQuestionChips producer={producer} />);
-    expect(screen.getByTestId("escalation-link")).toHaveAttribute("href", escalationHref);
-  });
-
-  it("fires no WhatsApp attribution when the escalation is clicked", () => {
-    render(<WhatsAppQuestionChips producer={producer} />);
-    fireEvent.click(screen.getByTestId("escalation-link"));
-    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
-    expect(markWhatsAppClickedLocal).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
+    expect(screen.getByTestId("quick-answer-jump")).toBeInTheDocument();
   });
 });
 
@@ -255,83 +236,30 @@ describe.each(NON_WHATSAPP)("$method-primary", ({ method, escalationHref }) => {
 // details that only bite on one channel
 // ============================================================
 
-describe("escalation link mechanics", () => {
-  it("does not open tel: or mailto: in a new tab", () => {
-    // A new tab that immediately hands off to the OS dialer/mail client leaves
-    // a blank window behind on mobile.
-    for (const method of ["phone", "email"]) {
-      const { unmount } = render(
-        <WhatsAppQuestionChips producer={{ ...baseProducer, primary_contact_method: method }} />,
-      );
-      expect(screen.getByTestId("escalation-link")).not.toHaveAttribute("target");
-      unmount();
-    }
-  });
-
-  it("opens website / instagram / facebook / external_order in a new tab, safely", () => {
-    for (const method of ["website", "instagram", "facebook", "external_order"]) {
-      const { unmount } = render(
-        <WhatsAppQuestionChips producer={{ ...baseProducer, primary_contact_method: method }} />,
-      );
-      const link = screen.getByTestId("escalation-link");
-      expect(link).toHaveAttribute("target", "_blank");
-      expect(link).toHaveAttribute("rel", "noopener noreferrer");
-      unmount();
-    }
-  });
-
-  it("carries a subject on the mailto so the owner's inbox shows the intent", () => {
-    render(
-      <WhatsAppQuestionChips
-        producer={{ ...baseProducer, primary_contact_method: "email" }}
-      />,
-    );
-    const href = screen.getByTestId("escalation-link").getAttribute("href");
-    expect(decodeURIComponent(href)).toBe("mailto:hi@shikma.example.com?subject=שאלה דרך מהמקור");
-  });
-
-  it("hides the escalation when the declared channel has no backing field", () => {
-    // Not a regression of "escalation never disappears" — that lock is about
-    // never hiding it while a channel EXISTS. With email declared and no
-    // address stored there is nothing to link to, and a dead href is worse
-    // than no row.
-    const { container } = render(
-      <WhatsAppQuestionChips
-        producer={{
-          city: "צפת",
-          delivery_nationwide: true,
-          primary_contact_method: "email",
-          contact_email: "",
-        }}
-      />,
-    );
-    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
-    // …and the block still rendered its data answers, so this is a hidden row
-    // and not a dead component.
-    expect(screen.getAllByTestId("quick-answer-toggle").length).toBeGreaterThan(0);
-    // `expectNoWhatsApp` is deliberately NOT used here: its control demands at
-    // least one anchor, and this is the one case that legitimately renders
-    // none. Assert that directly instead — zero anchors is strictly stronger
-    // than "no anchor contains wa.me".
-    expect(allHrefs(container)).toHaveLength(0);
-  });
-
+describe("channel gate details", () => {
   it("hides the WhatsApp FALLBACK for Q1 when WhatsApp is not primary", () => {
     // With no delivery data Q1 has no in-page answer and used to fall back to a
     // wa.me link. A fallback that opens WhatsApp is a WhatsApp row like any
-    // other, so it moves behind the same gate.
-    const { container } = render(
+    // other, so it moves behind the same gate. payment_info keeps the block
+    // alive, so this is a hidden row and not a dead component.
+    render(
       <WhatsAppQuestionChips
-        producer={{ ...baseProducer, primary_contact_method: "website" }}
+        producer={{
+          ...baseProducer,
+          primary_contact_method: "website",
+          payment_info: { methods: ["bit"], timing: null, note: null },
+        }}
       />,
     );
     expect(screen.queryByTestId("question-link")).not.toBeInTheDocument();
-    expectNoWhatsApp(container);
+    expect(screen.getAllByTestId("quick-answer-toggle").length).toBe(1);
   });
 
-  it("still renders the whole block as null when no channel and no data exist", () => {
+  it("renders the whole block as null when there is nothing to answer", () => {
+    // MEH-3460: with the escalation row gone, a business with a channel but no
+    // data and no WhatsApp has no block at all — the button above is the way.
     const { container } = render(
-      <WhatsAppQuestionChips producer={{ name: "בלי כלום", primary_contact_method: "email" }} />,
+      <WhatsAppQuestionChips producer={{ ...baseProducer, primary_contact_method: "website" }} />,
     );
     expect(container.innerHTML).toBe("");
   });

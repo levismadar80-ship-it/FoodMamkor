@@ -33,13 +33,12 @@ const producer = {
 };
 
 describe("«שאלות נפוצות» is closed by default (19/11)", () => {
-  it("shows only the caption as a closed toggle — no question, no escalation", () => {
+  it("shows only the caption as a closed toggle — no question", () => {
     render(<WhatsAppQuestionChips producer={producer} />);
     const toggle = screen.getByTestId("question-chips-toggle");
     expect(toggle).toHaveTextContent("שאלות נפוצות");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByTestId("quick-answer-toggle")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
   });
 
   it("opens on a tap, and closes again", () => {
@@ -51,7 +50,8 @@ describe("«שאלות נפוצות» is closed by default (19/11)", () => {
       "אפשר משלוח לאזור שלי?",
       "איך משלמים?",
     ]);
-    expect(screen.getByTestId("escalation-link")).toBeInTheDocument();
+    // MEH-3460 (20/11): no «שאלה אחרת?» row — it repeated the button.
+    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByTestId("quick-answer-toggle")).not.toBeInTheDocument();

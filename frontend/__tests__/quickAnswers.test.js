@@ -236,17 +236,9 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     expect(links[0].getAttribute("href")).toContain("wa.me");
   });
 
-  // MEH-2154 changed the second half of this case ON PURPOSE. It used to assert
-  // `escalation-link` was ABSENT, because the escalation row was gated on a
-  // phone existing. The escalation row is the contact channel itself, so it now
-  // follows the declared primary channel and renders whenever ANY channel
-  // resolves — here, the order form. The WhatsApp half of the assertion is
-  // unchanged and is the half that still matters: zero wa.me rows.
-  //
-  // The replacement is stricter than what it replaces: `not.toBeInTheDocument`
-  // passes for a missing element AND for a broken render, while asserting the
-  // href value can only pass one way.
-  it("no phone but data present → answers render, zero WhatsApp items, escalation follows the order form", () => {
+  // MEH-3460: the «שאלה אחרת?» escalation row is gone (it opened the same
+  // channel as the primary button), so the answers are the whole block.
+  it("no phone but data present → answers render, zero WhatsApp items, no escalation row", () => {
     render(
       <WhatsAppQuestionChips
         producer={{
@@ -259,9 +251,7 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     );
     expect(screen.getAllByTestId("quick-answer-toggle")).toHaveLength(1); // delivery only (ordering = the button)
     expect(screen.queryByTestId("question-link")).not.toBeInTheDocument();
-    const escalation = screen.getByTestId("escalation-link");
-    expect(escalation).toHaveAttribute("href", "https://order.example.com");
-    expect(escalation.getAttribute("href")).not.toContain("wa.me");
+    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
   });
 
   it("no phone and no data → renders nothing", () => {
@@ -273,18 +263,13 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("escalation appears only when a phone exists", () => {
-    render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
-    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? צרו איתנו קשר");
-  });
-
   // MEH-2385 — the recipe-idea row (MEH-1462) and the category stock question
-  // are gone from the block. The escalation row is the positive control: a
+  // are gone from the block. The Q1 WhatsApp chip is the positive control: a
   // render that produced nothing would also pass the two negatives alone.
   it("renders neither the recipe-idea row nor a stock question, even with a phone", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה", categories: [{ name: "לחמים ואפייה" }] }} />);
     expect(screen.queryByTestId("recipe-idea-link")).not.toBeInTheDocument();
     expect(screen.queryByText("אילו לחמים יש השבוע?")).not.toBeInTheDocument();
-    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? צרו איתנו קשר");
+    expect(screen.getByTestId("question-link").getAttribute("href")).toContain("wa.me");
   });
 });

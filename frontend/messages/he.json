@@ -3997,8 +3997,6 @@
       "delivery_sub_day": "ימי משלוח: {day}",
       "delivery_pickup_only": "אין משלוחים — איסוף עצמי ב{city}",
       "delivery_pickup_only_nocity": "אין משלוחים — איסוף עצמי",
-      "escalation": "שאלה אחרת? צרו איתנו קשר",
-      "escalation_email_subject": "שאלה דרך מהמקור",
       "more_questions": "עוד שאלות",
       "wa_suffix": " (וואטסאפ)"
     }

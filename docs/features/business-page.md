@@ -14,7 +14,7 @@
 * `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` — כותרת, מצב חופשה.
 * `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, קבוצת WhatsApp.
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
-* `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quickAnswers.js` — «שאלות נפוצות» מתחת לכפתור הראשי. סגור כברירת מחדל; שאלת המשלוח קופצת לסעיף «משלוח» כשהוא מוצג (`hasDeliverySection`); אין «איך מזמינים?», כי היא רק חזרה על הכפתור (MEH-3460).
+* `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quickAnswers.js` — «שאלות נפוצות» מתחת לכפתור הראשי. סגור כברירת מחדל; שאלת המשלוח קופצת לסעיף «משלוח» כשהוא מוצג (`hasDeliverySection`); אין «איך מזמינים?» ואין «שאלה אחרת? צרו איתנו קשר», כי שתיהן רק חזרו על הכפתור (MEH-3460).
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים.
 * `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון.
 * `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. כשאין רכיבים ואין אחסון, אין שורה (MEH-3450).

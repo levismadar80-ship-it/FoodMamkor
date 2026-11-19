@@ -105,13 +105,6 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
     expect(markWhatsAppClickedLocal).toHaveBeenCalledTimes(links.length);
   });
 
-  it("fires on the escalation link", () => {
-    render(<WhatsAppQuestionChips producer={base} />);
-    fireEvent.click(screen.getByTestId("escalation-link"));
-    expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
-    expect(markWhatsAppClickedLocal).toHaveBeenCalledTimes(1);
-  });
-
   // THE DISCRIMINATING CASE. An answer-first disclosure opens no WhatsApp
   // conversation, so it must not be attributed. This is also what proves the
   // handlers sit on the <a> elements and not on a shared ancestor: an ancestor

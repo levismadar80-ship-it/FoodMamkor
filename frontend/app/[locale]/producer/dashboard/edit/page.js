@@ -619,7 +619,6 @@ function EditPageInner() {
       deliveryQuestion: tChips("delivery_to_my_area"),
       orderingQuestion: tChips("ordering_q"),
       paymentQuestion: tChips("payment_q"),
-      escalationQuestion: tChips("escalation"),
     });
     return { usesCustom, customCount, liveCount: items.length };
   })();

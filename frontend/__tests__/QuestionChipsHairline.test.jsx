@@ -66,8 +66,8 @@ describe("MEH-2385 — hairline only under a primary CTA", () => {
     expect(block.dataset.underCta).toBe("true");
     expect(block.className).toContain("mt-4");
     expect(block.className).not.toContain("border-t");
-    // Control: this cell really has the channel the rule is keyed on.
-    expect(screen.getByTestId("escalation-link")).toBeInTheDocument();
+    // Control: the block rendered its answer (MEH-3460: no escalation row).
+    expect(screen.getAllByTestId("quick-answer-toggle").length).toBeGreaterThan(0);
   });
 
   it("draws no rule when no channel resolves (no CTA above the block)", () => {
@@ -76,8 +76,7 @@ describe("MEH-2385 — hairline only under a primary CTA", () => {
     expect(block.dataset.underCta).toBe("false");
     expect(block.className).not.toContain("mt-4");
     // Control: the block rendered its answer, so this is a styled block and
-    // not a missing one; and there is genuinely no channel row to separate from.
+    // not a missing one.
     expect(screen.getAllByTestId("quick-answer-toggle").length).toBeGreaterThan(0);
-    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
   });
 });

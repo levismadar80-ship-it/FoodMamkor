@@ -75,7 +75,6 @@ const labelsFor = () => ({
   deliveryQuestion: chips.delivery_to_my_area,
   orderingQuestion: chips.ordering_q,
   paymentQuestion: chips.payment_q,
-  escalationQuestion: chips.escalation,
 });
 
 /**
@@ -275,8 +274,8 @@ describe("the annotations the dashboard renders", () => {
     expect(byId.delivery).toMatchObject({ answered: true, channel: null });
     // «איך מזמינים?» is gone (19/11): it only repeated the primary CTA.
     expect(byId.ordering).toBeUndefined();
-    // The escalation carries the channel it will actually open.
-    expect(byId.escalation).toMatchObject({ answered: false, channel: "email" });
+    // MEH-3460: no escalation row — it repeated the primary button.
+    expect(byId.escalation).toBeUndefined();
     // …and no WhatsApp-only rows survive for a non-WhatsApp business.
     expect(byId.recipe).toBeUndefined();
     expect(items.some((i) => i.source === "category")).toBe(false);
@@ -307,7 +306,7 @@ describe("the annotations the dashboard renders", () => {
     expect(customCount).toBe(0);
     // The stock question is gone from the public block, so the live list is
     // exactly the two answered rows + the escalation — nothing she never wrote.
-    expect(items.map((i) => i.source)).toEqual(["delivery", "escalation"]);
+    expect(items.map((i) => i.source)).toEqual(["delivery"]);
     expect(items.some((i) => i.source === "category")).toBe(false);
   });
 });

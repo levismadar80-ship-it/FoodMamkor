@@ -4001,8 +4001,6 @@
       "delivery_sub_day": "Delivery days: {day}",
       "delivery_pickup_only": "No delivery — self-pickup in {city}",
       "delivery_pickup_only_nocity": "No delivery — self-pickup",
-      "escalation": "Another question? Get in touch",
-      "escalation_email_subject": "A question via Mehamakor",
       "more_questions": "More questions",
       "wa_suffix": " (WhatsApp)"
     }

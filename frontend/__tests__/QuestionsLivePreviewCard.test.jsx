@@ -95,11 +95,11 @@ describe("live list — what the page is actually showing", () => {
     await openQuestionsCard();
 
     const items = await screen.findAllByTestId("live-question-item");
-    // MEH-2385: delivery + escalation (ordering left 19/11 — it repeated the
-    // primary CTA). The category stock question
+    // MEH-2385 / MEH-3460: delivery only (ordering and «שאלה אחרת?» left —
+    // both repeated the primary CTA). The category stock question
     // no longer renders on the public page, so it must not be listed here
     // either — the list's whole purpose is to be the page.
-    expect(items.length).toBe(2);
+    expect(items.length).toBe(1);
     expect(screen.getByTestId("live-questions-list").textContent).not.toContain(
       "אילו לחמים יש השבוע?",
     );
@@ -108,7 +108,8 @@ describe("live list — what the page is actually showing", () => {
   });
 
   it("annotates a data-answered row and a channel row differently", async () => {
-    mount(BASE);
+    // MEH-3460: her own question is the WhatsApp row now (no escalation row).
+    mount({ ...BASE, custom_questions: ["יש חלה לשבת?"] });
     await openQuestionsCard();
 
     const list = await screen.findByTestId("live-questions-list");
@@ -173,8 +174,8 @@ describe("accordion summary", () => {
     // …replaced by a count of what the page shows. Asserted by its stable
     // prefix rather than a rebuilt ICU string, so this cannot pass by
     // re-deriving the same formatting the component used.
-    expect(header).toContain("מוצגות");
-    expect(header).toContain("שאלות ברירת מחדל");
+    // MEH-3460: one live default now (delivery), so the singular form.
+    expect(header).toContain("מוצגת");
   });
 
   it("counts her custom questions once she has some", async () => {
