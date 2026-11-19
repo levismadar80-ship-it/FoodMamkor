@@ -60,6 +60,7 @@ from app.schemas.schemas import (
 from app.services.auth_emails import send_welcome_email
 from app.services.auth_notifications import (
     notify_admin_claim_link_requested,
+    notify_admin_draft_claimed,  # MEH-3410
     notify_producer_registered,
 )
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
@@ -344,7 +345,16 @@ def claim_producer(
     p_test = bool(producer.is_test or user.is_test)
     logger.info("producer_claim.claimed", producer_id=str(p_id), user_id=str(user.id))
     # Same three side effects as a self-registered draft (register_producer
-    # upgrade_path). The admin ping stays where it already is: at submit.
+    # upgrade_path), plus MEH-3410: the admin hears about the claim now, not
+    # only at submit — this is a draft SHE prepared and is waiting on.
+    background_tasks.add_task(
+        notify_admin_draft_claimed,
+        p_name,  # type: ignore[arg-type]
+        user.name,  # type: ignore[arg-type]
+        user.email,  # type: ignore[arg-type]
+        producer.city,  # type: ignore[arg-type]
+        test_cause=p_test,
+    )
     background_tasks.add_task(
         notify_producer_registered,
         p_name,  # type: ignore[arg-type]
