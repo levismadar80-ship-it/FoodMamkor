@@ -266,6 +266,7 @@ graph LR
     Admin[admin] --> ClearBlock[POST /admin/rescue/users/:id/clear-block<br/>🛡️ stamps users.rescue_block_cleared_at<br/>the no_show rows stay for the chunk-5 metrics<br/>MEH-3226: /admin/users row menu «שחרור חסימת סלים»]
 
     Dash --> MyOrders[GET /producers/me/rescue/orders<br/>👤 today's codes for this business, Israel clock<br/>NO buyer identity — four digits is the whole job<br/>carries pickup_end so «לא הגיע» can be gated client-side]
+    Dash --> Pilot[GET /producers/me/rescue/pilot-locations<br/>👤 MEH-2921: own pickup points in a pilot town, ids only]
     Dash --> Typical[GET · PUT /producers/me/rescue/typical-items<br/>👤 «בדרך כלל: …», one row per business, upsert in place<br/>bounded at 12 so the line stays one line on a phone]
     Admin --> Metrics[GET /admin/rescue/metrics?days=<br/>🛡️ offers/day · sell-through · no-show rate · repeat buyers · bags_donated MEH-2703<br/>rates are NULL not 0 when the denominator is zero]
     Dash --> MyOffers[GET /producers/me/rescue/offers<br/>👤 today's bags + leftover MEH-2703<br/>leftover = qty_left + no_show bags, 0 before pickup_end or when cancelled]

@@ -813,7 +813,7 @@ function LocationForm({
             value={form.city}
             onChange={handleCityChange}
           />
-          <span className="mt-1 block text-2xs text-fg-muted">{placeHint}</span>
+          {/* MEH-2931: the hint is said once, under the address it describes. */}
         </div>
         <div className="text-xs" data-testid="location-address-field">
           <label
@@ -1093,7 +1093,9 @@ function AddressState({ geocoded, unresolved, confirmLabel, lat, lng, name }) {
     return (
       <p
         data-testid="location-address-unresolved"
-        className="text-2xs text-fg-muted text-start"
+        role="status"
+        // MEH-2931: a fact the owner must act on, not a footnote.
+        className="text-xs text-warning-800 bg-warning-50 border border-warning-200 rounded-md px-3 py-2 text-start"
       >
         {tForm("address_unresolved")}
       </p>

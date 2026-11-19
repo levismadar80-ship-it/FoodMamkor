@@ -7019,6 +7019,15 @@ export const ListMyOrdersProducersMeRescueOrdersGetResponse = /*#__PURE__*/ zod.
 
 
 /**
+ * The caller's own pickup points whose town is in RESCUE_BAGS_CITIES.
+ * @summary My Pilot Locations
+ */
+export const MyPilotLocationsProducersMeRescuePilotLocationsGetResponse = /*#__PURE__*/ zod.object({
+  "location_ids": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.uuid())
+}).check(/*#__PURE__*/ zod.describe('MEH-2921: which of the caller\'s own pickup points sit in a pilot town.\n\nIds only — the tab already holds the points themselves (with their town)\nfrom GET /producers/me/locations, so the town list is never sent.'))
+
+
+/**
  * «בדרך כלל: …» as it stands. An empty list when never set — the read
  * never has to distinguish "no row" from "empty", only the first.
  * @summary Get Typical Items

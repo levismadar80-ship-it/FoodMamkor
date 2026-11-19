@@ -49,6 +49,7 @@ from app.routers import (
     product_order_offer,
     product_orders,
     rescue,
+    rescue_pilot,
     producers,
     registrations,
     page_freshness,
@@ -116,6 +117,8 @@ def _register_flagged_features(app: FastAPI) -> None:
     # MEH-2649: GET /producers/me/rescue/orders — the business's own counter
     # list, beside /producers/me/group-buys.
     app.include_router(rescue.me_router)
+    # MEH-2921: which of the business's pickup points are in a pilot town.
+    app.include_router(rescue_pilot.router)
     # MEH-3218: on-site ordering, stage 1 — the business's ordering settings.
     # Every route answers 404 while PRODUCT_ORDERS_ENABLED is off (the default).
     app.include_router(product_orders.me_router)

@@ -17259,6 +17259,24 @@
         "title": "RescueOwnerOrderOut",
         "type": "object"
       },
+      "RescuePilotLocationsOut": {
+        "description": "MEH-2921: which of the caller's own pickup points sit in a pilot town.\n\nIds only — the tab already holds the points themselves (with their town)\nfrom GET /producers/me/locations, so the town list is never sent.",
+        "properties": {
+          "location_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Location Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "location_ids"
+        ],
+        "title": "RescuePilotLocationsOut",
+        "type": "object"
+      },
       "RescueProducerSummary": {
         "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4's row has no\nplace to put them and serializing them would publish more than the screen\nneeds.",
         "properties": {
@@ -30514,6 +30532,33 @@
           }
         ],
         "summary": "List My Orders",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/pilot-locations": {
+      "get": {
+        "description": "The caller's own pickup points whose town is in RESCUE_BAGS_CITIES.",
+        "operationId": "my_pilot_locations_producers_me_rescue_pilot_locations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescuePilotLocationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "My Pilot Locations",
         "tags": [
           "rescue"
         ]

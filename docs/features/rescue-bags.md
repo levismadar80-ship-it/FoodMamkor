@@ -12,7 +12,7 @@
 * `frontend/app/[locale]/producer/dashboard/rescue/` ‏(+ `counter-card`)
 
 **קבצים מרכזיים**
-* `backend/app/routers/rescue.py`
+* `backend/app/routers/rescue.py` · `backend/app/routers/rescue_pilot.py` — אילו נקודות איסוף של העסק ביישוב פיילוט, לפני הטופס (MEH-2921)
 * `frontend/components/rescue/RescueSection.jsx`
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py`
 

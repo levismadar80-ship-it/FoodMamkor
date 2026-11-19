@@ -670,7 +670,7 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     expect((await screen.findByTestId("rescue-tab-notice")).textContent).toBe("המחיר חייב להיות חיובי");
   });
 
-  it("a failed «בדרך כלל יש בסל» save is shown in that box", async () => {
+  it("a failed «מה בדרך כלל בסל» save is shown in that box", async () => {
     put.mockRejectedValue({ response: { status: 500, data: {} } });
     render(<RescueTab />);
     await pointsLoaded();

@@ -8,6 +8,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { israelToday } from "@/lib/israel-date";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
+import { MyPilotLocationsProducersMeRescuePilotLocationsGetResponse as PilotLocationsOut } from "@/lib/generated/api.zod";
 import { detailToMessage, errorMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
@@ -97,6 +98,10 @@ export default function RescueTab() {
   // Known only after the list answers: the "add an address" box must not
   // flash while it loads, nor replace the form when the request failed.
   const [locationsLoaded, setLocationsLoaded] = useState(false);
+  // MEH-2921: which of those points are in a town where bags are open. null =
+  // not known (still loading, or the read failed): the form is not withheld
+  // on a guess, the server still refuses a town outside the pilot.
+  const [pilotIds, setPilotIds] = useState(/** @type {string[] | null} */ (null));
 
   // MEH-2703: today's bags with what was not collected. Reloaded with the
   // orders, so marking «לא הגיע» updates the leftover count at once.
@@ -138,6 +143,13 @@ export default function RescueTab() {
         setLocationsLoaded(true);
       })
       .catch(() => setLocations([]));
+    api
+      .get("/producers/me/rescue/pilot-locations")
+      .then((r) => {
+        const parsed = PilotLocationsOut.safeParse(r.data);
+        if (parsed.success) setPilotIds(parsed.data.location_ids.map(String));
+      })
+      .catch(() => {});
     api
       .get("/producers/me")
       .then((r) => {
@@ -220,10 +232,16 @@ export default function RescueTab() {
   // feeds both publish() and the leftover-group link (MEH-2702), so the link
   // always names the town the bags are actually published from.
   const exactLocation = locations.find((l) => l.location_precision === "exact");
+  // MEH-2921 (c): the point bags go out from — exact AND in a pilot town.
+  // An exact point outside the pilot used to get the full form and a refusal
+  // only after «לפרסם».
+  const publishLocation = locations.find(
+    (l) => l.location_precision === "exact" && (pilotIds === null || pilotIds.includes(String(l.id))),
+  );
 
   async function publish(dayOffset = 0) {
     clearNotice();
-    const location = exactLocation;
+    const location = publishLocation;
     if (!location) {
       setNotice("publish", t("no_location"));
       return;
@@ -377,7 +395,10 @@ export default function RescueTab() {
         ))}
       </div>
 
-      <div className="space-y-2" data-notice-scope="code">
+      {/* MEH-2921 (d): the code box is for handing a bag over. A business
+          that cannot publish and has no open order has nothing to hand over. */}
+      {(!gated || counters.reserved > 0) && (
+      <div className="space-y-2" data-notice-scope="code" data-testid="rescue-code-box">
         <div className="flex gap-2">
           <Input inline size="sm"
             value={code}
@@ -401,6 +422,7 @@ export default function RescueTab() {
         </div>
         {noticeAt(AT.code)}
       </div>
+      )}
 
       <section data-notice-scope="orders">
         <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title")}</h3>
@@ -526,6 +548,66 @@ export default function RescueTab() {
         </section>
       )}
 
+      {/* MEH-2935: what is in the bag and its allergens come BEFORE the publish
+          buttons — buyers see them before they reserve, so they are filled first. */}
+      <section className="border border-border rounded-md px-4 py-4 space-y-2" data-notice-scope="items" data-testid="rescue-items-section">
+        <h3 className="font-headline-md text-base font-black text-text">{t("items_title")}</h3>
+        <p className="font-body-sm text-sm text-fg-muted">{t("items_help")}</p>
+        <Input inline size="sm"
+          value={items}
+          onChange={(e) => setItems(e.target.value)}
+          aria-label={t("items_title")}
+          data-testid="rescue-items-input"
+          className="w-full"
+        />
+
+        {/* MEH-2752: what this business declares about ITS bag. Before this,
+            every bag showed one fixed sentence naming four allergens — a
+            statement about food nobody had made. */}
+        <div className="mt-3">
+          <p id="rescue-allergens-heading" className="font-body-sm text-sm text-text font-medium">
+            {t("allergens_title")}
+          </p>
+          <p className="font-body-sm text-sm text-fg-muted mb-2">{t("allergens_help")}</p>
+          <div
+            role="group"
+            aria-labelledby="rescue-allergens-heading"
+            data-testid="rescue-allergens-group"
+            className="flex flex-wrap gap-2"
+          >
+            {ALLERGEN_CODES.map((code) => {
+              const pressed = allergens.includes(code);
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() => setAllergens((prev) => toggleAllergen(prev, code))}
+                  data-testid={`rescue-allergen-${code}`}
+                  className={`inline-flex items-center min-h-touch rounded-full border px-4 py-2 font-body-sm text-sm transition focus-ring ${
+                    pressed
+                      ? "border-primary bg-green-50 text-primary"
+                      : "border-border text-fg-muted hover:border-primary"
+                  }`}
+                >
+                  {tProducts(`allergen_${code}`)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          onClick={saveItems}
+          data-testid="rescue-items-save"
+          variant="outlined"
+        >
+          {t("items_save")}
+        </Button>
+        {noticeAt(AT.items)}
+      </section>
+
       {/* MEH-2784: only the publish form is gated. Codes, orders and «לא הגיע»
           stay, so a business suspended with bags already out can still close
           its open orders. */}
@@ -552,11 +634,22 @@ export default function RescueTab() {
             {t("needs_address_cta")}
           </LocaleLink>
         </section>
+      ) : locationsLoaded && !publishLocation ? (
+        // MEH-2921 (c): exact point, but its town is not open for bags yet.
+        <section
+          className="border border-border rounded-md px-4 py-4 space-y-2"
+          data-testid="rescue-not-in-pilot"
+        >
+          <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
+          <p className="font-body-sm text-sm text-text">{t("not_in_pilot", { city: exactLocation?.city || "" })}</p>
+        </section>
       ) : (
         <section className="border border-border rounded-md px-4 py-4 space-y-3" data-notice-scope="publish">
           <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
           {/* MEH-2918: say it before the fields — publish 403s without it (rescue.py:340). */}
           {(emailUnverified || unverifiedHits > 0) && <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />}
+          {/* MEH-2921 (e): the numbers below are a suggestion, not a setting. */}
+          <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-publish-suggestion">{t("publish_suggestion")}</p>
           <div className="grid grid-cols-2 gap-3">
             <label className="font-body-sm text-sm">
               {t("field.qty")}
@@ -627,7 +720,7 @@ export default function RescueTab() {
             data-testid="rescue-publish-today"
             variant="primary" className="w-full"
           >
-            {t("publish_today", { price: shekels(Number(form.price) * 100) ?? form.price })}
+            {t("publish_today", { n: Number(form.qty_total) || 0, price: shekels(Number(form.price) * 100) ?? form.price })}
           </Button>
           <Button
             type="button"
@@ -635,69 +728,13 @@ export default function RescueTab() {
             data-testid="rescue-publish-tomorrow"
             variant="outlined" className="w-full"
           >
-            {t("publish_tomorrow", { n: form.qty_total })}
+            {/* MEH-2935: both buttons state the same two facts. */}
+            {t("publish_tomorrow", { n: Number(form.qty_total) || 0, price: shekels(Number(form.price) * 100) ?? form.price })}
           </Button>
           {noticeAt(AT.publish)}
         </section>
       )}
 
-      <section className="border border-border rounded-md px-4 py-4 space-y-2" data-notice-scope="items">
-        <h3 className="font-headline-md text-base font-black text-text">{t("items_title")}</h3>
-        <p className="font-body-sm text-sm text-fg-muted">{t("items_help")}</p>
-        <Input inline size="sm"
-          value={items}
-          onChange={(e) => setItems(e.target.value)}
-          aria-label={t("items_title")}
-          data-testid="rescue-items-input"
-          className="w-full"
-        />
-
-        {/* MEH-2752: what this business declares about ITS bag. Before this,
-            every bag showed one fixed sentence naming four allergens — a
-            statement about food nobody had made. */}
-        <div className="mt-3">
-          <p id="rescue-allergens-heading" className="font-body-sm text-sm text-text font-medium">
-            {t("allergens_title")}
-          </p>
-          <p className="font-body-sm text-sm text-fg-muted mb-2">{t("allergens_help")}</p>
-          <div
-            role="group"
-            aria-labelledby="rescue-allergens-heading"
-            data-testid="rescue-allergens-group"
-            className="flex flex-wrap gap-2"
-          >
-            {ALLERGEN_CODES.map((code) => {
-              const pressed = allergens.includes(code);
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  aria-pressed={pressed}
-                  onClick={() => setAllergens((prev) => toggleAllergen(prev, code))}
-                  data-testid={`rescue-allergen-${code}`}
-                  className={`inline-flex items-center min-h-touch rounded-full border px-4 py-2 font-body-sm text-sm transition focus-ring ${
-                    pressed
-                      ? "border-primary bg-green-50 text-primary"
-                      : "border-border text-fg-muted hover:border-primary"
-                  }`}
-                >
-                  {tProducts(`allergen_${code}`)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          onClick={saveItems}
-          data-testid="rescue-items-save"
-          variant="outlined"
-        >
-          {t("items_save")}
-        </Button>
-        {noticeAt(AT.items)}
-      </section>
 
       {/* MEH-2703: only once the window closed and something was not
           collected; before that a bag may still be reserved or picked up. */}
