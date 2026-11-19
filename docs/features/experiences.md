@@ -10,12 +10,14 @@
 **קבצים מרכזיים**
 * `backend/app/routers/experiences.py`
 * `backend/app/services/experience_moderation.py` — בדיקת AI, נכשלת פתוח בלי `ANTHROPIC_API_KEY`.
+* `backend/app/services/experience_sessions.py` — מועדים של סדנה חוזרת (MEH-3441): עד 12 קדימה, ומקומות, המתנה ורישום כפול לכל מועד. סדנה חוזרת בלי מועדים נשארת מאגר מקומות אחד.
 * `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת החוויות פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ב-`/experiences/mine` (MEH-3438). הטסט `frontend/__tests__/NewExperienceDashboardPage.test.jsx`.
 
 **Flags.** אין.
 
 **טסטים**
 * `tests/test_experiences.py` · `tests/test_experience_moderation_unit.py`
+* `tests/test_meh3441_session_signups.py` — **השומר** של המועדים: מועד מלא לצד מועד פנוי, אותה כתובת בשני מועדים, הסרת מועד מבטלת את ההרשמות שלו.
 * `tests/test_meh2602_experience_category.py` · `tests/test_meh1176_experience_email_notifications.py` · `tests/test_meh3219_b12_recurring_experience.py`
 
 **מזהי רישום שזה מכסה.** `experiences`.

@@ -89,12 +89,15 @@ def _message(
 ) -> RegistrantEmail:
     place = _event_place(item) if isinstance(item, Event) else _experience_place(item)
     past_first = _is_recurring(item) and not _is_upcoming(item)
+    day, at = item.event_date, item.event_time
+    if reg.session_date is not None:  # MEH-3441: the date she booked
+        day, at, past_first = reg.session_date, reg.session_time, False
     return RegistrantEmail(
         title=item.title or "",  # type: ignore[arg-type]
         # MEH-2871: a recurring experience's event_date is its FIRST occasion;
         # once that is past the email names no date rather than a past one.
-        date_text="" if past_first else _date_text(item.event_date),  # type: ignore[arg-type]
-        time_text="" if past_first else _time_text(item.event_time),  # type: ignore[arg-type]
+        date_text="" if past_first else _date_text(day),  # type: ignore[arg-type]
+        time_text="" if past_first else _time_text(at),  # type: ignore[arg-type]
         place=place,
         host_name=host_name,
         cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
@@ -105,6 +108,16 @@ def _message(
 _ACTIVE_SIGNUP = ("registered", "waitlisted")
 
 
+def _not_past_date() -> Any:
+    """MEH-3441: a sign-up for a date that has passed took place — it is
+    neither cancelled nor mailed, and its booking stays. Shared by the cancel
+    and the admin's pre-block count (MEH-3375), so the two agree."""
+    return or_(
+        Registration.session_date.is_(None),
+        Registration.session_date >= israel_today(),
+    )
+
+
 def _active_registrations(
     db: Session, column: Any, ids: list[Any]
 ) -> list[Registration]:
@@ -113,7 +126,11 @@ def _active_registrations(
     return (
         db.query(Registration)
         # MEH-3314: a waitlisted visitor is told the item is off too.
-        .filter(column.in_(ids), Registration.status.in_(_ACTIVE_SIGNUP))
+        .filter(
+            column.in_(ids),
+            Registration.status.in_(_ACTIVE_SIGNUP),
+            _not_past_date(),
+        )
         .with_for_update()
         .all()
     )
@@ -225,6 +242,7 @@ def count_open_bookings(db: Session, producer: Producer) -> int:
                 .filter(
                     column.in_(ids),
                     Registration.status.in_(_ACTIVE_SIGNUP),
+                    _not_past_date(),
                 )
                 .count()
             )
@@ -458,6 +476,43 @@ def cancel_item_signups(
     )
 
 
+def cancel_session_signups(
+    db: Session,
+    ex: Experience,
+    keys: list[tuple[date, time]],
+    background_tasks: BackgroundTasks,
+    test_cause: bool,
+) -> int:
+    """MEH-3441: the owner removed upcoming dates of a recurring workshop —
+    cancel the sign-ups (and waitlist) of those dates only, one email each,
+    the same email as a cancelled workshop."""
+    if not keys:
+        return 0
+    host_name = _host_name_for(ex)
+    regs: list[tuple[Registration, Event | Experience, str]] = [
+        (r, ex, host_name)
+        for r in (
+            db.query(Registration)
+            .filter(
+                Registration.experience_id == ex.id,
+                Registration.status.in_(("registered", "waitlisted")),
+                or_(
+                    *(
+                        (Registration.session_date == d)
+                        & (Registration.session_time == t)
+                        for d, t in keys
+                    )
+                ),
+            )
+            .with_for_update()
+            .all()
+        )
+    ]
+    return _cancel_and_queue(
+        db, background_tasks, regs, send_registrant_cancelled, test_cause
+    )
+
+
 def notify_item_moved(
     db: Session,
     item: Event | Experience,
@@ -475,7 +530,13 @@ def notify_item_moved(
     host_name = _host_name_for(item)
     regs = (
         db.query(Registration)
-        .filter(_column_for(item) == item.id, Registration.status == "registered")
+        .filter(
+            _column_for(item) == item.id,
+            Registration.status == "registered",
+            # MEH-3441: a sign-up for a listed date keeps its own date when
+            # the workshop's first date moves, so it is not told it moved.
+            Registration.session_date.is_(None),
+        )
         .all()
     )
     for reg in regs:
