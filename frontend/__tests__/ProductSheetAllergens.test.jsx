@@ -4,6 +4,8 @@ import he from "../messages/he.json";
 
 /**
  * MEH-2662 chunk 3 — ingredients + allergens on the public product sheet.
+ * MEH-3439: «מכיל: …» / «עלול להכיל: …», and an «לא ציין» line when the
+ * owner declared no allergens (contains 0 × may-contain 0).
  * Cells: (no ingredients / ingredients) × (allergens 0 / 1 / many), plus an
  * unknown code and a blank ingredients string. Keys resolve from the real
  * he.json so a missing or renamed key renders the raw key and fails.
@@ -12,10 +14,11 @@ const lookup = (full) => full.split(".").reduce((o, k) => (o == null ? undefined
 
 vi.mock("next-intl", () => ({
   useLocale: () => "he",
-  useTranslations: (ns) => (key) => {
+  useTranslations: (ns) => (key, vals) => {
     const full = ns ? `${ns}.${key}` : key;
     const v = lookup(full);
-    return typeof v === "string" ? v : full;
+    if (typeof v !== "string") return full;
+    return v.replace(/\{(\w+)\}/g, (m, k) => (vals && k in vals ? String(vals[k]) : m));
   },
 }));
 
@@ -47,44 +50,65 @@ const producer = { id: 7, name: "מאפיית השדה", phone: "0501234567" };
 const renderSheet = (extra) =>
   render(<ProductSheet product={{ id: 11, name: "לחם כוסמין", ...extra }} producer={producer} onClose={vi.fn()} />);
 
-describe("ProductSheet — ingredients + allergens (MEH-2662)", () => {
-  it("neither filled: no block, no declaration line", () => {
+const UNDECLARED = "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.";
+
+describe("ProductSheet — ingredients + allergens (MEH-2662 · MEH-3439)", () => {
+  it("nothing declared: the «לא ציין» line, no declaration line", () => {
     renderSheet({});
-    expect(screen.queryByTestId("product-sheet-facts")).toBeNull();
+    expect(screen.getByTestId("product-sheet-allergens-undeclared")).toHaveTextContent(UNDECLARED);
+    expect(screen.queryByTestId("product-sheet-allergens")).toBeNull();
+    expect(screen.queryByTestId("product-sheet-may-contain")).toBeNull();
     expect(screen.queryByText("לפי הצהרת בית העסק")).toBeNull();
   });
 
-  it("blank ingredients and an empty list count as not filled", () => {
-    renderSheet({ ingredients: "   ", allergens: [] });
-    expect(screen.queryByTestId("product-sheet-facts")).toBeNull();
+  it("blank ingredients and empty lists count as not filled", () => {
+    renderSheet({ ingredients: "   ", allergens: [], may_contain: [] });
+    expect(screen.queryByTestId("product-sheet-ingredients")).toBeNull();
+    expect(screen.getByTestId("product-sheet-allergens-undeclared")).toBeInTheDocument();
+    expect(screen.queryByTestId("product-sheet-facts-declared")).toBeNull();
   });
 
-  it("ingredients only: heading + text + declaration, no allergens line", () => {
+  it("ingredients only: ingredients + «לא ציין» + declaration", () => {
     renderSheet({ ingredients: "קמח כוסמין מלא, מים, מלח" });
     expect(screen.getByRole("heading", { name: "רכיבים" })).toBeInTheDocument();
     expect(screen.getByTestId("product-sheet-ingredients")).toHaveTextContent("קמח כוסמין מלא, מים, מלח");
-    expect(screen.queryByTestId("product-sheet-allergens")).toBeNull();
+    expect(screen.getByTestId("product-sheet-allergens-undeclared")).toBeInTheDocument();
     expect(screen.getByTestId("product-sheet-facts-declared")).toHaveTextContent("לפי הצהרת בית העסק");
   });
 
-  it("one allergen, no ingredients: allergens line + declaration", () => {
+  it("one allergen: «מכיל: גלוטן», no «לא ציין»", () => {
     renderSheet({ allergens: ["gluten"] });
     expect(screen.getByRole("heading", { name: "אלרגנים" })).toBeInTheDocument();
-    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^גלוטן$/);
-    expect(screen.queryByTestId("product-sheet-ingredients")).toBeNull();
+    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^מכיל: גלוטן$/);
+    expect(screen.queryByTestId("product-sheet-allergens-undeclared")).toBeNull();
     expect(screen.getAllByTestId("product-sheet-facts-declared")).toHaveLength(1);
   });
 
   it("many allergens + ingredients: both blocks, one declaration line", () => {
     renderSheet({ ingredients: "קמח, שומשום", allergens: ["gluten", "sesame", "milk"] });
-    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent("גלוטן, שומשום, חלב");
+    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent("מכיל: גלוטן, שומשום, חלב");
     expect(screen.getByTestId("product-sheet-ingredients")).toBeInTheDocument();
     expect(screen.getAllByTestId("product-sheet-facts-declared")).toHaveLength(1);
   });
 
+  it("may-contain only (one): «עלול להכיל: אגוזים», no «מכיל», no «לא ציין»", () => {
+    renderSheet({ may_contain: ["tree_nuts"] });
+    expect(screen.getByTestId("product-sheet-may-contain")).toHaveTextContent(/^עלול להכיל: אגוזים$/);
+    expect(screen.queryByTestId("product-sheet-allergens")).toBeNull();
+    expect(screen.queryByTestId("product-sheet-allergens-undeclared")).toBeNull();
+    expect(screen.getByTestId("product-sheet-facts-declared")).toBeInTheDocument();
+  });
+
+  it("both lists (many): two lines, an overlapping code shown only under «מכיל»", () => {
+    renderSheet({ allergens: ["milk", "fava_beans"], may_contain: ["milk", "tree_nuts", "sesame"] });
+    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent("מכיל: חלב, פול");
+    expect(screen.getByTestId("product-sheet-may-contain")).toHaveTextContent(/^עלול להכיל: אגוזים, שומשום$/);
+  });
+
   it("an unknown code is dropped, never shown as a raw key", () => {
-    renderSheet({ allergens: ["gluten", "pineapple"] });
-    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^גלוטן$/);
+    renderSheet({ allergens: ["gluten", "pineapple"], may_contain: ["pineapple"] });
+    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^מכיל: גלוטן$/);
+    expect(screen.queryByTestId("product-sheet-may-contain")).toBeNull();
     expect(screen.queryByText(/pineapple/)).toBeNull();
   });
 });

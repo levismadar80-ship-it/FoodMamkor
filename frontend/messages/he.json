@@ -869,6 +869,9 @@
           "facts": {
             "ingredients_heading": "רכיבים",
             "allergens_heading": "אלרגנים",
+            "contains": "מכיל: {list}",
+            "may_contain": "עלול להכיל: {list}",
+            "allergens_undeclared": "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.",
             "declared_by_business": "לפי הצהרת בית העסק"
           },
           "sheet_close_aria": "סגירת פרטי המוצר",
@@ -6055,6 +6058,9 @@
         "allergen_mustard": "חרדל",
         "allergen_sulphites": "סולפיטים",
         "allergen_lupin": "תורמוס",
+        "allergen_fava_beans": "פול",
+        "may_contain_heading": "עלול להכיל",
+        "may_contain_helper": "סמנו מה עלול להגיע למוצר מכלים או ממשטח משותפים.",
         "image_label": "תמונת מוצר",
         "image_alt": "תמונה",
         "image_remove": "הסר",

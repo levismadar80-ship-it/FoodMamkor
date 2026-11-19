@@ -392,6 +392,7 @@ _OWNER_DECLARED_FLAGS = {
     # food — same rule as the diet flags.
     "ingredients",
     "allergens",
+    "may_contain",  # MEH-3439
 }
 
 _NOT_EDITABLE = "אפשר לערוך מוצרים מהאדמין רק בטיוטה שעוד לא שויכה לבעלת העסק"

@@ -344,6 +344,13 @@ export default function ProductSheet({
   // than rendered as a raw key.
   const allergenCodes = (product.allergens || []).filter((c) => ALLERGEN_CODES.includes(c));
   const hasAllergens = allergenCodes.length > 0;
+  // MEH-3439: «עלול להכיל» — same closed list; a code already in «מכיל» is
+  // never repeated (the backend drops it too).
+  const mayContainCodes = (product.may_contain || []).filter(
+    (c) => ALLERGEN_CODES.includes(c) && !allergenCodes.includes(c),
+  );
+  const hasMayContain = mayContainCodes.length > 0;
+  const allergenList = (codes) => codes.map((code) => t(`settings.products.form.allergen_${code}`)).join(", ");
   const hasIngredients = typeof product.ingredients === "string" && product.ingredients.trim() !== "";
 
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
@@ -611,42 +618,53 @@ export default function ProductSheet({
 
             {/* MEH-2662: what the owner declared about the food. Plain text,
                 no icons or pills (pills here mean diet tags); the allergen list
-                is a sentence so it never reads as a filterable badge row. One
-                «לפי הצהרת בית העסק» line under whichever block(s) render. */}
-            {(hasIngredients || hasAllergens) && (
-              <div className="space-y-2" data-testid="product-sheet-facts">
-                {hasIngredients && (
-                  <div>
-                    <h3 className="text-xs font-medium text-fg-muted">
-                      {t("producer.detail.sections.products.facts.ingredients_heading")}
-                    </h3>
-                    <p
-                      className="whitespace-pre-line text-sm leading-relaxed text-text"
-                      data-testid="product-sheet-ingredients"
-                    >
-                      {product.ingredients}
-                    </p>
-                  </div>
-                )}
+                is a sentence so it never reads as a filterable badge row.
+                MEH-3439: «מכיל: …» / «עלול להכיל: …», as on Israeli labels;
+                when the owner declared no allergens at all the sheet says so
+                instead of staying silent — silence reads as "none". One
+                «לפי הצהרת בית העסק» line under whatever the owner declared. */}
+            <div className="space-y-2" data-testid="product-sheet-facts">
+              {hasIngredients && (
+                <div>
+                  <h3 className="text-xs font-medium text-fg-muted">
+                    {t("producer.detail.sections.products.facts.ingredients_heading")}
+                  </h3>
+                  <p
+                    className="whitespace-pre-line text-sm leading-relaxed text-text"
+                    data-testid="product-sheet-ingredients"
+                  >
+                    {product.ingredients}
+                  </p>
+                </div>
+              )}
+              <div>
+                <h3 className="text-xs font-medium text-fg-muted">
+                  {t("producer.detail.sections.products.facts.allergens_heading")}
+                </h3>
+                {/* One label source with the owner form on purpose: the
+                    public name must be the exact word the owner ticked. */}
                 {hasAllergens && (
-                  <div>
-                    <h3 className="text-xs font-medium text-fg-muted">
-                      {t("producer.detail.sections.products.facts.allergens_heading")}
-                    </h3>
-                    <p className="text-sm text-text" data-testid="product-sheet-allergens">
-                      {/* One label source with the owner form on purpose: the
-                          public name must be the exact word the owner ticked. */}
-                      {allergenCodes
-                        .map((code) => t(`settings.products.form.allergen_${code}`))
-                        .join(", ")}
-                    </p>
-                  </div>
+                  <p className="text-sm text-text" data-testid="product-sheet-allergens">
+                    {t("producer.detail.sections.products.facts.contains", { list: allergenList(allergenCodes) })}
+                  </p>
                 )}
+                {hasMayContain && (
+                  <p className="text-sm text-text" data-testid="product-sheet-may-contain">
+                    {t("producer.detail.sections.products.facts.may_contain", { list: allergenList(mayContainCodes) })}
+                  </p>
+                )}
+                {!hasAllergens && !hasMayContain && (
+                  <p className="text-sm text-text" data-testid="product-sheet-allergens-undeclared">
+                    {t("producer.detail.sections.products.facts.allergens_undeclared")}
+                  </p>
+                )}
+              </div>
+              {(hasIngredients || hasAllergens || hasMayContain) && (
                 <p className="text-xs text-fg-muted" data-testid="product-sheet-facts-declared">
                   {t("producer.detail.sections.products.facts.declared_by_business")}
                 </p>
-              </div>
-            )}
+              )}
+            </div>
 
             {numericPrice && (
               <p className="font-medium text-accent" data-testid="product-sheet-price">

@@ -5209,6 +5209,21 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -14985,6 +15000,21 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -15605,6 +15635,20 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -15777,6 +15821,21 @@
               }
             ],
             "title": "Is Vegetarian"
+          },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
           },
           "name": {
             "anyOf": [

@@ -103,6 +103,10 @@ class Product(Base):
     position = Column(Integer, nullable=True)
     group_id = Column(String(36), nullable=True)
     allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
+    # MEH-3439: «עלול להכיל» — cross-contact codes, same closed list. NULL =
+    # not filled, never "no cross-contact". A code in `allergens` is never
+    # stored here too (ProductCreate/Update drop it: «מכיל» wins).
+    may_contain: Column[list[str]] = Column(ARRAY(Text), nullable=True)
     # MEH-3218: on-site ordering (parent MEH-3216). The PRICE stays where it
     # is: `price_min == price_max` is an exact price, a real range means the
     # final price is set at confirmation. No second price column, so one owner

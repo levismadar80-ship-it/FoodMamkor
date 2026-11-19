@@ -37,6 +37,8 @@ async function openAddForm() {
 }
 
 const chip = (label) => within(screen.getByTestId("product-allergens-group")).getByRole("button", { name: label });
+// MEH-3439: the «עלול להכיל» group.
+const mayChip = (label) => within(screen.getByTestId("product-may-contain-group")).getByRole("button", { name: label });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,7 +49,7 @@ describe("allergen code list", () => {
     const py = readFileSync(resolve(__dirname, "../../backend/app/allergens.py"), "utf8");
     const block = py.slice(py.indexOf("ALLERGEN_CODES"), py.indexOf(")", py.indexOf("ALLERGEN_CODES")));
     const backend = [...block.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
-    expect(backend).toHaveLength(14);
+    expect(backend).toHaveLength(15); // MEH-3439: EU 14 + fava beans
     expect(ALLERGEN_CODES).toEqual(backend);
   });
 
@@ -65,11 +67,11 @@ describe("allergen code list", () => {
 });
 
 describe("add form", () => {
-  it("shows the ingredients field with its example and the 14 allergen chips", async () => {
+  it("shows the ingredients field with its example and the 15 allergen chips", async () => {
     await openAddForm();
     expect(screen.getByPlaceholderText(F.ingredients_placeholder)).toBeInTheDocument();
     expect(screen.getByText(F.allergens_helper)).toBeInTheDocument();
-    expect(within(screen.getByTestId("product-allergens-group")).getAllByRole("button")).toHaveLength(14);
+    expect(within(screen.getByTestId("product-allergens-group")).getAllByRole("button")).toHaveLength(15);
   });
 
   it("nothing filled → both sent as null", async () => {
@@ -148,3 +150,40 @@ describe("edit form", () => {
     );
   });
 });
+
+describe("«עלול להכיל» (MEH-3439)", () => {
+  it("shows its heading, helper and 15 chips; nothing ticked → sent as null", async () => {
+    await openAddForm();
+    expect(screen.getByText(F.may_contain_heading)).toBeInTheDocument();
+    expect(screen.getByText(F.may_contain_helper)).toBeInTheDocument();
+    expect(within(screen.getByTestId("product-may-contain-group")).getAllByRole("button")).toHaveLength(15);
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith("/producers/me/products", expect.objectContaining({ may_contain: null }));
+  });
+
+  it("many ticked are sent in canonical order", async () => {
+    await openAddForm();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(mayChip(F.allergen_sesame));
+    fireEvent.click(mayChip(F.allergen_tree_nuts));
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ may_contain: ["tree_nuts", "sesame"] }),
+    );
+  });
+
+  it("a code is in one group at a time: ticking «מכיל» un-ticks «עלול להכיל» and back", async () => {
+    await openAddForm();
+    fireEvent.click(mayChip(F.allergen_milk));
+    expect(mayChip(F.allergen_milk)).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(chip(F.allergen_milk));
+    expect(chip(F.allergen_milk)).toHaveAttribute("aria-pressed", "true");
+    expect(mayChip(F.allergen_milk)).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(mayChip(F.allergen_milk));
+    expect(chip(F.allergen_milk)).toHaveAttribute("aria-pressed", "false");
+    expect(mayChip(F.allergen_milk)).toHaveAttribute("aria-pressed", "true");
+  });
+});
+

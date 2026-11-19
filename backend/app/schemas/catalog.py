@@ -22,7 +22,7 @@ from pydantic import (
 )
 
 from app.limits import MAX_PRODUCTS  # MEH-2312
-from app.allergens import normalize_allergens
+from app.allergens import drop_contained, normalize_allergens
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
     DeliveryDayField,
@@ -521,8 +521,10 @@ class ProductCreate(BaseModel):
     allergens: list[str] | None = Field(
         None, max_length=50
     )  # 14 codes + headroom for dupes
+    # MEH-3439: «עלול להכיל», same closed list and cap.
+    may_contain: list[str] | None = Field(None, max_length=50)
 
-    @field_validator("allergens")
+    @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
@@ -542,6 +544,13 @@ class ProductCreate(BaseModel):
     def check_price_max_gte_min(self) -> Self:
         if self.price_max is not None and self.price_max < self.price_min:
             raise ValueError("price_max must be greater than or equal to price_min")
+        return self
+
+    # MEH-3439: a code both «מכיל» and «עלול להכיל» is a contradiction;
+    # «מכיל» is the stronger claim and wins.
+    @model_validator(mode="after")
+    def _contains_wins(self) -> Self:
+        self.may_contain = drop_contained(self.allergens, self.may_contain)
         return self
 
 
@@ -565,8 +574,10 @@ class ProductUpdate(BaseModel):
     allergens: list[str] | None = Field(
         None, max_length=50
     )  # 14 codes + headroom for dupes
+    # MEH-3439: «עלול להכיל», same closed list and cap.
+    may_contain: list[str] | None = Field(None, max_length=50)
 
-    @field_validator("allergens")
+    @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
@@ -592,6 +603,13 @@ class ProductUpdate(BaseModel):
             raise ValueError("price_max must be greater than or equal to price_min")
         return self
 
+    # MEH-3439: same rule as ProductCreate, when both are sent together.
+    @model_validator(mode="after")
+    def _contains_wins(self) -> Self:
+        if self.may_contain is not None:
+            self.may_contain = drop_contained(self.allergens, self.may_contain)
+        return self
+
 
 class ProductOut(BaseModel):
     id: UUID
@@ -610,6 +628,7 @@ class ProductOut(BaseModel):
     is_low_carb: bool = False  # MEH-1934
     ingredients: str | None = None  # MEH-2662
     allergens: list[str] | None = None  # MEH-2662
+    may_contain: list[str] | None = None  # MEH-3439
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
 
