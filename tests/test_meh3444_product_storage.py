@@ -8,9 +8,13 @@ Cells:    not sent → null · text stored · blank → null · markup bleached 
           over 300 chars → 422 · PUT unset keeps / null clears · admin draft
           drops it · public producer detail carries it.
 """
+from unittest.mock import patch
+
 from app.models.models import Product
 from conftest import auth_header, make_producer, make_user
 from test_meh2662_product_ingredients_allergens import _create, _owner
+from test_meh3261_approved_edit_moderation import MODERATE, NOTIFY, _product
+from test_meh3261_approved_edit_moderation import _owner as _approved_owner
 
 STORAGE = "בקירור, עד 10 ימים מיום הקנייה"
 
@@ -41,8 +45,7 @@ def test_markup_is_bleached(client, db):
     user, _ = _owner(db)
     r = _create(client, user, storage_info="<script>x()</script>בקירור")
     assert r.status_code == 201, r.text
-    assert "<script>" not in (r.json()["storage_info"] or "")
-    assert "בקירור" in r.json()["storage_info"]
+    assert r.json()["storage_info"] == "x()בקירור"
 
 
 def test_over_300_chars_is_422(client, db):
@@ -81,3 +84,19 @@ def test_public_detail_carries_storage_info(client, db):
     r = client.get(f"/producers/{producer.id}")
     assert r.status_code == 200, r.text
     assert [p["storage_info"] for p in r.json()["products"]] == [STORAGE]
+
+
+
+def test_approved_business_edit_is_ai_checked(client, db):
+    # MEH-3261: public product text on an approved business goes through the
+    # AI check — «אחסון ותוקף» is public text too.
+    user, _ = _approved_owner(db)
+    with (
+        patch(MODERATE, return_value="APPROVED"),
+        patch("app.routers.alerts.fire_alerts"),
+    ):
+        pid = _product(client, user).json()["id"]
+    with patch(MODERATE, return_value="APPROVED") as ai, patch(NOTIFY):
+        r = client.put(f"/producers/me/products/{pid}", json={"storage_info": STORAGE}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    ai.assert_called_once_with({"storage_info": STORAGE}, "product_content")

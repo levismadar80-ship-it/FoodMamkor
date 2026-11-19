@@ -113,6 +113,14 @@ describe("ProductSheet — ingredients + allergens (MEH-2662 · MEH-3439)", () =
     expect(screen.getByText("לפי הצהרת בית העסק")).toBeInTheDocument();
   });
 
+  it("storage sits after the allergens and before the declaration line", () => {
+    renderSheet({ allergens: ["milk"], storage_info: "בקירור" });
+    const text = screen.getByTestId("product-sheet-facts").textContent;
+    expect(text.indexOf("מכיל: חלב")).toBeGreaterThan(-1);
+    expect(text.indexOf("אחסון ותוקף")).toBeGreaterThan(text.indexOf("מכיל: חלב"));
+    expect(text.indexOf("לפי הצהרת בית העסק")).toBeGreaterThan(text.indexOf("בקירור"));
+  });
+
   it("blank storage text is not shown", () => {
     renderSheet({ storage_info: "  " });
     expect(screen.queryByTestId("product-sheet-storage")).toBeNull();
