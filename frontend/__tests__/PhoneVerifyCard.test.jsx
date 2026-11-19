@@ -464,6 +464,8 @@ describe("PhoneVerifyCard — «sent» only after a send (MEH-2926)", () => {
     const line = screen.getByTestId("phone-verify-code-sent");
     expect(line).toHaveTextContent(T("code_sent"));
     expect(line).toHaveAttribute("role", "status");
+    // The «a tap will send» line gives way to «we sent», not both at once.
+    expect(screen.queryByText(T("description"))).toBeNull();
   });
 
   it("after a failed send: still no «sent» line", async () => {

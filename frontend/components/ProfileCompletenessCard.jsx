@@ -283,7 +283,8 @@ export default function ProfileCompletenessCard({ producer, footer = null }) {
   // MEH-2926: once the page is sent for review, «השלב הבא: …» is no longer
   // true — the next step is ours. The pending banner above says so; the
   // checklist stays so she can still improve the page while she waits.
-  const awaitingReview = producer.status === "pending";
+  // A pending page with requested changes is back in her hands: keep it.
+  const awaitingReview = producer.status === "pending" && !producer.requested_changes;
 
   // Complete → collapse to a single confirmation line (the card never fully
   // disappears, per the locked design decision).

@@ -183,7 +183,7 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
       </p>
       {/* MEH-2926: «נשלח קוד» only once a code has actually gone out. Before
           the tap the line says what the tap will do. */}
-      {!reverify && (
+      {!reverify && !(codeSent && !userFlow) && (
         <p className="text-xs text-fg-muted mb-3">{userFlow ? description : t("description")}</p>
       )}
       {codeSent && !userFlow && (
