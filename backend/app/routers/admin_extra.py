@@ -44,6 +44,7 @@ from app.models.models import (
     ProducerNameChangeRequest,
     ProducerRecipe,
 )
+from app.schemas.admin_block import BlockImpactOut  # MEH-3375
 from app.schemas.schemas import (
     CategoryCreate,
     CategoryIn,
@@ -315,12 +316,12 @@ def block_user(
     }
 
 
-@router.get("/users/{user_id}/block-impact", response_model=None)
+@router.get("/users/{user_id}/block-impact", response_model=BlockImpactOut)
 def block_impact(
     user_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-) -> dict[str, Any]:
+) -> BlockImpactOut:
     """MEH-3375: what blocking ``user_id`` would take down, read before the
     admin confirms — the business that would be hidden (same rule as
     block_user) and how many open bookings would be cancelled and mailed.
@@ -329,10 +330,11 @@ def block_impact(
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     business = None if target.is_blocked else _business_left_ownerless(db, target)
-    return {
-        "business_name": business.name if business is not None else None,
-        "open_bookings": count_open_bookings(db, business) if business is not None else 0,
-    }
+    if business is None:
+        return BlockImpactOut(business_name=None, open_bookings=0)
+    return BlockImpactOut(
+        business_name=business.name, open_bookings=count_open_bookings(db, business)
+    )
 
 
 @router.get("/audit-log", response_model=None)

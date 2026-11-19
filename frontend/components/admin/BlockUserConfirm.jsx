@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import api from "@/lib/api";
+import { BlockImpactAdminUsersUserIdBlockImpactGetResponse as BlockImpactOut } from "@/lib/generated/api.zod";
 
 /** @param {{ count: number, t: (key: string, values?: object) => string }} props */
 function BookingsLine({ count, t }) {
@@ -42,7 +43,12 @@ export default function BlockUserConfirm({ user, busy, onConfirm, onClose }) {
     let live = true;
     api
       .get(`/admin/users/${user.id}/block-impact`)
-      .then((r) => live && setImpact(r.data))
+      .then((r) => {
+        // Rule 19: a shape we do not expect reads as a failed read, so the
+        // block button stays disabled rather than confirming on a guess.
+        const parsed = BlockImpactOut.safeParse(r.data);
+        if (live) setImpact(parsed.success ? parsed.data : { error: true });
+      })
       .catch(() => live && setImpact({ error: true }));
     return () => {
       live = false;

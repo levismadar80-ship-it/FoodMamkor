@@ -87,4 +87,12 @@ describe("BlockUserConfirm (MEH-3375)", () => {
     fireEvent.click(submit());
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it("a reply of an unexpected shape counts as a failed read", async () => {
+    const { onConfirm } = renderWith({ business_name: "מאפיית הגליל", open_bookings: "two" });
+    expect(await screen.findByText(/לא הצלחנו לבדוק אם יש הזמנות פתוחות/)).toBeTruthy();
+    expect(submit().disabled).toBe(true);
+    fireEvent.click(submit());
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

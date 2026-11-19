@@ -789,6 +789,31 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
+      "BlockImpactOut": {
+        "properties": {
+          "business_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Name"
+          },
+          "open_bookings": {
+            "title": "Open Bookings",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "business_name",
+          "open_bookings"
+        ],
+        "title": "BlockImpactOut",
+        "type": "object"
+      },
       "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post": {
         "properties": {
           "file": {
@@ -24048,7 +24073,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/BlockImpactOut"
+                }
               }
             },
             "description": "Successful Response"

@@ -204,7 +204,9 @@ def count_open_bookings(db: Session, producer: Producer) -> int:
         bags = (
             db.query(RescueOrder)
             .join(User, RescueOrder.user_id == User.id)
-            .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
+            .filter(
+                RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved"
+            )
             # As in _cancel_live_bags: the business's own users get the owner
             # email, not a buyer's, so the admin's «כל מי שהזמינה תקבל מייל»
             # does not count them.

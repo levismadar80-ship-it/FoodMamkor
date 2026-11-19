@@ -3044,7 +3044,10 @@ export const BlockUserAdminUsersUserIdBlockPostResponse = /*#__PURE__*/ zod.unkn
  * Reads only. Already blocked → nothing (the next click unblocks).
  * @summary Block Impact
  */
-export const BlockImpactAdminUsersUserIdBlockImpactGetResponse = /*#__PURE__*/ zod.unknown()
+export const BlockImpactAdminUsersUserIdBlockImpactGetResponse = /*#__PURE__*/ zod.object({
+  "business_name": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "open_bookings": /*#__PURE__*/ zod.int()
+})
 
 
 /**
