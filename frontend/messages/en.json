@@ -3197,6 +3197,12 @@
       "field_requirements_placeholder": "Apron, closed shoes, ability to stand for two hours...",
       "is_recurring": "Recurring experience (weekly / monthly)",
       "recurring_placeholder": "Example: Every Friday 9:00–12:00",
+      "sessions_title": "Dates",
+      "sessions_hint": "Add each date separately. Every date has its own places, up to the number of participants you set.",
+      "sessions_add": "Add a date",
+      "sessions_remove": "Remove this date",
+      "sessions_max": "You can add up to 12 upcoming dates.",
+      "sessions_remove_confirm": "{count, plural, one {One person is signed up for this date. Removing it cancels the sign-up, and they will get an email.} other {# people are signed up for this date. Removing it cancels their sign-ups, and they will get an email.}}",
       "cancel": "Cancel",
       "submitting": "Submitting...",
       "cannot_publish": "Cannot publish",
@@ -6966,7 +6972,8 @@
       "attendance": "Did they come",
       "attended": "Came",
       "no_show": "Didn't come",
-      "attendance_error": "Couldn't save. Try again."
+      "attendance_error": "Couldn't save. Try again.",
+      "session_group": "{date}, {time} · {count} signed up"
     },
     "cta": {
       "signup_experience": "Sign up for the workshop",
@@ -6995,7 +7002,12 @@
       "generic": "Something went wrong. Try again.",
       "waitlist_submit": "Join the waitlist",
       "waitlist_success": "You're on the waitlist. If a spot opens up, we'll email you a sign-up link.",
-      "party_size": "How many people"
+      "party_size": "How many people",
+      "session": "Date",
+      "session_placeholder": "Choose a date",
+      "session_option": "{date}, {time}",
+      "session_full": "{date}, {time} · Full",
+      "session_required": "Choose a date."
     },
     "cancel": {
       "title": "Cancel sign-up for \"{title}\"",

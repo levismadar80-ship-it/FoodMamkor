@@ -414,6 +414,7 @@ export default function ExperienceDetailClient({ initialExperience = null } = {}
                     phone={hostBiz?.producer_phone}
                     url={ex.registration_url}
                     isFull={isFull}
+                    sessions={ex.sessions ?? []}
                     waitlistHref={waitlistHref}
                     onWaitlistClick={() => trackChannelClick(hostBiz?.producer_id, "whatsapp")}
                     waitlistLabel={t("waitlist_cta")}
