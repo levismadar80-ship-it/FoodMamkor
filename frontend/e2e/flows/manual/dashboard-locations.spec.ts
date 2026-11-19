@@ -1,5 +1,14 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 
+// MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
+// Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
+// and the fake token draws a 401 that logs the page out. 404 = ordering off.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+});
+
 /**
  * Spec:     manual/dashboard-locations — MEH-1249 chunk 11f of 12
  * Purpose:  Convert the CONVERT-verdict rows of the locations editor

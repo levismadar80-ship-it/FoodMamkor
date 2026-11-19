@@ -42,7 +42,7 @@ There is no soft-delete: deletion removes the row.
 | → consumer | anyone | `routers/auth.py` `register` | rate limit per IP and per email |
 | consumer → producer (with a draft business) | the user | `routers/auth_register_producer.py` `register_producer` (moved out of `routers/auth.py` in MEH-3293); claim `routers/producer_claim.py`; invite `routers/producer_owner_invite_existing.py` | an admin account is refused |
 | role → consumer / admin | admin | `routers/admin_extra.py` `update_user_role` | `producer` is refused; super-admin protected; no self-demotion; → consumer **and → admin** are both refused (409) while `producer_id` is set (MEH-3376): an account with a business is never an admin |
-| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871) |
+| blocked ⇄ not blocked | admin | `routers/admin_extra.py` `block_user` | no self-block; blocking the only owner of a live business hides it (`hide_business`, MEH-2871); the admin confirms first, shown the count `block_impact` reads (MEH-3375) |
 | email verified | the user | `routers/auth.py` `verify_email`; OAuth sign-in | token expiry, row lock |
 | email changed → unverified | the user | `routers/users_me.py` | current password (MEH-3104); 5 wrong per account per hour, row lock (MEH-3425); OAuth and super-admin refused; other devices signed out (`token_version`) |
 | tokens invalidated | the user | logout-all, password change, password reset, email change (MEH-3425) | checked on every request in `auth.py` `get_current_user` |
@@ -128,6 +128,7 @@ Places are people: capacity sums `party_size` (MEH-3315). `attendance`
 | waitlisted → cancelled | the holder of the emailed link; host cancels the item; business delisted | `cancel_registration` · `services/booking_cancellations.py` | as the registered rows below |
 | registered → cancelled | the holder of the emailed link | `routers/registrations.py` `cancel_registration` | row lock; ledger voided when the item is still upcoming; an upcoming item emails the next waitlisted visitor (`registration_waitlist.offer_next`) |
 | registered → cancelled | host cancels or deletes the item | `services/booking_cancellations.py` `cancel_item_signups` | items dated today or later, and every recurring workshop (MEH-2871); ledger voided |
+| registered → cancelled | the host removes an upcoming date of a recurring workshop (MEH-3441) | `services/booking_cancellations.py` `cancel_session_signups`, from `routers/experiences.py` `update_experience` | that date's registered and waitlisted rows only; one cancel email each |
 | registered → cancelled | the business leaves the live state | `services/booking_cancellations.py` `delist_business` | same |
 | purged | scheduler | `services/retention_purge.py` | 30 days after the date |
 

@@ -307,6 +307,7 @@ files = [
     "app/services/email.py",
     "app/services/email_branding.py",
     "app/services/experience_moderation.py",
+    "app/services/experience_sessions.py",
     "app/services/experience_notifications.py",
     "app/services/farmer_declaration.py",
     "app/services/gallery_cap.py",
@@ -397,6 +398,7 @@ files = [
     "app/utils/sql.py",
     "app/routers/admin_passkey.py",
     "app/schemas/admin_passkey.py",
+    "app/schemas/admin_block.py",
     "app/services/admin_passkey.py",
 ]
 explicit_package_bases = true

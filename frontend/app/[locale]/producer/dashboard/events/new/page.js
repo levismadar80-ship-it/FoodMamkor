@@ -7,11 +7,16 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import EventForm from "@/components/EventForm";
+import useDuplicateSource from "@/lib/use-duplicate-source";
+import { SkeletonForm } from "@/components/Skeleton";
 
 export default function NewEventPage() {
   const router = useRouter();
   const t = useTranslations("sweep_tail.event_new");
   const { user, loading: authLoading } = useAuth();
+  // MEH-3438: «שכפול» lands here with ?from=<id>; the form opens pre-filled.
+  const tDup = useTranslations("dashboard.producer.manage_events");
+  const dup = useDuplicateSource("events");
   // MEH-1161: a pending producer's event is hidden from the public until the
   // business is approved — the public detail would 404 for anyone else, so
   // instead of redirecting there, show an in-page success state with the
@@ -97,7 +102,16 @@ export default function NewEventPage() {
         {t("info_paragraph")}
       </p>
 
-      <EventForm mode="create" onSuccess={handleSuccess} cancelHref="/producer/dashboard/events" emailUnverified={user?.email_verified === false} />
+      {dup.source && (
+        <p className="text-sm text-text bg-green-50 rounded-md px-4 py-3 mb-6" role="status" data-testid="duplicate-note">
+          {tDup("copied_from", { title: dup.source.title })}
+        </p>
+      )}
+      {dup.loading ? (
+        <SkeletonForm />
+      ) : (
+        <EventForm mode="create" initial={dup.source} onSuccess={handleSuccess} cancelHref="/producer/dashboard/events" emailUnverified={user?.email_verified === false} />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 """meh2936_price_unit_bottle_box
 
 Revision ID: c7e2a9d4f1b8
-Revises: e3b9d1f7a2c4
+Revises: f2c8a4d6e9b1
 Create Date: 2026-11-19 14:00:00.000000+00:00
 
 MEH-2936. Expand-only (ADR-007): two more values for the existing
@@ -27,7 +27,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c7e2a9d4f1b8"
-down_revision: Union[str, None] = "e3b9d1f7a2c4"
+down_revision: Union[str, None] = "f2c8a4d6e9b1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

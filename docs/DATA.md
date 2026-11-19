@@ -466,7 +466,8 @@ registrations (
   reminder_sent_at,                              -- MEH-3312
   waitlist_offered_at,                           -- MEH-3314: the one offer email went out
   party_size smallint DEFAULT 1 CHECK 1..10,     -- MEH-3315: places this sign-up takes
-  attendance NULL|attended|no_show               -- MEH-3315: the owner's note, blocks nothing
+  attendance NULL|attended|no_show,              -- MEH-3315: the owner's note, blocks nothing
+  session_date date NULL, session_time time NULL -- MEH-3440: the workshop date this sign-up is for; NULL = no date. CHECK: a date only with experience_id, a time only with a date
 )
 ```
 
@@ -606,6 +607,7 @@ experiences (
 
   event_date date NOT NULL, event_time time, duration_minutes int,
   is_recurring bool, recurring_schedule text,
+  sessions jsonb NULL,               -- MEH-3440: [{date, time, participants_count}] a recurring workshop's dates; NULL/[] = one pool of places
 
   location_type: home|public,        -- producer_farm lives on Event
   city, address text,                -- address PRIVATE — redacted from public list
@@ -1080,8 +1082,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > an active event, or an approved, active, non-recurring experience, dated
 > tomorrow on the Israel clock: «תזכורת: "{title}" מחר», with time, place and
 > the cancel link. Rows are stamped and committed before sending, so a rerun
-> sends nothing. Recurring workshops are skipped until a sign-up carries its
-> occurrence date (MEH-3264). Service: `app/services/registration_reminders.py`.
+> sends nothing. A recurring workshop with listed dates reminds the sign-ups
+> of tomorrow's date (MEH-3441); one without dates is still skipped. Service: `app/services/registration_reminders.py`.
 >
 > **MEH-3314 — the waitlist (2026-11-18).** Migration `c9f5a3b7d2e8` adds
 > `registrations.waitlist_offered_at` and `'waitlisted'` to
@@ -1093,6 +1095,15 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > first waitlisted visitor not yet offered, once, with the item link; the spot
 > is not held. Re-submitting the form with the same email promotes her row.
 > Service: `app/services/registration_waitlist.py`.
+>
+> **MEH-3440 — a recurring workshop's dates (2026-11-19, stage 1 of MEH-3264).**
+> Migration `f2c8a4d6e9b1` adds `experiences.sessions` (JSONB, a list of
+> `{date, time, participants_count}`), `registrations.session_date` +
+> `session_time`, and the index `ix_registrations_experience_session`. All
+> nullable, no backfill, nothing reads them yet: a workshop with no dates keeps
+> one pool of places. Columns, not a table, because `EXPECTED_TABLES` lives in
+> a workflow file CC cannot write; the 12-date cap and one-row-per-date are
+> enforced by the API (stage 2).
 >
 > **MEH-3315 — party size and attendance (2026-11-18).** Migration
 > `d4a6b8c0e2f1` adds `registrations.party_size` (1–10, default 1) and
@@ -1616,10 +1627,10 @@ CTA and «או שאלה למארחת». Experiences already carry it as `host.pr
 
 ```
 POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required, `party_size` 1–10 (default 1, MEH-3315). 201 {status:"registered"} (no token, no PII back); on a full event `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Plus a per-RECIPIENT ceiling shared with the experience route: 3/hour and 10/day per email address (429; MEH-3373). Every request counts, also a 404, a 409 and a silent duplicate, so three posts an hour with someone's address stop her own sign-ups for that hour (accepted cost of a limit with no account behind it). The counter is in-process: a deploy resets it. The confirmation mail carries nothing the person signing up typed (title, place and host name are the item owner's).
-POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item), unless the body carries `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Same email twice → same 201, nothing stored or sent.
+POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item), unless the body carries `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Same email twice → same 201, nothing stored or sent. MEH-3441: a recurring workshop with dates needs `session_date` + `session_time` (422 registration_session_required «בחרו מועד.»; a date not among its upcoming ones → 409 registration_closed). Places (the date's own owner tally + its sign-ups), the waitlist and the repeat-email check are per date, so one address may book two dates; the confirmation and the owner's email carry the date («המועד»).
 GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled and waitlisted, oldest first.
 GET    /experiences/{id}/registrations    auth — host or admin; others 404.
-GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page (status may be waitlisted; the same link leaves the waitlist).
+GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page (status may be waitlisted; the same link leaves the waitlist). MEH-3441: for a sign-up to a listed date, `event_date` is that date.
 PATCH  /registrations/{registration_id}/attendance  auth — the item's owner (event: her business; workshop: the host) or an admin, else 403; 404 unknown id; 409 unless the row is registered. Body {attendance: "attended"|"no_show"|null}. 60/minute. MEH-3315.
 POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner and, when the form would still take a sign-up (active, site_form, not started, below the cap), offers the place to the first waitlisted visitor not yet offered (MEH-3314). A waitlisted row leaves the list the same way.
 ```
@@ -1662,7 +1673,7 @@ GET    /experiences/mine               auth    — owner's submissions, any stat
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
                                          MEH-2476: `host` = {id, name, producer_id, producer_slug, producer_name, producer_phone} — the producer_* four only when the host's business is public (approved, kind=producer), else null. Same on every experience response.
 POST   /experiences                    auth    — require_verified_producer (MEH-2246: producer role first → 403 "Producer access required", then email-verified → 403 {code: email_unverified}; was require_verified_email). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending. event_date before today (Israel) → 422 «התאריך כבר עבר. יש לבחור תאריך מהיום והלאה» (MEH-3224).
-PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate. Moving event_date before today → 422; an unchanged past date still saves (MEH-3224).
+PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate. Moving event_date before today → 422; an unchanged past date still saves (MEH-3224). MEH-3441: `sessions` [{date, time, participants_count}] on a recurring workshop — a new date in the past → 422 «בחרו תאריך עתידי.», a date twice → 422 «המועד הזה כבר ברשימה.», more than 12 upcoming → 422 «אפשר להוסיף עד 12 מועדים קדימה.»; stored dates that have passed drop off; each tally is clamped to the cap. Saving dates does not re-moderate. A removed upcoming date cancels its sign-ups and waitlist, one cancel email each. Reads return `sessions` (upcoming: date, time, participants_count, spots_left) and `spots_left: null` when there are dates.
 DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
 
@@ -1801,7 +1812,8 @@ PUT    /admin/users/{id}/role                  admin. role=consumer **or role=ad
 GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at> [&before_id=<uuid>]. Newest first. With both, a keyset cursor on (created_at, id), so a tie on created_at at a page edge is not skipped.
                                                { items: [{ id, actor_id, actor_email, action, target_type, target_id, details, created_at }] }. actor_email is None when the account is gone.
                                                The stored IP is not returned.
-POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden, cancelled} — MEH-2871; cancelled = customers' bookings cancelled (bags + sign-ups + group-buy participants, the business's own users excluded) — the same number GET block-impact showed, MEH-3375)
+GET    /admin/users/{id}/block-impact          admin — MEH-3375, read only. { business_name, open_bookings }: the business blocking would hide (same rule as /block; null for a consumer, a co-owned business or an already-blocked user) and its open bookings — reserved bags + registered/waitlisted sign-ups + live group-buy participants, the business's own users excluded (booking_cancellations.count_open_bookings, the same filters the cancel uses).
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 

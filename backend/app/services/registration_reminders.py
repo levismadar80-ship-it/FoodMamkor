@@ -6,12 +6,13 @@ Purpose:  The evening before an event or a one-off workshop, each person who
           used can still go to someone.
 Touches:  registrations (reminder_sent_at stamp), events / experiences
           (read), Resend via registration_emails (after the commit).
-Does NOT: remind a recurring workshop — a sign-up has no occurrence date yet
-          (MEH-3264), so "tomorrow" is unknown. Does not decide the hour
+Does NOT: remind a recurring workshop's sign-up with no date — "tomorrow" is
+          unknown. One booked for a date is reminded the evening before that
+          date (MEH-3441). Does not decide the hour
           (startup.py, REGISTRATION_REMINDER_CRON).
 Related:  services/booking_cancellations.py::registrant_message (same values
           as every registrant email); startup.py::_run_registration_reminder_job
-History:  MEH-3312 (creation)
+History:  MEH-3312 (creation); MEH-3441 (dated workshop sign-ups)
 """
 
 from __future__ import annotations
@@ -62,6 +63,22 @@ def _due(db: Session, tomorrow: date) -> list[tuple[Registration, Event | Experi
         .all()
     )
     out.extend((r, x) for r, x in experiences)
+    # MEH-3441: a sign-up for a date of a recurring workshop.
+    dated = (
+        db.query(Registration, Experience)
+        .join(Experience, Registration.experience_id == Experience.id)
+        .filter(
+            Registration.status == "registered",
+            Registration.reminder_sent_at.is_(None),
+            Registration.session_date == tomorrow,
+            Experience.is_active.is_(True),
+            Experience.status == "approved",
+            Experience.is_recurring.is_(True),
+        )
+        .with_for_update(of=Registration, skip_locked=True)
+        .all()
+    )
+    out.extend((r, x) for r, x in dated)
     return out
 
 

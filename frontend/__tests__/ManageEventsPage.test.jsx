@@ -128,4 +128,12 @@ describe("MEH-1405 — ManageEventsPage", () => {
     expect(createCtaCount()).toBe(1);
     expect(screen.queryByText(L.empty_title)).not.toBeInTheDocument();
   });
+
+  // MEH-3438: «שכפול» opens the create form seeded from this row.
+  it("each row links «שכפול» to the create form with ?from=<id>", async () => {
+    await renderPage();
+    await waitFor(() => expect(screen.getByText("אירוע פעיל")).toBeInTheDocument());
+    expect(screen.getByTestId("duplicate-e1")).toHaveAttribute("href", "/producer/dashboard/events/new?from=e1");
+    expect(screen.getByTestId("duplicate-e2")).toHaveTextContent(L.action_duplicate);
+  });
 });

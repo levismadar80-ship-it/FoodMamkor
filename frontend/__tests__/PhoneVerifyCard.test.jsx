@@ -449,3 +449,36 @@ describe("PhoneVerifyCard — the 6th digit verifies on its own (MEH-3126)", () 
     });
   });
 });
+
+// MEH-2926: the card said «נשלח קוד» before any tap. Now the «sent» line
+// appears only after the send answered, and the he copy before it says what
+// the tap will do.
+describe("PhoneVerifyCard — «sent» only after a send (MEH-2926)", () => {
+  it("before the tap: no «sent» line", () => {
+    render(<PhoneVerifyCard />);
+    expect(screen.queryByTestId("phone-verify-code-sent")).toBeNull();
+  });
+
+  it("after a successful send: the «sent» line, announced", async () => {
+    await sendOk();
+    const line = screen.getByTestId("phone-verify-code-sent");
+    expect(line).toHaveTextContent(T("code_sent"));
+    expect(line).toHaveAttribute("role", "status");
+    // The «a tap will send» line gives way to «we sent», not both at once.
+    expect(screen.queryByText(T("description"))).toBeNull();
+  });
+
+  it("after a failed send: still no «sent» line", async () => {
+    apiMock.post.mockRejectedValueOnce({ response: { status: 503 } });
+    render(<PhoneVerifyCard />);
+    await click(sendBtn());
+    expect(screen.queryByTestId("phone-verify-code-sent")).toBeNull();
+  });
+
+  it("the he description is conditional on the tap, not a past-tense «נשלח קוד»", async () => {
+    const he = (await import("../messages/he.json")).default.phone_verify;
+    expect(he.description.startsWith("נשלח קוד")).toBe(false);
+    expect(he.description).toContain("בלחיצה על «שלחו קוד אימות»");
+    expect(he.code_sent).toBe("שלחנו קוד לוואטסאפ של מספר העסק.");
+  });
+});

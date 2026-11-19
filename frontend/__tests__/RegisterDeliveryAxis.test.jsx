@@ -290,5 +290,28 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     expect(screen.getByTestId("register-delivery-note")).toHaveTextContent(
       `${K}.fields.fulfilment.areas_note`,
     );
+    // MEH-2447: where WhatsApp orders arrive — under every choice.
+    expect(screen.getByTestId("register-fulfilment-whatsapp-note")).toHaveTextContent(
+      `${K}.fields.fulfilment.whatsapp_note`,
+    );
+  });
+
+  // MEH-2447: the hours hint promises «קנייה במקום», which a delivery-only
+  // card never shows — so it appears only for a choice with a place to come to.
+  it.each([
+    ["none picked", null, false],
+    ["onsite", "onsite", true],
+    ["delivery", "delivery", false],
+    ["both", "both", true],
+  ])("hours hint with %s", async (_label, option, shown) => {
+    await renderWizard();
+    await fillAccountToDetails();
+    if (option) fireEvent.click(screen.getByTestId(`register-fulfilment-${option}`));
+    const hint = screen.queryByTestId("register-fulfilment-hours-hint");
+    if (shown) {
+      expect(hint).toHaveTextContent(`${K}.fields.fulfilment.hours_hint`);
+    } else {
+      expect(hint).toBeNull();
+    }
   });
 });

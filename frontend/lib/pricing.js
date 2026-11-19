@@ -178,6 +178,8 @@ export const PRICING_COPY_KEYS = Object.freeze([
   "terms.sections.pricing.cancel",
   "terms.sections.pricing.unpaid",
   "terms.sections.pricing.vat",
+  // MEH-3216: the order settings say a commission applies and send to the terms.
+  "dashboard.producer.orders.settings.commission",
 ]);
 
 /**
