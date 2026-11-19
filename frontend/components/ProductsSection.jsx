@@ -144,7 +144,7 @@ function clearFieldError(setErrors, field) {
  *   price_min: string | number, price_max: string | number,
  *   is_gluten_free: boolean, is_vegan: boolean, is_vegetarian: boolean,
  *   is_lactose_free: boolean, is_no_added_sugar: boolean,
- *   ingredients: string, allergens: string[], may_contain: string[],
+ *   ingredients: string, allergens: string[], may_contain: string[], storage_info: string,
  * }} ProductForm
  */
 /**
@@ -173,7 +173,7 @@ export default function ProductsSection({
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [] });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "" });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -373,10 +373,11 @@ export default function ProductsSection({
         ingredients: form.ingredients.trim() || null,
         allergens: form.allergens.length ? form.allergens : null,
         may_contain: form.may_contain.length ? form.may_contain : null, // MEH-3439
+        storage_info: form.storage_info.trim() || null, // MEH-3444
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [] });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "" });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch (err) {
@@ -405,6 +406,7 @@ export default function ProductsSection({
       ingredients: product.ingredients || "",  // MEH-2662
       allergens: product.allergens || [],
       may_contain: product.may_contain || [], // MEH-3439
+      storage_info: product.storage_info || "", // MEH-3444
     });
     setError("");
     setEditFormErrors({});
@@ -497,6 +499,7 @@ export default function ProductsSection({
         ingredients: (editForm.ingredients || "").trim() || null,
         allergens: editForm.allergens?.length ? editForm.allergens : null,
         may_contain: editForm.may_contain?.length ? editForm.may_contain : null, // MEH-3439
+        storage_info: (editForm.storage_info || "").trim() || null, // MEH-3444
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -758,6 +761,12 @@ export default function ProductsSection({
                   onToggle={(kind, code) => setEditForm((f) => ({ ...f, ...toggleDeclared(f, kind, code) }))}
                   tForm={tForm}
                 />
+                <StorageField
+                  idPrefix={`edit-product-${product.id}`}
+                  value={editForm.storage_info || ""}
+                  onChange={(v) => setEditForm((f) => ({ ...f, storage_info: v }))}
+                  tForm={tForm}
+                />
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
                       own wrapping <label>, so this stays a <span>. */}
@@ -990,6 +999,12 @@ export default function ProductsSection({
               mayContain={form.may_contain}
               onIngredients={(v) => setForm((f) => ({ ...f, ingredients: v }))}
               onToggle={(kind, code) => setForm((f) => ({ ...f, ...toggleDeclared(f, kind, code) }))}
+              tForm={tForm}
+            />
+            <StorageField
+              idPrefix="new-product"
+              value={form.storage_info}
+              onChange={(v) => setForm((f) => ({ ...f, storage_info: v }))}
               tForm={tForm}
             />
             <div>
@@ -1233,6 +1248,29 @@ function IngredientsAllergensFields({ idPrefix, ingredients, allergens, mayConta
         tForm={tForm}
       />
     </>
+  );
+}
+
+// MEH-3444: «אחסון ותוקף» — optional free text, shown on the product sheet
+// under the allergens. Empty = not shown.
+/** @param {{ idPrefix: string, value: string, onChange: (v: string) => void, tForm: (k: string) => string }} props */
+function StorageField({ idPrefix, value, onChange, tForm }) {
+  return (
+    <div>
+      <label htmlFor={`${idPrefix}-storage`} className="text-xs text-fg-muted mb-1 block">
+        {tForm("storage_label")}
+      </label>
+      <textarea
+        id={`${idPrefix}-storage`}
+        data-testid="product-storage-input"
+        rows={2}
+        maxLength={300}
+        value={value}
+        placeholder={tForm("storage_placeholder")}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-text focus-ring"
+      />
+    </div>
   );
 }
 

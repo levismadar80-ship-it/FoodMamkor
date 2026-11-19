@@ -352,6 +352,8 @@ export default function ProductSheet({
   const hasMayContain = mayContainCodes.length > 0;
   const allergenList = (codes) => codes.map((code) => t(`settings.products.form.allergen_${code}`)).join(", ");
   const hasIngredients = typeof product.ingredients === "string" && product.ingredients.trim() !== "";
+  // MEH-3444: «אחסון ותוקף» — shown only when the owner wrote something.
+  const hasStorage = typeof product.storage_info === "string" && product.storage_info.trim() !== "";
 
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
@@ -659,7 +661,20 @@ export default function ProductSheet({
                   </p>
                 )}
               </div>
-              {(hasIngredients || hasAllergens || hasMayContain) && (
+              {hasStorage && (
+                <div>
+                  <h3 className="text-xs font-medium text-fg-muted">
+                    {t("producer.detail.sections.products.facts.storage_heading")}
+                  </h3>
+                  <p
+                    className="whitespace-pre-line text-sm leading-relaxed text-text"
+                    data-testid="product-sheet-storage"
+                  >
+                    {product.storage_info}
+                  </p>
+                </div>
+              )}
+              {(hasIngredients || hasAllergens || hasMayContain || hasStorage) && (
                 <p className="text-xs text-fg-muted" data-testid="product-sheet-facts-declared">
                   {t("producer.detail.sections.products.facts.declared_by_business")}
                 </p>

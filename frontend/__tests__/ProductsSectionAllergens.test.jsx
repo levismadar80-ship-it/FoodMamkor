@@ -187,3 +187,38 @@ describe("«עלול להכיל» (MEH-3439)", () => {
   });
 });
 
+
+describe("«אחסון ותוקף» (MEH-3444)", () => {
+  it("shows the label and example; empty → sent as null", async () => {
+    await openAddForm();
+    expect(screen.getByLabelText(F.storage_label)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(F.storage_placeholder)).toBeInTheDocument();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith("/producers/me/products", expect.objectContaining({ storage_info: null }));
+  });
+
+  it("typed text is sent trimmed", async () => {
+    await openAddForm();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.change(screen.getByTestId("product-storage-input"), { target: { value: "  בקירור, עד 5 ימים " } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ storage_info: "בקירור, עד 5 ימים" }),
+    );
+  });
+
+  it("edit pre-fills the stored text; clearing it sends null", async () => {
+    const product = { id: 8, name: "גבינה", price_min: 40, image_url: null, storage_info: "בקירור" };
+    api.get.mockResolvedValue({ data: [product] });
+    renderSection();
+    await screen.findByText("גבינה");
+    fireEvent.click(screen.getByRole("button", { name: P.card.edit_aria_template.replace("{name}", "גבינה") }));
+    expect(screen.getByTestId("product-storage-input")).toHaveValue("בקירור");
+    api.put.mockResolvedValue({ data: { ...product, storage_info: null } });
+    fireEvent.change(screen.getByTestId("product-storage-input"), { target: { value: "" } });
+    fireEvent.click(screen.getByText(P.save_edit_cta));
+    expect(api.put).toHaveBeenCalledWith("/producers/me/products/8", expect.objectContaining({ storage_info: null }));
+  });
+});

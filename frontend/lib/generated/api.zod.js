@@ -1095,7 +1095,8 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersAdminProducersGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1360,7 +1361,8 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminCreateProducerAdminProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1622,7 +1624,8 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), pendingProducersAdminProducersPendingGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1947,7 +1950,8 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminGetProducerAdminProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -2209,7 +2213,8 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -2542,7 +2547,8 @@ export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
 
@@ -4802,7 +4808,8 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), readDraftPreviewProducerPreviewTokenGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseReportCountDefault),
@@ -5198,7 +5205,8 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), createProducerProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseReportCountDefault),
@@ -5416,7 +5424,8 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerBySlugProducersBySlugSlugGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault),
@@ -5675,7 +5684,8 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getMyProducerProducersMeGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseProductsCountDefault),
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5905,7 +5915,8 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), updateMyProducerProducersMePutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseProductsCountDefault),
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6340,7 +6351,8 @@ export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const SetMyProductOrderProducersMeProductOrderPutResponse = /*#__PURE__*/ zod.array(SetMyProductOrderProducersMeProductOrderPutResponseItem)
 
@@ -6689,7 +6701,8 @@ export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zo
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListMyProductsProducersMeProductsGetResponse = /*#__PURE__*/ zod.array(ListMyProductsProducersMeProductsGetResponseItem)
 
@@ -6722,7 +6735,8 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
 
@@ -6778,7 +6792,8 @@ export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE_
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
 
@@ -6810,7 +6825,8 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
 
@@ -7336,7 +7352,8 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseReportCountDefault),

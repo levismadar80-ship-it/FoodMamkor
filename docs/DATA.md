@@ -316,7 +316,8 @@ products       (id, producer_id FK, name, description,
                 in_stock Boolean NOT NULL DEFAULT TRUE,          -- MEH-3218
                 contains_alcohol Boolean NOT NULL DEFAULT FALSE, -- MEH-3218
                 allergens Text[] NULL,                           -- MEH-2662: owner-declared codes from app/allergens.py (15-item closed list since MEH-3439: EU 14 + fava_beans «פול», canonical order, unknown → 422); NULL = not filled, never "none"      -- MEH-1934: 6th dietary axis ("דל פחמימות"). Partial index idx_products_dietary on (producer_id) WHERE any flag TRUE — predicate extended with is_vegetarian in MEH-1438 and with both MEH-1934 flags in revision a2f7d4c8e153 (a product marked only low-carb would otherwise fall outside the index)
-                may_contain Text[] NULL)                         -- MEH-3439: «עלול להכיל» (cross-contact), same closed list; a code in allergens is dropped from it («מכיל» wins, drop_contained); NULL = not filled. Migration f1a7c3e9b2d5
+                may_contain Text[] NULL,                         -- MEH-3439: «עלול להכיל» (cross-contact), same closed list; a code in allergens is dropped from it («מכיל» wins, drop_contained); NULL = not filled. Migration f1a7c3e9b2d5
+                storage_info Text NULL)                          -- MEH-3444: «אחסון ותוקף», owner free text, ≤300 chars on input, bleached; NULL = not shown. Migration b4d8e2f6a1c3
 producer_offers (id, producer_id FK CASCADE, offer_type text NOT NULL,
                  threshold_value int nullable, threshold_unit text nullable,
                  headline text nullable, starts_at date nullable,

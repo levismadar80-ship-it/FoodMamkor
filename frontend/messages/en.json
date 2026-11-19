@@ -872,6 +872,7 @@
             "contains": "Contains: {list}",
             "may_contain": "May contain: {list}",
             "allergens_undeclared": "The business has not listed allergens. If you have a sensitivity, ask before ordering.",
+            "storage_heading": "Storage and shelf life",
             "declared_by_business": "As declared by the business"
           },
           "sheet_close_aria": "Close product details",
@@ -6065,6 +6066,8 @@
         "allergen_fava_beans": "Fava beans",
         "may_contain_heading": "May contain",
         "may_contain_helper": "Mark what may reach the product from shared tools or surfaces.",
+        "storage_label": "Storage and shelf life",
+        "storage_placeholder": "e.g.: refrigerated, up to 10 days from purchase",
         "image_label": "Product image",
         "image_alt": "Photo",
         "image_remove": "Remove",

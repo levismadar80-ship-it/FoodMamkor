@@ -5277,6 +5277,18 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -15058,6 +15070,18 @@
               }
             ],
             "title": "Price Range"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -15696,6 +15720,17 @@
               }
             ],
             "title": "Price Range"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -15890,6 +15925,18 @@
               }
             ],
             "title": "Price Range"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "title": "ProductUpdate",

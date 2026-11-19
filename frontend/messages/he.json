@@ -872,6 +872,7 @@
             "contains": "מכיל: {list}",
             "may_contain": "עלול להכיל: {list}",
             "allergens_undeclared": "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.",
+            "storage_heading": "אחסון ותוקף",
             "declared_by_business": "לפי הצהרת בית העסק"
           },
           "sheet_close_aria": "סגירת פרטי המוצר",
@@ -6061,6 +6062,8 @@
         "allergen_fava_beans": "פול",
         "may_contain_heading": "עלול להכיל",
         "may_contain_helper": "סמנו מה עלול להגיע למוצר מכלים או ממשטח משותפים.",
+        "storage_label": "אחסון ותוקף",
+        "storage_placeholder": "למשל: בקירור, עד 10 ימים מיום הקנייה",
         "image_label": "תמונת מוצר",
         "image_alt": "תמונה",
         "image_remove": "הסר",

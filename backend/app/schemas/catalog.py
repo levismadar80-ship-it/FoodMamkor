@@ -10,9 +10,10 @@ every name is still importable from app.schemas.schemas.
 import re
 from datetime import date
 from decimal import Decimal
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Field,
@@ -23,6 +24,7 @@ from pydantic import (
 
 from app.limits import MAX_PRODUCTS  # MEH-2312
 from app.allergens import drop_contained, normalize_allergens
+from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
     DeliveryDayField,
@@ -34,6 +36,13 @@ from app.schemas.schemas import (
     _image_url_validator,
     _min_letters_validator,
 )
+
+# MEH-3444: «אחסון ותוקף». The 300 cap is on the INPUT (before bleaching), so
+# a too-long text is a 422, not a silent cut; the bleach then mirrors
+# SanitizedDescriptionField. REUSES: schemas.py SanitizedAddressField order.
+StorageInfoField = Annotated[
+    str, Field(max_length=300), AfterValidator(lambda v: sanitize_text(v, max_length=300))
+]
 
 
 # --- Category ---
@@ -523,6 +532,8 @@ class ProductCreate(BaseModel):
     )  # 15 codes + headroom for dupes
     # MEH-3439: «עלול להכיל», same closed list and cap.
     may_contain: list[str] | None = Field(None, max_length=50)
+    # MEH-3444: «אחסון ותוקף», optional free text, bleached like ingredients.
+    storage_info: StorageInfoField | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
@@ -576,6 +587,8 @@ class ProductUpdate(BaseModel):
     )  # 15 codes + headroom for dupes
     # MEH-3439: «עלול להכיל», same closed list and cap.
     may_contain: list[str] | None = Field(None, max_length=50)
+    # MEH-3444: «אחסון ותוקף», optional free text, bleached like ingredients.
+    storage_info: StorageInfoField | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
@@ -629,6 +642,7 @@ class ProductOut(BaseModel):
     ingredients: str | None = None  # MEH-2662
     allergens: list[str] | None = None  # MEH-2662
     may_contain: list[str] | None = None  # MEH-3439
+    storage_info: str | None = None  # MEH-3444
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
 

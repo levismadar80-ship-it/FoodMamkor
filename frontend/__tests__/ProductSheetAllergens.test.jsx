@@ -105,6 +105,20 @@ describe("ProductSheet — ingredients + allergens (MEH-2662 · MEH-3439)", () =
     expect(screen.getByTestId("product-sheet-may-contain")).toHaveTextContent(/^עלול להכיל: אגוזים, שומשום$/);
   });
 
+  // MEH-3444: «אחסון ותוקף».
+  it("storage text: its heading + text + the declaration line", () => {
+    renderSheet({ storage_info: "בקירור, עד 10 ימים מיום הקנייה" });
+    expect(screen.getByTestId("product-sheet-storage")).toHaveTextContent("בקירור, עד 10 ימים מיום הקנייה");
+    expect(screen.getByText("אחסון ותוקף")).toBeInTheDocument();
+    expect(screen.getByText("לפי הצהרת בית העסק")).toBeInTheDocument();
+  });
+
+  it("blank storage text is not shown", () => {
+    renderSheet({ storage_info: "  " });
+    expect(screen.queryByTestId("product-sheet-storage")).toBeNull();
+    expect(screen.queryByText("אחסון ותוקף")).toBeNull();
+  });
+
   it("an unknown code is dropped, never shown as a raw key", () => {
     renderSheet({ allergens: ["gluten", "pineapple"], may_contain: ["pineapple"] });
     expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^מכיל: גלוטן$/);
