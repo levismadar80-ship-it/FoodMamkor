@@ -488,6 +488,10 @@ test.describe("edit tab — required/optional chip", () => {
     const filled = await page.getByTestId("section-chip-images").innerText();
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
+    // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
+    await page.route("**/producers/me/order-settings", (r) =>
+      r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+    );
     await stubEdit(page, { profile: EMPTY });
     await openAt(page, "images");
     await expect(page.getByTestId("section-chip-images")).toBeVisible();
