@@ -115,13 +115,6 @@ async function assertAuthenticated(page: Page): Promise<void> {
   expect(token, "storageState must carry an authenticated JWT").toBeTruthy();
 }
 
-// MEH-3380: the second cause has never been seen with a trace — the config
-// records `on-first-retry`, i.e. only the attempt that passed. Keep the trace
-// of a FAILED attempt for this block, so the next first-attempt red carries
-// the evidence `watchLoginSubmit` cannot give (network + DOM snapshots).
-// File level: Playwright refuses `trace` inside a describe (it forces a new worker).
-test.use({ trace: "retain-on-failure" });
-
 test.describe("admin role reaches the admin panel", () => {
   skipUnlessProvisioned("admin");
   test.use({ storageState: "e2e/.auth/admin.json" });
