@@ -33,13 +33,15 @@ const DEFAULT_CAP = 3;
 // MEH-3216: «מספר עוסק או ח״פ» — 9 digits; 8 is a ת״ז-based number typed
 // without its leading zero. The server applies the same rule.
 const BUSINESS_ID_DIGITS = 9;
+const BUSINESS_ID_INPUT_MAX = 20; // the server's limit: a pasted «51 234 567 8» is never cut short
 const BUSINESS_ID_SHORT = 8;
 
 /** What she typed → nine digits, null when blank, or NaN when it is not a number. */
 export function businessIdFromInput(typed) {
-  const digits = String(typed ?? "").replace(/[\s-]/g, "");
+  // Spaces, dashes of every kind and the direction marks a Hebrew paste carries.
+  const digits = String(typed ?? "").replace(/[\s\-\u2010-\u2015\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
   if (!digits) return null;
-  if (!/^\d+$/.test(digits) || digits.length < BUSINESS_ID_SHORT || digits.length > BUSINESS_ID_DIGITS) return Number.NaN;
+  if (!/^[0-9]+$/.test(digits) || digits.length < BUSINESS_ID_SHORT || digits.length > BUSINESS_ID_DIGITS) return Number.NaN;
   return digits.padStart(BUSINESS_ID_DIGITS, "0");
 }
 
@@ -160,7 +162,7 @@ export default function OrderSettingsCard({ settings, onSaved, collapsed = false
         inputMode="numeric"
         autoComplete="off"
         dir="ltr"
-        maxLength={11}
+        maxLength={BUSINESS_ID_INPUT_MAX}
         value={form.businessId}
         onChange={(e) => set("businessId", e.target.value)}
         data-testid="orders-business-id"

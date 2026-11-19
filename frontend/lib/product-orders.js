@@ -138,11 +138,12 @@ export function dayLabel(iso, locale = "he") {
 /**
  * Ordering is set up once it is switched on and has a hand-over window.
  * From then the settings cards start closed and the tab opens on the orders.
- * @param {{ enabled?: boolean } | null} settings
+ * @param {{ enabled?: boolean, business_id_number?: string | null } | null} settings
  * @param {unknown[]} windows
  */
 export function isSetUp(settings, windows) {
-  return Boolean(settings?.enabled) && windows.length > 0;
+  // MEH-3216: without «מספר עוסק» the business takes no orders, so it is not set up.
+  return Boolean(settings?.enabled && settings?.business_id_number) && windows.length > 0;
 }
 
 /**

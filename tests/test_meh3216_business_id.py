@@ -53,6 +53,8 @@ def test_ordering_off_may_be_saved_without_a_business_number(client, db, flag_on
         ("51-234567-8", "512345678"),
         (" 51 234 5678 ", "512345678"),
         ("12345678", "012345678"),
+        # pasted from a Hebrew document: an RLM, a non-breaking hyphen, a no-break space
+        ("\u200f51\u2011234567\u00a08", "512345678"),
     ],
 )
 def test_the_number_is_stored_as_nine_digits(client, db, flag_on, typed, stored):
@@ -64,7 +66,12 @@ def test_the_number_is_stored_as_nine_digits(client, db, flag_on, typed, stored)
     assert again.json()["business_id_number"] == stored
 
 
-@pytest.mark.parametrize("typed", ["1234567", "1234567890", "51234567a"])
+@pytest.mark.parametrize(
+    "typed",
+    # the last two are digits to str.isdigit() but not to the DB CHECK [0-9]:
+    # they must be a Hebrew 422 here, never a 500 at commit
+    ["1234567", "1234567890", "51234567a", "١٢٣٤٥٦٧٨٩", "５１２３４５６７８"],
+)
 def test_a_number_that_is_not_eight_or_nine_digits_is_refused(
     client, db, flag_on, typed
 ):

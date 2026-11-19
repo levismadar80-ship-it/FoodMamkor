@@ -239,6 +239,8 @@ describe("businessIdFromInput", () => {
     expect(businessIdFromInput("1234567")).toBeNaN();
     expect(businessIdFromInput("1234567890")).toBeNaN();
     expect(businessIdFromInput("51234567x")).toBeNaN();
+    expect(businessIdFromInput("\u200f51\u2011234567\u00a08")).toBe("512345678"); // a paste from a Hebrew document
+    expect(businessIdFromInput("١٢٣٤٥٦٧٨٩")).toBeNaN(); // non-ASCII digits: the server's CHECK is [0-9]
   });
 });
 
@@ -303,6 +305,7 @@ describe("settings cards: open until ordering is set up, closed after", () => {
   const settings = {
     enabled: true, auto_confirm: false, auto_confirm_cap: null, cancel_cutoff_hours: 2,
     shabbat_observant: false, min_order_agorot: null, slot_minutes: 60, lead_time_hours: 2,
+    business_id_number: "512345678",
   };
   const win = { weekday: 0, start_time: "09:00", end_time: "12:00", fulfilment: "pickup" };
   const wrap = (node) => render(<NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">{node}</NextIntlClientProvider>);
@@ -313,6 +316,7 @@ describe("settings cards: open until ordering is set up, closed after", () => {
     expect(isSetUp(settings, [win, win, win])).toBe(true);
     expect(isSetUp({ ...settings, enabled: false }, [win, win])).toBe(false);
     expect(isSetUp(null, [win])).toBe(false);
+    expect(isSetUp({ ...settings, business_id_number: null }, [win])).toBe(false); // no «מספר עוסק», takes no orders
   });
 
   it("closed: the title shows, the fields are folded; a tap on the title opens them", () => {

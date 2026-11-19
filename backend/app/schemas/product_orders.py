@@ -13,6 +13,7 @@ History:  MEH-3218 (creation; stage 1 of MEH-3216); MEH-3262 (slot_minutes,
           lead_time_hours)
 """
 
+import re
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -39,8 +40,17 @@ AUTO_CONFIRM_NEEDS_CAP_DETAIL = (
 BUSINESS_ID_NEEDED_DETAIL = "כדי לקבל הזמנות באתר צריך למלא מספר עוסק."
 BUSINESS_ID_FORMAT_DETAIL = "מספר עוסק או ח״פ הוא 9 ספרות."
 BUSINESS_ID_DIGITS = 9
-_BUSINESS_ID_SHORT = 8  # a ת״ז-based number typed without its leading zero
-_BUSINESS_ID_SEPARATORS = str.maketrans("", "", " -")
+_BUSINESS_ID_SHORT = (
+    8  # a ת״ז-based number typed without its leading zero (shape below)
+)
+# Spaces (incl. no-break), dashes of every kind and the invisible direction
+# marks a paste from a Hebrew document carries.
+_BUSINESS_ID_SEPARATORS = re.compile(
+    r"[\s\-\u2010-\u2015\u200e\u200f\u202a-\u202e\u2066-\u2069]"
+)
+_BUSINESS_ID_SHAPE = re.compile(
+    rf"[0-9]{{{_BUSINESS_ID_SHORT},{BUSINESS_ID_DIGITS}}}"
+)  # ASCII only: the DB CHECK is [0-9]
 
 
 class ProducerOrderSettingsIn(BaseModel):
@@ -71,12 +81,10 @@ class ProducerOrderSettingsIn(BaseModel):
         leading zero back, so «51-234567-8» and «12345678» are accepted."""
         if value is None:
             return None
-        digits = value.translate(_BUSINESS_ID_SEPARATORS)
+        digits = _BUSINESS_ID_SEPARATORS.sub("", value)
         if not digits:
             return None
-        if not digits.isdigit() or not (
-            _BUSINESS_ID_SHORT <= len(digits) <= BUSINESS_ID_DIGITS
-        ):
+        if not _BUSINESS_ID_SHAPE.fullmatch(digits):
             raise ValueError(BUSINESS_ID_FORMAT_DETAIL)
         return digits.zfill(BUSINESS_ID_DIGITS)
 
