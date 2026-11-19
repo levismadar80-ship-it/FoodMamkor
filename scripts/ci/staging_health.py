@@ -35,7 +35,8 @@ from dataclasses import dataclass
 API = "https://api.github.com"
 E2E_WORKFLOW = "e2e.yml"
 BASE = "staging"
-# e2e.yml:126 — `Playwright E2E (Vercel preview) ${{ matrix.shard }}/2`. The
+# e2e.yml `e2e` job — `Playwright E2E (Vercel preview) <shard>/<total>` (total 4 on a
+# public-mode PR, 2 otherwise, MEH-3453; matched by prefix). The
 # WebKit shadow job is "Playwright E2E (WebKit — shadow, non-blocking)" and is
 # deliberately NOT matched: it carries no vote.
 PLAYWRIGHT_PREFIX = "Playwright E2E (Vercel preview)"

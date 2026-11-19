@@ -86,7 +86,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────
   changes:
     name: Paths filter
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 5
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -122,7 +122,7 @@ jobs:
     name: Frontend lint (RTL + Next.js rules)
     needs: changes
     if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     # MEH-485: per-job concurrency. CI checks dedupe per source branch
     # (head_ref on PRs, ref on direct pushes); cancel stale runs.
@@ -159,7 +159,7 @@ jobs:
     name: API contract audit (static)
     needs: changes
     if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 5
     # MEH-485: per-job concurrency, same shape as lint.
     concurrency:
@@ -183,7 +183,7 @@ jobs:
   production:
     name: Trigger Railway production redeploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     # MEH-485: deploy concurrency MUST NOT cancel-in-progress (data
     # integrity — back-to-back main pushes serialize, never abort).
@@ -273,7 +273,7 @@ jobs:
   staging:
     name: Trigger Railway staging redeploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     # MEH-485: same data-integrity rule as production deploy.
     concurrency:
@@ -353,7 +353,7 @@ jobs:
     name: API contract probe (staging)
     needs: staging
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     # MEH-485: probe is verification, not a deploy — fresh probe wins on
     # back-to-back staging pushes. Treated as a CI check.
@@ -386,7 +386,7 @@ jobs:
     name: Deploy gate (required)
     if: always()
     needs: [changes, lint, api-contract-static]
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 3
     steps:
       - name: Aggregate deploy-side required checks

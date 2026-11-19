@@ -45,7 +45,7 @@ concurrency:
 jobs:
   checks:
     name: Post-deploy checks (${{ github.event_name == 'schedule' && 'weekly production crawl' || github.ref_name }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 45
     env:
       BASE_URL: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'staging' || github.event_name == 'push' && github.ref == 'refs/heads/staging') && 'https://staging.mehamakor.online' || 'https://mehamakor.co.il' }}

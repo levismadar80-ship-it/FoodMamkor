@@ -234,6 +234,12 @@ async function stubRejectedOwner(page: Page, reason: string, code: string): Prom
   await page.route("**/producers/me/dashboard", (r) => json(r, { producer: { id: 7, name: "מאפיית שקד", slug: null, status: "rejected", availability_state: "accepting_orders", vacation_until: null }, stats: {} }));
   await page.route("**/producers/me/analytics**", (r) => json(r, { profile_views: { total: 0, last_7d: 0 }, whatsapp_clicks: { total: 0, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 }, average_rating: null, total_reviews: 0, conversion_rate: "0%", top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
   await page.route("**/producers/me", (r) => json(r, profile));
+  // MEH-3316: the dashboard layout asks whether on-site ordering is on
+  // (lib/use-orders-tab.js); 404 = off. Unstubbed, the fake token drew a 401
+  // from the real backend — found by the MEH-2957 guard, which now fails it.
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
 }
 
 // ── locators + the control ─────────────────────────────────────────────────
