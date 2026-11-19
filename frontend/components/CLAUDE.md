@@ -53,12 +53,15 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Horizontal chip row | `ChipScrollRow.jsx` | — |
 | City / address field | `CitySearch.jsx` · `AddressSearch.jsx` | ESLint `no-restricted-syntax` |
 | Image with branded fallback | `ImageWithFallback.jsx` | — |
+| Landing for an email «unsubscribe» link (POST on mount, retry, token stripped) | `EmailLinkUnsubscribe.jsx` | `EmailLinkUnsubscribe` |
+| Admin panel that mints + copies a signed 14-day link for a draft | `admin/AdminLinkPanel.jsx` | `AdminClaimLink` (+ `scripts/checks/clone-ratchet.sh` for copies) |
 
 `Link`, `Badge`, `Heading`, `Card` have no product call sites yet (only
 `app/[locale]/dev/components`, the dev-only gallery). Prefer them over new
 copies, but check the look against the page you are matching.
 
-**When none fits:** extend the owner with a prop before writing a sibling. A
+**When none fits:** extend the owner with a prop before writing a sibling.
+Copying 8+ lines from another file fails `scripts/checks/clone-ratchet.sh` (MEH-3464). A
 genuinely new primitive goes in `ui/` with the `Module / Purpose / Does NOT`
 header, a row here, and a guard when a hand-written copy would be easy to write.
 
