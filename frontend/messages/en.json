@@ -1646,7 +1646,8 @@
           "dedup": "Duplicate?",
           "dedup_name_title": "Same name as another producer — check whether it's a duplicate.",
           "dedup_city_title": "Same city as another producer — check whether it's a duplicate.",
-          "dedup_both_title": "Same name and city as another producer — check whether it's a duplicate."
+          "dedup_both_title": "Same name and city as another producer — check whether it's a duplicate.",
+          "dedup_phone_title": "Same phone as another producer — check whether it's a duplicate."
         },
         "actions": {
           "approve_short": "✓ Approve",
@@ -2752,7 +2753,7 @@
           "steps": [
             "“Waiting N business days”: how long the request has waited.",
             "“Resubmission #N”: the owner fixed and resubmitted.",
-            "“Duplicate?”: same name or city as another business. Check before approving.",
+            "“Duplicate?”: same name, city or phone as another business, in any status. Check before approving.",
             "“Licence pending”: a licence-required category with no number.",
             "“Organizer”: a markets and events organizer, not a business.",
             "“Low / medium / high risk”: an automatic estimate. The decision is yours."

@@ -891,6 +891,8 @@ export const listProducersAdminProducersGetResponseDeliveryCitiesDefault = [];
 export const listProducersAdminProducersGetResponseDeliveryCountDefault = 0;
 export const listProducersAdminProducersGetResponseDeliveryExcludedCitiesDefault = [];
 export const listProducersAdminProducersGetResponseDeliveryNationwideDefault = false;
+export const listProducersAdminProducersGetResponseDupNameDefault = false;
+export const listProducersAdminProducersGetResponseDupPhoneDefault = false;
 export const listProducersAdminProducersGetResponseFavoritesCountDefault = 0;
 export const listProducersAdminProducersGetResponseGlutenFreeFacilityDefault = `unknown`;
 export const listProducersAdminProducersGetResponseGrassFedDefault = false;
@@ -992,6 +994,8 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseDeliveryNationwideDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseDupNameDefault),
+  "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1148,6 +1152,8 @@ export const adminCreateProducerAdminProducersPostResponseDeliveryCitiesDefault 
 export const adminCreateProducerAdminProducersPostResponseDeliveryCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseDeliveryExcludedCitiesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseDeliveryNationwideDefault = false;
+export const adminCreateProducerAdminProducersPostResponseDupNameDefault = false;
+export const adminCreateProducerAdminProducersPostResponseDupPhoneDefault = false;
 export const adminCreateProducerAdminProducersPostResponseFavoritesCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseGlutenFreeFacilityDefault = `unknown`;
 export const adminCreateProducerAdminProducersPostResponseGrassFedDefault = false;
@@ -1249,6 +1255,8 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseDeliveryNationwideDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseDupNameDefault),
+  "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1402,6 +1410,8 @@ export const pendingProducersAdminProducersPendingGetResponseDeliveryCitiesDefau
 export const pendingProducersAdminProducersPendingGetResponseDeliveryCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseDeliveryExcludedCitiesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseDeliveryNationwideDefault = false;
+export const pendingProducersAdminProducersPendingGetResponseDupNameDefault = false;
+export const pendingProducersAdminProducersPendingGetResponseDupPhoneDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseFavoritesCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseGlutenFreeFacilityDefault = `unknown`;
 export const pendingProducersAdminProducersPendingGetResponseGrassFedDefault = false;
@@ -1503,6 +1513,8 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseDeliveryNationwideDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseDupNameDefault),
+  "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1719,6 +1731,8 @@ export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryCitiesDe
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryExcludedCitiesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryNationwideDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseDupNameDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseDupPhoneDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseFavoritesCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseGlutenFreeFacilityDefault = `unknown`;
 export const adminGetProducerAdminProducersProducerIdGetResponseGrassFedDefault = false;
@@ -1820,6 +1834,8 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDeliveryNationwideDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDupNameDefault),
+  "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1973,6 +1989,8 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryCitie
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryExcludedCitiesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryNationwideDefault = false;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseDupNameDefault = false;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseDupPhoneDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseFavoritesCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseGlutenFreeFacilityDefault = `unknown`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseGrassFedDefault = false;
@@ -2074,6 +2092,8 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryNationwideDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "dup_name": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseDupNameDefault),
+  "dup_phone": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseDupPhoneDefault),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

@@ -34,6 +34,7 @@ from app.services.availability_validation import (  # MEH-2758
 )
 from app.services.producer_listing import is_business  # MEH-2459
 from app.services.page_freshness import stale_clause
+from app.services.producer_duplicates import attach_duplicate_signals  # MEH-3408
 from app.routers.producer_me import reconcile_secondary_phone  # MEH-3339
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
@@ -326,6 +327,8 @@ def list_producers(  # noqa: PLR0913 — FastAPI query params + Depends, one per
         attach_badge_fields(p)
         _attach_aging(p)
     _attach_has_owner(db, results)
+    # MEH-3408: «כפילות?» compares against every status, not the loaded page.
+    attach_duplicate_signals(db, results)
     return results
 
 

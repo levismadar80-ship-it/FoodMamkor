@@ -8013,6 +8013,16 @@
             ],
             "title": "Distance Km"
           },
+          "dup_name": {
+            "default": false,
+            "title": "Dup Name",
+            "type": "boolean"
+          },
+          "dup_phone": {
+            "default": false,
+            "title": "Dup Phone",
+            "type": "boolean"
+          },
           "established_year": {
             "anyOf": [
               {
