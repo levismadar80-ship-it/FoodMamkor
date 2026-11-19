@@ -111,7 +111,16 @@ def _active_registrations(
     return (
         db.query(Registration)
         # MEH-3314: a waitlisted visitor is told the item is off too.
-        .filter(column.in_(ids), Registration.status.in_(("registered", "waitlisted")))
+        .filter(
+            column.in_(ids),
+            Registration.status.in_(("registered", "waitlisted")),
+            # MEH-3441: a sign-up for a date that has passed took place —
+            # it is neither cancelled nor mailed, and its booking stays.
+            or_(
+                Registration.session_date.is_(None),
+                Registration.session_date >= israel_today(),
+            ),
+        )
         .with_for_update()
         .all()
     )
@@ -417,7 +426,8 @@ def cancel_session_signups(
                 Registration.status.in_(("registered", "waitlisted")),
                 or_(
                     *(
-                        (Registration.session_date == d) & (Registration.session_time == t)
+                        (Registration.session_date == d)
+                        & (Registration.session_time == t)
                         for d, t in keys
                     )
                 ),
@@ -448,7 +458,13 @@ def notify_item_moved(
     host_name = _host_name_for(item)
     regs = (
         db.query(Registration)
-        .filter(_column_for(item) == item.id, Registration.status == "registered")
+        .filter(
+            _column_for(item) == item.id,
+            Registration.status == "registered",
+            # MEH-3441: a sign-up for a listed date keeps its own date when
+            # the workshop's first date moves, so it is not told it moved.
+            Registration.session_date.is_(None),
+        )
         .all()
     )
     for reg in regs:

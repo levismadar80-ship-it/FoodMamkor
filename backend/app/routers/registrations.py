@@ -99,20 +99,29 @@ def _places_to_offer(
         return 0
     if item.max_participants is None:
         return None
-    if reg is not None and reg.session_date is not None:
-        # MEH-3441: a date's own places — only while that date is still open.
-        found = sessions_svc.find(item, reg.session_date, reg.session_time)  # type: ignore[arg-type]
-        if found is None:
-            return 0
-        key = (reg.session_date, reg.session_time)
-        used = int(found["participants_count"]) + sessions_svc.taken(db, item).get(key, 0)  # type: ignore[arg-type]
-        return max(int(item.max_participants) - used, 0)
+    if isinstance(item, Experience) and sessions_svc.has_sessions(item):
+        return _date_places(db, item, reg)
     if isinstance(item, Event):
         taken = registered_counts(db, event_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
     else:
         taken = registered_counts(db, experience_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
         taken += item.participants_count or 0
     return max(int(item.max_participants) - int(taken), 0)
+
+
+def _date_places(db: Session, ex: Experience, reg: Registration | None) -> int:
+    """MEH-3441: on a workshop with dates, a freed place belongs to its date,
+    and only while that date is open. An undated sign-up from before the
+    dates existed frees nothing: the form now takes only a date."""
+    if reg is None or reg.session_date is None or ex.max_participants is None:
+        return 0
+    d: date = reg.session_date  # type: ignore[assignment]
+    t: time | None = reg.session_time  # type: ignore[assignment]
+    found = sessions_svc.find(ex, d, t)
+    if found is None or t is None:
+        return 0
+    used = int(found["participants_count"]) + sessions_svc.taken(db, ex).get((d, t), 0)
+    return max(int(ex.max_participants) - used, 0)
 
 
 def _event_for_signup(db: Session, event_id: UUID) -> Event:
@@ -408,13 +417,13 @@ def register_for_experience(
             # MEH-3250: a recurring experience's event_date is its FIRST
             # occasion, often long past — the email gives the host's schedule
             # (approved page copy «מתקיימת באופן קבוע» when she left none).
-            date_text=(
-                _date_text(on["session_date"]) if on else _experience_when(ex)
-            ),
+            date_text=(_date_text(on["session_date"]) if on else _experience_when(ex)),
             time_text=(
                 _time_text(on["session_time"])
                 if on
-                else "" if ex.is_recurring else _time_text(ex.event_time)  # type: ignore[arg-type]
+                else ""
+                if ex.is_recurring
+                else _time_text(ex.event_time)  # type: ignore[arg-type]
             ),
             place=place,  # type: ignore[arg-type]
             host_name=host_name,  # type: ignore[arg-type]
@@ -443,7 +452,9 @@ def register_for_experience(
                 spots_left=spots,
                 party_size=int(reg.party_size or 1),  # MEH-3315
                 session_text=(  # MEH-3441
-                    sessions_svc.text(on["session_date"], on["session_time"]) if on else ""
+                    sessions_svc.text(on["session_date"], on["session_time"])
+                    if on
+                    else ""
                 ),
                 # MEH-2884: experiences tab, where the host sees this registration.
                 manage_url=f"{settings.frontend_url}/producer/dashboard/experiences",

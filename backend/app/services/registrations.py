@@ -25,17 +25,19 @@ from collections.abc import Iterable
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.models import Registration
+from app.utils.clock import israel_today
 from app.utils.phone import canonical_il_msisdn
 
 
 def registered_counts(
     db: Session, *, event_ids: Iterable[UUID] = (), experience_ids: Iterable[UUID] = ()
 ) -> dict[UUID, int]:
-    """{item id: places taken by active sign-ups (sum of party_size)}. Items
+    """{item id: places taken by active sign-ups (sum of party_size)} — on
+    a workshop with dates, its fullest upcoming date (MEH-3441). Items
     with none are absent (read as 0)."""
     out: dict[UUID, int] = {}
     for column, ids in (
@@ -46,12 +48,30 @@ def registered_counts(
             continue
         rows = (
             # MEH-3315: a sign-up takes party_size places, not one.
-            db.query(column, func.sum(Registration.party_size))
-            .filter(column.in_(ids), Registration.status == "registered")
-            .group_by(column)
+            # MEH-3441: per occasion — a recurring workshop's dates each
+            # have the cap, so its load is its fullest upcoming date; a
+            # date that has passed holds no places. Undated rows (every
+            # event, every workshop without dates) are one occasion, as
+            # before.
+            db.query(
+                column,
+                Registration.session_date,
+                Registration.session_time,
+                func.sum(Registration.party_size),
+            )
+            .filter(
+                column.in_(ids),
+                Registration.status == "registered",
+                or_(
+                    Registration.session_date.is_(None),
+                    Registration.session_date >= israel_today(),
+                ),
+            )
+            .group_by(column, Registration.session_date, Registration.session_time)
             .all()
         )
-        out.update({item_id: int(n) for item_id, n in rows})
+        for item_id, _d, _t, n in rows:
+            out[item_id] = max(out.get(item_id, 0), int(n))
     return out
 
 

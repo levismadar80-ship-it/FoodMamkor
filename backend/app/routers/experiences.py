@@ -144,7 +144,9 @@ def _serialize_list(ex: Experience, registered: int | None = None) -> dict[str, 
         "registered_count": registered,
         # MEH-3441: a workshop with dates has places per date, not one pool.
         "spots_left": (
-            None if sessions_svc.has_sessions(ex) else _compute_spots_left(ex, registered)
+            None
+            if sessions_svc.has_sessions(ex)
+            else _compute_spots_left(ex, registered)
         ),
         "sessions": _sessions_out(ex),
         "registration_method": ex.registration_method or "site_form",
@@ -606,6 +608,14 @@ def _sessions_edit(ex: Experience, payload: dict[str, Any]) -> list[Any]:
     """MEH-3441: normalise the dates in `payload` in place (422 on a past new
     date, a duplicate, more than 12) and return the upcoming dates it drops,
     whose sign-ups the caller cancels."""
+    recurring = payload.get("is_recurring", ex.is_recurring)
+    if not recurring:
+        # A one-off workshop has no dates: turning recurring off removes
+        # every upcoming one (and cancels its sign-ups), and dates sent
+        # with a one-off are dropped.
+        if "sessions" in payload or "is_recurring" in payload:
+            payload["sessions"] = None
+        return sessions_svc.removed(ex.sessions, [])  # type: ignore[arg-type]
     if "sessions" not in payload:
         return []
     new = sessions_svc.normalise(
@@ -615,6 +625,18 @@ def _sessions_edit(ex: Experience, payload: dict[str, Any]) -> list[Any]:
     )
     payload["sessions"] = new or None
     return sessions_svc.removed(ex.sessions, new)  # type: ignore[arg-type]
+
+
+def _experience_for_edit(
+    db: Session, experience_id: UUID, data: ExperienceUpdate
+) -> Experience | None:
+    """MEH-3441: an edit of the dates locks the row, as the sign-up path does
+    before it counts a date (registrations.py::_experience_for_signup), so a
+    sign-up cannot land on a date this edit is removing."""
+    query = db.query(Experience).filter(Experience.id == experience_id)
+    if {"sessions", "is_recurring"} & data.model_fields_set:
+        query = query.with_for_update()
+    return query.first()
 
 
 @router.put("/{experience_id}", response_model=ExperienceDetailOut)
@@ -627,7 +649,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ExperienceDetailOut | dict[str, Any]:
-    ex = db.query(Experience).filter(Experience.id == experience_id).first()
+    ex = _experience_for_edit(db, experience_id, data)
     if not ex:
         raise HTTPException(status_code=404, detail="החוויה לא נמצאה")
     if ex.host_user_id != user.id:

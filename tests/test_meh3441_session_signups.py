@@ -6,6 +6,7 @@ visitor who came last week could not sign up again. Now an owner lists dates
 and each one has its own places, waitlist and sign-ups.
 """
 
+import secrets
 from datetime import timedelta
 
 import pytest
@@ -270,3 +271,160 @@ def test_the_evening_before_a_date_its_sign_ups_are_reminded(
     assert rr.send_registration_reminders(db) == 1
     assert [to for to, _ in got] == ["soon@example.com"]
     assert got[0][1].date_text == tomorrow.strftime("%d.%m.%Y")
+
+
+# ---------- review round 1: what the dates broke elsewhere ----------
+
+
+def _reg(db, ex, email, day, **kw):
+    from datetime import time as _time
+
+    status = kw.pop("status", "registered")
+    at = kw.pop("at", "10:00")
+
+    row = Registration(
+        experience_id=ex.id,
+        name="דנה כהן",
+        phone="0527654321",
+        email=email,
+        party_size=kw.pop("party_size", 1),
+        status=status,
+        session_date=day,
+        session_time=_time.fromisoformat(at) if day else None,
+        cancel_token=secrets.token_urlsafe(16),
+        **kw,
+    )
+    db.add(row)
+    db.commit()
+    return row
+
+
+class TestReviewRound1:
+    def test_retention_keeps_a_dated_sign_up_until_its_date(self, db):
+        from datetime import datetime, timezone
+
+        from app.services.retention_purge import (
+            REGISTRATION_RETENTION_DAYS,
+            _purge_registrations,
+        )
+
+        _host, ex = _workshop(db, max_participants=5)
+        old = datetime.now(timezone.utc) - timedelta(
+            days=REGISTRATION_RETENTION_DAYS + 5
+        )
+        _reg(db, ex, "early@example.com", D2, created_at=old)
+        _reg(db, ex, "undated@example.com", None, created_at=old)
+        past = israel_today() - timedelta(days=REGISTRATION_RETENTION_DAYS + 1)
+        _reg(db, ex, "gone@example.com", past)
+        _purge_registrations(db, israel_today())
+        db.expire_all()
+        left = {r.email for r in db.query(Registration).all()}
+        assert left == {"early@example.com"}
+
+    def test_a_past_date_holds_no_places_in_the_cap_check(self, client, db, mail):
+        host, ex = _workshop(db, max_participants=5)
+        _reg(
+            db, ex, "past@example.com", israel_today() - timedelta(days=7), party_size=5
+        )
+        assert _join(client, ex, "a@example.com", D1).status_code == 201
+        assert _join(client, ex, "b@example.com", D2).status_code == 201
+        # The past date's 5 places would refuse a cap of 1 if it still counted.
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"max_participants": 1},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+
+    def test_the_cap_check_counts_the_fullest_date_not_the_sum(self, client, db, mail):
+        host, ex = _workshop(db, max_participants=5)
+        for i in range(3):
+            assert _join(client, ex, f"d1-{i}@example.com", D1).status_code == 201
+        for i in range(3):
+            assert _join(client, ex, f"d2-{i}@example.com", D2).status_code == 201
+        ok = client.put(
+            f"/experiences/{ex.id}",
+            json={"max_participants": 3},
+            headers=auth_header(host),
+        )
+        assert ok.status_code == 200, ok.text
+        no = client.put(
+            f"/experiences/{ex.id}",
+            json={"max_participants": 2},
+            headers=auth_header(host),
+        )
+        assert no.status_code == 422
+
+    def test_deactivating_leaves_a_past_date_alone(self, client, db, mail):
+        host, ex = _workshop(db, max_participants=5)
+        _reg(db, ex, "past@example.com", israel_today() - timedelta(days=7))
+        assert _join(client, ex, "a@example.com", D1).status_code == 201
+        mail.clear()
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        db.expire_all()
+        assert _active(db, "past@example.com")[0][1] == "registered"
+        assert _active(db, "a@example.com") == [(D1, "cancelled")]
+        assert [to for k, to, _ in mail] == ["a@example.com"]
+
+    def test_an_undated_cancel_offers_no_place_to_a_dated_waitlist(
+        self, client, db, mail
+    ):
+        _host, ex = _workshop(db, max_participants=2)
+        old = _reg(db, ex, "old@example.com", None)
+        assert _join(client, ex, "a@example.com", D1).status_code == 201
+        _reg(db, ex, "w1@example.com", D1, status="waitlisted")
+        mail.clear()
+        assert (
+            client.post(f"/registrations/{old.cancel_token}/cancel").status_code == 200
+        )
+        assert [to for k, to, _ in mail if k == "offer"] == []
+
+    def test_turning_recurring_off_cancels_the_dates(self, client, db, mail):
+        host, ex = _workshop(db, max_participants=5)
+        assert _join(client, ex, "a@example.com", D1).status_code == 201
+        mail.clear()
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_recurring": False},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        db.expire_all()
+        assert db.get(Experience, ex.id).sessions is None
+        assert _active(db, "a@example.com") == [(D1, "cancelled")]
+        assert [(k, to) for k, to, _ in mail] == [
+            ("send_registrant_cancelled", "a@example.com")
+        ]
+
+    def test_all_dates_passed_is_one_pool_again(self, client, db, mail):
+        past = israel_today() - timedelta(days=3)
+        _host, ex = _workshop(db, max_participants=1, sessions=[_s(past)])
+        _reg(db, ex, "past@example.com", past)
+        assert _join(client, ex, "a@example.com").status_code == 201
+
+    @pytest.mark.usefixtures("mail")
+    def test_moving_the_first_date_does_not_mail_dated_sign_ups(
+        self, client, db, monkeypatch
+    ):
+        got = []
+        monkeypatch.setattr(
+            bc, "send_registrant_moved", lambda to, m, test_cause=False: got.append(to)
+        )
+        host, ex = _workshop(db, max_participants=5)
+        assert _join(client, ex, "a@example.com", D1).status_code == 201
+        res = client.put(
+            f"/experiences/{ex.id}",
+            json={"event_date": (israel_today() + timedelta(days=3)).isoformat()},
+            headers=auth_header(host),
+        )
+        assert res.status_code == 200, res.text
+        assert got == []
+
+    def test_a_time_with_seconds_finds_the_stored_date(self, client, db, mail):
+        _host, ex = _workshop(db)
+        assert _join(client, ex, "a@example.com", D1, at="10:00:00").status_code == 201

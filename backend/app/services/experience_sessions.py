@@ -61,19 +61,22 @@ def _stored(s: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def has_sessions(ex: Experience) -> bool:
-    """Dates decide the places only on a recurring workshop that has some."""
-    return bool(ex.is_recurring and ex.sessions)
-
-
 def upcoming(ex: Experience) -> list[dict[str, Any]]:
     """The dates a visitor can still book, soonest first."""
-    if not has_sessions(ex):
+    if not (ex.is_recurring and ex.sessions):
         return []
     rows = [_stored(s) for s in ex.sessions or []]  # type: ignore[union-attr]
     return sorted(
         (s for s in rows if not _started(_key(s))), key=lambda s: (s["date"], s["time"])
     )
+
+
+def has_sessions(ex: Experience) -> bool:
+    """Dates decide the places only on a recurring workshop with an upcoming
+    one. Once every listed date has passed the workshop is one pool again,
+    as before dates existed (its past-date sign-ups hold no places,
+    services/registrations.py), rather than closed with nothing to pick."""
+    return bool(upcoming(ex))
 
 
 def find(ex: Experience, d: date | None, t: time | None) -> dict[str, Any] | None:
@@ -103,10 +106,12 @@ def require_choice(
 
 
 def scope(d: date | None, t: time | None) -> tuple[Any, ...]:
-    """The filter clauses that keep a count or a lookup to one date. Empty
-    for a sign-up with no date, which is every row of a workshop without."""
+    """The filter clauses that keep a count or a lookup to one date. For a
+    sign-up with no date (every event, every workshop without dates): the
+    undated rows only, so a place freed there is never offered to a
+    waitlister of a listed date."""
     if d is None:
-        return ()
+        return (Registration.session_date.is_(None),)
     return (Registration.session_date == d, Registration.session_time == t)
 
 

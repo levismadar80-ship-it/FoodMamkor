@@ -1080,8 +1080,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > an active event, or an approved, active, non-recurring experience, dated
 > tomorrow on the Israel clock: «תזכורת: "{title}" מחר», with time, place and
 > the cancel link. Rows are stamped and committed before sending, so a rerun
-> sends nothing. Recurring workshops are skipped until a sign-up carries its
-> occurrence date (MEH-3264). Service: `app/services/registration_reminders.py`.
+> sends nothing. A recurring workshop with listed dates reminds the sign-ups
+> of tomorrow's date (MEH-3441); one without dates is still skipped. Service: `app/services/registration_reminders.py`.
 >
 > **MEH-3314 — the waitlist (2026-11-18).** Migration `c9f5a3b7d2e8` adds
 > `registrations.waitlist_offered_at` and `'waitlisted'` to
@@ -1628,7 +1628,7 @@ POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, e
 POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming (not started: a start time today that has passed on the Israel clock closes it, MEH-3288; a recurring experience is not closed by its first date) + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item), unless the body carries `waitlist: true` → 201 {status:"waitlisted"} (MEH-3314). Same email twice → same 201, nothing stored or sent. MEH-3441: a recurring workshop with dates needs `session_date` + `session_time` (422 registration_session_required «בחרו מועד.»; a date not among its upcoming ones → 409 registration_closed). Places (the date's own owner tally + its sign-ups), the waitlist and the repeat-email check are per date, so one address may book two dates; the confirmation and the owner's email carry the date («המועד»).
 GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled and waitlisted, oldest first.
 GET    /experiences/{id}/registrations    auth — host or admin; others 404.
-GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page (status may be waitlisted; the same link leaves the waitlist).
+GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page (status may be waitlisted; the same link leaves the waitlist). MEH-3441: for a sign-up to a listed date, `event_date` is that date.
 PATCH  /registrations/{registration_id}/attendance  auth — the item's owner (event: her business; workshop: the host) or an admin, else 403; 404 unknown id; 409 unless the row is registered. Body {attendance: "attended"|"no_show"|null}. 60/minute. MEH-3315.
 POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner and, when the form would still take a sign-up (active, site_form, not started, below the cap), offers the place to the first waitlisted visitor not yet offered (MEH-3314). A waitlisted row leaves the list the same way.
 ```
