@@ -57,6 +57,9 @@ const DETAIL_ONLY = [
   // line in the contact card; on ProducerDetailOut, not ProducerListOut.
   "secondary_phone",
   "secondary_phone_label",
+  // MEH-3216 stage 5b: detail-only — whether the page offers «הוספה»; set by
+  // the two detail routes, never on a list row.
+  "takes_site_orders",
 ];
 
 const listKeys = () => Object.keys(ProducerListSchema.shape);
