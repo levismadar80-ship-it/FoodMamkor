@@ -1,4 +1,5 @@
 // @ts-check
+import ALLERGEN_DATA from "./allergen-words.json";
 // MEH-2662: the closed allergen list, in the same canonical order as
 // backend/app/allergens.py ALLERGEN_CODES. __tests__/ProductsSectionAllergens.test.jsx
 // ("matches backend/app/allergens.py exactly") reads the backend file and
@@ -70,39 +71,11 @@ export function toggleNoAllergens(state) {
  * Each entry is a term, or [term, notFollowedBy] where notFollowedBy lists
  * the next words that make it a different ingredient («חלב קוקוס»).
  */
-const PLANT_MILKS = ["קוקוס", "שקדים", "סויה", "שיבולת", "אורז", "אגוזים", "צמחי", "צמחית", "טבעוני", "טבעונית"];
-const NON_WHEAT_FLOURS = ["אורז", "תירס", "שקדים", "קוקוס", "חומוס", "כוסמת", "תפוחי", "טפיוקה", "עדשים", "ערמונים", "בוטנים", "סויה", "אגוזים"];
+// The words live in a JSON data file: they are matching data, not copy, and
+// the Hebrew-literal ratchet (HebrewLiteralRatchet.test.js) rightly keeps
+// Hebrew strings out of code.
 /** @type {Record<string, Array<string | [string, string[]]>>} */
-export const ALLERGEN_WORDS = {
-  gluten: [
-    "גלוטן", ["קמח", NON_WHEAT_FLOURS], "קמח חיטה", "חיטה", "כוסמין", "שעורה", "שיפון", "שיבולת שועל",
-    "סולת", ["סובין", ["אורז", "שיבולת"]], "בורגול", "קוסקוס", "פריקה", "פירורי לחם",
-    "gluten", "wheat", "wheat flour", "barley", "rye", "oats", "oat", "spelt", "semolina", "couscous", "bulgur", "breadcrumbs",
-  ],
-  milk: [
-    ["חלב", PLANT_MILKS], "אבקת חלב", ["חמאה", PLANT_MILKS], ["גבינה", PLANT_MILKS], ["גבינת", [...PLANT_MILKS, "קשיו"]], ["שמנת", PLANT_MILKS], ["יוגורט", PLANT_MILKS], ["קצפת", PLANT_MILKS],
-    "מי גבינה", "ריקוטה", "מוצרלה", "פרמזן", "מסקרפונה", "לקטוז", "קזאין",
-    "milk", "milk powder", "butter", "cream", "cheese", "yogurt", "yoghurt", "whey", "lactose", "casein", "ghee",
-  ],
-  eggs: ["ביצה", "ביצים", "ביצת", "חלמון", "חלמונים", "חלבון ביצה", "חלבוני ביצה", "egg", "eggs", "egg yolk", "egg white", "yolk"],
-  tree_nuts: [
-    ["אגוזים", ["קוקוס", "מוסקט"]], ["אגוז", ["קוקוס", "מוסקט"]], "אגוזי מלך", "אגוזי לוז", "אגוזי פקאן", "אגוזי ברזיל",
-    "שקדים", "שקד", "שקדי", "פקאן", "פקאנים", "קשיו", "פיסטוק", "פיסטוקים", "מקדמיה", "לוז", "מרציפן",
-    "almond", "almonds", "walnut", "walnuts", "hazelnut", "hazelnuts", "pecan", "pecans", "cashew", "cashews",
-    "pistachio", "pistachios", "macadamia", "marzipan",
-  ],
-  peanuts: ["בוטנים", "בוטן", "peanut", "peanuts", "groundnut", "groundnuts"],
-  sesame: ["שומשום", "טחינה", "חלבה", "sesame", "tahini", "tahina", "halva"],
-  soy: ["סויה", "טופו", "אדממה", "מיסו", "soy", "soya", "tofu", "edamame", "miso"],
-  fish: ["דג", "דגים", "דגי", "טונה", "סלמון", "אנשובי", "סרדינים", "מקרל", "הרינג", "fish", "tuna", "salmon", "anchovy", "anchovies", "sardines", "cod"],
-  crustaceans: ["סרטנים", "סרטן", "שרימפס", "חסילונים", "לובסטר", "shrimp", "prawn", "prawns", "crab", "lobster"],
-  molluscs: ["רכיכות", "קלמרי", "תמנון", "צדפות", "מולים", "squid", "octopus", "mussels", "clams", "oysters"],
-  celery: ["סלרי", "celery", "celeriac"],
-  mustard: ["חרדל", "mustard"],
-  sulphites: ["סולפיטים", "סולפיט", "sulphite", "sulphites", "sulfite", "sulfites"],
-  lupin: ["תורמוס", "lupin", "lupine"],
-  fava_beans: ["פול", "fava", "fava beans", "broad beans"],
-};
+export const ALLERGEN_WORDS = /** @type {any} */ (ALLERGEN_DATA.words);
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const HEBREW = /[֐-׿]/;
@@ -118,9 +91,9 @@ const NOT_PRECEDED_BY = {
 };
 // One-letter prefixes ש/כ also attach («שלחלב», «כחלב»), but on these short
 // terms they make another word («כפול»), so only ו/ב/ה/מ/ל apply to them.
-const NO_SH_KAF = new Set(["פול", "לוז", "דג", "דגי", "שקד"]);
+const NO_SH_KAF = new Set(ALLERGEN_DATA.noShKaf);
 // Between a term and the word that disqualifies it: space, hyphen, maqaf, «(».
-const GAP = "[\\s\\-\u05BE(]+";
+const GAP = "[\\s\\-\\u05BE(]+";
 
 /**
  * MEH-3443: split `text` into segments, marking the words that name an
@@ -160,7 +133,7 @@ export function highlightAllergens(text, codes, details = {}) {
     .sort((a, b) => b.length - a.length)
     .map((term) => {
       const notFollowedBy = terms.get(term) || [];
-      const prefixes = NO_SH_KAF.has(term) ? "ובהמל" : "ובהמלשכ";
+      const prefixes = NO_SH_KAF.has(term) ? ALLERGEN_DATA.shortPrefixes : ALLERGEN_DATA.prefixes;
       const prefix = HEBREW.test(term) ? `(?:[${prefixes}]{1,2})?` : "";
       const guard = notFollowedBy.length ? `(?!${GAP}(?:${notFollowedBy.map(escapeRe).join("|")}))` : "";
       const before = NOT_PRECEDED_BY[term.toLowerCase()];
