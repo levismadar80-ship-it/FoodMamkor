@@ -126,6 +126,13 @@ class TestOneClick:
         assert parse_qs(loc.query)["token"] == [token]
         assert _opt_out(db, producer.id) is False
 
+    def test_get_with_a_garbage_token_stays_on_our_page(self, client):
+        r = client.get(f"{ONE_CLICK}?token=https://evil.example/x", follow_redirects=False)
+        assert r.status_code == 303
+        loc = urlparse(r.headers["location"])
+        assert loc.netloc == urlparse(settings.frontend_url).netloc
+        assert loc.path.endswith(wos.UNSUBSCRIBE_PATH)
+
     def test_bad_token_is_400(self, client, db):
         producer, _ = _business(db)
         assert client.post(f"{ONE_CLICK}?token=not-a-jwt").status_code == 400
@@ -201,3 +208,9 @@ class TestSendEmailHeaders:
         email_module.send_email("owner@mehamakor-mail.co.il", "s", "b")
         assert len(resend_box) == 1
         assert "headers" not in resend_box[0]
+
+    def test_send_email_result_payload_unchanged(self, resend_box):
+        assert email_module.send_email_result(
+            "owner@mehamakor-mail.co.il", "s", "b", html="<p>x</p>"
+        ) == "sent"
+        assert resend_box[0]["headers"] == {"Content-Transfer-Encoding": "base64"}

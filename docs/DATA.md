@@ -1513,8 +1513,6 @@ DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city
                                                               No admin "sensitive edit" ping — the actor is the admin.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys, pending_orders (on-site orders waiting for an answer; 0 while PRODUCT_ORDERS_ENABLED is off, MEH-3316), products (MEH-3430; -1 when the count failed), products_no_allergens (published products with neither allergens nor may_contain, MEH-3445)} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
-GET    /producers/me/weekly-summary               producer  — { enabled, available } (MEH-3212); available = WEEKLY_OWNER_SUMMARY_ENABLED
-PATCH  /producers/me/weekly-summary               producer  — { enabled } → producers.weekly_summary_opt_out = !enabled; own business only; 30/hour
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +
                                                               new_followers_this_week (MEH-1364: counted from
@@ -1533,6 +1531,8 @@ PATCH  /producers/me/weekly-summary               producer  — { enabled } → 
                                                               column, so `total` is raw-only and shrinks once raw
                                                               page views are purged (MEH-2283 chunk C); read
                                                               last_7d / last_30d. The dashboard reads last_30d only)
+GET    /producers/me/weekly-summary               producer  — { enabled, available } (MEH-3212); available = WEEKLY_OWNER_SUMMARY_ENABLED
+PATCH  /producers/me/weekly-summary               producer  — { enabled } → producers.weekly_summary_opt_out = !enabled; own business only; 30/hour
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row
@@ -2000,7 +2000,7 @@ POST /weekly-summary/unsubscribe public — { token } → producers.weekly_summa
                                  rate-limited 20/hour per IP; token scope `weekly_summary_unsubscribe`,
                                  sub = producer id; 400 «הקישור אינו תקין או שפג תוקפו.»; idempotent 200
 POST /weekly-summary/unsubscribe/one-click?token=  public — RFC 8058 one-click target of the summary's
-                                 List-Unsubscribe header (MEH-3212); same token and effect as above, 20/hour.
+                                 List-Unsubscribe header (MEH-3212); same token and effect as above, 300/hour (shared mail-provider IPs).
 GET  /weekly-summary/unsubscribe/one-click?token=  public — changes nothing; 303 to the /unsubscribe/weekly
                                  page with the same token (a client that opens the header URL); 60/hour
 POST /page-freshness/confirm     public — { token } → producers.last_confirmed_at = now (page freshness)

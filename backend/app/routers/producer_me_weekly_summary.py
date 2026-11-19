@@ -87,7 +87,10 @@ def set_weekly_summary_setting(
 
 
 @one_click_router.post(ONE_CLICK_PATH, status_code=200)
-@limiter.limit("20/hour")
+# Higher than the body link's 20/hour: mail providers POST one-click requests
+# from shared egress ranges, and a 429 here is an unsubscribe that failed. A
+# forged request is already bounded by the token's signature.
+@limiter.limit("300/hour")
 def one_click_unsubscribe(
     request: Request,
     token: str = Query(..., min_length=1, max_length=_MAX_TOKEN),

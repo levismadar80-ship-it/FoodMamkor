@@ -232,7 +232,7 @@ graph LR
     Confirm -.->|background: sync, clears opt-out| ResendContacts
     Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
     WeeklyUnsub[POST /weekly-summary/unsubscribe<br/>🌐 20/hour · signed token, MEH-3079] -->|weekly_summary_opt_out = true| ProducersTable[(producers)]
-    WeeklyOneClick[POST /weekly-summary/unsubscribe/one-click<br/>🌐 20/hour · List-Unsubscribe header, MEH-3212<br/>GET → 303 to the page, changes nothing] -->|weekly_summary_opt_out = true| ProducersTable
+    WeeklyOneClick[POST /weekly-summary/unsubscribe/one-click<br/>🌐 300/hour · List-Unsubscribe header, MEH-3212<br/>GET → 303 to the page, changes nothing] -->|weekly_summary_opt_out = true| ProducersTable
     WeeklyToggle[GET·PATCH /producers/me/weekly-summary<br/>👤 owner switch on «תובנות», MEH-3212] -->|weekly_summary_opt_out = !enabled| ProducersTable
     FreshConfirm[POST /page-freshness/confirm<br/>🌐 20/hour · signed token, 404 on any dead link] -->|last_confirmed_at = now| ProducersTable
 
