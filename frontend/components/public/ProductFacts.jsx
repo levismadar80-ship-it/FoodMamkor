@@ -12,11 +12,12 @@
  * History:  MEH-2662 (ingredients + allergens); MEH-3439 «מכיל / עלול להכיל»;
  *           MEH-3442 cereal/nut detail; MEH-3444 storage; MEH-3445 «אין»;
  *           MEH-3450 (moved here; one closed row «פרטים על המוצר» with the
- *           allergen line always visible under its title — Sapir 19/11 18:07).
+ *           allergen line always visible under its title — Sapir 19/11 18:07);
+ *           MEH-3443 (ticked «מכיל» words emphasised inside the ingredients).
  */
 import { CaretDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { ALLERGEN_CODES } from "@/lib/allergens";
+import { ALLERGEN_CODES, highlightAllergens } from "@/lib/allergens";
 
 const FACTS = "producer.detail.sections.products.facts";
 
@@ -134,7 +135,16 @@ export default function ProductFacts({ product }) {
                 className="whitespace-pre-line text-sm leading-relaxed text-text"
                 data-testid="product-sheet-ingredients"
               >
-                {product.ingredients}
+                {/* MEH-3443: only codes in «מכיל» — «עלול להכיל» is a trace, not an ingredient. */}
+                {highlightAllergens(String(product.ingredients), allergenCodes, detailByCode).map((seg, i) =>
+                  seg.hit ? (
+                    <strong key={i} className="font-medium">
+                      {seg.text}
+                    </strong>
+                  ) : (
+                    seg.text
+                  ),
+                )}
               </p>
             </div>
           )}
