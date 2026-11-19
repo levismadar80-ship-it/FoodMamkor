@@ -132,9 +132,11 @@ DEMO_PRODUCER = {
         "נועה לביא, דור שני למאפייה. למדה אפייה בצרפת, חזרה לזכרון יעקב "
         "ופתחה מאפייה קטנה שבה כל לחם עולה לתנור באותו בוקר שבו הוא נמכר."
     ),
-    "owner_photo_url": (
-        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-owner"
-    ),
+    # MEH-2794 (19/11): no owner photo. mehamakor/demo/ruach-hasadeh-owner was
+    # never uploaded (staging /_next/image → 404 while ruach-hasadeh-hero → 200),
+    # so the dashboard preview showed a broken image. OwnerCard renders without
+    # a photo (OwnerCard.jsx:46). DO NOT point this at an asset nobody uploaded.
+    "owner_photo_url": None,
     # MEH-1706 §2 item 3 — order_window (MEH-1543 column, MEH-1869 value shape).
     # CANONICAL shape is a LIST of ranges per day (schemas.py:87-118); the legacy
     # single-dict form is still accepted on write but every new row writes the
