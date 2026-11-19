@@ -224,4 +224,21 @@ test.describe("axe a11y net — extended public routes (MEH-921)", () => {
       ).toEqual([]);
     });
   }
+  // MEH-3351: the pages a business lands on at launch (outreach links point at
+  // /join, then /join/pricing). Written before the a11y net reached them and
+  // never scanned. Same gate, same ignores. /rescue is not here: the E2E build
+  // runs with NEXT_PUBLIC_RESCUE_BAGS_ENABLED off, so the page is a 404 there.
+  for (const [route, ready] of [
+    ["/join", "h1"],
+    ["/join/pricing", "h1"],
+  ] as const) {
+    test(route, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState("domcontentloaded");
+      await expect(page.locator(ready).first()).toBeVisible({ timeout: 20_000 });
+      const results = await analyze(page);
+      summarize(route, results);
+      expect(gateViolations(results), `critical/serious axe violations on ${route}`).toEqual([]);
+    });
+  }
 });
