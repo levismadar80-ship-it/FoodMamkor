@@ -1,6 +1,15 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 import { LICENSE_REQUIRED_CATEGORIES, PRODUCER_LICENSE_REGEX } from "../../../lib/license-required-categories";
 
+// MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
+// Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
+// and the fake token draws a 401 that logs the page out. 404 = ordering off.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/producers/me/order-settings", (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+});
+
 /**
  * Spec:     manual/dashboard-trust-cards — MEH-1249 chunk 11g of 12
  * Purpose:  Convert the CONVERT-verdict rows of three edit-tab cards:
@@ -192,6 +201,10 @@ test.describe("licence card", () => {
     await expect(body(page, "license").getByText(HINT)).toHaveCount(0);
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
+    // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
+    await page.route("**/producers/me/order-settings", (r) =>
+      r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+    );
     await stubEdit(page, { profile: { ...BASE, categories: [{ id: 3, name: REQUIRED_CAT }] } });
     await openAt(page, "license");
     await expect(body(page, "license").getByText(HINT)).toBeVisible();
@@ -293,6 +306,10 @@ test.describe("kashrut card", () => {
     await openAt(page, "kashrut");
     const code = await firstCode(page);
     await page.unrouteAll({ behavior: "ignoreErrors" });
+    // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
+    await page.route("**/producers/me/order-settings", (r) =>
+      r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+    );
     await stubEdit(page, { kashrutRequests: [{ id: 5, badge_code: code, status: "rejected", notes: "התעודה לא קריאה — נא לצלם שוב" }] });
     await openAt(page, "kashrut");
     const list = page.getByTestId("kashrut-requests");

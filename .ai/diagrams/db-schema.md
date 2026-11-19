@@ -451,6 +451,8 @@ erDiagram
         timestamp waitlist_offered_at "MEH-3314 the one offer email"
         int party_size "MEH-3315 1-10, places taken"
         string attendance "MEH-3315 NULL|attended|no_show"
+        date session_date "MEH-3440 workshop date, NULL = none"
+        time session_time "MEH-3440"
     }
 
     business_billing {
@@ -493,6 +495,7 @@ erDiagram
         string registration_method "MEH-2763; legacy rows backfilled whatsapp"
         string registration_url "MEH-2763 external_url only"
         int min_participants "nullable; minimum to run (MEH-2665)"
+        jsonb sessions "MEH-3440 recurring dates [{date,time,participants_count}]; NULL = one pool"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
