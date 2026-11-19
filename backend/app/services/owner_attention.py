@@ -11,7 +11,8 @@ Does NOT: send anything (the per-event emails live in content_notifications
           the frontend renders the counts.
 Related:  backend/app/routers/producer_me.py `dashboard` (the only caller) ·
           frontend/components/producer/OwnerAttentionCard.jsx.
-History:  MEH-3108 (creation); MEH-3430 (product count for the menu row).
+History:  MEH-3108 (creation); MEH-3430 (product count for the menu row);
+          MEH-3445 (products with no allergen declaration).
 """
 
 import logging
@@ -52,6 +53,7 @@ class OwnerAttention(TypedDict):
     funded_group_buys: int
     pending_orders: int
     products: int  # MEH-3430: 0 → the «העלו תפריט» row
+    products_no_allergens: int  # MEH-3445: > 0 → the «לסימון» row
 
 
 def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
@@ -143,6 +145,23 @@ def _products(db: Session, producer_id: UUID) -> int:
     return int(n or 0)
 
 
+def _products_no_allergens(db: Session, producer_id: UUID) -> int:
+    # MEH-3445: a published product where neither «מכיל» nor «עלול להכיל» is
+    # ticked — the sheet then says «בית העסק לא ציין אלרגנים» (MEH-3439).
+    # A draft is not on the page yet, so it is not waiting for her.
+    n: Any = (
+        db.query(func.count(Product.id))
+        .filter(
+            Product.producer_id == producer_id,
+            Product.is_draft.is_(False),
+            Product.allergens.is_(None),
+            Product.may_contain.is_(None),
+        )
+        .scalar()
+    )
+    return int(n or 0)
+
+
 def owner_attention(
     db: Session, producer_id: UUID, host_user_id: Any
 ) -> OwnerAttention:
@@ -164,6 +183,7 @@ def owner_attention(
             "pending_orders": 0,
             # Unknown, not zero: a failed count must not tell her she has none.
             "products": -1,
+            "products_no_allergens": 0,
         }
 
 
@@ -174,4 +194,5 @@ def _counts(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention
         "funded_group_buys": _funded_group_buys(db, producer_id),
         "pending_orders": _pending_orders(db, producer_id),
         "products": _products(db, producer_id),
+        "products_no_allergens": _products_no_allergens(db, producer_id),
     }

@@ -14,7 +14,8 @@
  *           greeting).
  * History:  MEH-3108 (creation); MEH-3316 (on-site orders waiting, first row);
  *           MEH-3430 (no products yet → upload a menu, last row; not for an
- *           organizer, who has no catalog).
+ *           organizer, who has no catalog); MEH-3445 (products with no
+ *           allergens marked, after the menu row; not for an organizer).
  */
 
 import { useTranslations } from "next-intl";
@@ -27,7 +28,8 @@ const SIGNUP_HREF = {
 
 /**
  * The rows to show, in a fixed order: orders waiting (MEH-3316), reviews, the item with the most new
- * sign-ups, funded group buys, no products yet (MEH-3430). At most 5.
+ * sign-ups, funded group buys, no products yet (MEH-3430), products with no allergens
+ * marked (MEH-3445). At most 5: «menu» needs 0 products and «allergens» needs some.
  * @param {any} attention
  * @param {boolean} [isOrganizer]
  * @returns {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]}
@@ -62,6 +64,16 @@ function attentionRows(attention, isOrganizer = false) {
   // old backend sends nothing; neither must tell her she has no products.
   if (!isOrganizer && attention.products === 0) {
     rows.push({ key: "menu", text: ["menu", {}], cta: "menu_cta", href: "/producer/dashboard/edit#products" });
+  }
+  // MEH-3445: products whose sheet says «בית העסק לא ציין אלרגנים».
+  const unmarked = Number(attention.products_no_allergens) || 0;
+  if (!isOrganizer && unmarked > 0) {
+    rows.push({
+      key: "allergens",
+      text: ["allergens", { count: unmarked }],
+      cta: "allergens_cta",
+      href: "/producer/dashboard/edit?group=products#products",
+    });
   }
   return rows;
 }

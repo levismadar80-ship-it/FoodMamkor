@@ -5005,7 +5005,9 @@
         "orders": "{count, plural, one {One order waiting for confirmation} other {# orders waiting for confirmation}}",
         "orders_cta": "Confirm",
         "menu": "No products on your page yet. You can upload a menu instead of typing.",
-        "menu_cta": "Upload a menu"
+        "menu_cta": "Upload a menu",
+        "allergens": "{count, plural, one {One product has no allergens marked} other {# products have no allergens marked}}",
+        "allergens_cta": "Mark them"
       },
       "status": {
         "pending": {
