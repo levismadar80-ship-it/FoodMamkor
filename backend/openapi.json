@@ -5938,6 +5938,10 @@
       },
       "OrderMenuOut": {
         "properties": {
+          "business_id_number": {
+            "title": "Business Id Number",
+            "type": "string"
+          },
           "cancel_cutoff_hours": {
             "title": "Cancel Cutoff Hours",
             "type": "integer"
@@ -5982,6 +5986,7 @@
           "min_order_agorot",
           "cancel_cutoff_hours",
           "lead_time_hours",
+          "business_id_number",
           "products",
           "slots"
         ],
@@ -12289,6 +12294,18 @@
             ],
             "title": "Auto Confirm Slot Cap"
           },
+          "business_id_number": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Id Number"
+          },
           "cancel_cutoff_hours": {
             "maximum": 168.0,
             "minimum": 0.0,
@@ -12335,7 +12352,8 @@
           "shabbat_observant",
           "min_order_agorot",
           "slot_minutes",
-          "lead_time_hours"
+          "lead_time_hours",
+          "business_id_number"
         ],
         "title": "ProducerOrderSettingsIn",
         "type": "object"
@@ -12360,6 +12378,17 @@
               }
             ],
             "title": "Auto Confirm Slot Cap"
+          },
+          "business_id_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Id Number"
           },
           "cancel_cutoff_hours": {
             "title": "Cancel Cutoff Hours",
@@ -12408,7 +12437,8 @@
           "min_order_agorot",
           "slot_minutes",
           "lead_time_hours",
-          "alcohol_licensed"
+          "alcohol_licensed",
+          "business_id_number"
         ],
         "title": "ProducerOrderSettingsOut",
         "type": "object"

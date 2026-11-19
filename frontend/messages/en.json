@@ -1010,6 +1010,7 @@
         "total_estimate": "Total, approximately: ₪{total}",
         "payment_line": "You pay the business directly: {methods}. No payment on the site.",
         "cancel_line": "You can cancel or change until {cutoff}.",
+        "seller_line": "Seller: {name} · Business no. {number}{city, select, none {} other { · {city}}}",
         "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
         "send": "Send the request",
         "close": "Close",
@@ -5729,7 +5730,11 @@
           "save": "Save",
           "saved": "Saved",
           "cap_required": "To confirm automatically, choose how many orders per slot",
-          "bad_amount": "Write the amount in numbers"
+          "bad_amount": "Write the amount in numbers",
+          "business_id": "Business or company number",
+          "business_id_help": "Shown to customers on the order form, as the law requires.",
+          "business_id_required": "To take orders on the site, fill in your business number.",
+          "business_id_format": "A business or company number has 9 digits."
         },
         "windows": {
           "title": "When orders are handed over",

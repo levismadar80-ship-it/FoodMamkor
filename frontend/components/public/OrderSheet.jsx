@@ -12,7 +12,7 @@
  *           live in OrderSheetPhone.jsx.
  * Related:  lib/order-sheet.js (bodies + calls), components/public/OrderBar.jsx
  *           (opens it), app/[locale]/order/[id]/ (where it lands)
- * History:  MEH-3216 stage 5c (creation)
+ * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»)
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -147,7 +147,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         )}
       </div>
       <Totals quote={quote} delivery={delivery} t={t} />
-      <Disclosures producer={producer} deadline={deadline} locale={locale} t={t} />
+      <Disclosures producer={producer} menu={menu} deadline={deadline} locale={locale} t={t} />
       {quoteError && <InlineMessage tone="error" className="mt-3">{quoteError}</InlineMessage>}
       {error && <InlineMessage tone="error" className="mt-3">{error}</InlineMessage>}
       <div className="mt-5 flex gap-3">
@@ -208,10 +208,15 @@ function Totals({ quote, delivery, t }) {
   );
 }
 
-function Disclosures({ producer, deadline, locale, t }) {
+function Disclosures({ producer, menu, deadline, locale, t }) {
   const methods = producer?.payment_info?.methods ?? [];
   return (
     <div className="mt-4 space-y-1 text-xs text-fg-muted" data-testid="order-sheet-disclosures">
+      {/* MEH-3216: the seller's identity before the order, as distance selling requires.
+          The city only: the street address stays private (MEH-829). */}
+      <p data-testid="order-sheet-seller">
+        {t("seller_line", { name: producer?.name ?? "", number: menu.business_id_number, city: producer?.city?.trim() || "none" })}
+      </p>
       {methods.length > 0 && <PaymentLine methods={methods} t={t} />}
       {deadline && <p>{t("cancel_line", { cutoff: `${dayLabel(deadline, locale)} ${hhmm(deadline)}` })}</p>}
       <p>{t("platform_line")}</p>

@@ -35,6 +35,7 @@ const MENU = {
   min_order_agorot: null,
   cancel_cutoff_hours: 12,
   lead_time_hours: 24,
+  business_id_number: "512345678",
   products: [product(ID_A)],
   slots: [],
 };

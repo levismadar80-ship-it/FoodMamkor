@@ -13,6 +13,7 @@ History:  MEH-3218 (creation; stage 1 of MEH-3216); MEH-3262 (slot_minutes,
           lead_time_hours)
 """
 
+import re
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -35,6 +36,23 @@ AUTO_CONFIRM_NEEDS_CAP_DETAIL = (
 )
 
 
+# MEH-3216 — Sapir approved NEEDS_ID 19/11 06:05Z.
+BUSINESS_ID_NEEDED_DETAIL = "כדי לקבל הזמנות באתר צריך למלא מספר עוסק."
+BUSINESS_ID_FORMAT_DETAIL = "מספר עוסק או ח״פ הוא 9 ספרות."
+BUSINESS_ID_DIGITS = 9
+_BUSINESS_ID_SHORT = (
+    8  # a ת״ז-based number typed without its leading zero (shape below)
+)
+# Spaces (incl. no-break), dashes of every kind and the invisible direction
+# marks a paste from a Hebrew document carries.
+_BUSINESS_ID_SEPARATORS = re.compile(
+    r"[\s\-\u2010-\u2015\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b\ufeff]"
+)
+_BUSINESS_ID_SHAPE = re.compile(
+    rf"[0-9]{{{_BUSINESS_ID_SHORT},{BUSINESS_ID_DIGITS}}}"
+)  # ASCII only: the DB CHECK is [0-9]
+
+
 class ProducerOrderSettingsIn(BaseModel):
     """What the owner may change. Every field is required: the settings screen
     saves the whole form, so a missing field is a client bug, not "leave it"."""
@@ -52,6 +70,23 @@ class ProducerOrderSettingsIn(BaseModel):
     # MEH-3262: how long one slot is, and how early an order must be sent.
     slot_minutes: int
     lead_time_hours: int = Field(..., ge=0, le=PRODUCT_ORDER_MAX_LEAD_HOURS)
+    # MEH-3216: «מספר עוסק או ח״פ». Required in the body like the rest, so an
+    # older client cannot clear it by leaving it out; null or blank = none.
+    business_id_number: str | None = Field(..., max_length=20)
+
+    @field_validator("business_id_number")
+    @classmethod
+    def _nine_digits(cls, value: str | None) -> str | None:
+        """Spaces and dashes are dropped, and an 8-digit number gets its
+        leading zero back, so «51-234567-8» and «12345678» are accepted."""
+        if value is None:
+            return None
+        digits = _BUSINESS_ID_SEPARATORS.sub("", value)
+        if not digits:
+            return None
+        if not _BUSINESS_ID_SHAPE.fullmatch(digits):
+            raise ValueError(BUSINESS_ID_FORMAT_DETAIL)
+        return digits.zfill(BUSINESS_ID_DIGITS)
 
     @field_validator("slot_minutes")
     @classmethod
@@ -66,6 +101,14 @@ class ProducerOrderSettingsIn(BaseModel):
         # confirm without limit, which is the thing the cap exists to prevent.
         if self.auto_confirm and self.auto_confirm_slot_cap is None:
             raise ValueError(AUTO_CONFIRM_NEEDS_CAP_DETAIL)
+        return self
+
+    @model_validator(mode="after")
+    def _ordering_needs_a_business_id(self) -> "ProducerOrderSettingsIn":
+        # MEH-3216: the order form must show the seller's number (distance-
+        # selling disclosure), so ordering cannot be on without it.
+        if self.enabled and not self.business_id_number:
+            raise ValueError(BUSINESS_ID_NEEDED_DETAIL)
         return self
 
 
@@ -88,3 +131,4 @@ class ProducerOrderSettingsOut(BaseModel):
     slot_minutes: int
     lead_time_hours: int
     alcohol_licensed: bool
+    business_id_number: str | None

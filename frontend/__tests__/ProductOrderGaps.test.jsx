@@ -227,6 +227,8 @@ describe("per-slot cap: also without auto-confirm", () => {
     minimum: "",
     slot_minutes: 60,
     lead_time_hours: 24,
+    businessId: "512345678",
+    business_id_number: "512345678",
   };
 
   it("a cap typed with auto-confirm off is sent, not dropped", () => {
@@ -245,5 +247,13 @@ describe("per-slot cap: also without auto-confirm", () => {
     expect(cap.value).toBe("");
     await act(async () => fireEvent.click(screen.getByTestId("orders-settings-save")));
     expect(api.put.mock.calls[0][1].auto_confirm_slot_cap).toBeNull();
+  });
+
+  it("«מספר עוסק»: a pasted «51 234 567 8» is not cut short by the field (it would save a wrong 8-digit number)", () => {
+    const settings = { ...form, auto_confirm_slot_cap: null, min_order_agorot: null, alcohol_licensed: false, producer_id: P1 };
+    render(wrap(<OrderSettingsCard settings={settings} onSaved={() => {}} />));
+    const field = screen.getByTestId("orders-business-id");
+    expect(field.value).toBe("512345678");
+    expect(field.maxLength).toBeGreaterThanOrEqual("51 234 567 8".length);
   });
 });

@@ -88,6 +88,7 @@ def valid_settings_payload() -> dict:
         "min_order_agorot": None,
         "slot_minutes": 60,
         "lead_time_hours": 24,
+        "business_id_number": "512345678",
     }
 
 
@@ -369,6 +370,7 @@ def test_a_business_that_never_saved_has_ordering_off(client, db, flag_on):
         "slot_minutes": 60,
         "lead_time_hours": 24,
         "alcohol_licensed": False,
+        "business_id_number": None,
     }
 
 

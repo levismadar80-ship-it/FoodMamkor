@@ -70,6 +70,7 @@ def _owner(db, **producer_fields):
 
 
 def _enable(db, producer, **fields):
+    fields.setdefault("business_id_number", "512345678")
     row = ProducerOrderSettings(producer_id=producer.id, enabled=True, **fields)
     db.add(row)
     db.commit()

@@ -37,6 +37,7 @@ const MENU = {
   min_order_agorot: null,
   cancel_cutoff_hours: 12,
   lead_time_hours: 0,
+  business_id_number: "512345678",
   products: [product(BREAD), product(WINE, { name: "יין", contains_alcohol: true })],
   slots: [
     slot("2026-11-20T10:00:00Z", "2026-11-20T11:00:00Z"),
@@ -107,6 +108,15 @@ describe("OrderSheet", () => {
     expect(screen.getByText("התשלום ישירות לבית העסק: ביט, מזומן. באתר לא משלמים.")).toBeTruthy();
     expect(screen.getByText(/מהמקור מעבירה את הבקשה לבית העסק/)).toBeTruthy();
     expect(screen.queryByTestId("order-sheet-age")).toBeNull();
+  });
+
+  it("names the seller before the order: name, «מספר עוסק», and the city only when there is one", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const { unmount } = renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: "רחובות" });
+    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מספר עוסק 512345678 · רחובות");
+    unmount();
+    renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: " " });
+    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מספר עוסק 512345678");
   });
 
   it("asks for the age declaration when a line is alcohol", () => {

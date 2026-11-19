@@ -70,13 +70,16 @@ def closed_days(producer: Producer) -> ClosedDays:
 
 def takes_orders(producer: Producer | None, row: ProducerOrderSettings | None) -> bool:
     """One answer for every "no": unknown business, not shown on the site, a
-    seeded test row, ordering never switched on, or switched off."""
+    seeded test row, ordering never switched on, or switched off — or no
+    business number to show on the order form (MEH-3216; the settings route
+    refuses that, this covers a row written any other way)."""
     return bool(
         producer is not None
         and not producer.is_test
         and indexnow.is_public_business(producer)
         and row is not None
         and row.enabled
+        and row.business_id_number
     )
 
 

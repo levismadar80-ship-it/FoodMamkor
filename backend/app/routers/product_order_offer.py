@@ -254,6 +254,7 @@ def get_order_menu(
         "min_order_agorot": row.min_order_agorot,
         "cancel_cutoff_hours": row.cancel_cutoff_hours,
         "lead_time_hours": row.lead_time_hours,
+        "business_id_number": row.business_id_number,
         "products": _menu_products(db, producer_id, bool(row.alcohol_licensed)),
         "slots": [
             {

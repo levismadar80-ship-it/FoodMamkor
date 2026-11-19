@@ -25,11 +25,19 @@ def flag_off(monkeypatch):
     monkeypatch.setattr(settings, "product_orders_enabled", False, raising=False)
 
 
-def _business(db, *, enabled: bool | None):
+def _business(
+    db, *, enabled: bool | None, business_id_number: str | None = "512345678"
+):
     producer = make_producer(db, name=f"מאפייה {uuid.uuid4().hex[:6]}")
     producer.slug = f"bakery-{uuid.uuid4().hex[:8]}"
     if enabled is not None:
-        db.add(ProducerOrderSettings(producer_id=producer.id, enabled=enabled))
+        db.add(
+            ProducerOrderSettings(
+                producer_id=producer.id,
+                enabled=enabled,
+                business_id_number=business_id_number,
+            )
+        )
     db.commit()
     return producer
 
@@ -46,6 +54,11 @@ def test_a_business_taking_orders_says_so_on_both_reads(client, db, flag_on):
     assert _both_reads(client, producer) == (True, True)
 
 
+def test_switched_on_without_a_business_id_number_reads_false(client, db, flag_on):
+    producer = _business(db, enabled=True, business_id_number=None)
+    assert _both_reads(client, producer) == (False, False)
+
+
 def test_ordering_switched_off_or_never_set_reads_false(client, db, flag_on):
     off = _business(db, enabled=False)
     never = _business(db, enabled=None)
@@ -53,7 +66,9 @@ def test_ordering_switched_off_or_never_set_reads_false(client, db, flag_on):
     assert _both_reads(client, never) == (False, False)
 
 
-def test_the_site_flag_off_hides_a_business_that_switched_ordering_on(client, db, flag_off):
+def test_the_site_flag_off_hides_a_business_that_switched_ordering_on(
+    client, db, flag_off
+):
     producer = _business(db, enabled=True)
     assert _both_reads(client, producer) == (False, False)
 
