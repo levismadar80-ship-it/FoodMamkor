@@ -21,7 +21,8 @@ from pydantic import BaseModel, Field, model_validator
 from app.limits import MAX_PRODUCTS
 from app.schemas.catalog import ProductCreate
 
-PriceUnit = Literal["unit", "kg", "100g"]
+from app.schemas.product_order_offer import PriceUnit  # MEH-2936: one definition
+
 UncertainField = Literal["name", "description", "price", "unit"]
 
 

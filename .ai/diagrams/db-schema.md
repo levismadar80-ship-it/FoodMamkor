@@ -165,7 +165,7 @@ erDiagram
         text nuts_detail "MEH-3442: «איזה אגוז?», kept only while tree_nuts is declared"
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
-        varchar price_unit "MEH-3218: unit|kg|100g, default unit"
+        varchar price_unit "MEH-3218: unit|kg|100g; MEH-2936: +bottle|box; default unit"
         boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
@@ -260,7 +260,7 @@ erDiagram
         string name "copied at order time"
         int unit_price_agorot "copied at order time"
         boolean price_is_estimate
-        string price_unit "unit|kg|100g"
+        string price_unit "unit|kg|100g|bottle|box"
         int qty "1..99"
         boolean contains_alcohol
     }

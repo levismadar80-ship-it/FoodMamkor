@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { DraftProductSchema } from "@/lib/api-schemas";
-import { formatPriceRange } from "@/lib/utils";
+import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -130,7 +130,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
               <span className="flex-1 min-w-0">
                 <span className="font-medium block truncate">{p.name}</span>
                 <span className="text-sm text-muted">
-                  {formatPriceRange(p.price_min, p.price_max)}
+                  <ProductPrice product={p} />
                 </span>
               </span>
               {confirmId === p.id ? (
