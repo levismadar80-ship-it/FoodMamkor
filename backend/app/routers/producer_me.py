@@ -1351,6 +1351,16 @@ def update_my_product(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
         payload,
         bool(producer and _test_cause(producer, user)),
     )
+    # MEH-2924: a price is optional now, but «עד» alone is not a price. The
+    # schema can only see the fields sent, so check the row as it will be.
+    new_min = payload.get("price_min", product.price_min)
+    new_max = payload.get("price_max", product.price_max)
+    if new_min is None and new_max is not None:
+        raise HTTPException(status_code=422, detail="מחיר «עד» צריך גם מחיר «מ-»")
+    if new_min is not None and new_max is not None and new_max < new_min:
+        raise HTTPException(
+            status_code=422, detail="מחיר «עד» צריך להיות גדול או שווה למחיר «מ-»"
+        )
     for field, value in payload.items():
         setattr(product, field, value)
     db.commit()

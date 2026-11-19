@@ -65,3 +65,50 @@ def test_a_price_still_has_its_floor(client, db):
         URL, json={"name": "תפוזי עונה", "price_min": 0}, headers=auth_header(user)
     )
     assert r.status_code == 422, r.text
+
+
+def _product(db, user, **price):
+    p = Product(producer_id=user.producer_id, name="עגבניות", **price)
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    return p
+
+
+def test_update_max_only_on_a_priceless_product_is_422(client, db):
+    """The schema sees only the fields sent; the route checks the row as it
+    will be stored, so «עד» cannot be added to a product with no «מ-»."""
+    user = _owner(db)
+    p = _product(db, user)
+    r = client.put(f"{URL}/{p.id}", json={"price_max": 40}, headers=auth_header(user))
+    assert r.status_code == 422, r.text
+    db.refresh(p)
+    assert p.price_max is None
+
+
+def test_update_clearing_min_under_a_max_is_422(client, db):
+    user = _owner(db)
+    p = _product(db, user, price_min=20, price_max=40)
+    r = client.put(f"{URL}/{p.id}", json={"price_min": None}, headers=auth_header(user))
+    assert r.status_code == 422, r.text
+    db.refresh(p)
+    assert p.price_min == 20
+
+
+def test_update_clearing_both_is_200(client, db):
+    user = _owner(db)
+    p = _product(db, user, price_min=20, price_max=40)
+    r = client.put(
+        f"{URL}/{p.id}",
+        json={"price_min": None, "price_max": None},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["price_min"] is None and r.json()["price_max"] is None
+
+
+def test_update_max_below_stored_min_is_422(client, db):
+    user = _owner(db)
+    p = _product(db, user, price_min=30)
+    r = client.put(f"{URL}/{p.id}", json={"price_max": 10}, headers=auth_header(user))
+    assert r.status_code == 422, r.text

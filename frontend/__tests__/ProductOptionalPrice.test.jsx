@@ -4,7 +4,8 @@ import he from "../messages/he.json";
 
 /**
  * MEH-2924 — a product with no price reads «מחיר משתנה לפי עונה» on the
- * public sheet, never «₪» or «0», and the JSON-LD emits no broken offer.
+ * public sheet, never «₪» or «0». The JSON-LD side (no priceSpecification for
+ * a null price) is pinned in seo.test.js, the «יוגורט כבשים» case.
  * REUSES: __tests__/ProductSheetAllergens.test.jsx (mocks + real he.json).
  */
 const lookup = (full) => full.split(".").reduce((o, k) => (o == null ? undefined : o[k]), he);
