@@ -2352,6 +2352,7 @@ export const SetAlcoholLicensedAdminProducersProducerIdOrderSettingsAlcoholPutRe
   "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
   "auto_confirm": /*#__PURE__*/ zod.boolean(),
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "business_id_number": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
   "lead_time_hours": /*#__PURE__*/ zod.int(),
@@ -6171,6 +6172,7 @@ export const GetMyOrderSettingsProducersMeOrderSettingsGetResponse = /*#__PURE__
   "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
   "auto_confirm": /*#__PURE__*/ zod.boolean(),
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "business_id_number": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
   "lead_time_hours": /*#__PURE__*/ zod.int(),
@@ -6190,6 +6192,7 @@ export const PutMyOrderSettingsProducersMeOrderSettingsPutResponse = /*#__PURE__
   "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
   "auto_confirm": /*#__PURE__*/ zod.boolean(),
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "business_id_number": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
   "lead_time_hours": /*#__PURE__*/ zod.int(),
@@ -7381,6 +7384,7 @@ export const GetKashrutCertProducersProducerIdKashrutCertBadgeCodeGetResponse = 
  * @summary Get Order Menu
  */
 export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/ zod.object({
+  "business_id_number": /*#__PURE__*/ zod.string(),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "lead_time_hours": /*#__PURE__*/ zod.int(),
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),

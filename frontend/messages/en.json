@@ -5688,7 +5688,11 @@
           "save": "Save",
           "saved": "Saved",
           "cap_required": "To confirm automatically, choose how many orders per slot",
-          "bad_amount": "Write the amount in numbers"
+          "bad_amount": "Write the amount in numbers",
+          "business_id": "Business or company number",
+          "business_id_help": "Shown to customers on the order form, as the law requires.",
+          "business_id_required": "To take orders on the site, fill in your business number.",
+          "business_id_format": "A business or company number has 9 digits."
         },
         "windows": {
           "title": "When orders are handed over",

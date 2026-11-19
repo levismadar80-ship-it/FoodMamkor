@@ -11,7 +11,8 @@
  * Does NOT: show `alcohol_licensed` as editable (admin only), or the hand-over
  *           windows (OrderWindowsCard).
  * History:  MEH-3316 (creation; stage 4 of MEH-3216); MEH-3216 gaps (the
- *           per-slot cap is always shown and holds for manual confirm too)
+ *           per-slot cap is always shown and holds for manual confirm too);
+ *           MEH-3216 «מספר עוסק או ח״פ» (needed to switch ordering on)
  */
 
 import { useState } from "react";
@@ -29,6 +30,18 @@ import { agorotFromInput, saveSettings, shekelsText } from "@/lib/product-orders
 const SLOT_MINUTES = [30, 60, 120];
 const HOUR_CHOICES = [0, 1, 2, 3, 6, 12, 24, 48];
 const DEFAULT_CAP = 3;
+// MEH-3216: «מספר עוסק או ח״פ» — 9 digits; 8 is a ת״ז-based number typed
+// without its leading zero. The server applies the same rule.
+const BUSINESS_ID_DIGITS = 9;
+const BUSINESS_ID_SHORT = 8;
+
+/** What she typed → nine digits, null when blank, or NaN when it is not a number. */
+export function businessIdFromInput(typed) {
+  const digits = String(typed ?? "").replace(/[\s-]/g, "");
+  if (!digits) return null;
+  if (!/^\d+$/.test(digits) || digits.length < BUSINESS_ID_SHORT || digits.length > BUSINESS_ID_DIGITS) return Number.NaN;
+  return digits.padStart(BUSINESS_ID_DIGITS, "0");
+}
 
 /** The choices, plus the stored value when it is not one of them. */
 function withCurrent(choices, current) {
@@ -51,6 +64,7 @@ function toForm(settings) {
     ...settings,
     cap: String(settings.auto_confirm_slot_cap ?? ""),
     minimum: (settings.min_order_agorot ?? null) === null ? "" : shekelsText(settings.min_order_agorot),
+    businessId: settings.business_id_number ?? "",
   };
 }
 
@@ -60,6 +74,9 @@ export function toBody(form) {
   const cap = form.cap === "" ? null : Number(form.cap);
   if (Number.isNaN(minimum) || (cap !== null && !Number.isInteger(cap))) return { problem: "bad_amount" };
   if (form.auto_confirm && !(cap && cap >= 1)) return { problem: "cap_required" };
+  const businessId = businessIdFromInput(form.businessId);
+  if (Number.isNaN(businessId)) return { problem: "business_id_format" };
+  if (form.enabled && !businessId) return { problem: "business_id_required" };
   return {
     body: {
       enabled: form.enabled,
@@ -70,6 +87,7 @@ export function toBody(form) {
       min_order_agorot: minimum,
       slot_minutes: form.slot_minutes,
       lead_time_hours: form.lead_time_hours,
+      business_id_number: businessId,
     },
   };
 }
@@ -135,6 +153,18 @@ export default function OrderSettingsCard({ settings, onSaved, collapsed = false
       </summary>
       <p className="text-sm text-fg-muted">{t("lead")}</p>
       <SwitchRow id="orders-enabled" label={t("enabled")} checked={form.enabled} onChange={(on) => set("enabled", on)} />
+      <Input
+        label={t("business_id")}
+        helperText={t("business_id_help")}
+        placeholder="123456789"
+        inputMode="numeric"
+        autoComplete="off"
+        dir="ltr"
+        maxLength={11}
+        value={form.businessId}
+        onChange={(e) => set("businessId", e.target.value)}
+        data-testid="orders-business-id"
+      />
       <SwitchRow
         id="orders-auto"
         label={t("auto_confirm", { count: form.cap || DEFAULT_CAP })}

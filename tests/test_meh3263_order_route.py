@@ -87,7 +87,12 @@ class Shop:
         )
         self.owner.producer_id = self.producer.id
         self.owner.is_producer = True
-        fields = {"enabled": True, "lead_time_hours": 0, "cancel_cutoff_hours": 2}
+        fields = {
+            "enabled": True,
+            "lead_time_hours": 0,
+            "cancel_cutoff_hours": 2,
+            "business_id_number": "512345678",
+        }
         fields.update(settings)
         db.add(ProducerOrderSettings(producer_id=self.producer.id, **fields))
         self.bread = Product(

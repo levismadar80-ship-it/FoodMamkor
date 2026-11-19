@@ -227,6 +227,8 @@ describe("per-slot cap: also without auto-confirm", () => {
     minimum: "",
     slot_minutes: 60,
     lead_time_hours: 24,
+    businessId: "512345678",
+    business_id_number: "512345678",
   };
 
   it("a cap typed with auto-confirm off is sent, not dropped", () => {
