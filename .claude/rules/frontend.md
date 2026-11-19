@@ -306,6 +306,21 @@ only; the desktop chip stayed until MEH-2769.
 
 ---
 
+## A route change goes through the router — never `history.pushState` (MEH-3463)
+
+Two routes that are one screen (tabs) share a **layout** that renders the
+screen once (`app/[locale]/(whats-on)/layout.js`); the page files carry only
+the route and its metadata, and the tab is read from `usePathname()`. Switch
+with `router.push(path, { scroll: false })` or `<Link>`. Writing another route
+with `history.pushState` leaves Next holding one URL with the other page's
+tree — on 20/11 that put half the hub on «אירועים» and half on «חוויות» in
+production. `pushState` is for a new **query on the same path** only, and each
+such file is listed with its reason in
+`frontend/__tests__/NoHandWrittenRouteChangeGuard.test.js`, which fails on any
+other caller.
+
+---
+
 ## After UI changes
 
 - Cover the new behaviour with an automated test; only a real-device-only
