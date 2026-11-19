@@ -244,8 +244,31 @@ test.describe("contact channels — the wire", () => {
     const email = b(page).getByRole("textbox", { name: "אימייל" });
     await expect(email).toHaveValue("owner@example.com");
     await email.fill("");
+    // MEH-3449: one first attempt in CI ended with no PUT at all, and 104 local
+    // repeats (CPU ×4/×8/×16) never did. Before the click, gate on the two
+    // states the click needs — the field really empty and the button enabled
+    // (it is `disabled={!dirty}`) — so a lost edit fails HERE, by name, and not
+    // as a missing PUT. After the click, a failure says what the card showed.
+    await expect(email, "the cleared email did not stay cleared before the click").toHaveValue("");
+    await expect(save(page), "the save button never enabled — the card did not see the edit").toBeEnabled();
+    const seen: string[] = [];
+    page.on("request", (r) => seen.push(`${r.method()} ${new URL(r.url()).pathname}`));
     await save(page).click();
-    await expect.poll(() => writes.filter((w) => w.method === "PUT").length, { message: "the PUT never left the browser" }).toBe(1);
+    await expect.poll(() => writes.filter((w) => w.method === "PUT").length, {
+      message: "the PUT never left the browser",
+    }).toBe(1).catch(async (e: Error) => {
+      const state = await page.evaluate(() => {
+        const root = document.querySelector("#contact-channels");
+        const btn = [...(root?.querySelectorAll("button") ?? [])].find((x) => /שמירת ערוצי קשר|נשמר|שומר/.test(x.textContent ?? ""));
+        return {
+          url: location.pathname + location.search + location.hash,
+          email: (root?.querySelector('input[type="email"]') as HTMLInputElement | null)?.value ?? "<no field>",
+          button: btn ? `${btn.textContent?.trim()} disabled=${btn.disabled}` : "<no button>",
+          error: root?.querySelector('[role="alert"], .text-error')?.textContent?.trim() ?? null,
+        };
+      }).catch(() => "<page gone>");
+      throw new Error(`${e.message}\n[MEH-3449] after the click: ${JSON.stringify(state)} · requests since: ${seen.join(", ") || "none"}`);
+    });
     expect((writes.find((w) => w.method === "PUT")!.body as Record<string, unknown>).contact_email).toBeNull();
   });
 
