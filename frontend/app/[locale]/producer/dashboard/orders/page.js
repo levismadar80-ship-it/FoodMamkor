@@ -19,13 +19,14 @@
  *           read, GET /producers/me/products/ordering)
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { SkeletonList } from "@/components/Skeleton";
+import OrderSetupChecklist from "@/components/dashboard/orders/OrderSetupChecklist";
 import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
@@ -54,6 +55,13 @@ export default function OrdersPage() {
   const [failed, setFailed] = useState(false);
 
   const [attempt, setAttempt] = useState(0);
+  // MEH-3216: what the «מה חסר» checklist needs beyond the settings.
+  const [products, setProducts] = useState(/** @type {{ orderable: number, total: number } | null} */ (null));
+  const [windowsCount, setWindowsCount] = useState(/** @type {number | null} */ (null));
+  const countProducts = useCallback(
+    (/** @type {any[]} */ rows) => setProducts({ orderable: rows.filter((p) => p.is_orderable).length, total: rows.length }),
+    [],
+  );
 
   useEffect(() => {
     let live = true;
@@ -94,12 +102,18 @@ export default function OrdersPage() {
       {!data && !failed && <Skeleton count={3} testId="orders-loading" />}
       {data?.settings && (
         <>
+          <OrderSetupChecklist
+            settings={data.settings}
+            windowsCount={windowsCount ?? data.windows.length}
+            orderableCount={products?.orderable ?? null}
+            hasProducts={Boolean(products?.total)}
+          />
           <OrdersBoard orders={data.orders} onChanged={replace} />
           {/* MEH-3216 gaps: the products' two daily switches sit right under
               the orders — «אזל כרגע» is flipped mid-day, the settings are not. */}
-          <OrderProductsCard setUp={setUp} />
+          <OrderProductsCard setUp={setUp} onChange={countProducts} />
           <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={setUp} />
-          <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={setUp} />
+          <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={setUp} onSaved={(saved) => setWindowsCount(saved.length)} />
         </>
       )}
     </div>

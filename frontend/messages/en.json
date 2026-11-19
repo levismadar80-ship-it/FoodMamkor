@@ -5737,7 +5737,8 @@
           "business_id": "Business or company number",
           "business_id_help": "Shown to customers on the order form, as the law requires.",
           "business_id_required": "To take orders on the site, fill in your business number.",
-          "business_id_format": "A business or company number has 9 digits."
+          "business_id_format": "A business or company number has 9 digits.",
+          "commission": "Orders through the site carry a commission according to your plan. <link>Details in the terms</link>."
         },
         "windows": {
           "title": "When orders are handed over",
@@ -5824,6 +5825,20 @@
         "prep": {
           "title": "What to prepare",
           "line": "{count} × {name}"
+        },
+        "intro": {
+          "title": "New: pre-orders from your page",
+          "body": "Customers pick products and a pickup or delivery time, and send you a request. You confirm from your dashboard, and they pay you directly.",
+          "cta": "Set up orders",
+          "later": "Not now"
+        },
+        "checklist": {
+          "title": "What's missing to take orders",
+          "business_id": "Business or company number",
+          "windows": "Hand-over hours",
+          "product": "At least one product open for ordering",
+          "enabled": "Turn on \"Take orders on the site\"",
+          "done": "All set. Customers can order from your page."
         }
       }
     },

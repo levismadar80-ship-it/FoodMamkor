@@ -18,6 +18,7 @@ import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
 import WhatsNewCard from "@/components/producer/WhatsNewCard";
+import OrdersIntroCard from "@/components/producer/OrdersIntroCard";
 import WhatsNewRow from "@/components/producer/WhatsNewRow";
 import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
 import { useOwnerWelcome } from "@/hooks/useWhatsNew";
@@ -508,8 +509,11 @@ export default function ProducerDashboardPage() {
           <OwnerWelcomeCard onClose={welcome.dismiss} showCta={!(completenessFirst && profile && !isOrganizer)} />
         ) : slotMoment ? (
           <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
-        ) : (
+        ) : isOrganizer ? (
           <WhatsNewCard />
+        ) : (
+          // MEH-3216: on-site ordering, once, before «חדש במהמקור».
+          <OrdersIntroCard fallback={<WhatsNewCard />} />
         ))}
       <OwnerAttentionCard attention={data?.attention} isOrganizer={isOrganizer} />
 

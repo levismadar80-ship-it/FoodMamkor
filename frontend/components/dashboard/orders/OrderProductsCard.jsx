@@ -73,12 +73,12 @@ function ProductRow({ product, onSaved }) {
 }
 
 /**
- * @param {{ setUp?: boolean, initial?: any[] | null }} props
+ * @param {{ setUp?: boolean, initial?: any[] | null, onChange?: (products: any[]) => void }} props
  *   setUp: ordering is on with a window — the card then starts folded, but
  *   only once at least one product is open for ordering (otherwise this card
  *   is the next thing she has to do). `initial` skips the read (tests).
  */
-export default function OrderProductsCard({ setUp = false, initial = null }) {
+export default function OrderProductsCard({ setUp = false, initial = null, onChange = undefined }) {
   const t = useTranslations("dashboard.producer.orders");
   const [products, setProducts] = useState(/** @type {any[] | null} */ (initial));
   const [failed, setFailed] = useState(false);
@@ -99,12 +99,16 @@ export default function OrderProductsCard({ setUp = false, initial = null }) {
     };
   }, [initial]);
 
+  // MEH-3216: the page's «מה חסר» checklist counts the open products.
+  useEffect(() => {
+    if (products) onChange?.(products);
+  }, [products, onChange]);
   if (failed) return <InlineMessage tone="error">{t("load_error")}</InlineMessage>;
   if (!products || products.length === 0) return null;
   const replace = (/** @type {any} */ saved) =>
     setProducts((old) => (old ?? []).map((p) => (p.id === saved.id ? saved : p)));
   return (
-    <details open={startFolded === null ? !(setUp && products.some((p) => p.is_orderable)) : !startFolded} className="group rounded-lg border border-border bg-surface p-4 space-y-3" data-testid="order-products">
+    <details open={startFolded === null ? !(setUp && products.some((p) => p.is_orderable)) : !startFolded} className="group rounded-lg border border-border bg-surface p-4 space-y-3" id="order-products" data-testid="order-products">
       <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
         <h2 className="font-bold text-lg text-text">{t("products.title")}</h2>
         <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
