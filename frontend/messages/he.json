@@ -749,6 +749,7 @@
     },
     "claim": {
       "title": "קבלת עמוד העסק",
+      "title_named": "העמוד של {name} במהמקור",
       "description": "הכנו לכם עמוד במהמקור"
     },
     "producer": {
