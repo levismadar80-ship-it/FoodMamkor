@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import api from "@/lib/api";
 import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
 
 /**
@@ -21,5 +22,11 @@ import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
  * own user gesture, which Safari needs.
  */
 export default function DraftPreviewLinkPanel({ producerId }) {
-  return <AdminLinkPanel producerId={producerId} namespace="admin.producers.draft_preview" path="preview-link" testid="draft-preview-link" />;
+  return (
+    <AdminLinkPanel
+      mint={() => api.post(`/admin/producers/${producerId}/preview-link`)}
+      namespace="admin.producers.draft_preview"
+      testid="draft-preview-link"
+    />
+  );
 }

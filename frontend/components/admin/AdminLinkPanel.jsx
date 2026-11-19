@@ -3,7 +3,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
@@ -19,8 +18,8 @@ import Input from "@/components/ui/Input";
  *           (ClaimLinkPanel) and the read-only preview link
  *           (DraftPreviewLinkPanel) are this one panel with a different
  *           endpoint, copy namespace and test-id prefix (MEH-3464).
- * Touches:  POST /admin/producers/{id}/{path} — stateless, a fresh token per
- *           click, no DB write.
+ * Touches:  whatever `mint` posts (each wrapper names its own endpoint, so the
+ *           static API-contract audit can read it) — stateless, no DB write.
  * Does NOT: send the link anywhere (the admin pastes it herself), or decide
  *           who may use it — the server does (409 shown verbatim).
  * Related:  components/admin/ClaimLinkPanel.jsx · DraftPreviewLinkPanel.jsx.
@@ -30,9 +29,9 @@ import Input from "@/components/ui/Input";
  * Mint on click, copy on a second click: the clipboard write stays inside its
  * own user gesture, which Safari needs (same reason as RequestReviewCard).
  *
- * @param {{ producerId: string | number, namespace: string, path: string, testid: string }} props
+ * @param {{ mint: () => Promise<{ data: unknown }>, namespace: string, testid: string }} props
  */
-export default function AdminLinkPanel({ producerId, namespace, path, testid }) {
+export default function AdminLinkPanel({ mint, namespace, testid }) {
   const t = useTranslations(namespace);
   const locale = useLocale();
   const [link, setLink] = useState(null);
@@ -54,7 +53,7 @@ export default function AdminLinkPanel({ producerId, namespace, path, testid }) 
     setCopied(false);
     setCopyFailed(false);
     try {
-      const r = await api.post(`/admin/producers/${producerId}/${path}`);
+      const r = await mint();
       // Rule 19: a malformed payload is an error, never a link to paste.
       const parsed = ProducerClaimLinkSchema.safeParse(r.data);
       if (parsed.success) setLink(parsed.data);

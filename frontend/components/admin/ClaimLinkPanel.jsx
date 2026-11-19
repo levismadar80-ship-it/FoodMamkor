@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import api from "@/lib/api";
 import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
 
 /**
@@ -21,5 +22,11 @@ import AdminLinkPanel from "@/components/admin/AdminLinkPanel";
  * own user gesture, which Safari needs (same reason as RequestReviewCard).
  */
 export default function ClaimLinkPanel({ producerId }) {
-  return <AdminLinkPanel producerId={producerId} namespace="admin.producers.claim" path="claim-link" testid="claim-link" />;
+  return (
+    <AdminLinkPanel
+      mint={() => api.post(`/admin/producers/${producerId}/claim-link`)}
+      namespace="admin.producers.claim"
+      testid="claim-link"
+    />
+  );
 }
