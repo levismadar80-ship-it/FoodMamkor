@@ -26,7 +26,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 from app.database import Base
 from app.utils.clock import utc_now
@@ -144,6 +144,12 @@ class Experience(Base):
     duration_minutes = Column(Integer, nullable=True)
     is_recurring = Column(Boolean, default=False)
     recurring_schedule = Column(Text, nullable=True)  # "כל שישי 9:00-12:00"
+    # MEH-3440 (MEH-3264): the dates an owner opens for a recurring workshop —
+    # [{"date": "YYYY-MM-DD", "time": "HH:MM", "participants_count": int}].
+    # NULL / [] = no dates set: one pool of places, as before. Uniqueness and
+    # the 12-date cap are the API's (a column, not a table — see revision
+    # f2c8a4d6e9b1 for why).
+    sessions = Column(JSONB, nullable=True)
 
     # Location — producer_farm is explicitly NOT an option; that's what Event is for
     location_type = Column(String(20), default="home")  # home | public
@@ -241,6 +247,13 @@ class Registration(Base):
         ),
         Index("ix_registrations_event_id", "event_id"),
         Index("ix_registrations_experience_id", "experience_id"),
+        # MEH-3440: places, waitlist and the duplicate check count per date.
+        Index(
+            "ix_registrations_experience_session",
+            "experience_id",
+            "session_date",
+            "session_time",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -274,6 +287,10 @@ class Registration(Base):
         SmallInteger, nullable=False, server_default=text("1"), default=1
     )
     attendance = Column(String(10), nullable=True)
+    # MEH-3440: the date of a recurring workshop this sign-up is for. NULL =
+    # no date (an event, a one-off, or a recurring one with no dates set).
+    session_date = Column(Date, nullable=True)
+    session_time = Column(Time, nullable=True)
 
     event = relationship("Event")
     experience = relationship("Experience")
