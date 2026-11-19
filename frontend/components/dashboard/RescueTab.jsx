@@ -102,6 +102,9 @@ export default function RescueTab() {
   // not known (still loading, or the read failed): the form is not withheld
   // on a guess, the server still refuses a town outside the pilot.
   const [pilotIds, setPilotIds] = useState(/** @type {string[] | null} */ (null));
+  // Answered (or failed) — until then the form waits, so an out-of-pilot
+  // point never flashes a form it cannot submit (reviewer finding).
+  const [pilotChecked, setPilotChecked] = useState(false);
 
   // MEH-2703: today's bags with what was not collected. Reloaded with the
   // orders, so marking «לא הגיע» updates the leftover count at once.
@@ -149,7 +152,8 @@ export default function RescueTab() {
         const parsed = PilotLocationsOut.safeParse(r.data);
         if (parsed.success) setPilotIds(parsed.data.location_ids.map(String));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPilotChecked(true));
     api
       .get("/producers/me")
       .then((r) => {
@@ -306,7 +310,9 @@ export default function RescueTab() {
     (orders || []).filter((o) => o.offer_id === offerId && o.status === "reserved").length;
   // MEH-2702: the group for the town of the point bags are published from,
   // national fallback otherwise.
-  const leftoverHref = leftoverGroupUrl(exactLocation?.city);
+  // MEH-2921: the point bags actually go out from, when there is one.
+  const bagLocation = publishLocation ?? exactLocation;
+  const leftoverHref = leftoverGroupUrl(bagLocation?.city);
   // MEH-2703: bags not collected once the window closed (the server returns
   // 0 before pickup_end), and how many of them the business gave away.
   const leftoverRows = offers.filter((o) => Number(o.leftover) > 0);
@@ -324,7 +330,7 @@ export default function RescueTab() {
   const leftoverText = t("leftover_share_text", {
     count: leftoverTotal,
     name: businessName,
-    city: exactLocation?.city || "",
+    city: bagLocation?.city || "",
   });
   async function shareLeftover() {
     // MEH-2996: the site's one share sequence (lib/share-link.js).
@@ -397,7 +403,7 @@ export default function RescueTab() {
 
       {/* MEH-2921 (d): the code box is for handing a bag over. A business
           that cannot publish and has no open order has nothing to hand over. */}
-      {(!gated || counters.reserved > 0) && (
+      {orders !== null && (!gated || counters.reserved > 0 || notice?.at === AT.code) && (
       <div className="space-y-2" data-notice-scope="code" data-testid="rescue-code-box">
         <div className="flex gap-2">
           <Input inline size="sm"
@@ -634,7 +640,7 @@ export default function RescueTab() {
             {t("needs_address_cta")}
           </LocaleLink>
         </section>
-      ) : locationsLoaded && !publishLocation ? (
+      ) : locationsLoaded && !pilotChecked ? null : locationsLoaded && !publishLocation ? (
         // MEH-2921 (c): exact point, but its town is not open for bags yet.
         <section
           className="border border-border rounded-md px-4 py-4 space-y-2"

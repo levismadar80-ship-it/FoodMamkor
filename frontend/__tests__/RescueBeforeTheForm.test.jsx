@@ -147,3 +147,32 @@ describe("RescueTab — both publish buttons, same facts (MEH-2935)", () => {
     expect(screen.getByText("מחיר לסל (₪)")).toBeTruthy();
   });
 });
+
+describe("RescueTab — review findings (MEH-2921)", () => {
+  beforeEach(() => get.mockReset());
+
+  it("while the pilot read is pending: no form and no not-in-pilot box yet", async () => {
+    mock();
+    const base = get.getMockImplementation();
+    get.mockImplementation((url) =>
+      url === "/producers/me/rescue/pilot-locations" ? new Promise(() => {}) : base(url),
+    );
+    renderTab();
+    await screen.findByTestId("rescue-counters");
+    await screen.findByTestId("rescue-items-section");
+    expect(screen.queryByTestId("rescue-publish-today")).toBeNull();
+    expect(screen.queryByTestId("rescue-not-in-pilot")).toBeNull();
+  });
+
+  it("an in-pilot exact point listed after an out-of-pilot one still gets the form", async () => {
+    mock({
+      locations: [
+        { id: OUTSIDE, location_precision: "exact", city: "אילת" },
+        { id: IN_PILOT, location_precision: "exact", city: "רעננה" },
+      ],
+    });
+    renderTab();
+    await screen.findByTestId("rescue-publish-today");
+    expect(screen.queryByTestId("rescue-not-in-pilot")).toBeNull();
+  });
+});
