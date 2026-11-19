@@ -13869,6 +13869,18 @@
             ],
             "title": "Email"
           },
+          "external_order_form": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Order Form"
+          },
           "farmer_declaration_accepted": {
             "default": false,
             "title": "Farmer Declaration Accepted",

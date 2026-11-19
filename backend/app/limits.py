@@ -110,7 +110,7 @@ OWNED_TABLE_CAPS = {
 
 OWNED_TABLE_EXEMPT = {
     "delivery_areas": "written only as the delivery_areas list on ProducerUpdate, capped by MAX_DELIVERY_CITIES",
-    "producer_categories": "written only from category_ids, capped at 3 by _cap_categories_validator",
+    "producer_categories": "written only from category_ids, capped at MAX_PRODUCER_CATEGORIES (5, MEH-2925) by _cap_categories_validator",
     "rescue_typical_items": "one row per business (PUT replaces it)",
     "producer_offers": "history rows: each save deactivates the old offer and inserts one (producer_me.py ~190), so growth is bounded by the PUT /producers/me rate limit",
     "producer_name_change_requests": "409 while one is pending (producer_name_requests.py)",

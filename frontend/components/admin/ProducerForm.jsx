@@ -32,10 +32,10 @@ import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 
-// MEH-1297: a producer may hold at most 3 categories; the first-selected is the
+// MEH-1297: a producer may hold at most 5 categories (MEH-2925: was 3); the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
 // (schemas.MAX_PRODUCER_CATEGORIES) and the register CategorySelector.
-const MAX_CATEGORIES = 3;
+const MAX_CATEGORIES = 5;
 
 // MEH-1506: candidates under this review count are shown with a note that the
 // public rating line won't render for them (mirrors backend MIN_REVIEWS=20).

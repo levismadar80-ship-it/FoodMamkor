@@ -23,7 +23,7 @@ from app.models.models import Category, Producer, ProducerCategory
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
 
-CAP_MSG = "ניתן לבחור עד 3 קטגוריות לבית עסק"
+CAP_MSG = "ניתן לבחור עד 5 קטגוריות לבית עסק"  # MEH-2925: 3 → 5
 # MEH-530/743: bakery + honey require a producer license; veggies/oils do not.
 BAKERY = "לחמים ואפייה"
 HONEY = "דבש"
@@ -37,10 +37,10 @@ def _create_payload(category_ids: list[int]) -> dict:
 class TestCategoryCap:
     """MEH-1297 — the ≤3 Pydantic cap on POST /producers."""
 
-    def test_four_categories_422(self, client, db):
-        """cap-4 → 422 with the Hebrew message."""
+    def test_six_categories_422(self, client, db):
+        """MEH-2925: 6 → 422 with the Hebrew message."""
         user = make_user(db)
-        cats = [make_category(db, name=f"קטגוריה-{i}", emoji="🥬") for i in range(4)]
+        cats = [make_category(db, name=f"קטגוריה-{i}", emoji="🥬") for i in range(6)]
         resp = client.post(
             "/producers",
             json=_create_payload([c.id for c in cats]),
@@ -49,17 +49,17 @@ class TestCategoryCap:
         assert resp.status_code == 422, resp.text
         assert CAP_MSG in resp.text
 
-    def test_three_categories_201(self, client, db):
-        """3 → 201 (the cap boundary is inclusive)."""
+    def test_five_categories_201(self, client, db):
+        """MEH-2925: 5 → 201 (the cap boundary is inclusive)."""
         user = make_user(db)
-        cats = [make_category(db, name=f"קטגוריה-{i}", emoji="🥬") for i in range(3)]
+        cats = [make_category(db, name=f"קטגוריה-{i}", emoji="🥬") for i in range(5)]
         resp = client.post(
             "/producers",
             json=_create_payload([c.id for c in cats]),
             headers=auth_header(user),
         )
         assert resp.status_code == 201, resp.text
-        assert len(resp.json()["categories"]) == 3
+        assert len(resp.json()["categories"]) == 5
 
 
 class TestCategoryOrder:
@@ -121,9 +121,9 @@ class TestCategoryOrder:
         assert returned == [c.id, a.id, b.id]
 
     def test_update_cap_422(self, client, db):
-        """PUT with 4 categories → 422 (ProducerUpdate cap)."""
+        """PUT with 6 categories (MEH-2925) → 422 (ProducerUpdate cap)."""
         admin = make_user(db, role="admin")
-        cats = [make_category(db, name=f"ק-{i}", emoji="🥬") for i in range(4)]
+        cats = [make_category(db, name=f"ק-{i}", emoji="🥬") for i in range(6)]
         producer = make_producer(db, category=cats[0])
         resp = client.put(
             f"/admin/producers/{producer.id}",

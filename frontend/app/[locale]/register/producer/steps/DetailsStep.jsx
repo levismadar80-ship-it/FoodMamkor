@@ -13,7 +13,7 @@ import RegisterNameCheck from "@/components/RegisterNameCheck";
 import { validateIsraeliPhone } from "@/lib/validators";
 import { PRICING_PATH } from "@/lib/pricing";
 import Button from "@/components/ui/Button";
-import { CROSS_STEP_REQUIRED, FULFILMENT_OPTIONS, STEP } from "../registerProducerShared";
+import { CROSS_STEP_REQUIRED, FULFILMENT_AXES, STEP, fulfilmentHasAxis, toggleFulfilmentAxis } from "../registerProducerShared";
 
 /** @param {Record<string, any>} props */
 export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfilment, fulfilmentError, handleCityKnownChange, isOrganizer, isUpgrade, numberedTitle, phoneErrorMessage, runRequiredGate, set, setAndSave, setError, setFulfilmentError, setStep, setStepError, t }) {
@@ -142,31 +142,35 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                 {t("auth.register.producer.fields.fulfilment.legend")}
                 <span aria-hidden="true"> *</span>
               </legend>
-              {FULFILMENT_OPTIONS.map((opt) => (
+              {/* MEH-2939: two checkboxes, at least one — «גם וגם» is both ticked. */}
+              {FULFILMENT_AXES.map((axis) => (
                 <label
-                  key={opt.value}
-                  htmlFor={`fulfilment-${opt.value}`}
+                  key={axis}
+                  htmlFor={`fulfilment-${axis}`}
                   className="flex items-center gap-3 min-h-touch cursor-pointer"
                 >
                   <input
-                    type="radio"
-                    id={`fulfilment-${opt.value}`}
+                    type="checkbox"
+                    id={`fulfilment-${axis}`}
                     name="fulfilment"
-                    value={opt.value}
-                    data-testid={`register-fulfilment-${opt.value}`}
-                    checked={fulfilment === opt.value}
+                    value={axis}
+                    data-testid={`register-fulfilment-${axis}`}
+                    checked={fulfilmentHasAxis(fulfilment, axis)}
                     onChange={() => {
                       setStepError("");
                       setFulfilmentError("");
-                      setAndSave((prev) => ({ ...prev, fulfilment: opt.value }));
+                      setAndSave((prev) => ({ ...prev, fulfilment: toggleFulfilmentAxis(prev.fulfilment, axis) }));
                     }}
                     className="w-5 h-5 accent-primary shrink-0"
                   />
                   <span className="text-sm text-text">
-                    {t(`auth.register.producer.fields.fulfilment.${opt.value}`)}
+                    {t(`auth.register.producer.fields.fulfilment.${axis}`)}
                   </span>
                 </label>
               ))}
+              <p className="text-xs text-fg-muted text-start" data-testid="register-fulfilment-hint">
+                {t("auth.register.producer.fields.fulfilment.multi_hint")}
+              </p>
               {fulfilmentError && (
                 <p className="text-xs text-error" data-testid="register-fulfilment-error">
                   {fulfilmentError}
@@ -181,6 +185,26 @@ export default function DetailsStep({ clearFieldError, fieldErrors, form, fulfil
                 {t("auth.register.producer.fields.fulfilment.areas_note")}
               </p>
             </fieldset>
+            )}
+
+            {/* MEH-2938: the store / order-form link, optional. Same column the
+                dashboard's contact card edits (external_order_form, MEH-296);
+                the server keeps its http(s)-only guard. */}
+            {!isOrganizer && (
+              <Input
+                id="register-external-order"
+                data-testid="register-external-order"
+                type="url"
+                dir="ltr"
+                inputMode="url"
+                label={t("auth.register.producer.fields.external_order_form_label")}
+                placeholder="https://"
+                value={form.external_order_form || ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setAndSave((prev) => ({ ...prev, external_order_form: v }));
+                }}
+              />
             )}
 
             <div className="flex gap-3">

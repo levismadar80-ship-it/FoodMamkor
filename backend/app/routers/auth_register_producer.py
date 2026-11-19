@@ -269,6 +269,7 @@ async def register_producer(
             phone=data.phone,
             instagram=data.instagram,
             website=data.website,
+            external_order_form=data.external_order_form,  # MEH-2938
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
@@ -509,6 +510,7 @@ async def register_producer(
             phone=data.phone,
             instagram=data.instagram,
             website=data.website,
+            external_order_form=data.external_order_form,  # MEH-2938
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,

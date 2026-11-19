@@ -36,7 +36,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
 import {
   hasLicenseFormatWarning,
-  requiresProducerLicense,
+  licenseRequiringCategoryNames,
 } from "@/lib/license-required-categories";
 // MEH-1977: the draft's on-disk rules (envelope, 7-day expiry, what counts as
 // content) live in one module so they can be tested without rendering this
@@ -248,8 +248,11 @@ function RegisterProducerPageBody({ routeKind }) {
   const numberedTitle = (title, s) => renumberTitle(title, stepNumber(s));
   // MEH-2640: the stored answer; the payload's booleans come from it.
   const fulfilment = form.fulfilment;
-  const licenseRequired =
-    !isOrganizer && requiresProducerLicense(categories, form.category_ids);
+  // MEH-2928: the names, not just the boolean, so the hint can say which.
+  const licenseCategoryNames = isOrganizer
+    ? []
+    : licenseRequiringCategoryNames(categories, form.category_ids);
+  const licenseRequired = licenseCategoryNames.length > 0;
   const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
   // MEH-1807: the phone field has two distinct error sources — the pre-existing
   // as-you-type format check (fires only once something is typed) and the new
@@ -651,6 +654,9 @@ function RegisterProducerPageBody({ routeKind }) {
         // MEH-2773: an organizer is never asked for a license; a number
         // carried in by a shared business draft must not ride along.
         producer_license_number: isOrganizer ? "" : form.producer_license_number,
+        // MEH-2938: optional store / order-form link; empty → null (the
+        // server's scheme guard treats "" the same, this keeps the body clean).
+        external_order_form: (!isOrganizer && (form.external_order_form || "").trim()) || null,
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
@@ -1008,6 +1014,7 @@ function RegisterProducerPageBody({ routeKind }) {
             categoriesFailed={categoriesFailed}
             fieldErrors={fieldErrors}
             form={form}
+            licenseCategoryNames={licenseCategoryNames}
             licenseOptionalExpanded={licenseOptionalExpanded}
             licensePending={licensePending}
             licenseRequired={licenseRequired}

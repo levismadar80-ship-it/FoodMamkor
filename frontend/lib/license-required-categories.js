@@ -46,14 +46,44 @@ export const PRODUCER_LICENSE_REGEX = /^\d{7,10}$/;
  * @returns {boolean} — true if any selected category requires a licence
  */
 export function requiresProducerLicense(allCategories, selectedIds) {
-  if (!selectedIds || selectedIds.length === 0) return false;
-  return allCategories
-    .filter((c) => selectedIds.includes(c.id))
-    .some((c) =>
+  return licenseRequiringCategoryNames(allCategories, selectedIds).length > 0;
+}
+
+/**
+ * MEH-2928: the NAMES of the selected categories that require a licence, in
+ * selection order, so the form can say which one caused the requirement
+ * instead of «בקטגוריה זו». Same rule as requiresProducerLicense, which now
+ * reads it — one owner for "does this category need a licence".
+ *
+ * @param {Array<{id: number, name: string, requires_license?: boolean}>} allCategories
+ * @param {Array<number>} selectedIds
+ * @returns {string[]}
+ */
+export function licenseRequiringCategoryNames(allCategories, selectedIds) {
+  if (!selectedIds || selectedIds.length === 0) return [];
+  const byId = new Map(allCategories.map((c) => [c.id, c]));
+  return selectedIds
+    .map((id) => byId.get(id))
+    .filter((c) => c !== undefined)
+    .filter((c) =>
       typeof c.requires_license === "boolean"
         ? c.requires_license
         : LICENSE_REQUIRED_CATEGORIES.includes(c.name),
-    );
+    )
+    .map((c) => c.name);
+}
+
+/**
+ * MEH-2928: «א», «ב» ו«ג» — the Hebrew list form the licence hint interpolates.
+ * The conjunction ו attaches to the last item with no space.
+ *
+ * @param {string[]} names
+ * @returns {string}
+ */
+export function formatHebrewQuotedList(names) {
+  const quoted = names.map((n) => `«${n}»`);
+  if (quoted.length <= 1) return quoted.join("");
+  return `${quoted.slice(0, -1).join(", ")} ו${quoted[quoted.length - 1]}`;
 }
 
 /**

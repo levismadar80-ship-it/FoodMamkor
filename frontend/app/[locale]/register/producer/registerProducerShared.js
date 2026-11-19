@@ -27,6 +27,27 @@ export const FULFILMENT_OPTIONS = [
 // derived value is never "" — the radio would arrive pre-lit on a question
 // nobody answered and the required gate below could never fire. One stored
 // answer, booleans computed from it at submit.
+// MEH-2939: asked as two checkboxes (one per boolean), not three radios. The
+// stored answer stays one of the values above so fulfilmentBooleans remains
+// the single mapping point and an existing draft ("both") still loads.
+// «neither» is "" — the required gate's empty answer.
+export const FULFILMENT_AXES = ["onsite", "delivery"];
+
+/** @param {string} value @param {"onsite"|"delivery"} axis */
+export function fulfilmentHasAxis(value, axis) {
+  return value === axis || value === "both";
+}
+
+/** @param {string} value @param {"onsite"|"delivery"} axis */
+export function toggleFulfilmentAxis(value, axis) {
+  const onsite = axis === "onsite" ? !fulfilmentHasAxis(value, "onsite") : fulfilmentHasAxis(value, "onsite");
+  const delivery = axis === "delivery" ? !fulfilmentHasAxis(value, "delivery") : fulfilmentHasAxis(value, "delivery");
+  if (onsite && delivery) return "both";
+  if (onsite) return "onsite";
+  if (delivery) return "delivery";
+  return "";
+}
+
 export function fulfilmentBooleans(value) {
   const hit = FULFILMENT_OPTIONS.find((o) => o.value === value);
   return {
@@ -174,6 +195,8 @@ export const EMPTY_FORM = {
   // all — the dashboard owns delivery areas, and ProducerRegister defaults
   // both (schemas.py:959-960).
   fulfilment: "",
+  // MEH-2938: the online-store / order-form link (optional, step 2).
+  external_order_form: "",
 };
 
 // MEH-1471: fixed dropdown order — English keys stored in the DB, Hebrew labels

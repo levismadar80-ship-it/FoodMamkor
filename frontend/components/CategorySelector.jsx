@@ -111,11 +111,12 @@ const REST_DESC_SLUGS = new Set([
 // to silently drop it out of the «בית וטיפוח» group and back into «מזון».
 const HOME_CARE_SLUGS = ["care", "cosmetics", "candles"];
 
-// MEH-1297: a producer may pick at most 3 categories (Yelp model). The first
+// MEH-1297: a producer may pick at most MAX_CATEGORIES categories (Yelp model);
+// MEH-2925 raised it 3 → 5, mirroring schemas.MAX_PRODUCER_CATEGORIES. The first
 // selected is the primary — it drives categories[0] on the card/map pin. The
 // selection ORDER is owned by the parent (form.category_ids append-on-select),
 // so selectedIds[0] is the primary here; this component only reflects it.
-const MAX_CATEGORIES = 3;
+const MAX_CATEGORIES = 5;
 
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");

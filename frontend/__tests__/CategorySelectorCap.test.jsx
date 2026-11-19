@@ -1,5 +1,6 @@
 /**
- * MEH-1297 — CategorySelector cap-3 + primary-first behavior.
+ * MEH-1297 — CategorySelector cap + primary-first behavior.
+ * MEH-2925: the cap is 5 (was 3).
  *
  * Pins the three new behaviors on the register-flow picker:
  *   1. A 4th pick is blocked once 3 are selected (non-selected cards disabled,
@@ -44,17 +45,24 @@ function setup(selectedIds = []) {
   return { onChange, cardFor };
 }
 
-describe("CategorySelector cap-3 (MEH-1297)", () => {
-  it("blocks a 4th pick once 3 are selected: non-selected card disabled + no onChange", () => {
-    const { onChange, cardFor } = setup([1, 2, 3]);
-    const fourth = cardFor("שמנים"); // id 4, not selected
-    expect(fourth).toBeDisabled();
-    fireEvent.click(fourth);
+describe("CategorySelector cap-5 (MEH-1297, MEH-2925)", () => {
+  it("blocks a 6th pick once 5 are selected: non-selected card disabled + no onChange", () => {
+    const { onChange, cardFor } = setup([1, 2, 3, 4, 5]);
+    const sixth = cardFor("סבונים טבעיים"); // id 6, not selected
+    expect(sixth).toBeDisabled();
+    fireEvent.click(sixth);
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("lets a 4th and a 5th be picked (MEH-2925)", () => {
+    const three = setup([1, 2, 3]);
+    expect(three.cardFor("שמנים")).not.toBeDisabled();
+    fireEvent.click(three.cardFor("שמנים"));
+    expect(three.onChange).toHaveBeenCalledWith(4);
+  });
+
   it("keeps already-selected cards togglable at cap (deselect path)", () => {
-    const { onChange, cardFor } = setup([1, 2, 3]);
+    const { onChange, cardFor } = setup([1, 2, 3, 4, 5]);
     const selected = cardFor("בשר"); // id 3, selected
     expect(selected).not.toBeDisabled();
     fireEvent.click(selected);
@@ -77,13 +85,13 @@ describe("CategorySelector cap-3 (MEH-1297)", () => {
     expect(within(otherCard).queryByTestId("primary-badge")).toBeNull();
   });
 
-  it("renders a live N/3 counter", () => {
+  it("renders a live N/5 counter", () => {
     setup([1, 2, 3]);
-    expect(screen.getByTestId("category-counter")).toHaveTextContent("3/3");
+    expect(screen.getByTestId("category-counter")).toHaveTextContent("3/5");
   });
 
-  it("counter starts at 0/3 with no selection", () => {
+  it("counter starts at 0/5 with no selection", () => {
     setup([]);
-    expect(screen.getByTestId("category-counter")).toHaveTextContent("0/3");
+    expect(screen.getByTestId("category-counter")).toHaveTextContent("0/5");
   });
 });

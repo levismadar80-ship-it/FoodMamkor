@@ -11,9 +11,10 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { CROSS_STEP_REQUIRED, STEP } from "../registerProducerShared";
+import { formatHebrewQuotedList } from "@/lib/license-required-categories";
 
 /** @param {Record<string, any>} props */
-export default function CategoryStep({ categories, categoriesFailed, fieldErrors, form, licenseOptionalExpanded, licensePending, licenseRequired, licenseRequiredError, licenseWarning, loadCategories, numberedTitle, requestFocus, runRequiredGate, set, setAndSave, setError, setLicenseOptionalExpanded, setLicensePending, setLicenseRequiredError, setShowCategoryModal, setStep, setStepError, t, toggleCategory }) {
+export default function CategoryStep({ categories, categoriesFailed, fieldErrors, form, licenseCategoryNames = [], licenseOptionalExpanded, licensePending, licenseRequired, licenseRequiredError, licenseWarning, loadCategories, numberedTitle, requestFocus, runRequiredGate, set, setAndSave, setError, setLicenseOptionalExpanded, setLicensePending, setLicenseRequiredError, setShowCategoryModal, setStep, setStepError, t, toggleCategory }) {
   return (
     <div className="space-y-4" data-testid="register-frame-category">
       <h2 id="register-category-heading" className="font-headline-md text-lg font-black">{numberedTitle(t("auth.register.producer.steps.category.title"), STEP.CATEGORY)}</h2>
@@ -73,8 +74,13 @@ export default function CategoryStep({ categories, categoriesFailed, fieldErrors
           >
             {t("auth.register.producer.fields.license_required_label")}
           </label>
-          <p className="text-xs text-fg-muted mb-2 text-start">
-            {t("auth.register.producer.fields.license_required_hint")}
+          {/* MEH-2928: names the category (or categories) that caused the
+              requirement, instead of «בקטגוריה זו». ICU plural in he.json. */}
+          <p className="text-xs text-fg-muted mb-2 text-start" data-testid="register-license-required-hint">
+            {t("auth.register.producer.fields.license_required_hint", {
+              count: licenseCategoryNames.length,
+              names: formatHebrewQuotedList(licenseCategoryNames),
+            })}
           </p>
           {/* MEH-951: "what is this" extension after the required hint. */}
           <p className="text-xs text-fg-muted mb-2 text-start">

@@ -8,7 +8,8 @@ import api from "@/lib/api";
  * as MEH-2640 reshaped it.
  *
  * MEH-2640 REPLACED the four controls (two checkboxes, a nationwide toggle and
- * a city picker) with ONE required radio: מגיעים אלינו / משלוחים / גם וגם. The
+ * a city picker) with ONE required question; MEH-2939 made it two checkboxes
+ * (מגיעים אלינו / משלוחים, at least one) instead of three radios. The
  * nationwide flag and the city list are no longer collected at registration at
  * all — the dashboard owns delivery areas (dashboard/edit/cards.jsx:1572,
  * covered by EditTabDeliveryCard.test.jsx), and ProducerRegister defaults both
@@ -196,15 +197,17 @@ describe("MEH-2640 — one question, the right two booleans in the POST body", (
   // Still reading the POST body rather than the form, for MEH-1838's original
   // reason: Pydantic drops unknown fields silently, so a form that captures
   // nothing still returns 200. A rendered radio proves nothing on its own.
+  // MEH-2939: two checkboxes, not three radios. Every allowed combination
+  // maps 1:1 onto the two booleans; «neither» is the fourth cell, blocked below.
   it.each([
-    ["onsite", { has_physical_location: true, offers_delivery: false }],
-    ["delivery", { has_physical_location: false, offers_delivery: true }],
-    ["both", { has_physical_location: true, offers_delivery: true }],
-  ])("«%s» posts the matching pair", async (option, expected) => {
+    [["onsite"], { has_physical_location: true, offers_delivery: false }],
+    [["delivery"], { has_physical_location: false, offers_delivery: true }],
+    [["onsite", "delivery"], { has_physical_location: true, offers_delivery: true }],
+  ])("«%s» posts the matching pair", async (boxes, expected) => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
-    fireEvent.click(screen.getByTestId(`register-fulfilment-${option}`));
+    for (const box of boxes) fireEvent.click(screen.getByTestId(`register-fulfilment-${box}`));
     const body = await advanceAndSubmit();
     expect(body).toMatchObject(expected);
   });
@@ -221,19 +224,29 @@ describe("MEH-2640 — one question, the right two booleans in the POST body", (
     expect(body).not.toHaveProperty("delivery_cities");
   });
 
-  it("the three options are mutually exclusive — the last pick wins", async () => {
+  it("unticking a box takes it back out (MEH-2939)", async () => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
     fireEvent.click(screen.getByTestId("register-fulfilment-delivery"));
     fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(screen.getByTestId("register-fulfilment-delivery"));
     const body = await advanceAndSubmit();
     expect(body).toMatchObject({ has_physical_location: true, offers_delivery: false });
+  });
+
+  it("they are checkboxes, and «גם וגם» is gone (MEH-2939)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    for (const box of ["onsite", "delivery"]) {
+      expect(screen.getByTestId(`register-fulfilment-${box}`)).toHaveAttribute("type", "checkbox");
+    }
+    expect(screen.queryByTestId("register-fulfilment-both")).toBeNull();
   });
 });
 
 describe("MEH-2640 — the question is required, and the gate can actually fire", () => {
-  it("unanswered → the advance is BLOCKED with «בחרו אפשרות אחת»", async () => {
+  it("neither ticked → the advance is BLOCKED before any request (MEH-2939)", async () => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
@@ -245,6 +258,7 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     // this reason.
     expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
     expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
     expect(screen.getByTestId("register-fulfilment-error")).toHaveTextContent(
       `${K}.fields.fulfilment.required`,
     );
@@ -254,7 +268,7 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
-    for (const option of ["onsite", "delivery", "both"]) {
+    for (const option of ["onsite", "delivery"]) {
       expect(screen.getByTestId(`register-fulfilment-${option}`)).not.toBeChecked();
     }
   });
@@ -265,7 +279,7 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     fillDetailsFields();
     fireEvent.click(nextBtn());
     expect(screen.getByTestId("register-fulfilment-error")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("register-fulfilment-both"));
+    fireEvent.click(screen.getByTestId("register-fulfilment-delivery"));
     expect(screen.queryByTestId("register-fulfilment-error")).toBeNull();
     fireEvent.click(nextBtn());
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
@@ -290,5 +304,28 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     expect(screen.getByTestId("register-delivery-note")).toHaveTextContent(
       `${K}.fields.fulfilment.areas_note`,
     );
+  });
+});
+
+describe("MEH-2938 — the online-store link is collected at registration", () => {
+  it("a filled link reaches the POST body", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.change(screen.getByTestId("register-external-order"), {
+      target: { value: " https://shop.example.com " },
+    });
+    const body = await advanceAndSubmit();
+    expect(body.external_order_form).toBe("https://shop.example.com");
+  });
+
+  it("left empty, it posts null", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    const body = await advanceAndSubmit();
+    expect(body.external_order_form).toBeNull();
   });
 });
