@@ -5100,11 +5100,11 @@
         },
         "manage_events": {
           "title": "My events",
-          "sub": "Open days, market stalls and launches — what happens once"
+          "sub": "Happens once, on one date — an open day, a market stall, a launch"
         },
         "manage_experiences": {
           "title": "My experiences",
-          "sub": "Workshops and tours people sign up for"
+          "sub": "People sign up in advance, and it can run on several dates — a workshop, a tour, a tasting"
         },
         "rescue": {
           "title": "Rescue bags",
@@ -5203,7 +5203,7 @@
           "products": "First product in your catalog",
           "contact": "Contact details",
           "phone_verified": "WhatsApp verification",
-          "hours": "Opening hours",
+          "hours": "Hours open to visitors",
           "owner_photo": "Your photo"
         },
         "fields": {
@@ -6229,7 +6229,7 @@
         "more_summary": "More details — precision, label, phone, hours",
         "coords_summary": "Enter the exact location yourself",
         "coords_hint": "Optional. Fill these in only if the map pin isn't sitting in the right place.",
-        "hours_label": "Hours",
+        "hours_label": "When you're open to visitors",
         "hours_unreadable": "Saved hours: {value} — please pick them again below",
         "hours_where_primary": "Shown on your business page, in the «Hours» section",
         "hours_where_pickup": "Shown on your business page next to this point, under «Self pickup»",
