@@ -55,7 +55,10 @@ from app.utils.clock import utc_now
 # `payment_status` has ONE value today: the buyer pays the business directly.
 # The column exists so on-site payment can be added later as a CHECK widening
 # plus new values, not as a rewrite of every query that reads an order.
-PRODUCT_PRICE_UNITS = ("unit", "kg", "100g")
+# MEH-2936: bottle / box added (revision c7e2a9d4f1b8). They count like `unit`:
+# only the weighed units make a price an estimate (WEIGHED_PRICE_UNITS).
+PRODUCT_PRICE_UNITS = ("unit", "kg", "100g", "bottle", "box")
+WEIGHED_PRICE_UNITS = ("kg", "100g")
 PRODUCT_ORDER_STATUSES = (
     "pending",
     "confirmed",

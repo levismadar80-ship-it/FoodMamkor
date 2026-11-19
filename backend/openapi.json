@@ -5409,7 +5409,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5522,7 +5524,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5590,7 +5594,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -6190,7 +6196,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15194,6 +15202,18 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
           }
         },
         "required": [
@@ -15604,7 +15624,7 @@
       },
       "ProductOrderingIn": {
         "additionalProperties": false,
-        "description": "The four ordering fields of one product. All required: the screen\nsaves the whole row.",
+        "description": "The ordering fields of one product. is_orderable, in_stock and\ncontains_alcohol are required: the screen saves the whole row.\n\nMEH-2936: price_unit is optional and omitted means \"keep\". The owner's\nproduct form writes it now too, so an orders tab loaded before that edit\nmust not send the old unit back over it. An explicit null is refused.",
         "properties": {
           "contains_alcohol": {
             "title": "Contains Alcohol",
@@ -15619,19 +15639,27 @@
             "type": "boolean"
           },
           "price_unit": {
-            "enum": [
-              "unit",
-              "kg",
-              "100g"
+            "anyOf": [
+              {
+                "enum": [
+                  "unit",
+                  "kg",
+                  "100g",
+                  "bottle",
+                  "box"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Price Unit",
-            "type": "string"
+            "title": "Price Unit"
           }
         },
         "required": [
           "is_orderable",
           "in_stock",
-          "price_unit",
           "contains_alcohol"
         ],
         "title": "ProductOrderingIn",
@@ -15660,7 +15688,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15832,11 +15862,16 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "title": "Price Unit",
+            "type": "string"
           }
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "price_unit"
         ],
         "title": "ProductOut",
         "type": "object"
@@ -16026,6 +16061,18 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
           }
         },
         "title": "ProductUpdate",

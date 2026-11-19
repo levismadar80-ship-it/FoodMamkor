@@ -19,6 +19,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { ALLERGEN_CODES } from "@/lib/allergens";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import {
   formatPriceRange,
   getWhatsAppHref,
@@ -668,7 +669,7 @@ export default function ProductSheet({
 
             {numericPrice && (
               <p className="font-medium text-accent" data-testid="product-sheet-price">
-                <span dir="ltr">{numericPrice}</span>
+                <ProductPrice product={product} />
               </p>
             )}
             {freeTextPrice && (

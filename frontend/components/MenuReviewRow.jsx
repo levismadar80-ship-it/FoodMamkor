@@ -17,8 +17,9 @@ import { useTranslations } from "next-intl";
 import { Trash } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import { PRICE_UNITS } from "@/lib/product-price";
 
-const UNITS = ["unit", "kg", "100g"];
+const UNITS = PRICE_UNITS;  // MEH-2936: one list
 const MIN_PRICE = 1;
 const MAX_PRICE = 10000; // backend ProductCreate: 1 – 10,000 ₪
 
@@ -58,7 +59,7 @@ function CheckFlag({ flag }) {
  */
 export default function MenuReviewRow({ row, onChange, onRemove }) {
   const t = useTranslations("settings.products");
-  const tUnit = useTranslations("admin.producers.product_import.unit");
+  const tUnit = useTranslations("price_unit");
   const unsure = (/** @type {string} */ f) => row.uncertain.includes(f);
   const set = (/** @type {Partial<MenuDraftRow>} */ patch) => onChange(row.key, patch);
   const problem = rowProblem(row);

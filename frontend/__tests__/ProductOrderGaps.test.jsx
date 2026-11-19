@@ -177,14 +177,15 @@ describe("products card: 0 / 1 / many × folded / open", () => {
     expect(screen.getByTestId("order-products").open).toBe(true);
   });
 
-  it("a tap sends the whole row with only that field changed, and the switch follows the answer", async () => {
+  // MEH-2936: the unit is left out on purpose — the product form owns it, and
+  // a row read before an edit there must not send the old unit back.
+  it("a tap sends the row with only that field changed, never the unit, and the switch follows the answer", async () => {
     api.put.mockResolvedValue({ data: { id: P1, is_orderable: true, in_stock: true, price_unit: "kg", contains_alcohol: true } });
     render(wrap(<OrderProductsCard initial={[product({ price_unit: "kg", contains_alcohol: true })]} />));
     await act(async () => fireEvent.click(screen.getByTestId(`orderable-${P1}`)));
     expect(api.put).toHaveBeenCalledWith(`/producers/me/products/${P1}/ordering`, {
       is_orderable: true,
       in_stock: true,
-      price_unit: "kg",
       contains_alcohol: true,
     });
     expect(screen.getByTestId(`orderable-${P1}`).getAttribute("aria-checked")).toBe("true");
