@@ -245,6 +245,16 @@ class Registration(Base):
             "attendance IS NULL OR attendance IN ('attended', 'no_show')",
             name="ck_registrations_attendance",
         ),
+        # MEH-3440: a date belongs to a workshop sign-up only, and a time
+        # never stands without its date.
+        CheckConstraint(
+            "session_date IS NULL OR experience_id IS NOT NULL",
+            name="ck_registrations_session_experience",
+        ),
+        CheckConstraint(
+            "session_time IS NULL OR session_date IS NOT NULL",
+            name="ck_registrations_session_time_needs_date",
+        ),
         Index("ix_registrations_event_id", "event_id"),
         Index("ix_registrations_experience_id", "experience_id"),
         # MEH-3440: places, waitlist and the duplicate check count per date.

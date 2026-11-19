@@ -17,6 +17,11 @@ by Sapir 19/11 (plan doc, «כן מאשרת הכל»). Additive only:
     one-off experience, or a recurring one with no dates set).
   - ix_registrations_experience_session on (experience_id, session_date,
     session_time): places, waitlist and the duplicate check count per date.
+    A plain CREATE INDEX, as every revision here: registrations holds only
+    on-site sign-ups (MEH-2763 on), so the write lock lasts a moment.
+  - two CHECKs: a date only on a workshop sign-up, and a time only with a
+    date. Every existing row has both NULL, so both hold without a scan
+    finding anything.
 
 Columns, not an experience_sessions table: the EXPECTED_TABLES step lives in
 .github/workflows/pr-checks.yml, which CC cannot write (MEH-671). Same call as
@@ -25,8 +30,8 @@ date and the cap of 12 dates (MEH-3022) are enforced by the API (stage 2),
 not by a constraint. EXPECTED_TABLES unchanged (columns, not a table).
 
 No backfill, no server_default: every existing row stays NULL, which is the
-"no dates" case. Expand-only per ADR-007. Downgrade drops the index and the
-three columns; dates an owner set are not restorable.
+"no dates" case. Expand-only per ADR-007. Downgrade drops the CHECKs, the
+index and the three columns; dates an owner set are not restorable.
 
 # DO NOT tighten any of these to NOT NULL without a separate Expand-Contract
 #        ticket (ADR-007). Alembic is the sole schema authority (MEH-267).
@@ -50,20 +55,32 @@ def upgrade() -> None:
         "experiences",
         sa.Column("sessions", postgresql.JSONB(), nullable=True),
     )
-    op.add_column(
-        "registrations", sa.Column("session_date", sa.Date(), nullable=True)
-    )
-    op.add_column(
-        "registrations", sa.Column("session_time", sa.Time(), nullable=True)
-    )
+    op.add_column("registrations", sa.Column("session_date", sa.Date(), nullable=True))
+    op.add_column("registrations", sa.Column("session_time", sa.Time(), nullable=True))
     op.create_index(
         "ix_registrations_experience_session",
         "registrations",
         ["experience_id", "session_date", "session_time"],
     )
+    op.create_check_constraint(
+        "ck_registrations_session_experience",
+        "registrations",
+        "session_date IS NULL OR experience_id IS NOT NULL",
+    )
+    op.create_check_constraint(
+        "ck_registrations_session_time_needs_date",
+        "registrations",
+        "session_time IS NULL OR session_date IS NOT NULL",
+    )
 
 
 def downgrade() -> None:
+    op.drop_constraint(
+        "ck_registrations_session_time_needs_date", "registrations", type_="check"
+    )
+    op.drop_constraint(
+        "ck_registrations_session_experience", "registrations", type_="check"
+    )
     op.drop_index("ix_registrations_experience_session", table_name="registrations")
     op.drop_column("registrations", "session_time")
     op.drop_column("registrations", "session_date")

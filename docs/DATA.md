@@ -465,7 +465,7 @@ registrations (
   waitlist_offered_at,                           -- MEH-3314: the one offer email went out
   party_size smallint DEFAULT 1 CHECK 1..10,     -- MEH-3315: places this sign-up takes
   attendance NULL|attended|no_show,              -- MEH-3315: the owner's note, blocks nothing
-  session_date date NULL, session_time time NULL -- MEH-3440: the workshop date this sign-up is for; NULL = no date
+  session_date date NULL, session_time time NULL -- MEH-3440: the workshop date this sign-up is for; NULL = no date. CHECK: a date only with experience_id, a time only with a date
 )
 ```
 

@@ -30,8 +30,14 @@ def test_a_workshop_keeps_its_dates_and_a_sign_up_its_date(db):
         "time": "10:00",
         "participants_count": 2,
     }
-    got = db.get(Registration, reg.id)
-    assert (got.session_date, got.session_time) == (date(2026, 12, 4), time(10, 0))
+    # Read the columns, not the object: an unmapped attribute set on ``reg``
+    # would survive expire_all() and pass with no column behind it.
+    row = (
+        db.query(Registration.session_date, Registration.session_time)
+        .filter(Registration.id == reg.id)
+        .one()
+    )
+    assert tuple(row) == (date(2026, 12, 4), time(10, 0))
 
 
 def test_rows_with_no_dates_stay_null(db):
@@ -54,3 +60,23 @@ def test_per_date_counts_have_an_index(db):
         "session_date",
         "session_time",
     ]
+
+
+def test_a_date_needs_a_workshop_and_a_time_needs_a_date(db):
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    from tests.test_meh3227_delist_cascade import _business, _event
+
+    producer, _owner = _business(db)
+    on_event = _signup(db, _event(db, producer), "event@example.com")
+    on_event.session_date = date(2026, 12, 4)
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()
+
+    host = make_user(db, role="producer", email="host@example.com")
+    reg = _signup(db, _experience(db, host), "guest@example.com")
+    reg.session_time = time(10, 0)
+    with pytest.raises(IntegrityError):
+        db.commit()
