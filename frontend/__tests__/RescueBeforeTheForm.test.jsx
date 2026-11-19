@@ -137,6 +137,14 @@ describe("RescueTab — both publish buttons, same facts (MEH-2935)", () => {
     expect(screen.getByTestId("rescue-publish-tomorrow").textContent).toBe("לפרסם למחר · סל אחד · 15 ₪ לסל");
   });
 
+  it("two bags reads «2 סלים» (the Hebrew `two` plural branch)", async () => {
+    mock();
+    renderTab();
+    fireEvent.change(await screen.findByTestId("rescue-publish-qty"), { target: { value: "2" } });
+    expect(screen.getByTestId("rescue-publish-today").textContent).toBe("לפרסם להיום · 2 סלים · 15 ₪ לסל");
+    expect(screen.getByTestId("rescue-publish-tomorrow").textContent).toBe("לפרסם למחר · 2 סלים · 15 ₪ לסל");
+  });
+
   it("bag contents and allergens come before the publish buttons", async () => {
     mock();
     renderTab();

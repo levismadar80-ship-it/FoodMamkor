@@ -6733,8 +6733,8 @@
       "orders_title": "ההזמנות של היום",
       "orders_empty": "אין עדיין הזמנות להיום.",
       "publish_title": "לפרסם סלים",
-      "publish_today": "{n, plural, one {לפרסם להיום · סל אחד · {price} ₪ לסל} other {לפרסם להיום · # סלים · {price} ₪ לסל}}",
-      "publish_tomorrow": "{n, plural, one {לפרסם למחר · סל אחד · {price} ₪ לסל} other {לפרסם למחר · # סלים · {price} ₪ לסל}}",
+      "publish_today": "{n, plural, one {לפרסם להיום · סל אחד · {price} ₪ לסל} two {לפרסם להיום · # סלים · {price} ₪ לסל} other {לפרסם להיום · # סלים · {price} ₪ לסל}}",
+      "publish_tomorrow": "{n, plural, one {לפרסם למחר · סל אחד · {price} ₪ לסל} two {לפרסם למחר · # סלים · {price} ₪ לסל} other {לפרסם למחר · # סלים · {price} ₪ לסל}}",
       "published": "הסלים פורסמו.",
       "no_location": "צריך נקודת איסוף עם כתובת מדויקת.",
       "field": {
