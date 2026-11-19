@@ -272,6 +272,8 @@ function EditPageInner() {
   // (/producers/me joins products), then kept live by ProductsSection's
   // onCountChange as the owner adds/removes inside the card.
   const [productsCount, setProductsCount] = useState(null);
+  // MEH-2937: LocationsEditor reports its live list length here (null until it loads).
+  const [liveLocationCount, setLiveLocationCount] = useState(null);
 
   // MEH-2207: the LIVE primary contact channel, as selected in the contact
   // card's form — not the saved value. Seeded from the profile so the notice
@@ -1047,14 +1049,15 @@ function EditPageInner() {
           title={tLoc("section_heading")}
           summary={
             // MEH-2430: was a bare number ("10"); now "N מיקומים".
-            profile.locations?.length
-              ? tLoc("count_summary", { count: profile.locations.length })
+            // MEH-2937: the editor's live count wins over the mount-time profile.
+            (liveLocationCount ?? profile.locations?.length)
+              ? tLoc("count_summary", { count: liveLocationCount ?? profile.locations.length })
               : tLoc("empty_title")
           }
           open={openKey === "locations"}
           onToggle={() => toggleKey("locations")}
         >
-          <LocationsEditor />
+          <LocationsEditor onCountChange={setLiveLocationCount} />
         </EditAccordionCard>
 
         {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes

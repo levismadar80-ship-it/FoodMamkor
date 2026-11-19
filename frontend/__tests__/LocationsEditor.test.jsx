@@ -179,6 +179,22 @@ describe("LocationsEditor (MEH-1421)", () => {
   });
 });
 
+// MEH-2937 (pilot «מיקום אחד» after adding a second): the edit page's summary
+// counted the mount-time profile. The editor now reports its live list length.
+describe("live count for the accordion summary (MEH-2937)", () => {
+  it("reports the count on load and again after a create reloads the list", async () => {
+    const onCountChange = vi.fn();
+    apiMock.state.locations = [];
+    render(<LocationsEditor onCountChange={onCountChange} />);
+    await waitFor(() => expect(onCountChange).toHaveBeenLastCalledWith(0));
+    fireEvent.click(screen.getByText("settings.locations.empty_cta"));
+    await waitFor(() => screen.getByTestId("location-form"));
+    apiMock.state.locations = [{ id: 1, kind: "branch", is_primary: true }, { id: 2, kind: "branch", is_primary: false }];
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() => expect(onCountChange).toHaveBeenLastCalledWith(2));
+  });
+});
+
 // MEH-1563: the coords disclosure is the only non-trivial logic in the
 // field-guidance layer — a NEW location must not open on two unexplained
 // numeric inputs, but editing a row that already carries coordinates must not
