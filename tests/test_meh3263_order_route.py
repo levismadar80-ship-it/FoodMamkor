@@ -22,6 +22,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.exc import IntegrityError
 
+from app.models.catalog import ProducerLocation
 from app.models.models import DeliveryArea, Product, User
 from app.models.product_orders import (
     PRODUCT_ORDER_CODE_STATUSES,
@@ -39,6 +40,7 @@ from app.services import product_order_actions as actions
 from app.services import product_order_create as create_module
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
+from app.services import product_order_views as views
 from app.services.product_order_views import BUYER_VIEW_AFTER_CLOSE, mask_phone
 from app.utils.clock import utc_now
 from tests.conftest import auth_header, make_producer, make_user
@@ -823,6 +825,65 @@ def test_an_estimated_price_is_never_confirmed_automatically(client, db, flag_on
         client, shop, sent, items=[{"product_id": str(shop.cheese.id), "qty": 1}]
     )
     assert res.json()["status"] == "pending"
+
+
+# --- MEH-3216 stage 5a: where to pick up -------------------------------------
+
+
+def _primary(db, shop, **fields):
+    db.query(ProducerLocation).filter_by(producer_id=shop.producer.id).delete()
+    db.add(
+        ProducerLocation(
+            producer_id=shop.producer.id, kind="branch", is_primary=True, **fields
+        )
+    )
+    db.commit()
+
+
+def test_a_confirmed_pickup_names_the_public_address(client, db, flag_on):
+    shop = Shop(db)
+    _primary(db, shop, address="הרצל 12", city="רחובות", location_precision="exact")
+    order = stored_order(db, shop, status="confirmed", pickup_code="4821")
+    assert views.pickup_address(db, order) == "הרצל 12, רחובות"
+
+
+def test_an_approximate_location_gives_the_city_only(client, db, flag_on):
+    shop = Shop(db)
+    _primary(
+        db, shop, address="הרצל 12", city="רחובות", location_precision="approximate"
+    )
+    order = stored_order(db, shop, status="ready", pickup_code="4821")
+    assert views.pickup_address(db, order) == "רחובות"
+
+
+@pytest.mark.parametrize(
+    ("status", "fulfilment"),
+    [("pending", "pickup"), ("change_proposed", "pickup"), ("confirmed", "delivery")],
+)
+def test_no_address_before_confirmation_or_for_a_delivery(
+    client, db, flag_on, status, fulfilment
+):
+    shop = Shop(db)
+    _primary(db, shop, address="הרצל 12", city="רחובות", location_precision="exact")
+    order = stored_order(db, shop, status=status, fulfilment=fulfilment)
+    assert views.pickup_address(db, order) is None
+
+
+def test_the_status_page_carries_the_address_once_confirmed(client, db, flag_on):
+    shop = Shop(db)
+    _primary(db, shop, address="הרצל 12", city="רחובות", location_precision="exact")
+    token = "a" * 43
+    order = stored_order(
+        db, shop, "pending", status_token_hash=create_module.token_hash(token)
+    )
+    before = client.post("/product-orders/status", json={"token": token}).json()
+    order.status, order.pickup_code = "confirmed", "4821"
+    db.commit()
+    after = client.post("/product-orders/status", json={"token": token}).json()
+    assert (before["pickup_address"], after["pickup_address"]) == (
+        None,
+        "הרצל 12, רחובות",
+    )
 
 
 # --- the buyer follows her order ----------------------------------------------

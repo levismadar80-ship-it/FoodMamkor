@@ -75,10 +75,11 @@ SCAN_DIR="${1:-frontend}"
 # the wrong shape twice over — it would bless a future lib file nobody reviewed,
 # and it wrongly condemns components/OpeningHours.jsx, which MEH-1983 records as
 # an existing owner (`todayIndex`) that simply does not live in lib/.
+# MEH-2810: that component is deleted, so its entry is gone too; an allowlist
+# line for a missing path would exempt any file later created at it.
 SANCTIONED_OWNERS=(
   "frontend/lib/israel-date.js"          # the DATE primitive (israelToday)
   "frontend/lib/orderWindow.js"          # the CLOCK-TIME parts (israelNowParts)
-  "frontend/components/OpeningHours.jsx" # todayIndex — pre-existing owner
   "frontend/lib/friday-mode.js"          # pre-existing owner (MEH-1983 §1)
   "frontend/lib/established-year.js"     # pre-existing owner (MEH-1983 §1)
 )

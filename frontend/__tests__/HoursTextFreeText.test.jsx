@@ -13,48 +13,10 @@ vi.mock("@phosphor-icons/react", () => ({
   CaretUp: () => <span />,
 }));
 
-import OpeningHours from "@/components/OpeningHours";
 import HoursText from "@/components/HoursText";
 
-// The exact string the staging sweep entered through the location form.
-// MEH-2803: parseHours now READS it, so it opens the structured disclosure
-// (pinned below); the raw fallback is exercised with a string it still cannot
-// read — a lead-in word before the days.
-const HEBREW_HOURS = "א'–ה' 07:00–14:00, ו' 07:00–13:00";
-const UNREADABLE_HOURS = "בתיאום: א'–ה' 07:00–14:00, ו' 07:00–13:00";
-
-describe("OpeningHours — unparseable free text (MEH-2604)", () => {
-  it("shows the owner's text instead of rendering nothing", () => {
-    render(<OpeningHours opening_hours={UNREADABLE_HOURS} />);
-    const row = screen.getByTestId("hours-raw");
-    expect(row.textContent).toBe(UNREADABLE_HOURS);
-  });
-
-  it("isolates each time range left-to-right", () => {
-    render(<OpeningHours opening_hours={UNREADABLE_HOURS} />);
-    const ltr = [...screen.getByTestId("hours-raw").querySelectorAll('[dir="ltr"]')].map(
-      (el) => el.textContent,
-    );
-    expect(ltr).toEqual(["07:00–14:00", "07:00–13:00"]);
-  });
-
-  it("Hebrew hours the parser reads open the weekly table, not the raw text (MEH-2803)", () => {
-    render(<OpeningHours opening_hours={HEBREW_HOURS} />);
-    expect(screen.queryByTestId("hours-raw")).toBeNull();
-    expect(screen.getByTestId("hours-toggle")).toBeInTheDocument();
-  });
-
-  it("still opens the weekly table for the structured format", () => {
-    render(<OpeningHours opening_hours="Sun-Sat 09:00-17:00" />);
-    expect(screen.queryByTestId("hours-raw")).toBeNull();
-    expect(screen.getByTestId("hours-toggle")).toBeInTheDocument();
-  });
-
-  it("renders nothing for an empty or whitespace string", () => {
-    const { container } = render(<OpeningHours opening_hours="   " />);
-    expect(container.firstChild).toBeNull();
-  });
-});
+// MEH-2810: the OpeningHours free-text cases moved to
+// ProducerHoursSection.test.jsx, against the card the page renders.
 
 describe("HoursText", () => {
   it("wraps a pickup-row range typed with an en dash", () => {

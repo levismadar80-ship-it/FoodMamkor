@@ -11,7 +11,7 @@
  *           its own file; the per-change history is in the comments below.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { useTranslations } from "next-intl";
 import { Warning, X, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -164,6 +164,7 @@ function AssistField({ label, value, onChange, placeholder, optional }) {
 // Exported for isolation tests (EditTabDescriptionCard.test.jsx) — see CategoriesCard.
 export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.description_card");
+  const descId = useId(); // MEH-3351: ties the visible label to its textarea
   const [description, setDescription] = useState(profile.description || "");
   const [savedDescription, setSavedDescription] = useState(profile.description || "");
   const [tagline, setTagline] = useState(profile.short_description || "");
@@ -269,12 +270,13 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       {/* Hero: the description IS the product. Always visible, prefilled. */}
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
-          <label className="text-sm font-medium">{t("desc_label")}</label>
+          <label htmlFor={descId} className="text-sm font-medium">{t("desc_label")}</label>
           <span className="text-2xs text-fg-muted">{t("desc_where")}</span>
         </div>
         <textarea
           value={description}
           onChange={(e) => { setDescription(e.target.value.slice(0, DESC_MAX)); setSaved(false); }}
+          id={descId}
           placeholder={t("desc_placeholder")}
           className={`w-full rounded-sm px-3 py-2 text-sm resize-none h-24 transition-colors duration-500 focus-ring ${
             highlight

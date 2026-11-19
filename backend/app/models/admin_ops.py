@@ -346,9 +346,9 @@ class AdminChecklistItem(Base):
     admin without a deploy.
 
     Phase 1 (MEH-1396) shipped these 7 items as a frozen frontend constant
-    (``frontend/lib/admin-review-checklist.js``). That file is now the SEED, not
-    the source: the migration copies its contents in, and every reader goes
-    through this table afterwards.
+    (``frontend/lib/admin-review-checklist.js``). The migration copied those
+    items in, every reader goes through this table, and the constant itself was
+    deleted (MEH-2954).
 
     Rows are retired with ``active = False``, never deleted. That is not a
     convention to remember — ``producer_review_checks.item_id`` is

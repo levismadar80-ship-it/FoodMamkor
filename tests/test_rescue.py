@@ -36,6 +36,7 @@ from app.routers.rescue import (
     rescue_bags_enabled,
 )
 from app.utils.clock import israel_today, utc_now
+from app.utils import clock as clock_module
 
 
 @pytest.fixture
@@ -59,6 +60,15 @@ def rescue_on(monkeypatch):
     # or publishing 403s and the public list is empty. Patched as a function
     # for the same reason as the flag: `settings` has no such field yet.
     monkeypatch.setattr(rescue_module, "rescue_cities", lambda: ("חיפה",))
+    # MEH-2943: the seed (`_seed_offer`) and the routes each read
+    # `israel_today()` on their own. A test that seeds at 23:59:59 Israel and
+    # reserves at 00:00:00 got «הסל אינו של היום» (PR #4813, 21:59 UTC). Pin one
+    # "today" for the whole test, in both places (testing.md: a date compared
+    # with the clock freezes the clock). A test that needs another day still
+    # patches `rescue_module.israel_today` itself, after this.
+    today = israel_today()
+    monkeypatch.setattr(rescue_module, "israel_today", lambda: today)
+    monkeypatch.setitem(_seed_offer.__globals__, "israel_today", lambda: today)
     return True
 
 
@@ -1206,3 +1216,19 @@ def test_handed_time_is_printed_on_the_israel_clock_in_winter_and_summer():
 
     assert _israel_hhmm(_dt(2026, 11, 17, 16, 42)) == "18:42"  # IST, UTC+2
     assert _israel_hhmm(_dt(2026, 7, 14, 16, 42)) == "19:42"  # IDT, UTC+3
+
+
+def test_a_bag_seeded_before_midnight_is_still_reservable_after_it(
+    client, db, rescue_on, shop, monkeypatch
+):
+    """MEH-2943: the real clock crosses midnight between the seed and the call."""
+    offer = _seed_offer(db, shop["location"], qty_total=2)
+    real_now = clock_module.israel_now
+    monkeypatch.setattr(clock_module, "israel_now", lambda: real_now() + timedelta(days=1))
+    buyer = make_user(db, email="midnight@example.com")
+    resp = client.post(
+        "/rescue/orders",
+        json={"offer_id": str(offer.id), "qty": 1},
+        headers=auth_header(buyer),
+    )
+    assert resp.status_code == 201, resp.text

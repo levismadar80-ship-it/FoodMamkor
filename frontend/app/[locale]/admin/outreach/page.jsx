@@ -584,6 +584,7 @@ function AddLeadModal({ onClose, onCreated }) {
             with the old inputs (no labels invented; notes textarea stays). */}
         <Input
           placeholder={t("outreach.modal_add.name_placeholder")}
+          aria-label={t("outreach.modal_add.name_placeholder")}
           value={form.name}
           onChange={set("name")}
           required
@@ -591,11 +592,13 @@ function AddLeadModal({ onClose, onCreated }) {
         <div className="grid grid-cols-2 gap-2">
           <Input
             placeholder={t("outreach.modal_add.city_placeholder")}
+          aria-label={t("outreach.modal_add.city_placeholder")}
             value={form.city}
             onChange={set("city")}
           />
           <Input
             placeholder={t("outreach.modal_add.category_placeholder")}
+          aria-label={t("outreach.modal_add.category_placeholder")}
             value={form.category}
             onChange={set("category")}
           />
@@ -603,24 +606,28 @@ function AddLeadModal({ onClose, onCreated }) {
         <Input
           type="tel"
           placeholder={t("outreach.modal_add.phone_placeholder")}
+          aria-label={t("outreach.modal_add.phone_placeholder")}
           value={form.phone}
           onChange={set("phone")}
           dir="ltr"
         />
         <Input
           placeholder={t("outreach.modal_add.instagram_placeholder")}
+          aria-label={t("outreach.modal_add.instagram_placeholder")}
           value={form.instagram}
           onChange={set("instagram")}
           dir="ltr"
         />
         <Input
           placeholder={t("outreach.modal_add.website_placeholder")}
+          aria-label={t("outreach.modal_add.website_placeholder")}
           value={form.website}
           onChange={set("website")}
           dir="ltr"
         />
         <textarea
           placeholder={t("outreach.modal_add.notes_placeholder")}
+          aria-label={t("outreach.modal_add.notes_placeholder")}
           value={form.notes}
           onChange={set("notes")}
           rows={2}

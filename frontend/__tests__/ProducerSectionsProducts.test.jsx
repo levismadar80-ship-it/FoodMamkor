@@ -91,7 +91,6 @@ vi.mock("@/components/FadeInSection", () => ({
   REVEAL_PRESET: {},
 }));
 vi.mock("@/components/DirectoryDisclaimer", () => ({ default: () => null }));
-vi.mock("@/components/OpeningHours", () => ({ default: () => null }));
 // MEH-1306: the owner pencil is self-gating chrome irrelevant to these
 // assertions — mock it out so its @/i18n/navigation import never loads.
 vi.mock("@/components/OwnerSectionEditLink", () => ({ default: () => null }));

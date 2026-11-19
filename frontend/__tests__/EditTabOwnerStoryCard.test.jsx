@@ -175,3 +175,12 @@ describe("Edit-tab OwnerStoryCard (isolation)", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("קובץ לא נתמך"));
   });
 });
+
+// MEH-3351: a screen reader announces the bio field by its visible label, not
+// by the placeholder (which disappears once she types).
+describe("OwnerStoryCard — the bio field has an accessible name", () => {
+  it("getByLabelText(bio_label) finds the bio textarea", () => {
+    renderCard();
+    expect(screen.getByLabelText(O.bio_label)).toBe(screen.getByTestId("owner-bio-input"));
+  });
+});
