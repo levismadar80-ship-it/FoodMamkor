@@ -23,7 +23,6 @@ import Select from "@/components/ui/Select";
 export default function GroupBuyProductPicker({ onPick }) {
   const t = useTranslations("group_buys.dashboard.form");
   const [products, setProducts] = useState(/** @type {any[]} */ ([]));
-  const [picked, setPicked] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -41,20 +40,22 @@ export default function GroupBuyProductPicker({ onPick }) {
   if (products.length === 0) return null;
 
   const handleChange = (/** @type {import("react").ChangeEvent<HTMLSelectElement>} */ e) => {
-    setPicked(e.target.value);
     const product = products.find((p) => String(p.id) === e.target.value);
     if (!product) return;
     // price_min is the product's regular (lowest) price; a range keeps its
     // floor, and no price leaves the field for her to fill.
     const regularPrice = product.price_min == null ? "" : String(Number(product.price_min));
     onPick({ name: product.name, regularPrice });
+    // A one-shot fill, not a binding: the select returns to «בחירת מוצר», so it
+    // never claims to match fields she has since edited.
+    e.target.value = "";
   };
 
   return (
     <Select
       label={t("prefill_label")}
       helperText={t("prefill_helper")}
-      value={picked}
+      defaultValue=""
       onChange={handleChange}
       data-testid="group-buy-product-picker"
     >

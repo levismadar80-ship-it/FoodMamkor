@@ -60,6 +60,16 @@ describe("MEH-3438 · opening hours — same hours for all open days", () => {
     expect(onChange).toHaveBeenLastCalledWith("Sun-Tue 08:00-12:00 16:00-19:00");
   });
 
+  it("Sunday closed: the first open day (Monday) is the source, exactly 2 open days", () => {
+    const onChange = vi.fn();
+    render(<LocationHoursField value="Mon 07:00-15:00, Thu 12:00-13:00" onChange={onChange} />);
+    expect(screen.getByTestId("location-hours-day-1")).toContainElement(copyButton());
+    fireEvent.click(copyButton());
+    expect(timesOf(4)).toEqual(["07:00", "15:00"]);
+    expect(screen.getByTestId("location-hours-open-0")).not.toBeChecked();
+    expect(onChange).toHaveBeenLastCalledWith("Mon 07:00-15:00, Thu 07:00-15:00");
+  });
+
   it("the label is the approved string in both locales", () => {
     expect(he.settings.locations.form.hours_copy_all).toBe("אותן שעות לכל הימים הפתוחים");
     expect(en.settings.locations.form.hours_copy_all).toBe("Same hours for all open days");
@@ -142,6 +152,8 @@ describe("MEH-3438 · group buy from an existing product", () => {
     const select = await screen.findByTestId("group-buy-product-picker");
     fireEvent.change(select, { target: { value: "p1" } });
     expect(onPick).toHaveBeenLastCalledWith({ name: "חלה מתוקה", regularPrice: "45" });
+    // One-shot fill: the select goes back to «בחירת מוצר».
+    expect(select).toHaveValue("");
     fireEvent.change(select, { target: { value: "p2" } });
     expect(onPick).toHaveBeenLastCalledWith({ name: "עוגה", regularPrice: "" });
   });
