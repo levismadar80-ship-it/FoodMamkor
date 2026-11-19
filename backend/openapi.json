@@ -1249,6 +1249,17 @@
             "title": "Phone Masked",
             "type": "string"
           },
+          "pickup_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Address"
+          },
           "pickup_code": {
             "anyOf": [
               {
@@ -5482,6 +5493,17 @@
           "phone_masked": {
             "title": "Phone Masked",
             "type": "string"
+          },
+          "pickup_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Address"
           },
           "pickup_code": {
             "anyOf": [

@@ -172,6 +172,9 @@ class _OrderOut(BaseModel):
 
 class BuyerOrderOut(_OrderOut):
     producer_name: str
+    # MEH-3216 stage 5a: confirmed pickups only; city only for an
+    # approximate location (services/product_order_views.pickup_address).
+    pickup_address: str | None = None
     phone_masked: str
     # Present only while the order is confirmed or ready.
     pickup_code: str | None
