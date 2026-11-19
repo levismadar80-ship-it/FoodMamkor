@@ -44,7 +44,7 @@ export default function GroupBuyProductPicker({ onPick }) {
     if (!product) return;
     // price_min is the product's regular (lowest) price; a range keeps its
     // floor, and no price leaves the field for her to fill.
-    const regularPrice = product.price_min == null ? "" : String(Number(product.price_min));
+    const regularPrice = product.price_min === null || product.price_min === undefined ? "" : String(Number(product.price_min));
     onPick({ name: product.name, regularPrice });
     // A one-shot fill, not a binding: the select returns to «בחירת מוצר», so it
     // never claims to match fields she has since edited.
