@@ -98,7 +98,7 @@ is a secret; these are names and where they are read.
 | Edge → backend proxy | `backend/app/rate_limit.py`, `frontend/middleware.js` | `EDGE_PROXY_SECRET` |
 
 **‏`R2_*` is documented nowhere, and the drift check cannot see it.**
-`scripts/backup_production_db.py:65-73` and `scripts/restore_from_backup.py:84`
+`scripts/backup_production_db.py:65-73` and `scripts/restore_from_backup.py` (`REQUIRED_ENV_VARS`)
 read `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
 `R2_BUCKET_NAME` and `R2_ENDPOINT`. **None of them appears in any
 `.env.example`**, and `scripts/check_env_drift.sh` scans only `backend/` and
