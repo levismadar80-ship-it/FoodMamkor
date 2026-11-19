@@ -37,7 +37,7 @@ jobs:
   # ─────────────────────────────────────────────
   pip-audit:
     name: Backend dependency audit (pip-audit)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     permissions:
       contents: read
@@ -83,7 +83,7 @@ jobs:
   # ─────────────────────────────────────────────
   npm-audit:
     name: Frontend dependency audit (npm audit)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     permissions:
       contents: read
