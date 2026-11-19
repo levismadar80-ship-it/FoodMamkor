@@ -73,7 +73,7 @@ export function cancelDeadline(slotStart, cutoffHours) {
  * The picks as order lines, in the order she added them.
  * @param {Record<string, number>} picks
  */
-export function itemsOf(picks) {
+function itemsOf(picks) {
   return Object.entries(picks).map(([product_id, qty]) => ({ product_id, qty }));
 }
 
