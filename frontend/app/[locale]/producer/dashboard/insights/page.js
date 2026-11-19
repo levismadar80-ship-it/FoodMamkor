@@ -37,6 +37,7 @@ import { showToast } from "@/lib/toast";
 import { shareOrCopy } from "@/lib/share-link";
 import { copyOrThrow } from "@/lib/clipboard";
 import ShareVisitsLine from "@/components/producer/ShareVisitsLine";
+import WeeklySummaryToggle from "@/components/producer/WeeklySummaryToggle";
 
 export default function ProducerDashboardInsightsPage() {
   const router = useRouter();
@@ -145,6 +146,11 @@ export default function ProducerDashboardInsightsPage() {
         </div>
       )}
       <DeepAnalyticsSection analytics={analytics} profile={profile} />
+      {/* MEH-3212: the weekly email's own on/off. Here because the email
+          links to this page and its unsubscribe page sends the owner here.
+          Approved only — the email never goes to a business that is not
+          live. The card hides itself while the email is off site-wide. */}
+      {isApproved && <WeeklySummaryToggle />}
     </div>
   );
 }
