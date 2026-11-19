@@ -167,9 +167,16 @@ def _purge_registrations(db: Session, today: date) -> int:
         stale: ColumnElement[bool] = fk.in_(old_items.scalar_subquery())
         if model is Experience:
             recurring = select(Experience.id).where(Experience.is_recurring.is_(True))
+            # MEH-3441: a sign-up for a listed date ages out by that date —
+            # dates open up to 12 weeks ahead, so created_at would purge a
+            # sign-up before its date. Only an undated one uses created_at.
             stale = stale | (
                 fk.in_(recurring.scalar_subquery())
-                & (Registration.created_at < datetime.combine(boundary, time.min))
+                & or_(
+                    Registration.session_date < boundary,
+                    Registration.session_date.is_(None)
+                    & (Registration.created_at < datetime.combine(boundary, time.min)),
+                )
             )
         try:
             result = db.execute(

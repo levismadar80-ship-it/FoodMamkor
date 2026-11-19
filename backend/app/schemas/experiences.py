@@ -6,6 +6,7 @@ Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """
 
+import datetime as _dt
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any, Literal
@@ -71,6 +72,10 @@ class RegistrationCreate(BaseModel):
     waitlist: bool = False
     # MEH-3315: «כמה אנשים» — the places this sign-up takes.
     party_size: int = Field(1, ge=1, le=10)
+    # MEH-3441: the date of a recurring workshop with dates. Required there
+    # (422 «בחרו מועד.»), ignored everywhere else.
+    session_date: date | None = None
+    session_time: time | None = None
 
     @field_validator("name")
     @classmethod
@@ -121,6 +126,8 @@ class RegistrationOwnerOut(BaseModel):
     cancelled_at: datetime | None = None
     party_size: int = 1  # MEH-3315
     attendance: Literal["attended", "no_show"] | None = None  # MEH-3315
+    session_date: date | None = None  # MEH-3441: NULL = no date
+    session_time: time | None = None
 
     model_config = {"from_attributes": True}
 
@@ -139,6 +146,30 @@ class RegistrationCancelInfoOut(BaseModel):
     title: str
     event_date: date
     status: str
+
+
+class ExperienceSessionIn(BaseModel):
+    """MEH-3441: one date of a recurring workshop, as the owner's form sends
+    it. Uniqueness, the future and the cap of 12 are checked on save
+    (services/experience_sessions.normalise), against what is stored."""
+
+    # _dt.*: a field named after its type would shadow it in the class body.
+    date: _dt.date
+    time: _dt.time
+    # The owner's own count of people who signed up off the site for this
+    # date — like Experience.participants_count, for one date.
+    participants_count: int = Field(0, ge=0, le=500)
+
+
+class ExperienceSessionOut(BaseModel):
+    """MEH-3441: a date the page offers, with its places left (None = no cap)."""
+
+    date: _dt.date
+    time: str  # "HH:MM"
+    # The owner's off-site tally for this date (public, like the workshop's
+    # own participants_count) — the owner's form edits it.
+    participants_count: int
+    spots_left: int | None
 
 
 class ExperienceCreate(BaseModel):
@@ -177,6 +208,9 @@ class ExperienceCreate(BaseModel):
     requirements: str | None = None
     is_recurring: bool = False
     recurring_schedule: str | None = None
+    # MEH-3441: a recurring workshop's dates. max_length bounds the body
+    # (MEH-3022); the rule of 12 upcoming is checked against what is stored.
+    sessions: list[ExperienceSessionIn] | None = Field(None, max_length=24)
     # MEH-2763: «איך נרשמים?» — the router checks the method's prerequisite
     # (a mobile for whatsapp, a phone for phone, a URL for external_url).
     registration_method: RegistrationMethod = "site_form"
@@ -255,6 +289,9 @@ class ExperienceUpdate(BaseModel):
     requirements: str | None = None
     is_recurring: bool | None = None
     recurring_schedule: str | None = None
+    # MEH-3441: a recurring workshop's dates. max_length bounds the body
+    # (MEH-3022); the rule of 12 upcoming is checked against what is stored.
+    sessions: list[ExperienceSessionIn] | None = Field(None, max_length=24)
     is_active: bool | None = None  # MEH-1419: reversible cancel — mirrors EventUpdate
     # MEH-2663: sign-up happens on WhatsApp, so the host reports the count.
     # Bookkeeping, not content — the router keeps it out of moderation.
@@ -376,6 +413,8 @@ class ExperienceListOut(BaseModel):
     price_per_person: Decimal | None = None
     is_recurring: bool = False
     recurring_schedule: str | None = None
+    # MEH-3441: upcoming dates with places left; [] = no dates (one pool).
+    sessions: list[ExperienceSessionOut] = []
     status: str
     host: ExperienceHostOut | None = None
     created_at: datetime

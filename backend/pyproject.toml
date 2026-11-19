@@ -307,6 +307,7 @@ files = [
     "app/services/email.py",
     "app/services/email_branding.py",
     "app/services/experience_moderation.py",
+    "app/services/experience_sessions.py",
     "app/services/experience_notifications.py",
     "app/services/farmer_declaration.py",
     "app/services/gallery_cap.py",
