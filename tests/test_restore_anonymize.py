@@ -417,3 +417,27 @@ def test_the_production_url_env_is_refused(restore, monkeypatch):
     monkeypatch.setenv("DATABASE_URL_PRODUCTION", url)
     assert restore.main(["x.dump", url]) == restore.EXIT_CONFIG_ERROR
     assert restore.calls == []
+
+
+def test_run_anonymize_sends_utf8_bytes(monkeypatch):
+    """The SQL holds Hebrew; a locale codec (cp1255 on Windows) must not touch it."""
+    mod = _load_restore_module()
+    monkeypatch.setattr(mod, "existing_columns", lambda url: _existing_from_models())
+    seen = {}
+
+    def fake_run(cmd, **kw):
+        seen.update(kw)
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.run_anonymize("postgresql://localhost/dr") is True
+    assert isinstance(seen["input"], bytes)
+    assert "text" not in seen
+    assert seen["env"]["PGCLIENTENCODING"] == "UTF8"
+    seen["input"].decode("utf-8")
+
+
+def test_run_anonymize_fails_when_the_sql_file_is_missing(monkeypatch, tmp_path):
+    mod = _load_restore_module()
+    monkeypatch.setattr(mod, "existing_columns", lambda url: _existing_from_models())
+    monkeypatch.setattr(mod, "ANONYMIZE_SQL", tmp_path / "gone.sql")
+    assert mod.run_anonymize("postgresql://localhost/dr") is False

@@ -298,13 +298,22 @@ def run_anonymize(target_url: str) -> bool:
     if not existing:
         log.error("anonymization did not run: the restored schema is empty or unreadable")
         return False
-    sql, skipped = effective_sql(ANONYMIZE_SQL.read_text(encoding="utf-8"), existing)
+    try:
+        sql, skipped = effective_sql(ANONYMIZE_SQL.read_text(encoding="utf-8"), existing)
+    except (OSError, UnicodeDecodeError) as exc:
+        log.error("anonymization did not run: cannot read %s: %s", ANONYMIZE_SQL.name, exc)
+        return False
     for name in skipped:
         log.warning("  not in this dump's schema, skipped: %s", name)
+    if skipped:
+        log.warning("Skipped %d item(s) the dump predates; check them by hand.", len(skipped))
     cmd = ["psql", target_url, "-X", "--single-transaction", "-v", "ON_ERROR_STOP=1", "-q", "-f", "-"]
+    # The SQL carries Hebrew literals. Send UTF-8 bytes and say so to psql,
+    # never the locale codec: Git Bash on Windows is cp1255 / cp1252.
+    env = {**os.environ, "PGCLIENTENCODING": "UTF8"}
     log.info("Anonymizing personal details (%s)", ANONYMIZE_SQL.name)
     try:
-        subprocess.run(cmd, check=True, timeout=ANONYMIZE_TIMEOUT_SEC, input=sql, text=True)
+        subprocess.run(cmd, check=True, timeout=ANONYMIZE_TIMEOUT_SEC, input=sql.encode("utf-8"), env=env)
     except subprocess.CalledProcessError as exc:
         log.error("anonymization exited %d — nothing was changed (one transaction)", exc.returncode)
         return False
