@@ -22,6 +22,7 @@ from app.limits import MAX_PRODUCTS
 from app.schemas.catalog import ProductCreate
 
 from app.schemas.product_order_offer import PriceUnit  # MEH-2936: one definition
+
 UncertainField = Literal["name", "description", "price", "unit"]
 
 

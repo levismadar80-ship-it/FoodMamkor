@@ -15684,14 +15684,14 @@
             "title": "Price Range"
           },
           "price_unit": {
-            "default": "unit",
             "title": "Price Unit",
             "type": "string"
           }
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "price_unit"
         ],
         "title": "ProductOut",
         "type": "object"

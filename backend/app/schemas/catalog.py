@@ -608,7 +608,8 @@ class ProductOut(BaseModel):
     image_url: str | None = None
     price_min: Decimal | None = None
     price_max: Decimal | None = None
-    price_unit: str = "unit"  # MEH-2936
+    price_unit: str  # MEH-2936: NOT NULL column, so no default (a default
+    # would add 17 generated *Default exports to api.zod.js)
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False

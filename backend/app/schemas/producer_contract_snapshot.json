@@ -243,7 +243,8 @@
       "position",
       "price_max",
       "price_min",
-      "price_range"
+      "price_range",
+      "price_unit"
     ],
     "ProducerListOut.active_offer": [
       "expires_at",

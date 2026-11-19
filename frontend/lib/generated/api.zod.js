@@ -929,7 +929,6 @@ export const listProducersAdminProducersGetResponseProductsItemIsLowCarbDefault 
 export const listProducersAdminProducersGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemIsVeganDefault = false;
 export const listProducersAdminProducersGetResponseProductsItemIsVegetarianDefault = false;
-export const listProducersAdminProducersGetResponseProductsItemPriceUnitDefault = `unit`;
 export const listProducersAdminProducersGetResponseProductsDefault = [];
 export const listProducersAdminProducersGetResponseProductsCountDefault = 0;
 export const listProducersAdminProducersGetResponseReportCountDefault = 0;
@@ -1096,7 +1095,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), listProducersAdminProducersGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1195,7 +1194,6 @@ export const adminCreateProducerAdminProducersPostResponseProductsItemIsLowCarbD
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVeganDefault = false;
 export const adminCreateProducerAdminProducersPostResponseProductsItemIsVegetarianDefault = false;
-export const adminCreateProducerAdminProducersPostResponseProductsItemPriceUnitDefault = `unit`;
 export const adminCreateProducerAdminProducersPostResponseProductsDefault = [];
 export const adminCreateProducerAdminProducersPostResponseProductsCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseReportCountDefault = 0;
@@ -1362,7 +1360,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), adminCreateProducerAdminProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1458,7 +1456,6 @@ export const pendingProducersAdminProducersPendingGetResponseProductsItemIsLowCa
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVeganDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVegetarianDefault = false;
-export const pendingProducersAdminProducersPendingGetResponseProductsItemPriceUnitDefault = `unit`;
 export const pendingProducersAdminProducersPendingGetResponseProductsDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseProductsCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseReportCountDefault = 0;
@@ -1625,7 +1622,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), pendingProducersAdminProducersPendingGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1784,7 +1781,6 @@ export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLo
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
-export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemPriceUnitDefault = `unit`;
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault = 0;
@@ -1951,7 +1947,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), adminGetProducerAdminProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -2047,7 +2043,6 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemI
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsNoAddedSugarDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVeganDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsVegetarianDefault = false;
-export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemPriceUnitDefault = `unit`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReportCountDefault = 0;
@@ -2214,7 +2209,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault),
   "recommended_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -2528,7 +2523,6 @@ export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponse
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsNoAddedSugarDefault = false;
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVeganDefault = false;
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault = false;
-export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceUnitDefault = `unit`;
 
 export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2548,7 +2542,7 @@ export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponsePriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })
 
 
@@ -4671,7 +4665,6 @@ export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsLowCar
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVeganDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemIsVegetarianDefault = false;
-export const readDraftPreviewProducerPreviewTokenGetResponseProductsItemPriceUnitDefault = `unit`;
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseProductsCountDefault = 0;
 export const readDraftPreviewProducerPreviewTokenGetResponseReportCountDefault = 0;
@@ -4809,7 +4802,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), readDraftPreviewProducerPreviewTokenGetResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), readDraftPreviewProducerPreviewTokenGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseReportCountDefault),
@@ -5068,7 +5061,6 @@ export const createProducerProducersPostResponseProductsItemIsLowCarbDefault = f
 export const createProducerProducersPostResponseProductsItemIsNoAddedSugarDefault = false;
 export const createProducerProducersPostResponseProductsItemIsVeganDefault = false;
 export const createProducerProducersPostResponseProductsItemIsVegetarianDefault = false;
-export const createProducerProducersPostResponseProductsItemPriceUnitDefault = `unit`;
 export const createProducerProducersPostResponseProductsDefault = [];
 export const createProducerProducersPostResponseProductsCountDefault = 0;
 export const createProducerProducersPostResponseReportCountDefault = 0;
@@ -5206,7 +5198,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), createProducerProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseReportCountDefault),
@@ -5287,7 +5279,6 @@ export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsLowCar
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVeganDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegetarianDefault = false;
-export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemPriceUnitDefault = `unit`;
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault = 0;
@@ -5425,7 +5416,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), getProducerBySlugProducersBySlugSlugGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault),
@@ -5540,7 +5531,6 @@ export const getMyProducerProducersMeGetResponseProductsItemIsLowCarbDefault = f
 export const getMyProducerProducersMeGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemIsVeganDefault = false;
 export const getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault = false;
-export const getMyProducerProducersMeGetResponseProductsItemPriceUnitDefault = `unit`;
 export const getMyProducerProducersMeGetResponseProductsDefault = [];
 export const getMyProducerProducersMeGetResponseProductsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReportCountDefault = 0;
@@ -5685,7 +5675,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), getMyProducerProducersMeGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseProductsCountDefault),
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5771,7 +5761,6 @@ export const updateMyProducerProducersMePutResponseProductsItemIsLowCarbDefault 
 export const updateMyProducerProducersMePutResponseProductsItemIsNoAddedSugarDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemIsVeganDefault = false;
 export const updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefault = false;
-export const updateMyProducerProducersMePutResponseProductsItemPriceUnitDefault = `unit`;
 export const updateMyProducerProducersMePutResponseProductsDefault = [];
 export const updateMyProducerProducersMePutResponseProductsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReportCountDefault = 0;
@@ -5916,7 +5905,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), updateMyProducerProducersMePutResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseProductsCountDefault),
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6332,7 +6321,6 @@ export const setMyProductOrderProducersMeProductOrderPutResponseIsLowCarbDefault
 export const setMyProductOrderProducersMeProductOrderPutResponseIsNoAddedSugarDefault = false;
 export const setMyProductOrderProducersMeProductOrderPutResponseIsVeganDefault = false;
 export const setMyProductOrderProducersMeProductOrderPutResponseIsVegetarianDefault = false;
-export const setMyProductOrderProducersMeProductOrderPutResponsePriceUnitDefault = `unit`;
 
 export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6352,7 +6340,7 @@ export const SetMyProductOrderProducersMeProductOrderPutResponseItem = /*#__PURE
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), setMyProductOrderProducersMeProductOrderPutResponsePriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })
 export const SetMyProductOrderProducersMeProductOrderPutResponse = /*#__PURE__*/ zod.array(SetMyProductOrderProducersMeProductOrderPutResponseItem)
 
@@ -6682,7 +6670,6 @@ export const listMyProductsProducersMeProductsGetResponseIsLowCarbDefault = fals
 export const listMyProductsProducersMeProductsGetResponseIsNoAddedSugarDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVeganDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVegetarianDefault = false;
-export const listMyProductsProducersMeProductsGetResponsePriceUnitDefault = `unit`;
 
 export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6702,7 +6689,7 @@ export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zo
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listMyProductsProducersMeProductsGetResponsePriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })
 export const ListMyProductsProducersMeProductsGetResponse = /*#__PURE__*/ zod.array(ListMyProductsProducersMeProductsGetResponseItem)
 
@@ -6716,7 +6703,6 @@ export const createMyProductProducersMeProductsPostResponseIsLowCarbDefault = fa
 export const createMyProductProducersMeProductsPostResponseIsNoAddedSugarDefault = false;
 export const createMyProductProducersMeProductsPostResponseIsVeganDefault = false;
 export const createMyProductProducersMeProductsPostResponseIsVegetarianDefault = false;
-export const createMyProductProducersMeProductsPostResponsePriceUnitDefault = `unit`;
 
 export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6736,7 +6722,7 @@ export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createMyProductProducersMeProductsPostResponsePriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })
 
 
@@ -6773,7 +6759,6 @@ export const updateMyProductProducersMeProductsProductIdPutResponseIsLowCarbDefa
 export const updateMyProductProducersMeProductsProductIdPutResponseIsNoAddedSugarDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVeganDefault = false;
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault = false;
-export const updateMyProductProducersMeProductsProductIdPutResponsePriceUnitDefault = `unit`;
 
 export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6793,7 +6778,7 @@ export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE_
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProductProducersMeProductsProductIdPutResponsePriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })
 
 
@@ -6806,7 +6791,6 @@ export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsLowC
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsNoAddedSugarDefault = false;
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVeganDefault = false;
 export const setMyProductGroupProducersMeProductsProductIdGroupPutResponseIsVegetarianDefault = false;
-export const setMyProductGroupProducersMeProductsProductIdGroupPutResponsePriceUnitDefault = `unit`;
 
 export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -6826,7 +6810,7 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), setMyProductGroupProducersMeProductsProductIdGroupPutResponsePriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })
 
 
@@ -7215,7 +7199,6 @@ export const getProducerProducersProducerIdGetResponseProductsItemIsLowCarbDefau
 export const getProducerProducersProducerIdGetResponseProductsItemIsNoAddedSugarDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemIsVeganDefault = false;
 export const getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDefault = false;
-export const getProducerProducersProducerIdGetResponseProductsItemPriceUnitDefault = `unit`;
 export const getProducerProducersProducerIdGetResponseProductsDefault = [];
 export const getProducerProducersProducerIdGetResponseProductsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseReportCountDefault = 0;
@@ -7353,7 +7336,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseProductsItemPriceUnitDefault)
+  "price_unit": /*#__PURE__*/ zod.string()
 })), getProducerProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseReportCountDefault),

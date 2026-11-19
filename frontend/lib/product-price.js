@@ -22,7 +22,7 @@ const SILENT_UNITS = new Set(["unit"]);
  * @param {string | null | undefined} unit
  * @returns {boolean} true when a label goes next to the price
  */
-export function showsUnit(unit) {
+function showsUnit(unit) {
   return typeof unit === "string" && PRICE_UNITS.includes(unit) && !SILENT_UNITS.has(unit);
 }
 
