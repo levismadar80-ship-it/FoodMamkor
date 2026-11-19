@@ -279,15 +279,9 @@ export function ProducerTags({ producer }) {
       )}
       {/* MEH-1421 (MEH-1388 chunk 4a): read-only dedup signal — likely-duplicate
           producer (shared name/city). Signal only; approval is never blocked. */}
-      {(producer._dup?.name || producer._dup?.city) && (
+      {(producer._dup?.name || producer._dup?.city || producer._dup?.phone) && (
         <span
-          title={t(
-            producer._dup.name && producer._dup.city
-              ? "producers.table.tags.dedup_both_title"
-              : producer._dup.name
-                ? "producers.table.tags.dedup_name_title"
-                : "producers.table.tags.dedup_city_title",
-          )}
+          title={t(dedupTitleKey(producer._dup))}
           aria-label={t("producers.table.tags.dedup")}
           className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-2xs font-medium"
         >
@@ -297,6 +291,14 @@ export function ProducerTags({ producer }) {
       )}
     </div>
   );
+}
+
+// MEH-3408: a shared phone is the strongest sign, so its title wins; the
+// name/city titles keep their MEH-1421 order below it.
+function dedupTitleKey(dup) {
+  if (dup.phone) return "producers.table.tags.dedup_phone_title";
+  if (dup.name && dup.city) return "producers.table.tags.dedup_both_title";
+  return dup.name ? "producers.table.tags.dedup_name_title" : "producers.table.tags.dedup_city_title";
 }
 
 // MEH-1471: read-only self-reported attribution ("מאיפה שמעת עלינו?"). Admin-only
