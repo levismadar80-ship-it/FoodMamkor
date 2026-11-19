@@ -56,7 +56,7 @@ graph LR
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
-    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel,<br/>MEH-3315: PATCH /registrations/id/attendance owner/admin]
+    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel,<br/>MEH-3315: PATCH /registrations/id/attendance owner/admin,<br/>MEH-3441: a recurring workshop with dates books one date (places, waitlist, repeat check per date)]
     App --> Health[health.router<br/>/health, /health/liveness, /health/readiness, /health/places]
 ```
 

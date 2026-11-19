@@ -88,12 +88,15 @@ def _message(
 ) -> RegistrantEmail:
     place = _event_place(item) if isinstance(item, Event) else _experience_place(item)
     past_first = _is_recurring(item) and not _is_upcoming(item)
+    day, at = item.event_date, item.event_time
+    if reg.session_date is not None:  # MEH-3441: the date she booked
+        day, at, past_first = reg.session_date, reg.session_time, False
     return RegistrantEmail(
         title=item.title or "",  # type: ignore[arg-type]
         # MEH-2871: a recurring experience's event_date is its FIRST occasion;
         # once that is past the email names no date rather than a past one.
-        date_text="" if past_first else _date_text(item.event_date),  # type: ignore[arg-type]
-        time_text="" if past_first else _time_text(item.event_time),  # type: ignore[arg-type]
+        date_text="" if past_first else _date_text(day),  # type: ignore[arg-type]
+        time_text="" if past_first else _time_text(at),  # type: ignore[arg-type]
         place=place,
         host_name=host_name,
         cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
@@ -386,6 +389,42 @@ def cancel_item_signups(
     regs = [
         (r, item, host_name)
         for r in _active_registrations(db, _column_for(item), [item.id])
+    ]
+    return _cancel_and_queue(
+        db, background_tasks, regs, send_registrant_cancelled, test_cause
+    )
+
+
+def cancel_session_signups(
+    db: Session,
+    ex: Experience,
+    keys: list[tuple[date, time]],
+    background_tasks: BackgroundTasks,
+    test_cause: bool,
+) -> int:
+    """MEH-3441: the owner removed upcoming dates of a recurring workshop —
+    cancel the sign-ups (and waitlist) of those dates only, one email each,
+    the same email as a cancelled workshop."""
+    if not keys:
+        return 0
+    host_name = _host_name_for(ex)
+    regs: list[tuple[Registration, Event | Experience, str]] = [
+        (r, ex, host_name)
+        for r in (
+            db.query(Registration)
+            .filter(
+                Registration.experience_id == ex.id,
+                Registration.status.in_(("registered", "waitlisted")),
+                or_(
+                    *(
+                        (Registration.session_date == d) & (Registration.session_time == t)
+                        for d, t in keys
+                    )
+                ),
+            )
+            .with_for_update()
+            .all()
+        )
     ]
     return _cancel_and_queue(
         db, background_tasks, regs, send_registrant_cancelled, test_cause

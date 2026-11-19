@@ -128,6 +128,7 @@ Places are people: capacity sums `party_size` (MEH-3315). `attendance`
 | waitlisted → cancelled | the holder of the emailed link; host cancels the item; business delisted | `cancel_registration` · `services/booking_cancellations.py` | as the registered rows below |
 | registered → cancelled | the holder of the emailed link | `routers/registrations.py` `cancel_registration` | row lock; ledger voided when the item is still upcoming; an upcoming item emails the next waitlisted visitor (`registration_waitlist.offer_next`) |
 | registered → cancelled | host cancels or deletes the item | `services/booking_cancellations.py` `cancel_item_signups` | items dated today or later, and every recurring workshop (MEH-2871); ledger voided |
+| registered → cancelled | the host removes an upcoming date of a recurring workshop (MEH-3441) | `services/booking_cancellations.py` `cancel_session_signups`, from `routers/experiences.py` `update_experience` | that date's registered and waitlisted rows only; one cancel email each |
 | registered → cancelled | the business leaves the live state | `services/booking_cancellations.py` `delist_business` | same |
 | purged | scheduler | `services/retention_purge.py` | 30 days after the date |
 

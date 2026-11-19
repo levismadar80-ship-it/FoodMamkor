@@ -62,6 +62,7 @@ from app.services.registration_emails import (
 )
 from app.services import registration_waitlist as waitlist  # MEH-3314
 from app.services.registrations import registered_counts
+from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.utils.clock import israel_now, israel_today, utc_now
 
 router = APIRouter(tags=["registrations"])
@@ -83,7 +84,9 @@ def _has_started(day: date, at: time | None) -> bool:
     return at is not None and israel_now().time() >= at
 
 
-def _places_to_offer(db: Session, item: Event | Experience) -> int | None:
+def _places_to_offer(
+    db: Session, item: Event | Experience, reg: Registration | None = None
+) -> int | None:
     """MEH-3314: a freed place is offered only where the form would take it —
     active, on-site form, not started (a recurring workshop never closes by
     its first date), and below the cap after this cancel (a workshop's own
@@ -96,6 +99,14 @@ def _places_to_offer(db: Session, item: Event | Experience) -> int | None:
         return 0
     if item.max_participants is None:
         return None
+    if reg is not None and reg.session_date is not None:
+        # MEH-3441: a date's own places — only while that date is still open.
+        found = sessions_svc.find(item, reg.session_date, reg.session_time)  # type: ignore[arg-type]
+        if found is None:
+            return 0
+        key = (reg.session_date, reg.session_time)
+        used = int(found["participants_count"]) + sessions_svc.taken(db, item).get(key, 0)  # type: ignore[arg-type]
+        return max(int(item.max_participants) - used, 0)
     if isinstance(item, Event):
         taken = registered_counts(db, event_ids=[item.id]).get(item.id, 0)  # type: ignore[call-overload,list-item]
     else:
@@ -200,8 +211,14 @@ def _new_registration(
     )
 
 
-def _signup_row(
-    db: Session, data: RegistrationCreate, column: Any, item_id: UUID, *, full: bool
+def _signup_row(  # noqa: PLR0913 — MEH-3441 added the date
+    db: Session,
+    data: RegistrationCreate,
+    column: Any,
+    item_id: UUID,
+    *,
+    full: bool,
+    on: dict[str, Any] | None = None,
 ) -> Registration | None:
     """MEH-3314: the row this submit writes, or None when it writes nothing.
 
@@ -211,10 +228,14 @@ def _signup_row(
     answer never depends on who else is on the list."""
     # The cap before the duplicate check, as capacity is: the other order
     # answers 201 for an address already listed and 409 for a new one.
+    # MEH-3441: `on` = {session_date, session_time} keeps the waitlist and
+    # the duplicate check to that date.
+    on = on or {}
+    scope = sessions_svc.scope(on.get("session_date"), on.get("session_time"))
     if full:
-        waitlist.refuse_if_waitlist_full(db, column, item_id)
-    existing = waitlist.active_row(db, column, item_id, data.email)
-    item: dict[str, Any] = {column.key: item_id}
+        waitlist.refuse_if_waitlist_full(db, column, item_id, *scope)
+    existing = waitlist.active_row(db, column, item_id, data.email, *scope)
+    item: dict[str, Any] = {column.key: item_id, **on}
     if existing is not None and (full or existing.status == "registered"):
         db.rollback()  # releases the FOR UPDATE lock on the item row
         return None
@@ -343,14 +364,23 @@ def register_for_experience(
     db: Session = Depends(get_db),
 ) -> RegistrationCreatedOut:
     ex = _experience_for_signup(db, experience_id)
-    # Capacity first, for the same reason as register_for_event.
-    taken = registered_counts(db, experience_ids=[ex.id]).get(ex.id, 0)  # type: ignore[call-overload,list-item]
-    # The host's own tally (WhatsApp / phone sign-ups) shares the cap.
-    occupied = (ex.participants_count or 0) + taken
+    # MEH-3441: a workshop with dates books one date; its places are its own.
+    chosen = sessions_svc.require_choice(ex, data.session_date, data.session_time)
+    on: dict[str, Any] = {}
+    if chosen is not None:
+        key = (data.session_date, data.session_time.replace(second=0, microsecond=0))  # type: ignore[union-attr]
+        on = {"session_date": key[0], "session_time": key[1]}
+        taken = sessions_svc.taken(db, ex).get(key, 0)  # type: ignore[arg-type]
+        occupied = chosen["participants_count"] + taken
+    else:
+        # Capacity first, for the same reason as register_for_event.
+        taken = registered_counts(db, experience_ids=[ex.id]).get(ex.id, 0)  # type: ignore[call-overload,list-item]
+        # The host's own tally (WhatsApp / phone sign-ups) shares the cap.
+        occupied = (ex.participants_count or 0) + taken
     left = _left(ex.max_participants, occupied)  # type: ignore[arg-type]
     full = left is not None and data.party_size > left
     _gate(data, full=full, left=left)
-    reg = _signup_row(db, data, Registration.experience_id, ex.id, full=full)  # type: ignore[arg-type]
+    reg = _signup_row(db, data, Registration.experience_id, ex.id, full=full, on=on)  # type: ignore[arg-type]
     if reg is None:
         return waitlist.WAITLISTED if full else RegistrationCreatedOut()
     db.flush()
@@ -378,8 +408,14 @@ def register_for_experience(
             # MEH-3250: a recurring experience's event_date is its FIRST
             # occasion, often long past — the email gives the host's schedule
             # (approved page copy «מתקיימת באופן קבוע» when she left none).
-            date_text=_experience_when(ex),
-            time_text="" if ex.is_recurring else _time_text(ex.event_time),  # type: ignore[arg-type]
+            date_text=(
+                _date_text(on["session_date"]) if on else _experience_when(ex)
+            ),
+            time_text=(
+                _time_text(on["session_time"])
+                if on
+                else "" if ex.is_recurring else _time_text(ex.event_time)  # type: ignore[arg-type]
+            ),
             place=place,  # type: ignore[arg-type]
             host_name=host_name,  # type: ignore[arg-type]
             item_url=f"{settings.frontend_url}/experiences/{ex.id}",
@@ -406,6 +442,9 @@ def register_for_experience(
                 email=reg.email,  # type: ignore[arg-type]
                 spots_left=spots,
                 party_size=int(reg.party_size or 1),  # MEH-3315
+                session_text=(  # MEH-3441
+                    sessions_svc.text(on["session_date"], on["session_time"]) if on else ""
+                ),
                 # MEH-2884: experiences tab, where the host sees this registration.
                 manage_url=f"{settings.frontend_url}/producer/dashboard/experiences",
             ),
@@ -535,6 +574,11 @@ def _item(reg: Registration) -> Any:
     return reg.event if reg.event_id else reg.experience
 
 
+def _day(reg: Registration, item: Any) -> date:
+    """MEH-3441: the date she booked, else the item's own."""
+    return reg.session_date or item.event_date  # type: ignore[return-value]
+
+
 @router.get("/registrations/{token}", response_model=RegistrationCancelInfoOut)
 @limiter.limit("30/minute")
 def get_registration(
@@ -546,7 +590,7 @@ def get_registration(
         kind="event" if reg.event_id else "experience",
         item_id=item.id,
         title=item.title,
-        event_date=item.event_date,
+        event_date=_day(reg, item),
         status=reg.status,
     )
 
@@ -569,7 +613,7 @@ def cancel_registration(
     if was_active:
         # MEH-3179: a cancel before the item took place is not a booking the
         # business got. A late cancel of a past item stays counted.
-        if item.event_date >= israel_today():
+        if _day(reg, item) >= israel_today():
             billing_ledger.void(
                 db,
                 kind=(
@@ -579,15 +623,20 @@ def cancel_registration(
             )
     # A late cancel of a past item changes nothing for the owner — no email.
     # MEH-3250: a recurring experience is never past by its first date.
-    is_upcoming = item.event_date >= israel_today() or bool(
-        getattr(item, "is_recurring", False)
+    is_upcoming = _day(reg, item) >= israel_today() or (
+        reg.session_date is None and bool(getattr(item, "is_recurring", False))
     )
     # MEH-3314: the freed spot goes to the first one waiting (stamped here,
     # mailed after the commit). Flush first: the session does not autoflush,
     # so without it the count below still sees the cancelled party.
     db.flush()
     offers = (
-        waitlist.offer_places(db, item, _places_to_offer(db, item))
+        waitlist.offer_places(
+            db,
+            item,
+            _places_to_offer(db, item, reg),
+            *sessions_svc.scope(reg.session_date, reg.session_time),  # type: ignore[arg-type]
+        )
         if was_active
         else []
     )
@@ -625,6 +674,6 @@ def cancel_registration(
         kind="event" if reg.event_id else "experience",
         item_id=item.id,
         title=item.title,
-        event_date=item.event_date,
+        event_date=_day(reg, item),
         status=reg.status,
     )
