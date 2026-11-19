@@ -1010,6 +1010,7 @@
         "total_estimate": "סך הכול, בערך: {total} ₪",
         "payment_line": "התשלום ישירות לבית העסק: {methods}. באתר לא משלמים.",
         "cancel_line": "אפשר לבטל או לשנות עד {cutoff}.",
+        "seller_line": "המוכר: {name} · מספר עוסק {number}{city, select, none {} other { · {city}}}",
         "platform_line": "מהמקור מעבירה את הבקשה לבית העסק. היא לא המוכרת ולא צד לעסקה.",
         "send": "שליחת הבקשה",
         "close": "סגירה",

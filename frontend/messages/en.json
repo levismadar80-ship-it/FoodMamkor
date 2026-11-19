@@ -1010,6 +1010,7 @@
         "total_estimate": "Total, approximately: ₪{total}",
         "payment_line": "You pay the business directly: {methods}. No payment on the site.",
         "cancel_line": "You can cancel or change until {cutoff}.",
+        "seller_line": "Seller: {name} · Business no. {number}{city, select, none {} other { · {city}}}",
         "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
         "send": "Send the request",
         "close": "Close",
