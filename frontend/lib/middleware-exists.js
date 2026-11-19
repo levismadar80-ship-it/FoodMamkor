@@ -17,10 +17,33 @@
  *           runs as before (same rule as dietPageExists in middleware.js).
  * History:  MEH-2977 siblings (14/11/2026) — measured on production:
  *           /<slug>/recipes/<missing>, /producers/<cat>/<region> missing → 200.
+ *           MEH-3342: a recipe under a renamed business's old slug → 301.
  */
 import { REGION_PAGE_MIN, getRegion, regionCities } from "./region-pages";
 
 const TIMEOUT_MS = 3000;
+/**
+ * MEH-3336: the only slug a `slug_moved` 404 may send us to — plain Latin, so
+ * a hostile body can never turn the 301 into an off-site or path-escape jump.
+ */
+export const MOVED_SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * The business's current slug from a `slug_moved` 404 body, else null.
+ * @param {Response} res
+ * @returns {Promise<string | null>}
+ */
+export async function movedSlugOf(res) {
+  try {
+    const d = (await res.json())?.detail;
+    if (d?.code === "slug_moved" && typeof d.slug === "string" && MOVED_SLUG_SHAPE.test(d.slug)) {
+      return d.slug;
+    }
+  } catch {
+    // Not JSON — a plain miss.
+  }
+  return null;
+}
 const CATEGORIES_TTL_MS = 300_000;
 /** @type {{ at: number, rows: Array<{ id: unknown, slug: string }> } | null} */
 let categoriesMemo = null;
@@ -46,15 +69,22 @@ async function get(url, report) {
 
 /**
  * /<slug>/recipes/<id>. The page 404s on a 404 or 410 from the recipe
- * endpoint (410 = business deleted); 422 is a malformed id.
+ * endpoint (410 = business deleted); 422 is a malformed id. MEH-3342: a 404
+ * that names the business's new slug returns `{ moved }`, the path the
+ * middleware 301s to (same shape as producerExists, MEH-3336).
  * @param {string} apiUrl @param {string} slug @param {string} recipeId
  * @param {(msg: string, err?: unknown) => void} report
+ * @returns {Promise<boolean | { moved: string }>}
  */
 export async function recipeExists(apiUrl, slug, recipeId, report) {
   const url = `${apiUrl}/producers/${encodeURIComponent(slug)}/recipes/${encodeURIComponent(recipeId)}`;
   const res = await get(url, report);
   if (!res) return true;
-  if (res.status === 404 || res.status === 410 || res.status === 422) return false;
+  if (res.status === 404) {
+    const moved = await movedSlugOf(res);
+    return moved ? { moved: `${moved}/recipes/${encodeURIComponent(recipeId)}` } : false;
+  }
+  if (res.status === 410 || res.status === 422) return false;
   if (!res.ok) report(`backend answered ${res.status} for ${url} — failing open`);
   return true;
 }

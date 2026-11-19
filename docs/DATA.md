@@ -1860,6 +1860,9 @@ DELETE /producers/me/recipes/{id}           producer  — owner only
 # Public (no auth — slug + published+approved filter)
 GET    /producers/{slug}/recipes            public    — published+approved only
 GET    /producers/{slug}/recipes/{id}       public    — 404 if not published+approved
+                                                         MEH-3342: an old slug of a renamed business → 404
+                                                         {detail: {code: "slug_moved", slug}} (both routes); middleware 301s
+                                                         /<old>/recipes/<id> to /<new>/recipes/<id>
 
 # Admin (require_admin)
 POST   /admin/producers/{producer_id}/product-import          admin — MEH-2312: rows [{name, description, price, unit, source_image_url}] (≤100) →

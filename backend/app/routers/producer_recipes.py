@@ -31,6 +31,7 @@ from app.schemas.schemas import (
     ProducerRecipeUpdate,
 )
 from app.services import indexnow  # MEH-2852
+from app.services import retired_slugs  # MEH-3342
 from app.services.auth_notifications import notify_admin_new_recipe
 from app.services.producer_recipe_moderation import validate_producer_recipe
 from app.services.image_ownership import assert_own_new_images  # MEH-3247
@@ -410,6 +411,19 @@ def _resolve_producer_by_slug(db: Session, slug: str) -> Producer:
         .first()
     )
     if not producer:
+        # MEH-3342: a recipe link from before the business was renamed. Same
+        # contract as producers.py by-slug (MEH-3336): still a 404, carrying
+        # the current slug so the page edge (middleware.js) can 301.
+        new_slug = retired_slugs.moved_to(db, slug)
+        if new_slug:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "slug_moved",
+                    "message": "בית העסק עבר לכתובת חדשה",
+                    "slug": new_slug,
+                },
+            )
         raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
     return producer
 
