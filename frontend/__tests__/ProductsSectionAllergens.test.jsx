@@ -222,3 +222,44 @@ describe("«אחסון ותוקף» (MEH-3444)", () => {
     expect(api.put).toHaveBeenCalledWith("/producers/me/products/8", expect.objectContaining({ storage_info: null }));
   });
 });
+
+describe("«איזה דגן?» / «איזה אגוז?» (MEH-3442)", () => {
+  it("hidden until «גלוטן» or «אגוזים» is ticked; nothing ticked → both null", async () => {
+    await openAddForm();
+    expect(screen.queryByTestId("product-gluten-detail-input")).toBeNull();
+    expect(screen.queryByTestId("product-nuts-detail-input")).toBeNull();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ gluten_detail: null, nuts_detail: null }),
+    );
+  });
+
+  it("gluten in «מכיל» and nuts in «עלול להכיל» each open their field, sent trimmed", async () => {
+    await openAddForm();
+    fireEvent.click(chip(F.allergen_gluten));
+    fireEvent.click(mayChip(F.allergen_tree_nuts));
+    expect(screen.getByLabelText(F.gluten_detail_label)).toHaveAttribute("placeholder", F.gluten_detail_placeholder);
+    expect(screen.getByLabelText(F.nuts_detail_label)).toHaveAttribute("placeholder", F.nuts_detail_placeholder);
+    fireEvent.change(screen.getByTestId("product-gluten-detail-input"), { target: { value: " כוסמין " } });
+    fireEvent.change(screen.getByTestId("product-nuts-detail-input"), { target: { value: "שקדים" } });
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith(
+      "/producers/me/products",
+      expect.objectContaining({ gluten_detail: "כוסמין", nuts_detail: "שקדים" }),
+    );
+  });
+
+  it("unticking the code hides the field and sends null for its text", async () => {
+    await openAddForm();
+    fireEvent.click(chip(F.allergen_gluten));
+    fireEvent.change(screen.getByTestId("product-gluten-detail-input"), { target: { value: "כוסמין" } });
+    fireEvent.click(chip(F.allergen_gluten));
+    expect(screen.queryByTestId("product-gluten-detail-input")).toBeNull();
+    api.post.mockResolvedValue({ data: { id: 1, name: "לחם", price_min: 32 } });
+    fireEvent.click(screen.getByText(P.add_submit_cta));
+    expect(api.post).toHaveBeenCalledWith("/producers/me/products", expect.objectContaining({ gluten_detail: null }));
+  });
+});

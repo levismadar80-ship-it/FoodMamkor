@@ -23,7 +23,7 @@ from pydantic import (
 )
 
 from app.limits import MAX_PRODUCTS  # MEH-2312
-from app.allergens import drop_contained, normalize_allergens
+from app.allergens import detail_if_declared, drop_contained, normalize_allergens
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
@@ -42,6 +42,12 @@ from app.schemas.schemas import (
 # SanitizedDescriptionField. REUSES: schemas.py SanitizedAddressField order.
 StorageInfoField = Annotated[
     str, Field(max_length=300), AfterValidator(lambda v: sanitize_text(v, max_length=300))
+]
+
+# MEH-3442: «איזה דגן?» / «איזה אגוז?» — a few words; same input-cap-then-bleach
+# order as StorageInfoField.
+AllergenDetailField = Annotated[
+    str, Field(max_length=80), AfterValidator(lambda v: sanitize_text(v, max_length=80))
 ]
 
 
@@ -534,6 +540,8 @@ class ProductCreate(BaseModel):
     may_contain: list[str] | None = Field(None, max_length=50)
     # MEH-3444: «אחסון ותוקף», optional free text, bleached like ingredients.
     storage_info: StorageInfoField | None = None
+    gluten_detail: AllergenDetailField | None = None  # MEH-3442
+    nuts_detail: AllergenDetailField | None = None  # MEH-3442
 
     @field_validator("allergens", "may_contain")
     @classmethod
@@ -562,6 +570,9 @@ class ProductCreate(BaseModel):
     @model_validator(mode="after")
     def _contains_wins(self) -> Self:
         self.may_contain = drop_contained(self.allergens, self.may_contain)
+        # MEH-3442: a detail without its declared code is dropped.
+        self.gluten_detail = detail_if_declared("gluten", self.allergens, self.may_contain, self.gluten_detail)
+        self.nuts_detail = detail_if_declared("tree_nuts", self.allergens, self.may_contain, self.nuts_detail)
         return self
 
 
@@ -589,6 +600,8 @@ class ProductUpdate(BaseModel):
     may_contain: list[str] | None = Field(None, max_length=50)
     # MEH-3444: «אחסון ותוקף», optional free text, bleached like ingredients.
     storage_info: StorageInfoField | None = None
+    gluten_detail: AllergenDetailField | None = None  # MEH-3442
+    nuts_detail: AllergenDetailField | None = None  # MEH-3442
 
     @field_validator("allergens", "may_contain")
     @classmethod
@@ -643,6 +656,8 @@ class ProductOut(BaseModel):
     allergens: list[str] | None = None  # MEH-2662
     may_contain: list[str] | None = None  # MEH-3439
     storage_info: str | None = None  # MEH-3444
+    gluten_detail: str | None = None  # MEH-3442
+    nuts_detail: str | None = None  # MEH-3442
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
 

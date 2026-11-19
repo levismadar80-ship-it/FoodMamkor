@@ -5156,6 +5156,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -5227,6 +5239,18 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -14959,6 +14983,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -15030,6 +15066,18 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -15591,6 +15639,17 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "group_id": {
             "anyOf": [
               {
@@ -15676,6 +15735,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "position": {
             "anyOf": [
@@ -15767,6 +15837,18 @@
               }
             ],
             "title": "Description"
+          },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
           },
           "image_url": {
             "anyOf": [
@@ -15882,6 +15964,18 @@
               }
             ],
             "title": "Name"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [

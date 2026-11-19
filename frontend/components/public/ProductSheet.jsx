@@ -350,7 +350,17 @@ export default function ProductSheet({
     (c) => ALLERGEN_CODES.includes(c) && !allergenCodes.includes(c),
   );
   const hasMayContain = mayContainCodes.length > 0;
-  const allergenList = (codes) => codes.map((code) => t(`settings.products.form.allergen_${code}`)).join(", ");
+  // MEH-3442: «גלוטן (כוסמין)», «אגוזים (שקדים)» — the owner's detail in
+  // brackets after its allergen, wherever that allergen is listed.
+  const ALLERGEN_DETAIL = { gluten: product.gluten_detail, tree_nuts: product.nuts_detail };
+  const allergenList = (codes) =>
+    codes
+      .map((code) => {
+        const label = t(`settings.products.form.allergen_${code}`);
+        const detail = typeof ALLERGEN_DETAIL[code] === "string" ? ALLERGEN_DETAIL[code].trim() : "";
+        return detail ? `${label} (${detail})` : label;
+      })
+      .join(", ");
   const hasIngredients = typeof product.ingredients === "string" && product.ingredients.trim() !== "";
   // MEH-3444: «אחסון ותוקף» — shown only when the owner wrote something.
   const hasStorage = typeof product.storage_info === "string" && product.storage_info.trim() !== "";

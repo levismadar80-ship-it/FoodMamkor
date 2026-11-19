@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 PRODUCER_TEXT_FIELDS = ("description", "short_description", "owner_bio")
 # A product's public text.
 # MEH-3444: storage_info is public text too («אחסון ותוקף»).
-PRODUCT_TEXT_FIELDS = ("name", "description", "ingredients", "storage_info")
+PRODUCT_TEXT_FIELDS = ("name", "description", "ingredients", "storage_info", "gluten_detail", "nuts_detail")
 
 # Order here is the order in the admin message.
 CONTENT_FIELD_LABELS: dict[str, str] = {
@@ -64,6 +64,8 @@ _FIELD_NAMES = {
     "name": "שם המוצר",
     "ingredients": "רכיבים",
     "storage_info": "אחסון ותוקף",
+    "gluten_detail": "איזה דגן",
+    "nuts_detail": "איזה אגוז",
 }
 _SYSTEM = """אתה מודרטור תוכן לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
 בעלת בית עסק מאושר שינתה טקסט שמופיע בעמוד הציבורי של העסק. בדוק את הטקסט ותחזיר JSON בלבד.

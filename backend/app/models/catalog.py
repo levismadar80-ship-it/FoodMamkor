@@ -110,6 +110,10 @@ class Product(Base):
     # MEH-3444: «אחסון ותוקף» — owner-declared free text (e.g. «בקירור, עד 10
     # ימים מיום הקנייה»). NULL = not filled, the sheet shows nothing.
     storage_info = Column(Text, nullable=True)
+    # MEH-3442: «איזה דגן?» / «איזה אגוז?» — owner free text naming the source of
+    # gluten / tree nuts; kept only while that code is declared (allergens.py).
+    gluten_detail = Column(Text, nullable=True)
+    nuts_detail = Column(Text, nullable=True)
     # MEH-3218: on-site ordering (parent MEH-3216). The PRICE stays where it
     # is: `price_min == price_max` is an exact price, a real range means the
     # final price is set at confirmation. No second price column, so one owner

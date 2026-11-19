@@ -161,6 +161,8 @@ erDiagram
         text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
         text_array may_contain "MEH-3439: «עלול להכיל», same codes; overlap with allergens dropped, nullable"
         text storage_info "MEH-3444: «אחסון ותוקף», owner free text, nullable"
+        text gluten_detail "MEH-3442: «איזה דגן?», kept only while gluten is declared"
+        text nuts_detail "MEH-3442: «איזה אגוז?», kept only while tree_nuts is declared"
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
         varchar price_unit "MEH-3218: unit|kg|100g, default unit"

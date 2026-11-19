@@ -229,6 +229,7 @@
     "ProducerDetailOut.products": [
       "allergens",
       "description",
+      "gluten_detail",
       "group_id",
       "id",
       "image_url",
@@ -241,6 +242,7 @@
       "is_vegetarian",
       "may_contain",
       "name",
+      "nuts_detail",
       "position",
       "price_max",
       "price_min",

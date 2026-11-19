@@ -127,6 +127,18 @@ describe("ProductSheet — ingredients + allergens (MEH-2662 · MEH-3439)", () =
     expect(screen.queryByText("אחסון ותוקף")).toBeNull();
   });
 
+  // MEH-3442: the owner's detail in brackets after its allergen.
+  it("details: «מכיל: גלוטן (כוסמין)» and «עלול להכיל: אגוזים (שקדים)»", () => {
+    renderSheet({ allergens: ["gluten", "milk"], may_contain: ["tree_nuts"], gluten_detail: "כוסמין", nuts_detail: "שקדים" });
+    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^מכיל: גלוטן \(כוסמין\), חלב$/);
+    expect(screen.getByTestId("product-sheet-may-contain")).toHaveTextContent(/^עלול להכיל: אגוזים \(שקדים\)$/);
+  });
+
+  it("a blank detail adds no brackets", () => {
+    renderSheet({ allergens: ["gluten"], gluten_detail: "  " });
+    expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^מכיל: גלוטן$/);
+  });
+
   it("an unknown code is dropped, never shown as a raw key", () => {
     renderSheet({ allergens: ["gluten", "pineapple"], may_contain: ["pineapple"] });
     expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent(/^מכיל: גלוטן$/);

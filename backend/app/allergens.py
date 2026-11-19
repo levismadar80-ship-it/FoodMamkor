@@ -59,3 +59,23 @@ def drop_contained(
     contained = set(allergens or ())
     rest = [c for c in may_contain if c not in contained]
     return rest or None
+
+
+# MEH-3442: the two codes whose source must be named on a label (EU 1169/2011
+# Annex II: which cereal, which nut), and the product column that names it.
+DETAIL_COLUMNS: dict[str, str] = {"gluten": "gluten_detail", "tree_nuts": "nuts_detail"}
+
+
+def detail_if_declared(
+    code: str,
+    allergens: list[str] | None,
+    may_contain: list[str] | None,
+    detail: str | None,
+) -> str | None:
+    """MEH-3442: keep «איזה דגן?» / «איזה אגוז?» only while its code is ticked
+    in «מכיל» or «עלול להכיל» — a detail for an allergen that is no longer
+    declared would never be shown and must not come back if it is ticked
+    again later."""
+    if code in (allergens or ()) or code in (may_contain or ()):
+        return detail
+    return None
