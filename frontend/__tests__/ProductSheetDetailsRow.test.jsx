@@ -97,6 +97,7 @@ describe("ProductSheet — «פרטים על המוצר» row (MEH-3450)", () =>
     renderSheet({ ingredients: "שמן זית", storage_info: "במקום יבש", no_allergens: true });
     const details = screen.getByTestId("product-sheet-details");
     expect(summaryOf()).toContainElement(screen.getByTestId("product-sheet-allergens-none"));
+    expect(details.open).toBe(false);
     details.open = true;
     expect(details.open).toBe(true);
     for (const id of ["product-sheet-ingredients", "product-sheet-storage", "product-sheet-facts-declared"]) {
@@ -110,5 +111,19 @@ describe("ProductSheet — «פרטים על המוצר» row (MEH-3450)", () =>
   it("row with nothing declared about allergens: «לא ציין» stays visible in the summary", () => {
     renderSheet({ ingredients: "דבש" });
     expect(summaryOf()).toContainElement(screen.getByTestId("product-sheet-allergens-undeclared"));
+  });
+
+  it("paging to the next product: a row opened on one product starts closed on the next", () => {
+    const { rerender } = renderSheet({ ingredients: "קמח", allergens: ["gluten"] });
+    screen.getByTestId("product-sheet-details").open = true;
+    rerender(
+      <ProductSheet
+        product={{ id: 12, name: "חלה", ingredients: "קמח, ביצים", allergens: ["eggs"] }}
+        producer={producer}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("product-sheet-ingredients")).toHaveTextContent("קמח, ביצים");
+    expect(screen.getByTestId("product-sheet-details").open).toBe(false);
   });
 });

@@ -604,7 +604,8 @@ export default function ProductSheet({
             )}
 
             {/* MEH-2662 · MEH-3450: what the owner declared about the food. */}
-            <ProductFacts product={product} />
+            {/* key: a row opened on one product must not stay open on the next (paging keeps the sheet mounted). */}
+            <ProductFacts key={product.id} product={product} />
 
             {numericPrice && (
               <p className="font-medium text-accent" data-testid="product-sheet-price">
