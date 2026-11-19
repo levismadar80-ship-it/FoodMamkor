@@ -181,6 +181,7 @@ graph TD
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️ 409 while a business is linked (MEH-2871)]
     Users --> Block[POST /admin/users/{id}/block<br/>🛡️ toggle; the only owner of a live business → hide_business (MEH-2871)]
+    Users --> BlockImpact[GET /admin/users/{id}/block-impact<br/>🛡️ read only: business to hide + open bookings to cancel, shown before the block (MEH-3375)]
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
     AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first, with actor_email; keyset cursor before+before_id — the row is scheduled in get_current_user for every change by an admin account]
 

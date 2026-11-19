@@ -75,8 +75,8 @@ function WindowRow({ row, onChange, onRemove }) {
   );
 }
 
-/** @param {{ windows: any[], orderWindow: any, collapsed?: boolean }} props — collapsed: see OrderSettingsCard */
-export default function OrderWindowsCard({ windows, orderWindow, collapsed = false }) {
+/** @param {{ windows: any[], orderWindow: any, collapsed?: boolean, onSaved?: (windows: any[]) => void }} props — collapsed: see OrderSettingsCard; onSaved: the week as saved */
+export default function OrderWindowsCard({ windows, orderWindow, collapsed = false, onSaved = undefined }) {
   const t = useTranslations("dashboard.producer.orders.windows");
   const tHours = useTranslations("dashboard.producer.order_window");
   const prefilled = windows.length === 0 ? prefillFrom(orderWindow) : [];
@@ -88,7 +88,9 @@ export default function OrderWindowsCard({ windows, orderWindow, collapsed = fal
   const save = async () => {
     setState({ busy: true });
     try {
-      setRows(rowsFrom(await saveWindows(rows)));
+      const saved = await saveWindows(rows);
+      setRows(rowsFrom(saved));
+      onSaved?.(saved);
       setState({ saved: true });
     } catch (err) {
       setState({ error: detailToMessage(/** @type {any} */ (err)?.response?.data?.detail) || tHours("save_error") });
@@ -99,6 +101,7 @@ export default function OrderWindowsCard({ windows, orderWindow, collapsed = fal
     <details
       open={!collapsed}
       className="group rounded-lg border border-border bg-surface p-4 space-y-3"
+      id="order-windows"
       data-testid="order-windows"
     >
       <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
