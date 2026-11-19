@@ -97,6 +97,13 @@ def _quiet_side_effects(monkeypatch):
         "app.routers.producer_claim.score_producer",
         lambda pid: calls.append(("risk", pid)),
     )
+    # MEH-3410: the admin's «הטיוטה נקלטה» alert.
+    monkeypatch.setattr(
+        "app.routers.producer_claim.notify_admin_draft_claimed",
+        lambda name, owner, email, city, test_cause=False: calls.append(
+            ("admin_claimed", name, owner, email, city, test_cause)
+        ),
+    )
     monkeypatch.setattr(
         "app.routers.producer_claim.send_welcome_email",
         lambda email, name, role, test_cause=False: calls.append(
@@ -690,3 +697,94 @@ class TestClaimGrowerDeclaration:
         assert r.status_code == 200, r.text
         db.expire_all()
         assert db.get(Producer, p.id).farmer_declared_at is None
+
+
+# ---------- MEH-3410: the admin hears about the claim ----------
+
+
+class TestAdminToldOfTheClaim:
+    def _admin_calls(self, calls):
+        return [c for c in calls if c[0] == "admin_claimed"]
+
+    def test_a_claim_tells_the_admin_who_took_which_draft(
+        self, client, db, _quiet_side_effects
+    ):
+        p = _draft(db, name="מאפיית הבוקר", city="חדרה")
+        user = make_user(db, email="owner3410@example.com", name="רותם")
+        r = client.post(CLAIM, json=_body(_token(p)), headers=auth_header(user))
+        assert r.status_code == 200, r.text
+        assert self._admin_calls(_quiet_side_effects) == [
+            ("admin_claimed", "מאפיית הבוקר", "רותם", "owner3410@example.com", "חדרה", False)
+        ]
+
+    def test_a_refused_claim_tells_nobody(self, client, db, _quiet_side_effects):
+        p = _draft(db)
+        token = _token(p)
+        first, second = make_user(db), make_user(db)
+        assert client.post(CLAIM, json=_body(token), headers=auth_header(first)).status_code == 200
+        _quiet_side_effects.clear()
+        r = client.post(CLAIM, json=_body(token), headers=auth_header(second))
+        assert r.status_code == 409
+        assert self._admin_calls(_quiet_side_effects) == []
+
+    def test_a_claim_without_the_declaration_tells_nobody(
+        self, client, db, _quiet_side_effects
+    ):
+        p = _draft(db)
+        user = make_user(db)
+        r = client.post(
+            CLAIM,
+            json=_body(_token(p), declaration_accepted=False),
+            headers=auth_header(user),
+        )
+        assert r.status_code == 422
+        assert self._admin_calls(_quiet_side_effects) == []
+
+    def test_a_test_business_marks_the_alert_as_test(
+        self, client, db, _quiet_side_effects
+    ):
+        p = _draft(db)
+        p.is_test = True
+        db.commit()
+        user = make_user(db)
+        assert client.post(CLAIM, json=_body(_token(p)), headers=auth_header(user)).status_code == 200
+        calls = self._admin_calls(_quiet_side_effects)
+        assert len(calls) == 1 and calls[0][-1] is True
+
+
+class TestDraftClaimedMessage:
+    def _capture(self, monkeypatch):
+        from app.services import auth_notifications as n
+
+        sent = []
+        monkeypatch.setattr(n.settings, "admin_email", "admin@example.com")
+        monkeypatch.setattr(n.settings, "admin_whatsapp_to", "+972500000000")
+        monkeypatch.setattr(
+            n, "send_email", lambda to, subject, body, test_cause=False: sent.append(("email", to, subject, body))
+        )
+        monkeypatch.setattr(
+            n, "send_text", lambda to, body, test_cause=False: sent.append(("wa", to, body)) or True
+        )
+        return n, sent
+
+    def test_message_is_the_approved_copy_with_flattened_fields(self, monkeypatch):
+        n, sent = self._capture(monkeypatch)
+        n.notify_admin_draft_claimed("מאפיית\nהבוקר", "רותם\nhttps://evil", "r@example.com", "חדרה")
+        email = [s for s in sent if s[0] == "email"]
+        wa = [s for s in sent if s[0] == "wa"]
+        assert len(email) == 1 and len(wa) == 1
+        _, to, subject, body = email[0]
+        assert to == "admin@example.com"
+        assert subject == "מהמקור - הטיוטה של מאפיית הבוקר נקלטה"
+        lines = body.split("\n")
+        assert lines[0] == "הטיוטה של מאפיית הבוקר נקלטה."
+        assert lines[1] == "מי קלט: רותם https://evil (r@example.com)"
+        assert lines[2] == "עיר: חדרה"
+        assert lines[3].startswith("לאדמין: ") and lines[3].endswith("/admin/producers")
+        assert len(lines) == 4
+        assert wa[0][2] == body
+
+    def test_test_cause_sends_nothing(self, monkeypatch):
+        n, sent = self._capture(monkeypatch)
+        n.notify_admin_draft_claimed("x", "y", "z@example.com", "w", test_cause=True)
+        assert sent == []

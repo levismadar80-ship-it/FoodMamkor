@@ -19,7 +19,7 @@
 | API routes (actor actions) | 298 | 285 | 8 | 5 | 0 |
 | — negative cell of gated routes (401/403) | 217 | 141 | 0 | 76 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
-| Business tools | 51 | 49 | 1 | 1 | 0 |
+| Business tools | 52 | 50 | 1 | 1 | 0 |
 | Pages — public | 59 | 52 | 0 | 7 | 0 |
 | Pages — dashboard | 21 | 17 | 0 | 4 | 0 |
 | Pages — admin | 21 | 19 | 0 | 2 | 0 |
@@ -420,6 +420,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `faq_answers` | contact | live | — | n/a | `frontend/__tests__/BadgeRequestLine.test.jsx:7` | `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:175` | covered |
 | `delivery_areas` | contact | live | — | n/a | `frontend/__tests__/LocationFormDisclosure.test.jsx:25` | n/a | covered |
 | `delivery_checker` | contact | live | — | n/a | `frontend/__tests__/CoverageRequestCta.test.jsx:49` | n/a | covered |
+| `product_orders` | contact | live | — | `tests/test_meh3263_order_route.py:145` (7/7 routes in file) | `frontend/__tests__/OrderSheet.test.jsx:13` | n/a | covered |
 | `wa_group` | contact | live | — | n/a | `frontend/__tests__/ContactCard.test.jsx:69` | n/a | covered |
 | `nav_buttons` | contact | live | — | n/a | GAP | n/a | GAP |
 | `save_share` | contact | live | — | n/a | `frontend/__tests__/EntityRegistryGuard.test.js:85` | n/a | covered |
