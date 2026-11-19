@@ -27,7 +27,7 @@ const EXPECTED_5787 = {
 
 // 5788, typed by hand from the calendar, not from this module: ר"ה 02–03/10/27 ·
 // סוכות 16/10 · שמחת תורה 23/10 · חנוכה 25/12/27–01/01/28 · פסח 11/04/28 +
-// 17/04 · שבועות 31/05/28. ט"ו בשבט = 12/02/28: first typed as 22/01 (wrong),
+// 17/04 · שבועות 31/05/28. ט״ו בשבט = 12/02/28: first typed as 22/01 (wrong),
 // then checked independently — Intl reads 2028-01-22 as 23 Tevet and
 // 2028-02-12 as 15 Shevat, and Pesach − 59 days gives the same day.
 const EXPECTED_5788 = {

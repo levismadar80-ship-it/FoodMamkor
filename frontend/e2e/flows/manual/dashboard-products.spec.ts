@@ -244,8 +244,8 @@ test.describe("products card — add form validation", () => {
     }
   });
 
-  // MT:MEH-295:19 — submit copy. Doc: «הוסיפי מוצר» / «מוסיפה...» (feminine); live: «הוסיפו מוצר» / «בהוספה...».
-  test("the submit reads «הוסיפו מוצר», and «בהוספה...» while the POST is in flight", async ({ page }) => {
+  // MT:MEH-295:19 — submit copy. Doc: «הוסיפי מוצר» / «מוסיפה...» (feminine); live: «הוסיפו מוצר» / «בהוספה…».
+  test("the submit reads «הוסיפו מוצר», and «בהוספה…» while the POST is in flight", async ({ page }) => {
     const writes: Rec[] = [];
     await stubEdit(page, [product({ id: 1, name: "חלה" })], writes, { postDelayMs: 1_200 });
     await openProducts(page);
@@ -255,7 +255,7 @@ test.describe("products card — add form validation", () => {
     await addForm(page).getByLabel("שם המוצר").fill("טסט-קופי");
     await addForm(page).getByLabel(/^מחיר מ-/).fill("12");
     await submit.click();
-    await expect(submit).toHaveText("בהוספה...");
+    await expect(submit).toHaveText("בהוספה…");
     await expect(submit).toBeDisabled();
     await expect(rowOf(page, "טסט-קופי")).toBeVisible();
   });

@@ -12,7 +12,7 @@ import { SkeletonList, SkeletonTable, SkeletonForm, SkeletonTiles } from "@/comp
  * assertion expected `count` → red; the sr-only span dropped → red;
  * restored → green.
  */
-const LABEL = "בטעינה...";
+const LABEL = "בטעינה…";
 
 function noVisibleText(status) {
   const sr = status.querySelector(".sr-only");

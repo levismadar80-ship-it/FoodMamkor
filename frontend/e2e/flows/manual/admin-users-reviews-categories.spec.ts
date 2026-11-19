@@ -406,7 +406,7 @@ test.describe("/admin/users — pagination", () => {
     await expect(page.getByText("עמוד 1 מתוך 3")).toBeVisible();
     await page.getByRole("button", { name: "הבא" }).click();
     await expect(page.getByText("עמוד 2 מתוך 3")).toBeVisible();
-    await page.getByPlaceholder("חיפוש לפי אימייל או שם...").fill("משתמשת 4");
+    await page.getByPlaceholder("חיפוש לפי אימייל או שם…").fill("משתמשת 4");
     await page.keyboard.press("Enter");
     await expect.poll(() => listCalls.at(-1)?.search).toBe("משתמשת 4");
     await expect(page.getByText("עמוד 1 מתוך 1")).toBeVisible();
@@ -762,7 +762,7 @@ test.describe("/admin/reviews — the delete dialog", () => {
     await expectNoWrite(writes, "DELETE", "a cancelled dialog sends nothing");
   });
 
-  // MT:MEH-530:20 — confirm: DELETE /reviews/{id}, both buttons disabled + «במחיקה...» in flight, row gone, success toast.
+  // MT:MEH-530:20 — confirm: DELETE /reviews/{id}, both buttons disabled + «במחיקה…» in flight, row gone, success toast.
   test("«מחקי» in the dialog DELETEs, disables both buttons while it flies, removes the row and toasts", async ({ page }) => {
     const writes: Rec[] = [];
     await stubAdmin(page, { writes, delayMs: 1_500 });
@@ -770,7 +770,7 @@ test.describe("/admin/reviews — the delete dialog", () => {
     await page.getByRole("button", { name: "מחקי ביקורת של דנה כהן" }).click();
     const d = reviewDialog(page);
     await d.getByRole("button", { name: "מחקי" }).click();
-    await expect(d.getByRole("button", { name: "במחיקה..." })).toBeDisabled();
+    await expect(d.getByRole("button", { name: "במחיקה…" })).toBeDisabled();
     await expect(d.getByRole("button", { name: "ביטול" })).toBeDisabled();
     await page.keyboard.press("Escape");
     await expect(d, "Escape is gated while the DELETE flies").toBeVisible();

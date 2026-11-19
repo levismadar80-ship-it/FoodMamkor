@@ -13,7 +13,7 @@ import { CircleNotch } from "@phosphor-icons/react";
  *     {loading ? (
  *       <span className="inline-flex items-center gap-2">
  *         <ButtonSpinner />
- *         בשליחה...
+ *         בשליחה…
  *       </span>
  *     ) : (
  *       "שלחו"
