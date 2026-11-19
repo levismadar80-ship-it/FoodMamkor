@@ -70,12 +70,26 @@ describe("claimMetadata (MEH-3403)", () => {
   it("falls back to the site image when the business has no photo", async () => {
     fetchMock.mockReturnValue(ok({ name: "מאפיית הבוקר", image: null }));
     const m = await claimMetadata(Promise.resolve({ locale: "he", token: TOKEN }));
-    expect(m.openGraph.images[0].url).toBe("/og-image.png");
-    expect(m.twitter.images).toEqual(["/og-image.png"]);
+    expect(m.openGraph.images[0].url).toBe("/og-image.jpg");
+    expect(m.twitter.images).toEqual(["/og-image.jpg"]);
+  });
+
+  it("uses the English site image on /en", async () => {
+    fetchMock.mockReturnValue(ok({ name: "Morning Bakery", image: null }));
+    const m = await claimMetadata(Promise.resolve({ locale: "en", token: TOKEN }));
+    expect(m.openGraph.images[0].url).toBe("/og-image-en.jpg");
+  });
+
+  it("never names a non-Cloudinary host as the card image", async () => {
+    fetchMock.mockReturnValue(ok({ name: "מאפיית הבוקר", image: "https://evil.example/x.jpg" }));
+    const m = await claimMetadata(Promise.resolve({ locale: "he", token: TOKEN }));
+    expect(m.openGraph.title).toBe("העמוד של מאפיית הבוקר במהמקור");
+    expect(m.openGraph.images[0].url).toBe("/og-image.jpg");
   });
 
   it.each([
     ["an expired or revoked token (404)", () => ({ ok: false, status: 404, json: async () => ({}) })],
+    ["a rate-limited preview (429)", () => ({ ok: false, status: 429, json: async () => ({}) })],
     ["a claimed draft (409)", () => ({ ok: false, status: 409, json: async () => ({}) })],
     ["an empty name", () => ok({ name: "  ", image: CLOUD })],
   ])("keeps the generic card for %s", async (_label, respond) => {

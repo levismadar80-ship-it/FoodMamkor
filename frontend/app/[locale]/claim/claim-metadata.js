@@ -20,7 +20,20 @@ import { BRAND_NAME } from "@/lib/constants";
 // generic card of before, with no business name.
 
 const PREVIEW_TIMEOUT_MS = 3000;
-const SITE_OG_IMAGE = "/og-image.png";
+// The layout's own default cards (app/[locale]/layout.js), per locale.
+const SITE_OG_IMAGE = { he: "/og-image.jpg", en: "/og-image-en.jpg" };
+
+/** Only a Cloudinary photo becomes the card: the crawler fetches whatever
+ * host is named here, and the photo of a draft is ours, never a third party's.
+ * @param {unknown} url */
+function cloudinaryOnly(url) {
+  if (typeof url !== "string") return null;
+  try {
+    return new URL(url).hostname === "res.cloudinary.com" ? ogImage(url) : null;
+  } catch {
+    return null;
+  }
+}
 
 /** @param {string | undefined} token */
 async function claimPreview(token) {
@@ -60,7 +73,8 @@ export async function claimMetadata(params) {
 
   // The named title already says «במהמקור», so it skips the brand template.
   const title = t("title_named", { name: preview.name.trim() });
-  const image = ogImage(preview.image) || SITE_OG_IMAGE;
+  const image =
+    cloudinaryOnly(preview.image) || (locale === "en" ? SITE_OG_IMAGE.en : SITE_OG_IMAGE.he);
   return {
     ...base,
     title: { absolute: title },
