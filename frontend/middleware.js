@@ -20,10 +20,9 @@ import staticRoutes from "./lib/static-routes.json";
  *           captureMessage on the backend-5xx fail-open branch only, so that
  *           path stops being silent past a Vercel runtime log line.
  * Does NOT: own the 404 status for VALID pages (those pass straight through).
- *           Does NOT existence-check /[locale]/producer/<id> — the edge is
- *           permanently unauthenticated, so that check could not distinguish
- *           the owner of a pending business from a stranger and hard-404'd her
- *           own page (MEH-1632; full reasoning at the call site below).
+ *           /[locale]/producer/<id> is existence-checked again since
+ *           MEH-3024 (owners of a non-approved business use the dashboard
+ *           preview; reasoning at the call site below).
  *           Producer data-loading + not-found UI still live in [slug]/page.js +
  *           producer/[id]/page.js. Does NOT alert on 429 or on a network
  *           exception (unreachable backend) — MEH-1906 scoped the new Sentry
@@ -33,6 +32,7 @@ import staticRoutes from "./lib/static-routes.json";
  *           app/global-not-found.js (real-404 renderer), lib/slug.js.
  * History:  MEH-1398 (creation — middleware existence-check);
  *           MEH-1632 (dropped the /producer/<id> branch — owner-facing 404);
+ *           MEH-3024 (re-added it — owner links moved to the preview, 11/11);
  *           MEH-1906 (5xx fail-open now also reports to Sentry);
  *           MEH-2298 (/api/* pass-through stamps the visitor IP for the
  *           backend rate limiter — see apiPassThrough).
@@ -117,6 +117,11 @@ const ENTITY_404_SEGMENTS = new Set(["events", "group-buys", "experiences", "org
 // The two of them whose page renders an owner/admin preview (lib/owner-preview.js).
 // /events/<id> has no preview branch, so it keeps its 404 check on ?preview=1.
 const OWNER_PREVIEW_SEGMENTS = new Set(["group-buys", "experiences"]);
+
+// MEH-3024: static routes under app/[locale]/producer/ besides [id]. The
+// MEH-3024 case in MiddlewareProducerId404.test.js reads the directory and
+// fails when a new static child is missing here.
+const PRODUCER_STATIC_CHILDREN = new Set(["dashboard"]);
 
 // producerExists() result for a deleted business (truthy: it is not a 404).
 const GONE = "gone";
@@ -301,30 +306,18 @@ export default async function middleware(request) {
       existsUrl = `${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`;
     }
   }
-  // MEH-1632: /producer/{id} is deliberately NOT existence-checked here.
-  //
-  // DO NOT re-add it — the check cannot tell an owner from a stranger, and
-  // re-adding it 404s three owner-facing surfaces for every business that is
-  // not yet approved (tools/page.js reviews card, dashboard/layout.js
-  // "צפייה בדף", Header.jsx account menu).
-  //
-  // Why the edge cannot authenticate: producers.py:265-271 serves a
-  // non-approved producer only to its owner or an admin, and identifies the
-  // caller from the Bearer access token (auth.py:233). That token lives in
-  // localStorage and is attached per-request by the axios interceptor
-  // (lib/api.js:15-22), so it does not exist at the edge. Forwarding cookies
-  // would not help either: `refresh_token` is scoped to path=/api/auth
-  // (auth.py:107-116) and so is not sent on a page request at all, and
-  // `__Secure-Fgp` is a fingerprint that is inert without the token. The
-  // fetch below is therefore permanently anonymous, and to producers.py an
-  // anonymous caller IS a stranger — including the owner herself.
-  //
-  // What this costs: a by-id miss now renders the page's own not-found UI
-  // instead of a real HTTP 404. Bounded — by-id URLs already emit
-  // robots:{index:false} on a miss (producer/[id]/page.js:36) and are never
-  // the canonical form (lib/seo.js:120 prefers the slug). The /[slug] check
-  // above is untouched, so the canonical, indexable, crawler-facing shape
-  // keeps its real 404 and MEH-1398's SEO guarantee holds where it matters.
+  // MEH-1632 → MEH-3024: /producer/{id} IS existence-checked now (below,
+  // next to the entity routes). MEH-1632 dropped the check because the edge
+  // is anonymous and the backend 404s a not-yet-approved business to anyone
+  // but its owner/admin (producers.py; the token lives in localStorage, so it
+  // never reaches the edge). That reason no longer holds: the page's own SSR
+  // fetch is anonymous too and calls notFound() for her (producer/[id]/
+  // page.js, MEH-2101), and since 11/11 (Sapir) the owner's links for a
+  // non-approved business go to /producer/dashboard/preview, which fetches
+  // with her token (DashboardLayoutClient.jsx «צפייה בדף»). So the check
+  // changes only the status code of a page that already showed «לא נמצא»,
+  // 200 → 404 — the same reasoning as /events/<id> (entityExists above).
+  // DO NOT check /producer/dashboard — a static child of the segment.
 
   let exists = existsUrl ? await producerExists(existsUrl) : true;
   // MEH-2706: entity detail and diet pages (see entityExists / dietPageExists). These
@@ -352,6 +345,10 @@ export default async function middleware(request) {
     // decodeSlugParam: the pathname is percent-encoded, and an organizer slug can
     // be Hebrew (re-encoding it raw would send %25D7… and mint a false 404).
     exists = await entityExists(`${API_URL}/${segs[0]}/${encodeURIComponent(decodeSlugParam(segs[1]))}`);
+  } else if (segs.length === 2 && segs[0] === "producer" && segs[1] &&
+    !PRODUCER_STATIC_CHILDREN.has(segs[1]) && !isPrefetch(request)) {
+    // MEH-3024: /producer/<id> — see the MEH-1632 → MEH-3024 note above.
+    exists = await entityExists(`${API_URL}/producers/${encodeURIComponent(decodeSlugParam(segs[1]))}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
   } else if (segs.length === 3 && segs[0] === "producers" && !isPrefetch(request)) {

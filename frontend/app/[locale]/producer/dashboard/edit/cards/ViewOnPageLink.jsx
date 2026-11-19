@@ -32,13 +32,22 @@ import { Eye } from "@phosphor-icons/react";
 // EditAccordionCard keeps collapsed cards mounted (MEH-1100), so both links
 // are in the DOM at once and a shared testid would resolve to two elements —
 // which `getByTestId` treats as an error, not as a match.
-export function ViewOnPageLink({ producerId, anchor, testId }) {
+// MEH-3024: /producer/<id> answers a real 404 while the business is not
+// approved, so an unapproved owner is sent to the dashboard preview instead —
+// the same rule as DashboardLayoutClient's «צפייה בדף» (MEH-2916). `status` is
+// the /producers/me payload's status; absent (older callers, tests) keeps the
+// public link, since every dashboard caller passes it.
+export function ViewOnPageLink({ producerId, anchor, testId, status }) {
   const t = useTranslations("dashboard.producer");
   if (!producerId) return null;
+  const href =
+    status && status !== "approved"
+      ? "/producer/dashboard/preview"
+      : `/producer/${producerId}#${anchor}`;
   return (
     <p className="mb-3">
       <LocaleLink
-        href={`/producer/${producerId}#${anchor}`}
+        href={href}
         data-testid={testId || `view-on-page-${anchor}`}
         // Calm idiom (ADR-019): muted text link, never a primary CTA;
         // min-h 44px keeps the tap target (MEH-813).
