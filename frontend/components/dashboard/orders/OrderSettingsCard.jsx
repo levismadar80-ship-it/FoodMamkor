@@ -18,6 +18,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
+import { Link } from "@/i18n/navigation";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -147,6 +148,7 @@ export default function OrderSettingsCard({ settings, onSaved, collapsed = false
     <details
       open={!collapsed}
       className="group rounded-lg border border-border bg-surface p-4 space-y-3"
+      id="order-settings"
       data-testid="order-settings"
     >
       <summary className="flex items-center justify-between gap-3 cursor-pointer list-none min-h-touch focus-ring rounded-sm [&::-webkit-details-marker]:hidden">
@@ -154,6 +156,17 @@ export default function OrderSettingsCard({ settings, onSaved, collapsed = false
         <CaretDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" />
       </summary>
       <p className="text-sm text-fg-muted">{t("lead")}</p>
+      {/* MEH-3216: what ordering costs, said where it is switched on (copy
+          approved by Sapir 19/11). The rate lives in the terms, not here. */}
+      <p className="text-sm text-fg-muted" data-testid="orders-commission">
+        {t.rich("commission", {
+          link: (chunks) => (
+            <Link href="/terms#pricing" className="text-primary underline underline-offset-4">
+              {chunks}
+            </Link>
+          ),
+        })}
+      </p>
       <SwitchRow id="orders-enabled" label={t("enabled")} checked={form.enabled} onChange={(on) => set("enabled", on)} />
       <Input
         label={t("business_id")}
