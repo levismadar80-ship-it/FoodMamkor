@@ -63,7 +63,7 @@ export default function OrdersIntroCard({ fallback = null }) {
   return (
     <section data-testid="orders-intro-card" aria-labelledby="orders-intro-heading" className="bg-surface border border-primary rounded-lg p-4 mb-6 space-y-2">
       <h2 id="orders-intro-heading" className="flex items-center gap-2 font-semibold text-text">
-        <Basket size={22} aria-hidden="true" className="shrink-0 text-primary" />
+        <Basket size={20} aria-hidden="true" className="shrink-0 text-primary" />
         {t("title")}
       </h2>
       <p className="text-sm text-text">{t("body")}</p>

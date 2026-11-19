@@ -97,7 +97,7 @@ export default function OrderSetupChecklist({
         className="flex items-center gap-2 rounded-lg border border-primary bg-surface p-4 text-text"
       >
         <CheckCircle
-          size={22}
+          size={20}
           weight="fill"
           aria-hidden="true"
           className="shrink-0 text-primary"
@@ -134,14 +134,14 @@ export default function OrderSetupChecklist({
               >
                 {step.done ? (
                   <CheckCircle
-                    size={22}
+                    size={20}
                     weight="fill"
                     aria-hidden="true"
                     className="shrink-0 text-primary"
                   />
                 ) : (
                   <Circle
-                    size={22}
+                    size={20}
                     aria-hidden="true"
                     className="shrink-0 text-fg-muted"
                   />
