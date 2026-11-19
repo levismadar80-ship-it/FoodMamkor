@@ -713,7 +713,14 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
         item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
     )
     .map(({ item, surface }) => ({
-      href: item.href.replace(":producerId", user.producer_id ?? ""),
+      // MEH-3024: an unapproved business's /producer/<id> is a real 404, so
+      // its owner's «צפייה בדף» goes to the dashboard preview — the same rule
+      // as DashboardLayoutClient (MEH-2916). producer_status rides /auth/me.
+      href:
+        item.id === "producerPublicPage" &&
+        user.producer_status !== "approved"
+          ? "/producer/dashboard/preview"
+          : item.href.replace(":producerId", user.producer_id ?? ""),
       label: t(surface.labelKey),
     }));
 
