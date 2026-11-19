@@ -137,6 +137,9 @@ class ProducerRegister(BaseModel):
     phone: str | None = None
     instagram: str | None = None
     website: str | None = None
+    # MEH-2938: the online-store / order-form link, collected at signup (14 of
+    # 31 pilot leads sell in a shop of their own). MEH-296's column, reused.
+    external_order_form: str | None = Field(default=None, max_length=500)
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
@@ -318,10 +321,9 @@ class ProducerRegister(BaseModel):
     def _validate_primary_contact_method(cls, v: str) -> str | str | None:
         return _contact_method_validator(v)
 
-    # MEH-296: same http(s) scheme guard as ProducerUpdate. ProducerRegister
-    # only exposes `website` among the URL fields (no facebook /
-    # external_order_form columns here — those are owner-edit-only).
-    @field_validator("website")
+    # MEH-296: same http(s) scheme guard as ProducerUpdate. MEH-2938 added
+    # external_order_form; facebook stays owner-edit-only.
+    @field_validator("website", "external_order_form")
     @classmethod
     def _validate_contact_urls(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)

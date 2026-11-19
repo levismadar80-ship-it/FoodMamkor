@@ -54,6 +54,7 @@ const EMPTY_FORM = {
   referral_source_other: "",
   kind: "producer",
   fulfilment: "",
+  external_order_form: "",
 };
 
 const FILLED = {
@@ -187,6 +188,9 @@ describe("MEH-2915 · the draft stops carrying the person", () => {
     // Business attributes collected by the wizard, not personal identifiers.
     "referral_source",
     "referral_source_other",
+    // MEH-2938: the business's own shop link — shown publicly on its page,
+    // so it is the business, not the person.
+    "external_order_form",
     // Set by the route, never typed — see NON_CONTENT_FIELDS.
     "kind",
   ];

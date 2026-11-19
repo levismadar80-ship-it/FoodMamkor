@@ -193,7 +193,7 @@ class ProducerAdminCreate(BaseModel):
         default_factory=list, max_length=MAX_DELIVERY_CITIES
     )
 
-    # MEH-1297: cap categories at 3 (admin create).
+    # MEH-1297: cap categories (admin create); 5 since MEH-2925.
     @field_validator("category_ids")
     @classmethod
     def _cap_categories(cls, v: list[int]) -> list[int] | list[int] | None:
@@ -539,7 +539,7 @@ class ProducerUpdate(BaseModel):
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
 
-    # MEH-1297: cap categories at 3 (admin/owner update). None passes through.
+    # MEH-1297: cap categories (admin/owner update); 5 since MEH-2925. None passes through.
     @field_validator("category_ids")
     @classmethod
     def _cap_categories(cls, v: list[int] | None) -> list[int] | None:

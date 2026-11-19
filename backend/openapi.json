@@ -789,6 +789,31 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
+      "BlockImpactOut": {
+        "properties": {
+          "business_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Name"
+          },
+          "open_bookings": {
+            "title": "Open Bookings",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "business_name",
+          "open_bookings"
+        ],
+        "title": "BlockImpactOut",
+        "type": "object"
+      },
       "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post": {
         "properties": {
           "file": {
@@ -2911,6 +2936,21 @@
             ],
             "title": "Requirements"
           },
+          "sessions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ExperienceSessionIn"
+                },
+                "maxItems": 24,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sessions"
+          },
           "title": {
             "maxLength": 300,
             "minLength": 4,
@@ -3199,6 +3239,14 @@
             ],
             "title": "Requirements"
           },
+          "sessions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExperienceSessionOut"
+            },
+            "title": "Sessions",
+            "type": "array"
+          },
           "spots_left": {
             "anyOf": [
               {
@@ -3462,6 +3510,14 @@
             ],
             "title": "Registration Url"
           },
+          "sessions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExperienceSessionOut"
+            },
+            "title": "Sessions",
+            "type": "array"
+          },
           "spots_left": {
             "anyOf": [
               {
@@ -3511,6 +3567,83 @@
           }
         },
         "title": "ExperienceModerationAction",
+        "type": "object"
+      },
+      "ExperienceSessionIn": {
+        "description": "MEH-3441: one date of a recurring workshop, as the owner's form sends\nit. Uniqueness, the future and the cap of 12 are checked on save\n(services/experience_sessions.normalise), against what is stored.",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "participants_count": {
+            "default": 0,
+            "maximum": 500.0,
+            "minimum": 0.0,
+            "title": "Participants Count",
+            "type": "integer"
+          },
+          "time": {
+            "format": "time",
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ],
+        "title": "ExperienceSessionIn",
+        "type": "object"
+      },
+      "ExperienceSessionOut": {
+        "description": "MEH-3441: a date the page offers, with its places left (None = no cap).",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "participants_count": {
+            "title": "Participants Count",
+            "type": "integer"
+          },
+          "registered": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registered"
+          },
+          "spots_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spots Left"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "time",
+          "participants_count",
+          "spots_left",
+          "registered"
+        ],
+        "title": "ExperienceSessionOut",
         "type": "object"
       },
       "ExperienceUpdate": {
@@ -3767,6 +3900,21 @@
               }
             ],
             "title": "Requirements"
+          },
+          "sessions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ExperienceSessionIn"
+                },
+                "maxItems": 24,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sessions"
           },
           "title": {
             "anyOf": [
@@ -5156,6 +5304,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -5209,9 +5369,41 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -5258,10 +5450,24 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
@@ -5371,7 +5577,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5439,7 +5647,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -6039,7 +6249,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -13869,6 +14081,18 @@
             ],
             "title": "Email"
           },
+          "external_order_form": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Order Form"
+          },
           "farmer_declaration_accepted": {
             "default": false,
             "title": "Farmer Declaration Accepted",
@@ -14932,6 +15156,18 @@
             ],
             "title": "Description"
           },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
+          },
           "image_url": {
             "anyOf": [
               {
@@ -14985,9 +15221,41 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -15014,6 +15282,9 @@
               },
               {
                 "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Price Min"
@@ -15028,11 +15299,34 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
-          "name",
-          "price_min"
+          "name"
         ],
         "title": "ProductCreate",
         "type": "object"
@@ -15438,7 +15732,7 @@
       },
       "ProductOrderingIn": {
         "additionalProperties": false,
-        "description": "The four ordering fields of one product. All required: the screen\nsaves the whole row.",
+        "description": "The ordering fields of one product. is_orderable, in_stock and\ncontains_alcohol are required: the screen saves the whole row.\n\nMEH-2936: price_unit is optional and omitted means \"keep\". The owner's\nproduct form writes it now too, so an orders tab loaded before that edit\nmust not send the old unit back over it. An explicit null is refused.",
         "properties": {
           "contains_alcohol": {
             "title": "Contains Alcohol",
@@ -15453,19 +15747,27 @@
             "type": "boolean"
           },
           "price_unit": {
-            "enum": [
-              "unit",
-              "kg",
-              "100g"
+            "anyOf": [
+              {
+                "enum": [
+                  "unit",
+                  "kg",
+                  "100g",
+                  "bottle",
+                  "box"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Price Unit",
-            "type": "string"
+            "title": "Price Unit"
           }
         },
         "required": [
           "is_orderable",
           "in_stock",
-          "price_unit",
           "contains_alcohol"
         ],
         "title": "ProductOrderingIn",
@@ -15494,7 +15796,9 @@
             "enum": [
               "unit",
               "kg",
-              "100g"
+              "100g",
+              "bottle",
+              "box"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15536,6 +15840,17 @@
               }
             ],
             "title": "Description"
+          },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
           },
           "group_id": {
             "anyOf": [
@@ -15605,9 +15920,39 @@
             "title": "Is Vegetarian",
             "type": "boolean"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "no_allergens": {
+            "default": false,
+            "title": "No Allergens",
+            "type": "boolean"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "position": {
             "anyOf": [
@@ -15652,11 +15997,27 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "price_unit"
         ],
         "title": "ProductOut",
         "type": "object"
@@ -15688,6 +16049,18 @@
               }
             ],
             "title": "Description"
+          },
+          "gluten_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gluten Detail"
           },
           "image_url": {
             "anyOf": [
@@ -15778,6 +16151,21 @@
             ],
             "title": "Is Vegetarian"
           },
+          "may_contain": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "May Contain"
+          },
           "name": {
             "anyOf": [
               {
@@ -15788,6 +16176,29 @@
               }
             ],
             "title": "Name"
+          },
+          "no_allergens": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Allergens"
+          },
+          "nuts_detail": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuts Detail"
           },
           "price_max": {
             "anyOf": [
@@ -15831,6 +16242,30 @@
               }
             ],
             "title": "Price Range"
+          },
+          "price_unit": {
+            "default": "unit",
+            "enum": [
+              "unit",
+              "kg",
+              "100g",
+              "bottle",
+              "box"
+            ],
+            "title": "Price Unit",
+            "type": "string"
+          },
+          "storage_info": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Info"
           }
         },
         "title": "ProductUpdate",
@@ -16206,6 +16641,30 @@
             "title": "Phone",
             "type": "string"
           },
+          "session_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Date"
+          },
+          "session_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Time"
+          },
           "waitlist": {
             "default": false,
             "title": "Waitlist",
@@ -16292,6 +16751,30 @@
           "phone": {
             "title": "Phone",
             "type": "string"
+          },
+          "session_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Date"
+          },
+          "session_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Time"
           },
           "status": {
             "title": "Status",
@@ -17257,6 +17740,24 @@
           "pickup_end"
         ],
         "title": "RescueOwnerOrderOut",
+        "type": "object"
+      },
+      "RescuePilotLocationsOut": {
+        "description": "MEH-2921: which of the caller's own pickup points sit in a pilot town.\n\nIds only — the tab already holds the points themselves (with their town)\nfrom GET /producers/me/locations, so the town list is never sent.",
+        "properties": {
+          "location_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Location Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "location_ids"
+        ],
+        "title": "RescuePilotLocationsOut",
         "type": "object"
       },
       "RescueProducerSummary": {
@@ -18259,6 +18760,14 @@
             "format": "date-time",
             "title": "Saved At",
             "type": "string"
+          },
+          "sessions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExperienceSessionOut"
+            },
+            "title": "Sessions",
+            "type": "array"
           },
           "spots_left": {
             "anyOf": [
@@ -24023,6 +24532,55 @@
           }
         ],
         "summary": "Block User",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
+    "/admin/users/{user_id}/block-impact": {
+      "get": {
+        "description": "MEH-3375: what blocking ``user_id`` would take down, read before the\nadmin confirms — the business that would be hidden (same rule as\nblock_user) and how many open bookings would be cancelled and mailed.\nReads only. Already blocked → nothing (the next click unblocks).",
+        "operationId": "block_impact_admin_users__user_id__block_impact_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockImpactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Block Impact",
         "tags": [
           "admin-extra"
         ]
@@ -30514,6 +31072,33 @@
           }
         ],
         "summary": "List My Orders",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/pilot-locations": {
+      "get": {
+        "description": "The caller's own pickup points whose town is in RESCUE_BAGS_CITIES.",
+        "operationId": "my_pilot_locations_producers_me_rescue_pilot_locations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescuePilotLocationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "My Pilot Locations",
         "tags": [
           "rescue"
         ]

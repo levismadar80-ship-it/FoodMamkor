@@ -123,8 +123,11 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       try {
         await api.put("/producers/me", { images: next });
         onSave({ images: next });
+        // MEH-2926: no timeout here. The upload saved on its own, so the
+        // button below is disabled (nothing dirty) and a 3 s «נשמר» inside a
+        // grey button was missed. The line under the grid stays until the
+        // next change.
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
       } catch (err) {
         // Uploaded to Cloudinary but the profile save failed — the photos stay
         // in the local list (now dirty), so the explicit Save button lets her
@@ -183,8 +186,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
     try {
       await api.put("/producers/me", { images });
       onSave({ images });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setSaved(true); // MEH-2926: shown under the grid until the next change
     } catch (err) {
       const raw = err?.response?.data?.detail;
       // MEH-2911: reachable when the business was approved in another tab
@@ -338,6 +340,12 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         </InlineMessage>
       )}
 
+      {saved && !errorMsg && (
+        <InlineMessage tone="success" size="xs" className="mt-3" data-testid="images-saved">
+          {t("saved")}
+        </InlineMessage>
+      )}
+
       {errorMsg && (
         // MEH-1099: text-error (ADR-026) — the drag-drop path made this error
         // display newly reachable; sibling text-red-600 sites in the other
@@ -353,9 +361,9 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         disabled={saving || uploading || !dirty}
         variant="primary" size="sm" className="mt-4"
       >
-        <span aria-live="polite" aria-atomic="true">
-          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-        </span>
+        {/* MEH-2926: «נשמר» moved out of the (then disabled) button to the
+            status line above, which announces itself (role="status"). */}
+        {saving ? t("saving") : t("save_cta")}
       </Button>
     </div>
   );

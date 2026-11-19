@@ -15,7 +15,7 @@ export const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 
 // `onsite` is the schema default (has_physical_location: true,
 // offers_delivery: false, schemas.py:957-958), so a visitor who never
 // touches the radio still posts a coherent shape.
-export const FULFILMENT_OPTIONS = [
+const FULFILMENT_OPTIONS = [
   { value: "onsite", has_physical_location: true, offers_delivery: false },
   { value: "delivery", has_physical_location: false, offers_delivery: true },
   { value: "both", has_physical_location: true, offers_delivery: true },
@@ -27,12 +27,50 @@ export const FULFILMENT_OPTIONS = [
 // derived value is never "" — the radio would arrive pre-lit on a question
 // nobody answered and the required gate below could never fire. One stored
 // answer, booleans computed from it at submit.
+// MEH-2939: asked as two checkboxes (one per boolean), not three radios. The
+// stored answer stays one of the values above so fulfilmentBooleans remains
+// the single mapping point and an existing draft ("both") still loads.
+// «neither» is "" — the required gate's empty answer.
+export const FULFILMENT_AXES = ["onsite", "delivery"];
+
+/** @param {string} value @param {"onsite"|"delivery"} axis */
+export function fulfilmentHasAxis(value, axis) {
+  return value === axis || value === "both";
+}
+
+/** @param {string} value @param {"onsite"|"delivery"} axis */
+export function toggleFulfilmentAxis(value, axis) {
+  const onsite = axis === "onsite" ? !fulfilmentHasAxis(value, "onsite") : fulfilmentHasAxis(value, "onsite");
+  const delivery = axis === "delivery" ? !fulfilmentHasAxis(value, "delivery") : fulfilmentHasAxis(value, "delivery");
+  if (onsite && delivery) return "both";
+  if (onsite) return "onsite";
+  if (delivery) return "delivery";
+  return "";
+}
+
 export function fulfilmentBooleans(value) {
   const hit = FULFILMENT_OPTIONS.find((o) => o.value === value);
   return {
     has_physical_location: hit ? hit.has_physical_location : true,
     offers_delivery: hit ? hit.offers_delivery : false,
   };
+}
+
+/**
+ * MEH-2938: the store link as the register POST sends it. The wizard has no
+ * <form>, so type="url" checks nothing, and «myshop.co.il» used to reach the
+ * server's http(s) guard and fail the whole signup on its last step. A bare
+ * domain gets «https://» in front (what browsers do with it in the address
+ * bar); any other scheme is left alone for the server to refuse.
+ * @param {string | null | undefined} value
+ * @returns {string | null}
+ */
+export function storeLinkForPayload(value) {
+  const v = (value || "").trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return v;
+  return `https://${v.replace(/^\/+/, "")}`;
 }
 
 export const STEP_NAME = {
@@ -174,6 +212,8 @@ export const EMPTY_FORM = {
   // all — the dashboard owns delivery areas, and ProducerRegister defaults
   // both (schemas.py:959-960).
   fulfilment: "",
+  // MEH-2938: the online-store / order-form link (optional, step 2).
+  external_order_form: "",
 };
 
 // MEH-1471: fixed dropdown order — English keys stored in the DB, Hebrew labels

@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.8 (19/11): product price unit, optional price, allergens, storage
+  // (MEH-2936, MEH-2924, MEH-3439/3442/3444/3445, tier ב׳); recurring workshop
+  // dates (MEH-3441/3447); duplicate event/experience, group buy from a product
+  // (MEH-3438). Lines approved by Sapir word for word.
+  { version: "1.5.8", key: "v1_5_8", date: "2026-11-19", items: 3 },
   // 1.5.7 (19/11): AI menu import in the products card (MEH-3430, #4833,
   // Launch tier ב׳). Line approved by Sapir word for word.
   { version: "1.5.7", key: "v1_5_7", date: "2026-11-19", items: 1 },

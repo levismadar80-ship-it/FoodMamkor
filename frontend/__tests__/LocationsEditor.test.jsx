@@ -598,3 +598,23 @@ describe("primary-location errors render from code (MEH-1943)", () => {
     expect(box.textContent).toBe("SERVER-SENTENCE");
   });
 });
+
+// MEH-2931: the place hint is said once, under the address, and the copy no
+// longer promises a navigation link the business page does not have.
+describe("place hint, said once (MEH-2931)", () => {
+  it("renders under the address and not under the city", async () => {
+    await openAddForm();
+    const hint = "settings.locations.form.place_hint_exact";
+    expect(screen.getAllByText(hint)).toHaveLength(1);
+    expect(screen.getByTestId("location-address-field").textContent).toContain(hint);
+    expect(screen.getByTestId("location-city-field").textContent).not.toContain(hint);
+  });
+
+  it("the he copy names what the page shows, not «ניווט» or «קואורדינטות»", async () => {
+    const he = (await import("../messages/he.json")).default.settings.locations.form;
+    for (const k of ["place_hint_exact", "place_hint_approximate", "address_unresolved", "coords_summary"]) {
+      expect(he[k]).not.toMatch(/ניווט|קואורדינטות/);
+    }
+    expect(he.more_summary).toContain("דיוק");
+  });
+});

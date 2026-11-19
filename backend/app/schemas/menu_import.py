@@ -21,7 +21,8 @@ from pydantic import BaseModel, Field, model_validator
 from app.limits import MAX_PRODUCTS
 from app.schemas.catalog import ProductCreate
 
-PriceUnit = Literal["unit", "kg", "100g"]
+from app.schemas.product_order_offer import PriceUnit  # MEH-2936: one definition
+
 UncertainField = Literal["name", "description", "price", "unit"]
 
 
@@ -32,7 +33,7 @@ class MenuRow(BaseModel):
     description: str | None = None
     section: str | None = None
     # None = no readable price on the menu: the row cannot be published until
-    # the owner types one (ProductCreate requires price_min).
+    # the owner types one (MenuProductIn requires price_min).
     price_min: Decimal | None = None
     price_max: Decimal | None = None
     price_unit: PriceUnit = "unit"
@@ -51,6 +52,10 @@ MENU_FIELDS = frozenset({"name", "description", "price_min", "price_max", "price
 
 
 class MenuProductIn(ProductCreate):
+    # MEH-2924 made ProductCreate's price optional for a product an owner types
+    # by hand. A menu row without a readable price stays unpublishable, as the
+    # review screen says («הוסיפו מחיר כדי לפרסם») — re-required here.
+    price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
     price_unit: PriceUnit = "unit"
 
     @model_validator(mode="before")

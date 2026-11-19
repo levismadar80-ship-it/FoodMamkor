@@ -56,7 +56,7 @@ graph LR
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
-    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel,<br/>MEH-3315: PATCH /registrations/id/attendance owner/admin]
+    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel,<br/>MEH-3315: PATCH /registrations/id/attendance owner/admin,<br/>MEH-3441: a recurring workshop with dates books one date (places, waitlist, repeat check per date)]
     App --> Health[health.router<br/>/health, /health/liveness, /health/readiness, /health/places]
 ```
 
@@ -181,6 +181,7 @@ graph TD
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️ 409 while a business is linked (MEH-2871)]
     Users --> Block[POST /admin/users/{id}/block<br/>🛡️ toggle; the only owner of a live business → hide_business (MEH-2871)]
+    Users --> BlockImpact[GET /admin/users/{id}/block-impact<br/>🛡️ read only: business to hide + open bookings to cancel, shown before the block (MEH-3375)]
     Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
     AuditLog[GET /admin/audit-log<br/>🛡️ MEH-3306: every successful admin change, newest first, with actor_email; keyset cursor before+before_id — the row is scheduled in get_current_user for every change by an admin account]
 
@@ -266,6 +267,7 @@ graph LR
     Admin[admin] --> ClearBlock[POST /admin/rescue/users/:id/clear-block<br/>🛡️ stamps users.rescue_block_cleared_at<br/>the no_show rows stay for the chunk-5 metrics<br/>MEH-3226: /admin/users row menu «שחרור חסימת סלים»]
 
     Dash --> MyOrders[GET /producers/me/rescue/orders<br/>👤 today's codes for this business, Israel clock<br/>NO buyer identity — four digits is the whole job<br/>carries pickup_end so «לא הגיע» can be gated client-side]
+    Dash --> Pilot[GET /producers/me/rescue/pilot-locations<br/>👤 MEH-2921: own pickup points in a pilot town, ids only]
     Dash --> Typical[GET · PUT /producers/me/rescue/typical-items<br/>👤 «בדרך כלל: …», one row per business, upsert in place<br/>bounded at 12 so the line stays one line on a phone]
     Admin --> Metrics[GET /admin/rescue/metrics?days=<br/>🛡️ offers/day · sell-through · no-show rate · repeat buyers · bags_donated MEH-2703<br/>rates are NULL not 0 when the denominator is zero]
     Dash --> MyOffers[GET /producers/me/rescue/offers<br/>👤 today's bags + leftover MEH-2703<br/>leftover = qty_left + no_show bags, 0 before pickup_end or when cancelled]

@@ -312,7 +312,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await pickCategory(page, "לחמים ואפייה");
     await expect(licenceField(page)).toBeVisible();
     await expect(page.getByText("מספר רישיון ייצור (משרד הבריאות)", { exact: true })).toBeVisible();
-    await expect(page.getByText("ייצור מזון בקטגוריה זו דורש רישיון ייצור ממשרד הבריאות")).toBeVisible();
+    await expect(page.getByTestId("register-license-required-hint")).toHaveText("הקטגוריה «לחמים ואפייה» דורשת רישיון ייצור ממשרד הבריאות"); // MEH-2928: the hint names the category
     await expect(optionalToggle(page), "no optional toggle on the required path").toHaveCount(0);
     await licenceField(page).fill("1234567");
     await nextBtn(page).click();
@@ -342,12 +342,12 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await gotoCategoryFrame(page);
     await pickCategory(page, "פירות וירקות");
     await expect(licenceField(page)).toHaveCount(0);
-    await expect(page.getByText("ייצור מזון בקטגוריה זו דורש רישיון ייצור ממשרד הבריאות")).toHaveCount(0);
+    await expect(page.getByTestId("register-license-required-hint")).toHaveCount(0);
     await optionalToggle(page).click();
     const optional = licenceInput(page);
     await expect(optional).toBeVisible();
     await expect(page.getByText("מספר רישיון ייצור (משרד הבריאות)", { exact: true })).toBeVisible();
-    await expect(page.getByText("ייצור מזון בקטגוריה זו דורש רישיון ייצור ממשרד הבריאות")).toHaveCount(0);
+    await expect(page.getByTestId("register-license-required-hint")).toHaveCount(0);
     await nextBtn(page).click();
     await expect(page.getByTestId("register-frame-story")).toBeVisible();
   });
@@ -361,7 +361,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await pickCategory(page, "לחמים ואפייה");
     await expect(licenceField(page)).toBeVisible();
     await expect(page.getByText("מספר רישיון ייצור (משרד הבריאות)", { exact: true })).toBeVisible();
-    await expect(page.getByText("ייצור מזון בקטגוריה זו דורש רישיון ייצור ממשרד הבריאות")).toBeVisible();
+    await expect(page.getByTestId("register-license-required-hint")).toHaveText("הקטגוריה «לחמים ואפייה» דורשת רישיון ייצור ממשרד הבריאות"); // MEH-2928: only the category that needs it is named
     await expect(optionalToggle(page)).toHaveCount(0);
   });
 

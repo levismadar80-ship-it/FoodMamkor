@@ -1572,3 +1572,21 @@ def test_one_address_gets_five_codes_an_hour_whatever_the_phones(
     ]
     assert answers == [200] * 5 + [429]
     assert len(sent) == 5
+
+
+# MEH-2936: the stored order line, not only the menu, counts bottle/box like
+# `unit` and weighs kg/100g — services/product_order_create.py decides it.
+@pytest.mark.parametrize(
+    ("unit", "estimate"), [("bottle", False), ("box", False), ("unit", False), ("100g", True)]
+)
+def test_an_exact_price_is_an_estimate_only_for_a_weighed_unit(
+    client, db, flag_on, sent, unit, estimate
+):
+    shop = Shop(db)
+    product = Product(producer_id=shop.producer.id, name="שמן", price_min=60, price_max=60, price_unit=unit)
+    db.add(product)
+    db.commit()
+    res = send(client, shop, sent, items=[{"product_id": str(product.id), "qty": 1}])
+    assert res.status_code == 201, res.text
+    line = res.json()["items"][0]
+    assert (line["price_unit"], line["price_is_estimate"]) == (unit, estimate)

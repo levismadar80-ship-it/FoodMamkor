@@ -58,6 +58,7 @@ vi.mock("@phosphor-icons/react", () => ({
   Receipt: () => <span data-testid="icon-receipt" />,
   CaretLeft: () => <span data-testid="caret-left" />,
   CaretRight: () => <span data-testid="caret-right" />,
+  CaretDown: () => <span />,
 }));
 
 vi.mock("@/lib/contact-tracking", () => ({

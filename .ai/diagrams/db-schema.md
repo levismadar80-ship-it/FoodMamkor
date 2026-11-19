@@ -159,9 +159,14 @@ erDiagram
         boolean is_low_carb "MEH-1934: 6th dietary axis; independent of every other flag"
         text ingredients "MEH-2662: owner-declared, nullable"
         text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
+        text_array may_contain "MEH-3439: «עלול להכיל», same codes; overlap with allergens dropped, nullable"
+        text storage_info "MEH-3444: «אחסון ותוקף», owner free text, nullable"
+        text gluten_detail "MEH-3442: «איזה דגן?», kept only while gluten is declared"
+        text nuts_detail "MEH-3442: «איזה אגוז?», kept only while tree_nuts is declared"
+        boolean no_allergens "MEH-3445: «אין במוצר אלרגנים מהרשימה», false while any code is declared"
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
-        varchar price_unit "MEH-3218: unit|kg|100g, default unit"
+        varchar price_unit "MEH-3218: unit|kg|100g; MEH-2936: +bottle|box; default unit"
         boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
@@ -256,7 +261,7 @@ erDiagram
         string name "copied at order time"
         int unit_price_agorot "copied at order time"
         boolean price_is_estimate
-        string price_unit "unit|kg|100g"
+        string price_unit "unit|kg|100g|bottle|box"
         int qty "1..99"
         boolean contains_alcohol
     }
@@ -450,6 +455,8 @@ erDiagram
         timestamp waitlist_offered_at "MEH-3314 the one offer email"
         int party_size "MEH-3315 1-10, places taken"
         string attendance "MEH-3315 NULL|attended|no_show"
+        date session_date "MEH-3440 workshop date, NULL = none"
+        time session_time "MEH-3440"
     }
 
     business_billing {
@@ -492,6 +499,7 @@ erDiagram
         string registration_method "MEH-2763; legacy rows backfilled whatsapp"
         string registration_url "MEH-2763 external_url only"
         int min_participants "nullable; minimum to run (MEH-2665)"
+        jsonb sessions "MEH-3440 recurring dates [{date,time,participants_count}]; NULL = one pool"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"

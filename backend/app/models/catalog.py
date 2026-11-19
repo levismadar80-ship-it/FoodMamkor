@@ -103,6 +103,24 @@ class Product(Base):
     position = Column(Integer, nullable=True)
     group_id = Column(String(36), nullable=True)
     allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
+    # MEH-3439: «עלול להכיל» — cross-contact codes, same closed list. NULL =
+    # not filled, never "no cross-contact". A code in `allergens` is never
+    # stored here too (ProductCreate/Update drop it: «מכיל» wins).
+    may_contain: Column[list[str]] = Column(ARRAY(Text), nullable=True)
+    # MEH-3444: «אחסון ותוקף» — owner-declared free text (e.g. «בקירור, עד 10
+    # ימים מיום הקנייה»). NULL = not filled, the sheet shows nothing.
+    storage_info = Column(Text, nullable=True)
+    # MEH-3442: «איזה דגן?» / «איזה אגוז?» — owner free text naming the source of
+    # gluten / tree nuts; kept only while that code is declared (allergens.py).
+    gluten_detail = Column(Text, nullable=True)
+    nuts_detail = Column(Text, nullable=True)
+    # MEH-3445: «אין במוצר אלרגנים מהרשימה» — the owner's explicit declaration
+    # that none of the listed allergens is in the product. Distinct from NULL
+    # lists («לא ציין»). Never true while a code is in `allergens` or
+    # `may_contain` (schemas/catalog.py, producer_me.update_my_product).
+    no_allergens = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
     # MEH-3218: on-site ordering (parent MEH-3216). The PRICE stays where it
     # is: `price_min == price_max` is an exact price, a real range means the
     # final price is set at confirmation. No second price column, so one owner
@@ -155,7 +173,8 @@ class Product(Base):
     # EXISTS subquery seq-scans products.
     __table_args__ = (
         CheckConstraint(
-            "price_unit IN ('unit', 'kg', '100g')", name="products_price_unit_check"
+            "price_unit IN ('unit', 'kg', '100g', 'bottle', 'box')",
+            name="products_price_unit_check",
         ),
         Index(
             "idx_products_dietary",

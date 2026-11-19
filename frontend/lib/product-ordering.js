@@ -8,7 +8,8 @@
  *           PUT /producers/me/products/{id}/ordering
  * Does NOT: change a product's price, name or unit — the product routes in
  *           producer_me.py own those. The PUT takes the whole row, so
- *           price_unit and contains_alcohol are sent back unchanged.
+ *           contains_alcohol is sent back unchanged; price_unit is left out
+ *           (omitted = kept, MEH-2936).
  * Related:  lib/product-orders.js (the orders, the list groups),
  *           backend/app/routers/product_order_offer.py
  * History:  MEH-3216 gaps (creation; split from product-orders.js, which is
@@ -41,7 +42,8 @@ export async function saveProductOrdering(product, change) {
   const body = {
     is_orderable: product.is_orderable,
     in_stock: product.in_stock,
-    price_unit: product.price_unit,
+    // MEH-2936: no price_unit — the product form owns it, and a row read
+    // before an edit there would send the old unit back over it.
     contains_alcohol: product.contains_alcohol,
     ...change,
   };

@@ -18,7 +18,6 @@
 /holiday-mode
 /producers/me/bio/generate
 /producers/me/kashrut-requests
-/producers/me/products/{}
 /push-vapid-key
 /register/producer/prefill/{}
 /reviews/{}/reply

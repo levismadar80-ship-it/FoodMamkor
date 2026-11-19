@@ -311,12 +311,14 @@
           "producer_name_label": "Business name",
           "city": "e.g. Zikhron Ya'akov",
           "fulfilment": {
-            "legend": "How do people buy from you?",
-            "onsite": "They come to us",
-            "delivery": "We deliver",
-            "both": "Both",
-            "required": "Pick one option",
-            "areas_note": "You set your delivery areas in the dashboard"
+            "legend": "How do customers get their order?",
+            "onsite": "Pickup or visit",
+            "delivery": "Delivery",
+            "required": "Tick at least one option",
+            "multi_hint": "You can tick both",
+            "areas_note": "You set your delivery areas in the dashboard",
+            "hours_hint": "Have opening hours? Your card will show “Buy on site”. Without hours it shows “By arrangement”. Add hours in your dashboard.",
+            "whatsapp_note": "WhatsApp orders reach you through the contact button on your page."
           },
           "city_label": "City",
           "address": "e.g. 5 Olive St., Haifa",
@@ -339,9 +341,11 @@
           "phone": "0501234567",
           "phone_label": "WhatsApp phone",
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
+          "external_order_form_label": "Your online shop or order form (link)",
           "license_required_label": "Producer license number (required)",
-          "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
-          "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it after approval.",
+          "license_required_hint": "{count, plural, one {The category {names} requires a production licence from the Ministry of Health} other {The categories {names} require a production licence from the Ministry of Health}}",
+          "license_names_last": "{rest} and {last}",
+          "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it in your dashboard. Your business goes live once we have the number.",
           "license_pending_optin_label": "I don't have a license number yet",
           "license_pending_optin_hint": "You can complete registration now. Your business will be approved and go live only after we receive your license number.",
           "license_optional_label": "Producer license number",
@@ -867,8 +871,14 @@
             "no_added_sugar": "No added sugar"
           },
           "facts": {
+            "details_heading": "Product details",
             "ingredients_heading": "Ingredients",
             "allergens_heading": "Allergens",
+            "contains": "Contains: {list}",
+            "may_contain": "May contain: {list}",
+            "allergens_undeclared": "The business has not listed allergens. If you have a sensitivity, ask before ordering.",
+            "no_allergens": "None of the listed allergens",
+            "storage_heading": "Storage and shelf life",
             "declared_by_business": "As declared by the business"
           },
           "sheet_close_aria": "Close product details",
@@ -1318,7 +1328,10 @@
         "fulfillment_required": "Fill in pickup or delivery",
         "submitting": "Creating...",
         "submit": "Create group buy",
-        "toast_created": "Group buy created and open for joining"
+        "toast_created": "Group buy created and open for joining",
+        "prefill_label": "Fill from an existing product",
+        "prefill_placeholder": "Choose a product",
+        "prefill_helper": "The name and regular price fill in, and you can change them."
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {
@@ -1781,7 +1794,7 @@
         "submit_create": "Create business",
         "submit_update": "Save changes",
         "uploading": "Uploading...",
-        "category_cap_hint": "Your first pick shows on the business card · up to 3 categories",
+        "category_cap_hint": "Your first pick shows on the business card · up to 5 categories",
         "primary_badge": "Primary",
         "photos": {
           "main_label": "Main photo",
@@ -2084,12 +2097,7 @@
         "error_json": "The text is not valid JSON.",
         "error_shape": "Expected an array of products, or an object with rows.",
         "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
-        "load_failed": "Couldn't load the drafts. Try refreshing.",
-        "unit": {
-          "unit": "per unit",
-          "kg": "per kg",
-          "100g": "per 100 g"
-        }
+        "load_failed": "Couldn't load the drafts. Try refreshing."
       }
     },
     "users": {
@@ -2137,7 +2145,15 @@
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
         "confirm": "Confirm",
-        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone."
+        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone.",
+        "block": "Block {name}? They won't be able to sign in until the block is lifted.",
+        "block_business": "Block {name}? The business “{business}” will be hidden from the site.",
+        "block_none": "It has no open bookings.",
+        "block_one": "One open booking will be cancelled, and the customer will get an email.",
+        "block_many": "{count} open bookings will be cancelled, and each customer will get an email.",
+        "block_restore": "Lifting the block doesn't bring the business back. Restore it with «Activate» on the businesses page.",
+        "block_submit": "Block",
+        "block_impact_error": "We couldn't check for open bookings. Try again."
       },
       "pagination": {
         "page_size": "Rows per page",
@@ -2148,7 +2164,8 @@
       "rescue": {
         "blocked_badge": "Blocked from bags ({count} no-shows)",
         "cleared": "Block released"
-      }
+      },
+      "blocked_hidden": "The account is blocked and the business is hidden."
     },
     "recipes": {
       "title": "Business recipes",
@@ -3181,6 +3198,12 @@
       "field_requirements_placeholder": "Apron, closed shoes, ability to stand for two hours...",
       "is_recurring": "Recurring experience (weekly / monthly)",
       "recurring_placeholder": "Example: Every Friday 9:00–12:00",
+      "sessions_title": "Dates",
+      "sessions_hint": "Add each date separately. Every date has its own places, up to the number of participants you set.",
+      "sessions_add": "Add a date",
+      "sessions_remove": "Remove this date",
+      "sessions_max": "You can add up to 12 upcoming dates.",
+      "sessions_remove_confirm": "{count, plural, one {One person is signed up for this date. Removing it cancels the sign-up, and they will get an email.} other {# people are signed up for this date. Removing it cancels their sign-ups, and they will get an email.}}",
       "cancel": "Cancel",
       "submitting": "Submitting...",
       "cannot_publish": "Cannot publish",
@@ -3585,7 +3608,7 @@
       "section_results": "Results",
       "section_popular": "Popular",
       "counter": "{count}/{max}",
-      "cap_hint": "Your first pick shows on the business card · up to 3 categories",
+      "cap_hint": "Your first pick shows on the business card · up to 5 categories",
       "primary_badge": "Primary",
       "group_food": "Food",
       "group_home": "Home & care",
@@ -4905,6 +4928,11 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_8": {
+            "i0": "Products can now be priced per bottle or per box, saved without a price, and given allergens, «may contain» and storage and shelf life.",
+            "i1": "For a workshop that repeats, customers pick a date when they sign up.",
+            "i2": "Less typing: you can duplicate an event or experience, and start a buying group straight from a product."
+          },
           "v1_5_7": {
             "i0": "In the products card on the «Edit» tab you can now upload a photo of your menu or price list. The products fill in by themselves, so all that's left is to check and publish."
           },
@@ -5001,7 +5029,9 @@
         "orders": "{count, plural, one {One order waiting for confirmation} other {# orders waiting for confirmation}}",
         "orders_cta": "Confirm",
         "menu": "No products on your page yet. You can upload a menu instead of typing.",
-        "menu_cta": "Upload a menu"
+        "menu_cta": "Upload a menu",
+        "allergens": "{count, plural, one {One product has no allergens marked} other {# products have no allergens marked}}",
+        "allergens_cta": "Mark them"
       },
       "status": {
         "pending": {
@@ -5216,7 +5246,7 @@
         "channel_email": "Email",
         "channel_website": "Website",
         "channel_facebook": "Facebook",
-        "channel_external_order": "Order form",
+        "channel_external_order": "Shop or order form",
         "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
         "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
         "location_missing": "No location set yet",
@@ -5256,7 +5286,7 @@
         "whatsapp_group_helper": "We recommend a WhatsApp channel: customers can't see each other's numbers, and there's no limit on how many can join.",
         "field_email": "Email",
         "field_facebook": "Facebook (link)",
-        "field_external_order": "Order form (link)",
+        "field_external_order": "Your online shop or order form (link)",
         "instagram_placeholder": "maafiat_hasade",
         "website_placeholder": "https://example.co.il",
         "whatsapp_group_placeholder": "https://whatsapp.com/channel/…",
@@ -5269,7 +5299,7 @@
         "primary_email": "Email",
         "primary_website": "Website",
         "primary_facebook": "Facebook",
-        "primary_external_order": "Order form",
+        "primary_external_order": "Shop or order form",
         "hint_empty": "Fill in this field to use it as your primary channel",
         "error_summary": "To set a primary channel, fill in its field",
         "save_cta": "Save contact channels",
@@ -5611,7 +5641,9 @@
         "action_delete": "Delete",
         "action_error": "Action failed. Please try again.",
         "delete_confirm": "Delete the event \"{title}\"? This cannot be undone.",
-        "badge_past": "Ended"
+        "badge_past": "Ended",
+        "action_duplicate": "Duplicate",
+        "copied_from": "Details copied from \"{title}\". Just pick a date."
       },
       "manage_experiences": {
         "heading": "My experiences",
@@ -5637,7 +5669,9 @@
         "status_changes_requested": "Changes requested",
         "badge_past": "Ended",
         "signed_up_label": "Signed up so far",
-        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left"
+        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left",
+        "action_duplicate": "Duplicate",
+        "copied_from": "Details copied from \"{title}\". Just pick a date."
       },
       "name_change": {
         "heading": "Change business name",
@@ -5740,7 +5774,8 @@
           "business_id": "Business or company number",
           "business_id_help": "Shown to customers on the order form, as the law requires.",
           "business_id_required": "To take orders on the site, fill in your business number.",
-          "business_id_format": "A business or company number has 9 digits."
+          "business_id_format": "A business or company number has 9 digits.",
+          "commission": "Orders through the site carry a commission according to your plan. <link>Details in the terms</link>."
         },
         "windows": {
           "title": "When orders are handed over",
@@ -5827,6 +5862,20 @@
         "prep": {
           "title": "What to prepare",
           "line": "{count} × {name}"
+        },
+        "intro": {
+          "title": "New: pre-orders from your page",
+          "body": "Customers pick products and a pickup or delivery time, and send you a request. You confirm from your dashboard, and they pay you directly.",
+          "cta": "Set up orders",
+          "later": "Not now"
+        },
+        "checklist": {
+          "title": "What's missing to take orders",
+          "business_id": "Business or company number",
+          "windows": "Hand-over hours",
+          "product": "At least one product open for ordering",
+          "enabled": "Turn on \"Take orders on the site\"",
+          "done": "All set. Customers can order from your page."
         }
       }
     },
@@ -6028,6 +6077,7 @@
         "price_max_optional_suffix": "optional",
         "price_max_placeholder": "60",
         "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
+        "price_optional_hint": "No fixed price? Leave the price empty and your page will say «Price varies by season».",
         "diet_heading": "Dietary tags (optional)",
         "diet_gluten_free": "Gluten-free",
         "diet_vegan": "Vegan",
@@ -6059,12 +6109,24 @@
         "allergen_mustard": "Mustard",
         "allergen_sulphites": "Sulphites",
         "allergen_lupin": "Lupin",
+        "allergen_fava_beans": "Fava beans",
+        "may_contain_heading": "May contain",
+        "may_contain_helper": "Mark what may reach the product from shared tools or surfaces.",
+        "no_allergens_label": "None of the listed allergens",
+        "storage_label": "Storage and shelf life",
+        "storage_placeholder": "e.g.: refrigerated, up to 10 days from purchase",
+        "gluten_detail_label": "Which cereal?",
+        "gluten_detail_placeholder": "e.g.: spelt",
+        "nuts_detail_label": "Which nut?",
+        "nuts_detail_placeholder": "e.g.: almonds, hazelnuts",
         "image_label": "Product image",
         "image_alt": "Photo",
         "image_remove": "Remove",
         "image_upload_cta": "Upload photo",
         "image_replace": "Replace photo",
-        "image_uploading": "Uploading…"
+        "image_uploading": "Uploading…",
+        "price_unit_label": "Price per",
+        "price_unit_hint": "Shown next to the price on your page, e.g. ₪40 per kg"
       },
       "save_edit_cta": "Save changes",
       "save_edit_saving": "Saving…",
@@ -6159,13 +6221,13 @@
         "address_label": "Address",
         "address_placeholder": "e.g. 12 Ha'atzmaut St",
         "address_confirmed": "Location found: {location}",
-        "address_unresolved": "We couldn't locate that address — you can enter coordinates manually below.",
-        "place_hint_exact": "Your city and address appear on your page and in navigation.",
-        "place_hint_approximate": "Only the city is shown. The full address won't appear on your page or in navigation.",
+        "address_unresolved": "We couldn't find this address. You can save it as is, or enter the exact location yourself below. Surprise bags need an exact location.",
+        "place_hint_exact": "The business page shows the town, and the map pin sits at the exact location. Only people who reserved a surprise bag see the full address.",
+        "place_hint_approximate": "The business page shows the town, and the map pin shows the area only. The full address is not shown.",
         "lat_label": "Latitude",
         "lng_label": "Longitude",
-        "more_summary": "More details — label, phone, hours",
-        "coords_summary": "Manual coordinates",
+        "more_summary": "More details — precision, label, phone, hours",
+        "coords_summary": "Enter the exact location yourself",
         "coords_hint": "Optional. Fill these in only if the map pin isn't sitting in the right place.",
         "hours_label": "Hours",
         "hours_unreadable": "Saved hours: {value} — please pick them again below",
@@ -6178,7 +6240,8 @@
         "precision_helper": "Exact — customers see a pin at the full location; Approximate — a pin in the area only, without an address.",
         "precision_exact": "Exact",
         "precision_approximate": "Approximate",
-        "primary_label": "Primary location"
+        "primary_label": "Primary location",
+        "hours_copy_all": "Same hours for all open days"
       },
       "save_cta": "Save",
       "saving": "Saving…",
@@ -6737,13 +6800,13 @@
       "orders_title": "Today's reservations",
       "orders_empty": "No reservations for today yet.",
       "publish_title": "Publish bags",
-      "publish_today": "Publish for today · {price} ₪",
-      "publish_tomorrow": "Publish {n} bags for tomorrow",
+      "publish_today": "{n, plural, one {Publish for today · 1 bag · {price} ₪ per bag} other {Publish for today · # bags · {price} ₪ per bag}}",
+      "publish_tomorrow": "{n, plural, one {Publish for tomorrow · 1 bag · {price} ₪ per bag} other {Publish for tomorrow · # bags · {price} ₪ per bag}}",
       "published": "Bags published.",
       "no_location": "You need a pickup point with an exact address.",
       "field": {
         "qty": "How many bags",
-        "price": "Price (₪)",
+        "price": "Price per bag (₪)",
         "from": "Pickup from",
         "to": "until",
         "cancel": "Free cancellation until",
@@ -6751,15 +6814,15 @@
         "cancel_hour": "An hour before pickup",
         "cancel_two_hours": "Two hours before pickup"
       },
-      "items_title": "Usually in the bag",
-      "items_help": "Comma separated. This is what buyers see before they reserve.",
+      "items_title": "What's usually in the bag",
+      "items_help": "Separate with commas. This is what customers see before they reserve a bag.",
       "items_save": "Save",
       "items_saved": "Saved.",
       "leftover_hint": "Instead of throwing them away, you can give them away free.",
       "leftover_link": "Food give-away group on Facebook",
-      "needs_address": "To publish bags you need an exact pickup address.",
+      "needs_address": "To publish bags you need an exact pickup address. In the location editor, open «More details» and choose «Precision: exact».",
       "needs_address_privacy": "Only people who reserved a bag see the full address.",
-      "needs_address_cta": "Add an address",
+      "needs_address_cta": "Edit the location",
       "leftover_title": "{count, plural, one {Not collected today: one bag} other {Not collected today: # bags}}",
       "leftover_share": "Share on WhatsApp",
       "leftover_donated": "Done: given away free",
@@ -6777,7 +6840,9 @@
       "cancel_offer_one": "There is one active reservation. We'll email them that the bag was cancelled.",
       "cancel_offer_many": "There are {n} active reservations. We'll email all of them that the bag was cancelled.",
       "cancel_offer_yes": "Yes, cancel",
-      "cancel_offer_no": "No"
+      "cancel_offer_no": "No",
+      "not_in_pilot": "Surprise bags are not open in {city} yet. Once they open there, you can publish from here.",
+      "publish_suggestion": "We filled in a suggestion based on a typical evening. Change it to match what's left today."
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
@@ -6930,7 +6995,8 @@
       "attendance": "Did they come",
       "attended": "Came",
       "no_show": "Didn't come",
-      "attendance_error": "Couldn't save. Try again."
+      "attendance_error": "Couldn't save. Try again.",
+      "session_group": "{date}, {time} · {count} signed up"
     },
     "cta": {
       "signup_experience": "Sign up for the workshop",
@@ -6959,7 +7025,12 @@
       "generic": "Something went wrong. Try again.",
       "waitlist_submit": "Join the waitlist",
       "waitlist_success": "You're on the waitlist. If a spot opens up, we'll email you a sign-up link.",
-      "party_size": "How many people"
+      "party_size": "How many people",
+      "session": "Date",
+      "session_placeholder": "Choose a date",
+      "session_option": "{date}, {time}",
+      "session_full": "{date}, {time} · Full",
+      "session_required": "Choose a date."
     },
     "cancel": {
       "title": "Cancel sign-up for \"{title}\"",
@@ -7445,7 +7516,8 @@
   "phone_verify": {
     "title": "Verify your business phone",
     "reverify_title": "Your business WhatsApp number isn't verified yet",
-    "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
+    "description": "Tap «Send verification code» and we will send a 6-digit code to the business number's WhatsApp. Verification is one of the steps before sending for review.",
+    "code_sent": "We sent a code to the business number's WhatsApp.",
     "send_cta": "Send verification code",
     "sending": "Sending...",
     "resend_in": "You can resend a code in {seconds}s",
@@ -7483,5 +7555,15 @@
     "line": "{qty} × {name}",
     "back": "Back",
     "failed": "That didn't work. Please try again."
+  },
+  "price_unit": {
+    "unit": "per unit",
+    "kg": "per kg",
+    "100g": "per 100 g",
+    "bottle": "per bottle",
+    "box": "per box"
+  },
+  "product_price": {
+    "varies": "Price varies by season"
   }
 }

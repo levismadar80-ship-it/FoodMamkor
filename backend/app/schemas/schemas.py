@@ -821,10 +821,10 @@ def _require_categories_validator(value: list[int] | None) -> list[int]:
     return value
 
 
-# MEH-1297: cap a producer's categories at 3 (Yelp model) to stop category
+# MEH-1297: cap a producer's categories (Yelp model; 3, then 5 since MEH-2925) to stop category
 # stuffing. Enforced at the Pydantic layer only — existing producers may
 # carry more from import, so there is no DB CHECK constraint (see migration).
-MAX_PRODUCER_CATEGORIES = 3
+MAX_PRODUCER_CATEGORIES = 5  # MEH-2925: 3 → 5 (Sapir, D5a 11/11)
 
 # MEH-1577: upper bound for producers.delivery_fee / free_delivery_above.
 # Both are Postgres INTEGER (max 2147483647), and without a ceiling a larger
@@ -839,11 +839,12 @@ MAX_DELIVERY_MONEY = 1_000_000
 
 
 def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
-    """MEH-1297: reject >3 categories. `None` (field omitted on a partial
-    update) passes through untouched so it composes with optional fields.
+    """MEH-1297: reject more than MAX_PRODUCER_CATEGORIES (5 since MEH-2925).
+    `None` (field omitted on a partial update) passes through untouched so it
+    composes with optional fields.
     """
     if value is not None and len(value) > MAX_PRODUCER_CATEGORIES:
-        raise ValueError("ניתן לבחור עד 3 קטגוריות לבית עסק")
+        raise ValueError(f"ניתן לבחור עד {MAX_PRODUCER_CATEGORIES} קטגוריות לבית עסק")
     return value
 
 

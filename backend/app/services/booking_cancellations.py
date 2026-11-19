@@ -21,7 +21,8 @@ Related:  services/group_buy_delist.py::cancel_live_group_buys (MEH-2498,
           the precedent) · routers/rescue.py::cancel_offer (the business's
           own bag cancel) · routers/registrations.py (the confirmation email
           these mirror).
-History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants)
+History:  MEH-3227 (creation); MEH-3310 (leaving site_form tells registrants);
+          MEH-3375 (count_open_bookings, the pre-block count)
 """
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ from app.models import (
 )
 from app.services import billing_ledger
 from app.services.email import send_email
-from app.services.group_buy_delist import cancel_live_group_buys
+from app.services.group_buy_delist import cancel_live_group_buys, count_live_commits
 from app.services.registration_emails import (
     RegistrantEmail,
     send_registrant_cancelled,
@@ -88,15 +89,32 @@ def _message(
 ) -> RegistrantEmail:
     place = _event_place(item) if isinstance(item, Event) else _experience_place(item)
     past_first = _is_recurring(item) and not _is_upcoming(item)
+    day, at = item.event_date, item.event_time
+    if reg.session_date is not None:  # MEH-3441: the date she booked
+        day, at, past_first = reg.session_date, reg.session_time, False
     return RegistrantEmail(
         title=item.title or "",  # type: ignore[arg-type]
         # MEH-2871: a recurring experience's event_date is its FIRST occasion;
         # once that is past the email names no date rather than a past one.
-        date_text="" if past_first else _date_text(item.event_date),  # type: ignore[arg-type]
-        time_text="" if past_first else _time_text(item.event_time),  # type: ignore[arg-type]
+        date_text="" if past_first else _date_text(day),  # type: ignore[arg-type]
+        time_text="" if past_first else _time_text(at),  # type: ignore[arg-type]
         place=place,
         host_name=host_name,
         cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
+    )
+
+
+# MEH-3314: a waitlisted visitor is told the item is off too.
+_ACTIVE_SIGNUP = ("registered", "waitlisted")
+
+
+def _not_past_date() -> Any:
+    """MEH-3441: a sign-up for a date that has passed took place — it is
+    neither cancelled nor mailed, and its booking stays. Shared by the cancel
+    and the admin's pre-block count (MEH-3375), so the two agree."""
+    return or_(
+        Registration.session_date.is_(None),
+        Registration.session_date >= israel_today(),
     )
 
 
@@ -108,7 +126,11 @@ def _active_registrations(
     return (
         db.query(Registration)
         # MEH-3314: a waitlisted visitor is told the item is off too.
-        .filter(column.in_(ids), Registration.status.in_(("registered", "waitlisted")))
+        .filter(
+            column.in_(ids),
+            Registration.status.in_(_ACTIVE_SIGNUP),
+            _not_past_date(),
+        )
         .with_for_update()
         .all()
     )
@@ -144,6 +166,89 @@ def _cancel_and_queue(
 # ---------- 1. the site takes a business off ----------
 
 
+# MEH-3375: the cancel and the admin's pre-block count share these filters, so
+# the number she is shown is the set the block cancels. DO NOT copy a filter
+# into count_open_bookings — change it here.
+def _live_offers_query(db: Session, producer: Producer) -> Any:
+    """Active rescue bags of ``producer`` whose pickup has not ended."""
+    return (
+        db.query(RescueOffer)
+        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
+        .filter(
+            ProducerLocation.producer_id == producer.id,
+            RescueOffer.status == "active",
+            RescueOffer.pickup_end > utc_now(),
+        )
+    )
+
+
+def _upcoming_items(
+    db: Session, producer: Producer
+) -> tuple[list[Event], list[Experience]]:
+    """Events of ``producer`` from today on, and experiences its owner hosts
+    from today on (a recurring one whatever its first date, MEH-2871)."""
+    today = israel_today()
+    events = (
+        db.query(Event)
+        .filter(Event.producer_id == producer.id, Event.event_date >= today)
+        .all()
+    )
+    experiences = (
+        db.query(Experience)
+        .join(User, Experience.host_user_id == User.id)
+        .filter(User.producer_id == producer.id)
+        # MEH-2871: a recurring experience is live past its first date.
+        .filter(or_(Experience.event_date >= today, Experience.is_recurring.is_(True)))
+        .all()
+    )
+    return events, experiences
+
+
+def _not_own(producer: Producer) -> Any:
+    """A user outside ``producer`` — the people a delist mails as customers."""
+    return (User.producer_id.is_(None)) | (User.producer_id != producer.id)
+
+
+def count_open_bookings(db: Session, producer: Producer) -> int:
+    """MEH-3375: how many customers' bookings taking ``producer`` off would
+    cancel and mail — reserved bags, sign-ups (registered or waitlisted) and
+    group-buy participants, without the business's own users (they get the
+    owner email). Reads only; shown to the admin before she blocks the owner,
+    and returned by the block as ``cancelled``."""
+    offer_ids = [o.id for o in _live_offers_query(db, producer).all()]
+    bags = 0
+    if offer_ids:
+        bags = (
+            db.query(RescueOrder)
+            .join(User, RescueOrder.user_id == User.id)
+            .filter(
+                RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved"
+            )
+            # As in _cancel_live_bags: the business's own users get the owner
+            # email, not a buyer's, so the admin's «כל מי שהזמינה תקבל מייל»
+            # does not count them.
+            .filter(_not_own(producer))
+            .count()
+        )
+    events, experiences = _upcoming_items(db, producer)
+    signups = 0
+    for column, ids in (
+        (Registration.event_id, [e.id for e in events]),
+        (Registration.experience_id, [x.id for x in experiences]),
+    ):
+        if ids:
+            signups += (
+                db.query(Registration)
+                .filter(
+                    column.in_(ids),
+                    Registration.status.in_(_ACTIVE_SIGNUP),
+                    _not_past_date(),
+                )
+                .count()
+            )
+    return bags + signups + count_live_commits(db, producer)
+
+
 def _cancel_live_bags(
     db: Session, producer: Producer, background_tasks: BackgroundTasks
 ) -> int:
@@ -151,16 +256,8 @@ def _cancel_live_bags(
     reservations; one email per buyer. Rows are locked as cancel_offer locks
     them, so a reservation landing at the same instant cannot slip past."""
     now = utc_now()
-    offers = (
-        db.query(RescueOffer)
-        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
-        .filter(
-            ProducerLocation.producer_id == producer.id,
-            RescueOffer.status == "active",
-            RescueOffer.pickup_end > now,
-        )
-        .with_for_update(of=RescueOffer)
-        .all()
+    offers: list[RescueOffer] = (
+        _live_offers_query(db, producer).with_for_update(of=RescueOffer).all()
     )
     if not offers:
         return 0
@@ -171,7 +268,7 @@ def _cancel_live_bags(
         .join(RescueOrder, RescueOrder.user_id == User.id)
         .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
         # The business's own users are told by the owner email instead.
-        .filter((User.producer_id.is_(None)) | (User.producer_id != producer.id))
+        .filter(_not_own(producer))
         if email
     }
     cancelled = (
@@ -197,20 +294,7 @@ def _cancel_upcoming_signups(
     """Sign-ups to this business's events, and to experiences its owner
     hosts, from today on → cancelled, one email each. A recurring experience
     counts whatever its first date (MEH-2871)."""
-    today = israel_today()
-    events = (
-        db.query(Event)
-        .filter(Event.producer_id == producer.id, Event.event_date >= today)
-        .all()
-    )
-    experiences = (
-        db.query(Experience)
-        .join(User, Experience.host_user_id == User.id)
-        .filter(User.producer_id == producer.id)
-        # MEH-2871: a recurring experience is live past its first date.
-        .filter(or_(Experience.event_date >= today, Experience.is_recurring.is_(True)))
-        .all()
-    )
+    events, experiences = _upcoming_items(db, producer)
     by_event = {e.id: e for e in events}
     by_ex = {x.id: x for x in experiences}
     name = str(producer.name or "")
@@ -392,6 +476,43 @@ def cancel_item_signups(
     )
 
 
+def cancel_session_signups(
+    db: Session,
+    ex: Experience,
+    keys: list[tuple[date, time]],
+    background_tasks: BackgroundTasks,
+    test_cause: bool,
+) -> int:
+    """MEH-3441: the owner removed upcoming dates of a recurring workshop —
+    cancel the sign-ups (and waitlist) of those dates only, one email each,
+    the same email as a cancelled workshop."""
+    if not keys:
+        return 0
+    host_name = _host_name_for(ex)
+    regs: list[tuple[Registration, Event | Experience, str]] = [
+        (r, ex, host_name)
+        for r in (
+            db.query(Registration)
+            .filter(
+                Registration.experience_id == ex.id,
+                Registration.status.in_(("registered", "waitlisted")),
+                or_(
+                    *(
+                        (Registration.session_date == d)
+                        & (Registration.session_time == t)
+                        for d, t in keys
+                    )
+                ),
+            )
+            .with_for_update()
+            .all()
+        )
+    ]
+    return _cancel_and_queue(
+        db, background_tasks, regs, send_registrant_cancelled, test_cause
+    )
+
+
 def notify_item_moved(
     db: Session,
     item: Event | Experience,
@@ -409,7 +530,13 @@ def notify_item_moved(
     host_name = _host_name_for(item)
     regs = (
         db.query(Registration)
-        .filter(_column_for(item) == item.id, Registration.status == "registered")
+        .filter(
+            _column_for(item) == item.id,
+            Registration.status == "registered",
+            # MEH-3441: a sign-up for a listed date keeps its own date when
+            # the workshop's first date moves, so it is not told it moved.
+            Registration.session_date.is_(None),
+        )
         .all()
     )
     for reg in regs:

@@ -34,8 +34,9 @@ from app.schemas.catalog import (
 )
 
 # Source unit words → our closed set (models/product_orders.py
-# PRODUCT_PRICE_UNITS). mypips shows "ליחידה" / "למארז" / "לק"ג". A package is
-# priced per unit here; anything unknown is per unit too (the row is kept).
+# PRODUCT_PRICE_UNITS). mypips shows "ליחידה" / "למארז" / "לק"ג". A package
+# («מארז») is priced per unit here; a box («ארגז») and a bottle are their own
+# units since MEH-2936; anything unknown is per unit too (the row is kept).
 _UNIT_MAP: dict[str, str] = {
     "unit": "unit",
     "יחידה": "unit",
@@ -53,6 +54,13 @@ _UNIT_MAP: dict[str, str] = {
     "100g": "100g",
     "100 גרם": "100g",
     "ל-100 גרם": "100g",
+    # MEH-2936: bottle / box are their own units now.
+    "bottle": "bottle",
+    "בקבוק": "bottle",
+    "לבקבוק": "bottle",
+    "box": "box",
+    "ארגז": "box",
+    "לארגז": "box",
 }
 
 _PRICE_NOISE = re.compile(r"[₪\s]|ש\"ח|ש״ח")
@@ -135,6 +143,17 @@ def import_drafts(
             invalid.append(
                 ProductImportInvalidRow(
                     index=index, name=row.name, reason=_first_error(err)
+                )
+            )
+            continue
+        # MEH-2924 made ProductCreate's price optional (an owner may leave it
+        # blank: «מחיר משתנה לפי עונה»). The admin import keeps requiring it —
+        # a blank or unreadable cell here is a typo far more often than a
+        # seasonal price, so the admin sees the row as invalid, as before.
+        if checked.price_min is None:
+            invalid.append(
+                ProductImportInvalidRow(
+                    index=index, name=row.name, reason="מחיר חסר או לא בטווח 1–10,000"
                 )
             )
             continue

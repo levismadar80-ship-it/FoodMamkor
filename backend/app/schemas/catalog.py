@@ -10,9 +10,10 @@ every name is still importable from app.schemas.schemas.
 import re
 from datetime import date
 from decimal import Decimal
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Field,
@@ -22,7 +23,9 @@ from pydantic import (
 )
 
 from app.limits import MAX_PRODUCTS  # MEH-2312
-from app.allergens import normalize_allergens
+from app.schemas.product_order_offer import PriceUnit  # MEH-2936
+from app.allergens import detail_if_declared, drop_contained, normalize_allergens
+from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
     DeliveryDayField,
@@ -34,6 +37,21 @@ from app.schemas.schemas import (
     _image_url_validator,
     _min_letters_validator,
 )
+
+# MEH-3444: «אחסון ותוקף». The 300 cap is on the INPUT (before bleaching), so
+# a too-long text is a 422, not a silent cut; the bleach then mirrors
+# SanitizedDescriptionField. REUSES: schemas.py SanitizedAddressField order.
+StorageInfoField = Annotated[
+    str,
+    Field(max_length=300),
+    AfterValidator(lambda v: sanitize_text(v, max_length=300)),
+]
+
+# MEH-3442: «איזה דגן?» / «איזה אגוז?» — a few words; same input-cap-then-bleach
+# order as StorageInfoField.
+AllergenDetailField = Annotated[
+    str, Field(max_length=80), AfterValidator(lambda v: sanitize_text(v, max_length=80))
+]
 
 
 # --- Category ---
@@ -503,8 +521,14 @@ class ProductCreate(BaseModel):
     description: SanitizedDescriptionField | None = None
     price_range: str | None = None  # legacy: removal tracked in MEH-295 follow-up
     image_url: str | None = Field(None, max_length=500)
-    price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-2924: optional. No price = «מחיר משתנה לפי עונה» on the page, derived
+    # from price_min IS NULL (Sapir 11/11, option א — no column, no migration;
+    # products.price_min was already nullable).
+    price_min: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-2936: what the price is per. "unit" renders nothing next to it, so a
+    # product that never chose one looks exactly as before.
+    price_unit: PriceUnit = "unit"
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False
@@ -520,9 +544,16 @@ class ProductCreate(BaseModel):
     ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
     allergens: list[str] | None = Field(
         None, max_length=50
-    )  # 14 codes + headroom for dupes
+    )  # 15 codes + headroom for dupes
+    # MEH-3439: «עלול להכיל», same closed list and cap.
+    may_contain: list[str] | None = Field(None, max_length=50)
+    # MEH-3444: «אחסון ותוקף», optional free text, bleached like ingredients.
+    storage_info: StorageInfoField | None = None
+    gluten_detail: AllergenDetailField | None = None  # MEH-3442
+    nuts_detail: AllergenDetailField | None = None  # MEH-3442
+    no_allergens: bool = False  # MEH-3445: «אין במוצר אלרגנים מהרשימה»
 
-    @field_validator("allergens")
+    @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
@@ -540,8 +571,30 @@ class ProductCreate(BaseModel):
 
     @model_validator(mode="after")
     def check_price_max_gte_min(self) -> Self:
-        if self.price_max is not None and self.price_max < self.price_min:
+        if self.price_max is None:
+            return self
+        # MEH-2924: a range needs its lower end — «עד 40» alone is not a price.
+        if self.price_min is None:
+            raise ValueError("price_max requires price_min")
+        if self.price_max < self.price_min:
             raise ValueError("price_max must be greater than or equal to price_min")
+        return self
+
+    # MEH-3439: a code both «מכיל» and «עלול להכיל» is a contradiction;
+    # «מכיל» is the stronger claim and wins.
+    @model_validator(mode="after")
+    def _contains_wins(self) -> Self:
+        self.may_contain = drop_contained(self.allergens, self.may_contain)
+        # MEH-3442: a detail without its declared code is dropped.
+        self.gluten_detail = detail_if_declared(
+            "gluten", self.allergens, self.may_contain, self.gluten_detail
+        )
+        self.nuts_detail = detail_if_declared(
+            "tree_nuts", self.allergens, self.may_contain, self.nuts_detail
+        )
+        # MEH-3445: a ticked code is a stronger claim than "none".
+        if self.allergens or self.may_contain:
+            self.no_allergens = False
         return self
 
 
@@ -552,6 +605,9 @@ class ProductUpdate(BaseModel):
     image_url: str | None = Field(None, max_length=500)
     price_min: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-2936: omitted = unchanged (exclude_unset); an explicit null is a 422,
+    # never a NULL into the NOT NULL column.
+    price_unit: PriceUnit = "unit"
     # MEH-293: per-product dietary flags. Optional on update — exclude_unset
     # in producer_me.update_my_product means an unsupplied field stays put.
     is_gluten_free: bool | None = None
@@ -564,12 +620,26 @@ class ProductUpdate(BaseModel):
     ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
     allergens: list[str] | None = Field(
         None, max_length=50
-    )  # 14 codes + headroom for dupes
+    )  # 15 codes + headroom for dupes
+    # MEH-3439: «עלול להכיל», same closed list and cap.
+    may_contain: list[str] | None = Field(None, max_length=50)
+    # MEH-3444: «אחסון ותוקף», optional free text, bleached like ingredients.
+    storage_info: StorageInfoField | None = None
+    gluten_detail: AllergenDetailField | None = None  # MEH-3442
+    nuts_detail: AllergenDetailField | None = None  # MEH-3442
+    # MEH-3445: exclude_unset → unsent stays put; null means false (the
+    # column is NOT NULL). The router clears it while a code is stored.
+    no_allergens: bool | None = None
 
-    @field_validator("allergens")
+    @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
+
+    @field_validator("no_allergens")
+    @classmethod
+    def _null_is_false(cls, v: bool | None) -> bool:
+        return bool(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -592,6 +662,13 @@ class ProductUpdate(BaseModel):
             raise ValueError("price_max must be greater than or equal to price_min")
         return self
 
+    # MEH-3439: same rule as ProductCreate, when both are sent together.
+    @model_validator(mode="after")
+    def _contains_wins(self) -> Self:
+        if self.may_contain is not None:
+            self.may_contain = drop_contained(self.allergens, self.may_contain)
+        return self
+
 
 class ProductOut(BaseModel):
     id: UUID
@@ -601,6 +678,8 @@ class ProductOut(BaseModel):
     image_url: str | None = None
     price_min: Decimal | None = None
     price_max: Decimal | None = None
+    price_unit: str  # MEH-2936: NOT NULL column, so no default (a default
+    # would add 17 generated *Default exports to api.zod.js)
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
     is_vegan: bool = False
@@ -610,6 +689,11 @@ class ProductOut(BaseModel):
     is_low_carb: bool = False  # MEH-1934
     ingredients: str | None = None  # MEH-2662
     allergens: list[str] | None = None  # MEH-2662
+    may_contain: list[str] | None = None  # MEH-3439
+    storage_info: str | None = None  # MEH-3444
+    gluten_detail: str | None = None  # MEH-3442
+    nuts_detail: str | None = None  # MEH-3442
+    no_allergens: bool = False  # MEH-3445
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
 
