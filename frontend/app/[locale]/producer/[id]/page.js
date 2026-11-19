@@ -94,10 +94,10 @@ export async function generateMetadata(props) {
   const params = await props.params;
   const { id, locale } = params;
   const producer = await getProducer(id);
-  // MEH-2101: pre-streaming, so this yields a REAL 404 status. A page-level
-  // notFound() alone streams 200 + 404 UI, because the shared
-  // app/[locale]/loading.js boundary flushes the shell first — bots would
-  // keep crawling a soft 404. (MEH-1045 established this on the slug route.)
+  // MEH-2101 / MEH-3024: this renders the not-found UI, but it does NOT set
+  // the status — in Next 16 generateMetadata streams too, so it measured 200
+  // on production (13/11). The real 404 is minted by middleware.js (the
+  // /producer/<id> existence check, MEH-3024) before the page runs.
   if (!producer) notFound();
 
   const path = producer ? buildPageUrl(producer).replace(SITE_URL, "") : `/producer/${id}`;
