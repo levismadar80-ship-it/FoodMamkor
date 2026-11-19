@@ -69,32 +69,32 @@ export function toggleNoAllergens(state) {
  * (Israeli adoption of 1169/2011, art. 21; mandatory from 1.1.2028).
  * Each entry is a term, or [term, notFollowedBy] where notFollowedBy lists
  * the next words that make it a different ingredient («חלב קוקוס»).
- * @type {Record<string, Array<string | [string, string[]]>>}
  */
 const PLANT_MILKS = ["קוקוס", "שקדים", "סויה", "שיבולת", "אורז", "אגוזים", "צמחי", "צמחית", "טבעוני", "טבעונית"];
 const NON_WHEAT_FLOURS = ["אורז", "תירס", "שקדים", "קוקוס", "חומוס", "כוסמת", "תפוחי", "טפיוקה", "עדשים", "ערמונים", "בוטנים", "סויה", "אגוזים"];
-const ALLERGEN_WORDS = {
+/** @type {Record<string, Array<string | [string, string[]]>>} */
+export const ALLERGEN_WORDS = {
   gluten: [
     "גלוטן", ["קמח", NON_WHEAT_FLOURS], "קמח חיטה", "חיטה", "כוסמין", "שעורה", "שיפון", "שיבולת שועל",
-    "סולת", "סובין", "בורגול", "קוסקוס", "פריקה", "פירורי לחם",
+    "סולת", ["סובין", ["אורז", "שיבולת"]], "בורגול", "קוסקוס", "פריקה", "פירורי לחם",
     "gluten", "wheat", "wheat flour", "barley", "rye", "oats", "oat", "spelt", "semolina", "couscous", "bulgur", "breadcrumbs",
   ],
   milk: [
-    ["חלב", PLANT_MILKS], "אבקת חלב", "חמאה", ["גבינה", PLANT_MILKS], "גבינת", ["שמנת", PLANT_MILKS], "יוגורט", "לבנה", "קצפת",
+    ["חלב", PLANT_MILKS], "אבקת חלב", ["חמאה", PLANT_MILKS], ["גבינה", PLANT_MILKS], ["גבינת", [...PLANT_MILKS, "קשיו"]], ["שמנת", PLANT_MILKS], ["יוגורט", PLANT_MILKS], ["קצפת", PLANT_MILKS],
     "מי גבינה", "ריקוטה", "מוצרלה", "פרמזן", "מסקרפונה", "לקטוז", "קזאין",
     "milk", "milk powder", "butter", "cream", "cheese", "yogurt", "yoghurt", "whey", "lactose", "casein", "ghee",
   ],
-  eggs: ["ביצה", "ביצים", "חלמון", "חלמונים", "חלבון ביצה", "חלבוני ביצה", "egg", "eggs", "egg yolk", "egg white", "yolk"],
+  eggs: ["ביצה", "ביצים", "ביצת", "חלמון", "חלמונים", "חלבון ביצה", "חלבוני ביצה", "egg", "eggs", "egg yolk", "egg white", "yolk"],
   tree_nuts: [
     ["אגוזים", ["קוקוס", "מוסקט"]], ["אגוז", ["קוקוס", "מוסקט"]], "אגוזי מלך", "אגוזי לוז", "אגוזי פקאן", "אגוזי ברזיל",
-    "שקדים", "שקד", "פקאן", "קשיו", "פיסטוק", "מקדמיה", "לוז", "מרציפן",
+    "שקדים", "שקד", "שקדי", "פקאן", "פקאנים", "קשיו", "פיסטוק", "פיסטוקים", "מקדמיה", "לוז", "מרציפן",
     "almond", "almonds", "walnut", "walnuts", "hazelnut", "hazelnuts", "pecan", "pecans", "cashew", "cashews",
     "pistachio", "pistachios", "macadamia", "marzipan",
   ],
   peanuts: ["בוטנים", "בוטן", "peanut", "peanuts", "groundnut", "groundnuts"],
   sesame: ["שומשום", "טחינה", "חלבה", "sesame", "tahini", "tahina", "halva"],
   soy: ["סויה", "טופו", "אדממה", "מיסו", "soy", "soya", "tofu", "edamame", "miso"],
-  fish: ["דג", "דגים", "טונה", "סלמון", "אנשובי", "סרדינים", "מקרל", "הרינג", "fish", "tuna", "salmon", "anchovy", "anchovies", "sardines", "cod"],
+  fish: ["דג", "דגים", "דגי", "טונה", "סלמון", "אנשובי", "סרדינים", "מקרל", "הרינג", "fish", "tuna", "salmon", "anchovy", "anchovies", "sardines", "cod"],
   crustaceans: ["סרטנים", "סרטן", "שרימפס", "חסילונים", "לובסטר", "shrimp", "prawn", "prawns", "crab", "lobster"],
   molluscs: ["רכיכות", "קלמרי", "תמנון", "צדפות", "מולים", "squid", "octopus", "mussels", "clams", "oysters"],
   celery: ["סלרי", "celery", "celeriac"],
@@ -106,6 +106,21 @@ const ALLERGEN_WORDS = {
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const HEBREW = /[֐-׿]/;
+// MEH-3443 review: «almond milk», «cocoa butter» — the word before makes it a
+// different ingredient. Hebrew puts the qualifier after (handled per term).
+/** @type {Record<string, string[]>} */
+const NOT_PRECEDED_BY = {
+  milk: ["almond", "oat", "soy", "soya", "rice", "coconut", "cashew", "plant", "nut"],
+  cream: ["coconut", "oat", "soy", "plant", "vegan"],
+  butter: ["peanut", "cocoa", "shea", "almond", "nut", "cashew", "apple"],
+  cheese: ["vegan", "cashew", "plant"],
+  yogurt: ["coconut", "soy", "oat", "almond", "plant"],
+};
+// One-letter prefixes ש/כ also attach («שלחלב», «כחלב»), but on these short
+// terms they make another word («כפול»), so only ו/ב/ה/מ/ל apply to them.
+const NO_SH_KAF = new Set(["פול", "לוז", "דג", "דגי", "שקד"]);
+// Between a term and the word that disqualifies it: space, hyphen, maqaf, «(».
+const GAP = "[\\s\\-\u05BE(]+";
 
 /**
  * MEH-3443: split `text` into segments, marking the words that name an
@@ -130,23 +145,27 @@ export function highlightAllergens(text, codes, details = {}) {
     }
     const detail = details[code];
     if (typeof detail === "string") {
-      for (const word of detail.split(/[,;/\n]|\s+ו(?=[֐-׿])/u)) {
+      // «כוסמין (מלא)» → «כוסמין», «מלא»; words under 3 letters are dropped.
+      for (const word of detail.split(/[,;/\n()]/u)) {
         const w = word.trim();
-        if (w.length >= 2 && !terms.has(w)) terms.set(w, []);
+        if (w.length >= 3 && !terms.has(w)) terms.set(w, []);
       }
     }
   }
   if (!text || terms.size === 0) return [{ text: text || "", hit: false }];
 
   // Longest first, so «קמח חיטה» wins over «קמח». Hebrew terms may carry up
-  // to two one-letter prefixes (ו/ב/ה/מ/ל: «וחמאה», «ובחלב»).
+  // to two one-letter prefixes (ו/ב/ה/מ/ל/ש/כ: «וחמאה», «ובחלב», «שלחלב»).
   const alternatives = [...terms.keys()]
     .sort((a, b) => b.length - a.length)
     .map((term) => {
       const notFollowedBy = terms.get(term) || [];
-      const prefix = HEBREW.test(term) ? "(?:[ובהמל]{1,2})?" : "";
-      const guard = notFollowedBy.length ? `(?!\\s+(?:${notFollowedBy.map(escapeRe).join("|")}))` : "";
-      return `${prefix}${escapeRe(term).replace(/\s+/g, "\\s+")}${guard}`;
+      const prefixes = NO_SH_KAF.has(term) ? "ובהמל" : "ובהמלשכ";
+      const prefix = HEBREW.test(term) ? `(?:[${prefixes}]{1,2})?` : "";
+      const guard = notFollowedBy.length ? `(?!${GAP}(?:${notFollowedBy.map(escapeRe).join("|")}))` : "";
+      const before = NOT_PRECEDED_BY[term.toLowerCase()];
+      const lookbehind = before ? `(?<!(?:${before.join("|")})${GAP})` : "";
+      return `${lookbehind}${prefix}${escapeRe(term).replace(/\s+/g, "\\s+")}${guard}`;
     });
   const re = new RegExp(`(?<![\\p{L}\\p{M}])(?:${alternatives.join("|")})(?![\\p{L}\\p{M}])`, "giu");
 

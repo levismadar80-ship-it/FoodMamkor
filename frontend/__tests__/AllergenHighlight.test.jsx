@@ -1,14 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import he from "../messages/he.json";
-import { highlightAllergens } from "@/lib/allergens";
+import { highlightAllergens, ALLERGEN_WORDS } from "@/lib/allergens";
 
 /**
  * MEH-3443 — allergen words inside the ingredients list are emphasised, for
  * the codes the owner ticked in «מכיל» only. Cells: 0 / 1 / many matches; a
  * word that is not an allergen; an allergen word whose code was not ticked;
  * Hebrew one-letter prefixes; look-alike words («חלבון», «חלב קוקוס»,
- * «קמח אורז») that must not match; the owner's own detail («כוסמין»).
+ * «קמח אורז») that must not match; the owner's own detail («פריכית»).
  */
 const hits = (segments) => segments.filter((s) => s.hit).map((s) => s.text);
 const joined = (segments) => segments.map((s) => s.text).join("");
@@ -60,12 +60,36 @@ describe("highlightAllergens", () => {
     expect(hits(highlightAllergens("קמח אורז, קמח תירס", ["gluten"]))).toEqual([]);
   });
 
-  it("the owner's cereal / nut detail is matched too", () => {
-    const out = highlightAllergens("קמח מלא, פקאן קלוי", ["gluten", "tree_nuts"], {
-      gluten: "כוסמין",
-      tree_nuts: "פקאן, שקדים",
+  it("the owner's detail adds words the dictionary lacks", () => {
+    // «פריכית» and «ברזילאי» are in no dictionary list: only the detail can match them.
+    const out = highlightAllergens("פריכית, ברזילאי קלוי, מלח", ["gluten", "tree_nuts"], {
+      gluten: "פריכית (מלאה)",
+      tree_nuts: "ברזילאי",
     });
-    expect(hits(out)).toEqual(["קמח", "פקאן"]);
+    expect(hits(out)).toEqual(["פריכית", "ברזילאי"]);
+    expect(hits(highlightAllergens("פריכית", ["gluten"]))).toEqual([]);
+  });
+
+  it("detail words under 3 letters are ignored", () => {
+    expect(hits(highlightAllergens("אב, סוכר", ["gluten"], { gluten: "אב" }))).toEqual([]);
+  });
+
+  it("look-alikes joined by hyphen, maqaf or a bracket do not match", () => {
+    expect(hits(highlightAllergens("קמח-אורז, חלב־שקדים, חלב (שקדים)", ["gluten", "milk"]))).toEqual([]);
+  });
+
+  it("prefixes ש/כ attach to longer terms, not to «פול» («כפול»)", () => {
+    expect(hits(highlightAllergens("שלחלב, כחמאה", ["milk"]))).toEqual(["שלחלב", "כחמאה"]);
+    expect(hits(highlightAllergens("שוקולד כפול", ["fava_beans"]))).toEqual([]);
+  });
+
+  it("English plant milks and butters do not count as milk", () => {
+    const out = highlightAllergens("Milk chocolate, almond milk, cocoa butter, peanut butter", ["milk"]);
+    expect(hits(out)).toEqual(["Milk"]);
+  });
+
+  it("every allergen code has dictionary words", () => {
+    for (const code of ALL) expect(ALLERGEN_WORDS[code]?.length, code).toBeGreaterThan(0);
   });
 
   it("English ingredient text, case-insensitive", () => {

@@ -16,7 +16,7 @@
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים.
 * `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון.
-* `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. כשאין רכיבים ואין אחסון, אין שורה (MEH-3450).
+* `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. כשאין רכיבים ואין אחסון, אין שורה (MEH-3450). ברשימת הרכיבים מודגשות המילים של אלרגנים שסומנו ב«מכיל» (MEH-3443).
 * `frontend/components/ProductPrice.jsx` · `frontend/lib/product-price.js` — המחיר עם היחידה («80₪ לבקבוק», MEH-2936). המחיר ב-span של `dir="ltr"`, היחידה אחריו ומחוץ לו. התוויות ב-namespace ‏`price_unit`, שנשלח לכל דף.
 * `frontend/lib/hours.js` — פענוח שעות ומצב «פתוח עכשיו».
 * `frontend/lib/contact-method.js` — הבעלים היחיד של «מה הכפתור הראשי ולאן הוא מוביל».
