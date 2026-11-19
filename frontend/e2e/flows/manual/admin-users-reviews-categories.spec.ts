@@ -232,6 +232,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     if (params.search) out = out.filter((x) => x.name.includes(params.search) || x.email.includes(params.search));
     return json(r, out);
   });
+  // MEH-3375: «חסום» first reads what the block would take down. None of these
+  // users owns a business, so the confirm shows the plain sentence.
+  await page.route(/\/api\/admin\/users\/([^/]+)\/block-impact$/, (r) => json(r, { business_name: null, open_bookings: 0 }));
   await page.route(/\/api\/admin\/users\/([^/]+)\/block$/, (r) => {
     rec(r, writes);
     const id = new URL(r.request().url()).pathname.match(/users\/([^/]+)\/block$/)![1];
@@ -420,6 +423,11 @@ test.describe("/admin/users — pagination", () => {
     await expect(page.getByText("עמוד 2 מתוך 3")).toBeVisible();
     const row = userRow(page, "משתמשת 30");
     await row.getByRole("button", { name: "חסום", exact: true }).click();
+    // MEH-3375: blocking asks first; nothing is written until the confirm.
+    const confirmBlock = page.getByTestId("block-confirm-submit");
+    await expect(confirmBlock).toBeEnabled();
+    expect(writes, "the «חסום» click alone must not block").toEqual([]);
+    await confirmBlock.click();
     await expect.poll(() => writes.map((w) => `${w.method} ${w.url}`)).toEqual([`POST /admin/users/${uuid(130)}/block`]);
     await expect(row.getByRole("button", { name: "שחרר חסימה" }), "the reload shows the blocked state").toBeVisible();
     await expect(row).toHaveClass(/bg-danger-50/);

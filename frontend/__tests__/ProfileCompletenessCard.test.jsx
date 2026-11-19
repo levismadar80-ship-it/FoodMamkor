@@ -419,3 +419,19 @@ describe("MEH-3032 — owner photo is a recommended 7th step", () => {
     expect(row.getAttribute("href")).toBe(`${EDIT}#owner-story`);
   });
 });
+
+// MEH-2926: «השלב הבא» is hers to act on, so it goes while the page waits for
+// review — and comes back when the review sends it back with changes.
+describe("ProfileCompletenessCard — next step and review (MEH-2926)", () => {
+  const incomplete = { ...base, images: [] };
+  it.each([
+    ["draft", undefined, true],
+    ["pending", undefined, false],
+    ["pending", "נא להוסיף תמונה", true],
+  ])("status %s, requested_changes %s → next step shown: %s", (status, requested_changes, shown) => {
+    render(<ProfileCompletenessCard producer={{ ...incomplete, status, requested_changes }} />);
+    expect(!!screen.queryByTestId("completeness-next-step")).toBe(shown);
+    // The checklist itself is never hidden.
+    expect(screen.getByRole("list", { name: "התקדמות השלמת העמוד" })).toBeInTheDocument();
+  });
+});
