@@ -196,11 +196,12 @@ def register_verify(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_FAILED)
     db.refresh(row)
     db.refresh(user)
-    # This device stays signed in: fresh cookies, and its next request
-    # recovers through /auth/refresh like the email-change path.
-    _set_refresh_cookie(response, user)
-    _set_fingerprint_cookie(response, generate_fingerprint())
-    return Registered(passkey=_out(row), recovery_codes=codes)
+    # This device stays signed in: a new session in the same response, so the
+    # page never meets a 401 while the one-time codes are on screen.
+    session = _issue_session(response, user)
+    return Registered(
+        passkey=_out(row), recovery_codes=codes, access_token=session.access_token
+    )
 
 
 @router.post("/{passkey_id}/delete", status_code=status.HTTP_204_NO_CONTENT)

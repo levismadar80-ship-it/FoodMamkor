@@ -140,6 +140,9 @@ export default function PasskeySettings() {
         credential,
         name: name.trim() || null,
       });
+      // MEH-3305: adding a passkey signs every older session out; the response
+      // carries this device's new token, so the reload below needs no refresh.
+      if (res.data.access_token) localStorage.setItem("token", res.data.access_token);
       setName("");
       setPassword("");
       if (res.data.recovery_codes) setCodes(res.data.recovery_codes);
@@ -159,7 +162,14 @@ export default function PasskeySettings() {
       setCodes(res.data.recovery_codes);
     });
 
-  if (loadError) return <InlineMessage tone="error">{t("error")}</InlineMessage>;
+  // The one-time codes outlive a failed reload: the server keeps only hashes.
+  if (loadError)
+    return (
+      <>
+        <InlineMessage tone="error">{t("error")}</InlineMessage>
+        {codes && <CodesOnce codes={codes} onDone={() => setCodes(null)} />}
+      </>
+    );
   if (!state) return null;
 
   const none = state.passkeys.length === 0;

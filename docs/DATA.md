@@ -1166,7 +1166,7 @@ Off where `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` are unset (local, vercel.app prev
 GET    /auth/passkey                    admin   — {enabled, passkeys[{id,name,synced,created_at,last_used_at}], recovery_codes_left, has_password}
 POST   /auth/passkey/step-up/options    admin   — {ticket, options} for a device check before a change (10/min)
 POST   /auth/passkey/register/options   admin   — body StepUp → {ticket, options}. Proof: a passkey (ticket+credential) or a recovery code once one exists, else the password, else (Google/Apple account) the session. 409 at 10 passkeys (10/min)
-POST   /auth/passkey/register/verify    admin   — {ticket, credential, name?} → {passkey, recovery_codes} — 10 codes on the FIRST passkey only, shown once (10/min)
+POST   /auth/passkey/register/verify    admin   — {ticket, credential, name?} → {passkey, recovery_codes, access_token} — 10 codes on the FIRST passkey only, shown once. Bumps token_version (every older session ends) and returns this device's new session: access_token + refresh and fingerprint cookies (10/min)
 POST   /auth/passkey/{id}/delete        admin   — body StepUp → 204. Own passkeys only (another admin's = 404). The last one takes the recovery codes with it (10/min)
 POST   /auth/passkey/recovery-codes     admin   — body StepUp → {recovery_codes}: replaces all 10 (5/min)
 POST   /auth/passkey/login/verify       public  — {ticket, credential} → Token + the same cookies as /auth/login (10/min)

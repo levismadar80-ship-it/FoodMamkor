@@ -108,3 +108,6 @@ class Registered(BaseModel):
     passkey: PasskeyOut
     # Shown once, on the first passkey only; None afterwards.
     recovery_codes: list[str] | None
+    # MEH-3305: adding a passkey bumps token_version, so the caller's old
+    # access token is dead; this one replaces it with no 401 round-trip.
+    access_token: str | None = None

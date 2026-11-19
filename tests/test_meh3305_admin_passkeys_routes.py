@@ -188,21 +188,9 @@ def _enroll(client, user, device=None) -> tuple[SoftAuthenticator, dict, list]:
         headers=h,
     )
     assert r.status_code == 200, r.text
-    # Adding a passkey ends every session, this one too until it refreshes
-    # (the browser does that on its next 401). Carry it over the same way.
-    return device, _carry_over(client, r), r.json()["recovery_codes"]
-
-
-def _carry_over(client, response) -> dict:
-    """The session after a token_version bump: /auth/refresh with the new
-    cookies the response set (the refresh cookie is path-scoped to /api/auth,
-    so it travels by hand), and the new fingerprint kept on the client."""
-    refreshed = client.post(
-        "/auth/refresh",
-        cookies={"refresh_token": response.cookies.get("refresh_token")},
-    )
-    assert refreshed.status_code == 200, refreshed.text
-    return _h(refreshed.json()["access_token"])
+    # Adding a passkey ends every session; the response carries this
+    # device's new one (token + fingerprint cookie), as the page uses it.
+    return device, _h(r.json()["access_token"]), r.json()["recovery_codes"]
 
 
 def _second_step(client, user):
@@ -588,6 +576,11 @@ def test_adding_a_passkey_signs_every_other_device_out(client, db, passkeys_on):
     db.refresh(admin)
     assert admin.token_version == version + 1
     assert other_device.get("/auth/me", headers=other).status_code == 401
+    # The old token of the device that added it is dead too; the new one in
+    # the response works at once, with the fingerprint cookie set beside it.
+    assert client.get("/auth/me", headers=h).status_code == 401
+    me = client.get("/auth/me", headers=_h(r.json()["access_token"]))
+    assert me.status_code == 200 and me.json()["email"] == admin.email
     # The caller's own device: the new cookies carry it over. The refresh
     # cookie is scoped to /api/auth, so it travels here by hand.
     new_refresh = r.cookies.get("refresh_token")
@@ -605,3 +598,29 @@ def test_adding_a_passkey_signs_every_other_device_out(client, db, passkeys_on):
         cookies={"__Secure-Fgp": refreshed.cookies.get("__Secure-Fgp") or new_fp},
     )
     assert me.status_code == 200 and me.json()["email"] == admin.email
+
+
+def test_a_failed_registration_signs_no_one_out(client, db, passkeys_on):
+    """The bump rides the same commit as the passkey row: a refused
+    credential rolls both back, and every session stays."""
+    admin = make_user(db, role="admin")
+    h = _session(client, admin)
+    version = admin.token_version
+    r = client.post(
+        "/auth/passkey/register/options", json={"password": PASSWORD}, headers=h
+    )
+    body = r.json()
+    wrong_origin = SoftAuthenticator(origin="https://evil.example.com")
+    r = client.post(
+        "/auth/passkey/register/verify",
+        json={
+            "ticket": body["ticket"],
+            "credential": wrong_origin.create(body["options"]),
+            "name": "x",
+        },
+        headers=h,
+    )
+    assert r.status_code == 400, r.text
+    db.refresh(admin)
+    assert admin.token_version == version
+    assert client.get("/auth/me", headers=h).status_code == 200

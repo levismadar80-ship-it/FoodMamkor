@@ -15933,6 +15933,17 @@
       },
       "Registered": {
         "properties": {
+          "access_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Token"
+          },
           "passkey": {
             "$ref": "#/components/schemas/PasskeyOut"
           },
