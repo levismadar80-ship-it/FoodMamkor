@@ -1,6 +1,7 @@
 // @ts-check
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -31,6 +32,10 @@ import { buildShareUrl, categoryListingHref, getRenderableImages } from "./lib/p
 import { getSectionNavItems } from "./lib/section-nav";
 import { isOnVacation } from "@/lib/availability";
 import BackLink from "@/components/ui/BackLink";
+
+// MEH-3216 stage 5c: loaded only when a buyer opens it, so a business page
+// that takes no orders carries none of the form's code.
+const OrderSheet = dynamic(() => import("@/components/public/OrderSheet"), { ssr: false });
 
 // Layout effect on the client, plain effect on the server (no layout there).
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -75,7 +80,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   // MEH-3216 stage 5b: the buyer's picks, shared by the product rows and the
   // order bar. Reads the menu only for a business that takes orders.
   const orderCart = useOrderCart(producer);
-  const [, setOrderSheetOpen] = useState(false);
+  const [orderSheetOpen, setOrderSheetOpen] = useState(false);
 
   // MEH-1693: the post-save AlertPrefsPanel is owned HERE, not by either heart.
   // The page has two hearts on different surfaces — the hero overlay circle
@@ -320,6 +325,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           producer={producer}
           isVacation={isVacation}
           isBarVisible={isBarVisible}
+        />
+      )}
+      {orderSheetOpen && orderCart.menu && orderCart.count > 0 && (
+        <OrderSheet
+          producer={producer}
+          menu={orderCart.menu}
+          picks={orderCart.picks}
+          onClose={() => setOrderSheetOpen(false)}
         />
       )}
     </div>

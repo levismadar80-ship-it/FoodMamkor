@@ -72,6 +72,7 @@ const ALLOWED = {
   "components/RegistrationOverlays.jsx": 1, // sign-up sheet title (MEH-3043)
   "components/producer/RequestReviewCard.jsx": 1, // card title
   "components/producer/ShareKitSection.jsx": 1, // card title
+  "components/public/OrderSheet.jsx": 1, // dialog title «ההזמנה שלכם» (MEH-3216 stage 5c)
   "components/public/ProductSheet.jsx": 1, // sheet title
 };
 
