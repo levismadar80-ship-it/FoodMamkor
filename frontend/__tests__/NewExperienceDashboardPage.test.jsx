@@ -37,7 +37,7 @@ vi.mock("@/lib/toast", () => ({
 vi.mock("@phosphor-icons/react", () => ({ Leaf: () => null }));
 vi.mock("@/components/ExperienceForm", () => ({
   default: ({ cancelHref, initial }) => (
-    <form data-testid="experience-form" data-cancel={cancelHref} data-initial-title={initial?.title ?? ""} data-initial-date={initial ? initial.event_date : "none"} />
+    <form data-testid="experience-form" data-cancel={cancelHref} data-initial-title={initial?.title ?? ""} data-initial-date={initial ? initial.event_date : "none"} data-initial-sessions={initial ? JSON.stringify(initial.sessions ?? null) : "none"} />
   ),
 }));
 const apiGet = vi.hoisted(() => vi.fn());
@@ -106,12 +106,23 @@ describe("/producer/dashboard/experiences/new (MEH-2249)", () => {
   it("?from=<own id>: the form opens seeded, date cleared, with the copied-from line", async () => {
     authState = { user: { id: "u1", role: "producer" }, loading: false };
     window.history.replaceState(null, "", "/?from=x1");
-    apiGet.mockResolvedValue({ data: [{ id: "x1", title: "סיור במטע", event_date: "2099-03-01" }] });
+    apiGet.mockResolvedValue({
+      data: [
+        {
+          id: "x1",
+          title: "סיור במטע",
+          event_date: "2099-03-01",
+          // MEH-3447: listed dates are dates too, with the source's sign-ups.
+          sessions: [{ date: "2099-03-08", time: "10:00", participants_count: 0, registered: 3 }],
+        },
+      ],
+    });
     wrap();
     const form = await screen.findByTestId("experience-form");
     expect(apiGet).toHaveBeenCalledWith("/experiences/mine");
     expect(form).toHaveAttribute("data-initial-title", "סיור במטע");
     expect(form).toHaveAttribute("data-initial-date", "");
+    expect(form).toHaveAttribute("data-initial-sessions", "[]");
     expect(screen.getByTestId("duplicate-note")).toHaveTextContent("הפרטים הועתקו מ«סיור במטע». נשאר לבחור תאריך.");
     window.history.replaceState(null, "", "/");
   });
