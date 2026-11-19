@@ -248,6 +248,7 @@
       "price_max",
       "price_min",
       "price_range",
+      "price_unit",
       "storage_info"
     ],
     "ProducerListOut.active_offer": [

@@ -36,7 +36,8 @@ import { prepareUpload } from "@/lib/prepare-upload";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
-import { formatPriceRange } from "@/lib/utils";
+import ProductPriceUnitField from "@/components/ProductPriceUnitField";
+import ProductPrice from "@/components/ProductPrice";
 import EmptyState from "@/components/ui/EmptyState";
 import MenuImport from "@/components/MenuImport";
 import ProductOrganizer from "@/components/ProductOrganizer";
@@ -141,7 +142,7 @@ function clearFieldError(setErrors, field) {
 /**
  * @typedef {{
  *   name: string, description: string, image_url: string,
- *   price_min: string | number, price_max: string | number,
+ *   price_min: string | number, price_max: string | number, price_unit: string,
  *   is_gluten_free: boolean, is_vegan: boolean, is_vegetarian: boolean,
  *   is_lactose_free: boolean, is_no_added_sugar: boolean,
  *   ingredients: string, allergens: string[], may_contain: string[], storage_info: string,
@@ -174,7 +175,7 @@ export default function ProductsSection({
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -365,6 +366,7 @@ export default function ProductsSection({
         image_url: form.image_url || null,
         price_min: minNum,
         price_max: maxNum,
+        price_unit: form.price_unit || "unit",  // MEH-2936
         is_gluten_free: form.is_gluten_free,
         is_vegan: form.is_vegan,
         is_vegetarian: form.is_vegetarian,
@@ -380,7 +382,7 @@ export default function ProductsSection({
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", price_unit: "unit", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [], may_contain: [], storage_info: "", gluten_detail: "", nuts_detail: "", no_allergens: false });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch (err) {
@@ -401,6 +403,7 @@ export default function ProductsSection({
       image_url: product.image_url || "",
       price_min: product.price_min != null ? String(Number(product.price_min)) : "",
       price_max: product.price_max != null ? String(Number(product.price_max)) : "",
+      price_unit: product.price_unit || "unit",  // MEH-2936
       is_gluten_free: !!product.is_gluten_free,
       is_vegan: !!product.is_vegan,
       is_vegetarian: !!product.is_vegetarian,
@@ -495,6 +498,7 @@ export default function ProductsSection({
         image_url: editForm.image_url || null,
         price_min: minNum,
         price_max: maxNum,
+        price_unit: editForm.price_unit || "unit",  // MEH-2936
         is_gluten_free: !!editForm.is_gluten_free,
         is_vegan: !!editForm.is_vegan,
         is_vegetarian: !!editForm.is_vegetarian,
@@ -740,6 +744,11 @@ export default function ProductsSection({
                   error={editFormErrors.price_max}
                 />
               </div>
+              <ProductPriceUnitField
+                id={`edit-product-${product.id}-price-unit`}
+                value={editForm.price_unit}
+                onChange={(u) => setEditForm((f) => ({ ...f, price_unit: u }))}
+              />
 
               {/* MEH-1273 group (c) — diet flags (toggle chips) + image. */}
               <div className="space-y-3">
@@ -854,7 +863,7 @@ export default function ProductsSection({
                 )}
                 {(() => {
                   if (product.price_min != null)
-                    return <p className="text-xs text-accent">{formatPriceRange(product.price_min, product.price_max)}</p>;
+                    return <p className="text-xs text-accent"><ProductPrice product={product} /></p>;
                   if (product.price_range)
                     return <p className="text-xs text-accent">{product.price_range}</p>;
                   return null;
@@ -988,6 +997,11 @@ export default function ProductsSection({
             </div>
             {/* MEH-1239: clarify the price pair — single price vs range (Wolt/Shopify). */}
             <p className="text-xs text-fg-muted">{tForm("price_hint")}</p>
+            <ProductPriceUnitField
+              id="new-product-price-unit"
+              value={form.price_unit}
+              onChange={(u) => setForm((f) => ({ ...f, price_unit: u }))}
+            />
           </div>
 
           {/* MEH-1273 group (c) — diet flags (toggle chips) + image. */}

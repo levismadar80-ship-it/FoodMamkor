@@ -17,6 +17,7 @@
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים.
 * `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון.
 * `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. כשאין רכיבים ואין אחסון, אין שורה (MEH-3450).
+* `frontend/components/ProductPrice.jsx` · `frontend/lib/product-price.js` — המחיר עם היחידה («80₪ לבקבוק», MEH-2936). המחיר ב-span של `dir="ltr"`, היחידה אחריו ומחוץ לו. התוויות ב-namespace ‏`price_unit`, שנשלח לכל דף.
 * `frontend/lib/hours.js` — פענוח שעות ומצב «פתוח עכשיו».
 * `frontend/lib/contact-method.js` — הבעלים היחיד של «מה הכפתור הראשי ולאן הוא מוביל».
 * `backend/app/routers/producers.py` — הפרט; `backend/app/services/producer_listing.py` — הרשימה.
@@ -34,6 +35,7 @@
 * `tests/test_meh3442_allergen_detail.py` — «גלוטן (כוסמין)», «אגוזים (שקדים)»: פירוט הדגן והאגוז, נשמר רק כשהאלרגן מסומן (MEH-3442).
 * `tests/test_meh3445_allergen_reminder.py` — «אין במוצר אלרגנים מהרשימה»: הצהרה מפורשת, מתבטלת כשמסומן אלרגן, ולא נספרת בתזכורת בלוח (MEH-3445).
 * `frontend/__tests__/ProductSheetDetailsRow.test.jsx` — השורה «פרטים על המוצר»: סגורה כברירת מחדל, האלרגנים בכותרת שלה, ובלי שורה כשאין מה לקפל (MEH-3450).
+* `tests/test_meh2936_product_unit.py` · `frontend/__tests__/ProductPriceUnit.test.jsx` — **השומר** של יחידת המחיר: רשימה אחת בשרת, בסכמות ובצד הלקוח, התווית מגיעה לדף ציבורי, ובקבוק/ארגז לא הופכים מחיר להערכה (MEH-2936).
 * `frontend/__tests__/MiddlewareProducerId404.test.js` — ‏`/producer/<id>` של עסק שלא קיים מחזיר 404 אמיתי מה-middleware (MEH-3024).
 
 **מזהי רישום שזה מכסה.** `gallery_story`, `product_details`, `top_product`, `hours`, `vacation_mode`, `primary_cta`, `wa_prefill`, `product_wa`, `faq_answers`, `wa_group`, `nav_buttons`, `similar_businesses`.
