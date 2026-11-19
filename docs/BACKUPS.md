@@ -67,7 +67,10 @@ drill = שחזור של גיבוי ל-DB **זמני** (לא production, לא sta
 # 1. הרימי DB זמני מקומי (Docker) — לא נוגעים ב-Railway.
 docker run --rm -d --name mm_restore_drill \
   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=mehamakor_drill \
-  -p 5433:5432 postgres:15
+  -p 5433:5432 postgres:18
+# 18, the version production runs (MEH-2950). A dump from pg_dump 17+ starts
+# with `SET transaction_timeout = 0;`, which 15 and 16 reject — an older drill
+# DB reports errors even when the backup is fine.
 
 # 2. שחזרי את ה-dump מ-§2 ל-DB הזמני.
 export DRILL_URL="postgresql://postgres:postgres@localhost:5433/mehamakor_drill"
