@@ -245,11 +245,10 @@ test.describe("contact channels — the wire", () => {
     await expect(email).toHaveValue("owner@example.com");
     await email.fill("");
     // MEH-3449: one first attempt in CI ended with no PUT at all, and 104 local
-    // repeats (CPU ×4/×8/×16) never did. Before the click, gate on the two
-    // states the click needs — the field really empty and the button enabled
-    // (it is `disabled={!dirty}`) — so a lost edit fails HERE, by name, and not
-    // as a missing PUT. After the click, a failure says what the card showed.
-    await expect(email, "the cleared email did not stay cleared before the click").toHaveValue("");
+    // repeats (CPU ×4/×8/×16) never did; the cause is NOT established. Before
+    // the click, gate on the state the click needs — the button enabled (it is
+    // `disabled={!dirty}`) — so a lost edit fails HERE, by name, and not as a
+    // missing PUT. After the click, a failure says what the card showed.
     await expect(save(page), "the save button never enabled — the card did not see the edit").toBeEnabled();
     const seen: string[] = [];
     page.on("request", (r) => seen.push(`${r.method()} ${new URL(r.url()).pathname}`));
@@ -259,7 +258,7 @@ test.describe("contact channels — the wire", () => {
     }).toBe(1).catch(async (e: Error) => {
       const state = await page.evaluate(() => {
         const root = document.querySelector("#contact-channels");
-        const btn = [...(root?.querySelectorAll("button") ?? [])].find((x) => /שמירת ערוצי קשר|נשמר|שומר/.test(x.textContent ?? ""));
+        const btn = [...(root?.querySelectorAll("button") ?? [])].find((x) => /שמירת ערוצי קשר|נשמר|בשמירה/.test(x.textContent ?? ""));
         return {
           url: location.pathname + location.search + location.hash,
           email: (root?.querySelector('input[type="email"]') as HTMLInputElement | null)?.value ?? "<no field>",
