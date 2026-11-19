@@ -264,6 +264,7 @@ async function stubSuccessfulLogin(page: Page) {
 // File level: Playwright refuses `trace` inside a describe (it forces a new worker).
 test.use({ trace: "retain-on-failure" });
 
+const REPS = Array.from({ length: 30 }, (_, i) => i); // STRESS PROBE
 test.describe("MEH-215 journey C — sign in to an existing account", () => {
   test("C1 — the header exposes login on desktop and NOT on mobile", async ({
     page,
@@ -343,7 +344,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     await expect(password).toHaveValue(VALID_PASSWORD);
   });
 
-  test("C2 — correct credentials sign in and land on the redirect target", async ({
+  for (const rep of REPS) test("C2 — correct credentials sign in and land on the redirect target #" + rep, async ({
     page,
   }) => {
     await stubSuccessfulLogin(page);
@@ -362,7 +363,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
       .toBe(STUB_TOKEN);
   });
 
-  test("C2 — wrong credentials surface the Hebrew error and mint no token", async ({
+  for (const rep of REPS) test("C2 — wrong credentials surface the Hebrew error and mint no token #" + rep, async ({
     page,
   }) => {
     await page.route("**/api/auth/login", (route) =>
@@ -444,7 +445,7 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     expect(await page.evaluate(() => window.localStorage.getItem("token"))).toBeNull();
   });
 
-  test("C2 — the session survives a new tab in the same browser", async ({
+  for (const rep of REPS) test("C2 — the session survives a new tab in the same browser #" + rep, async ({
     page,
     context,
   }) => {

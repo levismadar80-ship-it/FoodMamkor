@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Route } from "@playwright/test";
+import { installEventTrace, readEventTrace } from "../_event-trace";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -237,7 +238,7 @@ test.describe("contact channels — the wire", () => {
   const save = (page: Page) => b(page).getByRole("button", { name: /^(שמירת ערוצי קשר|נשמר)$/ });
 
   // MT:MEH-1537:4 — an emptied email is sent as null.
-  test("clearing the email sends null, not an empty string", async ({ page }) => {
+  for (const rep of Array.from({ length: 40 }, (_, i) => i)) test("clearing the email sends null, not an empty string #" + rep, async ({ page }) => {
     const writes: Rec[] = [];
     await stubEdit(page, { writes });
     await openAt(page, "contact-channels");
@@ -251,6 +252,7 @@ test.describe("contact channels — the wire", () => {
     // missing PUT. After the click, a failure says what the card showed.
     await expect(save(page), "the save button never enabled — the card did not see the edit").toBeEnabled();
     const seen: string[] = [];
+    await installEventTrace(page);
     page.on("request", (r) => seen.push(`${r.method()} ${new URL(r.url()).pathname}`));
     await save(page).click();
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length, {
@@ -266,7 +268,7 @@ test.describe("contact channels — the wire", () => {
           error: root?.querySelector('[role="alert"], .text-error')?.textContent?.trim() ?? null,
         };
       }).catch(() => "<page gone>");
-      throw new Error(`${e.message}\n[MEH-3449] after the click: ${JSON.stringify(state)} · requests since: ${seen.join(", ") || "none"}`);
+      throw new Error(`${e.message}\n[MEH-3449] after the click: ${JSON.stringify(state)} · requests since: ${seen.join(", ") || "none"}${await readEventTrace(page)}`);
     });
     expect((writes.find((w) => w.method === "PUT")!.body as Record<string, unknown>).contact_email).toBeNull();
   });

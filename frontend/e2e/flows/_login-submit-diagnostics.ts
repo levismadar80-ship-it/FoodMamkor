@@ -20,6 +20,7 @@
  * Values are reported by LENGTH, never by content — a password field is read.
  */
 import type { Page } from "@playwright/test";
+import { installEventTrace, readEventTrace } from "./_event-trace";
 
 const LOGIN_API = /\/api\/auth\/login$/;
 const MAX_CONSOLE_LINES = 5;
@@ -117,6 +118,7 @@ export function watchLoginSubmit(page: Page) {
     /** Snapshot the form right before the click — the state the click acted on. */
     async beforeClick(): Promise<void> {
       log(`before-click ${JSON.stringify(await formState(page))}`);
+      await installEventTrace(page);
     },
     /**
      * Run an assertion; if it throws, append the recorded events plus a
@@ -130,7 +132,8 @@ export function watchLoginSubmit(page: Page) {
         log(`at-failure ${JSON.stringify(await formState(page))}`);
         const report =
           "\n\nlogin-submit diagnostics (MEH-3154 · MEH-3380):\n  " +
-          (events.length ? events.join("\n  ") : "(no events recorded)");
+          (events.length ? events.join("\n  ") : "(no events recorded)") +
+          (await readEventTrace(page));
         if (err instanceof Error) {
           // The stack embeds the message captured at construction; update
           // both so whichever one the reporter prints carries the report.
