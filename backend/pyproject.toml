@@ -400,6 +400,7 @@ files = [
     "app/schemas/admin_passkey.py",
     "app/schemas/admin_block.py",
     "app/services/admin_passkey.py",
+    "app/routers/rescue_pilot.py",
 ]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:
