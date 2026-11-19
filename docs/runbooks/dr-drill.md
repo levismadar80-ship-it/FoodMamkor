@@ -25,7 +25,7 @@ Drill steps:
 
 - [ ] **3. Restore via the script.**
       `python scripts/restore_from_backup.py --latest postgresql://localhost/mehamakor_dr_test`
-      תוצאה מצופה: exit 0, log lines show download + pg_restore + row-count table.
+      תוצאה מצופה: exit 0, log lines show download + pg_restore + «Anonymized» with five «…: 0» checks (MEH-3406) + row-count table.
 
 - [ ] **4. Verify row counts roughly match production.**
       Manually compare the script's row-count summary to production

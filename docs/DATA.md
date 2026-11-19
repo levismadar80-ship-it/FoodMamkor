@@ -464,7 +464,8 @@ registrations (
   reminder_sent_at,                              -- MEH-3312
   waitlist_offered_at,                           -- MEH-3314: the one offer email went out
   party_size smallint DEFAULT 1 CHECK 1..10,     -- MEH-3315: places this sign-up takes
-  attendance NULL|attended|no_show               -- MEH-3315: the owner's note, blocks nothing
+  attendance NULL|attended|no_show,              -- MEH-3315: the owner's note, blocks nothing
+  session_date date NULL, session_time time NULL -- MEH-3440: the workshop date this sign-up is for; NULL = no date. CHECK: a date only with experience_id, a time only with a date
 )
 ```
 
@@ -604,6 +605,7 @@ experiences (
 
   event_date date NOT NULL, event_time time, duration_minutes int,
   is_recurring bool, recurring_schedule text,
+  sessions jsonb NULL,               -- MEH-3440: [{date, time, participants_count}] a recurring workshop's dates; NULL/[] = one pool of places
 
   location_type: home|public,        -- producer_farm lives on Event
   city, address text,                -- address PRIVATE — redacted from public list
@@ -1093,6 +1095,15 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > first waitlisted visitor not yet offered, once, with the item link; the spot
 > is not held. Re-submitting the form with the same email promotes her row.
 > Service: `app/services/registration_waitlist.py`.
+>
+> **MEH-3440 — a recurring workshop's dates (2026-11-19, stage 1 of MEH-3264).**
+> Migration `f2c8a4d6e9b1` adds `experiences.sessions` (JSONB, a list of
+> `{date, time, participants_count}`), `registrations.session_date` +
+> `session_time`, and the index `ix_registrations_experience_session`. All
+> nullable, no backfill, nothing reads them yet: a workshop with no dates keeps
+> one pool of places. Columns, not a table, because `EXPECTED_TABLES` lives in
+> a workflow file CC cannot write; the 12-date cap and one-row-per-date are
+> enforced by the API (stage 2).
 >
 > **MEH-3315 — party size and attendance (2026-11-18).** Migration
 > `d4a6b8c0e2f1` adds `registrations.party_size` (1–10, default 1) and
@@ -1801,7 +1812,8 @@ PUT    /admin/users/{id}/role                  admin. role=consumer **or role=ad
 GET    /admin/audit-log                        admin — MEH-3306. ?limit (1–200, default 50) &before=<ISO created_at> [&before_id=<uuid>]. Newest first. With both, a keyset cursor on (created_at, id), so a tie on created_at at a page edge is not skipped.
                                                { items: [{ id, actor_id, actor_email, action, target_type, target_id, details, created_at }] }. actor_email is None when the account is gone.
                                                The stored IP is not returned.
-POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden} — MEH-2871)
+POST   /admin/users/{id}/block                 admin  (toggle; blocking the only owner of a live business hides it → {is_blocked, business_hidden, cancelled} — MEH-2871; cancelled = customers' bookings cancelled (bags + sign-ups + group-buy participants, the business's own users excluded) — the same number GET block-impact showed, MEH-3375)
+GET    /admin/users/{id}/block-impact          admin — MEH-3375, read only. { business_name, open_bookings }: the business blocking would hide (same rule as /block; null for a consumer, a co-owned business or an already-blocked user) and its open bookings — reserved bags + registered/waitlisted sign-ups + live group-buy participants, the business's own users excluded (booking_cancellations.count_open_bookings, the same filters the cancel uses).
 DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 

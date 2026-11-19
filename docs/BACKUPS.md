@@ -78,6 +78,12 @@ docker run --rm -d --name mm_restore_drill \
 # 2. שחזרי את ה-dump מ-§2 ל-DB הזמני.
 export DRILL_URL="postgresql://postgres:postgres@localhost:5433/mehamakor_drill"
 pg_restore --no-owner --no-acl -d "$DRILL_URL" mehamakor_YYYYMMDD_HHMMSS.dump
+# MEH-3406: a raw pg_restore leaves real personal details in the drill DB.
+# Anonymize before anything else touches it (scripts/restore_from_backup.py
+# does both steps on its own and is the supported path for a production dump).
+# The raw file below assumes the newest schema: on an older dump it stops with
+# "column ... does not exist" and changes nothing, so use the script instead.
+PGCLIENTENCODING=UTF8 psql "$DRILL_URL" -X --single-transaction -v ON_ERROR_STOP=1 -f scripts/anonymize_restored_db.sql
 
 # 3. שאילתות אימות — הן ה-Definition of Done של ה-drill.
 ```

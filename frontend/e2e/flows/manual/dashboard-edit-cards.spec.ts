@@ -451,6 +451,10 @@ test.describe("overview — completeness card", () => {
     await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
+    // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
+    await page.route("**/producers/me/order-settings", (r) =>
+      r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+    );
     await openOverview(page, profile({ products: [{ id: 1, name: "חלה" }] }));
     await expect(cardRoot(page)).toContainText("העמוד מלא");
   });

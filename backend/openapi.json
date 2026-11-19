@@ -789,6 +789,31 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
+      "BlockImpactOut": {
+        "properties": {
+          "business_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Name"
+          },
+          "open_bookings": {
+            "title": "Open Bookings",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "business_name",
+          "open_bookings"
+        ],
+        "title": "BlockImpactOut",
+        "type": "object"
+      },
       "Body_admin_upload_owner_photo_upload_owner_photo__producer_id__post": {
         "properties": {
           "file": {
@@ -24041,6 +24066,55 @@
           }
         ],
         "summary": "Block User",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
+    "/admin/users/{user_id}/block-impact": {
+      "get": {
+        "description": "MEH-3375: what blocking ``user_id`` would take down, read before the\nadmin confirms — the business that would be hidden (same rule as\nblock_user) and how many open bookings would be cancelled and mailed.\nReads only. Already blocked → nothing (the next click unblocks).",
+        "operationId": "block_impact_admin_users__user_id__block_impact_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockImpactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Block Impact",
         "tags": [
           "admin-extra"
         ]

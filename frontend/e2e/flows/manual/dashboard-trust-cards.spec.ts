@@ -201,6 +201,10 @@ test.describe("licence card", () => {
     await expect(body(page, "license").getByText(HINT)).toHaveCount(0);
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
+    // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
+    await page.route("**/producers/me/order-settings", (r) =>
+      r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+    );
     await stubEdit(page, { profile: { ...BASE, categories: [{ id: 3, name: REQUIRED_CAT }] } });
     await openAt(page, "license");
     await expect(body(page, "license").getByText(HINT)).toBeVisible();
@@ -302,6 +306,10 @@ test.describe("kashrut card", () => {
     await openAt(page, "kashrut");
     const code = await firstCode(page);
     await page.unrouteAll({ behavior: "ignoreErrors" });
+    // MEH-3448: unrouteAll drops the beforeEach order-settings stub (MEH-3446); re-add it.
+    await page.route("**/producers/me/order-settings", (r) =>
+      r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+    );
     await stubEdit(page, { kashrutRequests: [{ id: 5, badge_code: code, status: "rejected", notes: "התעודה לא קריאה — נא לצלם שוב" }] });
     await openAt(page, "kashrut");
     const list = page.getByTestId("kashrut-requests");
