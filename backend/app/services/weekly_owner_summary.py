@@ -49,6 +49,7 @@ from datetime import time as dtime
 from datetime import timedelta, timezone
 from html import escape as html_escape
 from typing import Any
+from urllib.parse import urlencode
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -91,6 +92,21 @@ _sleep = time.sleep
 
 INSIGHTS_PATH = "/producer/dashboard/insights"
 UNSUBSCRIBE_PATH = "/unsubscribe/weekly"
+# MEH-3212: the RFC 8058 one-click target named in the List-Unsubscribe
+# header (routers/producer_me_weekly_summary.py). Reached through the
+# frontend's /api rewrite, so the header carries our own domain.
+ONE_CLICK_PATH = "/weekly-summary/unsubscribe/one-click"
+
+
+def unsubscribe_headers(base: str, token: str) -> dict[str, str]:
+    """MEH-3212: List-Unsubscribe + RFC 8058 one-click, so a mail client can
+    offer its own «unsubscribe» button. The URL only acts on a POST; a GET of
+    it lands on the same page as the link in the body."""
+    query = urlencode({"token": token})
+    return {
+        "List-Unsubscribe": f"<{base}/api{ONE_CLICK_PATH}?{query}>",
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    }
 
 
 def summary_enabled() -> bool:
@@ -442,6 +458,7 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
                 plain,
                 html=html,
                 test_cause=cand.test_business or owner_is_test,
+                headers=unsubscribe_headers(base, token),
             )
             counters["sent"] += 1
         except Exception:  # noqa: BLE001 — one business never stops the run

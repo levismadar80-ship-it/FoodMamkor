@@ -158,7 +158,7 @@
 
 > **MEH-2286 (2026-10-21):** `direct_outreach` («מהמקור פנו אליי ישירות») added to `REFERRAL_SOURCE_KEYS` — 9 keys. Code-side allowlist only; no migration.
 
-> **MEH-3079 (2026-11-14):** weekly summary email to business owners. `producers.weekly_summary_opt_out` (`BOOLEAN NOT NULL`, `server_default false`) and `producers.weekly_summary_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**), migration `0cfa83f0f53e`, Expand-only (ADR-007), no backfill. opt_out is written only by `POST /weekly-summary/unsubscribe` (signed token, scope `weekly_summary_unsubscribe`, sub = producer id); sent_at only by `services/weekly_owner_summary.py::send_weekly_summaries` (Sunday 08:00 Asia/Jerusalem, registered only when `WEEKLY_OWNER_SUMMARY_ENABLED`). A business is skipped when stamped within the last 6 days, opted out, not live (`is_business()`), its owner has no verified email, or its deduped 7-day page views are 0. **Not exposed on any response schema.**
+> **MEH-3079 (2026-11-14):** weekly summary email to business owners. `producers.weekly_summary_opt_out` (`BOOLEAN NOT NULL`, `server_default false`) and `producers.weekly_summary_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**), migration `0cfa83f0f53e`, Expand-only (ADR-007), no backfill. opt_out is written by `POST /weekly-summary/unsubscribe` and its one-click twin (signed token, scope `weekly_summary_unsubscribe`, sub = producer id), and since MEH-3212 by the owner's own `PATCH /producers/me/weekly-summary`, which can also turn it back off; sent_at only by `services/weekly_owner_summary.py::send_weekly_summaries` (Sunday 08:00 Asia/Jerusalem, registered only when `WEEKLY_OWNER_SUMMARY_ENABLED`). A business is skipped when stamped within the last 6 days, opted out, not live (`is_business()`), its owner has no verified email, or its deduped 7-day page views are 0. Exposed to the owner only, as `enabled` on `GET /producers/me/weekly-summary` (MEH-3212). Each email carries `List-Unsubscribe` + `List-Unsubscribe-Post: List-Unsubscribe=One-Click` (RFC 8058).
 
 > **Page freshness (2026-11-18):** the monthly "is everything still correct?" email. `producers.last_confirmed_at` and `producers.freshness_email_sent_at` (both `TIMESTAMP WITH TIME ZONE`, **nullable**), migration `a8d41c2e7f90`, Expand-only (ADR-007), no backfill. `freshness_email_sent_at` is written only by `services/page_freshness.py::send_freshness_emails` (daily tick, off until `PAGE_FRESHNESS_ENABLED`); a live business older than 30 days whose owner has a verified email gets at most one email per 30 days, and none while she confirmed within them. `last_confirmed_at` is written only by `POST /page-freshness/confirm` (signed token, scope `page_freshness_confirm`, `exp` 21 days). `last_confirmed_at` is on `ProducerAdminOut` only. `GET /admin/producers?freshness_stale=true` lists live businesses older than 60 days not confirmed within 60 days, ownerless pages included.
 
@@ -1513,6 +1513,8 @@ DELETE /admin/producers/{producer_id}/locations/{location_id}  admin  (same-city
                                                               No admin "sensitive edit" ping — the actor is the admin.
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys, pending_orders (on-site orders waiting for an answer; 0 while PRODUCT_ORDERS_ENABLED is off, MEH-3316), products (MEH-3430; -1 when the count failed), products_no_allergens (published products with neither allergens nor may_contain, MEH-3445)} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
+GET    /producers/me/weekly-summary               producer  — { enabled, available } (MEH-3212); available = WEEKLY_OWNER_SUMMARY_ENABLED
+PATCH  /producers/me/weekly-summary               producer  — { enabled } → producers.weekly_summary_opt_out = !enabled; own business only; 30/hour
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +
                                                               new_followers_this_week (MEH-1364: counted from
@@ -1997,6 +1999,10 @@ POST /newsletter/unsubscribe     public — { token } → deletes the row
 POST /weekly-summary/unsubscribe public — { token } → producers.weekly_summary_opt_out = true (MEH-3079)
                                  rate-limited 20/hour per IP; token scope `weekly_summary_unsubscribe`,
                                  sub = producer id; 400 «הקישור אינו תקין או שפג תוקפו.»; idempotent 200
+POST /weekly-summary/unsubscribe/one-click?token=  public — RFC 8058 one-click target of the summary's
+                                 List-Unsubscribe header (MEH-3212); same token and effect as above, 20/hour.
+GET  /weekly-summary/unsubscribe/one-click?token=  public — changes nothing; 303 to the /unsubscribe/weekly
+                                 page with the same token (a client that opens the header URL); 60/hour
 POST /page-freshness/confirm     public — { token } → producers.last_confirmed_at = now (page freshness)
                                  rate-limited 20/hour per IP; token scope `page_freshness_confirm`,
                                  sub = producer id, exp 21 days; one 404 body for every dead link

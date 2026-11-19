@@ -19573,6 +19573,37 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WeeklySummarySettingIn": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "WeeklySummarySettingIn",
+        "type": "object"
+      },
+      "WeeklySummarySettingOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "available"
+        ],
+        "title": "WeeklySummarySettingOut",
+        "type": "object"
+      },
       "WeeklySummaryUnsubscribeIn": {
         "properties": {
           "token": {
@@ -31296,6 +31327,76 @@
         ]
       }
     },
+    "/producers/me/weekly-summary": {
+      "get": {
+        "operationId": "get_weekly_summary_setting_producers_me_weekly_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklySummarySettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Weekly Summary Setting",
+        "tags": [
+          "producer-management"
+        ]
+      },
+      "patch": {
+        "operationId": "set_weekly_summary_setting_producers_me_weekly_summary_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeeklySummarySettingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklySummarySettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Weekly Summary Setting",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/random": {
       "get": {
         "description": "MEH-1288 — one random approved producer for the homepage \"הפתיעו אותי\"\nbutton. Returns only {id, slug} (enough for the client to navigate). 404\nwhen the catalog is empty — the button is render-gated on the approved\ncount client-side, so 404 is only reachable via a race / direct call.\n\nDECLARED BEFORE ``/producers/{producer_id}`` on purpose: FastAPI matches in\ndeclaration order, and \"random\" would otherwise 422 against the UUID path\nparam. Mirrors the ordering of /count, /cities, /by-slug above.\n\nMEH-1986: draws from the same set the catalog shows. \"Surprise me\" landing\non a business the catalog deliberately hides is the one case where the\ndefault-hide is not merely inconsistent but actively wrong — the button\npromises a business the visitor could have found by browsing.",
@@ -34166,6 +34267,95 @@
           }
         },
         "summary": "Unsubscribe Weekly Summary",
+        "tags": [
+          "marketing"
+        ]
+      }
+    },
+    "/weekly-summary/unsubscribe/one-click": {
+      "get": {
+        "description": "A client that opens the header's URL instead of POSTing lands on the\nsame page as the link in the email body, where the page asks nothing\nand POSTs on its own. This GET itself changes nothing. The target is\nalways our own page (no open redirect); the token is only quoted into it.",
+        "operationId": "one_click_landing_weekly_summary_unsubscribe_one_click_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One Click Landing",
+        "tags": [
+          "marketing"
+        ]
+      },
+      "post": {
+        "description": "RFC 8058: the mail client POSTs `List-Unsubscribe=One-Click` here.\n\nThe token rides in the query string because the header's URL is all the\nclient has. Only a POST changes anything: a scanner that prefetches the\nURL sends a GET, and the GET below changes nothing. The form body is not\nread — the POST itself is the signal, and the token is the authorization.",
+        "operationId": "one_click_unsubscribe_weekly_summary_unsubscribe_one_click_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "maxLength": 2048,
+              "minLength": 1,
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response One Click Unsubscribe Weekly Summary Unsubscribe One Click Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One Click Unsubscribe",
         "tags": [
           "marketing"
         ]

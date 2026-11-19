@@ -183,6 +183,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     html: str | None = None,
     reply_to: str | None = None,
     test_cause: bool = False,
+    headers: dict[str, str] | None = None,
 ) -> None:
     """Send a plain-text (+ optional HTML) email via Resend. Always fail-open.
 
@@ -204,6 +205,9 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     API call. Defaults to False so every caller that does not pass it is
     unchanged.
 
+    MEH-3212: `headers` adds extra MIME headers (List-Unsubscribe). Omitted
+    from the payload when unset, like `reply_to`.
+
     MEH-3402 is a SEPARATE, environment-level layer: outside production a
     recipient that is not a staff address is redirected to ADMIN_EMAIL
     (services/outbound_guard.py), whatever `test_cause` says.
@@ -216,7 +220,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
         )
         return
 
-    _deliver(to, subject, body, html, reply_to)
+    _deliver(to, subject, body, html, reply_to, headers)
 
 
 def send_email_result(  # noqa: PLR0913 — the same arguments as send_email
@@ -241,8 +245,13 @@ def send_email_result(  # noqa: PLR0913 — the same arguments as send_email
     return _deliver(to, subject, body, html, reply_to)
 
 
-def _deliver(
-    to: str, subject: str, body: str, html: str | None, reply_to: str | None
+def _deliver(  # noqa: PLR0913 — +headers (MEH-3212)
+    to: str,
+    subject: str,
+    body: str,
+    html: str | None,
+    reply_to: str | None,
+    headers: dict[str, str] | None = None,
 ) -> str:
     # MEH-1613 swallow point 1/3 — empty recipient. Was a bare `return` with
     # ZERO logging: a caller passing an unset settings.admin_email produced no
@@ -319,6 +328,9 @@ def _deliver(
             # top-level CTE header for the HTML part; if not, fall back
             # to a short-code redirect (Option 1).
             params["headers"] = {"Content-Transfer-Encoding": "base64"}
+        # MEH-3212: caller headers merge on top; absent → payload unchanged.
+        if headers:
+            params["headers"] = {**params.get("headers", {}), **headers}
         resend.Emails.send(params)
         # MEH-1613: was `to.split("@")[0] + "***"` — that masks the DOMAIN and
         # prints the local part, the wrong half. _mask does the inverse.
