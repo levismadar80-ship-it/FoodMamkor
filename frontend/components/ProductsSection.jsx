@@ -31,6 +31,7 @@ import { chipIcon } from "@/lib/chip-icons";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import api from "@/lib/api";
 import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
+import { prepareUpload } from "@/lib/prepare-upload";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -285,8 +286,11 @@ export default function ProductsSection({
   }, [products, onCountChange]);
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    // MEH-3400: a big camera photo is shrunk first, so the size check below
+    // only refuses what still is too large after that.
+    const file = await prepareUpload(picked);
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
       setError(tErr("upload_type"));
@@ -409,8 +413,11 @@ export default function ProductsSection({
   };
 
   const handleEditImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    // MEH-3400: a big camera photo is shrunk first, so the size check below
+    // only refuses what still is too large after that.
+    const file = await prepareUpload(picked);
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
       setError(tErr("upload_type"));
