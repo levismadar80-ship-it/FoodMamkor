@@ -115,6 +115,13 @@ async function assertAuthenticated(page: Page): Promise<void> {
   expect(token, "storageState must carry an authenticated JWT").toBeTruthy();
 }
 
+// MEH-3380: the second cause has never been seen with a trace — the config
+// records `on-first-retry`, i.e. only the attempt that passed. Keep the trace
+// of a FAILED attempt for this block, so the next first-attempt red carries
+// the evidence `watchLoginSubmit` cannot give (network + DOM snapshots).
+// File level: Playwright refuses `trace` inside a describe (it forces a new worker).
+test.use({ trace: "retain-on-failure" });
+
 test.describe("admin role reaches the admin panel", () => {
   skipUnlessProvisioned("admin");
   test.use({ storageState: "e2e/.auth/admin.json" });
@@ -186,11 +193,6 @@ test.describe("consumer role is denied the admin panel", () => {
 // ?redirect= so she lands back on the page she asked for.
 test.describe("unauthenticated visitor is redirected with a return target", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
-  // MEH-3380: the second cause has never been seen with a trace — the config
-  // records `on-first-retry`, i.e. only the attempt that passed. Keep the trace
-  // of a FAILED attempt for this block, so the next first-attempt red carries
-  // the evidence `watchLoginSubmit` cannot give (network + DOM snapshots).
-  test.use({ trace: "retain-on-failure" });
 
   // Needs no fixture and no password, so this one runs on the DEFAULT
   // unauthenticated CI job too — the ?redirect= contract is covered on
