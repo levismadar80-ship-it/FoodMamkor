@@ -270,6 +270,8 @@ answer. So `frontend/lib/api.js` refuses a FormData file above
 request into «הקובץ גדול מדי — מקסימום 4MB» (the existing `settings.products.errors.upload_size` string). The 6 MB and 5 MB caps above
 still guard the backend against a client that skips the browser.
 
+**Big photos are shrunk first (MEH-3400).** Before that cap, `frontend/lib/prepare-upload.js` (called from the same interceptor, and by the avatar and product forms before their own size check) re-encodes a JPEG/PNG/WebP above 1.5 MB to a JPEG with a 2000px long side, q 0.85, so an ordinary camera photo goes through instead of being refused. GIF, HEIC, non-images and any file the browser cannot decode are sent untouched and still meet the cap. The backend's magic-byte check is unchanged: the re-encoded file is a real JPEG.
+
 > **Slow bodies and buffered bytes (MEH-3297).** The cap above answers "how
 > big"; it deliberately does not answer "how slow" or "how many at once" —
 > `body_limit.py`'s own header says so and names `db_bulkhead.py` as the owner
