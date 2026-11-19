@@ -187,16 +187,28 @@ def _upcoming_items(
     return events, experiences
 
 
+def _not_own(producer: Producer) -> Any:
+    """A user outside ``producer`` — the people a delist mails as customers."""
+    return (User.producer_id.is_(None)) | (User.producer_id != producer.id)
+
+
 def count_open_bookings(db: Session, producer: Producer) -> int:
-    """MEH-3375: how many bookings taking ``producer`` off would cancel —
-    reserved bags, sign-ups (registered or waitlisted) and group-buy
-    participants. Reads only; shown to the admin before she blocks the owner."""
+    """MEH-3375: how many customers' bookings taking ``producer`` off would
+    cancel and mail — reserved bags, sign-ups (registered or waitlisted) and
+    group-buy participants, without the business's own users (they get the
+    owner email). Reads only; shown to the admin before she blocks the owner,
+    and returned by the block as ``cancelled``."""
     offer_ids = [o.id for o in _live_offers_query(db, producer).all()]
     bags = 0
     if offer_ids:
         bags = (
             db.query(RescueOrder)
+            .join(User, RescueOrder.user_id == User.id)
             .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
+            # As in _cancel_live_bags: the business's own users get the owner
+            # email, not a buyer's, so the admin's «כל מי שהזמינה תקבל מייל»
+            # does not count them.
+            .filter(_not_own(producer))
             .count()
         )
     events, experiences = _upcoming_items(db, producer)
@@ -224,7 +236,9 @@ def _cancel_live_bags(
     reservations; one email per buyer. Rows are locked as cancel_offer locks
     them, so a reservation landing at the same instant cannot slip past."""
     now = utc_now()
-    offers = _live_offers_query(db, producer).with_for_update(of=RescueOffer).all()
+    offers: list[RescueOffer] = (
+        _live_offers_query(db, producer).with_for_update(of=RescueOffer).all()
+    )
     if not offers:
         return 0
     offer_ids = [o.id for o in offers]
@@ -234,7 +248,7 @@ def _cancel_live_bags(
         .join(RescueOrder, RescueOrder.user_id == User.id)
         .filter(RescueOrder.offer_id.in_(offer_ids), RescueOrder.status == "reserved")
         # The business's own users are told by the owner email instead.
-        .filter((User.producer_id.is_(None)) | (User.producer_id != producer.id))
+        .filter(_not_own(producer))
         if email
     }
     cancelled = (

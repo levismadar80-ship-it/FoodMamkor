@@ -12,7 +12,7 @@ The block itself reports the same number back as ``cancelled``.
 from datetime import timedelta
 
 from app.models import Producer, Registration
-from app.models.models import GroupBuy, GroupBuyCommit
+from app.models.models import GroupBuy, GroupBuyCommit, RescueOrder
 from app.utils.clock import utc_now
 
 from tests.conftest import auth_header, make_user
@@ -36,7 +36,7 @@ def _impact(client, db, user, admin=None):
     return r.json()
 
 
-def _group_buy(db, producer, emails, status="open"):
+def _group_buy(db, producer, emails, status="open", own=()):
     gb = GroupBuy(
         producer_id=producer.id,
         title="רכש קמח מלא",
@@ -52,6 +52,8 @@ def _group_buy(db, producer, emails, status="open"):
     for email in emails:
         buyer = make_user(db, email=email)
         db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=1))
+    for member in own:  # the business's own users: told by the owner email
+        db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=member.id, quantity=1))
     db.commit()
     return gb
 
@@ -71,20 +73,44 @@ class TestBlockImpact:
 
     def test_counts_every_kind_and_the_block_cancels_them(self, client, db, sent):
         producer, owner = _business(db)
-        _bag(db, producer, ["bag1@example.com", "bag2@example.com"])
-        _signup(db, _event(db, producer), "event@example.com")
-        _signup(db, _experience(db, owner), "workshop@example.com")
-        _group_buy(db, producer, ["gb1@example.com", "gb2@example.com", "gb3@example.com"])
-        # Not counted: a past event's sign-up and a cancelled group buy.
-        _signup(db, _event(db, producer, days=-3), "past@example.com")
+        # Counted — 9 customers' bookings:
+        bag = _bag(db, producer, ["bag1@example.com", "bag2@example.com"])  # 2
+        _signup(db, _event(db, producer), "event@example.com")  # 1
+        wait = _signup(db, _event(db, producer), "wait@example.com")  # 1
+        wait.status = "waitlisted"
+        _signup(db, _experience(db, owner), "workshop@example.com")  # 1
+        # A recurring workshop whose first date has passed is still live.
+        _signup(
+            db, _experience(db, owner, days=-10, is_recurring=True), "rec@example.com"
+        )  # 1
+        live_gb = _group_buy(
+            db, producer, ["gb1@example.com", "gb2@example.com"], own=[owner]
+        )  # 2
+        funded = _group_buy(db, producer, ["fund@example.com"], status="funded")  # 1
+        # Not counted:
+        _signup(db, _event(db, producer, days=-3), "past@example.com")  # past event
+        done = _signup(db, _event(db, producer), "done@example.com")
+        done.status = "cancelled"  # already cancelled
         _group_buy(db, producer, ["old@example.com"], status="cancelled")
+        _bag(
+            db,
+            producer,
+            ["gone@example.com"],
+            pickup_start=utc_now() - timedelta(hours=3),
+            pickup_end=utc_now() - timedelta(hours=1),
+        )
+        picked = db.query(RescueOrder).filter(RescueOrder.offer_id == bag.id).first()
+        _bag(db, producer, ["late@example.com"], status="cancelled")
+        db.commit()
 
         admin = _admin(db)
-        assert _impact(client, db, owner, admin)["open_bookings"] == 7
+        assert _impact(client, db, owner, admin)["open_bookings"] == 9
 
         r = client.post(f"/admin/users/{owner.id}/block", headers=auth_header(admin))
         assert r.status_code == 200, r.text
         assert r.json()["business_hidden"] is True
+        # The number the block reports is the number the admin was shown.
+        assert r.json()["cancelled"] == 9
         db.expire_all()
         assert db.get(Producer, producer.id).status == "inactive"
         # Nothing the count named is still open.
@@ -94,6 +120,9 @@ class TestBlockImpact:
             .count()
         )
         assert left == 1  # only the past event's sign-up, which was never counted
+        assert db.get(RescueOrder, picked.id).status == "cancelled"
+        assert db.get(GroupBuy, live_gb.id).status == "cancelled"
+        assert db.get(GroupBuy, funded.id).status == "cancelled"
 
     def test_reading_the_impact_changes_nothing(self, client, db, sent):
         producer, owner = _business(db)

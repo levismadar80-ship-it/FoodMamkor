@@ -299,7 +299,11 @@ def block_user(
     if target.is_blocked:
         hidden = _business_left_ownerless(db, target)
         if hidden is not None:
-            cancelled = hide_business(db, hidden, background_tasks)
+            # MEH-3375: the same count the confirm showed (customers' bookings),
+            # read before the cancel. hide_business's own return counts group
+            # buys, not their people, so it is not the number she was shown.
+            cancelled = count_open_bookings(db, hidden)
+            hide_business(db, hidden, background_tasks)
     db.commit()
     if hidden is not None:
         indexnow.schedule(background_tasks, indexnow.producer_urls(hidden))

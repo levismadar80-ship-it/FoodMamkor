@@ -395,6 +395,7 @@ export default function AdminUsersPage() {
           through its Hebrew copy while reaching the other two by role. */}
       {blockTarget && (
         <BlockUserConfirm
+          key={blockTarget.id}
           user={blockTarget}
           busy={isBusy(`block:${blockTarget.id}`)}
           onConfirm={() => toggleBlock(blockTarget.id)}

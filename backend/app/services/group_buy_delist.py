@@ -42,16 +42,24 @@ def _live_query(db: Session, producer: Producer) -> Any:
 
 def count_live_commits(db: Session, producer: Producer) -> int:
     """MEH-3375: how many people joined a live group buy of ``producer`` —
-    the people cancel_live_group_buys would mail. Reads only."""
+    the people cancel_live_group_buys would mail (its own users excluded, as
+    there). Reads only."""
     live_ids = [gb.id for gb in _live_query(db, producer).all()]
     if not live_ids:
         return 0
     return int(
         db.query(func.count(GroupBuyCommit.id))
+        .join(User, GroupBuyCommit.user_id == User.id)
         .filter(GroupBuyCommit.group_buy_id.in_(live_ids))
+        .filter(_not_own(producer))
         .scalar()
         or 0
     )
+
+
+def _not_own(producer: Producer) -> Any:
+    """A participant outside ``producer`` — the people a delist mails."""
+    return (User.producer_id.is_(None)) | (User.producer_id != producer.id)
 
 
 def cancel_live_group_buys(
@@ -65,14 +73,14 @@ def cancel_live_group_buys(
     gets plain strings. The business's own users are not mailed — the owner may
     have joined her own group, and she is told about the decision separately.
     """
-    live = _live_query(db, producer).with_for_update().all()
+    live: list[GroupBuy] = _live_query(db, producer).with_for_update().all()
     for gb in live:
         emails = [
             email
             for (email,) in db.query(User.email)
             .join(GroupBuyCommit, GroupBuyCommit.user_id == User.id)
             .filter(GroupBuyCommit.group_buy_id == gb.id)
-            .filter((User.producer_id.is_(None)) | (User.producer_id != producer.id))
+            .filter(_not_own(producer))
             .all()
         ]
         gb.status = "cancelled"  # type: ignore[assignment]
