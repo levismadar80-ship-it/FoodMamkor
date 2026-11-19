@@ -138,6 +138,17 @@ def import_drafts(
                 )
             )
             continue
+        # MEH-2924 made ProductCreate's price optional (an owner may leave it
+        # blank: «מחיר משתנה לפי עונה»). The admin import keeps requiring it —
+        # a blank or unreadable cell here is a typo far more often than a
+        # seasonal price, so the admin sees the row as invalid, as before.
+        if checked.price_min is None:
+            invalid.append(
+                ProductImportInvalidRow(
+                    index=index, name=row.name, reason="מחיר חסר או לא בטווח 1–10,000"
+                )
+            )
+            continue
         key = _name_key(checked.name)
         if key in seen:
             duplicates.append(checked.name)

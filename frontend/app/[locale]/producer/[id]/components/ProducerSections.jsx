@@ -532,7 +532,10 @@ export default function ProducerSections({
                   product.price_min != null
                     ? formatPriceRange(product.price_min, product.price_max)
                     : null;
-                const freeTextPrice = numericPrice ? null : product.price_range || null;
+                // MEH-2924: no price at all = a seasonal price, said in words.
+                const freeTextPrice = numericPrice
+                  ? null
+                  : product.price_range || t("product_price.varies");
                 // MEH-3216 stage 5b: the product as the order menu has it, or
                 // undefined when this business takes no orders or did not open
                 // this product for ordering. Only then does the row get «הוספה».

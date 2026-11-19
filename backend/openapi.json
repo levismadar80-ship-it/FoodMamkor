@@ -15014,6 +15014,9 @@
               },
               {
                 "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Price Min"
@@ -15031,8 +15034,7 @@
           }
         },
         "required": [
-          "name",
-          "price_min"
+          "name"
         ],
         "title": "ProductCreate",
         "type": "object"

@@ -86,8 +86,10 @@ function validateProductForm(f, tErr) {
   /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
+  // MEH-2924: the price may be left empty — the page then says «מחיר משתנה
+  // לפי עונה». Only «עד» without «מ-» is incomplete: a range needs its floor.
   if (f.price_min === "") {
-    errors.price_min = tErr("price_required");
+    if (f.price_max !== "") errors.price_min = tErr("price_required");
   } else {
     const minNum = Number(f.price_min);
     if (minNum < 1) errors.price_min = tErr("price_min_too_low");
@@ -170,6 +172,7 @@ export default function ProductsSection({
   const t = useTranslations("settings.products");
   const tForm = useTranslations("settings.products.form");
   const tErr = useTranslations("settings.products.errors");
+  const tPrice = useTranslations("product_price"); // MEH-2924
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -353,7 +356,8 @@ export default function ProductsSection({
   // directly when the name is unique, and from the dialog's confirm when it is
   // not. Validation already ran in `handleAdd`; this never re-gates.
   const submitAdd = async () => {
-    const minNum = Number(form.price_min);
+    // MEH-2924: an empty price posts null, never Number("") === 0.
+    const minNum = form.price_min === "" ? null : Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);
     setSaving(true);
     setError("");
@@ -474,7 +478,9 @@ export default function ProductsSection({
       return;
     }
     setEditFormErrors({});
-    const minNum = Number(editForm.price_min);
+    // MEH-2924: clearing the price stores null (ProductUpdate allows it).
+    const minNum =
+      editForm.price_min === "" || editForm.price_min == null ? null : Number(editForm.price_min);
     const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
     setSavingEdit(true);
     setError("");
@@ -704,7 +710,6 @@ export default function ProductsSection({
                 <PriceField
                   id={`edit-product-${product.id}-price-min`}
                   label={tForm("price_min_label")}
-                  required
                   value={editForm.price_min || ""}
                   placeholder={tForm("price_min_placeholder")}
                   onChange={(e) => {
@@ -828,7 +833,8 @@ export default function ProductsSection({
                     return <p className="text-xs text-accent">{formatPriceRange(product.price_min, product.price_max)}</p>;
                   if (product.price_range)
                     return <p className="text-xs text-accent">{product.price_range}</p>;
-                  return null;
+                  // MEH-2924: no price at all = a seasonal price, said in words.
+                  return <p className="text-xs text-fg-muted">{tPrice("varies")}</p>;
                 })()}
               </div>
               {/* MEH-2094: the signature-product choice, in the row of the
@@ -935,7 +941,6 @@ export default function ProductsSection({
               <PriceField
                 id="new-product-price-min"
                 label={tForm("price_min_label")}
-                required
                 value={form.price_min}
                 placeholder={tForm("price_min_placeholder")}
                 onChange={(e) => {
@@ -959,6 +964,8 @@ export default function ProductsSection({
             </div>
             {/* MEH-1239: clarify the price pair — single price vs range (Wolt/Shopify). */}
             <p className="text-xs text-fg-muted">{tForm("price_hint")}</p>
+            {/* MEH-2924: what an empty price does on the page. */}
+            <p className="text-xs text-fg-muted">{tForm("price_optional_hint")}</p>
           </div>
 
           {/* MEH-1273 group (c) — diet flags (toggle chips) + image. */}

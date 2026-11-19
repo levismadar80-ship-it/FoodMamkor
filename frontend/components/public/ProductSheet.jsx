@@ -355,7 +355,10 @@ export default function ProductSheet({
     product.price_min != null
       ? formatPriceRange(product.price_min, product.price_max)
       : null;
-  const freeTextPrice = numericPrice ? null : product.price_range || null;
+  // MEH-2924: no price at all = a seasonal price, said in words — never «₪».
+  const freeTextPrice = numericPrice
+    ? null
+    : product.price_range || t("product_price.varies");
 
   // The WhatsApp channel is the producer's phone, normalised exactly as every
   // other WA surface does it (lib/utils normalizePhone → getWhatsAppHref).

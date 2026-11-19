@@ -503,7 +503,10 @@ class ProductCreate(BaseModel):
     description: SanitizedDescriptionField | None = None
     price_range: str | None = None  # legacy: removal tracked in MEH-295 follow-up
     image_url: str | None = Field(None, max_length=500)
-    price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-2924: optional. No price = «מחיר משתנה לפי עונה» on the page, derived
+    # from price_min IS NULL (Sapir 11/11, option א — no column, no migration;
+    # products.price_min was already nullable).
+    price_min: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
     # MEH-293: per-product dietary flags (moved from producer level).
     is_gluten_free: bool = False
@@ -540,7 +543,12 @@ class ProductCreate(BaseModel):
 
     @model_validator(mode="after")
     def check_price_max_gte_min(self) -> Self:
-        if self.price_max is not None and self.price_max < self.price_min:
+        if self.price_max is None:
+            return self
+        # MEH-2924: a range needs its lower end — «עד 40» alone is not a price.
+        if self.price_min is None:
+            raise ValueError("price_max requires price_min")
+        if self.price_max < self.price_min:
             raise ValueError("price_max must be greater than or equal to price_min")
         return self
 
