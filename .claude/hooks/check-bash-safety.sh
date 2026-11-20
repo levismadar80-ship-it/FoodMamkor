@@ -133,7 +133,7 @@ if [ -f "$SETTINGS" ]; then
       echo "$PATH_GUIDANCE" >&2
       exit 2
     fi
-    if echo "$SCAN" | grep -qE "sed[[:space:]]+-i[^>]*[[:space:]][\"']?(\./)?${esc}"; then
+    if echo "$SCAN" | grep -qE "sed[[:space:]]+-i.*[[:space:]][\"']?(\./)?${esc}"; then
       echo "Blocked: in-place edit of protected path (${prot})" >&2
       echo "$PATH_GUIDANCE" >&2
       exit 2

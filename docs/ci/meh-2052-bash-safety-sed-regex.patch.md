@@ -1,3 +1,10 @@
+> **✅ Status: APPLIED 20/11/2026 (MEH-3520)** — the one-token edit on line 136,
+> committed through the GitHub web editor on Sapir's instruction of 20/11
+> (`.claude/hooks/**` stays denied to CC's filesystem tools). Checked by sha256
+> against the prepared file. `scripts/bash-safety-sed-selftest.sh` on the
+> branch: Pass 1 APPLIED · A BLOCK · B BLOCK · C ALLOW · D BLOCK. "Staged for
+> Sapir" below is the state on 04/09.
+
 # MEH-2052 — `check-bash-safety.sh:136`: the `sed -i` regex stops at the first `>`
 
 **Staged for Sapir.** `.claude/hooks/**` is hard-denied in `permissions.deny`
