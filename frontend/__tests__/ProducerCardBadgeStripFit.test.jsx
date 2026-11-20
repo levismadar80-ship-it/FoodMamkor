@@ -332,6 +332,15 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     expect(allBadges(base), "control: the fixture earns no badge").toHaveLength(0);
     render(<ProducerCard producer={base} />);
     expect(screen.queryByTestId("card-badge-strip")).toBeNull();
+    expect(screen.queryByTestId("card-meta-pills"), "no empty body row either (MEH-3508)").toBeNull();
+  });
+
+  it("0 badges + delivery-only: no photo strip, the body row alone (MEH-3508)", () => {
+    const deliveryOnly = { ...base, has_physical_location: false, offers_delivery: true };
+    expect(allBadges(deliveryOnly), "control: still no BADGE_CONFIG badge").toHaveLength(0);
+    render(<ProducerCard producer={deliveryOnly} />);
+    expect(screen.queryByTestId("card-badge-strip")).toBeNull();
+    expect(screen.getByTestId("card-meta-pills")).toHaveTextContent("משלוחים בלבד");
   });
 
   it("StrictMode (dev) runs the fit effect twice — still exactly one pill, never 0", () => {

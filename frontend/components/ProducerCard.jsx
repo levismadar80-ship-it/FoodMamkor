@@ -540,16 +540,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             photo — verified at 375px + 1440px, badges unchanged. z-index ledger:
             .claude/rules/rtl.md (sheet family 1200/1210 > BottomNav 1000). */}
         {/* MEH-1592: the strip is the +N popover's collision boundary — the
-            panel is placed so it clears this whole box, which is what makes
-            WRAPPED siblings safe too (at 4-col desktop widths the TrustBadge
-            "מובילת קהילה" wraps onto a second line directly under the +N chip,
-            which is the overlap Sapir's QA screenshot caught). */}
-        {/* MEH-1508 chunk 3ב-2: row gap gap-y-2.5 (10px) = the +N's -m-2.5
-            pull-back below. When a long first-row badge («100% צמחוני») wraps
-            the +N onto a second line, its 44px hit area reaches 10px upward;
-            with the old 4px gap it covered «חדש» down to 41.5×19.3 (axe
-            target-size, CI mobile /producers). At 10px it touches the row
-            above and covers nothing. Single-row strips are unchanged. */}
+            panel is placed so it clears this whole box. */}
+        {/* MEH-1508 chunk 3ב-2: the +N's -m-2.5 (10px) pull-back once covered
+            a badge on a wrapped row above. MEH-3508: the photo strip never
+            wraps, and bottom-3 (12px) ≥ the pull-back keeps the hit area on
+            the photo (ProducerCard.test.jsx pins both). Inline, the 8px end
+            inset leaves ~2px of a full strip's +N reach clipped — as before
+            MEH-3321; see the 12px note below for why it is not wider. */}
         {/* MEH-2856 (Sapir 09/11): the badges sit on ONE line. The pills and
             «+N» are a no-wrap group (data-badge-line) capped at the strip's
             width: the photo minus the 12px start inset and an 8px end inset
@@ -557,9 +554,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             fit on staging);
             useBadgesThatFit() shows as many of the first 2 badges as fit and
             moves the rest into «+N». Two long pills used to stack (ערוגות נועם
-            at 390). TrustBadge and the delivery-only pill below stay OUTSIDE
-            the group: as before, they drop to the next line when there is no
-            room, instead of being clipped by the card's overflow-hidden. */}
+            at 390). TrustBadge and the delivery-only pill are not in this
+            strip (MEH-3508): they sit in card-meta-pills in the body. */}
         {earnedBadges > 0 && (
         <div
           ref={badgeStripRef}
