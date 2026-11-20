@@ -5466,7 +5466,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5593,7 +5594,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5663,7 +5665,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -6265,7 +6268,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15321,7 +15325,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15768,7 +15773,8 @@
                   "kg",
                   "100g",
                   "bottle",
-                  "box"
+                  "box",
+                  "pack"
                 ],
                 "type": "string"
               },
@@ -15812,7 +15818,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -16264,7 +16271,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"

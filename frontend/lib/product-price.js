@@ -13,7 +13,7 @@
 import { formatPriceRange } from "@/lib/utils";
 
 /** The order is the order the owner sees them in the form. */
-export const PRICE_UNITS = ["unit", "kg", "100g", "bottle", "box"];
+export const PRICE_UNITS = ["unit", "kg", "100g", "bottle", "box", "pack"];
 
 /** Units that print nothing next to the price. */
 const SILENT_UNITS = new Set(["unit"]);

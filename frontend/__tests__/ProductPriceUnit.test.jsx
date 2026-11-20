@@ -35,13 +35,15 @@ beforeEach(() => {
 
 describe("labels", () => {
   it("every unit has a Hebrew and an English label", () => {
-    expect(PRICE_UNITS).toEqual(["unit", "kg", "100g", "bottle", "box"]);
+    expect(PRICE_UNITS).toEqual(["unit", "kg", "100g", "bottle", "box", "pack"]); // MEH-3474: pack
     for (const u of PRICE_UNITS) {
       expect(he.price_unit[u], u).toBeTruthy();
       expect(en.price_unit[u], u).toBeTruthy();
     }
     expect(U.bottle).toBe("לבקבוק");
     expect(U.box).toBe("לארגז");
+    expect(U.pack).toBe("למארז");
+    expect(en.price_unit.pack).toBe("per pack");
   });
 });
 
@@ -60,6 +62,12 @@ describe("public price", () => {
     expect(unit.textContent.trim()).toBe("לבקבוק");
     expect(unit.closest("[dir='ltr']")).toBeNull();
     expect(screen.getByTestId("price").querySelector("[dir='ltr']").textContent).toBe("80₪");
+  });
+
+  it("per pack (MEH-3474) adds «למארז»", () => {
+    renderPrice({ price_min: 79, price_max: null, price_unit: "pack" });
+    expect(screen.getByTestId("product-price-unit").textContent.trim()).toBe("למארז");
+    expect(screen.getByTestId("price").querySelector("[dir='ltr']").textContent).toBe("79₪");
   });
 
   it("a range per kg keeps the range and adds «לק״ג»", () => {

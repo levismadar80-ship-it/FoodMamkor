@@ -17,7 +17,7 @@
 * דף בית העסק (שלב 5): `frontend/lib/order-cart.js` ו-`frontend/lib/use-order-cart.js` (הבחירות, נטען רק כש-`takes_site_orders` בדף), `frontend/components/public/OrderStepper.jsx` («הוספה» בשורת מוצר), `frontend/components/public/OrderBar.jsx` (סרגל ההזמנה), `frontend/components/public/OrderSheet.jsx` ו-`frontend/components/public/OrderSheetPhone.jsx` (טופס הבקשה), `frontend/lib/order-sheet.js` (הקריאות לשרת).
 
 **טסטים**
-* `tests/test_meh3263_order_route.py`, `tests/test_meh3262_order_windows.py`, `tests/test_meh3296_order_notifications.py`, `tests/test_meh3218_product_orders.py`, `tests/test_meh2936_product_unit.py` (bottle / box are counted, not weighed), `tests/test_meh3216_business_id.py`
+* `tests/test_meh3263_order_route.py`, `tests/test_meh3262_order_windows.py`, `tests/test_meh3296_order_notifications.py`, `tests/test_meh3218_product_orders.py`, `tests/test_meh2936_product_unit.py` (bottle / box are counted, not weighed), `tests/test_meh3474_pack_unit.py` (pack, the same way), `tests/test_meh3216_business_id.py`
 * `frontend/__tests__/OrderOnboarding.test.jsx` (הכרטיס, רשימת הצעדים ושורת העמלה)
 * `frontend/__tests__/ProductOrdersDashboard.test.jsx`, `frontend/__tests__/OrderStatusPage.test.jsx`, `frontend/__tests__/OrderCart.test.js`, `frontend/__tests__/OrderCartRows.test.jsx`, `frontend/__tests__/OrderSheet.test.jsx`
 * `tests/test_meh3216_order_cart.py`, `tests/test_meh3216_order_quote.py`
