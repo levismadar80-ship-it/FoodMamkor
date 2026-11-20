@@ -11,19 +11,13 @@
  */
 import { CaretLeft } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
-import { avatarInitial } from "@/components/ui/Avatar";
+import Avatar from "@/components/ui/Avatar";
 
 export default function OwnerRow({ href, name, testId, children }) {
-  // A whole code point, never half a surrogate pair (review #3801).
-  const initial = avatarInitial(name, "");
   const body = (
     <>
-      <span
-        aria-hidden="true"
-        className="shrink-0 w-11 h-11 rounded-full bg-green-50 text-primary font-headline-md text-lg font-bold grid place-items-center"
-      >
-        {initial}
-      </span>
+      {/* MEH-3461: the shared Avatar (was a hand-drawn circle). */}
+      <Avatar name={name} fallback="" size={44} tone="soft" aria-hidden="true" letterClassName="font-headline-md text-lg font-bold" />
       <span className="min-w-0 flex-1 text-base text-text">{children}</span>
       {href && <CaretLeft size={18} className="shrink-0 text-primary ltr:rotate-180" aria-hidden="true" />}
     </>

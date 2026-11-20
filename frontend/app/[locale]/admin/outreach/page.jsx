@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import { telHref } from "@/lib/contact-method";
 import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
@@ -313,7 +314,7 @@ export default function AdminOutreachPage() {
                         the stacked-card label keeps the RTL start side. */}
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.phone")}>
                       {lead.phone ? (
-                        <a href={`tel:${lead.phone}`} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
+                        <a href={telHref(lead.phone) ?? undefined} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
                           {lead.phone}
                         </a>
                       ) : (

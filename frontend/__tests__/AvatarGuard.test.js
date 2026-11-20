@@ -63,6 +63,31 @@ describe("AvatarGuard (MEH-3069)", () => {
     expect(offenders).toEqual([]);
   });
 
+  // MEH-3461: the owner's / host's circle on public pages was still drawn by
+  // hand in six files, each its own size and colours. A file that takes an
+  // initial now renders it through <Avatar>, unless it is listed here.
+  const DRAWS_OWN_CIRCLE_OK = {
+    // fills a 40px photo slot in the search suggestion row; no circle of its own
+    "components/HeroSearch.jsx": "fills the suggestion thumb",
+    // seeded per-review colours (ReviewInitial), a separate design
+    "components/ReviewsSection.jsx": "ReviewInitial, seeded colours",
+    "app/[locale]/producer/dashboard/reviews/page.js": "ReviewInitial, seeded colours",
+  };
+  it("MEH-3461: a file that takes an initial renders it with <Avatar>", () => {
+    const offenders = files
+      .filter((f) => f.rel !== OWNER && /\bavatarInitial\(/.test(f.src) && !/<Avatar\b/.test(f.src))
+      .filter((f) => !(f.rel in DRAWS_OWN_CIRCLE_OK))
+      .map((f) => f.rel);
+    expect(offenders, "render <Avatar name=…> instead of a hand-drawn circle").toEqual([]);
+  });
+  it("MEH-3461: the allow-list still names real files that take an initial", () => {
+    for (const rel of Object.keys(DRAWS_OWN_CIRCLE_OK)) {
+      const f = files.find((x) => x.rel === rel);
+      expect(f, rel).toBeTruthy();
+      expect(/\bavatarInitial\(/.test(f.src), rel).toBe(true);
+    }
+  });
+
   it("avatarInitial: one code point, upper-cased, fallback when empty", () => {
     expect(avatarInitial("שירה כהן")).toBe("ש");
     expect(avatarInitial("  dana ")).toBe("D");

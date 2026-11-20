@@ -632,7 +632,7 @@ front matter for the normative token bindings.
   collapsed neutral hours "היום · 9:00–17:00" (no green, no "פתוח", ranges
   `dir="ltr"`, expand → weekly table with font-weight-only today), Waze/Google
   **brand SVGs** (not mirrored, not recolored) on the standard deep links.
-  **OwnerCard "מאחורי העסק":** data-gated — compact (single-letter avatar at
+  **OwnerCard "מאחורי העסק":** data-gated — compact (single-letter `ui/Avatar` at
   inline-start + name + city) is the live variant; bio/photo variants dormant
   until MEH-1335; hidden entirely without contact_name.
 - **Producer trust strip (`ProducerHeader` + `ReviewExcerpt`, MEH-1048):** social
@@ -746,6 +746,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
   `components/ui/Avatar.jsx` — photo, else ONE initial from `avatarInitial()`
   (first code point, upper-cased, «?» when empty). Header 34px, BottomNav 24px,
   account sheet 40px (`tone="none"` inside its own ring), settings 64px.
+  **Owner / host initial on public pages (MEH-3461)** uses the same component:
+  organizer page 80px, event and experience bylines, `OwnerRow`, `OwnerCard`,
+  the `EventEntryRow` mark. `tone="soft"` (green-50 + primary letter) is that
+  look; `letterClassName` sets the letter's type; a caller placing it
+  `absolute` keeps its own position. Never hand-draw an initial circle.
   Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts

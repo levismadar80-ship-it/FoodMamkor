@@ -617,13 +617,16 @@ export default function GroupBuyDetailClient({ id }) {
               >
                 {cancelling ? t("cancelling") : t("cancel_cta")}
               </Button>
-              <button
+              {/* MEH-3461: ui/Button, like the confirm beside it (was a
+                  hand-written pill). Outlined = the house «keep» action in a
+                  confirm dialog. */}
+              <Button
                 disabled={cancelling}
                 onClick={() => setConfirmCancelOpen(false)}
-                className="flex-1 bg-surface border border-border text-text py-2.5 rounded-full hover:bg-green-50 transition text-sm font-medium"
+                variant="outlined" size="sm" className="flex-1"
               >
                 {t("cancel_dismiss")}
-              </button>
+              </Button>
             </div>
         </Dialog>
       )}

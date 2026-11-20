@@ -37,7 +37,7 @@ import { downloadIcs } from "@/lib/event-ics";
 import Button from "@/components/ui/Button";
 import RegistrationCta from "@/components/RegistrationCta";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { avatarInitial } from "@/components/ui/Avatar";
+import Avatar from "@/components/ui/Avatar";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
@@ -261,9 +261,8 @@ export default function EventDetailClient({ initialEvent = null } = {}) {
                 data-testid="event-byline"
                 className="inline-flex items-center gap-2 min-h-touch text-base text-text hover:text-primary rounded transition focus-ring"
               >
-                <span aria-hidden="true" className="w-7 h-7 rounded-full bg-green-50 text-primary text-sm font-bold grid place-items-center">
-                  {avatarInitial(event.producer_name, "")}
-                </span>
+                {/* MEH-3461: the shared Avatar (was a hand-drawn circle). */}
+                <Avatar name={event.producer_name} fallback="" size={28} tone="soft" aria-hidden="true" letterClassName="text-sm font-bold" />
                 <span>{ownerLabel}</span>
                 <CaretLeft size={14} className="text-primary ltr:rotate-180" aria-hidden="true" />
               </Link>

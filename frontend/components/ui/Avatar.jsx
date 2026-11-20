@@ -8,8 +8,15 @@
  *           there is one, otherwise ONE letter — the first code point of the
  *           name, upper-cased, «?» when there is no name.
  *             tone="primary" (default) white letter on bg-primary
+ *             tone="soft"    green letter on bg-green-50 (an owner / host mark)
  *             tone="none"    no fill — the parent draws the circle (the green
- *                            account sheet keeps its white/10 ring)
+ *                            account sheet keeps its white/10 ring), or the
+ *                            caller passes its own colours in `className`
+ *           MEH-3461: also the owner's / host's initial on public pages
+ *           (organizer masthead, OwnerCard, OwnerRow, the event and workshop
+ *           bylines, the event-row mark) — each drew its own circle before.
+ *           `letterClassName` sets the letter's type when the default ladder
+ *           does not fit; extra props (aria-hidden, data-testid) pass through.
  * Does NOT: decide who is signed in, or draw the guest icon — callers keep
  *           their own `<User>` glyph for a guest. Not for business logos.
  * Why:      until 13/11 the same `name.trim().charAt(0).toUpperCase()` line was
@@ -34,6 +41,7 @@ export function avatarInitial(name, fallback = "?") {
 
 const TONES = {
   primary: "bg-primary text-white",
+  soft: "bg-green-50 text-primary",
   none: "",
 };
 
@@ -44,15 +52,31 @@ function letterClass(size) {
   return "text-2xl";
 }
 
+// MEH-3461: a caller that places the circle itself (absolute on a cover or a
+// photo) must not also get `relative` — the two utilities clash.
+const PLACED = /(^|\s)(absolute|fixed|sticky)(\s|$)/;
+
 /**
- * @param {{ src?: string | null, name?: string | null, size?: number, tone?: "primary" | "none", className?: string, fallback?: string }} props
+ * @param {{ src?: string | null, name?: string | null, size?: number, tone?: "primary" | "soft" | "none", className?: string, letterClassName?: string, fallback?: string, style?: import("react").CSSProperties, [key: string]: any }} props
  */
-export default function Avatar({ src, name, size = 34, tone = "primary", className = "", fallback = "?" }) {
+export default function Avatar({
+  src,
+  name,
+  size = 34,
+  tone = "primary",
+  className = "",
+  letterClassName,
+  fallback = "?",
+  style,
+  ...rest
+}) {
+  const position = PLACED.test(className) ? "" : "relative ";
   return (
     <span
       data-avatar=""
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${src ? "" : TONES[tone]} ${className}`}
-      style={{ width: size, height: size }}
+      {...rest}
+      className={`${position}inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${src ? "" : TONES[tone]} ${className}`}
+      style={{ width: size, height: size, ...style }}
     >
       {src ? (
         // raw img: OAuth provider avatar — host not in next.config.js
@@ -60,7 +84,9 @@ export default function Avatar({ src, name, size = 34, tone = "primary", classNa
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" className="h-full w-full object-cover" />
       ) : (
-        <span className={`${letterClass(size)} font-semibold leading-none`}>{avatarInitial(name, fallback)}</span>
+        <span className={letterClassName ?? `${letterClass(size)} font-semibold leading-none`}>
+          {avatarInitial(name, fallback)}
+        </span>
       )}
     </span>
   );
