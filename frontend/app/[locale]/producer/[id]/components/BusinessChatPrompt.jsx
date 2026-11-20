@@ -34,7 +34,6 @@ import { usePreviewMode } from "@/lib/preview-mode";
 export default function BusinessChatPrompt({ producer, signatureProduct = null }) {
   const t = useTranslations("chat.business");
   const tWa = useTranslations("whatsapp.question_chips");
-  const tCta = useTranslations("contact_cta");
   const preview = usePreviewMode();
   if (!producer?.id || preview || producer.status !== "approved") return null;
   const name = producer.name || "";
@@ -45,7 +44,6 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
   const handoff = businessChatHandoff(producer, {
     greeting: (q) => tWa("greeting_template", { name, q }),
     sourceLine: tWa("source_line"),
-    plainGreeting: tCta("wa_greeting", { name }),
   });
   const open = (ask) => openBusinessChat({ id: producer.id, name, prompts, ask, handoff });
   return (

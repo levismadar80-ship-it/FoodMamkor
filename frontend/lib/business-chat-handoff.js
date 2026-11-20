@@ -23,9 +23,10 @@ import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 
 /**
  * @param {any} producer
- * @param {{ greeting: (q: string) => string, sourceLine: string, plainGreeting: string }} copy
- *   greeting(q) = «שלום {name}, {q}»; plainGreeting = the contact button's
- *   own WhatsApp prefill (no question yet).
+ * @param {{ greeting: (q: string) => string, sourceLine: string }} copy
+ *   greeting(q) = «שלום {name}, {q}». The link only shows under an answer, so
+ *   a question always exists; with none, only the source line is written in
+ *   (the contact_cta labels belong to the contact button, MEH-3459 guard).
  * @returns {BusinessHandoff | null}
  */
 export function businessChatHandoff(producer, copy) {
@@ -38,7 +39,7 @@ export function businessChatHandoff(producer, copy) {
       method,
       href: (question) => {
         const q = (question || "").trim();
-        const text = q ? `${copy.greeting(q).trim()}\n\n${copy.sourceLine}` : copy.plainGreeting;
+        const text = q ? `${copy.greeting(q).trim()}\n\n${copy.sourceLine}` : copy.sourceLine;
         return getWhatsAppHref(digits, text);
       },
     };
