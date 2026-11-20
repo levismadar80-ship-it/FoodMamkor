@@ -15,7 +15,8 @@
  * Placement (rule 37, delegated by Sapir 13/11 17:00Z): in the products card,
  *           under the product list, because ordering and grouping are about
  *           THESE rows; a separate tab would split one job across two screens.
- * History:  MEH-3055 (creation)
+ * History:  MEH-3055 (creation); MEH-3477 (products shown inside their group,
+ *           order set per group, thumbnails, width cap at 1440)
  */
 import { useEffect, useRef, useState } from "react";
 import { Reorder, useDragControls } from "framer-motion";
@@ -25,6 +26,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { orderProducts } from "@/lib/product-order";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Input from "@/components/ui/Input";
 
 /** @typedef {{ id: string, name: string, position?: number|null, group_id?: string|null, image_url?: string|null }} Product */
@@ -46,6 +48,26 @@ function move(list, from, to) {
   next.splice(to, 0, item);
   return next;
 }
+
+/**
+ * MEH-3477: lay the list out group by group in the groups' order, ungrouped
+ * last — the public page's layout (lib/product-order.js). Stable, so the
+ * order inside each group is the list's own.
+ * @param {Product[]} list
+ * @param {Group[]} groups
+ * @returns {{ id: string, name: string, items: Product[] }[]}
+ */
+function sectionsOf(list, groups) {
+  const known = new Set(groups.map((g) => g.id));
+  const inGroup = (/** @type {Product} */ p, /** @type {string} */ id) =>
+    id ? p.group_id === id : !(p.group_id && known.has(p.group_id));
+  return [...groups, { id: "", name: "" }]
+    .map((g) => ({ id: g.id, name: g.name, items: list.filter((p) => inGroup(p, g.id)) }))
+    .filter((s) => s.items.length > 0);
+}
+
+/** @param {Product[]} list @param {Group[]} groups */
+const regroup = (list, groups) => sectionsOf(list, groups).flatMap((s) => s.items);
 
 /**
  * MEH-3472: `basePath` is the only difference between the owner and the
@@ -99,6 +121,15 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
       .catch(() => setGroups([]));
   }, [open, basePath, idKey]);
 
+  // MEH-3477: a new group list (loaded, added, renamed, deleted) re-lays the
+  // list out by group. Display only — positions are saved on the next move.
+  useEffect(() => {
+    if (!open) return;
+    reorderLocal(regroup(orderRef.current, groups));
+    confirmedRef.current = regroup(confirmedRef.current, groups);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-lay on a new group list only
+  }, [groups]);
+
   /** @param {unknown} err */
   const fail = (err) =>
     showToast.error(detailToMessage(/** @type {any} */ (err)?.response?.data?.detail) || t("save_failed"));
@@ -136,9 +167,17 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
     }
   };
 
-  /** @param {number} from @param {number} to */
-  const moveProduct = (from, to) => {
-    const next = move(orderRef.current, from, to);
+  /**
+   * MEH-3477: the order is set inside a group; the saved list is the groups
+   * laid end to end.
+   * @param {string} sectionId @param {Product[]} items
+   */
+  const withSection = (sectionId, items) =>
+    sectionsOf(orderRef.current, groups).flatMap((s) => (s.id === sectionId ? items : s.items));
+
+  /** @param {string} sectionId @param {Product[]} items @param {number} from @param {number} to */
+  const moveProduct = (sectionId, items, from, to) => {
+    const next = withSection(sectionId, move(items, from, to));
     reorderLocal(next);
     saveOrder(next);
   };
@@ -163,8 +202,8 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
         group_id: groupId || null,
       });
       const patch = (/** @type {Product} */ p) => (p.id === productId ? { ...p, group_id: r.data.group_id } : p);
-      reorderLocal(orderRef.current.map(patch));
-      confirmedRef.current = confirmedRef.current.map(patch);
+      reorderLocal(regroup(orderRef.current.map(patch), groups));
+      confirmedRef.current = regroup(confirmedRef.current.map(patch), groups);
       onProductsChange(productsRef.current.map(patch));
       showToast.success(t("saved"));
     } catch (err) {
@@ -206,7 +245,7 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
   return (
     <div
       id="product-organizer-panel"
-      className="mb-4 border border-border rounded-md p-4 space-y-6 bg-surface-card"
+      className="mb-4 max-w-2xl border border-border rounded-md p-4 space-y-6 bg-surface-card"
       data-testid="product-organizer"
     >
       <GroupsEditor groups={groups} onSave={saveGroups} onDelete={deleteGroup} t={t} />
@@ -218,27 +257,37 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
         <p className="text-xs text-fg-muted mt-1 mb-3">
           {t(groups.length ? "order_where_grouped" : "order_where")}
         </p>
-        <Reorder.Group
-          axis="y"
-          values={order}
-          onReorder={reorderLocal}
-          className="divide-y divide-border border-y border-border"
-          data-testid="product-order-list"
-        >
-          {order.map((p, i) => (
-            <OrderRow
-              key={p.id}
-              product={p}
-              index={i}
-              last={order.length - 1}
-              groups={groups}
-              onDrop={() => saveOrder(orderRef.current)}
-              onMove={moveProduct}
-              onAssign={assign}
-              t={t}
-            />
+        <div data-testid="product-order-list" className="space-y-4">
+          {sectionsOf(order, groups).map((s) => (
+            <section key={s.id || "none"} data-testid="product-order-section" data-group={s.id}>
+              {groups.length > 0 && (
+                <h4 className="text-xs font-medium text-fg-muted mb-1 truncate" title={s.name || t("product_group_none")}>
+                  {s.name || t("product_group_none")}
+                </h4>
+              )}
+              <Reorder.Group
+                axis="y"
+                values={s.items}
+                onReorder={(items) => reorderLocal(withSection(s.id, items))}
+                className="divide-y divide-border border-y border-border"
+              >
+                {s.items.map((p, i) => (
+                  <OrderRow
+                    key={p.id}
+                    product={p}
+                    index={i}
+                    last={s.items.length - 1}
+                    groups={groups}
+                    onDrop={() => saveOrder(orderRef.current)}
+                    onMove={(from, to) => moveProduct(s.id, s.items, from, to)}
+                    onAssign={assign}
+                    t={t}
+                  />
+                ))}
+              </Reorder.Group>
+            </section>
           ))}
-        </Reorder.Group>
+        </div>
       </section>
 
       <button
@@ -273,6 +322,7 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
       onDragEnd={onDrop}
       className="flex items-center gap-2 py-2 bg-surface-card"
       data-testid="product-order-row"
+      data-name={product.name}
     >
       <button
         type="button"
@@ -282,6 +332,7 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
       >
         <DotsSixVertical size={20} aria-hidden="true" />
       </button>
+      <Thumb url={product.image_url} />
       {/* Name above, group below: at 375 a one-line row leaves the name no
           room once the select and two 44px arrows are in it. */}
       <span className="flex-1 min-w-0">
@@ -296,7 +347,8 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
               data-testid="product-group-select"
               value={product.group_id || ""}
               onChange={(e) => onAssign(product.id, e.target.value)}
-              className="mt-1 w-full max-w-[12rem] min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
+              title={groups.find((g) => g.id === product.group_id)?.name || t("product_group_none")}
+              className="mt-1 w-full max-w-[16rem] truncate min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
             >
               <option value="">{t("product_group_none")}</option>
               {groups.map((g) => (
@@ -329,6 +381,25 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
         <ArrowDown size={18} aria-hidden="true" />
       </button>
     </Reorder.Item>
+  );
+}
+
+// MEH-3477: 40px square, the same box with or without a photo, so names line up.
+const THUMB_PX = 80; // delivered at 2× the 40px box
+
+/** @param {{ url?: string|null }} props */
+function Thumb({ url }) {
+  if (!url) {
+    return <span data-testid="product-thumb-empty" aria-hidden="true" className="shrink-0 w-10 h-10 rounded-sm bg-border/60" />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- a 40px thumbnail; Cloudinary already sizes it
+    <img
+      src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.square, width: THUMB_PX })}
+      alt=""
+      loading="lazy"
+      className="shrink-0 w-10 h-10 rounded-sm object-cover"
+    />
   );
 }
 
