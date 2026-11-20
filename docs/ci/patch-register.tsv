@@ -69,3 +69,4 @@ staging-health	applied	.github/workflows/staging-health.yml	name: Staging health
 uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	
 vrt-label-trigger	unverified	-	-	
 webkit-project	unverified	-	-	
+meh-3153-webkit-core	pending	.github/workflows/e2e.yml	e2e-webkit-core	
