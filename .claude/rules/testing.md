@@ -49,9 +49,11 @@ mismatches, 0 orphans.
   if the element vanished, does this go red?
   In `frontend/e2e/**/*.spec.*` this is held by
   `scripts/checks/e2e-self-skip-ratchet.mjs` (inside `npm run lint:ratchet`,
-  MEH-3520): a new skip, a new `expect` inside a branch or a new branch in a
-  test body fails the PR. A skip gated on something the product cannot move
-  takes `// eslint-disable-next-line <rule> -- <reason>`; the reason is required.
+  MEH-3520): a new skip or fixme, a new `expect` inside a branch or a new
+  branch in a test body fails the PR. A skip gated on something the product
+  cannot move takes `// eslint-disable-next-line <rule> -- <reason>`; the
+  reason is required. It does not see an alias (`const t = test`), a
+  `try/catch` around an `expect`, or a loop that runs zero times.
 - A green VRT is not evidence the frame is unchanged (2% tolerance swallows
   copy changes; a pass writes no PNG) — read the rendered text. Tolerance is
   MEH-1765's call only.

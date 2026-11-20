@@ -20,9 +20,16 @@
  * eslint-plugin-playwright, run from frontend/e2e/self-skip.eslint.config.mjs
  * (the main config ignores e2e/** globally and that cannot be undone from a
  * later block):
- *   playwright/no-skipped-test         a skip or fixme, anywhere
+ *   playwright/no-skipped-test         a skip, anywhere
+ *   no-restricted-syntax               a `.fixme` (the plugin rule does not see it)
  *   playwright/no-conditional-expect   an expect inside a branch
  *   playwright/no-conditional-in-test  a branch inside a test body
+ *
+ * WHAT IT DOES NOT CATCH (measured by the reviewer, 20/11)
+ * --------------------------------------------------------
+ * An alias (`const t = test; t.skip()`), `try { expect } catch {}`, an
+ * `expect` inside a loop that may run zero times, `a || b` used as a branch,
+ * and an `if` inside a callback. These need review, not this gate.
  *
  * The gate is the per-rule TOTAL across all specs; the per-file rows name
  * where it rose (same comparator as eslint-ratchet.mjs, imported from it).
@@ -32,8 +39,9 @@
  * A skip gated on something the product cannot move (project name, env var)
  * is fine. Say so where it lives:
  *   // eslint-disable-next-line playwright/no-skipped-test -- <reason>
- * The reason is required: a disable for one of the three rules with no
- * ` -- reason` is counted as a finding under `disable-without-reason`.
+ * The reason is required: a disable that names one of the gated rules, or
+ * names no rule at all (which hides every rule), with no ` -- reason` inside
+ * the same comment is counted as a finding under `disable-without-reason`.
  *
  * A NULL RESULT IS NOT A PASS
  * ---------------------------
@@ -52,7 +60,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { compare, parseBaseline } from "./eslint-ratchet.mjs";
@@ -63,22 +71,41 @@ const FRONTEND_DIR = join(REPO_ROOT, "frontend");
 const BASELINE_PATH = join(HERE, "e2e-self-skip-baseline.tsv");
 const CONFIG = "e2e/self-skip.eslint.config.mjs";
 const MAX_BUFFER = 256 * 1024 * 1024;
-const RULES = ["playwright/no-skipped-test", "playwright/no-conditional-expect", "playwright/no-conditional-in-test"];
+const RULES = ["playwright/no-skipped-test", "no-restricted-syntax", "playwright/no-conditional-expect", "playwright/no-conditional-in-test"];
+const SPEC_RE = /\.spec\.[cm]?[jt]sx?$/;
 const NO_REASON = "disable-without-reason";
 const CONTROL_ANCHORS = 5;
 
-/** A disable comment that names one of the three rules and gives no ` -- reason`. */
+/**
+ * Disable comments that can hide a gated rule and give no ` -- reason`.
+ * "Can hide" = names one of the gated rules, or names no rule at all (a bare
+ * `eslint-disable` switches every rule off). The reason must be inside the
+ * same comment: text after a closing `*\/` does not count.
+ */
 export function disablesWithoutReason(source) {
   let count = 0;
   for (const line of source.split("\n")) {
-    const at = line.indexOf("eslint-disable");
-    if (at === -1) continue;
-    const directive = line.slice(at).replace(/\*\/\s*$/, "");
-    if (!RULES.some((rule) => directive.includes(rule))) continue;
-    const reason = directive.split(" -- ")[1];
-    if (!reason || !reason.trim()) count += 1;
+    const match = /(?:\/\/|\/\*)\s*eslint-disable(?:-next-line|-line)?(?![\w-])(.*)$/.exec(line);
+    if (!match) continue;
+    const body = match[1].split("*/")[0];
+    const [ruleList, ...reasonParts] = body.split(" -- ");
+    const named = ruleList.trim();
+    if (named && !RULES.some((rule) => named.includes(rule))) continue;
+    if (!reasonParts.join(" -- ").trim()) count += 1;
   }
   return count;
+}
+
+/** Every spec file on disk under frontend/e2e, as paths relative to frontend/. */
+export function specFilesOnDisk(dir = join(FRONTEND_DIR, "e2e")) {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules") continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...specFilesOnDisk(full));
+    else if (SPEC_RE.test(entry.name)) out.push(relative(FRONTEND_DIR, full).split(sep).join("/"));
+  }
+  return out;
 }
 
 /**
@@ -161,6 +188,12 @@ function selfTest() {
     ["a block disable with no reason is counted", "/* eslint-disable playwright/no-conditional-in-test */", 1],
     ["a block disable with a reason is not counted", "/* eslint-disable playwright/no-conditional-in-test -- report builder */", 0],
     ["a disable for another rule is not ours", "// eslint-disable-next-line no-console", 0],
+    ["a bare disable hides every rule and is counted", "/* eslint-disable */", 1],
+    ["a bare next-line disable is counted", "// eslint-disable-next-line", 1],
+    ["a bare disable with a reason is not counted", "/* eslint-disable -- generated report harness */", 0],
+    ["a reason outside the block comment does not count", "/* eslint-disable playwright/no-skipped-test */ // -- x", 1],
+    ["a fixme disable with no reason is counted", "// eslint-disable-next-line no-restricted-syntax", 1],
+    ["eslint-enable is not a disable", "/* eslint-enable */", 0],
     ["two bare disables are two", "// eslint-disable-line playwright/no-skipped-test\n// eslint-disable-line playwright/no-skipped-test", 2],
   ];
   let ran = 0;
@@ -194,8 +227,14 @@ function main() {
   const baseline = baselineExists ? parseBaseline(readFileSync(BASELINE_PATH, "utf8")) : new Map();
   if (baselineExists && !flag("--update-baseline")) control(baseline);
 
-  const results = runEslint(["e2e"]).filter((r) => /\.spec\.[cm]?[jt]sx?$/.test(r.filePath));
+  const results = runEslint(["e2e"]).filter((r) => SPEC_RE.test(r.filePath));
   if (results.length === 0) fail("ESLint returned 0 spec files under e2e/ — nothing was linted, so nothing was checked.");
+  const linted = new Set(results.map((r) => relative(FRONTEND_DIR, r.filePath).split(sep).join("/")));
+  const unlinted = specFilesOnDisk().filter((file) => !linted.has(file));
+  if (unlinted.length) {
+    fail(`${unlinted.length} spec file(s) on disk were not linted (first: frontend/${unlinted[0]}). ` +
+      `Widen the 'files' glob in frontend/${CONFIG}; an unlinted spec is an unchecked spec.`);
+  }
   const current = aggregate(results);
   const { risen, fallen, moved } = compare(baseline, current);
   const total = (rows) => [...rows.values()].reduce((a, b) => a + b, 0);
