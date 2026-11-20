@@ -537,7 +537,13 @@ on a seeded env. Local dev: same script against the local DB.
 Both Places keys — the browser's `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (address
 autocomplete in registration and the dashboard) and the server's
 `GOOGLE_PLACES_API_KEY` (the Google-rating line, MEH-1490) — live in ONE Google
-Cloud project, **«My First Project»**, on one billing account. When that
+Cloud project, **`mehamakor`** (project number `591935721343`, the same one
+that holds the «Sign in with Google» OAuth client), on the billing account
+**«Mehamkor»**. Look it up by that id, never by name: the same Google login
+also owns several projects called «My First Project», and one of them holds
+a key named `mehamakor-backend-places` on an ended free trial. That key was
+put in Railway on 20/11/2026 and turned `/api/health/places` red within a
+minute (MEH-3517). When that
 account stops (trial ended, card declined, budget cap), **every** lookup answers
 `403 PERMISSION_DENIED` and nothing in the UI says why.
 
@@ -562,6 +568,14 @@ a Google outage — but address search itself is still Google's.
 4. [Credentials](https://console.cloud.google.com/apis/credentials) → the key →
    *API restrictions* must list Places API (New); *Website restrictions* on the
    browser key must cover `mehamakor.co.il/*` and `staging.mehamakor.co.il/*`.
+
+**Before putting any Google key in Railway or Vercel** (MEH-3517):
+(1) open the key's project and check that it is `mehamakor`; (2) open
+*Billing* for that project and check that it is not an ended trial; (3) after
+the redeploy, `curl -s https://mehamakor.co.il/api/health/places` must still
+answer `{"status":"ok"}`, and an admin `google-place-candidates?q=שוק הכרמל תל אביב`
+must answer 200. If either is red, put the previous value back first, then
+investigate.
 
 **Cost control that is in place:** the key is API-restricted to Places API (New)
 only; a ₪30/month budget with alerts at 50/90/100/150% (alerts only — Google's
