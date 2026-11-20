@@ -89,6 +89,20 @@ def test_open_and_closed_by_the_israel_clock():
     assert ctx.open_now(None, _at(0, 10)) is None
 
 
+def test_next_opening_is_computed_not_guessed():
+    # MEH-3504: on a Friday evening the model said «מוצאי שבת»; the answer is Sunday.
+    he = "א'-ה' 07:00-14:00, ו' 06:30-13:00"
+    assert ctx.next_opening(he, _at(5, 20)) == "ראשון 07:00"  # Friday 20:00
+    assert ctx.next_opening(he, _at(6, 21)) == "מחר 07:00"  # Saturday night
+    assert ctx.next_opening(he, _at(1, 6)) == "היום 07:00"  # Monday before opening
+    assert ctx.next_opening(he, _at(1, 15)) == "מחר 07:00"  # Monday after closing
+    assert ctx.next_opening(he, _at(4, 15)) == "מחר 06:30"  # Thursday → Friday hours
+    assert ctx.next_opening(he, _at(1, 9)) is None  # open now
+    assert ctx.next_opening("Wed 10:00-12:00", _at(3, 13)) == "רביעי הבא 10:00"  # a week on
+    assert ctx.next_opening("א'-ה' 9:00-17:00, ו' בתיאום", _at(5, 20)) is None
+    assert ctx.next_opening(None, _at(5, 20)) is None
+
+
 def test_no_private_field_enters_the_facts(db):
     p = _business(db)
     dumped = json.dumps(ctx.facts(p, "מה הטלפון שלכם?"), ensure_ascii=False)
@@ -108,6 +122,7 @@ def test_the_keys_are_the_whitelist(db):
         "now_in_israel",
         "opening_hours",
         "open_now",
+        "next_opening",  # MEH-3504: derived from the public hours
         "special_hours",
         "order_window",
         "on_vacation_until",
