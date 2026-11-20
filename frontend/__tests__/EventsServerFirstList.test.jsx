@@ -3,7 +3,8 @@
  * (whats-on)/layout.js reads both unfiltered lists and hands them in as
  * `initialRows`; EventsClient uses the one for the tab the visit arrived on,
  * once, and only when the URL carries no filter. Everything else fetches as
- * before — which keeps MEH-3463's "one request per tab switch / Back" true.
+ * before — which keeps MEH-3463's "one request per tab switch / Back" true
+ * (e2e/flows/46-hub-tab-switch.spec.ts counts those requests).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
