@@ -12,6 +12,7 @@ from app.limits import enforce_cap
 from app.auth import require_producer
 from app.database import get_db
 from app.rate_limit import limiter
+from app.routers.product_describe import _business_key as _ai_business_key  # MEH-3497
 from app.services.availability_validation import (
     AvailabilityValidationError,
     resolve_vacation_until,
@@ -1258,12 +1259,22 @@ OTP_NOT_SENT = "לא הצלחנו לשלוח את הקוד בוואטסאפ כר
 # ---------------------------------------------------------------------------
 
 
+# MEH-3497: a per-business daily cap on top of the per-IP hourly one.
+BIO_DAILY_CAP = "20/day"
+
+
+def _mark_bio(request: Request, user: User = Depends(require_producer)) -> User:
+    request.state.ai_key = f"bio:{user.producer_id or user.id}"
+    return user
+
+
 @router.post("/bio/generate", response_model=None)
 @limiter.limit("5/hour")
+@limiter.limit(BIO_DAILY_CAP, key_func=_ai_business_key)
 def generate_bio_endpoint(
     request: Request,
     body: BioGenerateIn,
-    user: User = Depends(require_producer),
+    user: User = Depends(_mark_bio),
 ) -> dict[str, Any]:
     """Generate a Hebrew ≤150-char business description via Claude Haiku.
 
