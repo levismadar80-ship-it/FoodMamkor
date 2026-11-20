@@ -73,6 +73,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import EditHubCard from "@/components/EditHubCard";
 import ProductsSection from "@/components/ProductsSection";
+import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import OrganizerCityCard from "./OrganizerCityCard";
@@ -296,6 +297,8 @@ function EditPageInner() {
   // (pre-existing) dirty flag up via reportDirty(key, bool); the page only
   // aggregates — no card save logic changes.
   const [dirtyMap, setDirtyMap] = useState({});
+  // MEH-3483: bumped after «ספרו לנו על העסק» saves, so every card reseeds.
+  const [fillKey, setFillKey] = useState(0);
   const reportDirty = useCallback((key, isDirty) => {
     setDirtyMap((m) =>
       Boolean(m[key]) === Boolean(isDirty) ? m : { ...m, [key]: isDirty }
@@ -708,7 +711,7 @@ function EditPageInner() {
 
   return (
     // MEH-2460: the chips read the organizer's gate when she is one.
-    <EditAccordionKindContext.Provider value={profile.kind ?? "producer"}>
+    <EditAccordionKindContext.Provider key={fillKey} value={profile.kind ?? "producer"}>
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
       {/* MEH-1100 + MEH-1237: sticky unsaved-changes banner — sits just under
           the layout's sticky tab nav (top-0 z-10, ~46px tall). Names the dirty
@@ -757,6 +760,9 @@ function EditPageInner() {
         <h1 className="font-headline-lg text-xl font-bold text-text">
           {tAcc("hub_title")}
         </h1>
+        {/* Locations as the page shows them (an edit this session wins over the loaded profile). */}
+        <PageFillPanel profile={{ ...profile, locations: currentLocations }} readUrl="/producers/me/page-fill/read" saveUrl="/producers/me" blocked={anyDirty}
+          onSaved={() => api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); })} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {visibleGroupKeys.map((g) => {
             const tile = groupTile(g);
