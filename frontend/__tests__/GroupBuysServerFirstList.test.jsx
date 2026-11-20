@@ -69,12 +69,23 @@ describe("/group-buys server-first list (MEH-2233)", () => {
     expect(html).not.toContain('data-testid="group-buy-card"');
   });
 
-  it("a seeded arrival makes no list or count request", async () => {
+  it("a seeded arrival shows the server's cards, then refreshes them without the skeleton", async () => {
     render(<GroupBuysClient initialItems={[GB]} initialCounts={COUNTS} />);
     expect(screen.getAllByTestId("group-buy-card")).toHaveLength(1);
+    await waitFor(() => expect(listCalls()).toHaveLength(1));
+    expect(listCalls()[0][1]).toEqual({ params: { status: "open" } });
+    expect(countCalls()).toHaveLength(1);
+    // the fresh answer replaces the cached one (a Back replays an old list)
+    await waitFor(() => expect(screen.getByTestId("group-buy-card").getAttribute("href")).toContain("gb-from-client"));
+  });
+
+  it("a failed quiet refresh keeps the server's cards, with no error state", async () => {
+    api.get.mockImplementation(() => Promise.reject(new Error("offline")));
+    render(<GroupBuysClient initialItems={[GB]} initialCounts={COUNTS} />);
+    await waitFor(() => expect(listCalls()).toHaveLength(1));
     await new Promise((r) => setTimeout(r, 20));
-    expect(listCalls()).toHaveLength(0);
-    expect(countCalls()).toHaveLength(0);
+    // the error state would replace the cards
+    expect(screen.getAllByTestId("group-buy-card")).toHaveLength(1);
   });
 
   it("a server failure (null) fetches both, as before", async () => {
@@ -86,17 +97,16 @@ describe("/group-buys server-first list (MEH-2233)", () => {
 
   it("a city typed after arrival fetches that city (the seed is used once)", async () => {
     render(<GroupBuysClient initialItems={[GB]} initialCounts={COUNTS} />);
+    await waitFor(() => expect(listCalls()).toHaveLength(1)); // the quiet refresh
     fireEvent.change(screen.getByTestId("city-input"), { target: { value: "חיפה" } });
-    await waitFor(() => expect(listCalls()).toHaveLength(1));
-    expect(listCalls()[0][1]).toEqual({ params: { status: "open", city: "חיפה" } });
-    await waitFor(() => expect(countCalls()).toHaveLength(1));
-    expect(countCalls()[0][1]).toEqual({ params: { city: "חיפה" } });
+    await waitFor(() => expect(listCalls()).toHaveLength(2));
+    expect(listCalls()[1][1]).toEqual({ params: { status: "open", city: "חיפה" } });
+    await waitFor(() => expect(countCalls()).toHaveLength(2));
+    expect(countCalls()[1][1]).toEqual({ params: { city: "חיפה" } });
   });
 
-  it("a server empty list renders the empty state without a request", async () => {
-    render(<GroupBuysClient initialItems={[]} initialCounts={{ open: 0, funded: 0, fulfilled: 0 }} />);
-    expect(screen.getByTestId("group-buys-empty")).toBeTruthy();
-    await new Promise((r) => setTimeout(r, 20));
-    expect(listCalls()).toHaveLength(0);
+  it("a server empty list renders the empty state at once", () => {
+    const html = renderToString(<GroupBuysClient initialItems={[]} initialCounts={{ open: 0, funded: 0, fulfilled: 0 }} />);
+    expect(html).toContain('data-testid="group-buys-empty"');
   });
 });

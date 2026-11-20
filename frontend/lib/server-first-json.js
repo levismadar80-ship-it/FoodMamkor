@@ -2,6 +2,8 @@
 import { serverFetch } from "@/lib/server-fetch";
 import { API_URL } from "@/lib/env";
 
+const FIRST_PAINT_TIMEOUT_MS = 2500;
+
 /**
  * Module:   server-first-json
  * Purpose:  Read one API response on the server for a page's first paint
@@ -21,7 +23,9 @@ import { API_URL } from "@/lib/env";
  */
 export async function serverFirstJson(path, accept) {
   try {
-    const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
+    // A short, single attempt: the HTML waits on it, and a miss only means the
+    // client fetches (serverFetch's defaults, 8s × 3, could hold a cold page ~25s).
+    const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } }, { timeoutMs: FIRST_PAINT_TIMEOUT_MS, retries: 0 });
     if (!res.ok) return null;
     const json = await res.json();
     return accept(json) ? json : null;

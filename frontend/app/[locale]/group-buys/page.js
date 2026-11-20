@@ -41,7 +41,8 @@ export async function generateMetadata({ params }) {
 // phone (staging 20/11, slow 4G + CPU x4). null = the client fetches, as before.
 export default async function GroupBuysPage() {
   const [initialItems, initialCounts] = await Promise.all([
-    serverFirstJson("/group-buys?status=open", Array.isArray),
+    // Every row an object with an id: a malformed row must not break the server render.
+    serverFirstJson("/group-buys?status=open", (j) => Array.isArray(j) && j.every((x) => !!x && typeof x === "object" && "id" in x)),
     serverFirstJson("/group-buys/counts", (j) => !!j && typeof j === "object" && !Array.isArray(j)),
   ]);
   return <GroupBuysClient initialItems={initialItems} initialCounts={initialCounts} />;
