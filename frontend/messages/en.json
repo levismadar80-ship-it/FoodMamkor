@@ -4920,6 +4920,11 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_9": {
+            "i0": "A weekly email summary of what happened on your page. You can turn it off in the «Insights» tab.",
+            "i1": "In a product's ingredients list, allergens are highlighted so customers see them right away.",
+            "i2": "On the business page, the FAQ is shorter and opens only when tapped. The delivery question takes you straight to the delivery details."
+          },
           "v1_5_8": {
             "i0": "Products can now be priced per bottle or per box, saved without a price, and given allergens, «may contain» and storage and shelf life.",
             "i1": "For a workshop that repeats, customers pick a date when they sign up.",
