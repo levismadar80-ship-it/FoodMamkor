@@ -30,7 +30,8 @@ CITY_NOT_SERVED_DETAIL = "בית העסק לא עושה משלוחים לעיר 
 FEE_NOT_PUBLISHED_DETAIL = (
     "בית העסק עוד לא פרסם דמי משלוח, ולכן אפשר להזמין ממנו רק באיסוף"
 )
-AREA_MINIMUM_DETAIL = "סכום ההזמנה נמוך מהמינימום למשלוח לעיר הזאת"
+# MEH-3511: no «לעיר הזאת» — the minimum may now be the business-wide one.
+AREA_MINIMUM_DETAIL = "סכום ההזמנה נמוך מהמינימום למשלוח"
 
 
 class DeliveryRefused(Exception):

@@ -14,6 +14,10 @@ History:  MEH-3511 (creation).
 
 from __future__ import annotations
 
+from typing import Any
+
+from fastapi import HTTPException
+
 MIN_BUSINESS_DAYS = 1
 MAX_BUSINESS_DAYS = 30
 
@@ -35,3 +39,12 @@ def business_days(value: int | None) -> int | None:
 def check_range(low: int | None, high: int | None) -> None:
     if low is not None and high is not None and low > high:
         raise ValueError(DAYS_REVERSED)
+
+
+def check_stored(producer: Any) -> None:
+    """MEH-3511 review: a PUT may send one end of the range while the other is
+    stored — check the business range on the row after the patch."""
+    try:
+        check_range(producer.delivery_days_min, producer.delivery_days_max)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

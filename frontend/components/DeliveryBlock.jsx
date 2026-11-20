@@ -15,7 +15,7 @@ import NextDeliveryLine from "@/components/NextDeliveryLine";
 import PickupSchedule from "@/components/PickupSchedule"; // MEH-3512
 import DeliveryTerms from "@/components/DeliveryTerms"; // MEH-3511
 import NationwideZones from "@/components/NationwideZones"; // MEH-3511
-import { daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
+import { cutoffOfRow, daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
@@ -87,7 +87,7 @@ const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 // `fee != null` and not `fee ?` for the same reason the producer-level line
 // uses explicit null gates (MEH-1577): 0 is a VALUE ("משלוח חינם"), and a
 // truthiness test would silently render the free case as "no fee stated".
-function AreaRow({ da, t, fee = null }) {
+function AreaRow({ da, t, fee = null, next = null }) {
   const feeLabel =
     fee === 0 ? null : splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL }));
   const freeAbove = splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL }));
@@ -103,6 +103,9 @@ function AreaRow({ da, t, fee = null }) {
           className="text-xs text-fg-muted"
           testid="area-terms"
         />
+        {/* MEH-3511 review: in a day group whose rows do not share a cutoff,
+            a row with its own cutoff states its own next date. */}
+        {next}
       </span>
       <span className="flex items-center gap-2">
         {fee != null ? (
@@ -224,13 +227,76 @@ function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer =
           on every day (Sapir, option א, 13/11). */}
       <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
       {/* MEH-3485: the date of the next run, under its day heading. */}
-      <NextDeliveryLine days={days} producer={producer} cutoff={sharedCutoff(rows)} className="-mt-1 mb-1.5" />
-      <ul className={LIST_CARD}>
-        {rows.map((da) => (
-          <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
-        ))}
-      </ul>
+      {groupNext(rows, days, producer)}
+      <AreaList rows={rows} t={t} feeOf={feeOf} days={days} producer={producer} />
     </div>
+  );
+}
+
+/**
+ * The rows of one day set (a group, or the hoisted single day).
+ * @param {{ rows: any[], t: any, feeOf: (da: any) => number | null,
+ *   days: string[] | null, producer: any, allRows?: any[] }} props
+ */
+function AreaList({ rows, t, feeOf, days, producer, allRows = rows }) {
+  const shared = sharedCutoff(allRows);
+  return (
+    <ul className={LIST_CARD}>
+      {/* Sapir 20/11: a town with nothing of its own to say is a name, not a
+          row — the plain towns read as one line, the way Google Business
+          lists service areas; only towns with their own fee, minimum or
+          terms keep a row. */}
+      {plainLine(rows, feeOf)}
+      {rows.filter((da) => !isPlainArea(da, feeOf(da))).map((da) => (
+        <AreaRow
+          key={da.id ?? da.city}
+          da={da}
+          t={t}
+          fee={feeOf(da)}
+          next={
+            !shared && cutoffOfRow(da) ? (
+              <NextDeliveryLine days={days} producer={producer} cutoff={cutoffOfRow(da)} className="text-xs" />
+            ) : null
+          }
+        />
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The group's «המשלוח הבא» line: the shared cutoff when the rows share one;
+ * else the business window, shown only while some row has no cutoff of its
+ * own (those rows then state their own date).
+ * @param {any[]} rows @param {string[] | null} days @param {any} producer
+ * @param {string} [className]
+ */
+function groupNext(rows, days, producer, className = "-mt-1 mb-1.5") {
+  const shared = sharedCutoff(rows);
+  if (!shared && rows.every((da) => cutoffOfRow(da))) return null;
+  return <NextDeliveryLine days={days} producer={producer} cutoff={shared} className={className} />;
+}
+
+/** A row with nothing beyond its town name. @param {any} da @param {number | null} fee */
+function isPlainArea(da, fee) {
+  return (
+    fee == null &&
+    !da.min_order &&
+    typeof da.free_delivery_above !== "number" &&
+    !da.delivery_days_min &&
+    !da.delivery_days_max &&
+    !da.order_cutoff_day
+  );
+}
+
+/** @param {any[]} rows @param {(da: any) => number | null} feeOf */
+function plainLine(rows, feeOf) {
+  const plain = rows.filter((da) => isPlainArea(da, feeOf(da)));
+  if (plain.length === 0) return null;
+  return (
+    <li className="px-3.5 py-3 text-sm text-text" data-testid="area-plain-cities">
+      {plain.map((da) => da.city).join(", ")}
+    </li>
   );
 }
 
@@ -746,29 +812,23 @@ export default function DeliveryBlock({
                   : t("dispatch_days", { day: grouped.day })}
               </FactLine>
               {/* MEH-3485: one shared day set → one next-run date. */}
-              <NextDeliveryLine
+              {groupNext(grouped.rows, daysOfRow(grouped.rows[0]), producer, "-mt-1 mb-2")}
+              {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
+              <AreaList
+                rows={visibleAreaRows}
+                allRows={grouped.rows}
+                t={t}
+                feeOf={feeOf}
                 days={daysOfRow(grouped.rows[0])}
                 producer={producer}
-                cutoff={sharedCutoff(grouped.rows)}
-                className="-mt-1 mb-2"
               />
-              {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
-              <ul className={LIST_CARD}>
-                {visibleAreaRows.map((da) => (
-                  <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
-                ))}
-              </ul>
               {areaToggle}
             </>
           )}
 
           {grouped.mode === "flat" && (
             <>
-              <ul className={LIST_CARD}>
-                {visibleAreaRows.map((da) => (
-                  <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
-                ))}
-              </ul>
+              <AreaList rows={visibleAreaRows} allRows={grouped.rows} t={t} feeOf={feeOf} days={null} producer={producer} />
               {areaToggle}
             </>
           )}

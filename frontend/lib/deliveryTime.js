@@ -6,7 +6,7 @@
  *           number. Returns an i18n key + values; the caller translates.
  * Touches:  nothing — pure.
  * Does NOT: validate (backend app/schemas/delivery_time.py: 1..30, low ≤ high)
- *           or pick the zone-vs-business value (`timeOf` below takes the row
+ *           or pick the zone-vs-business value (the caller passes the row
  *           first, the business second — the same inheritance the server
  *           states in its column comments).
  * Related:  components/DeliveryTerms.jsx (renders it).
@@ -29,14 +29,3 @@ export function deliveryTimeMessage(low, high) {
   return { key: "business_days_range", values: { min: /** @type {number} */ (lo), max: hi } };
 }
 
-/**
- * A row's own delivery time, else the business's (a zone row carries its
- * zone's; a plain row carries none and inherits).
- * @param {{ delivery_days_min?: number | null, delivery_days_max?: number | null } | null | undefined} row
- * @param {{ delivery_days_min?: number | null, delivery_days_max?: number | null } | null | undefined} business
- */
-export function timeOf(row, business) {
-  const own = num(row?.delivery_days_min) !== null || num(row?.delivery_days_max) !== null;
-  const src = own ? row : business;
-  return deliveryTimeMessage(src?.delivery_days_min, src?.delivery_days_max);
-}

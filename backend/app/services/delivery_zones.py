@@ -100,6 +100,24 @@ _ZONE_ONLY = (
 )
 
 
+# MEH-3511 review finding 2: «כל הארץ חוץ מ…» and a zone holding the same city
+# answered differently on the checker, the filter and the order flow.
+EXCLUDED_ZONE_CITY_DETAIL = (
+    "עיר לא יכולה להיות גם ברשימת «חוץ מ» וגם באזור משלוח: {city}."
+)
+
+
+def _refuse_excluded_zone_city(producer: Producer, member: dict[str, str]) -> None:
+    if not producer.delivery_nationwide:
+        return
+    excluded = {city_key(c) for c in (producer.delivery_excluded_cities or [])}
+    clash = sorted(c for c in member if c in excluded)
+    if clash:
+        raise HTTPException(
+            status_code=422, detail=EXCLUDED_ZONE_CITY_DETAIL.format(city=clash[0])
+        )
+
+
 def sync(
     db: Session,
     producer: Producer,
@@ -131,16 +149,20 @@ def sync(
         member = before
     stored: list[dict[str, Any]] = producer.delivery_zones or []  # type: ignore[assignment]
     by_name = {str(z.get("name")): z for z in stored}
+    _refuse_excluded_zone_city(producer, member)
     for area in areas:
         name = member.get(city_key(area.city))
         zone = by_name.get(name) if name else None
         if zone is None:
             # Out of every zone: the city keeps the day, minimum and fee it
             # had; only the zone-only threshold goes.
-            if producer.delivery_nationwide and stored:
+            if producer.delivery_nationwide and (
+                stored or city_key(area.city) in before
+            ):
                 # MEH-3511: a nationwide business with zones keeps only zone
-                # rows — a city outside every zone is just «כל הארץ». Without
-                # zones its rows are left exactly as before this card.
+                # rows — a city outside every zone is just «כל הארץ». A city
+                # that just left its zone goes too (review finding 4). Legacy
+                # rows of a nationwide business without zones stay as before.
                 db.delete(area)
                 continue
             area.zone_name = None  # type: ignore[assignment]

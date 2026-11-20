@@ -173,3 +173,50 @@ def test_a_bad_zone_cutoff_is_a_hebrew_422(client, db):
 def test_a_negative_business_minimum_is_refused(client, db):
     _, user = _owner(db)
     assert "שלילי" in _detail(_put(client, user, {"delivery_min_order": -1}))
+
+
+# --- fresh-reviewer findings (rule 5a) -------------------------------------
+
+
+def test_a_zone_on_a_nationwide_business_sends_no_new_city_alert(client, db, monkeypatch):
+    # Finding 1: the zone's cities were reported as new delivery cities.
+    from app.services import delivery_waitlist
+
+    seen = []
+    monkeypatch.setattr(delivery_waitlist, "notify_cities", lambda *a, **k: seen.append(a))
+    producer, user = _owner(db)
+    assert _put(client, user, _nationwide(delivery_zones=[])).status_code == 200
+    r = _put(client, user, _nationwide())
+    assert r.status_code == 200, r.text
+    assert seen == []
+    assert set(_rows(db, producer)) == {"תל אביב-יפו", "רמת גן"}
+
+
+def test_an_excluded_city_cannot_sit_in_a_zone(client, db):
+    # Finding 2: the checker said no, the order flow and the filter said yes.
+    producer, user = _owner(db)
+    r = _put(client, user, _nationwide(delivery_excluded_cities=["רמת גן"]))
+    assert r.status_code == 422, r.text
+    assert "רמת גן" in r.json()["detail"]
+    assert _rows(db, producer) == {}
+
+
+def test_dropping_the_zones_of_a_nationwide_business_drops_their_rows(client, db):
+    # Finding 4: rows stayed with the zone's minimum and fee, read by the chat.
+    producer, user = _owner(db)
+    assert _put(client, user, _nationwide()).status_code == 200
+    r = _put(client, user, {"delivery_zones": []})
+    assert r.status_code == 200, r.text
+    assert _rows(db, producer) == {}
+
+
+def test_one_end_of_the_range_is_checked_against_the_stored_other(client, db):
+    # Finding 5: stored max 5, then min 10 alone → the page said «10–5».
+    producer, user = _owner(db)
+    assert _put(client, user, {"delivery_days_max": 5}).status_code == 200
+    r = _put(client, user, {"delivery_days_min": 10})
+    assert r.status_code == 422, r.text
+    assert "קטן מהשני" in r.json()["detail"]
+    db.expire_all()
+    db.refresh(producer)
+    assert (producer.delivery_days_min, producer.delivery_days_max) == (None, 5)

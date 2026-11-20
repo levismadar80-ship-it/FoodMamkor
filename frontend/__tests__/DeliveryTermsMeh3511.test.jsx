@@ -143,3 +143,49 @@ describe("checker on a nationwide business with a zone (MEH-3511)", () => {
     expect(screen.getByTestId("delivery-checker")).toBeTruthy();
   });
 });
+
+// Sapir 20/11: a day group of towns with nothing of their own reads as one
+// line of names; a town with its own minimum keeps its row.
+describe("plain towns in a day group read as one line", () => {
+  const town = (id, city, day, extra = {}) => ({ id, city, delivery_day: day, delivery_days: [day], ...extra });
+  const producer = {
+    offers_delivery: true,
+    delivery_areas: [
+      town("1", "עמיקם", "רביעי"),
+      town("2", "אביאל", "רביעי"),
+      town("3", "זכרון יעקב", "רביעי", { min_order: 120 }),
+      town("4", "קיסריה", "חמישי"),
+    ],
+  };
+
+  it("many plain + one detailed: one line of names, one row", () => {
+    renderBlock(producer);
+    const lines = screen.getAllByTestId("area-plain-cities").map((el) => el.textContent);
+    expect(lines).toEqual(["עמיקם, אביאל", "קיסריה"]);
+    expect(screen.getByText("זכרון יעקב")).toBeInTheDocument();
+  });
+
+  it("no plain town: no line", () => {
+    renderBlock({ ...producer, delivery_areas: [town("3", "זכרון יעקב", "רביעי", { min_order: 120 }), town("5", "חדרה", "חמישי", { min_order: 90 })] });
+    expect(screen.queryByTestId("area-plain-cities")).toBeNull();
+  });
+});
+
+// Fresh-reviewer finding 3: a zone with its own cutoff and a plain town on the
+// same day share a heading; the zone row states its own next date.
+describe("a day group whose rows do not share a cutoff", () => {
+  it("the zone row carries its own «המשלוח הבא», the group line keeps the business one", () => {
+    // Mon 23/11 09:00. Zone closes Mon 08:00 → misses this Tuesday → 1.12.
+    renderBlock({
+      offers_delivery: true,
+      delivery_areas: [
+        { id: "z", city: "רמת גן", delivery_day: "שלישי", delivery_days: ["שלישי"], zone_name: "אקספרס", order_cutoff_day: "שני", order_cutoff_time: "08:00" },
+        { id: "p", city: "חולון", delivery_day: "שלישי", delivery_days: ["שלישי"] },
+      ],
+    });
+    const lines = screen.getAllByText(/המשלוח הבא/).map((el) => el.textContent);
+    expect(lines).toHaveLength(2);
+    expect(lines.some((l) => l.includes("24.11"))).toBe(true);
+    expect(lines.some((l) => l.includes("1.12"))).toBe(true);
+  });
+});

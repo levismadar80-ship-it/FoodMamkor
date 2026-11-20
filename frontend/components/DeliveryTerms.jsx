@@ -7,7 +7,7 @@
  *           יום שני 12:00». One component for the business-wide lines (under
  *           the fee line) and a zone row's sublines.
  * Does NOT: decide inheritance beyond the delivery time (lib/deliveryTime.js
- *           timeOf), render the fee (DeliveryBlock's fee line / AreaRow), or
+ *           the caller), render the fee (DeliveryBlock's fee line / AreaRow), or
  *           compute the next delivery date (NextDeliveryLine).
  * Related:  components/DeliveryBlock.jsx, components/NationwideZones.jsx.
  * History:  MEH-3511 (creation).
