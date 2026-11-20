@@ -37,10 +37,15 @@ export default function EditProducerPage() {
   const [reloadKey, setReloadKey] = useState(0);
   // MEH-3472: the organizer orders the WHOLE catalog the admin is building —
   // published products (producer.products) and drafts (reported by the
-  // import panel). `organizeEdits` holds the organizer's own updates
-  // (position / group_id) until the next re-read replaces the lists.
+  // import panel). `organizeEdits` maps product id → the organizer's own
+  // saved {position, group_id}. It is laid OVER every fresh list and never
+  // cleared: a later import or delete must not rebuild the organizer from
+  // the page-load positions and then save that stale order (rule-5a review).
   const [drafts, setDrafts] = useState(/** @type {any[]} */ ([]));
-  const [organizeEdits, setOrganizeEdits] = useState(/** @type {any[] | null} */ (null));
+  const [organizeEdits, setOrganizeEdits] = useState(/** @type {Record<string, {position?: number|null, group_id?: string|null}>} */ ({}));
+  // Bumped after the organizer saves groups, so the import panel's
+  // «קבוצה: …» lines re-read the names.
+  const [groupsVersion, setGroupsVersion] = useState(0);
   const t = useTranslations("admin");
   const locale = useLocale();
 
@@ -70,13 +75,19 @@ export default function EditProducerPage() {
       .finally(() => setFetching(false));
   }, [id, user, reloadKey]);
 
-  const organizeBase = useMemo(
-    () => [...(producer?.products || []), ...drafts],
-    [producer, drafts],
+  const organizeProducts = useMemo(
+    () =>
+      [...(producer?.products || []), ...drafts].map((p) =>
+        organizeEdits[p.id] ? { ...p, ...organizeEdits[p.id] } : p,
+      ),
+    [producer, drafts, organizeEdits],
   );
-  // A new list from the server (import, approve, delete) wins over local
-  // edits: the organizer then rebuilds from the fresh set.
-  useEffect(() => setOrganizeEdits(null), [organizeBase]);
+  /** @param {any[]} next */
+  const recordOrganizeEdits = (next) =>
+    setOrganizeEdits((prev) => ({
+      ...prev,
+      ...Object.fromEntries(next.map((p) => [p.id, { position: p.position, group_id: p.group_id }])),
+    }));
 
   // MEH-3456: after drafts are approved the page re-reads the producer
   // without the skeleton, so the import panel keeps its result line and only
@@ -202,15 +213,21 @@ export default function EditProducerPage() {
       )}
       {/* MEH-2312: catalog import from the business's existing store → drafts
           the admin approves. Any status: Sandra's page is approved and live. */}
-      <AdminProductImport producerId={String(id)} onApproved={refreshProducts} onDraftsChange={setDrafts} />
+      <AdminProductImport
+        producerId={String(id)}
+        onApproved={refreshProducts}
+        onDraftsChange={setDrafts}
+        groupsVersion={groupsVersion}
+      />
       {/* MEH-3472: the owner's organizer, against the admin routes (same
           service, drafts in scope). It renders nothing below 2 products —
           the same rule as on the owner's dashboard. */}
-      {organizeBase.length >= 2 && (
+      {organizeProducts.length >= 2 && (
         <section className="bg-surface rounded-md border border-border p-6 my-6" data-testid="admin-product-organizer">
           <ProductOrganizer
-            products={organizeEdits ?? organizeBase}
-            onProductsChange={setOrganizeEdits}
+            products={organizeProducts}
+            onProductsChange={recordOrganizeEdits}
+            onGroupsChange={() => setGroupsVersion((v) => v + 1)}
             basePath={`/admin/producers/${id}`}
           />
         </section>

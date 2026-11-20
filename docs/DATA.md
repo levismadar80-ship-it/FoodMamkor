@@ -1910,11 +1910,13 @@ PUT    /admin/producers/{producer_id}/product-groups          admin — MEH-3472
 GET    /admin/producers/{producer_id}/product-groups          admin — MEH-3472: the business's groups [{id, name}]
 PUT    /admin/producers/{producer_id}/product-order           admin — MEH-3472: `product_ids` = every product of the business, published AND
                                                                draft, each once (else 409). The owner's route stays published-only.
+                                                               One `products.position` column serves both: an owner reorder numbers
+                                                               published rows 0..n-1 and moves drafts after them (n..), in their order.
 PUT    /admin/producers/{producer_id}/products/{product_id}/group  admin — MEH-3472: {group_id|null}; a draft or published product of THAT
                                                                business (another business's product → 404). All four share
                                                                services/product_organize.py with the owner routes; 60/120/120 per hour.
 POST   /admin/producers/{producer_id}/product-import          admin — MEH-2312: rows [{name, description, price, unit, source_image_url, group?}] (≤100) →
-                                                               MEH-3472: `group` (≤60, blank = none) puts the draft in a product group of
+                                                               MEH-3472: `group` (≤200 or 422, blank = none) puts the draft in a product group of
                                                                that name — matched to an existing group by strip+casefold, else created in
                                                                first-seen order; a name the owner could not type (>40) → `invalid[]`;
                                                                existing + new groups > 20 → 409, nothing written.

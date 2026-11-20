@@ -52,9 +52,11 @@ function move(list, from, to) {
  * admin. The owner writes /producers/me/...; the admin edit page passes
  * /admin/producers/{id}, whose routes run the same service
  * (backend/app/services/product_organize.py) with drafts in scope.
- * @param {{ products: Product[], onProductsChange: (next: Product[]) => void, basePath?: string }} props
+ * `onGroupsChange` (optional) is told after a group list is saved, so a
+ * sibling that shows group names (the admin import panel) can re-read them.
+ * @param {{ products: Product[], onProductsChange: (next: Product[]) => void, basePath?: string, onGroupsChange?: () => void }} props
  */
-export default function ProductOrganizer({ products, onProductsChange, basePath = "/producers/me" }) {
+export default function ProductOrganizer({ products, onProductsChange, basePath = "/producers/me", onGroupsChange }) {
   const t = useTranslations("settings.products.organize");
   const [open, setOpen] = useState(false);
   /** @type {[Group[], (g: Group[]) => void]} */
@@ -86,14 +88,16 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
   }, [open, idKey]);
 
   // Fetched on open, not on mount: the dashboard loads this card for every
-  // owner, and most will never open it.
+  // owner, and most will never open it. Re-read when the product set changes
+  // too (MEH-3472): an admin import can add groups while the organizer is
+  // open, and saving the old list would delete them.
   useEffect(() => {
     if (!open) return;
     api
       .get(`${basePath}/product-groups`)
       .then((r) => setGroups(Array.isArray(r.data) ? r.data : []))
       .catch(() => setGroups([]));
-  }, [open, basePath]);
+  }, [open, basePath, idKey]);
 
   /** @param {unknown} err */
   const fail = (err) =>
@@ -144,6 +148,7 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
     try {
       const r = await api.put(`${basePath}/product-groups`, { groups: next });
       setGroups(r.data);
+      onGroupsChange?.();
       return /** @type {Group[]} */ (r.data);
     } catch (err) {
       fail(err);

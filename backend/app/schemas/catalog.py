@@ -723,7 +723,9 @@ class ProductImportRow(BaseModel):
     source_image_url: str | None = Field(None, max_length=2000)
     # MEH-3472: the source store's category; the import creates a product
     # group of that name (matched case-insensitively) and puts the draft in it.
-    group: str | None = Field(None, max_length=60)
+    # 200, not 40: a long name must reach _group_name and come back as an
+    # invalid ROW, not fail the whole batch with 422 (rows are loose).
+    group: str | None = Field(None, max_length=200)
 
     @field_validator("group")
     @classmethod

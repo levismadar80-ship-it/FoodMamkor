@@ -1,3 +1,4 @@
+# guard-ok: backend/pyproject.toml is edit-denied for CC; Sapir adds this file to [tool.mypy].files (MEH-3472 PR)
 """
 Module:   product_organize (service)
 Purpose:  One implementation of product groups and product order for a
@@ -39,7 +40,12 @@ def groups_of(producer: Producer) -> list[dict[str, str]]:
 def replace_groups(db: Session, producer: Producer, body: ProductGroupsIn) -> list[dict[str, str]]:
     """The whole ordered list in one write: add (no id), rename, reorder,
     delete (absent). Products of a deleted group become ungrouped — drafts
-    included, so a draft never points at a group that no longer exists."""
+    included, so a draft never points at a group that no longer exists.
+
+    The producer row is locked first (as the import does): without it an
+    import committing new groups between this read and this write would be
+    overwritten, leaving its drafts with a dangling group_id."""
+    db.refresh(producer, with_for_update=True)
     known = {g["id"] for g in groups_of(producer)}
     new: list[dict[str, str]] = []
     for g in body.groups:
@@ -71,6 +77,19 @@ def set_order(
         raise HTTPException(status_code=409, detail=ORDER_CHANGED_DETAIL)
     for pos, pid in enumerate(product_ids):
         by_id[pid].position = pos  # type: ignore[assignment,index]
+    if not include_drafts:
+        # One `position` column serves both scopes. The owner numbers only
+        # published rows 0..n-1, so drafts (which the admin may have numbered
+        # in the same range) move after them, keeping their own relative
+        # order — otherwise an approved draft lands mid-list (MEH-3472).
+        drafts = (
+            db.query(Product)
+            .filter(Product.producer_id == producer_id, Product.is_draft.is_(True))
+            .order_by(Product.position.asc().nulls_last(), Product.id.asc())
+            .all()
+        )
+        for offset, d in enumerate(drafts):
+            d.position = len(product_ids) + offset  # type: ignore[assignment]
     db.commit()
     return [by_id[pid] for pid in product_ids]  # type: ignore[index]
 
@@ -92,6 +111,7 @@ def assign_group(
     product = q.first()
     if product is None:
         raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND_DETAIL)
+    db.refresh(producer, with_for_update=True)  # same lock as replace_groups
     if group_id is not None and group_id not in {g["id"] for g in groups_of(producer)}:
         raise HTTPException(status_code=404, detail=GROUP_NOT_FOUND_DETAIL)
     product.group_id = group_id  # type: ignore[assignment]

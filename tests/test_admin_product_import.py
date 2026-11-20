@@ -394,6 +394,20 @@ def test_a_group_name_over_40_characters_is_an_invalid_row(client, db):
     assert _groups(db, producer) == []
 
 
-def test_group_over_60_characters_is_422(client, db):
+def test_a_61_character_group_is_an_invalid_row_not_a_422(client, db):
+    # Rule-5a review: a schema cap at 60 failed the whole batch; one long
+    # category must cost only its own row.
     producer = make_producer(db)
-    assert _import(client, db, producer, rows=[{"name": "x", "price": 10, "group": "א" * 61}]).status_code == 422
+    resp = _import(client, db, producer, rows=[
+        {"name": "ארוך", "price": 10, "group": "א" * 61},
+        {"name": "רגיל", "price": 10, "group": "לחמים"},
+    ])
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["created"] == 1
+    assert [r["index"] for r in body["invalid"]] == [0]
+
+
+def test_group_over_200_characters_is_422(client, db):
+    producer = make_producer(db)
+    assert _import(client, db, producer, rows=[{"name": "x", "price": 10, "group": "א" * 201}]).status_code == 422

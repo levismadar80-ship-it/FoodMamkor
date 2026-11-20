@@ -166,7 +166,10 @@ def test_deleting_a_group_ungroups_drafts_too(client, db):
     h = auth_header(_admin(db))
     (draft,) = _products(db, producer, 1, draft=True)
     g = client.put(f"{_base(producer.id)}/product-groups", json={"groups": [{"name": "לחמים"}]}, headers=h).json()[0]
-    client.put(f"{_base(producer.id)}/products/{draft.id}/group", json={"group_id": g["id"]}, headers=h)
+    r = client.put(f"{_base(producer.id)}/products/{draft.id}/group", json={"group_id": g["id"]}, headers=h)
+    assert r.status_code == 200, r.text
+    db.refresh(draft)
+    assert draft.group_id == g["id"]  # grouped first, or the next line proves nothing
     assert client.put(f"{_base(producer.id)}/product-groups", json={"groups": []}, headers=h).status_code == 200
     db.refresh(draft)
     assert draft.group_id is None
@@ -182,3 +185,22 @@ def test_draft_list_carries_group_and_position(client, db):
     (row,) = client.get(f"{_base(producer.id)}/product-drafts", headers=h).json()
     assert row["group_id"] == g["id"]
     assert row["position"] == 0
+
+
+def test_owner_reorder_moves_drafts_after_published(client, db):
+    # Rule-5a review: one `position` column serves both scopes. The admin
+    # numbers drafts in among published rows; the owner's reorder of
+    # published rows must push drafts after them, not leave them colliding.
+    producer = make_producer(db)
+    admin_h = auth_header(_admin(db))
+    pub = _products(db, producer, 2)
+    (draft,) = _products(db, producer, 1, draft=True)
+    order = [str(draft.id), str(pub[0].id), str(pub[1].id)]
+    assert client.put(f"{_base(producer.id)}/product-order", json={"product_ids": order}, headers=admin_h).status_code == 200
+    db.refresh(draft)
+    assert draft.position == 0
+    owner_h = auth_header(_owner_of(db, producer))
+    r = client.put("/producers/me/product-order", json={"product_ids": [str(pub[1].id), str(pub[0].id)]}, headers=owner_h)
+    assert r.status_code == 200, r.text
+    db.refresh(draft)
+    assert draft.position == 2

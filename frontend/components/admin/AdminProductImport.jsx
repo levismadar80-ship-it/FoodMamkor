@@ -49,8 +49,8 @@ function parseRows(text) {
   }
 }
 
-/** @param {{ producerId: string, onApproved?: () => void, onDraftsChange?: (drafts: any[]) => void }} props */
-export default function AdminProductImport({ producerId, onApproved, onDraftsChange }) {
+/** @param {{ producerId: string, onApproved?: () => void, onDraftsChange?: (drafts: any[]) => void, groupsVersion?: number }} props */
+export default function AdminProductImport({ producerId, onApproved, onDraftsChange, groupsVersion = 0 }) {
   const t = useTranslations("admin.producers.product_import");
   const tUnit = useTranslations("price_unit");  // MEH-2936
   const [text, setText] = useState("");
@@ -77,6 +77,12 @@ export default function AdminProductImport({ producerId, onApproved, onDraftsCha
       })
       .catch(() => setGroupNames({}));  // the group line is a hint; the list still works
   }, [producerId]);
+
+  // The organizer saved a group list (rename, delete): re-read the names so
+  // the «קבוצה: …» lines don't show a group that is gone (MEH-3472 review).
+  useEffect(() => {
+    if (groupsVersion > 0) loadGroups();
+  }, [groupsVersion, loadGroups]);
 
   const [loadFailed, setLoadFailed] = useState(false);
   const load = useCallback(async () => {

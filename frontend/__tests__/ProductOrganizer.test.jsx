@@ -189,4 +189,33 @@ describe("ProductOrganizer", () => {
     expect(api.get.mock.calls.every(([u]) => u.startsWith("/admin/producers/biz-1/"))).toBe(true);
     expect(api.put.mock.calls.every(([u]) => u.startsWith("/admin/producers/biz-1/"))).toBe(true);
   });
+  // MEH-3472 rule-5a review: an admin import can add groups while the
+  // organizer is open; saving the old list would delete them.
+  it("re-reads the groups when the product set changes while open", async () => {
+    api.get.mockResolvedValue({ data: [] });
+    const wrap = (products) => (
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProductOrganizer products={products} onProductsChange={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+    const { rerender } = render(wrap(prods(2)));
+    fireEvent.click(screen.getByTestId("product-organizer-open"));
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+    rerender(wrap(prods(3)));
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+  });
+
+  it("tells onGroupsChange after a group list is saved", async () => {
+    api.put.mockResolvedValue({ data: [{ id: "g1", name: "לחמים" }] });
+    const onGroupsChange = vi.fn();
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProductOrganizer products={prods(2)} onProductsChange={vi.fn()} onGroupsChange={onGroupsChange} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("product-organizer-open"));
+    fireEvent.change(await screen.findByTestId("product-group-new"), { target: { value: "לחמים" } });
+    fireEvent.click(screen.getByTestId("product-group-add"));
+    await waitFor(() => expect(onGroupsChange).toHaveBeenCalledTimes(1));
+  });
 });
