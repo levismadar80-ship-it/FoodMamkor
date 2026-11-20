@@ -857,4 +857,47 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     // announces variance the page then refuses to show.
     expect(areaFees()).toEqual(["משלוח: 20₪", "משלוח: 40₪"]);
   });
+
+  // ── MEH-3473: «·» never opens (or closes) a wrapped line ─────────────────
+  // jsdom has no layout, so the line-start clipping itself is measured in
+  // e2e/visual/delivery-cities-wrap.spec.ts. Here: the structure that clipping
+  // depends on — every city owns one leading, aria-hidden separator in the
+  // clipped slot — for 1 / 2 / 48 cities, closed and open.
+  const cityAreas = (n) =>
+    Array.from({ length: n }, (_, i) => ({ id: i + 1, city: `עיר ${String(i + 1).padStart(2, "0")}` }));
+
+  it.each([1, 2, 48])("MEH-3473: %i cities → one aria-hidden leading separator per visible city", (n) => {
+    render(<DeliveryBlock nationwide={false} areas={cityAreas(n)} pickup={false} producer={producer} />);
+    const visibleCount = Math.min(n, 15);
+    const items = screen.getByTestId("delivery-cities").querySelectorAll("li");
+    expect(items).toHaveLength(visibleCount);
+    items.forEach((li) => {
+      const sep = li.firstElementChild;
+      expect(sep).toHaveAttribute("data-testid", "delivery-city-sep");
+      expect(sep).toHaveAttribute("aria-hidden", "true");
+      // The separator is the item's FIRST child and never its last: a line can
+      // only end on a city name.
+      expect(li.lastElementChild.textContent).toMatch(/^עיר /);
+    });
+    // The list is pulled into a clipping wrapper; without both, the first
+    // item of each wrapped line shows its «·» (the 19/11 bug).
+    expect(screen.getByTestId("delivery-cities-clip")).toHaveClass("overflow-hidden");
+    expect(screen.getByTestId("delivery-cities")).toHaveClass("-ms-4");
+  });
+
+  it("MEH-3473: 48 cities open — still one separator per city, none trailing", () => {
+    render(<DeliveryBlock nationwide={false} areas={cityAreas(48)} pickup={false} producer={producer} />);
+    fireEvent.click(screen.getByRole("button", { name: "show_all_cities|33" }));
+    const items = screen.getByTestId("delivery-cities").querySelectorAll("li");
+    expect(items).toHaveLength(48);
+    expect(screen.getAllByTestId("delivery-city-sep")).toHaveLength(48);
+    // Accessible text of the list carries no separator at all.
+    const spoken = [...items].map((li) => [...li.children].filter((c) => !c.hasAttribute("aria-hidden")).map((c) => c.textContent).join(""));
+    expect(spoken.every((t) => !t.includes("·"))).toBe(true);
+  });
+
+  it("MEH-3473: 0 city areas → no city list", () => {
+    render(<DeliveryBlock nationwide={false} areas={[]} pickup={false} producer={producer} />);
+    expect(screen.queryByTestId("delivery-cities")).not.toBeInTheDocument();
+  });
 });
