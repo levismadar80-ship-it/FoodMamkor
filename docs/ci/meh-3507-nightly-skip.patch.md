@@ -142,3 +142,66 @@ The full patched file has sha256
      runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
      timeout-minutes: 3
 ```
+
+## Round 2 (fresh reviewer, 20/11) — second Chrome commit
+
+The rule-5a reviewer's findings, and what changed. The full patched file now has sha256
+`46a6770626b4543ac0aa6699a02015b823739640f349aede815d65f87e3bae1b`.
+
+1. **Blocking.** The job-level `permissions` dropped `pull-requests`, and `dorny/paths-filter` lists a PR's files through the API.
+   - Fixed: `pull-requests: read` was added.
+2. **Coverage.** A green **push** run never runs WebKit, so counting it would skip WebKit on a commit WebKit never saw.
+   - Fixed: only `schedule` and `workflow_dispatch` runs count.
+   - Measured on 8 recent green staging push commits: the first patch skipped 3 of them (`9d47d68`, `4857721`, `ad87d5b`), and this one skips none. `4647bad`, a green nightly, still skips.
+3. **Errors.** A failure outside python could still fail `filter`.
+   - Fixed: `continue-on-error: true` on the step. The output is then empty, and `!= 'true'` runs the suite.
+
+```diff
+--- a/.github/workflows/e2e.yml
++++ b/.github/workflows/e2e.yml
+@@ -92,19 +92,23 @@
+       runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
+       # MEH-3507: actions: read lets the nightly-skip step below list this
+       # workflow's earlier runs. Job-level, so it replaces the workflow-level
+-      # set for this job only (this job comments on nothing).
++      # set for this job only (this job comments on nothing). pull-requests:
++      # read stays: dorny/paths-filter lists a PR's files through the API.
+       permissions:
+         contents: read
+         actions: read
++        pull-requests: read
+       outputs:
+         frontend: ${{ steps.filter.outputs.frontend }}
+         backend: ${{ steps.filter.outputs.backend }}
+         nightly_unchanged: ${{ steps.nightly.outputs.unchanged }}
+       steps:
+         # MEH-3507 (Sapir 20/11): skip the nightly suite when staging has not
+-        # moved since a run that executed the Chromium suite and passed on the
+-        # SAME commit. The newest run on this commit whose Playwright jobs
+-        # actually ran decides: green -> skip, red or none -> run. Any error
++        # moved since a nightly or manual run that executed the Chromium suite
++        # and passed on the SAME commit. Push runs do not count: they never run
++        # WebKit, so counting them would let WebKit go untested. The newest
++        # such run whose Playwright jobs actually ran decides: green -> skip,
++        # red or none -> run. Any error
+         # here prints unchanged=false, so a broken probe runs the suite and
+         # never skips it. Nightly cron only; push, PR and manual runs are
+         # untouched. staging_health.py (rule 41) is unaffected: a skipped job
+@@ -112,6 +116,7 @@
+         - name: Nightly skip check (MEH-3507)
+           id: nightly
+           if: github.event.schedule == '30 1 * * *'
++          continue-on-error: true
+           env:
+             GH_TOKEN: ${{ github.token }}
+             REPO: ${{ github.repository }}
+@@ -134,7 +139,7 @@
+             for run in sorted(runs, key=lambda r: r["created_at"], reverse=True):
+                 if str(run["id"]) == os.environ["RUN_ID"] or run["head_sha"] != sha:
+                     continue
+-                if run["event"] not in ("push", "schedule", "workflow_dispatch"):
++                if run["event"] not in ("schedule", "workflow_dispatch"):
+                     continue
+                 jobs = get(run["jobs_url"] + "?per_page=100")["jobs"]
+                 pw = [j for j in jobs
+```
