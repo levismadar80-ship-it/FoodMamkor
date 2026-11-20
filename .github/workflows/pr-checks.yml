@@ -1055,6 +1055,9 @@ jobs:
           # script-injection sink. The step above already does this for the
           # title and body; this is the same discipline for the same reason.
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          # MEH-2244: the PR author, for the dependabot exemption on the
+          # closing-line check. Via env for the same reason as the branch name.
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" "$PR_HEAD_REF" || true
 
   # ─────────────────────────────────────────────

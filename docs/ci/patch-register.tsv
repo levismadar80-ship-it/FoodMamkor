@@ -45,7 +45,7 @@ meh-2202-uptime-workflow	unverified	-	-
 meh-2212-actions-cost	dead	-	-	case rested on private-repo billing; repo is public
 meh-2244-reconcile	unverified	-	-	
 meh-2244-stale	applied	.github/workflows/stale.yml	do-not-merge	stale.yml exists; the gap is do-not-merge exemption
-meh-2244	pending	.github/workflows/pr-checks.yml	PR_AUTHOR:	
+meh-2244	applied	.github/workflows/pr-checks.yml	PR_AUTHOR:	
 meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]refs/tags/	hook: Sapir only
 meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	
 meh-2749-post-deploy-checks	unverified	-	-	
