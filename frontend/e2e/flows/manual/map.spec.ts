@@ -1,5 +1,6 @@
 import type { BrowserContext, Locator, Route, TestInfo } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import he from "../../../messages/he.json";
 import en from "../../../messages/en.json";
 // The app libs below are plain JS (the app is JS + JSDoc); tsconfig.e2e has no
@@ -475,13 +476,63 @@ async function panMap(page: Page, shell: Locator): Promise<void> {
 }
 
 /**
+ * MEH-3486: on a short phone the PEEK sheet covers the bottom band of the map,
+ * and a marker inside that band cannot be tapped — by a person or by a test.
+ * iPhone 13 (390×664) puts the southern pins of this fixture there, Pixel 5
+ * (393×727) does not, so a bare `.click()` passed on Chromium and timed out on
+ * WebKit every night ("map-sheet-content … intercepts pointer events"). Do what
+ * a person does: drag the map up until the pin clears the sheet. Then hit-test
+ * it and fail BY NAME if it is still covered, instead of a 20 s click timeout.
+ */
+async function revealMarkerAboveSheet(page: Page, shell: Locator, marker: Locator): Promise<void> {
+  await expect(marker, "the marker must be on the map").toHaveCount(1);
+  for (let i = 0; i < 3 && !(await hitTestIsSelf(marker)); i++) {
+    if (!(await bottomSheet(shell).isVisible())) break; // desktop: nothing to drag clear of
+    const m = await box(marker);
+    const sheetTop = (await box(bottomSheet(shell))).y;
+    const c = await box(mapCanvas(shell));
+    const x = c.x + c.width / 2;
+    const y0 = sheetTop - 12; // on the canvas, just above the sheet's edge
+    // Lift the pin's bottom 48px clear of the sheet, never past the canvas top.
+    // Always upward: a pin covered by something ABOVE the sheet (a top pill) is
+    // not this helper's case, and the named expect below reports it.
+    const lift = m.y + m.height - sheetTop + 48;
+    if (lift <= 0) break;
+    const y1 = Math.max(c.y + 12, y0 - lift);
+    await page.mouse.move(x, y0);
+    await page.mouse.down();
+    await page.mouse.move(x, y1, { steps: 10 });
+    await page.mouse.up();
+    await expect.poll(async () => (await box(marker)).y, "control: the drag must move the map").not.toBe(m.y);
+    // Leaflet's inertia keeps the map gliding after mouseup, and the «search
+    // this area» pill lands on `moveend`: hit-test only once both are done, or
+    // the check passes on a pin that is still moving (measured: it glided into
+    // the pill and the tap went to the pill). On a second pass the pill is
+    // already up, so `layoutSettled` alone covers the inertia there.
+    await expect(shell.getByTestId("map-search-this-area"), "control: the drag must register as a user move").toBeVisible();
+    await layoutSettled(marker);
+  }
+  expect(await hitTestIsSelf(marker), "the marker must be tappable — it is still under the sheet or a control").toBe(true);
+}
+
+/**
+ * The ONE way this spec clicks a marker (MEH-3486): hit-test it first, drag it
+ * clear of the sheet if it is covered, then click. `__tests__/E2EClickPreconditionGuard.test.js`
+ * fails on a bare `markerOf(…).click()` anywhere else in this file.
+ */
+async function tapMarker(page: Page, shell: Locator, p: Producer): Promise<void> {
+  await revealMarkerAboveSheet(page, shell, markerOf(shell, p));
+  await markerOf(shell, p).click();
+}
+
+/**
  * Tap a marker on the mobile shell. MEH-3119: the sheet STAYS at PEEK and the
  * picked business shows once, as a card floating over the map. (Until then the
  * tap opened the sheet to HALF with the card pinned above a list that also
  * held the same business.)
  */
 async function tapMarkerShowsCard(page: Page, shell: Locator, p: Producer): Promise<void> {
-  await markerOf(shell, p).click();
+  await tapMarker(page, shell, p);
   await expect(shell.getByTestId("map-selected-card")).toBeVisible();
   await settleSheet(shell);
   await expectAtPeek(page, shell);
@@ -691,7 +742,7 @@ test.describe("manual › /map multi-location epic (MEH-1388)", () => {
     await expect(secondaryMarkers(shell)).toHaveCount(0);
     await expect(page.locator('[data-testid^="pickup-layer-"]')).toHaveCount(0);
 
-    await markerOf(shell, P_HAIFA).click();
+    await tapMarker(page, shell, P_HAIFA);
     await expect(secondaryMarkers(shell)).toHaveCount(1);
     await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length);
   });
@@ -1413,7 +1464,14 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
     await sheetSettledAt(page, shell, 0.45); // HALF (MapBottomSheet.jsx)
     await expect(shell.getByTestId("map-selected-card"), "no second copy of the picked business with the list open").toHaveCount(0);
     await expect(cardOf(shell, picked), "the picked business is exactly one list row").toHaveCount(1);
-    await expect(cardOf(shell, picked), "its row is brought fully into view").toBeInViewport({ ratio: 1 });
+    // Fully in view, to the pixel: `toBeInViewport({ ratio: 1 })` demanded an
+    // exact 1.0 and at 390×664 the row's box is fractional — measured 0.998
+    // (0.2px) after the scroll, which no eye sees (MEH-3486).
+    const vh = page.viewportSize()!.height;
+    await expect.poll(async () => {
+      const r = await box(cardOf(shell, picked));
+      return r.y >= -1 && r.y + r.height <= vh + 1;
+    }, "its row is brought fully into view").toBe(true);
     await expect(shell.getByTestId("map-legend-toggle")).toBeHidden();
     // MT:z:a2 — the attribution rides the HALF edge: its bottom sits at
     // `container bottom − sheet height − 6px` (the MEH-1365 rule), and it
@@ -1541,7 +1599,7 @@ test.describe("manual › /map desktop — marker click = card-sync (MEH-1010)",
     expect(inside(await box(card), await box(scroller)), "control: the target card starts out of the sidebar's view").toBe(false);
     await expect(card).toHaveCSS("border-top-width", "1px");
 
-    await markerOf(shell, target).click();
+    await tapMarker(page, shell, target);
     await expect(card).toHaveCSS("border-top-width", "2px");
     await expect.poll(async () => inside(await box(card), await box(scroller))).toBe(true);
     await expect(shell.locator(".leaflet-popup")).toHaveCount(0);

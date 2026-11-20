@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "./_cloudinary-stub";
+import { pickCity } from "./_pick-city";
 
 /**
  * Spec:     38-register-delivery-axis
@@ -62,8 +63,7 @@ async function reachDetails(page: Page): Promise<void> {
   await expect(page.getByTestId("register-frame-details")).toBeVisible();
   await page.getByTestId("register-details-name").fill("העסק שלי");
   await page.getByTestId("register-details-phone").fill("0501234567");
-  await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
-  await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click(); // MEH-2241 chunk B: the gate needs a picked town, not typed text
+  await pickCity(page.getByTestId("register-details-city"), "תל אביב"); // MEH-2241 chunk B: the gate needs a picked town, not typed text
   // The question itself — the anchor a form without it fails on.
   await expect(page.getByTestId("register-fulfilment")).toBeVisible();
 }

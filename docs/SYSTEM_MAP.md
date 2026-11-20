@@ -46,7 +46,7 @@ This page links to those and does not repeat their numbers.
 | Browser | Google Places or Nominatim | address autocomplete (`lib/places.js`) | falls back to settlement only |
 | Browser | PostHog, Clarity, Sentry | analytics and errors, after consent | nothing visible |
 | Backend | Postgres | everything; the app may log in as `app_runtime` (rows only) while the boot migration step uses the schema owner (`MIGRATION_DATABASE_URL`, MEH-3307, DEPLOYMENT.md §1.3) | 5xx |
-| Backend | Anthropic | moderation of reviews, recipes, workshops, owner replies; chat; reading an uploaded menu into product rows (MEH-3430); suggesting product groups from product names (MEH-3478); suggesting a product description (MEH-3479) or a reply to a review (MEH-3480); drafting the page fields from the owner's text (MEH-3483) | **fails open**: content publishes unchecked, chat answers offline; a menu read, a group suggestion, a description / reply suggestion or a page draft answers 503 and the owner does it by hand |
+| Backend | Anthropic | moderation of reviews, recipes, workshops, owner replies; chat (with one named business's public page facts, MEH-3481); reading an uploaded menu into product rows (MEH-3430); suggesting product groups from product names (MEH-3478); suggesting a product description (MEH-3479) or a reply to a review (MEH-3480); drafting the page fields from the owner's text (MEH-3483) | **fails open**: content publishes unchecked, chat answers offline; a menu read, a group suggestion, a description / reply suggestion or a page draft answers 503 and the owner does it by hand |
 | Backend | Resend | every email, including the monthly page-freshness email (`services/page_freshness.py`) and its Sunday admin digest (`services/page_freshness_digest.py`), off until `PAGE_FRESHNESS_ENABLED`) | verification and reset emails stop |
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
@@ -91,6 +91,9 @@ inventory.
    requests that hold a connection (an external call inside a route) exhaust
    it; the DB bulkhead middleware sheds load with a 503 before the process
    deadlocks. A new external call inside a route closes its DB session first.
+   The public chat reads one business before its model calls and rolls the
+   session back right after (MEH-3481), so a chat holds no connection while
+   Claude answers.
    A request body above 6 MB is refused with 413 before it reaches the
    bulkhead (`backend/app/body_limit.py`), so it never holds a slot.
 3. **Per-IP rate limits behind one address.** Limits are per IP and held in

@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { pickCity } from "./_pick-city";
 
 /**
  * Module:   28-register-success-state
@@ -93,8 +94,7 @@ async function driveWizardToStorySubmitReady(page) {
   await expect(page.getByTestId("register-frame-details")).toBeVisible();
   await page.getByTestId("register-details-name").fill("העסק שלי");
   await page.getByTestId("register-details-phone").fill("0501234567");
-  await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
-  await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click(); // MEH-2241 chunk B: the gate needs a picked town, not typed text
+  await pickCity(page.getByTestId("register-details-city"), "תל אביב"); // MEH-2241 chunk B: the gate needs a picked town, not typed text
   await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left DETAILS; the one required question took its place
   await page.getByTestId("register-details-next").click();
 

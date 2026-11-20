@@ -48,7 +48,7 @@ jobs:
     runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 45
     env:
-      BASE_URL: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'staging' || github.event_name == 'push' && github.ref == 'refs/heads/staging') && 'https://staging.mehamakor.online' || 'https://mehamakor.co.il' }}
+      BASE_URL: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'staging' || github.event_name == 'push' && github.ref == 'refs/heads/staging') && 'https://staging.mehamakor.co.il' || 'https://mehamakor.co.il' }}
       IS_PRODUCTION: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'production' || github.event_name == 'push' && github.ref == 'refs/heads/main') && 'true' || 'false' }}
     steps:
       - name: Target
