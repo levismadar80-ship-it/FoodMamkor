@@ -34,29 +34,51 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
   const t = useTranslations("chat.business");
   const preview = usePreviewMode();
   if (!producer?.id || preview || producer.status !== "approved") return null;
+  const name = producer.name || "";
+  const prompts = businessChatPrompts(producer, signatureProduct);
+  /** @param {string} [ask] a question to send as the panel opens */
+  const open = (ask) => openBusinessChat({ id: producer.id, name, prompts, ask });
   return (
     <section
       data-testid="business-chat-prompt"
-      className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4 print:hidden"
+      aria-labelledby="business-chat-title"
+      className="mt-8 rounded-lg border border-border bg-surface p-4 print:hidden"
     >
-      <p className="flex items-center gap-2 text-sm text-text">
+      <h3 id="business-chat-title" className="flex items-center gap-2 text-sm font-semibold text-text">
         <ChatCircleDots size={20} className="flex-shrink-0 text-primary" aria-hidden="true" />
-        {t("page_lead")}
-      </p>
+        {t("page_title", { name })}
+      </h3>
+      {/* MEH-3505: the business's own questions on the page, like Google Maps'
+          «Ask about this place» and Amazon's Rufus chips — a tap opens the
+          panel with that question already sent. No generic lead line. */}
+      {prompts.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-2" data-testid="business-chat-questions">
+          {prompts.map((p) => {
+            const label = t(`prompts.${p.id}`, p.values);
+            return (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={() => open(label)}
+                  className="inline-flex min-h-touch items-center rounded-full border border-border bg-green-50 px-3.5 text-start text-sm text-primary transition focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <Button
         variant="outlined"
         size="sm"
+        className="mt-3"
         data-testid="business-chat-open"
         aria-haspopup="dialog"
-        onClick={() =>
-          openBusinessChat({
-            id: producer.id,
-            name: producer.name || "",
-            prompts: businessChatPrompts(producer, signatureProduct),
-          })
-        }
+        onClick={() => open()}
       >
-        {t("page_button")}
+        {prompts.length > 0 ? t("page_other") : t("page_button")}
       </Button>
     </section>
   );

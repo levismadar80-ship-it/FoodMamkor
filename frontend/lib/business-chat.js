@@ -21,16 +21,18 @@ const BUSINESS_CHAT_EVENT = "mehamakor:business-chat";
 const REPLAY_MS = 10_000;
 /**
  * @typedef {{ id: string, values?: Record<string, string> }} BusinessPrompt
- * @typedef {{ id: string, name: string, prompts: BusinessPrompt[] }} BusinessChatTarget
+ * @typedef {{ id: string, name: string, prompts: BusinessPrompt[], ask?: string }} BusinessChatTarget
  */
 /** @type {{ business: BusinessChatTarget, at: number } | null} */
 let pending = null;
 
-/** @param {{ id: string, name: string, prompts?: BusinessPrompt[] }} business */
+/** @param {{ id: string, name: string, prompts?: BusinessPrompt[], ask?: string }} business */
 export function openBusinessChat(business) {
   if (typeof window === "undefined" || !business?.id) return;
   const prompts = Array.isArray(business.prompts) ? business.prompts : [];
-  const detail = { id: business.id, name: business.name || "", prompts };
+  // MEH-3505: a question tapped on the page is sent as the panel opens.
+  const ask = typeof business.ask === "string" && business.ask.trim() ? business.ask : undefined;
+  const detail = { id: business.id, name: business.name || "", prompts, ask };
   pending = { business: detail, at: Date.now() };
   window.dispatchEvent(new CustomEvent(BUSINESS_CHAT_EVENT, { detail }));
 }

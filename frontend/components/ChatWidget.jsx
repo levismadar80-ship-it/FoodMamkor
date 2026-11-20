@@ -263,6 +263,8 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
   const businessIdRef = useRef(/** @type {string | null} */ (null));
   // With no launcher on the page, focus goes back to the page's own button.
   const returnFocusRef = useRef(/** @type {HTMLElement | null} */ (null));
+  // MEH-3505: a question tapped on the page, sent once the panel has the business.
+  const pendingAskRef = useRef(/** @type {string | null} */ (null));
   const openForBusiness = useCallback((next) => {
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
       returnFocusRef.current = document.activeElement;
@@ -273,8 +275,11 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
       openingRef.current = opening;
       setMessages([opening]);
       setError("");
-      setBusiness(next);
     }
+    // MEH-3505: the page's questions are re-read on every open, so a reopen of
+    // the same business after its data changed shows the current ones.
+    setBusiness(next);
+    pendingAskRef.current = next.ask || null;
     setOpen(true);
   }, [tBusiness]);
   useBusinessChatRequest(openForBusiness);
@@ -349,6 +354,16 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
       }
     } finally { setSending(false); }
   };
+
+  // MEH-3505: send the page's tapped question after the render that set the
+  // business, so it carries producer_id. Read once, then cleared.
+  useEffect(() => {
+    if (!open || !business || !pendingAskRef.current) return;
+    const ask = pendingAskRef.current;
+    pendingAskRef.current = null;
+    sendMessage(ask);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sendMessage is recreated each render; the ref gates it
+  }, [open, business]);
 
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
 

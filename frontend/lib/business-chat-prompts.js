@@ -59,8 +59,12 @@ export function businessChatPrompts(producer, signatureProduct = null) {
   }
   if (diet) out.push({ id: diet });
 
+  // MEH-1848: area rows left on a business that stopped delivering are not a
+  // delivery — the server reads offers_delivery first (_delivers_to).
   const areas = Array.isArray(producer.delivery_areas) ? producer.delivery_areas : [];
-  if (producer.delivery_nationwide === true || areas.length > 0) out.push({ id: "delivery" });
+  if (producer.offers_delivery === true && (producer.delivery_nationwide === true || areas.length > 0)) {
+    out.push({ id: "delivery" });
+  }
 
   if (resolveStoreHours(producer)) out.push({ id: "hours" });
 

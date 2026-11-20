@@ -11,19 +11,34 @@ describe("businessChatPrompts", () => {
     expect(ids(null)).toEqual([]);
   });
 
-  it("1: delivery only → only the delivery question", () => {
-    expect(ids({ delivery_areas: [{ city: "חיפה" }] })).toEqual(["delivery"]);
+  it("1: delivery areas only → only the delivery question", () => {
+    expect(ids({ offers_delivery: true, delivery_nationwide: false, delivery_areas: [{ city: "חיפה" }] }))
+      .toEqual(["delivery"]);
   });
 
-  it("no delivery, no hours → neither question", () => {
+  it("delivery switched off with area rows left behind → no delivery question", () => {
+    expect(ids({ offers_delivery: false, delivery_nationwide: true, delivery_areas: [{ city: "חיפה" }] }))
+      .toEqual([]);
+  });
+
+  it("a gluten-free product, no delivery, no hours → only the gluten question", () => {
     expect(ids({ delivery_nationwide: false, delivery_areas: [], products: [{ is_gluten_free: true }] }))
       .toEqual(["diet_gluten_free"]);
+  });
+
+  it("a tie between two flags goes to the first in the list (gluten before vegan)", () => {
+    expect(ids({ products: [{ is_vegan: true }, { is_gluten_free: true }] })).toEqual(["diet_gluten_free"]);
+  });
+
+  it("a featured product with ingredients only still gets its question", () => {
+    expect(ids({}, { name: "חלה", ingredients: "קמח" })).toEqual(["signature"]);
   });
 
   it("many: priority order, capped at 3", () => {
     const sig = { name: " עוגת גבינה ", description: "עוגה אפויה" };
     const out = businessChatPrompts(
       {
+        offers_delivery: true,
         delivery_nationwide: true,
         opening_hours: "א׳ 08:00-14:00",
         products: [{ is_vegan: true }, { is_vegan: true }, { is_gluten_free: true }],
@@ -48,7 +63,7 @@ describe("businessChatPrompts", () => {
 
   it("every id it can return has a Hebrew label", () => {
     const all = businessChatPrompts(
-      { delivery_nationwide: true, opening_hours: "x", products: [{ is_lactose_free: true }] },
+      { offers_delivery: true, delivery_nationwide: true, opening_hours: "x", products: [{ is_lactose_free: true }] },
       { name: "a", ingredients: "b" },
     );
     const more = ["diet_gluten_free", "diet_vegan", "diet_no_added_sugar"];
