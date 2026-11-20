@@ -93,4 +93,4 @@ def set_test_business(
         )
         indexnow.schedule(background_tasks, urls_before + urls_after)
 
-    return TestBusinessFlagOut(producer_id=producer.id, hidden=bool(producer.is_test))  # type: ignore[arg-type]
+    return TestBusinessFlagOut(producer_id=producer.id, hidden=bool(producer.is_test))
