@@ -1,6 +1,19 @@
 # `uptime.yml` — add the Google Places key probe, hourly (MEH-2482)
 
-> **Status: ⏳ NOT APPLIED — written 28/10/2026.** `.github/workflows/**` is
+> **Status: ✅ APPLIED 20/11/2026 (MEH-3517 follow-up)** — committed through the
+> GitHub web editor on `feature/meh-2482-places-uptime-probe`, adapted to the
+> file as it is now: only the URL list and a `PLACES_URL` env line change, so the
+> OSM tile probe added later (MEH-3356) is untouched. The replacement block in §2
+> below predates the tile probe — do not paste it as written.
+>
+> **Changed the same day, after review: every tick, not hourly.** The outage
+> issue opens after two consecutive failing ticks, and a URL probed on every
+> other tick can never fail twice in a row, so an hourly Places probe would
+> never have alerted. It now runs on every 30-minute tick (~1,440 requests a
+> month) and also fails on `{"status":"disabled"}`, which is a 200 that means
+> the key is missing. "Hourly" in the title and in §1–§2 is the original design.
+>
+> _Original status (28/10/2026):_ staged, not yet applied. `.github/workflows/**` is
 > CC-deny for the filesystem tools (`.claude/settings.json`, MEH-671); Sapir
 > pastes the block below, or CC lands it through the Contents API per the
 > tool × path note in `.claude/rules/security.md` once she says so.
