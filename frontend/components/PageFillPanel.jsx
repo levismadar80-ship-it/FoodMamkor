@@ -128,8 +128,13 @@ export default function PageFillPanel({ profile, readUrl, saveUrl, owner = true,
     try {
       if (producer) await api.put(saveUrl, producer);
       if (location) await api.put(`/producers/me/locations/${location.id}`, { opening_hours: location.opening_hours });
-      // The host reloads the business and remounts its cards, this one too.
       showToast.success(t("saved"));
+      // Back to the closed card: the host reloads the business, and a host
+      // that does not remount this panel (admin) must not keep a stale preview.
+      setRows([]);
+      setText("");
+      setPhase("write");
+      setOpen(false);
       onSaved();
     } catch (err) {
       setError(detailToMessage(/** @type {any} */ (err)?.response?.data?.detail) || t("save_failed"));

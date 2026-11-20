@@ -30,11 +30,21 @@ const TEXT_FIELDS = [
 
 /**
  * @typedef {{ key: string, value: any, current: any, replaces: boolean,
- *   adds?: boolean, note?: "delivery_exists" | "hours_no_location" }} FillRow
+ *   adds?: boolean, note?: "delivery_exists" | "delivery_nationwide" | "hours_no_location" }} FillRow
  */
 
 /** @param {any} v */
 const filled = (v) => (Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim() !== "" : v != null);
+
+/** The field each contact method sends customers to (lib/contact-method.js). */
+const METHOD_CHANNEL = /** @type {Record<string, string>} */ ({
+  whatsapp: "phone", phone: "phone", website: "website", email: "contact_email",
+  instagram: "instagram", facebook: "facebook", external_order: "external_order_form",
+});
+
+/** Phones compare by digits: «050-1234567» is «0501234567». */
+const same = (/** @type {string} */ key, /** @type {any} */ a, /** @type {any} */ b) =>
+  key === "phone" ? String(a ?? "").replace(/\D/g, "") === String(b ?? "").replace(/\D/g, "") : a === b;
 
 /** @param {any} profile */
 function primaryLocation(profile) {
@@ -56,7 +66,10 @@ export function buildRows(draft, profile, opts = {}) {
     const value = draft?.[key];
     if (!filled(value)) continue;
     const current = profile?.[key] ?? null;
-    if (current === value) continue;
+    if (same(key, current, value)) continue;
+    // A main contact button needs its channel, here or already on the page.
+    const channel = key === "primary_contact_method" ? METHOD_CHANNEL[value] : null;
+    if (channel && !filled(draft?.[channel]) && !filled(profile?.[channel])) continue;
     rows.push({ key, value, current, replaces: filled(current) });
   }
   const haveIds = new Set((profile?.categories ?? []).map((/** @type {any} */ c) => c.id));
@@ -65,9 +78,11 @@ export function buildRows(draft, profile, opts = {}) {
   const cities = draft?.delivery_cities ?? [];
   if (cities.length) {
     const hasAreas = (profile?.delivery_areas ?? []).length > 0;
+    // Nationwide has no city rows; adding some would leave both on.
+    const note = profile?.delivery_nationwide ? "delivery_nationwide" : hasAreas ? "delivery_exists" : null;
     rows.push({
       key: "delivery", value: cities, current: null, replaces: false,
-      ...(hasAreas && { note: /** @type {const} */ ("delivery_exists") }),
+      ...(note && { note: /** @type {"delivery_exists" | "delivery_nationwide"} */ (note) }),
     });
   }
   const hours = draft?.opening_hours;

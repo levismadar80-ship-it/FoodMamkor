@@ -7630,6 +7630,7 @@
     "save": "{count, plural, one {Save the checked detail} other {Save # checked details}}",
     "saved": "Saved to your page",
     "delivery_exists": "Your page already has delivery cities. You can add these in the delivery card.",
+    "delivery_nationwide": "The business delivers nationwide, so these cities were not added. You can change that in the delivery card.",
     "hours_no_location": "Opening hours need a location first. You can add them in the location card.",
     "menu_title": "Products from your menu photos",
     "menu_hint": "Have a menu or price list? Upload a photo, check the products and approve them separately.",

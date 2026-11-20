@@ -58,6 +58,24 @@ describe("buildRows / buildWrites", () => {
     expect(buildWrites(noted, busy).producer).toBeNull();
   });
 
+  it("a nationwide business gets a note, not city rows on top of «כל הארץ»", () => {
+    const nationwide = { ...fresh, delivery_nationwide: true };
+    const rows = buildRows(draft({ delivery_cities: ["חיפה"] }), nationwide);
+    expect(rows[0].note).toBe("delivery_nationwide");
+    expect(buildWrites(rows, nationwide).producer).toBeNull();
+  });
+
+  it("a main contact method needs its channel, in the draft or already on the page", () => {
+    expect(buildRows(draft({ primary_contact_method: "instagram" }), fresh)).toEqual([]);
+    expect(buildRows(draft({ primary_contact_method: "instagram", instagram: "@a" }), fresh).map((r) => r.key).sort())
+      .toEqual(["instagram", "primary_contact_method"]);
+    expect(buildRows(draft({ primary_contact_method: "whatsapp" }), { ...fresh, phone: "054" })[0].key).toBe("primary_contact_method");
+  });
+
+  it("the same phone written another way is not a change", () => {
+    expect(buildRows(draft({ phone: "0541234567" }), { ...fresh, phone: "054-1234567" })).toEqual([]);
+  });
+
   it("hours go to the primary location, never to producer.opening_hours", () => {
     const rows = buildRows(draft({ opening_hours: "Sun-Thu 08:00-18:00" }), fresh);
     expect(buildWrites(rows, fresh)).toEqual({ producer: null, location: { id: "L1", opening_hours: "Sun-Thu 08:00-18:00" } });
@@ -126,6 +144,9 @@ describe("PageFillPanel", () => {
     fireEvent.click(screen.getByTestId("page-fill-save"));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(api.put).toHaveBeenCalledWith("/producers/me", { phone: "054-1234567", category_ids: [2] });
+    // A host that does not remount the panel (admin) sees the closed card, not a stuck save.
+    expect(screen.queryByTestId("page-fill-preview")).toBeNull();
+    expect(screen.getByTestId("page-fill-open")).toBeInTheDocument();
   });
 
   it("1 row checked by hand: the replacement is written when she ticks it", async () => {

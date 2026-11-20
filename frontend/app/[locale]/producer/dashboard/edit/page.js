@@ -760,8 +760,9 @@ function EditPageInner() {
         <h1 className="font-headline-lg text-xl font-bold text-text">
           {tAcc("hub_title")}
         </h1>
-        <PageFillPanel profile={profile} readUrl="/producers/me/page-fill/read" saveUrl="/producers/me" blocked={anyDirty}
-          onSaved={() => api.get("/producers/me").then((r) => { setProfile(r.data); if (!anyDirty) setFillKey((k) => k + 1); })} />
+        {/* Locations as the page shows them (an edit this session wins over the loaded profile). */}
+        <PageFillPanel profile={{ ...profile, locations: currentLocations }} readUrl="/producers/me/page-fill/read" saveUrl="/producers/me" blocked={anyDirty}
+          onSaved={() => api.get("/producers/me").then((r) => { setProfile(r.data); setLiveLocations(null); if (!anyDirty) setFillKey((k) => k + 1); })} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {visibleGroupKeys.map((g) => {
             const tile = groupTile(g);

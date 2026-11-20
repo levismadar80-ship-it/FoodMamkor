@@ -89,12 +89,70 @@ def test_hours_outside_the_grammar_are_dropped_not_guessed():
             is None
         )
     two = "Sun-Thu 08:00-12:00 16:00-19:00, Fri 08:00-13:00"
+    split_day = SOURCE + " בימי חול הפסקה מ-12 עד 16 ונסגרים ב-19."
     assert (
         page_filler.to_draft(
-            _model_answer(opening_hours=two), SOURCE, set()
+            _model_answer(opening_hours=two), split_day, set()
         ).opening_hours
         == two
     )
+
+
+def test_hours_the_text_does_not_give_are_dropped():
+    # Grammatical, but 07 and 22 are not in the text; 18-08 runs backwards.
+    for invented in ("Sun-Thu 07:00-22:00", "Sun 18:00-08:00", "Sun 99:00-99:30"):
+        assert (
+            page_filler.to_draft(
+                _model_answer(opening_hours=invented), SOURCE, set()
+            ).opening_hours
+            is None
+        )
+    # «6 בערב» backs 18:00.
+    evening = "פתוחים מ-8 בבוקר עד 6 בערב, טלפון 054-1234567"
+    assert (
+        page_filler.to_draft(
+            _model_answer(opening_hours="Sun 08:00-18:00"), evening, set()
+        ).opening_hours
+        == "Sun 08:00-18:00"
+    )
+
+
+def test_a_city_the_text_does_not_name_is_dropped():
+    d = page_filler.to_draft(
+        _model_answer(delivery_cities=["חיפה", "עכו"]), SOURCE, set()
+    )
+    assert d.delivery_cities == ["חיפה"]
+
+
+def test_contact_details_must_stand_on_their_own_and_have_their_shape():
+    text = (
+        "המאפייה שלנו, bakery לכל דבר. כתבו ל-hi@bakeryhaifa.co.il "
+        "או היכנסו ל-www.bakery-haifa.co.il ולאינסטגרם instagram.com/bakery_haifa"
+    )
+    d = page_filler.to_draft(
+        _model_answer(
+            phone=None,
+            instagram="bakery",
+            website="bakeryhaifa.co.il",
+            contact_email="hi@bakeryhaifa.co.il",
+            facebook="not a link",
+        ),
+        text,
+        set(),
+    )
+    # "bakery" is prose, not a handle; the site is a piece of the email.
+    assert d.instagram is None and d.website is None and d.facebook is None
+    assert d.contact_email == "hi@bakeryhaifa.co.il"
+    d2 = page_filler.to_draft(
+        _model_answer(
+            phone=None, instagram="bakery_haifa", website="www.bakery-haifa.co.il"
+        ),
+        text,
+        set(),
+    )
+    # A bare domain is saved with https:// (the edit form rejects it without).
+    assert d2.instagram == "@bakery_haifa"
+    assert d2.website == "https://www.bakery-haifa.co.il"
 
 
 def test_a_claim_the_text_does_not_make_is_cut_from_the_description():

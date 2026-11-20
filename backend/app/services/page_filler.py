@@ -39,6 +39,10 @@ _HOURS_ENTRY = re.compile(
     r"( \d{2}:\d{2}-\d{2}:\d{2})+$"
 )
 _DIGITS = re.compile(r"\D")
+_RANGE = re.compile(r"\d{2}:\d{2}-\d{2}:\d{2}")
+_HANDLE = re.compile(r"^[A-Za-z0-9._]{1,30}$")
+_DOMAIN = re.compile(r"^[^\s/@]+\.[a-z]{2,}(/\S*)?$", re.IGNORECASE)
+_EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[a-z]{2,}$", re.IGNORECASE)
 
 _NULLABLE_STR = {"type": ["string", "null"]}
 _SCHEMA: dict[str, object] = {
@@ -87,12 +91,44 @@ def _categories_block(categories: list[tuple[int, str]]) -> str:
     return "\n".join(f"  {cid}: {name}" for cid, name in categories)
 
 
-def _found(value: object, source: str) -> str | None:
-    """A contact detail survives only when the owner's text holds it."""
-    if not isinstance(value, str) or not value.strip():
+def _in_text(value: str, source: str) -> bool:
+    """The value stands on its own in the text: not a piece of a longer word,
+    handle or address ("bakery" inside "bakery_haifa", "x.com" inside "a@x.com")."""
+    pattern = r"(?<![\w@./])" + re.escape(value) + r"(?![\w\-]|\.\w)"
+    return re.search(pattern, source, re.IGNORECASE) is not None
+
+
+def _handle(value: object, source: str) -> str | None:
+    """An Instagram handle the text writes with its @ or inside an instagram link."""
+    if not isinstance(value, str):
+        return None
+    handle = value.strip().lstrip("@")
+    if not _HANDLE.match(handle):
+        return None
+    low = source.lower()
+    tail = r"(?!\w|\.\w)"
+    written = re.search("@" + re.escape(handle.lower()) + tail, low) or re.search(
+        r"instagram\.com/" + re.escape(handle.lower()) + tail, low
+    )
+    return "@" + handle if written else None
+
+
+def _link(value: object, source: str) -> str | None:
+    """A site or page the text holds; stored with https:// (the edit form's rule)."""
+    if not isinstance(value, str):
+        return None
+    value = value.strip().rstrip("/.,")
+    bare = re.sub(r"^https?://", "", value, flags=re.IGNORECASE)
+    if not _DOMAIN.match(bare) or not _in_text(bare, source):
+        return None
+    return value if re.match(r"^https?://", value, re.IGNORECASE) else "https://" + bare
+
+
+def _email(value: object, source: str) -> str | None:
+    if not isinstance(value, str):
         return None
     value = value.strip()
-    return value if value.lower() in source.lower() else None
+    return value if _EMAIL.match(value) and _in_text(value, source) else None
 
 
 def _phone(value: object, source: str) -> str | None:
@@ -106,24 +142,49 @@ def _phone(value: object, source: str) -> str | None:
     )
 
 
-def _hours(value: object) -> str | None:
-    if not isinstance(value, str):
-        return None
-    entries = [e.strip() for e in value.split(",")]
-    return (
-        ", ".join(entries)
-        if entries and all(_HOURS_ENTRY.match(e) for e in entries)
-        else None
+def _numbers(source: str) -> set[int]:
+    """Stand-alone 1–2 digit numbers: «8 עד 18», «08:30»; not pieces of a phone."""
+    return {int(n) for n in re.findall(r"(?<!\d)\d{1,2}(?!\d)", source)}
+
+
+def _range_backed(open_: str, close: str, numbers: set[int]) -> bool:
+    """Open before close, and both hours appear as numbers in the text
+    («6 בערב» backs 18:00)."""
+    (oh, om), (ch, cm) = (map(int, open_.split(":")), map(int, close.split(":")))
+    if (oh, om) >= (ch, cm) or ch > 24 or cm > 59 or om > 59:
+        return False
+    return all(
+        (h in numbers or h - 12 in numbers) and (m == 0 or m in numbers)
+        for h, m in ((oh, om), (ch, cm))
     )
 
 
-def _cities(values: object) -> list[str]:
+def _hours(value: object, source: str) -> str | None:
+    if not isinstance(value, str):
+        return None
+    entries = [e.strip() for e in value.split(",")]
+    if not entries or not all(_HOURS_ENTRY.match(e) for e in entries):
+        return None
+    numbers = _numbers(source)
+    ranges = [r.split("-") for e in entries for r in _RANGE.findall(e)]
+    if not all(_range_backed(o, c, numbers) for o, c in ranges):
+        return None
+    return ", ".join(entries)
+
+
+def _cities(values: object, source: str) -> list[str]:
+    """Cities from the site's list that the text itself names."""
     out: list[str] = []
     for raw in values if isinstance(values, list) else []:
         if not isinstance(raw, str):
             continue
         city = canonical_city(raw)
-        if city and city_key(city) in STATIC_SPELLING_BY_KEY and city not in out:
+        if (
+            city
+            and city_key(city) in STATIC_SPELLING_BY_KEY
+            and (raw.strip() in source or city in source)
+            and city not in out
+        ):
             out.append(city)
     return out
 
@@ -146,13 +207,13 @@ def to_draft(data: dict[str, Any], source: str, allowed_ids: set[int]) -> PageDr
     return PageDraft(
         description=description,
         category_ids=list(dict.fromkeys(ids)),
-        delivery_cities=_cities(data.get("delivery_cities")),
-        opening_hours=_hours(data.get("opening_hours")),
+        delivery_cities=_cities(data.get("delivery_cities"), source),
+        opening_hours=_hours(data.get("opening_hours"), source),
         phone=_phone(data.get("phone"), source),
-        instagram=_found(data.get("instagram"), source),
-        facebook=_found(data.get("facebook"), source),
-        website=_found(data.get("website"), source),
-        contact_email=_found(data.get("contact_email"), source),
+        instagram=_handle(data.get("instagram"), source),
+        facebook=_link(data.get("facebook"), source),
+        website=_link(data.get("website"), source),
+        contact_email=_email(data.get("contact_email"), source),
         primary_contact_method=method if method in _ALLOWED_CONTACT_METHODS else None,
     )
 
