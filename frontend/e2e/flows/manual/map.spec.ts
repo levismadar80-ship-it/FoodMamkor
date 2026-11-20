@@ -502,13 +502,23 @@ async function revealMarkerAboveSheet(page: Page, shell: Locator, marker: Locato
     await page.mouse.move(x, y0);
     await page.mouse.down();
     await page.mouse.move(x, y1, { steps: 10 });
+    // Hold still before lifting, as a person placing the map does. Leaflet's
+    // inertia (Map.Drag `_onDragEnd`) prunes drag samples older than 50 ms at
+    // mouseup and glides by what is left; after a 120 ms hold only the final
+    // sample remains, the computed offset is not a number, and Leaflet fires
+    // `moveend` with no glide — the map stops where the drag put it. Without the hold the glide carried the pin on: into the
+    // «search this area» pill on Chromium (measured), and on WebKit off the top
+    // of the map for the deepest pin (Ashkelon, 20/11 run 44797982552), where
+    // markercluster's `removeOutsideVisibleBounds` takes the marker out of the
+    // DOM and every later read times out on a locator that no longer exists.
+    await page.waitForTimeout(120);
     await page.mouse.up();
+    await expect(marker, "the marker must still be on the map after the drag — it left the visible map, and markercluster removed it").toHaveCount(1);
     await expect.poll(async () => (await box(marker)).y, "control: the drag must move the map").not.toBe(m.y);
-    // Leaflet's inertia keeps the map gliding after mouseup, and the «search
-    // this area» pill lands on `moveend`: hit-test only once both are done, or
-    // the check passes on a pin that is still moving (measured: it glided into
-    // the pill and the tap went to the pill). On a second pass the pill is
-    // already up, so `layoutSettled` alone covers the inertia there.
+    // The «search this area» pill lands on `moveend`: hit-test only once it is
+    // up and the pin is still, or the check passes on a layout that is still
+    // changing. On a second pass the pill is already up, so `layoutSettled`
+    // alone covers that.
     await expect(shell.getByTestId("map-search-this-area"), "control: the drag must register as a user move").toBeVisible();
     await layoutSettled(marker);
   }
