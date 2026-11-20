@@ -6193,6 +6193,17 @@
         "publish": "Publish {count} products",
         "failed": "We couldn't read the menu. Try a straighter, sharper photo, or add products by hand.",
         "cap": "Up to 100 products per page. Choose which ones to publish."
+      },
+      "describe": {
+        "cta": "Suggest a description",
+        "hint": "We'll write a suggestion from the product's name and price. Nothing is saved until you save the product.",
+        "loading": "Writing a suggestion…",
+        "preview_label": "Our suggestion. You can edit it before using it.",
+        "use": "Use this",
+        "cancel": "Cancel",
+        "no_name": "Add the product's name first.",
+        "failed": "We couldn't suggest a description this time. You can write it yourself.",
+        "limit": "You've reached today's number of suggestions. Try again tomorrow."
       }
     },
     "locations": {
