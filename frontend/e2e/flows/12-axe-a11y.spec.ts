@@ -285,6 +285,13 @@ for (const role of Object.keys(AUTHED_ROUTES) as (keyof typeof AUTHED_ROUTES)[])
         // Signed in, not bounced: a scan of /login would pass and prove nothing.
         await expect(page).not.toHaveURL(/\/login(\/|$|\?)/);
         await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 20_000 });
+        // The pages bounce to /login client-side, after domcontentloaded, and
+        // /login has its own <h1> — so re-check once the heading is up, and
+        // require the JWT the storageState injects (REUSES:
+        // flows/25-role-reachability.spec.ts assertAuthenticated, MEH-1599).
+        await expect(page).not.toHaveURL(/\/login(\/|$|\?)/);
+        const token = await page.evaluate(() => localStorage.getItem("token"));
+        expect(token, `${role} storageState must carry a JWT`).toBeTruthy();
         const results = await analyze(page);
         summarize(`${role} ${route}`, results);
         expect(
