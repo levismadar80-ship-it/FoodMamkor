@@ -91,7 +91,7 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
         className="mt-3 flex min-h-touch w-full items-center justify-between gap-2 rounded-full border border-border bg-surface-card px-4 text-start text-sm text-fg-muted transition hover:border-primary focus-visible:ring-2 focus-visible:ring-primary"
       >
         <span>{t("page_other")}</span>
-        <PaperPlaneTilt size={16} weight="fill" className="flex-shrink-0 text-primary" style={{ transform: "scaleX(-1)" }} aria-hidden="true" />
+        <PaperPlaneTilt size={16} weight="fill" className="flex-shrink-0 text-primary rtl:-scale-x-100" aria-hidden="true" />
       </button>
     </section>
   );
