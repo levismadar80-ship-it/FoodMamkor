@@ -1,3 +1,11 @@
+> **Status: PARTLY APPLIED 20/11/2026 (MEH-3520), the rest not needed.** A
+> stale bot already runs as `.github/workflows/stale.yml` (MEH-1518: 7 + 7
+> days, drafts and assigned PRs exempt). What this document adds to it, and
+> what was applied through the GitHub web editor, is the label exemption:
+> `do-not-merge` and `keep-open` are now in `exempt-pr-labels`. The separate
+> `stale-prs.yml` file and the 14 + 7 thresholds below were NOT applied; two
+> bots on the same PRs would be workflow smell #1.
+
 # MEH-2244 chunk C — stale-PR bot (`stale-prs.yml`), PRs only
 
 > **`.github/workflows/**` is CC-deny (MEH-671). This file is the workflow for Sapir to
