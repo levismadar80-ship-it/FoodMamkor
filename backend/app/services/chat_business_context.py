@@ -33,7 +33,6 @@ from app.allergens import detail_if_declared
 from app.config import settings
 from app.limits import MAX_PRODUCTS as LIMITS_MAX_PRODUCTS
 from app.data.cities import CITY_ALIASES, ISRAEL_CITIES, canonical_city, city_key
-from app.limits import MAX_PRODUCTS as LIMITS_MAX_PRODUCTS
 from app.models import Producer
 from app.models.product_orders import ProducerOrderSettings
 from app.schemas.catalog import ProductOut
