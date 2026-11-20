@@ -52,6 +52,7 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
 //   long     → יום חמישי, 5 בנובמבר (event signature)
 //   dateTime → 05.11.2026, 10:07 (admin "waiting since" tooltips)
 //   monthYear → נובמבר 2026      (the «מה חדש» release list, MEH-3200)
+//   dayMonthShort → 24.11       (the «המשלוח הבא» date, MEH-3485)
 /** @type {Record<string, Intl.DateTimeFormatOptions>} */
 const STYLES = {
   numeric: { day: "2-digit", month: "2-digit", year: "numeric" },
@@ -59,6 +60,7 @@ const STYLES = {
   long: DEFAULT_OPTIONS,
   dateTime: { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
   monthYear: { month: "long", year: "numeric" },
+  dayMonthShort: { day: "numeric", month: "numeric" },
 };
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const NOON_UTC = 12;
@@ -66,7 +68,7 @@ const NOON_UTC = 12;
 /**
  * @param {string|number|Date|null|undefined} value ISO instant, `YYYY-MM-DD`, epoch ms or Date.
  * @param {string} locale next-intl locale ("he" | "en") or a BCP-47 tag.
- * @param {"numeric"|"dayMonth"|"long"|"dateTime"|"monthYear"} [style]
+ * @param {"numeric"|"dayMonth"|"long"|"dateTime"|"monthYear"|"dayMonthShort"} [style]
  * @returns {string} "" for an empty or unparseable value.
  */
 export function formatDate(value, locale, style = "numeric") {

@@ -72,7 +72,7 @@ Backend runtime variables (Railway) are listed in `backend/app/config.py` and
 | **Cloudflare** | Nameservers `ernest`/`gina.ns.cloudflare.com` | **DNS for mehamakor.co.il** (incl. DMARC `p=none`, rua `dmarc@mehamakor.co.il`) | Vercel also shows copies of the email records. They are **inert**; edit DNS in Cloudflare only |
 | Vercel | team `levismadar80-ship-its-projects` | Frontend, staging protection | — |
 | Railway | project `believable-tenderness` (staging + production) | Backend, Postgres, backup cron | Audit log only goes back to ~24/10 2026 |
-| **Resend: two accounts** | `sapir000s` = **mehamakor.co.il verified, production key**; a second account has only `mehamakor.online` | Transactional email | A key made in the wrong account sends nothing from `.co.il`. That is what broke production email on 24/10 |
+| **Resend: two accounts** | `sapir000s` = **mehamakor.co.il verified, production key**; a second account (`levismadar80`) held only `mehamakor.online` and is empty since 20/11/2026 (MEH-3490) | Transactional email | A key made in the wrong account sends nothing from `.co.il`. That is what broke production email on 24/10 |
 | Anthropic | the account that replaced the one deleted 24/10 | `ANTHROPIC_API_KEY` (Railway), CI reviewer token | — |
 | Cloudflare R2 | token scoped to Object R/W on `mehamakor-backups` only | DB backups | — |
 | Cloudinary | `Root` key disabled; app key rotated 24/10 | Images | — |
@@ -168,7 +168,7 @@ When an item is renewed, change its date here in a docs-only PR.
 | Item | Expires | Who renews | How |
 |---|---|---|---|
 | Domain `mehamakor.co.il` | unknown | Sapir (registrar account) | Turn on auto-renew at the registrar; DNS stays in Cloudflare (§5) |
-| Domain `mehamakor.online` | unknown | Sapir (registrar account) | Turn on auto-renew at the registrar |
+| Domain `mehamakor.online` | 2027-04-08 (RDAP, registrar Galcomm / Communigal) | Sapir (Galcomm account) | **Renew once**, before 2027-04-08, then turn auto-renew off so it lapses about April 2028 (decided 20/11/2026, MEH-3490). It only 308-redirects to `mehamakor.co.il`; its email DNS is locked (SPF `-all`, null MX, DMARC `p=reject`). Turn on the transfer lock at Galcomm |
 | Classic token `git-bash` (§3) | 2027-05-02 | Sapir | GitHub → Settings → Developer settings → Tokens → Regenerate |
 | `CLAUDE_CODE_OAUTH_TOKEN` (§4, rotated 2026-10-26) | unknown | Sapir | `claude setup-token`, then replace the Actions secret |
 | `frontend/public/.well-known/security.txt` `Expires` (MEH-3303) | 2027-10-31 | Claude | Set a new `Expires` less than a year ahead (RFC 9116); the test in `SecurityTxt.test.js` fails once it lapses |

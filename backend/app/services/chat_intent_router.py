@@ -112,7 +112,7 @@ def log_cache_usage(label: str, response: Any) -> None:
 def _classifier_prompt(categories: list[dict[str, str]]) -> str:
     cats = ", ".join(f"{c['name']} ({c['slug']})" for c in categories) or "(none)"
     return (
-        "You route questions for the mehamakor.online chat. Answer ONLY with "
+        "You route questions for the mehamakor.co.il chat. Answer ONLY with "
         "the JSON object described by the schema.\n"
         "route=db_query when the question needs CURRENT site data: how many "
         "businesses exist (overall or in a city), which businesses of a "
