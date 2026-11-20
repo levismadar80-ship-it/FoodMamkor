@@ -7632,6 +7632,143 @@
         "title": "OwnerInvitePublicOut",
         "type": "object"
       },
+      "PageDraft": {
+        "description": "Every field is optional: what the text does not say stays None.",
+        "properties": {
+          "category_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "title": "Category Ids",
+            "type": "array"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "delivery_cities": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 300,
+            "title": "Delivery Cities",
+            "type": "array"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "facebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facebook"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "opening_hours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Hours"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "primary_contact_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Method"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "title": "PageDraft",
+        "type": "object"
+      },
+      "PageFillIn": {
+        "properties": {
+          "text": {
+            "maxLength": 6000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PageFillIn",
+        "type": "object"
+      },
+      "PageFillOut": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/PageDraft"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "PageFillOut",
+        "type": "object"
+      },
       "PageFreshnessConfirmIn": {
         "properties": {
           "token": {
@@ -22838,6 +22975,64 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/page-fill/read": {
+      "post": {
+        "operationId": "admin_read_page_text_admin_producers__producer_id__page_fill_read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Read Page Text",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/preview-link": {
       "post": {
         "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
@@ -30477,6 +30672,52 @@
         "summary": "Put My Order Windows",
         "tags": [
           "product-orders"
+        ]
+      }
+    },
+    "/producers/me/page-fill/read": {
+      "post": {
+        "operationId": "read_my_page_text_producers_me_page_fill_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Read My Page Text",
+        "tags": [
+          "producer-management"
         ]
       }
     },

@@ -2515,6 +2515,31 @@ export const ResendOwnerInviteAdminProducersProducerIdOwnerInviteResendPostRespo
 
 
 /**
+ * @summary Admin Read Page Text
+ */
+export const adminReadPageTextAdminProducersProducerIdPageFillReadPostResponseDraftCategoryIdsMax = 20;
+
+export const adminReadPageTextAdminProducersProducerIdPageFillReadPostResponseDraftDeliveryCitiesMax = 300;
+
+
+
+export const AdminReadPageTextAdminProducersProducerIdPageFillReadPostResponse = /*#__PURE__*/ zod.object({
+  "draft": /*#__PURE__*/ zod.object({
+  "category_ids": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.int()).check(/*#__PURE__*/ zod.maxLength(adminReadPageTextAdminProducersProducerIdPageFillReadPostResponseDraftCategoryIdsMax))),
+  "contact_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_cities": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(adminReadPageTextAdminProducersProducerIdPageFillReadPostResponseDraftDeliveryCitiesMax))),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "primary_contact_method": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Every field is optional: what the text does not say stays None.'))
+})
+
+
+/**
  * Mint a 14-day read-only link to the draft's full page. Stateless: no
  * write, and a new link does not cancel an earlier one. Every link dies
  * when the draft is published, claimed or deleted (the read checks the row).
@@ -6600,6 +6625,31 @@ export const PutMyOrderWindowsProducersMeOrderWindowsPutResponse = /*#__PURE__*/
   "start_time": /*#__PURE__*/ zod.iso.time({}),
   "weekday": /*#__PURE__*/ zod.int()
 }))
+})
+
+
+/**
+ * @summary Read My Page Text
+ */
+export const readMyPageTextProducersMePageFillReadPostResponseDraftCategoryIdsMax = 20;
+
+export const readMyPageTextProducersMePageFillReadPostResponseDraftDeliveryCitiesMax = 300;
+
+
+
+export const ReadMyPageTextProducersMePageFillReadPostResponse = /*#__PURE__*/ zod.object({
+  "draft": /*#__PURE__*/ zod.object({
+  "category_ids": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.int()).check(/*#__PURE__*/ zod.maxLength(readMyPageTextProducersMePageFillReadPostResponseDraftCategoryIdsMax))),
+  "contact_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_cities": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(readMyPageTextProducersMePageFillReadPostResponseDraftDeliveryCitiesMax))),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "primary_contact_method": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('Every field is optional: what the text does not say stays None.'))
 })
 
 
