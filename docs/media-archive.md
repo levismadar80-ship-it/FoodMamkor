@@ -17,6 +17,10 @@ garbage-collected).
 | `tests/screenshots/` | 28 | 11.8 MB |
 | **Total** | **4,507** | **242.4 MB** |
 
+Files that landed on staging while this PR was open, removed in the same PR
+and kept at the staging tip it merged in, `df052ed1dd41b11ec3de68d74b78e02de7f7c77d`:
+`qa-artifacts/MEH-3524/` (4 WebP captures).
+
 Text evidence in those folders (`.md`, `.json`, `.log`, `.txt`, `.html`,
 scripts) was kept.
 
