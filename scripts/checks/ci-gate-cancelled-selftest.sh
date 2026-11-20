@@ -4,18 +4,14 @@
 # Proves that the `CI gate` aggregation predicate in the main pull-request
 # checks workflow sorts three scenarios correctly, and reports whether the
 # MEH-1907 fix (staged under docs/ci/, see this repo's ci docs index) is
-# applied yet. Mirrors scripts/ci-gate-selftest.sh (MEH-1582) and
+# applied yet. Mirrors scripts/checks/ci-gate-selftest.sh (MEH-1582) and
 # scripts/checks/e2e-gate-selftest.sh (MEH-1742) — same two-pass structure.
-# The MEH-1742 one has since MOVED into scripts/checks/ and become a blocking
-# regression guard, because its fix landed (#4743); this one keeps living out
-# here for the reason below, which still holds for it.
 #
-# WHY IT LIVES HERE AND NOT IN scripts/checks/
-#   scripts/checks/run-all.sh auto-discovers every *executable* *.sh directly
-#   inside scripts/checks/ and runs it under the required "Repo guards" job
-#   (run-all.sh:97-113). This script reports a KNOWN-UNAPPLIED state as
-#   informational, but promoting it into that directory before Sapir applies
-#   the patch would red every PR. Move it once the patch has landed, if wanted.
+# WHY IT LIVES IN scripts/checks/ (MEH-3520, 20/11/2026)
+#   It sat in scripts/ while its patch was unapplied, because run-all.sh runs
+#   every executable *.sh in this directory under the required "Repo guards"
+#   job. The patch has landed, so it now runs there and FAILS if the fix
+#   disappears from the workflow file.
 #
 # NOTE ON FIDELITY (.claude/rules/testing.md — "exercise the real
 # implementation, never a copy"): the gate's logic lives inside a YAML `run:`
@@ -24,13 +20,14 @@
 # both predicates to show they discriminate. Pass 1 is what catches drift
 # between this script and the workflow.
 #
-# Usage:  bash scripts/ci-gate-cancelled-selftest.sh
-# Exit:   0 = predicates discriminate as expected (regardless of applied state)
-#         1 = the reproduction failed to discriminate -> this script is wrong
+# Usage:  bash scripts/checks/ci-gate-cancelled-selftest.sh
+# Exit:   0 = the fix is in the workflow AND the predicates discriminate
+#         1 = the fix is gone from the workflow (regression), or the
+#             reproduction failed to discriminate (this script is wrong)
 
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # Built via concatenation rather than one literal so the aggregator
 # workflow's own filename never appears contiguously in this file's source.
 WF_NAME="pr"; WF_NAME="${WF_NAME}-checks.yml"
@@ -48,9 +45,7 @@ if grep -q 'is_cancelled()' "$WF"; then
   echo "  APPLIED   — ci-gate's check()/check_ran() treat 'cancelled' as SUPERSEDED, not FAIL."
 else
   APPLIED=0
-  echo "  NOT YET   — ci-gate still maps 'cancelled' to FAIL via ok()/strict_ok() (the MEH-1907 hole)."
-  echo "              Fix is staged under docs/ci/ for Sapir to apply — see the MEH-1907 patch doc"
-  echo "              there (.github/workflows/** is CC-deny, MEH-671)."
+  echo "  MISSING   — the MEH-1907 fix is not in the workflow file. It was applied; this is a regression."
 fi
 
 # ---------------------------------------------------------------- Pass 2
@@ -125,7 +120,10 @@ fi
 
 if [ $PASS -eq 1 ]; then
   echo "  SELF-TEST PASS — the change discriminates exactly scenario A, and only A."
-  [ $APPLIED -eq 0 ] && echo "  (Gate is still UNPATCHED in this checkout — scenario A is live today.)"
+  if [ $APPLIED -eq 0 ]; then
+    echo "  REGRESSION: the MEH-1907 fix is no longer in the workflow file — the hole is open again." >&2
+    exit 1
+  fi
   exit 0
 fi
 echo "  SELF-TEST FAIL — this harness no longer models the gate; fix it before trusting it." >&2
