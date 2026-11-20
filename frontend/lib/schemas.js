@@ -131,6 +131,12 @@ export const ProducerListSchema = z.object({
     delivery_days: z.array(z.string()).nullable().optional(),
     zone_name: z.string().nullable().optional(),
     free_delivery_above: z.number().nullable().optional(),
+    // MEH-3511: the zone's delivery time and own order cutoff (copied onto
+    // the city row). Undeclared, the parse strips them (MEH-2142 shape).
+    delivery_days_min: z.number().nullable().optional(),
+    delivery_days_max: z.number().nullable().optional(),
+    order_cutoff_day: z.string().nullable().optional(),
+    order_cutoff_time: z.string().nullable().optional(),
   })).optional().default([]),
   // MEH-1412 (MEH-1388 chunk 3): physical presence points from chunk 2's
   // serializer (backend ProducerLocationOut) — {kind, label, city, lat, lng,
@@ -386,6 +392,10 @@ export const ProducerListSchema = z.object({
   // stops the strip; a field can be declared without being rendered here.
   delivery_fee: z.number().nullable().optional(),
   free_delivery_above: z.number().nullable().optional(),
+  // MEH-3511: the business-wide delivery minimum and time (business days).
+  delivery_min_order: z.number().nullable().optional(),
+  delivery_days_min: z.number().nullable().optional(),
+  delivery_days_max: z.number().nullable().optional(),
 });
 
 // MEH-1752: the detail contract — `GET /producers/{producer_id}` and
