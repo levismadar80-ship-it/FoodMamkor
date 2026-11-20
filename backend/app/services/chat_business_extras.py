@@ -152,7 +152,7 @@ def _israel_date(at: Any) -> str | None:
     """A stored deadline (naive UTC) as the Israel date the page shows."""
     if at is None:
         return None
-    aware = at if at.tzinfo else at.replace(tzinfo=UTC)
+    aware: datetime = at if at.tzinfo else at.replace(tzinfo=UTC)
     return aware.astimezone(ISRAEL_TZ).date().isoformat()
 
 
