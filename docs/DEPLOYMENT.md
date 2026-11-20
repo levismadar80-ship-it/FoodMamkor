@@ -558,7 +558,9 @@ a Google outage — but address search itself is still Google's.
 1. `curl -s https://mehamakor.co.il/api/health/places` — `{"status":"ok"}` or
    `{"status":"error","http":403,"code":"PERMISSION_DENIED"}`. This is the one
    call that uses the real key against the real endpoint. The uptime workflow
-   probes it hourly once `docs/ci/places-health-probe.patch.md` is applied.
+   probes it on every 30-minute tick (`.github/workflows/uptime.yml`) and
+   opens the `uptime` issue after two failures in a row; `disabled` (no key
+   on the server) counts as a failure there.
 2. [Billing overview](https://console.cloud.google.com/billing) — is the
    account active, and is the project linked to it?
 3. [Places API (New)](https://console.cloud.google.com/apis/library/places-backend.googleapis.com)
