@@ -12,10 +12,12 @@ Does NOT: Fetch anything from a third party (the rows arrive from the admin),
 Related:  schemas/catalog.py ProductCreate (the per-row validator, shared with
           the owner's own create); routers/admin_product_import.py (routes);
           limits.py MAX_PRODUCTS (the cap counts drafts too).
-History:  MEH-2312 (creation).
+History:  MEH-2312 (creation); MEH-3472 (a row's `group` puts the draft in a
+          product group, creating missing groups by name).
 """
 
 import re
+import uuid
 from decimal import Decimal, InvalidOperation
 from typing import Any
 from uuid import UUID
@@ -24,8 +26,9 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.limits import MAX_PRODUCTS
+from app.limits import MAX_PRODUCT_GROUPS, MAX_PRODUCTS, PRODUCT_GROUPS_DETAIL
 from app.models import Producer, Product
+from app.schemas.product_organize import ProductGroupIn
 from app.schemas.catalog import (
     ProductCreate,
     ProductImportInvalidRow,
@@ -111,6 +114,68 @@ def _first_error(err: ValidationError) -> str:
     return "השורה לא תקינה"
 
 
+def _group_name(raw: str | None) -> tuple[str | None, str | None]:
+    """(clean name, refusal). The owner's own group rules (sanitised, 1–40
+    characters) — one validator, so an imported group is never one the owner
+    could not have typed."""
+    if raw is None:
+        return None, None
+    try:
+        return ProductGroupIn(name=raw).name, None
+    except ValidationError as err:
+        return None, str(err.errors()[0].get("msg", "")).removeprefix("Value error, ")
+
+
+class _Groups:
+    """The business's groups plus the ones this batch adds, matched by name
+    (strip + casefold). New groups keep first-seen order, after the existing."""
+
+    def __init__(self, producer: Producer | None) -> None:
+        raw: Any = (producer.product_groups if producer is not None else None) or []
+        self.existing = [
+            g for g in raw if isinstance(g, dict) and g.get("id") and g.get("name")
+        ]
+        self.by_key = {
+            str(g["name"]).strip().casefold(): str(g["id"]) for g in self.existing
+        }
+        self.new: list[dict[str, str]] = []
+
+    def id_for(self, name: str) -> str:
+        key = name.strip().casefold()
+        if key not in self.by_key:
+            gid = str(uuid.uuid4())
+            self.by_key[key] = gid
+            self.new.append({"id": gid, "name": name})
+        return self.by_key[key]
+
+
+def _check_caps_and_add_groups(
+    db: Session,
+    producer: Producer | None,
+    producer_id: UUID,
+    new_count: int,
+    groups: _Groups,
+) -> None:
+    """Refuse the whole batch past either cap (nothing written yet), else
+    record the groups the batch adds. Split out of import_drafts for C901."""
+    current = db.query(Product).filter(Product.producer_id == producer_id).count()
+    if current + new_count > MAX_PRODUCTS:
+        # MEH-3022: the cap counts drafts — an approved catalog cannot outgrow it.
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"הייבוא יעבור את המגבלה של {MAX_PRODUCTS} מוצרים לבית עסק "
+                f"({current} קיימים, {new_count} חדשים). אפשר לייבא פחות שורות."
+            ),
+        )
+    if len(groups.existing) + len(groups.new) > MAX_PRODUCT_GROUPS:
+        # MEH-3472: the whole batch is refused — nothing is written, so a
+        # partial import never leaves drafts pointing at groups that were cut.
+        raise HTTPException(status_code=409, detail=PRODUCT_GROUPS_DETAIL)
+    if groups.new and producer is not None:
+        producer.product_groups = [*groups.existing, *groups.new]  # type: ignore[assignment]
+
+
 def import_drafts(
     db: Session, producer_id: UUID, rows: list[ProductImportRow]
 ) -> ProductImportResult:
@@ -122,7 +187,10 @@ def import_drafts(
     """
     # Two imports at once must not both pass the cap / duplicate check: lock
     # the business row for the transaction (REUSES producer_claim's pattern).
-    db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
+    producer = (
+        db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
+    )
+    groups = _Groups(producer)
     existing = db.query(Product.name).filter(Product.producer_id == producer_id).all()
     seen = {_name_key(str(r.name)) for r in existing}
     to_create: list[Product] = []
@@ -162,6 +230,14 @@ def import_drafts(
         if key in seen:
             duplicates.append(checked.name)
             continue
+        group_name, group_refusal = _group_name(row.group)
+        if group_refusal:
+            invalid.append(
+                ProductImportInvalidRow(
+                    index=index, name=row.name, reason=group_refusal
+                )
+            )
+            continue
         seen.add(key)
         unit, recognised = _unit(row.unit)
         if not recognised and row.unit:
@@ -176,19 +252,11 @@ def import_drafts(
                 price_unit=unit,
                 source_image_url=_source_image(row.source_image_url),
                 is_draft=True,
+                group_id=groups.id_for(group_name) if group_name else None,
             )
         )
 
-    current = db.query(Product).filter(Product.producer_id == producer_id).count()
-    if current + len(to_create) > MAX_PRODUCTS:
-        # MEH-3022: the cap counts drafts — an approved catalog cannot outgrow it.
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                f"הייבוא יעבור את המגבלה של {MAX_PRODUCTS} מוצרים לבית עסק "
-                f"({current} קיימים, {len(to_create)} חדשים). אפשר לייבא פחות שורות."
-            ),
-        )
+    _check_caps_and_add_groups(db, producer, producer_id, len(to_create), groups)
     db.add_all(to_create)
     db.commit()
     return ProductImportResult(
