@@ -5431,6 +5431,13 @@
         "area_fee_hint": "Optional — if left empty, we show the business-wide delivery fee",
         "area_fee_placeholder": "20",
         "area_fee_aria": "Delivery fee for {city}",
+        "area_min_label": "Minimum order for this area (₪)",
+        "area_min_hint": "Optional — shown next to the city in the delivery section of your page.",
+        "area_min_aria": "Minimum order for {city}",
+        "bulk_label": "Same day for several cities",
+        "bulk_hint": "Tick cities in the list, pick a day and press «Apply».",
+        "bulk_city_aria": "Select {city}",
+        "bulk_apply": "Apply to selected cities",
         "area_fee_inherits": "Inherits {fee} ₪",
         "area_fee_inherits_free": "Inherits: free delivery",
         "default_block_title_nationwide": "Nationwide delivery fee",
@@ -6194,6 +6201,17 @@
         "publish": "Publish {count} products",
         "failed": "We couldn't read the menu. Try a straighter, sharper photo, or add products by hand.",
         "cap": "Up to 100 products per page. Choose which ones to publish."
+      },
+      "describe": {
+        "cta": "Suggest a description",
+        "hint": "We'll write a suggestion from the product's name and price. Nothing is saved until you save the product.",
+        "loading": "Writing a suggestion…",
+        "preview_label": "Our suggestion. You can edit it before using it.",
+        "use": "Use this",
+        "cancel": "Cancel",
+        "no_name": "Add the product's name first.",
+        "failed": "We couldn't suggest a description this time. You can write it yourself.",
+        "limit": "You've reached the number of suggestions for now. Try again later."
       }
     },
     "locations": {
