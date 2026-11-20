@@ -1,5 +1,6 @@
 import type { BrowserContext, Locator, Route, TestInfo } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import he from "../../../messages/he.json";
 import en from "../../../messages/en.json";
 // The app libs below are plain JS (the app is JS + JSDoc); tsconfig.e2e has no
@@ -2626,6 +2627,12 @@ test.describe("manual › recently viewed (task 13)", () => {
     ];
     expect(b.y, "the band sits below the producer grid").toBeGreaterThan(g.y + g.height - 1);
     expect(b.y, "…and above the closing CTA").toBeLessThan(c.y);
+    // MEH-3486 (WebKit, 20/11, passed on retry): the click left the page on «/».
+    // The band sits at the foot of a page whose grid is still settling, so the
+    // card can move between mousedown and mouseup and the click is lost with no
+    // error (MEH-3449). Scroll it in and wait for it to be still first.
+    await items.first().scrollIntoViewIfNeeded();
+    await layoutSettled(items.first());
     await items.first().click();
     await expect(page).toHaveURL(new RegExp(`/${P1.slug}$|/producer/${P1.id}$`));
   });
