@@ -167,8 +167,9 @@ When an item is renewed, change its date here in a docs-only PR.
 <!-- expiry-register:start -->
 | Item | Expires | Who renews | How |
 |---|---|---|---|
-| Domain `mehamakor.co.il` | unknown | Sapir (registrar account) | Turn on auto-renew at the registrar; DNS stays in Cloudflare (§5) |
-| Domain `mehamakor.online` | 2027-04-08 (RDAP, registrar Galcomm / Communigal) | Sapir (Galcomm account) | **Renew once**, before 2027-04-08, then turn auto-renew off so it lapses about April 2028 (decided 20/11/2026, MEH-3490). It only 308-redirects to `mehamakor.co.il`; its email DNS is locked (SPF `-all`, null MX, DMARC `p=reject`). Turn on the transfer lock at Galcomm |
+| Domain `mehamakor.co.il` | **2027-05-05** (Galcomm panel, 20/11/2026) | Sapir (Galcomm account) | **Production. If it lapses the site goes down.** Auto-renew set 20/11/2026 ("Renew Method: Auto Renewal"), **but Galcomm charges it from prepaid account credit**, and the balance was ₪0 that day. Load credit before 2027-05-05 or renew by hand. Transfer lock is on. DNS stays in Cloudflare (§5) |
+| Domain `mehamakor.com` | 2027-05-05 (Galcomm panel, 20/11/2026) | Sapir (Galcomm account) | Not in this register until 20/11/2026 (MEH-3492). Nameservers are Vercel's; it was a lame delegation with no zone in our team, a takeover gap, until it was added to project `food-mamkor` as a 308 redirect to `mehamakor.co.il` (apex + `www`). Auto-renew not configured. Transfer lock is on |
+| Domain `mehamakor.online` | 2027-04-08 (RDAP, registrar Galcomm / Communigal) | Sapir (Galcomm account) | **Renew once**, before 2027-04-08, then turn auto-renew off so it lapses about April 2028 (decided 20/11/2026, MEH-3490). It only 308-redirects to `mehamakor.co.il`; its email DNS is locked (SPF `-all`, null MX, DMARC `p=reject`). Transfer lock is on (Galcomm panel, 20/11/2026); auto-renew is not configured |
 | Classic token `git-bash` (§3) | 2027-05-02 | Sapir | GitHub → Settings → Developer settings → Tokens → Regenerate |
 | `CLAUDE_CODE_OAUTH_TOKEN` (§4, rotated 2026-10-26) | unknown | Sapir | `claude setup-token`, then replace the Actions secret |
 | `frontend/public/.well-known/security.txt` `Expires` (MEH-3303) | 2027-10-31 | Claude | Set a new `Expires` less than a year ahead (RFC 9116); the test in `SecurityTxt.test.js` fails once it lapses |
