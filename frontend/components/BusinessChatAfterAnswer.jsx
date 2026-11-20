@@ -53,10 +53,16 @@ export default function BusinessChatAfterAnswer({ business, messages, onAsk }) {
       {href && (
         <a
           href={href}
-          target="_blank"
-          rel="noopener noreferrer"
+          // MEH-3513: a new tab only where the contact button opens one
+          // (website / social); wa.me, tel and mailto stay in place.
+          {...(business.handoff?.external
+            ? {
+                target: "_blank",
+                rel: business.handoff.isWebsite ? "noopener" : "noopener noreferrer",
+                "aria-label": t("ask_business_aria", { name: business.name }),
+              }
+            : {})}
           data-testid="business-chat-handoff"
-          aria-label={t("ask_business_aria", { name: business.name })}
           onClick={() => trackPrimaryCtaClick(business.id, business.handoff?.method)}
           className="min-h-11 inline-flex items-center gap-1.5 self-start text-xs font-medium text-primary underline underline-offset-2 px-1 py-2 focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
         >

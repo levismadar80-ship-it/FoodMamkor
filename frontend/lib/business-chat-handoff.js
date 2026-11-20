@@ -14,11 +14,15 @@
  * History:  MEH-3513 (creation)
  */
 
-import { getResolvedMethod, getPrimaryContactHref } from "@/lib/contact-method";
-import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import { getResolvedMethod, getPrimaryContactHref, isPrimaryExternal } from "@/lib/contact-method";
+import { getWhatsAppHref, normalizePhone, withReferralParams } from "@/lib/utils";
 
 /**
- * @typedef {{ method: string, href: (question?: string) => string | null }} BusinessHandoff
+ * `external` = opens in a new tab, by the contact button's own rule
+ * (isPrimaryExternal: website / social / external order, not wa.me, tel or
+ * mailto). `isWebsite` = the referral UTM is on the href and the link keeps
+ * the referrer (MEH-1525, as PrimaryContactButton.jsx).
+ * @typedef {{ method: string, external: boolean, isWebsite: boolean, href: (question?: string) => string | null }} BusinessHandoff
  */
 
 /**
@@ -37,6 +41,8 @@ export function businessChatHandoff(producer, copy) {
     if (!digits) return null;
     return {
       method,
+      external: false,
+      isWebsite: false,
       href: (question) => {
         const q = (question || "").trim();
         const text = q ? `${copy.greeting(q).trim()}\n\n${copy.sourceLine}` : copy.sourceLine;
@@ -44,6 +50,10 @@ export function businessChatHandoff(producer, copy) {
       },
     };
   }
-  const href = getPrimaryContactHref(producer);
-  return href ? { method, href: () => href } : null;
+  const raw = getPrimaryContactHref(producer);
+  if (!raw) return null;
+  const isWebsite = method === "website";
+  // MEH-3513: same referral tagging as the contact button (MEH-1525).
+  const href = isWebsite ? withReferralParams(raw) : raw;
+  return { method, external: isPrimaryExternal(producer), isWebsite, href: () => href };
 }

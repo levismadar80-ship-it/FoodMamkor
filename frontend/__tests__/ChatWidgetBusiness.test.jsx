@@ -286,6 +286,8 @@ describe("MEH-3513: after an answer — follow-ups and «ask the business»", ()
     expect(link.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/972501234567\?/);
     expect(text.startsWith(`שלום ${producer.name}, ${B.prompts.delivery}`)).toBe(true);
     expect(text.endsWith(he.whatsapp.question_chips.source_line)).toBe(true);
+    // wa.me opens in place, like the contact button (isPrimaryExternal).
+    expect(link).not.toHaveAttribute("target");
     fireEvent.click(link);
     expect(trackPrimaryCtaClick).toHaveBeenCalledWith(producer.id, "whatsapp");
   });
@@ -331,11 +333,13 @@ describe("MEH-3513: after an answer — follow-ups and «ask the business»", ()
     expect(dialog.queryByTestId("business-chat-after-answer")).not.toBeInTheDocument();
   });
 
-  it("a non-WhatsApp channel links to the contact button's own href, without the question", async () => {
+  it("a website channel links like the contact button: referral UTM, new tab, referrer kept", async () => {
     const producer = { ...PRODUCER, primary_contact_method: "website", website: "example.com" };
     const dialog = await askFromPage(producer, B.prompts.delivery);
     const link = dialog.getByTestId("business-chat-handoff");
-    expect(link).toHaveAttribute("href", "https://example.com");
+    expect(link).toHaveAttribute("href", "https://example.com/?utm_source=mehamakor&utm_medium=referral");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener");
     fireEvent.click(link);
     expect(trackPrimaryCtaClick).toHaveBeenCalledWith(producer.id, "website");
   });
