@@ -118,7 +118,8 @@ def test_one_row(client, db):
     draft = db.query(Product).filter(Product.producer_id == producer.id).one()
     assert draft.is_draft is True
     assert float(draft.price_min) == 25.0 and float(draft.price_max) == 25.0
-    assert draft.price_unit == "unit"
+    # MEH-3474: the fixture row is «למארז» — a pack now, no longer «ליחידה».
+    assert draft.price_unit == "pack"
     assert draft.source_image_url.startswith("https://firebasestorage.googleapis.com/")
 
 

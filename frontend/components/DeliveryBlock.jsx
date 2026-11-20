@@ -218,20 +218,36 @@ function CompactCities({ areas, t }) {
   const overLimit = sorted.length > CITY_PREVIEW_LIMIT;
   const visible = expanded || !overLimit ? sorted : sorted.slice(0, CITY_PREVIEW_LIMIT);
   const hiddenCount = sorted.length - CITY_PREVIEW_LIMIT;
+  // MEH-3473: every city carries its own leading «·» in a fixed 1rem slot
+  // (w-2 + gap-x-2), and the list is pulled 1rem past the inline-start edge of
+  // an overflow-hidden wrapper. The first city of EVERY visual line — not only
+  // of the list — therefore starts inside the clipped 1rem, so no line opens
+  // with «·» and none ends with one (separators only ever precede a city).
+  // DO NOT go back to `i > 0 && "·"`: flex-wrap breaks between items, so each
+  // new line opened with the separator of its first item (Sapir 19/11, 48
+  // cities). DO NOT drop the separator from the first item either — it would
+  // then start inside the clipped slot and lose its first letter.
   return (
     <div className="mb-4">
-      <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text">
-        {visible.map((da, i) => (
-          <li key={da.id ?? da.city} className="flex items-center gap-x-2">
-            {i > 0 && (
-              <span aria-hidden="true" className="text-fg-muted">
+      <div className="overflow-hidden" data-testid="delivery-cities-clip">
+        <ul
+          className="-ms-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text"
+          data-testid="delivery-cities"
+        >
+          {visible.map((da) => (
+            <li key={da.id ?? da.city} className="flex items-center gap-x-2">
+              <span
+                aria-hidden="true"
+                className="inline-block w-2 shrink-0 text-center text-fg-muted"
+                data-testid="delivery-city-sep"
+              >
                 ·
               </span>
-            )}
-            <span>{da.city}</span>
-          </li>
-        ))}
-      </ul>
+              <span>{da.city}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       {overLimit && (
         <ShowMore
           size="inline"

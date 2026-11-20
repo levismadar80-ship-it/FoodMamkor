@@ -1577,7 +1577,7 @@ def test_one_address_gets_five_codes_an_hour_whatever_the_phones(
 # MEH-2936: the stored order line, not only the menu, counts bottle/box like
 # `unit` and weighs kg/100g — services/product_order_create.py decides it.
 @pytest.mark.parametrize(
-    ("unit", "estimate"), [("bottle", False), ("box", False), ("unit", False), ("100g", True)]
+    ("unit", "estimate"), [("bottle", False), ("box", False), ("pack", False), ("unit", False), ("100g", True)]
 )
 def test_an_exact_price_is_an_estimate_only_for_a_weighed_unit(
     client, db, flag_on, sent, unit, estimate
