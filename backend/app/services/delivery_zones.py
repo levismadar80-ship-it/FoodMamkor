@@ -110,7 +110,8 @@ EXCLUDED_ZONE_CITY_DETAIL = (
 def _refuse_excluded_zone_city(producer: Producer, member: dict[str, str]) -> None:
     if not producer.delivery_nationwide:
         return
-    excluded = {city_key(c) for c in (producer.delivery_excluded_cities or [])}
+    stored: list[str] = list(producer.delivery_excluded_cities or [])
+    excluded = {city_key(c) for c in stored}
     clash = sorted(c for c in member if c in excluded)
     if clash:
         raise HTTPException(
