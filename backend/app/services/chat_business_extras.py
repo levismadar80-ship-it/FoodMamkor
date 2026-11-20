@@ -148,7 +148,7 @@ def _money(value: Any) -> str | None:
     return None if value is None or value == 0 else f"{value} ₪"
 
 
-def _israel_date(at: datetime | None) -> str | None:
+def _israel_date(at: Any) -> str | None:
     """A stored deadline (naive UTC) as the Israel date the page shows."""
     if at is None:
         return None
