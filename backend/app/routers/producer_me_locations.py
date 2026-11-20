@@ -394,8 +394,8 @@ def create_my_location(
     )
     enforce_cap(existing_count, "locations")  # MEH-3022
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
-    _fill_centroid_when_unpinned(db, loc)
     pickup_schedule.settle(loc)  # MEH-3512
+    _fill_centroid_when_unpinned(db, loc)
 
     # MEH-1938 follow-up (Sapir, 02/09) — branch-only primaries are enforced
     # HERE too, not only on the update path. A rule that the create path can
@@ -472,8 +472,8 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
     want_primary = patch.pop("is_primary", None)
     for field, value in patch.items():
         setattr(loc, field, value)
-    _fill_centroid_when_unpinned(db, loc)
     pickup_schedule.settle(loc)  # MEH-3512
+    _fill_centroid_when_unpinned(db, loc)
 
     if want_primary is True:
         # MEH-1938 follow-up (Sapir, 02/09): promotion is BRANCH-ONLY, and this
