@@ -13,10 +13,12 @@
  * Does NOT: Fetch the source store (the rows are pasted as JSON — the
  *           extractor is scripts/import/mypips-extract.mjs), show or upload
  *           images (MEH-1184), or edit published products.
- * History:  MEH-2312 (creation).
+ *           GET /admin/producers/{id}/product-groups (MEH-3472: a draft's group).
+ * History:  MEH-2312 (creation); MEH-3472 (each draft shows its group; the
+ *           page is told the draft list so the organizer can order drafts).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PRICE_UNITS } from "@/lib/product-price";
 import api from "@/lib/api";
@@ -47,8 +49,8 @@ function parseRows(text) {
   }
 }
 
-/** @param {{ producerId: string, onApproved?: () => void }} props */
-export default function AdminProductImport({ producerId, onApproved }) {
+/** @param {{ producerId: string, onApproved?: () => void, onDraftsChange?: (drafts: any[]) => void, groupsVersion?: number }} props */
+export default function AdminProductImport({ producerId, onApproved, onDraftsChange, groupsVersion = 0 }) {
   const t = useTranslations("admin.producers.product_import");
   const tUnit = useTranslations("price_unit");  // MEH-2936
   const [text, setText] = useState("");
@@ -56,6 +58,35 @@ export default function AdminProductImport({ producerId, onApproved }) {
   const [result, setResult] = useState(/** @type {any} */ (null));
   const [error, setError] = useState(/** @type {string | null} */ (null));
   const [busy, setBusy] = useState(false);
+  // MEH-3472: group id → name, for the «קבוצה: …» line under each draft.
+  const [groupNames, setGroupNames] = useState(/** @type {Record<string, string>} */ ({}));
+  const onDraftsChangeRef = useRef(onDraftsChange);
+  // Kept current in an effect, not during render (react-hooks/refs); it runs
+  // before the drafts effect below, so that one always calls the latest.
+  useEffect(() => {
+    onDraftsChangeRef.current = onDraftsChange;
+  }, [onDraftsChange]);
+
+  // Every draft-list change goes to the page too (null = not loaded).
+  useEffect(() => {
+    if (drafts) onDraftsChangeRef.current?.(drafts);
+  }, [drafts]);
+
+  const loadGroups = useCallback(() => {
+    api
+      .get(`/admin/producers/${producerId}/product-groups`)
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setGroupNames(Object.fromEntries(list.map((/** @type {any} */ g) => [g.id, g.name])));
+      })
+      .catch(() => setGroupNames({}));  // the group line is a hint; the list still works
+  }, [producerId]);
+
+  // The organizer saved a group list (rename, delete): re-read the names so
+  // the «קבוצה: …» lines don't show a group that is gone (MEH-3472 review).
+  useEffect(() => {
+    if (groupsVersion > 0) loadGroups();
+  }, [groupsVersion, loadGroups]);
 
   const [loadFailed, setLoadFailed] = useState(false);
   const load = useCallback(async () => {
@@ -65,12 +96,13 @@ export default function AdminProductImport({ producerId, onApproved }) {
       if (!parsed.success) throw new Error("schema");
       setDrafts(parsed.data);
       setLoadFailed(false);
+      loadGroups();
     } catch {
       // A failed load is NOT "nothing to approve" — say so instead.
       setDrafts(null);
       setLoadFailed(true);
     }
-  }, [producerId]);
+  }, [producerId, loadGroups]);
 
   // First load: the fetch lives in the effect and sets state only from its
   // callbacks (react-hooks/set-state-in-effect); `load` is for reloads after
@@ -90,10 +122,11 @@ export default function AdminProductImport({ producerId, onApproved }) {
         setDrafts(null);
         setLoadFailed(true);
       });
+    loadGroups();
     return () => {
       alive = false;
     };
-  }, [producerId]);
+  }, [producerId, loadGroups]);
 
   const run = async (/** @type {() => Promise<void>} */ fn) => {
     setBusy(true);
@@ -205,7 +238,14 @@ export default function AdminProductImport({ producerId, onApproved }) {
         <ul className="divide-y divide-border text-sm" data-testid="draft-list">
           {drafts?.map((d) => (
             <li key={d.id} className="flex items-center gap-3 py-2">
-              <span className="flex-1 min-w-0 truncate">{d.name}</span>
+              <span className="flex-1 min-w-0">
+                <span className="block truncate">{d.name}</span>
+                {d.group_id && groupNames[d.group_id] && (
+                  <span className="block truncate text-xs text-fg-muted" data-testid="draft-group">
+                    {t("draft_group", { name: groupNames[d.group_id] })}
+                  </span>
+                )}
+              </span>
               <span className="text-fg-muted shrink-0">
                 <span className="numeric" dir="ltr">
                   ₪{Number(d.price_min ?? 0)}

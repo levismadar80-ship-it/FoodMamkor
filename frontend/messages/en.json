@@ -2097,7 +2097,8 @@
         "error_json": "The text is not valid JSON.",
         "error_shape": "Expected an array of products, or an object with rows.",
         "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
-        "load_failed": "Couldn't load the drafts. Try refreshing."
+        "load_failed": "Couldn't load the drafts. Try refreshing.",
+        "draft_group": "Group: {name}"
       }
     },
     "users": {

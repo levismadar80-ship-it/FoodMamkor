@@ -2539,8 +2539,10 @@ export const AdminSuggestProductDescriptionAdminProducersProducerIdProductDescri
  */
 export const AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponseItem = /*#__PURE__*/ zod.object({
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "name": /*#__PURE__*/ zod.string(),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
   "source_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -2568,6 +2570,26 @@ export const AdminDeleteProductDraftAdminProducersProducerIdProductDraftsProduct
 
 
 /**
+ * @summary Admin List Product Groups
+ */
+export const AdminListProductGroupsAdminProducersProducerIdProductGroupsGetResponseItem = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.string(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))
+export const AdminListProductGroupsAdminProducersProducerIdProductGroupsGetResponse = /*#__PURE__*/ zod.array(AdminListProductGroupsAdminProducersProducerIdProductGroupsGetResponseItem)
+
+
+/**
+ * @summary Admin Replace Product Groups
+ */
+export const AdminReplaceProductGroupsAdminProducersProducerIdProductGroupsPutResponseItem = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.string(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))
+export const AdminReplaceProductGroupsAdminProducersProducerIdProductGroupsPutResponse = /*#__PURE__*/ zod.array(AdminReplaceProductGroupsAdminProducersProducerIdProductGroupsPutResponseItem)
+
+
+/**
  * @summary Admin Import Products
  */
 export const adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault = [];
@@ -2582,6 +2604,47 @@ export const AdminImportProductsAdminProducersProducerIdProductImportPostRespons
   "skipped_duplicates": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "unknown_units": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault)
 })
+
+
+/**
+ * Every product of the business, published AND draft — the admin builds
+ * the page before approval. The exact-set 409 applies to that whole set.
+ * @summary Admin Set Product Order
+ */
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsGlutenFreeDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLactoseFreeDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLowCarbDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsNoAddedSugarDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVeganDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVegetarianDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseNoAllergensDefault = false;
+
+export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponse = /*#__PURE__*/ zod.array(AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponseItem)
 
 
 /**
@@ -2626,6 +2689,44 @@ export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse
  * @summary Admin Delete Draft Product
  */
 export const AdminDeleteDraftProductAdminProducersProducerIdProductsProductIdDeleteResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * @summary Admin Set Product Group
+ */
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsGlutenFreeDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLactoseFreeDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLowCarbDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsNoAddedSugarDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVeganDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVegetarianDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseNoAllergensDefault = false;
+
+export const AdminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
 
 
 /**
