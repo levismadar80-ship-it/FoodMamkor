@@ -2,8 +2,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ChatCircleDots } from "@phosphor-icons/react";
-import Button from "@/components/ui/Button";
+import { PaperPlaneTilt, Sparkle } from "@phosphor-icons/react";
 import { openBusinessChat } from "@/lib/business-chat";
 import { businessChatPrompts } from "@/lib/business-chat-prompts";
 import { usePreviewMode } from "@/lib/preview-mode";
@@ -45,10 +44,21 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
       aria-labelledby="business-chat-title"
       className="mt-8 rounded-lg border border-border bg-surface p-4 print:hidden"
     >
-      <h3 id="business-chat-title" className="flex items-center gap-2 text-sm font-semibold text-text">
-        <ChatCircleDots size={20} className="flex-shrink-0 text-primary" aria-hidden="true" />
-        {t("page_title", { name })}
-      </h3>
+      {/* Sapir 20/11 «האם יבינו שזה עוזרת»: the sparkle is the AI mark people
+          learned from Google (Gemini), Amazon (Rufus) and most design systems,
+          and the line under the title says in words that it is an AI that
+          answers from this page (EU AI Act art. 50 asks the same). */}
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 flex-shrink-0 place-items-center rounded-full bg-green-50 text-primary" aria-hidden="true">
+          <Sparkle size={18} weight="fill" />
+        </span>
+        <div className="min-w-0">
+          <h3 id="business-chat-title" className="text-base font-semibold text-text">
+            {t("page_title", { name })}
+          </h3>
+          <p className="mt-0.5 text-xs text-fg-muted" data-testid="business-chat-ai-note">{t("page_ai_note")}</p>
+        </div>
+      </div>
       {/* MEH-3505: the business's own questions on the page, like Google Maps'
           «Ask about this place» and Amazon's Rufus chips — a tap opens the
           panel with that question already sent. No generic lead line. */}
@@ -71,16 +81,18 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
           })}
         </ul>
       )}
-      <Button
-        variant="outlined"
-        size="sm"
-        className="mt-3"
+      {/* Looks like the field it opens (Rufus's «Ask Rufus a question» box):
+          one more outlined button under the chips read as a fourth chip. */}
+      <button
+        type="button"
         data-testid="business-chat-open"
         aria-haspopup="dialog"
         onClick={() => open()}
+        className="mt-3 flex min-h-touch w-full items-center justify-between gap-2 rounded-full border border-border bg-surface-card px-4 text-start text-sm text-fg-muted transition hover:border-primary focus-visible:ring-2 focus-visible:ring-primary"
       >
-        {prompts.length > 0 ? t("page_other") : t("page_button")}
-      </Button>
+        <span>{t("page_other")}</span>
+        <PaperPlaneTilt size={16} weight="fill" className="flex-shrink-0 text-primary" style={{ transform: "scaleX(-1)" }} aria-hidden="true" />
+      </button>
     </section>
   );
 }
