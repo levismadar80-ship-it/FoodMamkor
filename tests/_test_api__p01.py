@@ -540,7 +540,7 @@ class TestAuth:
         assert shapes[0][0] == "signup_marker"
 
     def test_login_returns_jwt(self, client, db):
-        make_user(db, email="bob@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="bob@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         resp = client.post(
             "/auth/login",
             json={"email": "bob@test.com", "password": "Zx7Yp9Mq2Lr4"},
@@ -549,7 +549,7 @@ class TestAuth:
         assert resp.json()["access_token"]
 
     def test_login_wrong_password(self, client, db):
-        make_user(db, email="bob2@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="bob2@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         resp = client.post(
             "/auth/login",
             json={"email": "bob2@test.com", "password": "wrong"},
@@ -557,7 +557,7 @@ class TestAuth:
         assert resp.status_code == 401
 
     def test_login_blocked_user_returns_403(self, client, db):
-        make_user(db, email="blocked@test.com", password="Zx7Yp9Mq2Lr4", is_blocked=True)
+        make_user(db, email="blocked@test.com", password="Zx7Yp9Mq2Lr4", is_blocked=True)  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         resp = client.post(
             "/auth/login",
             json={"email": "blocked@test.com", "password": "Zx7Yp9Mq2Lr4"},

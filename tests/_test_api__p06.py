@@ -25,7 +25,7 @@ class TestRefreshTokenFlow:
     gets a fresh DB and a clean slowapi counter.
     """
 
-    def _login(self, client, email, password="Zx7Yp9Mq2Lr4"):
+    def _login(self, client, email, password="Zx7Yp9Mq2Lr4"):  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         return client.post("/auth/login", json={"email": email, "password": password})
 
     def _refresh_cookies(self, response):
@@ -51,7 +51,7 @@ class TestRefreshTokenFlow:
         return None
 
     def test_login_sets_refresh_cookie(self, client, db):
-        make_user(db, email="t1@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="t1@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         res = self._login(client, "t1@test.com")
         assert res.status_code == 200
         cookies = self._refresh_cookies(res)
@@ -71,7 +71,7 @@ class TestRefreshTokenFlow:
         from joserfc.jwt import JWTClaimsRegistry
         from app.config import settings
 
-        make_user(db, email="t2@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="t2@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         login_res = self._login(client, "t2@test.com")
         refresh_cookie = login_res.cookies.get("refresh_token")
         assert refresh_cookie, "Login did not return a refresh_token cookie"
@@ -99,7 +99,7 @@ class TestRefreshTokenFlow:
         assert res.status_code == 401
 
     def test_refresh_rejects_after_token_version_bump(self, client, db):
-        make_user(db, email="t5@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="t5@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         login_res = self._login(client, "t5@test.com")
         refresh_cookie = login_res.cookies.get("refresh_token")
 
@@ -113,7 +113,7 @@ class TestRefreshTokenFlow:
         assert res.status_code == 401
 
     def test_refresh_rejects_blocked_user(self, client, db):
-        make_user(db, email="t6@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="t6@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         login_res = self._login(client, "t6@test.com")
         refresh_cookie = login_res.cookies.get("refresh_token")
 
@@ -157,7 +157,7 @@ class TestRefreshTokenFlow:
         assert res.json()["email"] == "t8@test.com"
 
     def test_logout_clears_refresh_cookie(self, client, db):
-        make_user(db, email="t9@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="t9@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         self._login(client, "t9@test.com")  # sets cookie in client session
 
         res = client.post("/auth/logout")
@@ -171,7 +171,7 @@ class TestRefreshTokenFlow:
         assert "max-age=0" in low or "expires=" in low
 
     def test_logout_all_devices_rotates_refresh_cookie(self, client, db):
-        make_user(db, email="t10@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="t10@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         login_res = self._login(client, "t10@test.com")
         old_refresh = login_res.cookies.get("refresh_token")
         access_token = login_res.json()["access_token"]
@@ -208,7 +208,7 @@ class TestFingerprintCookie:
     tokens fail-open, logout clears the cookie.
     """
 
-    def _login(self, client, email, password="Zx7Yp9Mq2Lr4"):
+    def _login(self, client, email, password="Zx7Yp9Mq2Lr4"):  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         return client.post("/auth/login", json={"email": email, "password": password})
 
     def _all_set_cookies(self, response):
@@ -228,7 +228,7 @@ class TestFingerprintCookie:
         return header.split("=", 1)[1].split(";")[0].strip()
 
     def test_login_sets_fingerprint_cookie(self, client, db):
-        make_user(db, email="fp1@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="fp1@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         res = self._login(client, "fp1@test.com")
         assert res.status_code == 200
         fp_hdr = self._fp_cookie_header(res)
@@ -255,7 +255,7 @@ class TestFingerprintCookie:
         assert self._fp_cookie_header(res) is None
 
     def test_authenticated_request_valid_fingerprint_passes(self, client, db):
-        make_user(db, email="fp3@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="fp3@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         login_res = self._login(client, "fp3@test.com")
         access_token = login_res.json()["access_token"]
         fp = self._fp_value(login_res)
@@ -273,7 +273,7 @@ class TestFingerprintCookie:
         """Core security invariant: a stolen access token cannot be replayed
         without also stealing the HttpOnly __Secure-Fgp cookie.
         """
-        make_user(db, email="fp4@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="fp4@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         login_res = self._login(client, "fp4@test.com")
         access_token = login_res.json()["access_token"]
 
@@ -317,7 +317,7 @@ class TestFingerprintCookie:
         assert res.json()["email"] == "fp5@test.com"
 
     def test_logout_clears_fingerprint_cookie(self, client, db):
-        make_user(db, email="fp6@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="fp6@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         self._login(client, "fp6@test.com")
 
         res = client.post("/auth/logout")
@@ -339,7 +339,7 @@ class TestFingerprintCookie:
         (auth.py:228-234): all non-403 HTTPExceptions are caught and
         return None, so a fingerprint-mismatch 401 never bubbles to the caller.
         """
-        make_user(db, email="fp7@test.com", password="Zx7Yp9Mq2Lr4")
+        make_user(db, email="fp7@test.com", password="Zx7Yp9Mq2Lr4")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         login_res = self._login(client, "fp7@test.com")
         access_token = login_res.json()["access_token"]
 

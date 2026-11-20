@@ -749,7 +749,7 @@ class TestResetPasswordFlow:
     def test_happy_path(self, client, db):
         import secrets
         from datetime import timedelta
-        user = make_user(db, password="OldPass1!")
+        user = make_user(db, password="OldPass1!")  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         token = secrets.token_urlsafe(32)
         user.reset_token = token
         user.reset_token_expires_at = utc_now() + timedelta(hours=1)

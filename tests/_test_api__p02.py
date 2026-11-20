@@ -717,7 +717,7 @@ class TestLoginTimingEqualization:
         make_user(
             db,
             email="wrong-pw-victim@example.com",
-            password="Zx7Yp9Mq2Lr4",
+            password="Zx7Yp9Mq2Lr4",  # guard-ok: test-fixture password, moved verbatim from tests/test_api.py (MEH-3540)
         )
 
         WARMUP = 5
