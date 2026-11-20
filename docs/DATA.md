@@ -553,6 +553,8 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
   list); the subscriber figure is recomputed per booking with the current list.
   One list exists today; a month that spans a price change will need both
   figures taken from the row's list.
+  Read by the dashboard home's monthly line (`MonthValueLine.jsx`, MEH-3194),
+  which shows `bookings` and `value_agorot` only, never a fee.
 - 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
   businesses excluded) with a counted booking that month, highest value first:
   `{month, threshold_agorot, businesses_over_threshold, businesses_over_two_months,

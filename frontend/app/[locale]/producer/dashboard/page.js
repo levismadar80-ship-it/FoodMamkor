@@ -17,6 +17,7 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
+import MonthValueLine from "@/components/producer/MonthValueLine";
 import WhatsNewCard from "@/components/producer/WhatsNewCard";
 import OrdersIntroCard from "@/components/producer/OrdersIntroCard";
 import WhatsNewRow from "@/components/producer/WhatsNewRow";
@@ -506,6 +507,10 @@ export default function ProducerDashboardPage() {
           {t("nav.view_page")}
         </LocaleLink>
       )}
+
+      {/* MEH-3194: what came through the site this month, one line under the
+          greeting so it is seen before any card (and before any price). */}
+      {isApproved && <MonthValueLine />}
 
       {/* MEH-3108: «מה מחכה לך» — what is waiting for the owner, right
           under the greeting. Renders nothing when nothing is waiting. */}

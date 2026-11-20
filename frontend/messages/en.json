@@ -4890,6 +4890,13 @@
   },
   "dashboard": {
     "producer": {
+      "month_value": {
+        "none": "No orders through the site yet this month",
+        "one": "This month one order came through the site",
+        "one_value": "This month one order came through the site, worth {value}",
+        "many": "This month {count} orders came through the site",
+        "many_value": "This month {count} orders came through the site, worth {value}"
+      },
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
       "unsaved_guard": {

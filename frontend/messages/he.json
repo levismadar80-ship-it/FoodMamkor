@@ -4886,6 +4886,13 @@
   },
   "dashboard": {
     "producer": {
+      "month_value": {
+        "none": "עוד אין הזמנות דרך האתר החודש",
+        "one": "החודש הגיעה דרך האתר הזמנה אחת",
+        "one_value": "החודש הגיעה דרך האתר הזמנה אחת, בשווי {value}",
+        "many": "החודש הגיעו דרך האתר {count} הזמנות",
+        "many_value": "החודש הגיעו דרך האתר {count} הזמנות, בשווי {value}"
+      },
       "loading_data": "טעינת נתונים…",
       "loading_analytics": "טעינת סטטיסטיקות…",
       "unsaved_guard": {
