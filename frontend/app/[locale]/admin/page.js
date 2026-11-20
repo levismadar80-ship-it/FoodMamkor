@@ -8,6 +8,7 @@ import { detailToMessage } from "@/lib/errors";
 import { QUEUES, queueCount } from "./queues";
 import { useAdminDashboard } from "./dashboard-data";
 import { SkeletonTiles } from "@/components/Skeleton";
+import AdminLicenceExpiry from "@/components/admin/AdminLicenceExpiry";
 
 /**
  * /admin — «מה מחכה לטיפול» (MEH-2359).
@@ -28,7 +29,10 @@ import { SkeletonTiles } from "@/components/Skeleton";
  *           (admin/dashboard-data.js, MEH-2399 — one request, not one per
  *           consumer); reads `stats` + `pending_producers`, the preview list
  *           the endpoint already ships.
- * Does NOT: fetch anything new, decide approvals (that is the table on
+ *           MEH-3524: plus GET /admin/license-expiry-reminders, through
+ *           components/admin/AdminLicenceExpiry.jsx — licences that run out
+ *           within 30 days need the admin to act, so they belong here.
+ * Does NOT: fetch anything else, decide approvals (that is the table on
  *           /admin/producers), or list queues the sidebar does not — both
  *           read admin/queues.js.
  */
@@ -159,6 +163,9 @@ export default function AdminHome() {
           </p>
         )}
       </section>
+
+      {/* 3. MEH-3524: licences about to lapse. Nothing when there are none. */}
+      <AdminLicenceExpiry />
 
       <p className="text-xs text-muted">
         <Link href="/admin/analytics" className="hover:underline">

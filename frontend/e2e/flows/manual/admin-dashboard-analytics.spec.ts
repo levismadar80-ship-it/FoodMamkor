@@ -188,6 +188,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
   );
   await page.route("**/users/me/favorites", (r) => json(r, []));
+  // MEH-3524: the home lists licences about to lapse; analytics, the rescue pilot (off → 404).
+  await page.route("**/admin/license-expiry-reminders", (r) => json(r, { window_days: 30, total: 0, rows: [] }));
+  await page.route("**/admin/rescue/metrics**", (r) => json(r, { detail: "לא נמצא" }, 404));
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
   await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
