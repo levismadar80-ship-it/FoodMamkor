@@ -37,6 +37,7 @@ Exit codes:
   1 — pg_dump failed (output preserved in tempdir for inspection)
   2 — R2 upload failed (dump preserved)
   3 — config error (missing env var, ENV not set, etc.)
+  4 — unexpected error (traceback in the log; still reported to Sentry)
 
 Filename format:
   mehamakor_${ENV}_${UTC ISO 8601}.dump
@@ -72,6 +73,7 @@ EXIT_OK = 0
 EXIT_PG_DUMP_FAILED = 1
 EXIT_UPLOAD_FAILED = 2
 EXIT_CONFIG_ERROR = 3
+EXIT_UNEXPECTED = 4
 
 # pg_dump timeout, in seconds. ~50MB DB completes in single-digit
 # seconds; 600s is generous safety margin for growth + slow networks.
@@ -116,7 +118,7 @@ def checkin_url(dsn: str, status: str, slug: str = CHECKIN_MONITOR_SLUG) -> str 
         parts = urllib.parse.urlsplit(dsn.strip())
         key = parts.username
         project_id = parts.path.strip("/").rsplit("/", 1)[-1]
-        if not (parts.scheme and parts.hostname and key and project_id.isdigit()):
+        if not (parts.scheme in ("http", "https") and parts.hostname and key and project_id.isdigit()):
             return None
         host = parts.hostname + (f":{parts.port}" if parts.port else "")
     except ValueError:
@@ -277,7 +279,13 @@ def upload_to_r2(local_path: Path, filename: str, cfg: dict[str, str]) -> bool:
 
 def main() -> int:
     send_checkin("in_progress")
-    code = run_backup()
+    try:
+        code = run_backup()
+    except Exception:
+        # An unexpected raise (tempdir, stat, a non-boto error) must still
+        # report: log it, and exit with a code no handled failure uses.
+        log.exception("Backup FAILED with an unexpected error")
+        code = EXIT_UNEXPECTED
     send_checkin("ok" if code == EXIT_OK else "error")
     if code != EXIT_OK:
         send_failure_event(code)

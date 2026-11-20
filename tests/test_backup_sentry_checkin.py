@@ -35,7 +35,13 @@ def test_checkin_url_follows_sentry_http_format(backup):
 
 @pytest.mark.parametrize(
     "bad",
-    ["", "not a url", "https://o42.ingest.sentry.io/123", "https://k@host/notanumber"],
+    [
+        "",
+        "not a url",
+        "https://o42.ingest.sentry.io/123",
+        "https://k@host/notanumber",
+        "file://k@host/123",
+    ],
 )
 def test_malformed_dsn_gives_no_url(backup, bad):
     assert backup.checkin_url(bad, "ok") is None
@@ -111,3 +117,15 @@ def test_no_dsn_sends_nothing_and_backup_still_runs(monkeypatch, backup):
     assert backup.main() == backup.EXIT_OK
     assert ran == [True]
     assert sent == []
+
+
+def test_unexpected_raise_still_reports_error_and_exits_nonzero(monkeypatch, backup):
+    monkeypatch.setenv("SENTRY_DSN", DSN)
+    sent = _record(monkeypatch, backup)
+
+    def boom():
+        raise RuntimeError("tempdir vanished")
+
+    monkeypatch.setattr(backup, "run_backup", boom)
+    assert backup.main() == backup.EXIT_UNEXPECTED
+    assert sent == ["in_progress", "error", "event"]
