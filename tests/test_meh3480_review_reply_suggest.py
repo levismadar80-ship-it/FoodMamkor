@@ -141,3 +141,22 @@ def test_daily_cap_is_per_business_not_per_ip(client, db, monkeypatch):
         headers = {**auth_header(who), "X-Real-IP": f"10.1.{i}.1"}
         codes.append(client.post(_url(review), headers=headers).status_code)
     assert codes[:30] == [200] * 30 and codes[30] == 429
+
+
+def test_more_ways_to_promise_are_dropped(monkeypatch):
+    for promise in (
+        "המשלוח הבא על חשבון הבית.",
+        "נשמח לשלוח לכם מנה ללא עלות.",
+        "נחליף לכם את המוצר.",
+        "נשלח לכם שובר.",
+    ):
+        monkeypatch.setattr(
+            ai_text, "ask", lambda *_a, p=promise, **_k: f"תודה על הביקורת. {p}"
+        )
+        assert reply_writer.draft(2, "לא היה טוב") == "תודה על הביקורת."
+
+
+def test_a_link_or_phone_number_is_dropped(monkeypatch):
+    answer = "תודה רבה. דברו איתנו ב-050-123-4567. פרטים ב-https://example.com. שמחנו."
+    monkeypatch.setattr(ai_text, "ask", lambda *_a, **_k: answer)
+    assert reply_writer.draft(4, "טעים") == "תודה רבה. שמחנו."

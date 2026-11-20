@@ -45,6 +45,7 @@ describe("ReviewReply AI draft (MEH-3480)", () => {
     fireEvent.change(preview, { target: { value: "תודה רבה, שמחנו." } });
     fireEvent.click(screen.getByRole("button", { name: S.use }));
     expect(box().value).toBe("תודה רבה, שמחנו.");
+    await waitFor(() => expect(box()).toHaveFocus());
     expect(api.put).not.toHaveBeenCalled();
   });
 
@@ -68,5 +69,15 @@ describe("ReviewReply AI draft (MEH-3480)", () => {
     api.post.mockRejectedValueOnce({ response: { status: 429 } });
     fireEvent.click(screen.getByRole("button", { name: S.cta }));
     expect(await screen.findByText(S.limit)).toBeInTheDocument();
+  });
+  it("«שימוש בטיוטה» replaces what was typed: the owner saw both before choosing", async () => {
+    api.post.mockResolvedValue({ data: { reply: "הטיוטה." } });
+    openEditor();
+    fireEvent.change(box(), { target: { value: "מה שכתבתי" } });
+    fireEvent.click(screen.getByRole("button", { name: S.cta }));
+    await screen.findByLabelText(S.preview_label);
+    expect(screen.getByRole("group", { name: S.cta })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: S.use }));
+    expect(box().value).toBe("הטיוטה.");
   });
 });

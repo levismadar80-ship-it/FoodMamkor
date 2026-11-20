@@ -11,6 +11,8 @@ History:  MEH-3480 (creation)
 
 from __future__ import annotations
 
+import re
+
 from app.services import ai_text
 
 MAX_DRAFT = 600  # the reply field takes 1,000
@@ -26,6 +28,20 @@ _PROMISES = (
     "פיצוי",
     "נחזיר",
     "נזכה",
+    # Rule-5a review: more ways to say the same promise. A deny-list, so
+    # best-effort; the PUT that saves the reply still moderates it.
+    "חינם",
+    "בלי עלות",
+    "ללא עלות",
+    "ללא תשלום",
+    "על חשבון",
+    "יוחזר",
+    "נפצה",
+    "נפצו",
+    "נחליף",
+    "שובר",
+    "קרדיט",
+    "תגמול",
 )
 
 _PROMPT = """You are helping the owner of a small Israeli food business answer \
@@ -46,6 +62,14 @@ never invent facts about the business, its products or its staff.
 - Answer with the reply only."""
 
 
+# A link or a phone number in a public reply is the owner's to add, not ours.
+_CONTACT = re.compile(r"https?://|www\.|\d[\d\- ]{6,}\d")
+
+
+def _no_contact(text: str) -> str:
+    return " ".join(s for s in ai_text.split_sentences(text) if not _CONTACT.search(s))
+
+
 def draft(stars: int, body: str | None) -> str | None:
     """None = could not ask, or nothing usable came back."""
     prompt = _PROMPT.format(
@@ -56,5 +80,5 @@ def draft(stars: int, body: str | None) -> str | None:
     if not answer:
         return None
     # The review is not a source of promises: only the owner makes them.
-    text = ai_text.drop_unbacked(answer, "", _PROMISES, MAX_DRAFT)
+    text = ai_text.drop_unbacked(_no_contact(answer), "", _PROMISES, MAX_DRAFT)
     return text or None

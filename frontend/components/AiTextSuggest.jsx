@@ -9,8 +9,9 @@
  * Does NOT: save, send or moderate. Copy comes from the caller's namespace:
  *           cta, hint, loading, preview_label, use, cancel, failed, limit,
  *           and no_name when `ready` can say no.
- * Focus:    the preview's textarea takes focus when it opens; «שימוש» /
- *           «ביטול» hand it back to the button. The hint describes the button.
+ * Focus:    the preview's textarea takes focus when it opens; «ביטול» hands
+ *           it back to the button, «שימוש» to `focusAfterUse` (the field the
+ *           text landed in) when given. The hint describes the button.
  * Used by:  ProductDescriptionSuggest.jsx (MEH-3479), ReviewsSection.jsx
  *           ReviewReply (MEH-3480).
  * History:  MEH-3479 (as ProductDescriptionSuggest); MEH-3480 (made generic)
@@ -32,9 +33,19 @@ const TOO_MANY = 429;
  *   idPrefix: string,
  *   testId: string,
  *   maxLength?: number,
+ *   focusAfterUse?: string,
  * }} props
  */
-export default function AiTextSuggest({ namespace, request, ready, onUse, idPrefix, testId, maxLength = 2000 }) {
+export default function AiTextSuggest({
+  namespace,
+  request,
+  ready,
+  onUse,
+  idPrefix,
+  testId,
+  maxLength = 2000,
+  focusAfterUse,
+}) {
   const t = useTranslations(namespace);
   const [phase, setPhase] = useState(/** @type {"idle"|"loading"|"preview"|"failed"|"limit"|"no_name"} */ ("idle"));
   const [text, setText] = useState("");
@@ -42,18 +53,21 @@ export default function AiTextSuggest({ namespace, request, ready, onUse, idPref
   const previewId = `${idPrefix}-suggested`;
   const ctaId = `${idPrefix}-suggest-cta`;
   const hintId = `${idPrefix}-suggest-hint`;
-  const returnFocus = useRef(false);
+  // Where focus goes when the preview closes: the field the text landed in
+  // after «שימוש» (when the caller names it), else back to the button.
+  const returnFocus = useRef(/** @type {string|null} */ (null));
 
   useEffect(() => {
     if (phase === "preview") document.getElementById(previewId)?.focus();
     else if (phase === "idle" && returnFocus.current) {
-      returnFocus.current = false;
-      document.getElementById(ctaId)?.focus();
+      const target = returnFocus.current;
+      returnFocus.current = null;
+      document.getElementById(target)?.focus();
     }
-  }, [phase, previewId, ctaId]);
+  }, [phase, previewId]);
 
-  const close = () => {
-    returnFocus.current = true;
+  const close = (/** @type {string} */ target = ctaId) => {
+    returnFocus.current = target;
     setPhase("idle");
   };
 
@@ -78,7 +92,14 @@ export default function AiTextSuggest({ namespace, request, ready, onUse, idPref
 
   if (phase === "preview") {
     return (
-      <div data-testid={`${testId}-suggestion`} className="mt-2 border border-primary/30 rounded-md p-3 space-y-2">
+      // A labelled group: the screen reader hears which «ביטול» this is when
+      // the form around it has its own (the review-reply editor does).
+      <div
+        role="group"
+        aria-label={t("cta")}
+        data-testid={`${testId}-suggestion`}
+        className="mt-2 border border-primary/30 rounded-md p-3 space-y-2"
+      >
         <Textarea
           id={previewId}
           label={t("preview_label")}
@@ -94,12 +115,12 @@ export default function AiTextSuggest({ namespace, request, ready, onUse, idPref
             disabled={!text.trim()}
             onClick={() => {
               onUse(text.trim());
-              close();
+              close(focusAfterUse || ctaId);
             }}
           >
             {t("use")}
           </Button>
-          <Button type="button" size="sm" variant="outlined" onClick={close}>
+          <Button type="button" size="sm" variant="outlined" onClick={() => close()}>
             {t("cancel")}
           </Button>
         </div>

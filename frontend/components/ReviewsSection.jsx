@@ -224,6 +224,7 @@ export function ReviewReply({ review, isOwner, onSaved }) {
             return typeof r.data?.reply === "string" ? r.data.reply : "";
           }}
           onUse={setDraft}
+          focusAfterUse={`reply-${review.id}`}
         />
         <label htmlFor={`reply-${review.id}`} className="block text-sm font-semibold text-primary-dark mb-1 mt-3">
           {t("reply_heading")}
