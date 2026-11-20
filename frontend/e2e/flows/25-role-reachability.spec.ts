@@ -51,7 +51,7 @@ import { watchLoginSubmit } from "./_login-submit-diagnostics";
  * anyway, at :105 / :122; this keeps the spec honest if that ever changes.)
  *
  * WHERE THIS COVERAGE ACTUALLY RUNS: a target with the passwords exported —
- * `TEST_URL=https://staging.mehamakor.online` plus DEMO_*_PASSWORD (+
+ * `TEST_URL=https://staging.mehamakor.co.il` plus DEMO_*_PASSWORD (+
  * VERCEL_AUTOMATION_BYPASS_SECRET for a protected preview), or a seeded local
  * full stack. To turn it on in CI, the E2E job needs the three secrets in its
  * env: docs/ci/e2e-auth-fixtures.patch.md.

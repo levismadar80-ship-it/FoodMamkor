@@ -97,7 +97,7 @@ needed for `--probe` / `--cross-env`.
   (`Producer not found`), which reads as served. Every other shadowing param is
   a `UUID`, so a shadowed literal gets `422` — the same answer as before.
 - The bypass header (`VERCEL_AUTOMATION_BYPASS_SECRET`) is sent only to
-  `staging.mehamakor.online` (`BYPASS_HOSTS`); `--cross-env` no longer hands
+  `staging.mehamakor.co.il` (`BYPASS_HOSTS`); `--cross-env` no longer hands
   it to production.
 - Rate-limited endpoints (`@limiter.limit(...)`) can return `429` during
   a probe burst. `429` is inside `ACCEPTED_STATUSES` — the rate limiter
@@ -208,7 +208,7 @@ Both steps are wired in `.github/workflows/deploy.yml` and are
 | Step | Trigger | Mode |
 |---|---|---|
 | `api-contract-static` | Every push and PR to `main` / `staging`. | Static — always runs, no network. |
-| `api-contract-probe` | Staging redeploy job (`push` to `staging`). | Probe against `https://staging.mehamakor.online` after redeploy. |
+| `api-contract-probe` | Staging redeploy job (`push` to `staging`). | Probe against `https://staging.mehamakor.co.il` after redeploy. |
 
 Cross-env mode is manual (`workflow_dispatch`). Run it after any
 production-only change (e.g. direct hotfix to `main`) to confirm no drift.
@@ -225,11 +225,11 @@ python scripts/check_api_contract.py
 python scripts/check_api_contract.py --json
 
 # After a staging deploy — catches drift before production deploy
-python scripts/check_api_contract.py --probe https://staging.mehamakor.online
+python scripts/check_api_contract.py --probe https://staging.mehamakor.co.il
 
 # On demand — compare the two environments
 python scripts/check_api_contract.py --cross-env \
-  --staging https://staging.mehamakor.online \
+  --staging https://staging.mehamakor.co.il \
   --prod    https://mehamakor.online
 ```
 

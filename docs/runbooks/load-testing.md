@@ -13,7 +13,7 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 
 ## Env vars required
 
-- `BASE_URL` — default `https://staging.mehamakor.online`. **Do not point at production.**
+- `BASE_URL` — default `https://staging.mehamakor.co.il`. **Do not point at production.**
 - `VERCEL_BYPASS_TOKEN` — same value as `VERCEL_AUTOMATION_BYPASS_SECRET` in GitHub Actions (see `frontend/playwright.config.ts:38`).
 - `PRODUCER_SLUG`, `PRODUCER_ID` — fetch a real pair from `/producers` first so the latency numbers aren't dominated by 404 paths.
 

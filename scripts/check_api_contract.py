@@ -480,7 +480,9 @@ def _probe_url(base: str, path: str) -> str:
 BYPASS_ENV = "VERCEL_AUTOMATION_BYPASS_SECRET"
 # MEH-2411: the only host behind Deployment Protection that CI probes. Production
 # is public, so `--cross-env` no longer hands it the secret.
-BYPASS_HOSTS = frozenset({"staging.mehamakor.online"})
+# MEH-3405: staging moved to staging.mehamakor.co.il; the .online host stays
+# behind the same protection until it only redirects there.
+BYPASS_HOSTS = frozenset({"staging.mehamakor.co.il", "staging.mehamakor.online"})
 
 
 def _probe_headers(env=None, base_url: str | None = None) -> dict:
@@ -836,6 +838,13 @@ def probe_self_test() -> int:
                 {BYPASS_ENV: "s3cret"}, "https://staging.mehamakor.online"
             ),
             "bypass header not sent to staging",
+        ),
+        (
+            "x-vercel-protection-bypass"
+            in _probe_headers(
+                {BYPASS_ENV: "s3cret"}, "https://staging.mehamakor.co.il"
+            ),
+            "bypass header not sent to the co.il staging host (MEH-3405)",
         ),
         (
             "x-vercel-protection-bypass"
