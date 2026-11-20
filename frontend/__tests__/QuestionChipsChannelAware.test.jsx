@@ -108,20 +108,29 @@ const allHrefs = (container) =>
  * there), and the SAME producer re-rendered as whatsapp-primary must produce a
  * wa.me link — so a zero here is the channel gate, not a dead locator.
  */
+const WA_HOSTS = new Set(["wa.me", "web.whatsapp.com", "api.whatsapp.com"]);
+/** True when the href's HOST is a WhatsApp host (not a substring anywhere in the URL). */
+function isWhatsAppHref(href) {
+  try {
+    return WA_HOSTS.has(new URL(href, "https://mehamakor.co.il").hostname);
+  } catch {
+    return false;
+  }
+}
+
 function expectNoWhatsApp(container, producer) {
   expect(container.querySelector("#section-faq"), "the block rendered nothing — an empty pass").not.toBeNull();
   const control = render(
     <WhatsAppQuestionChips producer={{ ...producer, primary_contact_method: "whatsapp" }} />,
   );
   expect(
-    allHrefs(control.container).some((h) => h.includes("wa.me") || h.includes("web.whatsapp.com")),
+    allHrefs(control.container).some(isWhatsAppHref),
     "CONTROL: the same producer as whatsapp-primary must render a WhatsApp link",
   ).toBe(true);
   control.unmount();
   const hrefs = allHrefs(container);
   for (const href of hrefs) {
-    expect(href).not.toContain("wa.me");
-    expect(href).not.toContain("web.whatsapp.com");
+    expect(isWhatsAppHref(href), href).toBe(false);
   }
 }
 
