@@ -13,6 +13,7 @@
 * `backend/app/services/registration_emails.py` — מיילי ההרשמה (אישור, בעלים, ביטול, תזכורת MEH-3312, רשימת המתנה והצעת מקום MEH-3314).
 * `frontend/app/[locale]/events/EventsClient.jsx`
 * `frontend/components/RegistrationOverlays.jsx` — פס ההרשמה.
+* `frontend/components/RegistrationCta.jsx` — כפתור ההרשמה. לחיצה על וואטסאפ, התקשרות או «שאלה» נספרת לבית העסק (`trackChannelClick`, MEH-2991), כמו בדף בית העסק. קישור הרשמה חיצוני לא נספר. שומר: `frontend/__tests__/RegistrationCtaContactCount.test.jsx`.
 * `frontend/app/[locale]/events/[id]/EventDetailClient.jsx` — תמונת השער: תמונת האירוע, ואם אין, התמונה הראשונה של הבעלים, כמו בכרטיס (MEH-3459). תמונת השיתוף ב-`frontend/app/[locale]/events/[id]/page.js` באותו סדר.
 * `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת האירועים פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ברשימה של העסק עצמו, `/events/mine` (MEH-3438). הטסט `frontend/__tests__/MEH3438LessTyping.test.jsx`.
 
