@@ -13,7 +13,7 @@
 
 import { useEffect } from "react";
 
-export const BUSINESS_CHAT_EVENT = "mehamakor:business-chat";
+const BUSINESS_CHAT_EVENT = "mehamakor:business-chat";
 // The widget is a lazy chunk; a tap before it has mounted would be lost (an
 // event has no memory). The last request is kept this long and replayed when
 // the widget subscribes.
