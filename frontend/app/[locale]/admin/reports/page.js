@@ -39,10 +39,17 @@ export default function AdminReportsPage() {
     loadReports();
   }, []);
 
-  const suspendProducer = (id) =>
-    run(`suspend:${id}`, async () => {
-      await api.post(`/admin/producers/${id}/toggle-status`);
-      setReports(reports.map((r) => (r.producer_id === id ? { ...r, _suspended: true } : r)));
+  // MEH-3524: hiding the page is the action taken, so its open reports are
+  // closed as «resolved» (the route had no caller; they stayed in the queue
+  // forever). Only when the page really went to `inactive`: toggle-status flips
+  // both ways, and a page that came back live has had no action taken.
+  const suspendProducer = (group) =>
+    run(`suspend:${group.producer_id}`, async () => {
+      const res = await api.post(`/admin/producers/${group.producer_id}/toggle-status`);
+      if (res?.data?.status === "inactive") {
+        await Promise.all(group.reports.map((rep) => api.post(`/admin/reports/${rep.id}/resolve`)));
+      }
+      loadReports();
     });
 
   // MEH-1266: "התעלם" now closes every open report for the producer via the
@@ -96,7 +103,7 @@ export default function AdminReportsPage() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => suspendProducer(r.producer_id)}
+                        onClick={() => suspendProducer(r)}
                         disabled={isBusy(`suspend:${r.producer_id}`)}
                         className="bg-yellow-500 text-text px-3 py-1.5 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >

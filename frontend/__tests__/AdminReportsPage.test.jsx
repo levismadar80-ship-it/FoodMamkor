@@ -15,7 +15,7 @@ const ONE_REPORT_GROUP = {
 };
 
 const apiMock = vi.hoisted(() => {
-  const state = { dismissed: false };
+  const state = { dismissed: false, toggledTo: "inactive" };
   return {
     state,
     get: vi.fn((url) => {
@@ -25,7 +25,8 @@ const apiMock = vi.hoisted(() => {
       return Promise.resolve({ data: [] });
     }),
     post: vi.fn((url) => {
-      if (url.includes("/dismiss")) state.dismissed = true;
+      if (url.includes("/dismiss") || url.includes("/resolve")) state.dismissed = true;
+      if (url.includes("/toggle-status")) return Promise.resolve({ data: { status: state.toggledTo } });
       return Promise.resolve({ data: {} });
     }),
   };
@@ -69,6 +70,7 @@ vi.mock("next-intl", () => {
 describe("AdminReportsPage — report lifecycle (MEH-1266)", () => {
   beforeEach(() => {
     apiMock.state.dismissed = false;
+    apiMock.state.toggledTo = "inactive";
     apiMock.get.mockClear();
     apiMock.post.mockClear();
     toastMock.error.mockClear();
@@ -106,5 +108,27 @@ describe("AdminReportsPage — report lifecycle (MEH-1266)", () => {
     fireEvent.keyDown(globalThis, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(apiMock.post).not.toHaveBeenCalled();
+  });
+
+  // MEH-3524: hiding the page is the action taken, so its reports close as
+  // «resolved» and the business leaves the queue.
+  it("suspend hides the page, resolves its reports and removes the business", async () => {
+    render(<AdminReportsPage />);
+    await screen.findByText("מאפיית השכונה");
+    fireEvent.click(screen.getByText("השהה עסק"));
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith("/admin/reports/rep1/resolve"));
+    expect(apiMock.post).toHaveBeenCalledWith("/admin/producers/p1/toggle-status");
+    await waitFor(() => expect(screen.queryByText("מאפיית השכונה")).not.toBeInTheDocument());
+  });
+
+  it("a toggle that put the page back live resolves nothing", async () => {
+    apiMock.state.toggledTo = "approved";
+    render(<AdminReportsPage />);
+    await screen.findByText("מאפיית השכונה");
+    fireEvent.click(screen.getByText("השהה עסק"));
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith("/admin/producers/p1/toggle-status"));
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
+    expect(apiMock.post).not.toHaveBeenCalledWith("/admin/reports/rep1/resolve");
+    expect(screen.getByText("מאפיית השכונה")).toBeInTheDocument();
   });
 });
