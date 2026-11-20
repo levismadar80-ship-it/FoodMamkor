@@ -6622,14 +6622,19 @@
     "input_placeholder": "Type a question...",
     "send_label": "Send question",
     "business": {
-      "page_lead": "Have a question about the products, hours or delivery?",
-      "page_button": "Ask the assistant",
+      "page_title": "Ask the assistant about {name}",
+      "page_ai_note": "An AI assistant that answers from this page",
+      "page_other": "Write your own question…",
       "panel_title": "Ask about {name}",
       "opening": "You can ask me about {name}: opening hours, delivery, products and allergens. I answer only from what is written on the business's page.",
       "prompts": {
         "hours": "When is the business open?",
         "delivery": "Where do they deliver?",
-        "gluten": "Are there gluten-free products?"
+        "signature": "What goes into the {product}?",
+        "diet_gluten_free": "Which products are gluten-free?",
+        "diet_vegan": "Which products are vegan?",
+        "diet_lactose_free": "Which products are lactose-free?",
+        "diet_no_added_sugar": "Which products have no added sugar?"
       }
     }
   },

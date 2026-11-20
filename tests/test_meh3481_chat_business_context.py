@@ -322,3 +322,16 @@ def test_a_failing_lookup_never_breaks_the_chat(db, monkeypatch):
 def test_no_key_is_still_the_offline_reply(db, monkeypatch):
     monkeypatch.setattr(chat, "_get_client", lambda: None)
     assert _ask(db, "מאפיית הדגמה?").reply == chat.OFFLINE_REPLY
+
+
+def test_meh3505_every_product_reaches_the_chat_not_the_first_60(db):
+    """MEH-3505: the business page offers a question about any of its products
+    (lib/business-chat-prompts.js), so the 61st product must be in the facts."""
+    p = _business(db)
+    for i in range(70):
+        db.add(Product(producer_id=p.id, name=f"מוצר {i}", price_unit="unit"))
+    db.commit()
+    db.refresh(p)
+    names = [item["name"] for item in ctx.facts(p, "מה יש?")["products"]]
+    assert len(names) == 71
+    assert "מוצר 69" in names
