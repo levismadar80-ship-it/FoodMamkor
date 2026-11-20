@@ -36,7 +36,7 @@ meh-1910-ci-speedup	dead	-	-	-	PR-A/caches judged low value; other halves landed
 meh-1911-pytest-parallel	applied	.github/workflows/pr-checks.yml	-n auto	-	-
 meh-1912-vitest-shard	dead	-	-	-	-
 meh-1980-coverage-ratchet	applied	.github/workflows/pr-checks.yml	coverage-ratchet.mjs	-	-
-meh-2052-bash-safety-sed-regex	pending	.claude/hooks/check-bash-safety.sh	sed[[:space:]]+-i.*[[:space:]]	2026-11-20	committed on its own PR (#4967) via the web editor; Sapir merges, and that PR flips this row
+meh-2052-bash-safety-sed-regex	applied	.claude/hooks/check-bash-safety.sh	sed[[:space:]]+-i.*[[:space:]]	2026-11-20	committed on its own PR (#4967) via the web editor; Sapir merges, and that PR flips this row
 meh-2062-vercel-git-deployments	applied	frontend/vercel.json	deploymentEnabled	-	-
 meh-2077-branch-name-delete	applied	.claude/hooks/check-branch-name.sh	(--delete|-d)	-	-
 meh-2079-expected-tables-43	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=	-	applied as 43; the number has moved on since
