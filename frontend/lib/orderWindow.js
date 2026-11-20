@@ -49,7 +49,7 @@ export const CLOSING_SOON_MINUTES = 60;
 const MINUTES_PER_DAY = 24 * 60;
 
 /** "HH:MM" → minutes since midnight. Returns null for a malformed value. */
-function toMinutes(hhmm) {
+export function toMinutes(hhmm) {
   if (typeof hhmm !== "string") return null;
   const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm);
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
