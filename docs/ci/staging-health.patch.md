@@ -1,8 +1,9 @@
 # `Staging health` — rule 41 as a required status (MEH-3176 follow-up)
 
-**Status: staged for Sapir. NOT APPLIED.** `.github/workflows/**` is CC-deny,
-so CC wrote the logic in `scripts/ci/staging_health.py` (committable, with a
-self-test) and only the thin workflow below needs a human commit.
+**Status: ✅ APPLIED.** Checked 20/11/2026: `.github/workflows/staging-health.yml`
+is on `origin/staging` (it differs from the block below only by SHA-pinned
+actions and the CI_MODE runner), and the `protect-staging` ruleset requires the
+`Staging health` status. The logic lives in `scripts/ci/staging_health.py`.
 
 ## What it does
 

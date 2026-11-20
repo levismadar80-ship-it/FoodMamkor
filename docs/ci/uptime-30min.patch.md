@@ -1,8 +1,8 @@
 # Patch — `uptime.yml`: probe every 30 minutes instead of every 10 (MEH-2888)
 
-> **Status: ⏳ NOT APPLIED — written 10/11/2026.** `.github/workflows/**` is
-> CC-deny, so CC prepared and checked this patch and Sapir commits it (GitHub
-> web editor, one line). See [§6](#6--how-to-apply-sapir-github-web-editor).
+> **Status: ✅ APPLIED.** Checked 20/11/2026 against `origin/staging`:
+> `uptime.yml` runs on `cron: "*/30 * * * *"`. Kept as the record of the
+> decision; do not paste it again.
 
 ## 1 · What it changes (`.github/workflows/uptime.yml`)
 
