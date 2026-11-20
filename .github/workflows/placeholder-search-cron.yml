@@ -1,0 +1,65 @@
+name: Placeholder search rot
+
+on:
+  schedule:
+    # 05:00 UTC יום ראשון — לפני תחילת השבוע בישראל.
+    - cron: "0 5 * * 0"
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Base URL to check"
+        required: false
+        default: "https://staging.mehamakor.co.il"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Placeholders still return results
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Check placeholders against live search
+        id: check
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PLACEHOLDER_CHECK_BASE: ${{ inputs.base || 'https://staging.mehamakor.co.il' }}
+        run: |
+          set +e
+          python3 scripts/check_placeholder_search.py | tee "$RUNNER_TEMP/placeholder-report.txt"
+          echo "code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+      - name: Open an issue when a placeholder rotted
+        if: steps.check.outputs.code != '0'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync(process.env.RUNNER_TEMP + '/placeholder-report.txt', 'utf8');
+            const code = '${{ steps.check.outputs.code }}';
+            const title = code === '2'
+              ? 'Placeholder rot check could not reach the search'
+              : 'A search placeholder returns zero results';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body: [
+                'Automated run of `scripts/check_placeholder_search.py`.',
+                '',
+                'A placeholder that returns nothing teaches the user something false —',
+                'see MEH-1800 for the mechanism (AND over tokens, MEH-1664).',
+                '',
+                '```',
+                report.slice(0, 60000),
+                '```',
+              ].join('\n'),
+            });
+      - name: Fail the run
+        if: steps.check.outputs.code != '0'
+        run: exit 1
