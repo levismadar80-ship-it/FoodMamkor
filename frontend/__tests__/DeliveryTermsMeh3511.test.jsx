@@ -8,7 +8,7 @@
  * no zones / one zone (+ checker: zone city vs any other city).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -111,9 +111,11 @@ describe("business page (MEH-3511)", () => {
     const zone = screen.getByTestId("nationwide-zone");
     expect(zone.textContent).toContain("גוש דן, אקספרס");
     expect(zone.textContent).toContain("רמת גן");
-    expect(screen.getByTestId("nationwide-zone-fee").textContent).toBe("משלוח: 40₪");
-    expect(screen.getByTestId("nationwide-zone-terms-time").textContent).toBe("מגיע תוך 1–2 ימי עסקים");
-    expect(screen.getByTestId("nationwide-zone-terms-cutoff").textContent).toBe(
+    // Same row as every area (Sapir 20/11): towns titled, the zone a tag.
+    expect(within(zone).getByTestId("area-zone-tag").textContent).toBe("גוש דן, אקספרס");
+    expect(within(zone).getByTestId("area-fee").textContent).toBe("משלוח: 40₪");
+    expect(within(zone).getByTestId("area-terms-time").textContent).toBe("מגיע תוך 1–2 ימי עסקים");
+    expect(within(zone).getByTestId("area-terms-cutoff").textContent).toBe(
       "מקבלים הזמנות עד יום שני 12:00",
     );
     // Monday 09:00, before Monday 12:00 → tomorrow's Tuesday run.
@@ -259,5 +261,22 @@ describe("the town list beside the checker", () => {
   it("no checker (delivery not offered): the list stays open whatever its size", () => {
     renderBlock({ offers_delivery: false, delivery_areas: towns(4) });
     expect(screen.queryByTestId("delivery-list-toggle")).toBeNull();
+  });
+});
+
+// Sapir 20/11: the towns are the row's title; the zone's name is a tag.
+describe("a zone row", () => {
+  it("titles the row with its towns and tags it with the zone", () => {
+    const zone = { delivery_fee: 15, min_order: 120, zone_name: "קריות" };
+    renderBlock({
+      offers_delivery: false,
+      delivery_areas: [
+        { id: "a", city: "קריית ביאליק", delivery_day: "שני", delivery_days: ["שני"], ...zone },
+        { id: "b", city: "קריית מוצקין", delivery_day: "שני", delivery_days: ["שני"], ...zone },
+      ],
+    });
+    const title = screen.getByTestId("area-row-title");
+    expect(title.firstChild.textContent).toBe("קריית ביאליק, קריית מוצקין");
+    expect(screen.getByTestId("area-zone-tag").textContent).toBe("קריות");
   });
 });

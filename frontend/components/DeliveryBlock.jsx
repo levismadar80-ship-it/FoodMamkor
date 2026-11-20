@@ -15,7 +15,7 @@ import NextDeliveryLine from "@/components/NextDeliveryLine";
 import PickupSchedule from "@/components/PickupSchedule"; // MEH-3512
 import DeliveryTerms from "@/components/DeliveryTerms"; // MEH-3511
 import NationwideZones from "@/components/NationwideZones"; // MEH-3511
-import AreaTermsRow from "@/components/AreaTermsRow"; // MEH-3511
+import AreaTermsRow, { LIST_CARD } from "@/components/AreaTermsRow"; // MEH-3511
 import { cutoffOfRow, daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
@@ -27,8 +27,6 @@ import FactLine from "@/components/ui/FactLine";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
-const LIST_CARD =
-  "divide-y divide-border rounded-lg border border-border bg-surface-card overflow-hidden";
 // MEH-2592 C: the 44px logo circles (Waze, Google Maps) on each pickup stop.
 const NAV_CIRCLE =
   "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary";

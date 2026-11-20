@@ -16,8 +16,7 @@
  * several zones → one card each, in the order the rows arrive.
  */
 import { useTranslations } from "next-intl";
-import { formatPrice } from "@/lib/utils";
-import DeliveryTerms from "@/components/DeliveryTerms";
+import AreaTermsRow, { LIST_CARD } from "@/components/AreaTermsRow";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
 import { daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
 
@@ -47,34 +46,36 @@ export default function NationwideZones({ areas = [], producer = null }) {
       <p className="text-sm font-bold text-gold-deep mb-1.5">{t("zones_other_terms")}</p>
       <ul className="space-y-2">
         {zones.map(([name, rows]) => (
-          <ZoneCard key={name} name={name} rows={rows} producer={producer} t={t} />
+          <ZoneCard key={name} rows={rows} producer={producer} />
         ))}
       </ul>
     </div>
   );
 }
 
-/** @param {{ name: string, rows: ZoneRow[], producer: any, t: any }} props */
-function ZoneCard({ name, rows, producer, t }) {
+/** @param {{ rows: ZoneRow[], producer: any }} props */
+// Sapir 20/11 («אחידות»): the same row as every other delivery area
+// (AreaTermsRow): the towns as the title, the zone's name a tag, the terms on
+// one «·» line, then the next date.
+function ZoneCard({ rows, producer }) {
   const first = rows[0];
-  const fee = first.delivery_fee;
   return (
-    <li className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm" data-testid="nationwide-zone">
-      <p className="font-medium text-text">{name}</p>
-      <p className="text-fg-muted">{rows.map((r) => r.city).join(", ")}</p>
-      {fee != null && (
-        <p className="text-fg-muted" data-testid="nationwide-zone-fee">
-          {fee === 0 ? t("fee_free") : t("fee", { amount: formatPrice(fee) })}
-        </p>
-      )}
-      <DeliveryTerms
-        daysMin={first.delivery_days_min}
-        daysMax={first.delivery_days_max}
-        minOrder={first.min_order}
-        cutoffRow={first}
-        testid="nationwide-zone-terms"
-      />
-      <NextDeliveryLine days={daysOfRow(first)} producer={producer} cutoff={sharedCutoff(rows)} />
+    <li data-testid="nationwide-zone">
+      <ul className={LIST_CARD}>
+        <AreaTermsRow
+          rows={rows}
+          fee={first.delivery_fee ?? null}
+          next={
+            <NextDeliveryLine
+              days={daysOfRow(first)}
+              producer={producer}
+              cutoff={sharedCutoff(rows)}
+              className="mt-0.5"
+              textClass="text-xs text-fg-muted"
+            />
+          }
+        />
+      </ul>
     </li>
   );
 }

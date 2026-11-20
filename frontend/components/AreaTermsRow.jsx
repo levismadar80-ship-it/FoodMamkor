@@ -17,6 +17,10 @@ import { deliveryTermTexts } from "@/components/DeliveryTerms";
 
 // «·» after every term but the last, drawn by CSS so a missing term leaves no
 // stray dot, and a wrapped line ends with the dot instead of starting with it.
+// The rounded, divided card a list of area rows sits in (DeliveryBlock and
+// NationwideZones share it).
+export const LIST_CARD =
+  "divide-y divide-border rounded-lg border border-border bg-surface-card overflow-hidden";
 export const TERMS_LINE =
   "mt-0.5 flex flex-wrap gap-x-1.5 text-xs text-fg-muted [&>*:not(:last-child)]:after:ms-1.5 [&>*:not(:last-child)]:after:content-['·']";
 const SENTINEL = "\u0000";
@@ -72,10 +76,19 @@ export default function AreaTermsRow({ rows, fee = null, next = null }) {
   const plain = !zone && terms.length <= (fee == null ? 0 : 1);
   return (
     <li className="px-3.5 py-3 text-sm" data-testid={plain ? "area-plain-cities" : "area-row"}>
+      {/* Sapir 20/11: a visitor looks for her own town, so the towns are the
+          title; the zone's name is a small tag beside them. */}
       <p className="font-medium text-text" data-testid={plain ? "area-plain-cities-names" : "area-row-title"}>
-        {zone ?? towns}
+        {towns}
+        {zone ? (
+          <span
+            className="ms-1.5 inline-block rounded-full bg-gray-100 px-2 py-0.5 align-middle text-xs font-normal text-fg-muted"
+            data-testid="area-zone-tag"
+          >
+            {zone}
+          </span>
+        ) : null}
       </p>
-      {zone ? <p className="text-fg-muted">{towns}</p> : null}
       {terms.length > 0 ? (
         <p className={TERMS_LINE} data-testid="area-terms">
           {terms}
