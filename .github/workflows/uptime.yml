@@ -30,6 +30,9 @@ jobs:
       # so the header is checked, not just the status code.
       TILE_URL: https://tile.openstreetmap.org/8/153/104.png
       TILE_REFERER: https://mehamakor.co.il/
+      # MEH-2482: the server's Google Places key, probed with a real call.
+      # One billable request per probe, so hourly (the :0x tick) only.
+      PLACES_URL: https://mehamakor.co.il/api/health/places
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
@@ -39,7 +42,9 @@ jobs:
         run: |
           set -uo pipefail
           fail=0
-          for url in "$HOME_URL" "$READY_URL"; do
+          urls=("$HOME_URL" "$READY_URL")
+          if [ "$(date -u +%M | cut -c1)" = "0" ]; then urls+=("$PLACES_URL"); fi
+          for url in "${urls[@]}"; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 --retry 2 --retry-delay 5 "$url" || echo 000)
             echo "$url -> HTTP $code"
             if [ "$code" != "200" ]; then fail=1; fi
