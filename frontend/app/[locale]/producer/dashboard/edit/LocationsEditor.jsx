@@ -138,7 +138,7 @@ function toEditForm(loc) {
 const OWNER_BASE = "/producers/me/locations";
 
 /** @param {{ basePath?: string }} props */
-export default function LocationsEditor({ basePath = OWNER_BASE } = {}) {
+export default function LocationsEditor({ basePath = OWNER_BASE, onLocationsChange } = {}) {
   const t = useTranslations("settings.locations");
   const tKind = useTranslations("settings.locations.kind");
   const [locations, setLocations] = useState(null);
@@ -238,6 +238,14 @@ export default function LocationsEditor({ basePath = OWNER_BASE } = {}) {
   }, [reloadKey, basePath]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
+
+  // MEH-2937: the accordion summary on the edit page («מיקום אחד») read the
+  // profile fetched once on mount, so it stayed on 1 after a second location
+  // was added here. The list this editor holds is the live one — report it
+  // (the page derives the count and, MEH-2930, the store hours from it).
+  useEffect(() => {
+    if (Array.isArray(locations) && onLocationsChange) onLocationsChange(locations);
+  }, [locations, onLocationsChange]);
 
   // Rule 19: safeParse before every write. Returns `{data}` or `{error}` so the
   // caller decides where the message goes — MEH-1940 moved that destination

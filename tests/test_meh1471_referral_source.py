@@ -116,3 +116,32 @@ def test_absent_referral_source_is_nullable(client, db):
     producer = db.query(Producer).one()
     assert producer.referral_source is None
     assert producer.referral_source_other is None
+
+
+# MEH-2937 (pilot: admin showed «אחר: ט»): a supplied free-text answer must
+# clear the ≥3-letter floor (MEH-555 pattern); an empty one stays optional.
+def test_other_one_letter_answer_is_422(client, db):
+    resp = client.post(
+        REGISTER_URL,
+        json=_new_registration(
+            email="ref-short@example.com",
+            referral_source="other",
+            referral_source_other="ט",
+        ),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_other_empty_answer_stays_optional(client, db):
+    resp = client.post(
+        REGISTER_URL,
+        json=_new_registration(
+            email="ref-empty@example.com",
+            referral_source="other",
+            referral_source_other="   ",
+        ),
+    )
+    assert resp.status_code in (200, 201), resp.text
+    producer = db.query(Producer).order_by(Producer.id.desc()).first()
+    assert producer.referral_source == "other"
+    assert producer.referral_source_other is None

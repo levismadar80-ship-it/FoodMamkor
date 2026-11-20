@@ -103,6 +103,7 @@ export named here no longer exists.
 | Email / password rules | `validators.js` | `validateEmail`, `passwordRules` |
 | WhatsApp link | `utils.js` | `getWhatsAppHref` |
 | A business's contact button (href, label) | `contact-method.js` | `getPrimaryContactHref`, `getPrimaryContactLabel` |
+| Phone call link (`tel:`) | `contact-method.js` | `telHref` |
 | Opening hours: parse, open-now | `hours.js` | `parseHours`, `computeStatus` |
 | Distance in km | `distance.js` | `haversineKm`, `formatDistance` |
 | Share / copy a link | `share-link.js` · `clipboard.js` | `shareOrCopy` · `copyText` |

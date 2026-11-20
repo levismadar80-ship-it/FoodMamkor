@@ -24,7 +24,7 @@ on:
 jobs:
   measure:
     name: CLS measurement
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 20
     defaults:
       run:

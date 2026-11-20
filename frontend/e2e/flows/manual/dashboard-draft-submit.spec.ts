@@ -156,7 +156,7 @@ const checklistRows = (page: Page) => checklist(page).getByRole("list", { name: 
 /** Rows whose screen-reader status reads «עדיין חסר» (checklist_todo). */
 const missingRows = (page: Page) => checklistRows(page).filter({ hasText: "עדיין חסר" });
 
-const STEP_LABELS = ["תמונה ראשית", "קטגוריות ומיקום", "מוצר ראשון בקטלוג", "פרטי קשר", "אימות וואטסאפ", "שעות פתיחה", "תמונה שלך"];
+const STEP_LABELS = ["תמונות", "קטגוריות ומיקום", "מוצר ראשון בקטלוג", "פרטי קשר", "אימות וואטסאפ", "שעות פתיחה", "תמונה שלך"];
 
 // ── the banner's state matrix — the cells flows/34 leaves open ─────────────
 

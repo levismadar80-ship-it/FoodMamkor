@@ -1,0 +1,43 @@
+# WARNING: this workflow uses a workflow-level on.pull_request.paths filter
+# (the `on.pull_request.paths:` block below — frontend/messages/** + the
+# validator script). Off-path PRs → the workflow NEVER triggers → the
+# "parity" check is NEVER created → it stays "Expected" forever.
+# NEVER mark "parity" as a required status check: an off-path PR would be
+# blocked from merging permanently. If gating is ever needed, convert to a
+# job-level paths-filter skip (pattern: e2e.yml:54-60) — a skipped job
+# reports `skipped`, which SATISFIES a required check. (Refs MEH-716)
+
+name: ICU plural parity (he ↔ en)
+# MEH-473 reconstruction — gate for HE/EN plural-form drift in
+# next-intl messages. Hebrew has 4 plural categories (zero/one/two/other);
+# LLM translation batches frequently drop the `two` branch silently.
+# Validator: .claude/scripts/check-icu-parity.py (R-2 mitigation per
+# docs/i18n-migration-plan.md §7).
+
+on:
+  pull_request:
+    branches: [staging, main]
+    paths:
+      - 'frontend/messages/**'
+      - '.claude/scripts/check-icu-parity.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate HE/EN plural parity
+        run: python .claude/scripts/check-icu-parity.py

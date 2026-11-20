@@ -52,7 +52,7 @@ concurrency:
 jobs:
   update-baselines:
     name: Regenerate VRT baselines
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 20
     # Self-loop guard (existing): the baseline commit this job pushes must not
     # re-run it. MEH-1764 adds the label conditions — on a `labeled` event ALL
