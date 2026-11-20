@@ -11,6 +11,8 @@ import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
+import NextDeliveryLine from "@/components/NextDeliveryLine";
+import { daysOfRow } from "@/lib/nextDelivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
@@ -189,13 +191,15 @@ function capSections(sections, limit) {
  *   feeOf?: (da: object) => number | null,
  * }} props
  */
-function AreaGroup({ label, rows, t, feeOf = () => null }) {
+function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer = null }) {
   return (
     <div>
       {/* MEH-2592 C: the day reads as a small gold heading. MEH-3028: text
           only — the truck now leads the fee line once, instead of repeating
           on every day (Sapir, option א, 13/11). */}
       <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
+      {/* MEH-3485: the date of the next run, under its day heading. */}
+      <NextDeliveryLine days={days} producer={producer} className="-mt-1 mb-1.5" />
       <ul className={LIST_CARD}>
         {rows.map((da) => (
           <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
@@ -558,6 +562,8 @@ export default function DeliveryBlock({
               key: `day:${g.day}`,
               label: t("delivery_day_group", { day: g.day }),
               rows: g.rows,
+              // MEH-3485: every row of a group shares its day set.
+              days: daysOfRow(g.rows[0]),
             })),
             ...(grouped.arranged.length > 0
               ? [{ key: "bucket:arranged", label: t("arranged_group"), rows: grouped.arranged }]
@@ -684,6 +690,12 @@ export default function DeliveryBlock({
                     })
                   : t("dispatch_days", { day: grouped.day })}
               </FactLine>
+              {/* MEH-3485: one shared day set → one next-run date. */}
+              <NextDeliveryLine
+                days={daysOfRow(grouped.rows[0])}
+                producer={producer}
+                className="-mt-1 mb-2"
+              />
               {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
               <ul className={LIST_CARD}>
                 {visibleAreaRows.map((da) => (
@@ -722,7 +734,15 @@ export default function DeliveryBlock({
                   TOTAL visible rows — a group entirely past the cap is absent
                   header and all while collapsed. One toggle for the section. */}
               {visibleSections.map((s) => (
-                <AreaGroup key={s.key} label={s.label} rows={s.rows} t={t} feeOf={feeOf} />
+                <AreaGroup
+                  key={s.key}
+                  label={s.label}
+                  rows={s.rows}
+                  t={t}
+                  feeOf={feeOf}
+                  days={s.days ?? null}
+                  producer={producer}
+                />
               ))}
               {areaToggle}
             </div>

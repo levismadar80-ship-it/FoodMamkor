@@ -1411,7 +1411,9 @@
         "host_sent": "We've emailed you to confirm hosting.",
         "host_already_sent": "We already emailed you to confirm hosting. Check your inbox (and spam).",
         "host_limit_reached": "Several emails were already sent to this address today. Please try again tomorrow."
-      }
+      },
+      "next_delivery": "Next delivery: {date}",
+      "next_delivery_city": "Next delivery to {city}: {date}"
     },
     "friday_delivery": {
       "today": "Friday",

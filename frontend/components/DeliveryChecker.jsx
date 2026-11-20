@@ -4,6 +4,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import NextDeliveryLine from "@/components/NextDeliveryLine";
+import { daysOfRow } from "@/lib/nextDelivery";
 import { formatPrice } from "@/lib/utils";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import { canonicalCity } from "@/data/cities";
@@ -78,6 +80,8 @@ export function matchDeliveryCity({ city, nationwide, excluded = [], areas = [] 
     status: "yes",
     city: area.city,
     day: area.delivery_day || null,
+    // MEH-3485: every day of the city, for «המשלוח הבא ל…».
+    days: daysOfRow(area),
     minOrder: area.min_order ?? null,
   };
 }
@@ -203,6 +207,14 @@ export default function DeliveryChecker({
                   </>
                 )}
               </p>
+            )}
+            {result.status === "yes" && (
+              <NextDeliveryLine
+                days={result.days}
+                producer={producer}
+                city={result.city}
+                className="mt-0.5 ms-6"
+              />
             )}
             {/* MEH-2626: the WhatsApp updates link — positive answer only, and
                 only when the business has one (the pill self-gates on the
