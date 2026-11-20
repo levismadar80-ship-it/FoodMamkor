@@ -29,7 +29,7 @@
 | משתנה | איפה | המפתח בקונסול | הגבלות | בדיקה |
 |---|---|---|---|---|
 | `GOOGLE_PLACES_API_KEY` | Railway production + staging | «mehamakor server places» (נוצר 20/11/2026) | API: Places API (New) בלבד · אפליקציה: None (השרת קורא, אין Referer) | `GET /api/health/places` → `{"status":"ok"}` |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Vercel | «Maps Platform API Key» | HTTP referrers · 35 APIs. ציבורי מעצם הגדרתו (נשלח לדפדפן) | המפה בעמוד בית עסק נטענת |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Vercel | «Maps Platform API Key» | HTTP referrers · 35 APIs. ציבורי מעצם הגדרתו (נשלח לדפדפן) | חיפוש כתובת בהרשמת עסק או בלוח הבקרה מציע כתובות (`frontend/lib/places.js`). המפה עצמה היא Leaflet ו-OSM ולא תלויה במפתח |
 | `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Railway + Vercel | OAuth client «מהמקור» (591935721343-jjrc…) | Web application | כניסה עם Google ב-`/login` |
 
 **לא להשתמש:** הפרויקט `project-cddabfa3-9d77-4d7a-862` («My First Project»,
@@ -57,10 +57,28 @@
 | `NEXT_PUBLIC_POSTHOG_KEY` | PostHog | Vercel | לא נבדק | ציבורי (נשלח לדפדפן) |
 | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Microsoft Clarity | Vercel | לא נבדק | ציבורי |
 | `APPLE_CLIENT_ID`, `NEXT_PUBLIC_APPLE_CLIENT_ID` | Apple | Railway + Vercel | לא נבדק | |
-| `ADMIN_PASSWORD`, `SMOKE_ADMIN_PASSWORD` | — | Railway | — | לא נבדק באיזו סביבה מוגדר |
-| `DEMO_OWNER_PASSWORD`, `DEMO_CONSUMER_PASSWORD`, `DEMO_ADMIN_PASSWORD` | — | Railway staging + סביבת הסשן | — | חשבונות QA של staging בלבד (testing.md) |
+| `ADMIN_PASSWORD` | — | Railway | — | נקרא רק ביצירת האדמין הראשון (`config.py`). לא נבדק באיזו סביבה מוגדר |
+| `DEMO_OWNER_PASSWORD`, `DEMO_CONSUMER_PASSWORD`, `DEMO_ADMIN_PASSWORD` | — | Railway staging (ה-seed), GitHub secrets (`e2e.yml`) וסביבת הסשן | — | חשבונות QA של staging בלבד (testing.md). הערך חייב להיות זהה בשלושתם, אחרת הכניסה ב-E2E נכשלת |
+| `OTP_TEST_NUMBERS`, `ADMIN_WHATSAPP_TO` | — | Railway | — | מספרי טלפון, לא מפתחות. מחוץ ל-production רק הם מקבלים WhatsApp (`outbound_guard.py`) |
 | `OTP_TEST_CODE` | — | Railway staging | — | staging בלבד |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | Vercel | GitHub secrets + סביבת הסשן | פרויקט Vercel | לא לכתוב לקובץ, ללוג או ל-PR |
+
+---
+
+## סודות שגרים רק ב-GitHub Actions
+
+מוגדרים ב-*Settings → Secrets and variables → Actions* של הריפו. הרשימה נגזרה
+מ-`secrets.*` בקובצי `.github/workflows/` ב-20/11/2026; אף אחד מהם לא נבדק
+במסך ההגדרות עצמו.
+
+| סוד | מי קורא | בשביל מה |
+|---|---|---|
+| `RAILWAY_PRODUCTION_TOKEN`, `RAILWAY_STAGING_TOKEN` | `deploy.yml`, `staging-smoke.yml` | deploy ל-Railway |
+| `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD` | `staging-smoke.yml` | כניסת אדמין בבדיקת ה-smoke של staging |
+| `STAGING_DATABASE_URL_READONLY` | `backup-restore-verify.yml` | תרגיל השחזור, קריאה בלבד |
+| `LINEAR_API_KEY` | `pr-reconcile.yml` | התאמה שבועית בין PRs לכרטיסים |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `claude-review.yml` | הסוקר ב-CI (כבוי מאז 08/11) |
+| `SMOKESHOW_AUTH_KEY` | `pr-checks.yml` | העלאת דוח הכיסוי |
 
 ---
 

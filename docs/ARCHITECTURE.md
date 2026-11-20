@@ -71,6 +71,7 @@ Current set: `MapClient.jsx`, `MapComponent.jsx`, `producers/page.jsx`,
 
 - DB schema + endpoints → [`docs/DATA.md`](./DATA.md)
 - Branch strategy + deploy → [`docs/DEPLOYMENT.md`](./DEPLOYMENT.md)
+- Where each key and secret lives (names only) → [`docs/SECRETS.md`](./SECRETS.md)
 - Security model → [`docs/SECURITY.md`](./SECURITY.md)
 - Who/what has access (apps, bots, tokens, external accounts) → [`docs/ACCESS.md`](./ACCESS.md)
 - Migrations workflow → [`docs/MIGRATIONS.md`](./MIGRATIONS.md)
