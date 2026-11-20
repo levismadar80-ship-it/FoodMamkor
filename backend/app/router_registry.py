@@ -10,6 +10,7 @@ from app.routers import (
     admin_outreach,
     admin_producer_locations,
     admin_product_import,
+    admin_product_organize,
     admin_recipes,
     admin_whatsapp,
     alerts,
@@ -105,6 +106,10 @@ def _include_admin(app: FastAPI) -> None:
     GET /admin/producers/{producer_id} (the order they had in one file)."""
     app.include_router(admin_decisions.router)
     app.include_router(admin.router)
+    # MEH-3472: admin product groups + order (drafts included); same rules
+    # as the owner's routes via services/product_organize.py. Here, not in
+    # register_routers, to keep that function under the statement limit.
+    app.include_router(admin_product_organize.router)
 
 
 def _register_flagged_features(app: FastAPI) -> None:
