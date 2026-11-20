@@ -15,7 +15,8 @@ Related:  routers/producers.py get_producer (the same "is a public business"
           rule, services/producer_listing.is_business); frontend/lib/hours.js
           parseHours (the grammar ported in _parse_hours).
 History:  MEH-3481 (creation); MEH-3489 (the business page the chat
-          was opened from: by_id, find(page_producer_id))
+          was opened from: by_id, find(page_producer_id)); MEH-3505 (all
+          products, not the first 60)
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.allergens import detail_if_declared
 from app.config import settings
+from app.limits import MAX_PRODUCTS as LIMITS_MAX_PRODUCTS
 from app.data.cities import CITY_ALIASES, ISRAEL_CITIES, canonical_city, city_key
 from app.models import Producer
 from app.models.product_orders import ProducerOrderSettings
@@ -37,7 +39,11 @@ from app.services.producer_listing import is_business
 from app.services.product_order_menu import takes_orders
 from app.utils.clock import israel_now, israel_today
 
-MAX_PRODUCTS = 60  # a page's worth; keeps the prompt bounded
+# MEH-3505: every product the business may hold (limits.MAX_PRODUCTS), not a
+# page's worth — the business page offers a question about any of its products
+# (lib/business-chat-prompts.js), and a product cut here would be answered
+# «not on the page». Still bounded: the per-business cap bounds it.
+MAX_PRODUCTS = LIMITS_MAX_PRODUCTS
 MIN_NAME_MATCH = 3  # a two-letter name would match half of every question
 
 # ---------- which business ----------
@@ -408,6 +414,13 @@ def facts(
                 "label": loc.label,
                 "city": loc.city,
                 "hours": loc.opening_hours,
+                # MEH-3512: the pickup weekdays and this point's own cutoff.
+                "pickup_days": loc.pickup_days or [],
+                "order_cutoff": (
+                    f"{loc.order_cutoff_day} {loc.order_cutoff_time}"
+                    if loc.order_cutoff_day and loc.order_cutoff_time
+                    else None
+                ),
             }
             for loc in producer.locations
             if loc.city

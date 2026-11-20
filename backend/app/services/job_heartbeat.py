@@ -29,6 +29,9 @@ History:  MEH-3155 (creation, 14/11/2026: found by the repo health scan,
           The job was healthy; the check-in was not arriving — and _safe_checkin
           caught every exception and returned None with no log line, so there
           was nothing to look at. See docs/audits/2026-11-sentry-crons.md).
+          MEH-3515 (20/11/2026: the cause. app/sentry.py:before_send ran the
+          MEH-2114 burst cap on check-ins too, all slugs sharing one empty
+          fingerprint, so 3 per 6 h got through. Check-ins now bypass it).
 """
 
 from __future__ import annotations

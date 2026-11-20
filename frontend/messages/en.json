@@ -1413,7 +1413,9 @@
         "host_limit_reached": "Several emails were already sent to this address today. Please try again tomorrow."
       },
       "next_delivery": "Next delivery: {date}",
-      "next_delivery_city": "Next delivery to {city}: {date}"
+      "next_delivery_city": "Next delivery to {city}: {date}",
+      "pickup_days": "{count, plural, one {Pickup on {days}} other {Pickup on {days}}}",
+      "next_pickup": "Next pickup: {date}"
     },
     "friday_delivery": {
       "today": "Friday",
@@ -6313,7 +6315,15 @@
         "precision_exact": "Exact",
         "precision_approximate": "Approximate",
         "primary_label": "Primary location",
-        "hours_copy_all": "Same hours for all open days"
+        "hours_copy_all": "Same hours for all open days",
+        "pickup_days_label": "Pickup days",
+        "pickup_days_hint": "The days customers can pick up from this point. They appear next to the point on your page, with the next pickup date.",
+        "pickup_cutoff_label": "Orders close",
+        "pickup_cutoff_hint": "Optional. For example Wednesday 15:00 for a Thursday pickup. Without a day and time, your business order hours apply.",
+        "pickup_cutoff_half": "Pick both a day and a time.",
+        "pickup_cutoff_none": "No day",
+        "pickup_cutoff_day_aria": "Last day to order",
+        "pickup_cutoff_time_aria": "Last time to order"
       },
       "save_cta": "Save",
       "saving": "Saving…",
@@ -6598,14 +6608,19 @@
     "input_placeholder": "Type a question...",
     "send_label": "Send question",
     "business": {
-      "page_lead": "Have a question about the products, hours or delivery?",
-      "page_button": "Ask the assistant",
+      "page_title": "Ask the assistant about {name}",
+      "page_ai_note": "An AI assistant that answers from this page",
+      "page_other": "Write your own question…",
       "panel_title": "Ask about {name}",
       "opening": "You can ask me about {name}: opening hours, delivery, products and allergens. I answer only from what is written on the business's page.",
       "prompts": {
         "hours": "When is the business open?",
         "delivery": "Where do they deliver?",
-        "gluten": "Are there gluten-free products?"
+        "signature": "What goes into the {product}?",
+        "diet_gluten_free": "Which products are gluten-free?",
+        "diet_vegan": "Which products are vegan?",
+        "diet_lactose_free": "Which products are lactose-free?",
+        "diet_no_added_sugar": "Which products have no added sugar?"
       }
     }
   },

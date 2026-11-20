@@ -296,7 +296,8 @@ until then label-only, MEH-2779; staging pushes always), and carries no vote unt
 Sapir applies `docs/ci/e2e-gate.patch.md` and adds the context to the ruleset
 (both are hers). So with auto-merge armed a PR lands on the two gates
 alone — an instruction like "wait for N green E2E runs" is enforced only by
-**not arming auto-merge** until it is checked. "Waiting for status / expected"
+**not arming auto-merge** until it is checked. A release PR (base `main`) gets
+the same E2E run since 20/11 (MEH-1932); before that GitHub never created one. "Waiting for status / expected"
 right after a push = gates still registering; retry once. Re-measure any
 as-of claim here before acting on it.
 

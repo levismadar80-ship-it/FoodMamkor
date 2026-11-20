@@ -35,7 +35,9 @@ name: E2E Tests
 
 on:
   pull_request:
-    branches: [staging]
+    # MEH-1932: `main` too, so a release PR (base main) gets an E2E run like
+    # every other gated workflow here. Without it GitHub never creates the run.
+    branches: [staging, main]
     # MEH-2779: `labeled` is load-bearing — adding the `run-e2e` label is what
     # starts the suite on a PR (see the e2e job's `if:`). The other three are
     # the GitHub defaults, listed because naming `types` replaces them.
@@ -1088,7 +1090,12 @@ jobs:
       always() && github.event.schedule != '30 2 * * 0' &&
       (!(vars.CI_MODE == 'private' || github.event.repository.private) || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-e2e'))) &&
-      needs.filter.outputs.nightly_unchanged != 'true'
+      needs.filter.outputs.nightly_unchanged != 'true' &&
+      !(github.event_name == 'push' && needs.e2e.result == 'skipped' && needs.filter.result == 'success')
+    # MEH-1799: on a push to staging that skipped the suite (no frontend
+    # change), publish no gate status at all instead of a fresh `success` on
+    # the staging tip. PRs are untouched. If the paths filter itself failed the
+    # gate still runs, so its R_FILTER guard can go red.
     needs: [filter, e2e]
     runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 3
