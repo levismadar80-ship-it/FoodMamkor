@@ -61,7 +61,9 @@ export default function AdminProductImport({ producerId, onApproved, onDraftsCha
   // MEH-3472: group id → name, for the «קבוצה: …» line under each draft.
   const [groupNames, setGroupNames] = useState(/** @type {Record<string, string>} */ ({}));
   const onDraftsChangeRef = useRef(onDraftsChange);
-  onDraftsChangeRef.current = onDraftsChange;
+  useEffect(() => {
+    onDraftsChangeRef.current = onDraftsChange;
+  }, [onDraftsChange]);
 
   // Every draft-list change goes to the page too (null = not loaded).
   useEffect(() => {

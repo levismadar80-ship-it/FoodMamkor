@@ -99,7 +99,9 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
   const inFlightRef = useRef(false);
   const pendingRef = useRef(/** @type {Product[] | null} */ (null));
   const productsRef = useRef(products);
-  productsRef.current = products;
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
 
   // Rebuilt when the organizer opens AND whenever the set of products changes
   // underneath it (a product added or deleted in the list above), so a save
@@ -130,7 +132,9 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
   // list out by group. Display only — positions are saved on the next move.
   useEffect(() => {
     if (!open) return;
-    reorderLocal(regroup(orderRef.current, groups));
+    const regrouped = regroup(orderRef.current, groups);
+    setOrder(regrouped);
+    orderRef.current = regrouped;
     confirmedRef.current = regroup(confirmedRef.current, groups);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-lay on a new group list only
   }, [groups]);
