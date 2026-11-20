@@ -108,3 +108,44 @@ def test_half_a_cutoff_is_refused(client, db):
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
+
+
+def _put(client, user, loc_id, body):
+    return client.put(f"/producers/me/locations/{loc_id}", json=body, headers=auth_header(user))
+
+
+def _point_with_cutoff(client, user):
+    body = _pickup(pickup_days=["חמישי"], order_cutoff_day="רביעי", order_cutoff_time="15:00")
+    return client.post("/producers/me/locations", json=body, headers=auth_header(user)).json()
+
+
+def test_clearing_one_half_of_a_stored_cutoff_is_refused(client, db):
+    # Review finding: the pair was checked on the body only, so this stored
+    # 15:00 with no day.
+    user, _ = _owner(db)
+    loc = _point_with_cutoff(client, user)
+    resp = _put(client, user, loc["id"], {"order_cutoff_day": None})
+    assert resp.status_code == 422, resp.text
+    assert "גם יום וגם שעה" in resp.json()["detail"]
+    db.expire_all()
+    from app.models import ProducerLocation
+
+    row = db.get(ProducerLocation, loc["id"])
+    assert (row.order_cutoff_day, row.order_cutoff_time) == ("רביעי", "15:00")
+
+
+def test_changing_only_the_day_keeps_the_stored_time(client, db):
+    user, _ = _owner(db)
+    loc = _point_with_cutoff(client, user)
+    resp = _put(client, user, loc["id"], {"order_cutoff_day": "שלישי"})
+    assert resp.status_code == 200, resp.text
+    assert (resp.json()["order_cutoff_day"], resp.json()["order_cutoff_time"]) == ("שלישי", "15:00")
+
+
+def test_a_point_turned_into_a_branch_drops_its_schedule(client, db):
+    user, _ = _owner(db)
+    loc = _point_with_cutoff(client, user)
+    resp = _put(client, user, loc["id"], {"kind": "branch"})
+    assert resp.status_code == 200, resp.text
+    out = resp.json()
+    assert (out["pickup_days"], out["order_cutoff_day"], out["order_cutoff_time"]) == ([], None, None)
