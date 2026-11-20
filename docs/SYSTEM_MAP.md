@@ -102,7 +102,10 @@ inventory.
    bucket and get 429s on ordinary reads.
 4. **Server-rendered pages on Vercel.** Almost every public page renders on
    each request, about 140 ms of CPU each. Traffic raises cost linearly; there
-   is no cache to absorb a spike.
+   is no cache to absorb a spike. The exceptions are ISR pages such as `/` and
+   the `/events` + `/experiences` hub (MEH-2233): the server reads the first
+   `/events` and `/experiences` lists at most once a minute per locale, and
+   every visit in between gets the cached HTML.
 5. **Anthropic credit or rate limit.** Moderation fails open and chat goes
    offline. Nobody is told unless they look at Sentry.
 6. **Sentry's monthly error quota.** Past it, new errors are dropped silently,
