@@ -54,7 +54,8 @@ def _product_payload(**extra) -> dict:
 
 
 def test_the_vocabulary_has_bottle_and_box():
-    assert PRODUCT_PRICE_UNITS == ("unit", "kg", "100g", "bottle", "box")
+    # MEH-3474 appended pack; this revision's own values stay the first five.
+    assert PRODUCT_PRICE_UNITS[:5] == ("unit", "kg", "100g", "bottle", "box")
     assert set(WEIGHED_PRICE_UNITS) < set(PRODUCT_PRICE_UNITS)
 
 
@@ -65,7 +66,9 @@ def test_the_schema_literal_is_the_model_tuple():
 def test_the_revision_check_is_the_model_tuple():
     found = re.search(r'^_UNITS = "(.*?)"', REVISION.read_text(encoding="utf-8"), re.M)
     assert found
-    assert tuple(re.findall(r"'([a-z0-9]+)'", found.group(1))) == PRODUCT_PRICE_UNITS
+    # MEH-3474 widened again (revision e4b8d2f6a1c3, pinned to the whole tuple
+    # by tests/test_meh3474_pack_unit.py): this revision is the first five.
+    assert tuple(re.findall(r"'([a-z0-9]+)'", found.group(1))) == PRODUCT_PRICE_UNITS[:5]
 
 
 @pytest.mark.parametrize("model", [Product, ProductOrderItem])
@@ -181,7 +184,7 @@ def test_only_weighed_units_make_an_exact_price_an_estimate(
 
 @pytest.mark.parametrize(
     ("raw", "unit"),
-    [("לבקבוק", "bottle"), ("בקבוק", "bottle"), ("לארגז", "box"), ("box", "box"), ("למארז", "unit")],
+    [("לבקבוק", "bottle"), ("בקבוק", "bottle"), ("לארגז", "box"), ("box", "box"), ("למארז", "pack")],
 )
 def test_the_admin_import_reads_bottle_and_box(raw, unit):
     from app.services.product_import import _unit
