@@ -4933,6 +4933,15 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_10": {
+            "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
+            "i1": "The business page now shows when the next delivery to your city is.",
+            "i2": "On a business page you can now ask the assistant about hours, deliveries or products, and it answers from the details on the page.",
+            "i3": "Write about your business in your own words, and we'll draft the page details. You choose what to save.",
+            "i4": "Organising products: groups and headings for the menu, moving several products at once, and a suggested product description.",
+            "i5": "Reply to a review in one tap: get a suggested reply, edit it and send.",
+            "i6": "You can choose «pack» as a price unit."
+          },
           "v1_5_9": {
             "i0": "A weekly email summary of what happened on your page. You can turn it off in the «Insights» tab.",
             "i1": "In a product's ingredients list, allergens are highlighted so customers see them right away.",
