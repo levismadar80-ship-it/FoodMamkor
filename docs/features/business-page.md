@@ -28,6 +28,7 @@
 **טסטים**
 * `frontend/e2e/flows/03-view-producer-detail.spec.ts` · `frontend/e2e/flows/manual/producer-detail.spec.ts`
 * `frontend/e2e/flows/04-whatsapp-click.spec.ts` — לחיצת WhatsApp, זרימה קריטית (כלל 5).
+* `frontend/e2e/visual/parity.spec.ts` — צילומי VRT של דף העסק. `producer-detail-disclosure-open` מצלם את הסעיף `#section-faq` עצמו, שאלה פתוחה, ולא את המסך כולו: מיקום הגלילה למסך משתנה מריצה לריצה (MEH-3460).
 * `frontend/e2e/flows/47-products-show-all.spec.ts` — רשימת מוצרים ארוכה וקיפול. רץ על בית העסק של ה-seed (`ruach-hasadeh`), לא על הראשון בפיד (MEH-3435).
 * `tests/test_meh3385_producer_detail_product_order.py` — סדר המוצרים בדף העסק (לפי `position`, בלי מקום בסוף), טיוטות לא מופיעות, ואין מכפלה בין אוספים (MEH-3385).
 * `tests/test_meh2602_producer_page_lists.py` · `tests/test_producer_contract_snapshot.py`
