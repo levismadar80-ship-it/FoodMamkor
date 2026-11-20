@@ -21,7 +21,7 @@ import Input from "@/components/ui/Input";
 
 // Mirrors backend MAX_DELIVERY_MONEY / MAX_DELIVERY_ZONES (app/limits.py).
 const MAX_DELIVERY_MONEY = 1_000_000;
-export const MAX_DELIVERY_ZONES = 20;
+const MAX_DELIVERY_ZONES = 20;
 const ZONE_NAME_MAX = 40;
 
 /**
