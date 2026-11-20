@@ -5467,7 +5467,7 @@
         "bulk_apply": "Apply to selected cities",
         "area_fee_inherits": "Inherits {fee} ₪",
         "area_fee_inherits_free": "Inherits: free delivery",
-        "default_block_title_nationwide": "Nationwide delivery fee",
+        "default_block_title_nationwide": "Nationwide delivery terms",
         "default_block_hint_nationwide": "This fee applies to all your deliveries, except zones on other terms set below.",
         "area_fee_free": "Free delivery",
         "default_block_title": "Default for all areas",

@@ -5463,7 +5463,7 @@
         "bulk_apply": "החלה על הערים המסומנות",
         "area_fee_inherits": "יורש {fee} ₪",
         "area_fee_inherits_free": "יורש: משלוח חינם",
-        "default_block_title_nationwide": "עלות משלוח לכל הארץ",
+        "default_block_title_nationwide": "תנאי המשלוח לכל הארץ",
         "default_block_hint_nationwide": "העלות הזו חלה על כל המשלוחים שלכם, חוץ מאזורים בתנאים אחרים שמוגדרים למטה.",
         "area_fee_free": "משלוח חינם",
         "default_block_title": "ברירת מחדל לכל האזורים",
