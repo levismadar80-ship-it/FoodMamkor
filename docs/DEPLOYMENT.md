@@ -208,7 +208,7 @@ Steps:
    | `BACKEND_URL` | `https://foodmamkor-production.up.railway.app` | `https://foodmamkor-staging.up.railway.app` |
    | `NEXT_PUBLIC_API_URL` | same as production `BACKEND_URL` | same as staging `BACKEND_URL` |
    | `NEXT_PUBLIC_SITE_URL` | `https://mehamakor.co.il` | `https://staging.mehamakor.online` |
-   | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. |
+   | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. Empty also means no `Content-Security-Policy-Report-Only` header (MEH-3286), so the MEH-3304 CSP measurement runs only where a DSN is set. |
    | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Production Clarity ID | Empty (don't pollute heatmaps). |
 
    With a DSN set, `next.config.js` wraps the build with `withSentryConfig` from `@sentry/nextjs/config`, which is the v11 path. From the 11 upgrade until #4827 the old import returned `undefined`, so the wrap was skipped silently: no tunnel route, no debug stripping. With no `SENTRY_AUTH_TOKEN` set, the wrap skips source-map upload and the build continues.
