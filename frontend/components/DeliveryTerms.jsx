@@ -37,24 +37,43 @@ export default function DeliveryTerms({
 }) {
   const t = useTranslations("group_buys.delivery");
   const tWeekdays = useTranslations("opening_hours.weekdays");
-  const time = deliveryTimeMessage(daysMin, daysMax);
-  const cutoff = cutoffOfRow(cutoffRow);
-  // Truthiness on purpose, as AreaRow: a 0 minimum is «no minimum».
+  const [time, cutoff] = ["time", "cutoff"].map(
+    (key) => deliveryTermTexts({ daysMin, daysMax, cutoffRow, t, tWeekdays }).find((x) => x.key === key)?.text,
+  );
+  // Truthiness on purpose: a 0 minimum is «no minimum».
   if (!time && !minOrder && !cutoff) return null;
   return (
     <div className={className} data-testid={testid}>
-      {time && <p data-testid={`${testid}-time`}>{t(time.key, time.values)}</p>}
+      {time && <p data-testid={`${testid}-time`}>{time}</p>}
       {minOrder ? (
         <p data-testid={`${testid}-min`}>
           {/* MEH-1168 P1 (bidi): isolate the ₪ amount so RTL keeps "150₪". */}
           {t("min_order")} <span dir="ltr">{formatPrice(minOrder)}</span>
         </p>
       ) : null}
-      {cutoff && (
-        <p data-testid={`${testid}-cutoff`}>
-          {t("order_cutoff", { day: tWeekdays(WEEKDAY_KEYS[cutoff.dayIndex]), time: cutoff.close })}
-        </p>
-      )}
+      {cutoff && <p data-testid={`${testid}-cutoff`}>{cutoff}</p>}
     </div>
   );
+}
+
+/**
+ * The delivery time and the order cutoff as text, in that order — shared with
+ * AreaTermsRow, which joins them on one line.
+ * @param {{ daysMin?: number | null, daysMax?: number | null, cutoffRow?: any,
+ *   t: any, tWeekdays: any }} args
+ * @returns {{ key: "time" | "cutoff", text: string }[]}
+ */
+export function deliveryTermTexts({ daysMin = null, daysMax = null, cutoffRow = null, t, tWeekdays }) {
+  const time = deliveryTimeMessage(daysMin, daysMax);
+  const cutoff = cutoffOfRow(cutoffRow);
+  /** @type {{ key: "time" | "cutoff", text: string }[]} */
+  const out = [];
+  if (time) out.push({ key: "time", text: t(time.key, time.values) });
+  if (cutoff) {
+    out.push({
+      key: "cutoff",
+      text: t("order_cutoff", { day: tWeekdays(WEEKDAY_KEYS[cutoff.dayIndex]), time: cutoff.close }),
+    });
+  }
+  return out;
 }

@@ -97,7 +97,8 @@ describe("business page (MEH-3511)", () => {
       delivery_areas: [{ id: "h", city: "חיפה", delivery_day: "ראשון", min_order: 80 }],
     });
     expect(screen.queryByTestId("delivery-business-terms")).toBeNull();
-    expect(screen.queryByTestId("area-terms")).toBeNull();
+    expect(screen.queryByTestId("area-terms-time")).toBeNull();
+    expect(screen.queryByTestId("area-terms-cutoff")).toBeNull();
     expect(screen.queryByTestId("nationwide-zones")).toBeNull();
   });
 
@@ -124,9 +125,9 @@ describe("business page (MEH-3511)", () => {
       offers_delivery: true,
       delivery_areas: [EXPRESS, { id: "h", city: "חיפה", delivery_day: "שלישי", min_order: 80 }],
     });
-    const terms = screen.getAllByTestId("area-terms");
-    expect(terms).toHaveLength(1);
-    expect(terms[0].textContent).toContain("מגיע תוך 1–2 ימי עסקים");
+    const times = screen.getAllByTestId("area-terms-time");
+    expect(times.map((el) => el.textContent)).toEqual(["מגיע תוך 1–2 ימי עסקים"]);
+    expect(screen.getAllByTestId("area-terms-cutoff")).toHaveLength(1);
   });
 });
 
@@ -181,6 +182,25 @@ describe("plain towns in a day group read as one line", () => {
     expect(screen.getByTestId("area-plain-cities").textContent).toContain("משלוח: 25₪");
     // Two drawn rows, under the cap of 6: no «הצגת עוד».
     expect(screen.queryByText(/הצגת עוד/)).toBeNull();
+  });
+
+  it("towns with the same terms share one row, and the terms are stated once", () => {
+    const kiryot = { delivery_fee: 15, min_order: 120, zone_name: "קריות", delivery_days_max: 2 };
+    renderBlock({
+      offers_delivery: true,
+      delivery_fee: 25,
+      delivery_areas: [
+        town("b", "קריית ביאליק", "שני", kiryot),
+        town("m", "קריית מוצקין", "שני", kiryot),
+        town("h", "חיפה", "שני"),
+      ],
+    });
+    const rows = screen.getAllByTestId("area-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain("קריות");
+    expect(rows[0].textContent).toContain("קריית ביאליק, קריית מוצקין");
+    expect(screen.getAllByTestId("area-terms-time")).toHaveLength(1);
+    expect(screen.getByTestId("area-plain-cities-names").textContent).toBe("חיפה");
   });
 
   it("no plain town: no line", () => {

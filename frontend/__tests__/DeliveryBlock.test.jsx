@@ -606,7 +606,9 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     Array.from({ length: n }, (_, i) => ({
       id: from + i,
       city: `עיר ${String(from + i).padStart(2, "0")}`,
-      min_order: 100,
+      // MEH-3511: a distinct minimum per town, so each is its own row (towns
+      // with identical terms share one row).
+      min_order: 100 + from + i,
       delivery_day: day,
     }));
 
@@ -696,8 +698,8 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
         areas={[
           ...areaRows(4, { day: "ראשון", from: 1 }),
           ...areaRows(3, { day: "שני", from: 5 }),
-          { id: 8, city: "עיר 08", min_order: 100 },
-          { id: 9, city: "עיר 09", min_order: 100 },
+          { id: 8, city: "עיר 08", min_order: 108 },
+          { id: 9, city: "עיר 09", min_order: 109 },
         ]}
         pickup={false}
         producer={producer}
@@ -777,9 +779,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     // 25 is the minimum even though no AREA declares it.
     expect(feeLine()).toHaveTextContent("משלוח מ-25₪");
-    // MEH-3511 (Sapir 20/11): the inheriting town reads in the plain line,
-    // which leads the group; the town with its own fee keeps its row.
-    expect(areaFees()).toEqual(["משלוח: 25₪", "משלוח: 40₪"]);
+    expect(areaFees()).toEqual(["משלוח: 40₪", "משלוח: 25₪"]);
   });
 
   it("MEH-1772 (3/6) uniform fees → rendering is unchanged: no per-row fee, no 'מ-'", () => {
