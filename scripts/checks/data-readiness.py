@@ -26,7 +26,7 @@ nobody asked.
 Usage
 -----
     python scripts/checks/data-readiness.py
-    python scripts/checks/data-readiness.py --base-url https://staging.mehamakor.online/api
+    python scripts/checks/data-readiness.py --base-url https://staging.mehamakor.co.il/api
     python scripts/checks/data-readiness.py --out /tmp/report.md --raw /tmp/raw.json
 
 Exit codes: 0 = report written. 1 = the API could not be enumerated.

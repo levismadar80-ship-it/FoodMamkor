@@ -65,6 +65,10 @@ def ask(prompt: str, *, tag: str, max_tokens: int = 600) -> str | None:
     )
 
 
+def split_sentences(text: str) -> list[str]:
+    return [s for s in _SENTENCE.split(text.strip()) if s]
+
+
 def drop_unbacked(text: str, source: str, terms: tuple[str, ...], limit: int) -> str:
     """Drop every sentence holding one of `terms` that `source` does not; trim
     to `limit` characters at a word."""

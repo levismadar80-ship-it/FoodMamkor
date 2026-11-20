@@ -5065,6 +5065,107 @@
         "title": "GroupBuyStatusUpdate",
         "type": "object"
       },
+      "GroupMoveIn": {
+        "description": "MEH-3477: these products go into `group_id` (None = out of any group).",
+        "properties": {
+          "group_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "product_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "title": "GroupMoveIn",
+        "type": "object"
+      },
+      "GroupMovesIn": {
+        "description": "MEH-3477: several moves in one write — «העברה לקבוצה» for the products\nthe owner marked, and the approval (and undo) of a group suggestion.",
+        "properties": {
+          "moves": {
+            "items": {
+              "$ref": "#/components/schemas/GroupMoveIn"
+            },
+            "maxItems": 21,
+            "minItems": 1,
+            "title": "Moves",
+            "type": "array"
+          }
+        },
+        "required": [
+          "moves"
+        ],
+        "title": "GroupMovesIn",
+        "type": "object"
+      },
+      "GroupSuggestionOut": {
+        "description": "MEH-3478: one suggested group. `id` is set when the name matches a group\nthe business already has; None = a new group. Nothing is saved.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "product_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "product_ids"
+        ],
+        "title": "GroupSuggestionOut",
+        "type": "object"
+      },
+      "GroupSuggestionsOut": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupSuggestionOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "GroupSuggestionsOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -5663,6 +5764,18 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
           },
           "storage_info": {
             "anyOf": [
@@ -15715,6 +15828,17 @@
             ],
             "title": "Description"
           },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -15723,6 +15847,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
           },
           "price_min": {
             "anyOf": [
@@ -15989,6 +16124,18 @@
               }
             ],
             "title": "Description"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
           },
           "name": {
             "anyOf": [
@@ -18542,6 +18689,19 @@
           "created_at"
         ],
         "title": "ReviewOut",
+        "type": "object"
+      },
+      "ReviewReplySuggestOut": {
+        "properties": {
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "ReviewReplySuggestOut",
         "type": "object"
       },
       "ReviewReplyUpdate": {
@@ -23185,6 +23345,228 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/product-groups": {
+      "get": {
+        "operationId": "admin_list_product_groups_admin_producers__producer_id__product_groups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response Admin List Product Groups Admin Producers  Producer Id  Product Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Product Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      },
+      "put": {
+        "operationId": "admin_replace_product_groups_admin_producers__producer_id__product_groups_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response Admin Replace Product Groups Admin Producers  Producer Id  Product Groups Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Replace Product Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-groups/assign": {
+      "put": {
+        "operationId": "admin_move_products_between_groups_admin_producers__producer_id__product_groups_assign_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMovesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Admin Move Products Between Groups Admin Producers  Producer Id  Product Groups Assign Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Move Products Between Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-groups/suggest": {
+      "post": {
+        "operationId": "admin_suggest_product_groups_admin_producers__producer_id__product_groups_suggest_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSuggestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Suggest Product Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/product-import": {
       "post": {
         "operationId": "admin_import_products_admin_producers__producer_id__product_import_post",
@@ -23240,6 +23622,69 @@
         "summary": "Admin Import Products",
         "tags": [
           "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-order": {
+      "put": {
+        "description": "Every product of the business, published AND draft — the admin builds\nthe page before approval. The exact-set 409 applies to that whole set.",
+        "operationId": "admin_set_product_order_admin_producers__producer_id__product_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Admin Set Product Order Admin Producers  Producer Id  Product Order Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Set Product Order",
+        "tags": [
+          "admin-product-organize"
         ]
       }
     },
@@ -23349,6 +23794,74 @@
         "summary": "Admin Delete Draft Product",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/products/{product_id}/group": {
+      "put": {
+        "operationId": "admin_set_product_group_admin_producers__producer_id__products__product_id__group_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupAssignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Set Product Group",
+        "tags": [
+          "admin-product-organize"
         ]
       }
     },
@@ -30330,6 +30843,82 @@
         ]
       }
     },
+    "/producers/me/product-groups/assign": {
+      "put": {
+        "operationId": "move_products_between_groups_producers_me_product_groups_assign_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMovesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Move Products Between Groups Producers Me Product Groups Assign Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Move Products Between Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-groups/suggest": {
+      "post": {
+        "operationId": "suggest_product_groups_producers_me_product_groups_suggest_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSuggestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Suggest Product Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/product-order": {
       "put": {
         "description": "`product_ids` must be exactly the business's products, each once —\na partial list would leave two products sharing a position.",
@@ -33720,6 +34309,55 @@
           }
         ],
         "summary": "Set Review Reply",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/reviews/{review_id}/reply/suggest": {
+      "post": {
+        "description": "Owner of the reviewed business only; anyone else gets the same 404 as\nthe reply route (MEH-1001), and there is no admin override (MEH-1039) —\na reply is the business's own voice.",
+        "operationId": "suggest_review_reply_reviews__review_id__reply_suggest_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Review Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewReplySuggestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Suggest Review Reply",
         "tags": [
           "reviews"
         ]

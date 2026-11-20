@@ -78,7 +78,10 @@ try {
   await page.keyboard.press("Escape");
   // One category at a time: its chip at the top switches the grid, and the
   // grid is virtualised, so each category is read at every scroll step.
-  const readWhileScrolling = async () => {
+  // MEH-3472: `cat` is written on each row as `group`, so the admin import
+  // puts the draft in a product group of that name. A product keeps the FIRST
+  // category it was seen in — one group per product.
+  const readWhileScrolling = async (cat) => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(600);
     // The page scrolls inside an inner container (window.scrollY never
@@ -88,7 +91,7 @@ try {
     for (let step = 0; step < 3000 && idle < 40; step += 1) {
       const size = byName.size;
       for (const row of await page.evaluate(readCards)) {
-        if (row.name && !byName.has(row.name)) byName.set(row.name, row);
+        if (row.name && !byName.has(row.name)) byName.set(row.name, { ...row, group: cat });
       }
       idle = byName.size === size ? idle + 1 : 0;
       await page.mouse.wheel(0, 450);
@@ -104,7 +107,7 @@ try {
     const size = byName.size;
     await chip.first().click({ force: true });
     await page.waitForTimeout(2500);
-    await readWhileScrolling();
+    await readWhileScrolling(cat);
     console.error(`${cat}: +${byName.size - size} (total ${byName.size})`);
   }
   console.error(`done: ${byName.size} products (${categories.length} categories in the store)`);

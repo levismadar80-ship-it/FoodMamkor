@@ -26,6 +26,7 @@ import ShowMore from "@/components/ui/ShowMore";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { avatarInitial } from "@/components/ui/Avatar";
 import { COLOR } from "@/lib/color-tokens";
+import AiTextSuggest from "@/components/AiTextSuggest"; // MEH-3480
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -187,6 +188,7 @@ function RatingDistribution({ counts, total, t }) {
 export function ReviewReply({ review, isOwner, onSaved }) {
   const t = useTranslations("reviews");
   const tError = useTranslations("error");
+  const tSuggest = useTranslations("reviews.reply_suggest");
   const locale = useLocale();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(review.reply || "");
@@ -212,7 +214,20 @@ export function ReviewReply({ review, isOwner, onSaved }) {
   if (editing) {
     return (
       <div className="mt-3">
-        <label htmlFor={`reply-${review.id}`} className="block text-sm font-semibold text-primary-dark mb-1">
+        {/* MEH-3480: an editable AI draft above the box; only «שמירה» sends it. */}
+        <AiTextSuggest
+          t={tSuggest}
+          testId="reply"
+          idPrefix={`reply-${review.id}-ai`}
+          maxLength={1000}
+          request={async () => {
+            const r = await api.post(`/reviews/${review.id}/reply/suggest`);
+            return typeof r.data?.reply === "string" ? r.data.reply : "";
+          }}
+          onUse={setDraft}
+          focusAfterUse={`reply-${review.id}`}
+        />
+        <label htmlFor={`reply-${review.id}`} className="block text-sm font-semibold text-primary-dark mb-1 mt-3">
           {t("reply_heading")}
         </label>
         <textarea

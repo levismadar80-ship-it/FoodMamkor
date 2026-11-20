@@ -27,14 +27,16 @@ from typing import Any
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
 
 from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
+from app.database import get_db
 from app.rate_limit import limiter
 
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
-from app.services import chat_db_tools, chat_intent_router
+from app.services import chat_business_context, chat_db_tools, chat_intent_router
 from app.services.chat_intent_router import cached_text_block, log_cache_usage
 
 
@@ -274,11 +276,11 @@ LIVE_DATA_PREAMBLE = (
 )
 
 
-def _fence_live_data(payload: str) -> str:
+def _fence_live_data(payload: str, tag: str = LIVE_DATA_TAG) -> str:
     """Wrap the JSON in the tag. `<` / `>` inside it are JSON-escaped first,
     so no business-written string can close the tag early."""
     safe = payload.replace("<", "\\u003c").replace(">", "\\u003e")
-    return f"<{LIVE_DATA_TAG}>\n{safe}\n</{LIVE_DATA_TAG}>"
+    return f"<{tag}>\n{safe}\n</{tag}>"
 
 
 def _db_query_allowed(request: Request) -> bool:
@@ -321,6 +323,39 @@ def _live_data_context(
     return f"{LIVE_DATA_PREAMBLE}\n{_fence_live_data(payload)}"
 
 
+# ---------- one business's page (MEH-3481) ----------
+
+
+def _business_context(db: Session, api_messages: list[dict[str, Any]]) -> str | None:
+    """The facts of the one business the visitor's latest questions name,
+    fenced like the live data: business-written text is data, never an
+    instruction. None when they name no one business — the flow is then
+    unchanged.
+
+    By name only: the widget is not shown on a business page (MEH-1168, the
+    page has its own contact button), so there is no page to read it from.
+    The connection goes back to the pool before the model is called."""
+    if not isinstance(db, Session):
+        return None
+    questions = [m["content"] for m in reversed(api_messages) if m["role"] == "user"]
+    try:
+        producer = chat_business_context.find(db, questions)
+        if producer is None:
+            return None
+        data = chat_business_context.facts(
+            producer,
+            questions[0],
+            takes_site_orders=chat_business_context.takes_site_orders(db, producer),
+        )
+    finally:
+        # MEH-3481: never hold a pooled connection through a model call
+        # (database.py, the MEH-2886 pattern).
+        db.rollback()
+    payload = json.dumps(data, ensure_ascii=False, default=str)
+    fenced = _fence_live_data(payload, chat_business_context.TAG)
+    return f"{chat_business_context.PREAMBLE}\n{fenced}"
+
+
 # ---------- site-wide daily cap (MEH-3010) ----------
 
 # MEH-3010: the route limits below are per IP, so many IPs together are not
@@ -358,7 +393,9 @@ OFFLINE_REPLY = "העוזרת לא זמינה כרגע 🌿 נסו שוב בעו
 @router.post("", response_model=ChatResponse)
 @limiter.limit("10/minute")  # SECURITY: chat is unauth + costs $$, lock it down
 @limiter.limit("30/hour")
-def chat(request: Request, body: ChatRequest) -> ChatResponse:
+def chat(
+    request: Request, body: ChatRequest, db: Session = Depends(get_db)
+) -> ChatResponse:
     """Answer a user question about mehamakor.online via Claude Haiku 4.5."""
     client = _get_client()
     if client is None:
@@ -389,11 +426,21 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
     # MEH-586: hybrid — a db_query turn gets the live JSON appended to the
     # fixed knowledge; everything else is the unchanged freeform flow.
     base_prompt = _base_system_prompt()  # MEH-3004
+    # MEH-3481: a question that names one business gets that business's public
+    # facts beside the live block. Read first, so the DB connection is back in
+    # the pool before any model call. Never 500s the widget.
+    try:
+        business = _business_context(db, api_messages)
+    except Exception as e:  # noqa: BLE001 — same fail-open as the live hop
+        logger.warning("chat business-context hop failed: %s", e)
+        business = None
     try:
         live = _live_data_context(client, request, api_messages)
     except Exception as e:  # noqa: BLE001 — the hybrid hop never 500s the widget
         logger.warning("chat live-data hop failed: %s", e)
         live = None
+    if business:
+        live = f"{live}\n\n{business}" if live else business
 
     try:
         response = client.messages.create(

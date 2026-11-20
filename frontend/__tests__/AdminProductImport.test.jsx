@@ -81,4 +81,22 @@ describe("AdminProductImport (MEH-2312)", () => {
     );
     expect(await screen.findByText(T.drafts_empty)).toBeInTheDocument();
   });
+
+  // MEH-3472: a draft shows its group; a draft without one shows no line.
+  it("shows «קבוצה: …» only on a draft that has a group", async () => {
+    const withGroup = { ...DRAFTS[0], group_id: "g1", position: 0 };
+    api.get.mockImplementation((url) =>
+      Promise.resolve({ data: url.endsWith("/product-groups") ? [{ id: "g1", name: "פירות" }] : [withGroup, DRAFTS[1]] }),
+    );
+    const onDraftsChange = vi.fn();
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <AdminProductImport producerId="p-1" onDraftsChange={onDraftsChange} />
+      </NextIntlClientProvider>,
+    );
+    const lines = await screen.findAllByTestId("draft-group");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toHaveTextContent("קבוצה: פירות");
+    expect(onDraftsChange).toHaveBeenLastCalledWith([expect.objectContaining({ group_id: "g1" }), expect.objectContaining({ name: "אננס" })]);
+  });
 });
