@@ -980,7 +980,7 @@ Secrets and variables → Actions → Variables); **public** otherwise.
 | Runner | `ubuntu-latest` | `self-hosted` (the runner on Sapir's PC) |
 | E2E on a PR | by paths or `run-e2e`, 4 shards | only with `run-e2e`, 2 shards |
 | E2E on push to staging | yes, 2 shards | none |
-| Nightly 01:30 UTC | Chromium + WebKit | Chromium |
+| Nightly 01:30 UTC | Chromium + WebKit, skipped when staging is unchanged since a green run (MEH-3507) | Chromium, same skip |
 | WebKit | nightly | weekly, Sunday 02:30 UTC |
 | pytest / vitest | 3 shards each | 1 shard each |
 
