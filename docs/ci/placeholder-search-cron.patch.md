@@ -1,3 +1,12 @@
+> **✅ Status: APPLIED 20/11/2026 (MEH-3520)** — committed through the GitHub web
+> editor as `.github/workflows/placeholder-search-cron.yml`. Three differences
+> from the block below: the actions are pinned by SHA (MEH-3308), the runner
+> follows `CI_MODE` (MEH-3453), and the report is written under `RUNNER_TEMP`
+> and read in the script step through `process.env`. Both open points in
+> «לפני ההחלה» are settled: `VERCEL_AUTOMATION_BYPASS_SECRET` is already an
+> Actions secret (three workflows read it), and a failure opens an issue.
+> The script passed against staging on 20/11 (6 of 6 placeholders).
+
 # Placeholder search rot — periodic checker (MEH-1800)
 
 > **הבלוק כאן מיועד לספיר להדבקה ידנית.** `.github/workflows/**` הוא CC-deny

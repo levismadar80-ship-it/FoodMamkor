@@ -15,7 +15,7 @@ e2e-gate-strict-skip	applied	.github/workflows/e2e.yml	check_ran
 e2e-gate	unverified	-	-	
 e2e-local-backend	unverified	-	-	
 e2e-one-backend-queue	dead	-	-	
-e2e-release-coverage	decision	.github/workflows/e2e.yml	branches: [staging, main]	
+e2e-release-coverage	applied	.github/workflows/e2e.yml	branches: [staging, main]	
 e2e-skip-green	unverified	-	-	
 e2e-stability	unverified	-	-	
 e2e-two-shards	unverified	-	-	
@@ -44,7 +44,7 @@ meh-2117-stop-hook-in-repo	applied	.claude/settings.json	scripts/hooks/stop-buil
 meh-2202-uptime-workflow	unverified	-	-	
 meh-2212-actions-cost	dead	-	-	case rested on private-repo billing; repo is public
 meh-2244-reconcile	unverified	-	-	
-meh-2244-stale	decision	.github/workflows/stale.yml	do-not-merge	stale.yml exists; the gap is do-not-merge exemption
+meh-2244-stale	applied	.github/workflows/stale.yml	do-not-merge	stale.yml exists; the gap is do-not-merge exemption
 meh-2244	pending	.github/workflows/pr-checks.yml	PR_AUTHOR:	
 meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]refs/tags/	hook: Sapir only
 meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	
@@ -58,7 +58,7 @@ meh-449-settings-hook-registration	unverified	-	-
 meh-784-protected-path-gate	decision	.github/workflows/pr-checks.yml	protected-path-gate	
 osm-tile-probe	applied	.github/workflows/uptime.yml	TILE_URL	
 palette-selector-widen	applied	frontend/eslint.config.mjs	Literal[value=	
-placeholder-search-cron	decision	.github/workflows/placeholder-search-cron.yml	check_placeholder_search	needs VERCEL_AUTOMATION_BYPASS_SECRET checked + SHA-pinned actions
+placeholder-search-cron	applied	.github/workflows/placeholder-search-cron.yml	check_placeholder_search	needs VERCEL_AUTOMATION_BYPASS_SECRET checked + SHA-pinned actions
 places-health-probe	applied	.github/workflows/uptime.yml	PLACES_URL	
 post-deploy-trim	applied	.github/workflows/post-deploy-checks.yml	17 3 * * 0	
 pr-checks-cancelled-not-failure	unverified	-	-	
