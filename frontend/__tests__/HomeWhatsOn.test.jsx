@@ -10,7 +10,7 @@
  *     round-robin is the feature, not the sort;
  *   - a group buy growing a countdown.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import fs from "node:fs";
 import path from "node:path";
@@ -112,6 +112,17 @@ async function renderNear(Component) {
   await act(async () => observers[0].fire(true));
   return out;
 }
+
+// MEH-3516: every test imports the component inside its own body, so the
+// FIRST test used to pay for the cold load of the whole module graph inside
+// its 5 s budget — on a loaded CI runner that load alone ran past 5 s and the
+// test timed out with nothing wrong in the component. Load it once here, under
+// a hook timeout of its own; each test's `await import` then reads the cache.
+// Safe because nothing here calls `vi.resetModules` and the component reads
+// its env flag at call time (`rescueOn()`), not at import.
+beforeAll(async () => {
+  await import("@/components/HomeWhatsOn");
+}, 60_000);
 
 beforeEach(() => {
   observers = [];
