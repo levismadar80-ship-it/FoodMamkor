@@ -16,10 +16,12 @@ The opposing axes:
 | Marketplace | Mehamakor |
 |---|---|
 | Optimize for transaction | Optimize for discovery + trust |
-| Take rate / GMV / conversion | Story, craft, origin |
+| Ranking bought or driven by sales / GMV / conversion | Ranking never for sale; story, craft, origin |
 | Auto-onboard for scale | Manual approval, every business |
 | Consumer = wallet | Consumer = reader |
 | Producer = supply | Producer = subject of editorial |
+
+**A commission does not make it a marketplace (MEH-3470, 20/11/2026).** Since ADR-042 a booking or order made through the site may carry a commission, billed to the business. The line between the two models is not *whether money changes hands*, it is *who decides what is shown and why*: a person approves every business, and money never buys ranking, exposure, a badge or verification (ADR-042 §7). Editorial guides that also take bookings (the Michelin Guide, The Infatuation) stay guides; the booking is a tool inside the guide. The test below applies to that line, not to the presence of a fee.
 
 This is the DNA. Every product decision passes through "does this push toward magazine or marketplace?" If the answer is marketplace, STOP and ask.
 
