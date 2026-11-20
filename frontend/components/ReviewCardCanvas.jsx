@@ -41,7 +41,7 @@ import * as Sentry from "@sentry/nextjs";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { ReviewsPageSchema } from "@/lib/api-schemas";
+import { ReviewsPageSchema } from "@/lib/api-responses";
 import { SITE_URL } from "@/lib/env";
 import {
   STORY_SAFE_TOP,

@@ -57,6 +57,13 @@ module.exports = {
         zod: {
           version: 4,
           variant: "mini",
+          // MEH-1748: accept a datetime with NO timezone too. The backend
+          // serialises naive DB columns without an offset (production
+          // GET /producers/{id}: created_at "2026-11-11T13:49:10.726940",
+          // updated_at "…Z" — measured 20/11), and with `offset` alone every
+          // such response failed the generated schema. The hand-written
+          // schemas accepted any string, so this is still stricter than them.
+          dateTimeOptions: { offset: true, local: true },
           generate: {
             response: true,
             param: false,

@@ -16,6 +16,7 @@ import { render, screen, within, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
+import { uuidFor } from "./helpers/contract-row";
 import { israelToday } from "@/lib/israel-date";
 
 vi.mock("@/lib/api", () => ({
@@ -144,8 +145,8 @@ describe("experiences list (MEH-2430 §1)", () => {
 describe("group buys list (MEH-2430 §2)", () => {
   it("an open group buy past its deadline says «המועד עבר»", async () => {
     const gb = (id, title, deadline) => ({
-      id, title, product_name: "קמח", producer_id: "p1", status: "open", deadline,
-      price_per_unit_group: 13, price_per_unit_regular: 18, commits_count: 1, min_participants: 2,
+      id: uuidFor(id), title, product_name: "קמח", producer_id: uuidFor("p1"), status: "open", deadline,
+      price_per_unit_group: "13.00", price_per_unit_regular: "18.00", commits_count: 1, min_participants: 2,
       created_at: "2026-01-01T00:00:00Z",
     });
     api.get.mockImplementation((url, opts) => {
@@ -177,8 +178,8 @@ describe("group buys list (MEH-2430 §2)", () => {
       if (url === "/producers/me/group-buys")
         return Promise.resolve({
           data: [{
-            id: "g9", title: "רכש שלי", product_name: "קמח", producer_id: "p1", status: "funded",
-            deadline: "2099-01-01T10:00:00Z", price_per_unit_group: 13, price_per_unit_regular: 18,
+            id: uuidFor("g9"), title: "רכש שלי", product_name: "קמח", producer_id: uuidFor("p1"), status: "funded",
+            deadline: "2099-01-01T10:00:00Z", price_per_unit_group: "13.00", price_per_unit_regular: "18.00",
             commits_count: 2, min_participants: 2, created_at: "2026-01-01T00:00:00Z",
           }],
         });

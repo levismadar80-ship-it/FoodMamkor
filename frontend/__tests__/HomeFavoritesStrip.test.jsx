@@ -1,6 +1,8 @@
 // MEH-2724 — homepage «המועדפים שלך» strip: the strip itself (0 / 1 / many,
 // cap, link) and the favorites-cache read it depends on (newest first, a heart
 // removed drops the card, one bad row costs one card, logout clears).
+import { contractRow, uuidFor } from "./helpers/contract-row";
+import { GetFavoritesUsersMeFavoritesGetResponseItem as FAV } from "@/lib/generated/api.zod";
 import { render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -43,7 +45,11 @@ import {
   hadFavoritesLastVisit,
 } from "@/lib/favorites-cache";
 
-const producer = (i) => ({ id: `p${i}`, name: `עסק ${i}`, city: "בנימינה", slug: `biz-${i}`, images: [] });
+// MEH-1748: rows are parsed with the generated FavoriteOut, so producers are
+// contract-valid and ids are real UUIDs; `P(i)` maps the short test names.
+const P = (i) => uuidFor(`p${i}`);
+const producer = (i) =>
+  contractRow(FAV._zod.def.shape.producer, { id: P(i), name: `עסק ${i}`, city: "בנימינה", slug: `biz-${i}`, images: [] });
 
 describe("HomeFavoritesStrip", () => {
   it("0 favorites → renders nothing", () => {
@@ -109,7 +115,7 @@ describe("HomeFavoritesStrip", () => {
 
     it("the hint key the script reads is the one the cache writes", async () => {
       localStorage.setItem("token", "t");
-      apiGet.mockResolvedValueOnce({ data: [{ producer_id: "p1", producer: producer(1), created_at: "2026-11-01T10:00:00Z" }] });
+      apiGet.mockResolvedValueOnce({ data: [{ producer_id: P(1), producer: producer(1), created_at: "2026-11-01T10:00:00Z" }] });
       resetFavoritesCache();
       await ensureFavoritesLoaded();
       expect(paint().hidden).toBe(false);
@@ -138,22 +144,22 @@ describe("favorites-cache → getFavoriteProducers", () => {
     apiGet.mockReset();
   });
 
-  const row = (i, created_at) => ({ producer_id: `p${i}`, producer: producer(i), created_at });
+  const row = (i, created_at) => ({ producer_id: P(i), producer: producer(i), created_at });
 
   it("newest saved first, skips a malformed row, drops an un-hearted one", async () => {
     apiGet.mockResolvedValue({
       data: [
         row(1, "2026-11-01T10:00:00"),
         row(2, "2026-11-05T10:00:00"),
-        { producer_id: "p9", producer: { id: "p9" }, created_at: "2026-11-06T10:00:00" }, // no name
+        { producer_id: P(9), producer: { id: P(9) }, created_at: "2026-11-06T10:00:00" }, // no name
         row(3, "2026-11-03T10:00:00"),
       ],
     });
     await ensureFavoritesLoaded();
-    expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p2", "p3", "p1"]);
+    expect(getFavoriteProducers().map((p) => p.id)).toEqual([P(2), P(3), P(1)]);
 
-    setFavoritedLocal("p3", false);
-    expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p2", "p1"]);
+    setFavoritedLocal(P(3), false);
+    expect(getFavoriteProducers().map((p) => p.id)).toEqual([P(2), P(1)]);
   });
 
   it("a heart added after the load re-reads the list, so the new card appears", async () => {
@@ -162,8 +168,8 @@ describe("favorites-cache → getFavoriteProducers", () => {
     apiGet.mockResolvedValueOnce({
       data: [row(1, "2026-11-01T10:00:00"), row(4, "2026-11-06T10:00:00")],
     });
-    setFavoritedLocal("p4", true);
-    await vi.waitFor(() => expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p4", "p1"]));
+    setFavoritedLocal(P(4), true);
+    await vi.waitFor(() => expect(getFavoriteProducers().map((p) => p.id)).toEqual([P(4), P(1)]));
     expect(apiGet).toHaveBeenCalledTimes(2);
   });
 
@@ -177,9 +183,9 @@ describe("favorites-cache → getFavoriteProducers", () => {
       apiGet.mockResolvedValueOnce({
         data: [row(1, "2026-11-01T10:00:00"), row(5, "2026-11-06T11:00:00")],
       });
-      setFavoritedLocal("p5", true);
+      setFavoritedLocal(P(5), true);
       await vi.advanceTimersByTimeAsync(2000);
-      expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p5", "p1"]);
+      expect(getFavoriteProducers().map((p) => p.id)).toEqual([P(5), P(1)]);
       expect(apiGet).toHaveBeenCalledTimes(3);
     } finally {
       vi.useRealTimers();
@@ -191,11 +197,11 @@ describe("favorites-cache → getFavoriteProducers", () => {
     await ensureFavoritesLoaded();
     let release;
     apiGet.mockReturnValueOnce(new Promise((r) => { release = r; }));
-    setFavoritedLocal("p6", true);
+    setFavoritedLocal(P(6), true);
     resetFavoritesCache();
     release({ data: [row(1, "2026-11-01T10:00:00"), row(6, "2026-11-06T10:00:00")] });
     await new Promise((r) => setTimeout(r, 0));
-    setFavoritedLocal("p1", true); // new session's heart, rows must be empty
+    setFavoritedLocal(P(1), true); // new session's heart, rows must be empty
     expect(getFavoriteProducers()).toEqual([]);
   });
 
@@ -206,7 +212,7 @@ describe("favorites-cache → getFavoriteProducers", () => {
     resetFavoritesCache();
     release({ data: [row(1, "2026-11-01T10:00:00")] });
     await p;
-    expect(isFavorited("p1")).toBe(false);
+    expect(isFavorited(P(1))).toBe(false);
     expect(getFavoriteProducers()).toEqual([]);
   });
 
@@ -218,26 +224,26 @@ describe("favorites-cache → getFavoriteProducers", () => {
       data: [row(1, "2026-11-01T10:00:00"), row(2, "2026-11-02T10:00:00"), row(7, "2026-11-06T10:00:00")],
     });
     const p = ensureFavoritesLoaded();
-    setFavoritedLocal("p7", true); // added mid-load
-    setFavoritedLocal("p2", false); // removed mid-load
+    setFavoritedLocal(P(7), true); // added mid-load
+    setFavoritedLocal(P(2), false); // removed mid-load
     release({ data: [row(1, "2026-11-01T10:00:00"), row(2, "2026-11-02T10:00:00")] });
     await p;
-    expect(isFavorited("p7")).toBe(true);
-    expect(isFavorited("p2")).toBe(false);
-    await vi.waitFor(() => expect(getFavoriteProducers().map((x) => x.id)).toEqual(["p7", "p1"]));
+    expect(isFavorited(P(7))).toBe(true);
+    expect(isFavorited(P(2))).toBe(false);
+    await vi.waitFor(() => expect(getFavoriteProducers().map((x) => x.id)).toEqual([P(7), P(1)]));
   });
 
   it("a favorite whose row fails validation does not trigger refresh retries", async () => {
     vi.useFakeTimers();
     try {
-      const bad = { producer_id: "p9", producer: { id: "p9" }, created_at: "2026-11-06T10:00:00" };
+      const bad = { producer_id: P(9), producer: { id: P(9) }, created_at: "2026-11-06T10:00:00" };
       apiGet.mockResolvedValueOnce({ data: [row(1, "2026-11-01T10:00:00"), bad] });
       await ensureFavoritesLoaded();
       // A new heart: one refresh finds its row; the bad p9 must not keep it retrying.
       apiGet.mockResolvedValue({ data: [row(1, "2026-11-01T10:00:00"), bad, row(4, "2026-11-06T11:00:00")] });
-      setFavoritedLocal("p4", true);
+      setFavoritedLocal(P(4), true);
       await vi.advanceTimersByTimeAsync(10000);
-      expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p4", "p1"]);
+      expect(getFavoriteProducers().map((p) => p.id)).toEqual([P(4), P(1)]);
       expect(apiGet).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
@@ -252,7 +258,7 @@ describe("favorites-cache → getFavoriteProducers", () => {
       ],
     });
     await ensureFavoritesLoaded();
-    expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p1", "p2"]);
+    expect(getFavoriteProducers().map((p) => p.id)).toEqual([P(1), P(2)]);
   });
 
   it("strip hint: set after a load with favorites, cleared on logout", async () => {
@@ -266,7 +272,7 @@ describe("favorites-cache → getFavoriteProducers", () => {
   it("strip hint: un-hearting the last favorite clears it", async () => {
     apiGet.mockResolvedValue({ data: [row(1, "2026-11-01T10:00:00")] });
     await ensureFavoritesLoaded();
-    setFavoritedLocal("p1", false);
+    setFavoritedLocal(P(1), false);
     expect(hadFavoritesLastVisit()).toBe(false);
   });
 

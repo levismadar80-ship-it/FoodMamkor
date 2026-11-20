@@ -58,6 +58,8 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 import api from "@/lib/api";
+import { contractRow } from "./helpers/contract-row";
+import { GetFavoritesUsersMeFavoritesGetResponseItem as FAV } from "@/lib/generated/api.zod";
 import FavoritesClient from "@/app/[locale]/favorites/FavoritesClient";
 
 const LABEL = "עדכונים";
@@ -65,7 +67,11 @@ const LABEL = "עדכונים";
 const rows = (n) =>
   Array.from({ length: n }, (_, i) => {
     const id = `${i + 1}`.padStart(8, "0") + "-1111-4111-8111-111111111111";
-    return { producer_id: id, producer: { id, name: `עסק ${i + 1}` } };
+    // MEH-1748: a contract-valid FavoriteOut row (the page parses the generated one).
+    return {
+      ...contractRow(FAV, { producer_id: id }),
+      producer: contractRow(FAV._zod.def.shape.producer, { id, name: `עסק ${i + 1}` }),
+    };
   });
 
 const renderWith = async (n) => {
