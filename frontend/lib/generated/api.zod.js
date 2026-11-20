@@ -2590,6 +2590,57 @@ export const AdminReplaceProductGroupsAdminProducersProducerIdProductGroupsPutRe
 
 
 /**
+ * @summary Admin Move Products Between Groups
+ */
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsGlutenFreeDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLactoseFreeDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLowCarbDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsNoAddedSugarDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVeganDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVegetarianDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseNoAllergensDefault = false;
+
+export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponse = /*#__PURE__*/ zod.array(AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseItem)
+
+
+/**
+ * @summary Admin Suggest Product Groups
+ */
+export const AdminSuggestProductGroupsAdminProducersProducerIdProductGroupsSuggestPostResponse = /*#__PURE__*/ zod.object({
+  "groups": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.string(),
+  "product_ids": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+}).check(/*#__PURE__*/ zod.describe('MEH-3478: one suggested group. `id` is set when the name matches a group\nthe business already has; None = a new group. Nothing is saved.')))
+})
+
+
+/**
  * @summary Admin Import Products
  */
 export const adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault = [];
@@ -6580,6 +6631,57 @@ export const ReplaceMyProductGroupsProducersMeProductGroupsPutResponseItem = /*#
   "name": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))
 export const ReplaceMyProductGroupsProducersMeProductGroupsPutResponse = /*#__PURE__*/ zod.array(ReplaceMyProductGroupsProducersMeProductGroupsPutResponseItem)
+
+
+/**
+ * @summary Move Products Between Groups
+ */
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsGlutenFreeDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLactoseFreeDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLowCarbDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsNoAddedSugarDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVeganDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVegetarianDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseNoAllergensDefault = false;
+
+export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponse = /*#__PURE__*/ zod.array(MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseItem)
+
+
+/**
+ * @summary Suggest Product Groups
+ */
+export const SuggestProductGroupsProducersMeProductGroupsSuggestPostResponse = /*#__PURE__*/ zod.object({
+  "groups": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.string(),
+  "product_ids": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+}).check(/*#__PURE__*/ zod.describe('MEH-3478: one suggested group. `id` is set when the name matches a group\nthe business already has; None = a new group. Nothing is saved.')))
+})
 
 
 /**
