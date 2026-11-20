@@ -6591,8 +6591,8 @@
       "approval_time": "How long does approval take?"
     },
     "answers": {
-      "register": "You register through a short form — completely free! After registering you complete your profile in the dashboard (a photo, your first product), send it for review — and our team checks and approves your business within 3 business days, and then it appears on the site.",
-      "find_nearby": "There are two easy ways:\n\n1. Our map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
+      "register": "You register through a short form at /register/producer, and it is free. After registering you complete your profile in the dashboard (a photo, your first product), send it for review — and our team checks and approves your business within 3 business days, and then it appears on the site.",
+      "find_nearby": "There are two easy ways:\n\n1. /map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
     },
     "fallback_reply": "I couldn't understand the question — could you rephrase it?",
     "error_rate_limit": "You sent a lot of messages in a short time — try again in a minute",
@@ -6622,6 +6622,26 @@
         "diet_lactose_free": "Which products are lactose-free?",
         "diet_no_added_sugar": "Which products have no added sugar?"
       }
+    },
+    "pages": {
+      "map": "The map",
+      "events": "Events",
+      "experiences": "Experiences",
+      "group_buys": "Group buys",
+      "favorites": "My favorites",
+      "register": "Sign up",
+      "login": "Log in",
+      "join": "Join as a business",
+      "register_business": "the business sign-up form",
+      "pricing": "the business price list",
+      "dashboard": "the dashboard",
+      "recommend": "Recommend a business",
+      "about": "About",
+      "contact": "Contact us",
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "accessibility": "Accessibility statement",
+      "rescue": "Surprise bags"
     }
   },
   "diet_pages": {

@@ -257,7 +257,8 @@ def test_live_data_hop_failure_never_breaks_chat(monkeypatch):
     reply = handler(_request("203.0.113.11"), body)
     assert reply.reply == "שלום"
     # MEH-3384: one cached block, no live block when the hop failed.
-    assert [b["text"] for b in calls[0]["system"]] == [chat.SYSTEM_PROMPT]
+    # MEH-3528: the base prompt = SYSTEM_PROMPT + business tools + page list.
+    assert [b["text"] for b in calls[0]["system"]] == [chat._base_system_prompt()]
 
 
 def test_live_data_context_is_none_for_freeform_cap_and_tool_error(monkeypatch):

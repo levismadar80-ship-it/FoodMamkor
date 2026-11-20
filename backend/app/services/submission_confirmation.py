@@ -41,6 +41,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from app.config import settings
 from app.services.email import send_email
 from app.utils.clock import ISRAEL_TZ
 
@@ -63,6 +64,7 @@ _SUBJECT = "קיבלנו את הפרופיל — תשובה עד 3 ימי עסק
 _BODY = """הפרופיל של {business_name} נשלח לבדיקה ב-{submitted_date}.
 מה עכשיו? הצוות שלנו עובר על הפרטים ומאשר עד 3 ימי עסקים. ברגע שהעסק מאושר — הוא עולה לאתר ונעדכן אתכם במייל.
 בינתיים אפשר להמשיך לעדכן את הפרופיל בלוח הבקרה — כל שינוי נשמר.
+{dashboard_url}
 יש שאלה? אפשר פשוט להשיב למייל הזה."""
 
 
@@ -92,6 +94,8 @@ def build_submission_confirmation(
     return _SUBJECT, _BODY.format(
         business_name=business_name,
         submitted_date=_format_date(submitted_at),
+        # 20/11: every page an email names carries its link (site-wide sweep).
+        dashboard_url=f"{settings.frontend_url}/producer/dashboard",
     )
 
 
