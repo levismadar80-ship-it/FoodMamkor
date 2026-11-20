@@ -90,11 +90,26 @@ describe("server-first list (MEH-2233)", () => {
     expect(html).toContain('aria-busy="true"');
   });
 
-  it("an unfiltered arrival makes no client request", async () => {
-    render(<EventsClient initialRows={seeded} />);
+  it("an unfiltered arrival shows the server rows, then refreshes them without the skeleton", async () => {
+    api.get.mockResolvedValue({ data: [row("fresh", "2026-11-20")] });
+    const { container } = render(<EventsClient initialRows={seeded} />);
     expect(screen.getByText("event today")).toBeTruthy();
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+    expect(api.get.mock.calls[0][0]).toBe("/events");
+    expect(api.get.mock.calls[0][1].params).toEqual({});
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
+    // the fresh answer replaces the cached one (a Back replays an old list)
+    await waitFor(() => expect(screen.getByText("event fresh")).toBeTruthy());
+    expect(screen.queryByText("event today")).toBeNull();
+  });
+
+  it("a failed quiet refresh keeps the server rows, with no error state", async () => {
+    api.get.mockRejectedValue(new Error("offline"));
+    render(<EventsClient initialRows={seeded} />);
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
     await new Promise((r) => setTimeout(r, 20));
-    expect(api.get).not.toHaveBeenCalled();
+    expect(screen.getByText("event today")).toBeTruthy();
+    expect(screen.queryByTestId("events-load-error")).toBeNull();
   });
 
   it("an arrival with a filter in the URL fetches, with that filter", async () => {
@@ -119,16 +134,18 @@ describe("server-first list (MEH-2233)", () => {
       .flatMap((r) => [...r.querySelectorAll("button")])
       .find((b) => b.dataset.key !== "all" && !b.dataset.key.startsWith("when:"));
     expect(chip).toBeTruthy();
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1)); // the quiet refresh
     fireEvent.click(chip);
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
-    expect(api.get.mock.calls[0][0]).toBe("/events");
-    expect(api.get.mock.calls[0][1].params.category).toBeTruthy();
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(api.get.mock.calls[1][0]).toBe("/events");
+    expect(api.get.mock.calls[1][1].params.category).toBeTruthy();
   });
 
   it("the other tab is fetched on a switch, even though the server read it", async () => {
     render(<EventsClient initialRows={seeded} />);
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1)); // the quiet refresh
     fireEvent.click(screen.getByTestId("to-experiences"));
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
-    expect(api.get.mock.calls[0][0]).toBe("/experiences");
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(api.get.mock.calls[1][0]).toBe("/experiences");
   });
 });

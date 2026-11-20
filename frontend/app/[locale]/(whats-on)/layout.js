@@ -32,6 +32,8 @@ export default async function WhatsOnLayout({ children }) {
   );
 }
 
+const FIRST_PAINT_TIMEOUT_MS = 2500;
+
 /**
  * The unfiltered list, or null on any failure — null tells EventsClient to
  * fetch it itself, exactly as before (a backend blip never becomes an error
@@ -40,10 +42,13 @@ export default async function WhatsOnLayout({ children }) {
  */
 async function firstList(path) {
   try {
-    const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
+    // One short attempt: the HTML waits on it, and a miss only means the client
+    // fetches (serverFetch's defaults, 8s × 3, could hold a cold page ~25s).
+    const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } }, { timeoutMs: FIRST_PAINT_TIMEOUT_MS, retries: 0 });
     if (!res.ok) return null;
     const json = await res.json();
-    return Array.isArray(json) ? json : null;
+    // Every row an object with an id: a malformed row must not break the server render.
+    return Array.isArray(json) && json.every((x) => !!x && typeof x === "object" && "id" in x) ? json : null;
   } catch {
     return null;
   }
