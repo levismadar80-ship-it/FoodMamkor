@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { ListTestBusinessesAdminTestBusinessesGetResponse } from "@/lib/generated/api.zod";
 
 /**
  * Module:   use-test-business-ids
@@ -26,7 +27,9 @@ function load() {
     // failed read like any other, never a crash of the table around it.
     pending = Promise.resolve()
       .then(() => api.get("/admin/test-businesses"))
-      .then((r) => new Set((r.data?.producer_ids || []).map(String)))
+      // Rule 19: a malformed body throws here and lands in the catch below.
+      .then((r) => ListTestBusinessesAdminTestBusinessesGetResponse.parse(r?.data))
+      .then((d) => new Set(d.producer_ids.map(String)))
       .catch(() => {
         // Unknown is not "none": a failed read must never show a hidden
         // business as public (rule-5a review). Callers render nothing for

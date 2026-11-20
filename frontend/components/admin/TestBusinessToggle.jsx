@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import Switch from "@/components/ui/Switch";
+import { SetTestBusinessAdminTestBusinessesProducerIdPutResponse } from "@/lib/generated/api.zod";
 import { setTestBusinessId, useTestBusinessIds } from "@/lib/use-test-business-ids";
 
 /**
@@ -30,7 +31,8 @@ export default function TestBusinessToggle({ producerId }) {
     setSaving(true);
     try {
       const r = await api.put(`/admin/test-businesses/${producerId}`, { hidden: !hidden });
-      await setTestBusinessId(producerId, Boolean(r.data?.hidden));
+      const saved = SetTestBusinessAdminTestBusinessesProducerIdPutResponse.parse(r.data);
+      await setTestBusinessId(producerId, saved.hidden);
       showToast.success(t("common.saved"));
     } catch {
       showToast.error(t("common.error_generic"));

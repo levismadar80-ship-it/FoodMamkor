@@ -15,6 +15,10 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), put: vi.fn() } }));
 vi.mock("@/lib/toast", () => ({ showToast: { error: vi.fn(), success: vi.fn() } }));
 
 const LABEL = he.admin.producers.test_business.label;
+// Real uuids: the hook and the switch parse the generated zod schemas (rule 19).
+const P1 = "11111111-1111-4111-8111-111111111111";
+const P2 = "22222222-2222-4222-8222-222222222222";
+const OTHER = "33333333-3333-4333-8333-333333333333";
 
 function wrap(ui) {
   return render(
@@ -36,9 +40,9 @@ beforeEach(() => vi.clearAllMocks());
 
 describe("TestBusinessToggle", () => {
   it("is the approved label, unchecked for a real business", async () => {
-    api.get.mockResolvedValue({ data: { producer_ids: ["other"] } });
+    api.get.mockResolvedValue({ data: { producer_ids: [OTHER] } });
     const { Toggle } = await load();
-    wrap(<Toggle producerId="p-1" />);
+    wrap(<Toggle producerId={P1} />);
     const box = await screen.findByRole("switch", { name: LABEL });
     expect(LABEL).toBe("עסק בדיקה — מוסתר מהאתר");
     expect(box.getAttribute("aria-checked")).toBe("false");
@@ -46,33 +50,33 @@ describe("TestBusinessToggle", () => {
   });
 
   it("checked when the id is listed; turning it off sends hidden:false", async () => {
-    api.get.mockResolvedValue({ data: { producer_ids: ["p-1"] } });
-    api.put.mockResolvedValue({ data: { producer_id: "p-1", hidden: false } });
+    api.get.mockResolvedValue({ data: { producer_ids: [P1] } });
+    api.put.mockResolvedValue({ data: { producer_id: P1, hidden: false } });
     const { Toggle } = await load();
-    wrap(<Toggle producerId="p-1" />);
+    wrap(<Toggle producerId={P1} />);
     const box = await screen.findByRole("switch", { name: LABEL });
     expect(box.getAttribute("aria-checked")).toBe("true");
     fireEvent.click(box);
     await waitFor(() => expect(box.getAttribute("aria-checked")).toBe("false"));
-    expect(api.put).toHaveBeenCalledWith("/admin/test-businesses/p-1", { hidden: false });
+    expect(api.put).toHaveBeenCalledWith(`/admin/test-businesses/${P1}`, { hidden: false });
     expect(showToast.success).toHaveBeenCalled();
   });
 
   it("turning it on sends hidden:true and the list tag appears", async () => {
     api.get.mockResolvedValue({ data: { producer_ids: [] } });
-    api.put.mockResolvedValue({ data: { producer_id: "p-1", hidden: true } });
+    api.put.mockResolvedValue({ data: { producer_id: P1, hidden: true } });
     const { Toggle, Tag } = await load();
     wrap(
       <>
-        <Toggle producerId="p-1" />
-        <Tag producerId="p-1" />
+        <Toggle producerId={P1} />
+        <Tag producerId={P1} />
       </>,
     );
     const box = await screen.findByRole("switch", { name: LABEL });
     expect(screen.queryByTestId("admin-tag-test-business")).toBeNull();
     fireEvent.click(box);
     await waitFor(() => expect(box.getAttribute("aria-checked")).toBe("true"));
-    expect(api.put).toHaveBeenCalledWith("/admin/test-businesses/p-1", { hidden: true });
+    expect(api.put).toHaveBeenCalledWith(`/admin/test-businesses/${P1}`, { hidden: true });
     expect(await screen.findByTestId("admin-tag-test-business")).toBeTruthy();
     expect(api.get).toHaveBeenCalledTimes(1); // one request shared by both
   });
@@ -81,7 +85,7 @@ describe("TestBusinessToggle", () => {
     api.get.mockResolvedValue({ data: { producer_ids: [] } });
     api.put.mockRejectedValue(new Error("500"));
     const { Toggle } = await load();
-    wrap(<Toggle producerId="p-1" />);
+    wrap(<Toggle producerId={P1} />);
     const box = await screen.findByRole("switch", { name: LABEL });
     fireEvent.click(box);
     await waitFor(() => expect(showToast.error).toHaveBeenCalled());
@@ -95,8 +99,8 @@ describe("a failed read", () => {
     const { Toggle, Tag } = await load();
     wrap(
       <>
-        <Toggle producerId="p-1" />
-        <Tag producerId="p-1" />
+        <Toggle producerId={P1} />
+        <Tag producerId={P1} />
       </>,
     );
     await waitFor(() => expect(api.get).toHaveBeenCalled());
@@ -107,23 +111,32 @@ describe("a failed read", () => {
 });
 
 describe("TestBusinessTag", () => {
+  it("a malformed list body renders nothing (rule 19: parse, never trust)", async () => {
+    api.get.mockResolvedValue({ data: { producer_ids: ["not-a-uuid"] } });
+    const { Tag } = await load();
+    wrap(<Tag producerId="not-a-uuid" />);
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByTestId("admin-tag-test-business")).toBeNull();
+  });
+
   it("a client that returns no promise renders nothing and does not throw", async () => {
     // AdminDraftMissing.test.jsx mocks api.get as a bare vi.fn(): undefined.
     api.get.mockReturnValue(undefined);
     const { Tag } = await load();
-    wrap(<Tag producerId="p-1" />);
+    wrap(<Tag producerId={P1} />);
     await waitFor(() => expect(api.get).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 0));
     expect(screen.queryByTestId("admin-tag-test-business")).toBeNull();
   });
 
   it("renders only for a listed id", async () => {
-    api.get.mockResolvedValue({ data: { producer_ids: ["p-2"] } });
+    api.get.mockResolvedValue({ data: { producer_ids: [P2] } });
     const { Tag } = await load();
     wrap(
       <>
-        <Tag producerId="p-1" />
-        <Tag producerId="p-2" />
+        <Tag producerId={P1} />
+        <Tag producerId={P2} />
       </>,
     );
     const tags = await screen.findAllByTestId("admin-tag-test-business");
