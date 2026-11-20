@@ -1414,11 +1414,11 @@
       },
       "next_delivery": "המשלוח הבא: {date}",
       "next_delivery_city": "המשלוח הבא ל{city}: {date}",
-      "pickup_days": "{count, plural, one {איסוף ביום {days}} other {איסוף בימים {days}}}",
+      "pickup_days": "{count, plural, one {איסוף ביום {days}} two {איסוף בימים {days}} other {איסוף בימים {days}}}",
       "next_pickup": "האיסוף הבא: {date}",
       "business_days_range": "מגיע תוך {min}–{max} ימי עסקים",
-      "business_days_upto": "{max, plural, one {מגיע תוך יום עסקים אחד} other {מגיע תוך עד # ימי עסקים}}",
-      "business_days_exact": "{days, plural, one {מגיע תוך יום עסקים אחד} other {מגיע תוך # ימי עסקים}}",
+      "business_days_upto": "{max, plural, one {מגיע תוך יום עסקים אחד} two {מגיע תוך עד # ימי עסקים} other {מגיע תוך עד # ימי עסקים}}",
+      "business_days_exact": "{days, plural, one {מגיע תוך יום עסקים אחד} two {מגיע תוך # ימי עסקים} other {מגיע תוך # ימי עסקים}}",
       "zones_other_terms": "באזורים האלה התנאים אחרים:"
     },
     "friday_delivery": {

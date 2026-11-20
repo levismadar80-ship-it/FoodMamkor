@@ -62,7 +62,7 @@ def test_partial_update_leaves_days_and_can_clear_them(client, db):
         headers=auth_header(user),
     )
     assert cleared.status_code == 200, cleared.text
-    assert cleared.json()["pickup_days"] == []
+    assert cleared.json()["pickup_days"] is None
     assert cleared.json()["order_cutoff_day"] is None
 
 
@@ -70,7 +70,7 @@ def test_point_without_new_fields_reads_as_before(client, db):
     user, producer = _owner(db)
     resp = client.post("/producers/me/locations", json=_pickup(), headers=auth_header(user))
     assert resp.status_code == 201, resp.text
-    assert resp.json()["pickup_days"] == []
+    assert resp.json()["pickup_days"] is None
     assert resp.json()["order_cutoff_day"] is None
     assert resp.json()["order_cutoff_time"] is None
 
@@ -148,4 +148,4 @@ def test_a_point_turned_into_a_branch_drops_its_schedule(client, db):
     resp = _put(client, user, loc["id"], {"kind": "branch"})
     assert resp.status_code == 200, resp.text
     out = resp.json()
-    assert (out["pickup_days"], out["order_cutoff_day"], out["order_cutoff_time"]) == ([], None, None)
+    assert (out["pickup_days"], out["order_cutoff_day"], out["order_cutoff_time"]) == (None, None, None)

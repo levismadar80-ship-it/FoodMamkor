@@ -419,7 +419,9 @@ class ProducerLocationOut(BaseModel):
     phone: str | None = None
     # MEH-3512: pickup weekdays + this point's own order cutoff ([] / None =
     # «בתיאום» and the business-wide order_window — rendered as before).
-    pickup_days: list[str] = []
+    # None, not [], when there are none: a [] default makes the OpenAPI
+    # codegen emit one dead `…PickupDaysDefault` export per route (Knip).
+    pickup_days: list[str] | None = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
     # Field name matches the ORM attribute (from_attributes reads it directly);
@@ -432,7 +434,7 @@ class ProducerLocationOut(BaseModel):
     @field_validator("pickup_days", mode="before")
     @classmethod
     def _none_days(cls, v: Any) -> Any:
-        return v or []
+        return v or None
 
 
 # MEH-1421 (MEH-1388 chunk 4a): shared enums — same value sets as the ORM CHECK
@@ -605,7 +607,9 @@ class ProducerLocationOwnerOut(BaseModel):
     is_primary: bool = False
     location_precision: str = "exact"
     # MEH-3512
-    pickup_days: list[str] = []
+    # None, not [], when there are none: a [] default makes the OpenAPI
+    # codegen emit one dead `…PickupDaysDefault` export per route (Knip).
+    pickup_days: list[str] | None = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
 
@@ -614,7 +618,7 @@ class ProducerLocationOwnerOut(BaseModel):
     @field_validator("pickup_days", mode="before")
     @classmethod
     def _none_days(cls, v: Any) -> Any:
-        return v or []
+        return v or None
 
 
 # --- Producer offers (MEH-1823 chunk 2) ---
