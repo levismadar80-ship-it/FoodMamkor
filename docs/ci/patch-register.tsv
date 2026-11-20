@@ -59,7 +59,7 @@ meh-784-protected-path-gate	decision	.github/workflows/pr-checks.yml	protected-p
 osm-tile-probe	applied	.github/workflows/uptime.yml	TILE_URL	
 palette-selector-widen	applied	frontend/eslint.config.mjs	Literal[value=	
 placeholder-search-cron	applied	.github/workflows/placeholder-search-cron.yml	check_placeholder_search	needs VERCEL_AUTOMATION_BYPASS_SECRET checked + SHA-pinned actions
-places-health-probe	pending	.github/workflows/uptime.yml	PLACES_URL	
+places-health-probe	applied	.github/workflows/uptime.yml	PLACES_URL	
 post-deploy-trim	applied	.github/workflows/post-deploy-checks.yml	17 3 * * 0	
 pr-checks-cancelled-not-failure	unverified	-	-	
 repo-guards	unverified	-	-	

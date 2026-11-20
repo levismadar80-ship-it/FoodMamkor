@@ -2284,9 +2284,9 @@ GET /health/places               public, 10/min — is the Google Places key ans
                                    503 {"status":"error","http":<code|null>,"code":<Google
                                         status word, e.g. PERMISSION_DENIED | exception name>}
                                  Never the key, never Google's body. A 503 also lands in Sentry
-                                 (fingerprint places-health/<code>) and, once
-                                 docs/ci/places-health-probe.patch.md is applied, in the
-                                 hourly uptime workflow. Cause/remedy: DEPLOYMENT.md § D-quater.
+                                 (fingerprint places-health/<code>) and in the uptime
+                                 workflow (every 30 minutes; `disabled` fails there too).
+                                 Cause/remedy: DEPLOYMENT.md § D-quater.
 
 GET/HEAD /health                 public — backwards-compat alias, the path Railway currently
                                  polls (railway.json). ALWAYS 200; it never reports failure
