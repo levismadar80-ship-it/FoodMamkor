@@ -1204,15 +1204,16 @@ test.describe("Visual parity — MEH-991", () => {
     await page.goto(`/producer/${borrowedId}`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
     // MEH-3460 (20/11): «שאלות נפוצות» is its own section lower on the page,
-    // not in the contact card — scroll the opened answer into the frame.
+    // not in the contact card. An ELEMENT shot of that section: a viewport shot
+    // after scrollIntoViewIfNeeded landed at a different offset run to run (CI
+    // 20/11: 0.23 then 0.31 of the frame differed on the retry), because the
+    // sections above it settle at different heights.
     await page.locator('[data-testid="quick-answer-toggle"]:visible').first().click();
     const answer = page.locator('[data-testid="quick-answer-content"]:visible').first();
     await answer.waitFor({ timeout: 5_000 });
-    await answer.scrollIntoViewIfNeeded();
     await settle(page);
-    await expect(page).toHaveScreenshot("producer-detail-disclosure-open.png", {
+    await expect(page.locator("#section-faq")).toHaveScreenshot("producer-detail-disclosure-open.png", {
       ...SHOT,
-      mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
   });
 
