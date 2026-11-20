@@ -23224,6 +23224,55 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/order-settings": {
+      "get": {
+        "description": "MEH-3524: what the admin's alcohol switch reads before it writes. Read\nonly, and it creates no row: a business that never saved gets the defaults,\nthe same shape the owner's GET returns.",
+        "operationId": "get_order_settings_as_admin_admin_producers__producer_id__order_settings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerOrderSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Order Settings As Admin",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/order-settings/alcohol": {
       "put": {
         "description": "Mark a business as licensed to sell alcohol (or take the mark away).\n\nSapir's decision of 14/11: alcohol can be ordered only from a business an\nadmin has marked. The mark does not switch ordering on — `enabled` is the\nowner's own choice and a row created here starts with it off.",
