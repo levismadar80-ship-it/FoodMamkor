@@ -1,6 +1,6 @@
 # Claude project instructions — the source Sapir pastes from
 
-**Last reviewed:** 2026-11-19 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
+**Last reviewed:** 2026-11-20 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
 
 The block below is the text of the Claude project's instructions. **Edit it here,
 in a PR, then paste it into the project.** Never edit the pasted copy first:
@@ -39,6 +39,8 @@ written for the old claude.ai project).
   עובדה על המוצר הולכים לריפו, לא לזיכרון ולא לכאן.
 - ההוראות האלה נשמרות ב-docs/PROJECT_INSTRUCTIONS.md. שינוי — שם, ואז אני מדביקה.
 - תבניות: docs/templates/. לפני issue חדש — חיפוש כפילויות ב-Linear.
+- סושיאל: לוח אחד, https://claude.ai/artifact/JvjzeVxSGqE6zC2FRtuGb7. כל עדכון סושיאל
+  נכנס אליו, לא למסמך חדש. רעיונות לאחר כך: Linear, תווית «סושיאל».
 
 LOCK (שינוי רק ב-ADR חדש)
 - עיקרון פנימי: עריכה, לא marketplace. «מגזין» היא מילה פנימית בלבד: לא באתר
