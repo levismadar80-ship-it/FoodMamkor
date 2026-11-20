@@ -153,7 +153,7 @@ export default function PageFillPanel({ profile, readUrl, saveUrl, owner = true,
   const count = rows.filter((r) => canSave(r) && checked.has(r.key)).length;
 
   return (
-    <section data-testid="page-fill" className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+    <section data-testid="page-fill" className="rounded-lg border border-border bg-surface p-4 space-y-3">
       <div className="flex items-start gap-3">
         <NotePencil size={24} aria-hidden="true" className="shrink-0 text-primary mt-0.5" />
         <div className="min-w-0 flex-1">

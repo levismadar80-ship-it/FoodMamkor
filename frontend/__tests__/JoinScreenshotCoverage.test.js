@@ -71,6 +71,9 @@ const NO_VISUAL = new Set([
   // MEH-3216: the demo business on /join has no order bar yet; a shot follows
   // once a real business turns ordering on.
   "product_orders",
+  // MEH-3483: an owner-only step on the edit screen; the /join demo pictures
+  // the public page it fills, not the form.
+  "page_fill",
 ]);
 
 describe("the shot list against the tool registry", () => {
