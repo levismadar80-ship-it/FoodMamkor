@@ -3737,6 +3737,16 @@
     "pagination": {
       "prev_aria": "Previous page",
       "next_aria": "Next page"
+    },
+    "reply_suggest": {
+      "cta": "Suggest a reply",
+      "hint": "We'll write a draft from the review. The reply is sent only when you send it.",
+      "loading": "Writing a draft…",
+      "preview_label": "Our draft. You can edit it before using it.",
+      "use": "Use the draft",
+      "cancel": "Cancel",
+      "failed": "We couldn't suggest a reply this time. You can write it yourself.",
+      "limit": "You've reached the number of suggestions for now. Try again later."
     }
   },
   "newsletter_unsubscribe": {
