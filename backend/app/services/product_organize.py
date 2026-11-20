@@ -14,7 +14,8 @@ Does NOT: authorise anything — the caller resolves WHICH business (the
 Related:  routers/product_organize.py (owner) · routers/admin_product_organize.py
           (admin) · services/product_import.py (import creates groups by name)
 History:  MEH-3055 (logic created in routers/product_organize.py);
-          MEH-3472 (moved here verbatim, drafts made a caller choice).
+          MEH-3472 (moved here verbatim, drafts made a caller choice);
+          MEH-3477 (assign_many); MEH-3478 (ungrouped_in_scope).
 """
 
 import uuid
@@ -118,3 +119,62 @@ def assign_group(
     db.commit()
     db.refresh(product)
     return product
+
+
+def assign_many(
+    db: Session,
+    producer: Producer,
+    moves: list[tuple[str | None, list[UUID]]],
+    *,
+    include_drafts: bool,
+) -> list[Product]:
+    """MEH-3477: every (group_id, product_ids) move in one transaction. All or
+    nothing: one product outside the business (or a draft, for the owner) or
+    one unknown group refuses the whole write, so a bulk move never half-lands."""
+    db.refresh(producer, with_for_update=True)  # same lock as replace_groups
+    known = {g["id"] for g in groups_of(producer)}
+    if any(gid is not None and gid not in known for gid, _ in moves):
+        raise HTTPException(status_code=404, detail=GROUP_NOT_FOUND_DETAIL)
+    wanted = [pid for _, ids in moves for pid in ids]
+    q = db.query(Product).filter(Product.producer_id == producer.id, Product.id.in_(wanted))
+    if not include_drafts:
+        q = q.filter(Product.is_draft.is_(False))  # MEH-2312
+    by_id = {p.id: p for p in q.all()}
+    if len(by_id) != len(set(wanted)):
+        raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND_DETAIL)
+    for gid, ids in moves:
+        for pid in ids:
+            by_id[pid].group_id = gid  # type: ignore[assignment,index]
+    db.commit()
+    return [by_id[pid] for pid in wanted]  # type: ignore[index]
+
+
+def ungrouped_in_scope(db: Session, producer: Producer, *, include_drafts: bool) -> list[Product]:
+    """MEH-3478: the products a suggestion may place — those in no live group,
+    in the order the owner set (position, then id)."""
+    known = {g["id"] for g in groups_of(producer)}
+    q = db.query(Product).filter(Product.producer_id == producer.id)
+    if not include_drafts:
+        q = q.filter(Product.is_draft.is_(False))  # MEH-2312
+    rows = q.order_by(Product.position.asc().nulls_last(), Product.id.asc()).all()
+    return [p for p in rows if p.group_id is None or p.group_id not in known]
+
+
+# The frontend shows its own approved line on a 503; this is the API's.
+SUGGEST_UNAVAILABLE_DETAIL = "לא הצלחנו להציע קבוצות הפעם. אפשר ליצור קבוצות ידנית."
+
+
+def suggestion_for(db: Session, producer: Producer, *, include_drafts: bool) -> dict[str, Any]:
+    """MEH-3478: groups for the ungrouped products in scope. Saves nothing."""
+    from app.limits import MAX_PRODUCT_GROUPS
+    from app.services import group_suggester
+
+    products = ungrouped_in_scope(db, producer, include_drafts=include_drafts)
+    groups = groups_of(producer)
+    room = max(0, MAX_PRODUCT_GROUPS - len(groups))
+    result = group_suggester.suggest(
+        [str(p.name) for p in products], [str(p.id) for p in products], groups, room
+    )
+    if result is None:
+        raise HTTPException(status_code=503, detail=SUGGEST_UNAVAILABLE_DETAIL)
+    return {"groups": result}
