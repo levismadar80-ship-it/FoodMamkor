@@ -138,10 +138,14 @@ def assign_many(
     if any(gid is not None and gid not in known for gid, _ in moves):
         raise HTTPException(status_code=404, detail=GROUP_NOT_FOUND_DETAIL)
     wanted = [pid for _, ids in moves for pid in ids]
-    q = db.query(Product).filter(Product.producer_id == producer.id, Product.id.in_(wanted))
+    q = db.query(Product).filter(
+        Product.producer_id == producer.id, Product.id.in_(wanted)
+    )
     if not include_drafts:
         q = q.filter(Product.is_draft.is_(False))  # MEH-2312
-    by_id = {p.id: p for p in q.all()}
+    # Row locks too: a product deleted between this read and the commit would
+    # otherwise surface as StaleDataError (a 500), not the 404 above (review).
+    by_id = {p.id: p for p in q.with_for_update().all()}
     if len(by_id) != len(set(wanted)):
         raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND_DETAIL)
     for gid, ids in moves:
@@ -151,7 +155,9 @@ def assign_many(
     return [by_id[pid] for pid in wanted]  # type: ignore[index]
 
 
-def ungrouped_in_scope(db: Session, producer: Producer, *, include_drafts: bool) -> list[Product]:
+def ungrouped_in_scope(
+    db: Session, producer: Producer, *, include_drafts: bool
+) -> list[Product]:
     """MEH-3478: the products a suggestion may place — those in no live group,
     in the order the owner set (position, then id)."""
     known = {g["id"] for g in groups_of(producer)}
@@ -166,7 +172,9 @@ def ungrouped_in_scope(db: Session, producer: Producer, *, include_drafts: bool)
 SUGGEST_UNAVAILABLE_DETAIL = "לא הצלחנו להציע קבוצות הפעם. אפשר ליצור קבוצות ידנית."
 
 
-def suggestion_for(db: Session, producer: Producer, *, include_drafts: bool) -> dict[str, Any]:
+def suggestion_for(
+    db: Session, producer: Producer, *, include_drafts: bool
+) -> dict[str, Any]:
     """MEH-3478: groups for the ungrouped products in scope. Saves nothing."""
     from app.limits import MAX_PRODUCT_GROUPS
     from app.services import group_suggester
@@ -174,9 +182,11 @@ def suggestion_for(db: Session, producer: Producer, *, include_drafts: bool) -> 
     products = ungrouped_in_scope(db, producer, include_drafts=include_drafts)
     groups = groups_of(producer)
     room = max(0, MAX_PRODUCT_GROUPS - len(groups))
-    result = group_suggester.suggest(
-        [str(p.name) for p in products], [str(p.id) for p in products], groups, room
-    )
+    names, ids = [str(p.name) for p in products], [str(p.id) for p in products]
+    # End the read before the model call (up to 60 s): the connection goes back
+    # to the pool instead of sitting idle in a transaction (review).
+    db.rollback()
+    result = group_suggester.suggest(names, ids, groups, room)
     if result is None:
         raise HTTPException(status_code=503, detail=SUGGEST_UNAVAILABLE_DETAIL)
     return {"groups": result}

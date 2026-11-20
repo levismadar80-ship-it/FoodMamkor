@@ -24,7 +24,9 @@ import logging
 from typing import Any
 
 from app.config import AI_MENU_MODEL
-from app.services.menu_reader import _get_client  # REUSES: one Anthropic client, http_client lock
+from app.services.menu_reader import (
+    _get_client,
+)  # REUSES: one Anthropic client, http_client lock
 from app.services.product_import import _group_name
 
 logger = logging.getLogger(__name__)
@@ -77,7 +79,9 @@ def _ask(names: list[str], existing: list[str], room: int) -> dict[str, Any] | N
     if client is None:
         return None
     prompt = _PROMPT.format(
-        products="\n".join(f"{i}. {n[:_NAME_MAX]}" for i, n in enumerate(names, start=1)),
+        products="\n".join(
+            f"{i}. {n[:_NAME_MAX]}" for i, n in enumerate(names, start=1)
+        ),
         existing="\n".join(existing) or "(none)",
         room=room,
     )
@@ -94,7 +98,9 @@ def _ask(names: list[str], existing: list[str], room: int) -> dict[str, Any] | N
     if response.stop_reason != "end_turn":
         logger.warning("[groups] suggest stopped: %s", response.stop_reason)
         return None
-    text = next((b.text for b in response.content if getattr(b, "type", "") == "text"), "")
+    text = next(
+        (b.text for b in response.content if getattr(b, "type", "") == "text"), ""
+    )
     try:
         answer = json.loads(text)
     except ValueError:
@@ -109,7 +115,12 @@ def _items(raw: object, size: int, placed: set[int]) -> list[int]:
         return []
     out: list[int] = []
     for n in raw:
-        if isinstance(n, int) and not isinstance(n, bool) and 1 <= n <= size and n not in placed:
+        if (
+            isinstance(n, int)
+            and not isinstance(n, bool)
+            and 1 <= n <= size
+            and n not in placed
+        ):
             placed.add(n)
             out.append(n)
     return out

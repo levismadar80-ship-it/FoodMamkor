@@ -187,6 +187,9 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
     saveOrder(next);
   };
 
+  /** Same key the backend matches group names by (strip + casefold). @param {string} n */
+  const nameKey = (n) => n.trim().toLocaleLowerCase();
+
   /** @param {{ id?: string, name: string }[]} next */
   const saveGroups = async (next) => {
     try {
@@ -206,6 +209,7 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
       const r = await api.put(`${basePath}/products/${productId}/group`, {
         group_id: groupId || null,
       });
+      setUndo(null);  // review: an undo after a manual change would clobber it
       const patch = (/** @type {Product} */ p) => (p.id === productId ? { ...p, group_id: r.data.group_id } : p);
       reorderLocal(regroup(orderRef.current.map(patch), groups));
       confirmedRef.current = regroup(confirmedRef.current.map(patch), groups);
@@ -220,6 +224,7 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
   const deleteGroup = async (id) => {
     const saved = await saveGroups(groups.filter((g) => g.id !== id));
     if (!saved) return;
+    setUndo(null);
     const clear = (/** @type {Product} */ p) => (p.group_id === id ? { ...p, group_id: null } : p);
     reorderLocal(orderRef.current.map(clear));
     confirmedRef.current = confirmedRef.current.map(clear);
@@ -237,6 +242,9 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
       else next.add(id);
       return next;
     });
+
+  // Review: a marked product that was deleted meanwhile is not counted or sent.
+  const marked = new Set(order.filter((p) => selected.has(p.id)).map((p) => p.id));
 
   /** @param {Record<string, string|null>} groupOf  product id → its new group */
   const applyGroups = (groupOf) => {
@@ -260,9 +268,11 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
 
   /** @param {string} groupId  "" = no group */
   const moveSelected = async (groupId) => {
-    const ids = order.filter((p) => selected.has(p.id)).map((p) => p.id);
+    const ids = [...marked];
+    if (!ids.length) return;
     try {
       await writeMoves([[groupId || null, ids]]);
+      setUndo(null);
       setSelected(new Set());
       const name = groups.find((g) => g.id === groupId)?.name;
       showToast.success(name && ids.length > 1 ? t("moved_toast", { count: ids.length, group: name }) : t("saved"));
@@ -282,39 +292,56 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
     saveOrder(next);
   };
 
-  // MEH-3478: the last saved suggestion, for «ביטול».
-  const [undo, setUndo] = useState(/** @type {{ ids: string[], groups: Group[] } | null} */ (null));
+  // MEH-3478: the last saved suggestion, for «ביטול»: the products it moved
+  // (all had no group before) and the groups it created. Any other change in
+  // the organizer clears it, so «ביטול» never undoes the owner's own work.
+  const [undo, setUndo] = useState(/** @type {{ ids: string[], created: string[] } | null} */ (null));
 
   /** @param {{ id: string|null, name: string, product_ids: string[] }[]} list */
   const applySuggestion = async (list) => {
-    const before = groups;
-    const known = new Set(groups.map((g) => g.name.trim().toLowerCase()));
-    const added = list.filter((g) => !g.id && !known.has(g.name.trim().toLowerCase()));
-    const saved = added.length ? await saveGroups([...groups, ...added.map((g) => ({ name: g.name.trim() }))]) : groups;
+    // Review: build on the server's list, not the one loaded with the page —
+    // a PUT of a stale list would delete a group added elsewhere meanwhile.
+    let current = groups;
+    try {
+      const r = await api.get(`${basePath}/product-groups`);
+      if (Array.isArray(r.data)) current = r.data;
+    } catch {
+      // keep the loaded list; the PUT below still answers for it
+    }
+    const known = new Set(current.map((g) => nameKey(g.name)));
+    const added = list.filter((g) => !g.id && !known.has(nameKey(g.name)));
+    const saved = added.length ? await saveGroups([...current, ...added.map((g) => ({ name: g.name.trim() }))]) : current;
     if (!saved) return false;
+    const created = saved.filter((g) => !current.some((c) => c.id === g.id)).map((g) => g.id);
     const idOf = (/** @type {{ id: string|null, name: string }} */ g) =>
-      g.id || saved.find((x) => x.name.trim().toLowerCase() === g.name.trim().toLowerCase())?.id || null;
+      g.id || saved.find((x) => nameKey(x.name) === nameKey(g.name))?.id || null;
     /** @type {[string|null, string[]][]} */
     const moves = list.map((g) => [idOf(g), g.product_ids]);
     try {
       await writeMoves(moves, saved);
-      setUndo({ ids: list.flatMap((g) => g.product_ids), groups: before });
+      setUndo({ ids: list.flatMap((g) => g.product_ids), created });
       return true;
     } catch (err) {
       fail(err);
+      // The moves did not land: take back the empty groups this step created.
+      if (created.length) await saveGroups(saved.filter((g) => !created.includes(g.id)));
       return false;
     }
   };
 
   const undoSuggestion = async () => {
     if (!undo) return;
+    const live = new Set(productsRef.current.map((p) => p.id));
+    const ids = undo.ids.filter((id) => live.has(id));
     try {
-      await writeMoves([[null, undo.ids]]);
-      await saveGroups(undo.groups);
-      setUndo(null);
+      if (ids.length) await writeMoves([[null, ids]]);
     } catch (err) {
       fail(err);
+      return;
     }
+    const rest = groups.filter((g) => !undo.created.includes(g.id));
+    if (rest.length !== groups.length && !(await saveGroups(rest))) return;
+    setUndo(null);
   };
 
   if (products.length < 2) return null;
@@ -343,7 +370,7 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
       className="mb-4 max-w-2xl border border-border rounded-md p-4 space-y-6 bg-surface-card"
       data-testid="product-organizer"
     >
-      <GroupsEditor groups={groups} onSave={saveGroups} onDelete={deleteGroup} t={t} />
+      <GroupsEditor groups={groups} onSave={(next) => { setUndo(null); return saveGroups(next); }} onDelete={deleteGroup} t={t} />
 
       <ProductGroupSuggest
         basePath={basePath}
@@ -367,9 +394,9 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
         <p className="text-xs text-fg-muted mt-1 mb-3">
           {t(groups.length ? "order_where_sections" : "order_where")}
         </p>
-        {selected.size > 0 && (
+        {marked.size > 0 && (
           <SelectionBar
-            count={selected.size}
+            count={marked.size}
             groups={groups}
             onMove={moveSelected}
             onEdge={moveSelectedToEdge}
@@ -443,7 +470,7 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, chec
       dragListener={false}
       dragControls={controls}
       onDragEnd={onDrop}
-      className="flex items-center gap-2 py-2 bg-surface-card"
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 bg-surface-card"
       data-testid="product-order-row"
       data-name={product.name}
     >
@@ -461,15 +488,17 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, chec
         type="button"
         aria-label={t("drag_aria", { name: product.name })}
         onPointerDown={(e) => controls.start(e)}
-        className={`${ICON_BTN} cursor-grab touch-none`}
+        className={`${ICON_BTN} cursor-grab touch-none hidden sm:inline-flex`}
       >
         <DotsSixVertical size={20} aria-hidden="true" />
       </button>
       <Thumb url={product.image_url} />
-      {/* Name above, group below: at 375 a one-line row leaves the name no
-          room once the select and two 44px arrows are in it. */}
-      <span className="flex-1 min-w-0">
-        <span className="block text-sm text-text truncate">{product.name}</span>
+      {/* At 375 a single line leaves the name no room once the checkbox, the
+          thumbnail, the select and two 44px arrows are in it: the row wraps,
+          name on the first line, group + arrows on the second. Drag needs a
+          pointer and is hidden below sm; the arrows do the same job there. */}
+      <span className="flex-1 min-w-0 text-sm text-text line-clamp-2">{product.name}</span>
+      <span className="flex items-center gap-2 basis-full min-w-0 sm:basis-auto">
         {groups.length > 0 && (
           <>
             <label htmlFor={selectId} className="sr-only">
@@ -481,7 +510,7 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, chec
               value={product.group_id || ""}
               onChange={(e) => onAssign(product.id, e.target.value)}
               title={groups.find((g) => g.id === product.group_id)?.name || t("product_group_none")}
-              className="mt-1 w-full max-w-[16rem] truncate min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
+              className="flex-1 min-w-0 sm:flex-none sm:w-48 truncate min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
             >
               <option value="">{t("product_group_none")}</option>
               {groups.map((g) => (
@@ -492,27 +521,29 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, chec
             </select>
           </>
         )}
+        <span className="flex items-center ms-auto">
+          <button
+            type="button"
+            data-testid="product-move-up"
+            aria-label={t("move_up_aria", { name: product.name })}
+            disabled={index === 0}
+            onClick={() => onMove(index, index - 1)}
+            className={ICON_BTN}
+          >
+            <ArrowUp size={18} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            data-testid="product-move-down"
+            aria-label={t("move_down_aria", { name: product.name })}
+            disabled={index === last}
+            onClick={() => onMove(index, index + 1)}
+            className={ICON_BTN}
+          >
+            <ArrowDown size={18} aria-hidden="true" />
+          </button>
+        </span>
       </span>
-      <button
-        type="button"
-        data-testid="product-move-up"
-        aria-label={t("move_up_aria", { name: product.name })}
-        disabled={index === 0}
-        onClick={() => onMove(index, index - 1)}
-        className={ICON_BTN}
-      >
-        <ArrowUp size={18} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        data-testid="product-move-down"
-        aria-label={t("move_down_aria", { name: product.name })}
-        disabled={index === last}
-        onClick={() => onMove(index, index + 1)}
-        className={ICON_BTN}
-      >
-        <ArrowDown size={18} aria-hidden="true" />
-      </button>
     </Reorder.Item>
   );
 }

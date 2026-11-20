@@ -113,7 +113,9 @@ def admin_move_products_between_groups(
 
 # MEH-3478: an AI suggestion for the products in no group. Saves nothing; one
 # model call per press, so it is limited tighter than the writes.
-@router.post("/{producer_id}/product-groups/suggest", response_model=GroupSuggestionsOut)
+@router.post(
+    "/{producer_id}/product-groups/suggest", response_model=GroupSuggestionsOut
+)
 @limiter.limit("30/hour")
 def admin_suggest_product_groups(
     request: Request,  # required by slowapi

@@ -85,6 +85,26 @@ describe("selection bar (MEH-3477)", () => {
     expect(await ready(1)).toHaveLength(1); // everything is in «לחמים» now
   });
 
+  it("a marked product that leaves the list is not counted or sent", async () => {
+    api.get.mockResolvedValue({ data: GROUPS });
+    const props = { onProductsChange: vi.fn() };
+    const { rerender } = render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProductOrganizer products={PRODUCTS} {...props} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("product-organizer-open"));
+    await ready(2);
+    mark("עוגת גבינה");
+    mark("עוגת שמרים");
+    rerender(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProductOrganizer products={PRODUCTS.filter((p) => p.id !== "e")} {...props} />
+      </NextIntlClientProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId("product-selection-bar")).toHaveTextContent("מוצר אחד נבחר"));
+  });
+
   it("with 0 groups there is no «העברה לקבוצה», but top / end still work", async () => {
     mount([]);
     await waitFor(() => expect(api.get).toHaveBeenCalled());
@@ -173,6 +193,46 @@ describe("«הצעת קבוצות» (MEH-3478)", () => {
     );
     await waitFor(() => expect(screen.queryByText(O.suggest_saved)).toBeNull());
     expect(onChange.mock.calls.at(-1)[0].find((p) => p.id === "d").group_id).toBeNull();
+  });
+
+  // Review findings (rule 5a): «ביטול» must not undo the owner's own work, and
+  // a product deleted meanwhile must not break it.
+  async function applied(onChangeHolder) {
+    api.post.mockResolvedValueOnce({ data: SUGGESTION });
+    fireEvent.click(screen.getByRole("button", { name: O.suggest_cta }));
+    const preview = await screen.findByTestId("group-suggestion");
+    api.put
+      .mockResolvedValueOnce({ data: [...GROUPS, { id: "g2", name: "עוגות" }] })
+      .mockResolvedValueOnce({ data: [] });
+    fireEvent.click(within(preview).getByRole("button", { name: O.suggest_save }));
+    expect(await screen.findByText(O.suggest_saved)).toBeInTheDocument();
+    return onChangeHolder;
+  }
+
+  it("a manual group change after the suggestion takes «ביטול» away", async () => {
+    mount();
+    await ready(2);
+    await applied();
+    api.put.mockResolvedValueOnce({ data: { id: "a", group_id: null } });
+    fireEvent.change(screen.getAllByTestId("product-group-select")[0], { target: { value: "" } });
+    await waitFor(() => expect(screen.queryByRole("button", { name: O.suggest_undo })).toBeNull());
+  });
+
+  it("«ביטול» deletes only the groups the suggestion created, and skips a product deleted since", async () => {
+    mount();
+    await ready(2);
+    // the server already has a group the page never loaded
+    api.get.mockResolvedValueOnce({ data: [...GROUPS, { id: "gx", name: "מארזים" }] });
+    await applied();
+    expect(api.put).toHaveBeenNthCalledWith(1, "/producers/me/product-groups", {
+      groups: [{ id: "g1", name: "לחמים" }, { id: "gx", name: "מארזים" }, { name: "עוגות" }],
+    });
+    api.put.mockClear();
+    api.put.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: GROUPS });
+    fireEvent.click(screen.getByRole("button", { name: O.suggest_undo }));
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(2));
+    const groupsWrite = api.put.mock.calls.find(([u]) => u === "/producers/me/product-groups")[1];
+    expect(groupsWrite.groups.map((g) => g.id)).not.toContain("g2");
   });
 
   it("«ביטול» on the preview closes it and saves nothing", async () => {

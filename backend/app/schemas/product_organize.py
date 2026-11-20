@@ -89,7 +89,9 @@ class GroupMovesIn(BaseModel):
     the owner marked, and the approval (and undo) of a group suggestion."""
 
     # One move per group plus one «no group».
-    moves: list[GroupMoveIn] = Field(..., min_length=1, max_length=MAX_PRODUCT_GROUPS + 1)
+    moves: list[GroupMoveIn] = Field(
+        ..., min_length=1, max_length=MAX_PRODUCT_GROUPS + 1
+    )
 
     @field_validator("moves")
     @classmethod

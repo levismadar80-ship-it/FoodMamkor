@@ -49,7 +49,9 @@ class MenuReadOut(BaseModel):
 # ingredients, allergens, diet flags, the legacy price text) is refused, not
 # ignored: a photo would skip the MEH-3247 ownership check and ingredients
 # the batch text check, and a silent drop would hide that from the caller.
-MENU_FIELDS = frozenset({"name", "description", "price_min", "price_max", "price_unit", "section"})
+MENU_FIELDS = frozenset(
+    {"name", "description", "price_min", "price_max", "price_unit", "section"}
+)
 
 
 class MenuProductIn(ProductCreate):

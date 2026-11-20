@@ -217,7 +217,9 @@ def publish_my_menu(
     enforce_cap(existing + len(kept) - 1, "products")
     group_ids = _section_groups(producer, kept)
     db.add_all(
-        Product(producer_id=producer.id, group_id=gid, **p.model_dump(exclude={"section"}))
+        Product(
+            producer_id=producer.id, group_id=gid, **p.model_dump(exclude={"section"})
+        )
         for p, gid in zip(kept, group_ids)
     )
     db.commit()

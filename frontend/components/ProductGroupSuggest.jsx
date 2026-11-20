@@ -152,14 +152,15 @@ export default function ProductGroupSuggest({ basePath, products, onApply, t }) 
 function SuggestedRow({ product, groups, value, onChange, t }) {
   const id = `suggest-group-${product.id}`;
   return (
-    <li className="flex items-center gap-2 py-1.5">
-      <span className="flex-1 min-w-0 text-sm text-text truncate">{product.name}</span>
+    // At 375 the name gets its own line; a select beside it left «עוגת …».
+    <li className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5">
+      <span className="basis-full sm:basis-auto sm:flex-1 min-w-0 text-sm text-text line-clamp-2">{product.name}</span>
       <label htmlFor={id} className="sr-only">{t("product_group_label", { name: product.name })}</label>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-36 shrink-0 min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring truncate"
+        className="w-full sm:w-36 shrink-0 min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring truncate"
       >
         <option value="">{t("product_group_none")}</option>
         {groups.map((g) => (
