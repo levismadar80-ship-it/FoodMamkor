@@ -223,8 +223,13 @@ def test_classifier_reads_the_string_target_form():
 
 # --- the guard -----------------------------------------------------------
 
+def _test_modules():
+    # MEH-3540: split modules keep their tests in `_test_<stem>__pNN.py` parts.
+    return sorted(p for p in TESTS.rglob("*.py") if re.match(r"_?test_.+\.py$", p.name))
+
+
 def test_no_test_patches_a_name_where_no_code_reads_it():
-    files = sorted(TESTS.rglob("test_*.py"))
+    files = _test_modules()
     seen = 0
     problems = []
     for path in files:
@@ -394,7 +399,7 @@ def test_half_patch_classifier_on_the_real_split():
 
 
 def test_no_test_stubs_only_one_copy_of_a_shared_name():
-    files = sorted(TESTS.rglob("test_*.py"))
+    files = _test_modules()
     calls = 0
     problems = []
     for path in files:

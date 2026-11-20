@@ -16,7 +16,7 @@ import { pickCity } from "./_pick-city";
  *           DEFAULT CI E2E target (localhost:3000, no storageState fixtures),
  *           unlike flows/25 which needs DEMO_* provisioning.
  * Related:  RegisterProducerClient.jsx (`submitted` gate guard + the
- *           STEP.CONFIRM success screen), __tests__/RegisterProducerClient.test.jsx
+ *           STEP.CONFIRM success screen), __tests__/RegisterProducerClient-01/-02.test.jsx
  *           (same invariant at the vitest layer, with mocks)
  * History:  MEH-1814 (creation)
  *
@@ -198,7 +198,7 @@ test.describe("MEH-1814 — post-submit success state owns the render", () => {
  *
  * This assertion CANNOT live in vitest. jsdom does no layout, so every
  * geometric claim there passes against the broken code too — the exact trap the
- * MEH-2148 harness fell into. __tests__/RegisterProducerClient.test.jsx carries
+ * MEH-2148 harness fell into. __tests__/RegisterProducerClient-01/-02.test.jsx carries
  * the complementary half (that the call is made, on BOTH confirm branches);
  * this file carries the only half that can observe a viewport.
  *
