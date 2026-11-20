@@ -17,6 +17,7 @@
 * `backend/app/services/producer_risk.py` — דירוג סיכון לפני אישור.
 * `backend/app/routers/admin_whatsapp.py` + `frontend/components/admin/WhatsappBlockedSection.jsx` — במסך `frontend/app/[locale]/admin/whatsapp-failures/`: הודעות שלא נמסרו, ומחוץ ל-production גם הודעות שהשומר חסם, עם התוכן (MEH-3402; קוד כניסה מוסתר).
 * `frontend/components/admin/AdminProductImageButton.jsx` + `frontend/components/admin/AdminProductImagesPanel.jsx` — תמונה למוצר של כל בית עסק מעמוד העריכה (MEH-3456), דרך `POST /upload/product-image/{product_id}` ב-`backend/app/routers/upload.py`.
+* `frontend/components/admin/AdminDeliveryPaymentPanel.jsx` — משלוח (יום ומינימום לכל עיר, יום אחד לכמה ערים), חלון הזמנות ותשלום מעמוד העריכה (MEH-3475): העורכים של בעלת העסק, נשמרים ל-`PUT /admin/producers/{id}`. היום המשותף: `frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx`.
 * `frontend/components/admin/BlockUserConfirm.jsx` — אישור לפני חסימת משתמשת (MEH-3375): אם החסימה תסתיר בית עסק, החלון מציג את שמו וכמה הזמנות פתוחות של לקוחות יבוטלו. קריאה: `GET /admin/users/{id}/block-impact` ב-`backend/app/routers/admin_extra.py`, הספירה ב-`backend/app/services/booking_cancellations.py` (אותם מסננים כמו הביטול).
 
 **Flags.** אין. ‏`SUPER_ADMIN_EMAIL` הוא הגדרת סביבה, לא flag.
@@ -26,6 +27,7 @@
 * `tests/test_meh3306_admin_audit_log.py` — **השומר** של יומן הפעולות; `frontend/__tests__/AdminAuditLogPage.test.jsx` — המסך (0 / 1 / עמוד מלא + דפדוף).
 * `tests/test_meh3375_block_impact.py` — **השומר** של אישור החסימה: הספירה שווה למה שהחסימה מבטלת; `frontend/__tests__/BlockUserConfirm.test.jsx` — החלון (בלי עסק / 0 / 1 / רבים / קריאה שנכשלה).
 * `tests/test_admin_product_image.py` — **השומר** של תמונת המוצר מהאדמין (403 לכל מי שאינה אדמין, אותן בדיקות קובץ, יומן); `frontend/__tests__/AdminProductImage.test.jsx` — הכפתור (0 / 1 / רבים × עם תמונה / בלי).
+* `tests/test_meh3475_admin_delivery_payment.py` — **השומר** של משלוח ותשלום מהאדמין (שורות, 422 על יום לא חוקי, שמירת ימים ברשימת ערים, 403/401); `frontend/__tests__/AdminDeliveryPaymentPanel.test.jsx` — המסך (עיר אחת / רבות × בלי סימון / עם).
 * `tests/test_meh3402_blocked_capture.py` — **השומר** של לכידת ההודעות שנחסמו.
 * `tests/test_expansion_admin_authz.py` · `tests/test_meh2900_admin_role_endpoint.py` · `tests/test_meh2890_super_admin_env.py`
 * `frontend/e2e/flows/30-admin-panel-tabs.spec.ts` · `frontend/e2e/flows/33-admin-producers-tab.spec.ts`

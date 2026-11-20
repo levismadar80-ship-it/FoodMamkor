@@ -150,6 +150,19 @@ class DeliveryAreaCreate(BaseModel):
             raise ValueError("עלות משלוח גבוהה מדי")
         return v
 
+    # MEH-3475: the minimum became typeable (owner + admin). Same INTEGER
+    # column reasoning as the fee above: unbounded, a huge value is a 500.
+    @field_validator("min_order")
+    @classmethod
+    def _validate_area_min_order(cls, v: int | None) -> int | None:
+        if v is None:
+            return None
+        if v < 0:
+            raise ValueError("מינימום הזמנה לא יכול להיות שלילי")
+        if v > MAX_DELIVERY_MONEY:
+            raise ValueError("מינימום הזמנה גבוה מדי")
+        return v
+
 
 class DeliveryAreaOut(BaseModel):
     id: UUID

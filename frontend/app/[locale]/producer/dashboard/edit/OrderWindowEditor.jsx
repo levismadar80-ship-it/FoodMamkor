@@ -32,10 +32,13 @@ import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
 
+// MEH-3475: `saveUrl` — the admin edit page mounts this against
+// PUT /admin/producers/{id}.
 export default function OrderWindowEditor({
   profile,
   onSave,
   reportDirty = () => {},
+  saveUrl = "/producers/me",
 }) {
   const t = useTranslations("dashboard.producer.order_window");
   const tDays = useTranslations("opening_hours.weekdays");
@@ -146,7 +149,7 @@ export default function OrderWindowEditor({
     setErrorMsg(null);
     try {
       const payload = { order_window: current };
-      await api.put("/producers/me", payload);
+      await api.put(saveUrl, payload);
       onSave(payload);
       // MEH-1270 pattern: keep the ✓ until the next edit.
       setSaved(true);

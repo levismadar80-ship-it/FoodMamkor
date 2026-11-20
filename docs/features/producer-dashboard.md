@@ -11,6 +11,7 @@
 **קבצים מרכזיים**
 * `frontend/lib/business-features.js` — הרישום שמכתיב מה קיים ואיפה זה יושב (`dashboard: { home, href }`).
 * `frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx` — מיקומים ואזורי משלוח.
+* `frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx` — משלוחים: ערים, יום ומינימום הזמנה לכל עיר (MEH-3475), ו-`frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx` ליום אחד לכמה ערים. אותו כרטיס מוצג גם בעמוד העריכה של האדמין.
 * `frontend/app/[locale]/producer/dashboard/insights/page.js` — תובנות.
 * `frontend/components/producer/WeeklySummaryToggle.jsx` — «סיכום שבועי במייל» בתחתית תובנות (MEH-3212): מתג שמחזיר את המייל אחרי הסרה. מוסתר כשהמייל כבוי לכל האתר; הטסט `frontend/__tests__/WeeklySummaryToggle.test.jsx`.
 * `backend/app/routers/producer_me.py` — כל המספרים שהלוח מציג.
