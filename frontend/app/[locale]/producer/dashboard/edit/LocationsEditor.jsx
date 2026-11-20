@@ -21,7 +21,9 @@
  *           closes the geocoding gap MEH-1421 deferred);
  *           MEH-2144 (progressive disclosure on the new-location form — kind +
  *           place + confirmation map up front, the four detail fields behind
- *           "פרטים נוספים", GBP pattern).
+ *           "פרטים נוספים", GBP pattern);
+ *           MEH-3512 (pickup days + own order cutoff for a pickup point or a
+ *           market stand — PickupScheduleField, shown before the disclosure).
  */
 "use client";
 
@@ -30,6 +32,8 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 // MEH-2805: opening hours are picked from day rows, not typed.
 import LocationHoursField from "./LocationHoursField";
+// MEH-3512: pickup days + own order cutoff, as fields.
+import PickupScheduleField from "./PickupScheduleField";
 import {
   CaretDown,
   CheckCircle,
@@ -92,6 +96,10 @@ const EMPTY_FORM = {
   phone: "",
   location_precision: "exact",
   is_primary: false,
+  // MEH-3512
+  pickup_days: [],
+  order_cutoff_day: "",
+  order_cutoff_time: "",
 };
 
 // Form strings → the typed payload LocationInputSchema validates. Empty text →
@@ -111,6 +119,15 @@ function buildPayload(form) {
     phone: str(form.phone),
     location_precision: form.location_precision,
     is_primary: !!form.is_primary,
+    // MEH-3512: a branch has no pickup schedule — sent empty so switching a
+    // point to «סניף» clears what it had. Day and time travel together.
+    ...(form.kind === "branch"
+      ? { pickup_days: [], order_cutoff_day: null, order_cutoff_time: null }
+      : {
+          pickup_days: form.pickup_days || [],
+          order_cutoff_day: str(form.order_cutoff_day),
+          order_cutoff_time: str(form.order_cutoff_time),
+        }),
   };
 }
 
@@ -130,6 +147,9 @@ function toEditForm(loc) {
     phone: loc.phone || "",
     location_precision: loc.location_precision || "exact",
     is_primary: !!loc.is_primary,
+    pickup_days: loc.pickup_days || [],
+    order_cutoff_day: loc.order_cutoff_day || "",
+    order_cutoff_time: loc.order_cutoff_time || "",
   };
 }
 
@@ -861,6 +881,17 @@ function LocationForm({
         lng={form.lng}
         name={form.label || form.address || form.city}
       />
+
+      {/* MEH-3512: a pickup point / market stand states its days up front —
+          they are what a customer plans around, so not behind the disclosure. */}
+      {form.kind !== "branch" && (
+        <PickupScheduleField
+          days={form.pickup_days || []}
+          cutoffDay={form.order_cutoff_day || ""}
+          cutoffTime={form.order_cutoff_time || ""}
+          onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+        />
+      )}
 
       {/* MEH-2144 — "פרטים נוספים": תווית · טלפון · שעות · דיוק.
           Google Business Profile asks WHERE first and details after; eight

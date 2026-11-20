@@ -888,11 +888,11 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
       box(first.getByTestId("card-body")),
     ]);
     expect(p.y + p.height, "panel bottom must sit above the strip").toBeLessThanOrEqual(strip.y + 1);
-    // MEH-3321: the strip moved off the photo into the card body, and the
-    // panel now clears the whole body (name, rating, strip) — so it sits just
-    // above the body, over the photo, not just above the strip.
+    // MEH-3508: the strip is back on the photo and is again the panel's
+    // boundary (MEH-1592) — the panel sits just above the strip, over the
+    // photo, so it also clears the whole card body below it.
     expect(p.y + p.height, "panel bottom must sit above the card body").toBeLessThanOrEqual(body.y + 1);
-    expect(body.y - (p.y + p.height), "panel must stay adjacent to its card body").toBeLessThanOrEqual(40);
+    expect(strip.y - (p.y + p.height), "panel must stay adjacent to its badge strip").toBeLessThanOrEqual(40);
     expect(overlaps(p, strip), "panel must not cover the badge strip").toBe(false);
     expect(overlaps(p, name), "panel must not cover the business name").toBe(false);
     expect(overlaps(p, rating), "panel must not cover the rating").toBe(false);

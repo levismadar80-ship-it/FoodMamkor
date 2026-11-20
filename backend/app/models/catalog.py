@@ -275,6 +275,12 @@ class ProducerLocation(Base):
     lng = Column(Float, nullable=True)
     # Same unbounded free-text type as Producer.opening_hours (MEH-102).
     opening_hours = Column(String, nullable=True)
+    # MEH-3512 (a3d5f7b9c1e2): the pickup weekdays as a field, not inside the
+    # label. NULL/[] = «בתיאום» (renders as before). Cutoff NULL = the
+    # business-wide order_window applies.
+    pickup_days: Column[list[str]] = Column(ARRAY(String(10)), nullable=True)
+    order_cutoff_day = Column(String(10), nullable=True)
+    order_cutoff_time = Column(String(5), nullable=True)
     phone = Column(String(20), nullable=True)
     is_primary = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
