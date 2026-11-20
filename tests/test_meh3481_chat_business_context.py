@@ -66,7 +66,7 @@ def test_a_city_in_the_area_and_one_outside_it(db):
     p = _business(db)
     yes = ctx.facts(p, "אתם מגיעים לקריית ביאליק?")
     assert yes["asked_city"] == "קריית ביאליק" and yes["delivers_to_asked_city"] is True
-    assert yes["delivery"]["areas"][0]["day"] == "ראשון"
+    assert yes["delivery"]["areas"][0]["days"] == ["ראשון"]
     no = ctx.facts(p, "יש משלוח לאילת?")
     assert no["asked_city"] == "אילת" and no["delivers_to_asked_city"] is False
 
@@ -133,6 +133,9 @@ def test_the_keys_are_the_whitelist(db):
         "payment",
         "whole_kitchen",
         "products",
+        "rating",  # MEH-3510: the page's average and count
+        "reviews",  # MEH-3510: review text the page shows, no names
+        "activities",  # MEH-3510: the public events / workshops / group buys lists
         "asked_city",
         "delivers_to_asked_city",
     }
