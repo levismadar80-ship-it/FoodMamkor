@@ -433,7 +433,7 @@ body:has([data-meets-footer]) footer[data-site-footer] {
    documented exception as the map controls in .claude/rules/rtl.md.
 
    Upstream: Leaflet #7201 (open since 2020, present in 1.9.4). Guarded by
-   frontend/e2e/qa-meh1682-tooltip-rtl.mjs, which measures the rendered
+   frontend/e2e/_qa-archive/qa-meh1682-tooltip-rtl.mjs, which measures the rendered
    geometry rather than trusting this comment. */
 .leaflet-tooltip {
   left: 0; /* rtl-ok: positioning origin, see the measured table above */

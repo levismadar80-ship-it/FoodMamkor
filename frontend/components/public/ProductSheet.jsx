@@ -637,7 +637,7 @@ export default function ProductSheet({
                   }
                 : {})}
               // The WhatsApp testid is load-bearing outside this ticket's scope
-              // (frontend/e2e/qa-meh1901-sheet.mjs:87 queries it), so a WA
+              // (frontend/e2e/_qa-archive/qa-meh1901-sheet.mjs:87 queries it), so a WA
               // primary keeps it byte-for-byte; other channels get the neutral
               // id. `data-method` is the stable discriminator either way.
               data-testid={waIsPrimary ? "product-sheet-wa-cta" : "product-sheet-cta"}
