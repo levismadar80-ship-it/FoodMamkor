@@ -14,13 +14,19 @@
 import { useEffect } from "react";
 
 export const BUSINESS_CHAT_EVENT = "mehamakor:business-chat";
+// The widget is a lazy chunk; a tap before it has mounted would be lost (an
+// event has no memory). The last request is kept this long and replayed when
+// the widget subscribes.
+const REPLAY_MS = 10_000;
+/** @type {{ business: { id: string, name: string }, at: number } | null} */
+let pending = null;
 
 /** @param {{ id: string, name: string }} business */
 export function openBusinessChat(business) {
   if (typeof window === "undefined" || !business?.id) return;
-  window.dispatchEvent(
-    new CustomEvent(BUSINESS_CHAT_EVENT, { detail: { id: business.id, name: business.name || "" } }),
-  );
+  const detail = { id: business.id, name: business.name || "" };
+  pending = { business: detail, at: Date.now() };
+  window.dispatchEvent(new CustomEvent(BUSINESS_CHAT_EVENT, { detail }));
 }
 
 /**
@@ -33,9 +39,15 @@ export function useBusinessChatRequest(onOpen) {
     /** @param {Event} e */
     const handler = (e) => {
       const detail = /** @type {CustomEvent} */ (e).detail;
+      pending = null;
       if (detail?.id) onOpen(detail);
     };
     window.addEventListener(BUSINESS_CHAT_EVENT, handler);
+    if (pending && Date.now() - pending.at < REPLAY_MS) {
+      const { business } = pending;
+      pending = null;
+      onOpen(business);
+    }
     return () => window.removeEventListener(BUSINESS_CHAT_EVENT, handler);
   }, [onOpen]);
 }

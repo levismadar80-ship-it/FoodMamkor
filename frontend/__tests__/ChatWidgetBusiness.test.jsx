@@ -20,9 +20,10 @@ vi.mock("@/lib/api", () => ({ default: { post } }));
 
 import ChatWidget from "@/components/ChatWidget";
 import BusinessChatPrompt from "@/app/[locale]/producer/[id]/components/BusinessChatPrompt";
+import { PreviewModeProvider } from "@/lib/preview-mode";
 
 const B = he.chat.business;
-const PRODUCER = { id: "11111111-2222-3333-4444-555555555555", name: "מאפיית הדגמה" };
+const PRODUCER = { id: "11111111-2222-3333-4444-555555555555", name: "מאפיית הדגמה", status: "approved" };
 
 function mockMatchMedia(matches) {
   window.matchMedia = vi.fn().mockImplementation((query) => ({
@@ -82,12 +83,26 @@ describe.each([["desktop", true], ["phone", false]])("business page chat (%s)", 
     });
   });
 
-  it("closing the panel leaves no launcher behind", () => {
+  it("closing the panel leaves no launcher behind and returns focus to the page's button", () => {
     renderPage();
-    fireEvent.click(screen.getByTestId("business-chat-open"));
+    const trigger = screen.getByTestId("business-chat-open");
+    trigger.focus();
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog", { name: B.panel_title.replace("{name}", PRODUCER.name) })).toBeInTheDocument();
+    screen.getByLabelText(he.chat.input_label).focus(); // focus is inside the panel now
+    expect(document.activeElement).not.toBe(trigger);
     fireEvent.click(screen.getByRole("button", { name: he.chat.panel_close_label }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByTestId("chat-launcher")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("a tap before the lazy widget has mounted still opens it", () => {
+    const withIntl = (ui) => <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>{ui}</NextIntlClientProvider>;
+    const { rerender } = render(withIntl(<BusinessChatPrompt producer={PRODUCER} />));
+    fireEvent.click(screen.getByTestId("business-chat-open"));
+    rerender(withIntl(<><BusinessChatPrompt producer={PRODUCER} /><ChatWidget businessOnly /></>));
+    expect(screen.getByRole("dialog")).toHaveTextContent(B.opening.replace("{name}", PRODUCER.name));
   });
 });
 
@@ -100,4 +115,18 @@ it("the site chat (not businessOnly) still sends no producer_id", async () => {
   });
   await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
   expect(post.mock.calls[0][1]).not.toHaveProperty("producer_id");
+});
+
+describe("where the page's button is not shown", () => {
+  const withIntl = (ui) => <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>{ui}</NextIntlClientProvider>;
+
+  it.each(["pending", "rejected", undefined])("a page whose status is %s (not live)", (status) => {
+    render(withIntl(<BusinessChatPrompt producer={{ ...PRODUCER, status }} />));
+    expect(screen.queryByTestId("business-chat-prompt")).not.toBeInTheDocument();
+  });
+
+  it("the owner's preview (draft link, dashboard)", () => {
+    render(withIntl(<PreviewModeProvider><BusinessChatPrompt producer={PRODUCER} /></PreviewModeProvider>));
+    expect(screen.queryByTestId("business-chat-prompt")).not.toBeInTheDocument();
+  });
 });

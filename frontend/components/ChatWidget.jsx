@@ -39,6 +39,10 @@ import { useBusinessChatRequest } from "@/lib/business-chat";
  * Panel:
  *   Mobile: full-width from bottom. Desktop: 360px bottom-right.
  *
+ * Business page (MEH-3489, `businessOnly`): no launcher. BusinessChatPrompt
+ *   opens the panel for that business (lib/business-chat.js); the question
+ *   carries producer_id, and focus returns to that button on close.
+ *
  * Coexistence: positioning reads the `--cookie-banner-h` CSS var published by
  * CookieBanner (MEH-850) — no JS event handshake.
  */
@@ -257,7 +261,12 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
   // that business (a site conversation is not carried into it).
   const tBusiness = useTranslations("chat.business");
   const businessIdRef = useRef(/** @type {string | null} */ (null));
+  // With no launcher on the page, focus goes back to the page's own button.
+  const returnFocusRef = useRef(/** @type {HTMLElement | null} */ (null));
   const openForBusiness = useCallback((next) => {
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      returnFocusRef.current = document.activeElement;
+    }
     if (businessIdRef.current !== next.id) {
       businessIdRef.current = next.id;
       const opening = { role: "assistant", content: tBusiness("opening", { name: next.name }) };
@@ -290,6 +299,13 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
       const focusTimer = setTimeout(() => inputRef.current?.focus(), 50);
       return () => clearTimeout(focusTimer);
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (open || !returnFocusRef.current) return;
+    const el = returnFocusRef.current;
+    returnFocusRef.current = null;
+    if (el.isConnected) el.focus();
   }, [open]);
 
   useEffect(() => {
@@ -439,7 +455,7 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
           className="vv-pin print:hidden flex flex-col bg-background border border-border shadow-lg overflow-hidden"
           role="dialog"
           aria-modal="false"
-          aria-label={t("panel_label")}
+          aria-label={business ? tBusiness("panel_title", { name: business.name }) : t("panel_label")}
         >
           {/* Header */}
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">

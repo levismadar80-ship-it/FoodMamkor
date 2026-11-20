@@ -25,7 +25,8 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact", "/producer/dashboard"];
 
 // MEH-1168 P3: the global chat FAB is suppressed on the public producer detail
-// page (/producer/[id]) ONLY — that page already carries a primary contact CTA
+// page (/producer/[id]) ONLY (MEH-3489: the widget is still mounted there, as
+// businessOnly, with no FAB) — that page already carries a primary contact CTA
 // + a sticky contact bar, so the FAB was a second green action that overlapped
 // the contact card at 375px. The widget stays mounted everywhere else (this is
 // a conditional render by route, NOT a global removal). usePathname comes from

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ChatCircleDots } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { openBusinessChat } from "@/lib/business-chat";
+import { usePreviewMode } from "@/lib/preview-mode";
 
 /**
  * BusinessChatPrompt — the business page's way into the site chat (MEH-3489).
@@ -19,11 +20,16 @@ import { openBusinessChat } from "@/lib/business-chat";
  * Does NOT: hold chat state or call the API — it asks the ChatWidget that
  * ChatWidgetLazy mounts here (lib/business-chat.js) to open for this business.
  *
- * @param {{ producer: { id: string, name?: string } }} props
+ * Shown only on a live, approved page: a preview (draft link, dashboard) or
+ * a not-yet-approved page mounts no chat to open, and the server adds no
+ * facts for a business that is not public (routers/chat.py).
+ *
+ * @param {{ producer: { id: string, name?: string, status?: string } }} props
  */
 export default function BusinessChatPrompt({ producer }) {
   const t = useTranslations("chat.business");
-  if (!producer?.id) return null;
+  const preview = usePreviewMode();
+  if (!producer?.id || preview || producer.status !== "approved") return null;
   return (
     <section
       data-testid="business-chat-prompt"
@@ -37,6 +43,7 @@ export default function BusinessChatPrompt({ producer }) {
         variant="outlined"
         size="sm"
         data-testid="business-chat-open"
+        aria-haspopup="dialog"
         onClick={() => openBusinessChat({ id: producer.id, name: producer.name || "" })}
       >
         {t("page_button")}

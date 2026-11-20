@@ -46,7 +46,7 @@ This page links to those and does not repeat their numbers.
 | Browser | Google Places or Nominatim | address autocomplete (`lib/places.js`) | falls back to settlement only |
 | Browser | PostHog, Clarity, Sentry | analytics and errors, after consent | nothing visible |
 | Backend | Postgres | everything; the app may log in as `app_runtime` (rows only) while the boot migration step uses the schema owner (`MIGRATION_DATABASE_URL`, MEH-3307, DEPLOYMENT.md §1.3) | 5xx |
-| Backend | Anthropic | moderation of reviews, recipes, workshops, owner replies; chat (with one named business's public page facts, MEH-3481); reading an uploaded menu into product rows (MEH-3430); suggesting a product description (MEH-3479) | **fails open**: content publishes unchecked, chat answers offline; a menu read or a description suggestion answers 503 and the owner types it by hand |
+| Backend | Anthropic | moderation of reviews, recipes, workshops, owner replies; chat (with one business's public page facts, named in the question or the page it was opened from, MEH-3481 / MEH-3489); reading an uploaded menu into product rows (MEH-3430); suggesting a product description (MEH-3479) | **fails open**: content publishes unchecked, chat answers offline; a menu read or a description suggestion answers 503 and the owner types it by hand |
 | Backend | Resend | every email, including the monthly page-freshness email (`services/page_freshness.py`) and its Sunday admin digest (`services/page_freshness_digest.py`), off until `PAGE_FRESHNESS_ENABLED`) | verification and reset emails stop |
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
