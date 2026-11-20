@@ -24,6 +24,7 @@ import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import DeliveryBulkDay from "./DeliveryBulkDay";
 
 // MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
 // importable across the Python/JS boundary, so kept in sync by hand — the
@@ -47,7 +48,9 @@ const MAX_DELIVERY_MONEY = 1_000_000;
 // ============================================================
 
 // Exported for isolation tests (EditTabDeliveryCard.test.jsx).
-export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
+// MEH-3475: `saveUrl` lets the admin edit page mount this same card against
+// PUT /admin/producers/{id} (ProducerAdminUpdate ⊇ the owner's fields).
+export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl = "/producers/me" }) {
   const t = useTranslations("dashboard.producer.delivery");
   const tMap = useTranslations("map.producer_card");
   const initial = {
@@ -83,14 +86,14 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         .filter((d) => d.city)
         .map((d) => [d.city, d.delivery_fee ?? ""]),
     ),
+    // MEH-3475: per-city minimum order, editable (was carried through only).
+    // Same string-in-form / "" = not stated rule as `fees`.
+    mins: Object.fromEntries(
+      (profile?.delivery_areas ?? [])
+        .filter((d) => d.city)
+        .map((d) => [d.city, d.min_order ?? ""]),
+    ),
   };
-  // MEH-1644: min_order isn't editable here, but the structured save must not
-  // wipe values registration captured — carry them through per city.
-  const minOrders = Object.fromEntries(
-    (profile?.delivery_areas ?? [])
-      .filter((d) => d.city && d.min_order != null)
-      .map((d) => [d.city, d.min_order]),
-  );
   const [baseline, setBaseline] = useState(initial);
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -122,6 +125,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     // input strings, and 20 !== "20" would keep the card permanently dirty.
     form.cities.some(
       (c) => String(form.fees[c] ?? "") !== String(baseline.fees[c] ?? ""),
+    ) ||
+    form.cities.some(
+      (c) => String(form.mins[c] ?? "") !== String(baseline.mins[c] ?? ""),
     );
   useEffect(() => {
     reportDirty("delivery", dirty);
@@ -176,6 +182,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       freeAbove: form.offersDelivery ? toNullableInt(form.freeAbove) : null,
       days: form.days,
       fees: form.fees,
+      mins: form.mins,
     };
     // MEH-1644: structured rows replace the flat delivery_area_cities send —
     // each city carries its optional canonical day ("" → null = בתיאום מראש)
@@ -187,11 +194,11 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     const rows = normalized.cities.map((c) => ({
       city: c,
       delivery_day: normalized.days[c] || null,
-      min_order: minOrders[c] ?? null,
+      min_order: toNullableInt(normalized.mins[c] ?? ""),
       delivery_fee: toNullableInt(normalized.fees[c] ?? ""),
     }));
     try {
-      await api.put("/producers/me", {
+      await api.put(saveUrl, {
         has_physical_location: normalized.hasPhysical,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
@@ -450,6 +457,18 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                     <p className="text-xs text-fg-muted mb-2">
                       {t("area_fee_hint")}
                     </p>
+                    <DeliveryBulkDay
+                      cities={form.cities}
+                      onApply={(picked, day) =>
+                        set({ days: { ...form.days, ...Object.fromEntries(picked.map((c) => [c, day])) } })
+                      }
+                    />
+                    <span className="block text-sm text-muted mb-0.5 mt-3">
+                      {t("area_min_label")}
+                    </span>
+                    <p className="text-xs text-fg-muted mb-2">
+                      {t("area_min_hint")}
+                    </p>
                     <ul className="space-y-1.5">
                       {form.cities.map((c) => (
                         <li
@@ -470,6 +489,20 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                               set({ fees: { ...form.fees, [c]: e.target.value } })
                             }
                             placeholder={t("area_fee_placeholder")}
+                            className="w-20"
+                          />
+                          <Input inline size="xs"
+                            type="number"
+                            inputMode="numeric"
+                            min="1"
+                            max={MAX_DELIVERY_MONEY}
+                            step="1"
+                            value={form.mins[c] ?? ""}
+                            aria-label={t("area_min_aria", { city: c })}
+                            data-testid={`delivery-min-input-${c}`}
+                            onChange={(e) =>
+                              set({ mins: { ...form.mins, [c]: e.target.value } })
+                            }
                             className="w-20"
                           />
                           <select

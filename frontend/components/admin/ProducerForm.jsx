@@ -269,6 +269,19 @@ function changedOnly(payload, form, seed) {
   if (same(form.secondary_phone_label?.trim(), String(seed.secondary_phone_label ?? "").trim())) {
     delete out.secondary_phone_label;
   }
+  // MEH-3475: the delivery panel on the same edit page writes these through
+  // the owner's DeliveryCard. They travel as ONE group (the server judges the
+  // mode invariants together), and only when the admin changed one of them
+  // here — an unrelated save must not put the page-open cities back.
+  const deliveryKeys = ["has_physical_location", "offers_delivery", "delivery_nationwide"];
+  const sameList = (a, b) => JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
+  if (
+    deliveryKeys.every((k) => !!form[k] === !!seed[k]) &&
+    sameList(form.delivery_cities, seed.delivery_cities) &&
+    sameList(form.delivery_excluded_cities, seed.delivery_excluded_cities)
+  ) {
+    for (const k of [...deliveryKeys, "delivery_area_cities", "delivery_excluded_cities"]) delete out[k];
+  }
   return out;
 }
 
@@ -311,6 +324,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     owner_photo_url: "",
     secondary_phone: "",
     secondary_phone_label: "",
+    has_physical_location: true,
+    offers_delivery: false,
+    delivery_nationwide: false,
+    delivery_cities: [],
+    delivery_excluded_cities: [],
   });
   const t = useTranslations("admin");
   // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
@@ -363,6 +381,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-3339: owner-editable in her contact card too.
         secondary_phone: initial.secondary_phone ?? "",
         secondary_phone_label: initial.secondary_phone_label ?? "",
+        // MEH-3475: the delivery panel below writes these too.
+        has_physical_location: initial.has_physical_location ?? true,
+        offers_delivery: initial.offers_delivery ?? false,
+        delivery_nationwide: initial.delivery_nationwide ?? false,
+        delivery_cities: initial.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
+        delivery_excluded_cities: initial.delivery_excluded_cities ?? [],
       };
       setForm({
         ...EMPTY,

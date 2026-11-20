@@ -1729,6 +1729,10 @@ badge; experiences still require admin approval, so Haiku is enough.
 GET    /admin/producers                        admin — filter: status, search
 POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner, license guard skipped (the approve gate still enforces it) — for the owner-claim link
 PUT    /admin/producers/{id}                   admin — MEH-3245: a changed `phone` resets phone_verified=false and burns open codes (services/phone_reverify.py)
+                                               MEH-3475: also takes `delivery_areas` rows (city · delivery_day · min_order · delivery_fee,
+                                               the owner DeliveryCard's shape, same whitelist → 422) plus order_window / payment_info.
+                                               Rows win over the flat `delivery_area_cities` list; the flat list now KEEPS each
+                                               remaining city's day / minimum / fee (it used to rewrite them blank)
 POST   /admin/producers/{id}/toggle-status     admin — MEH-2945: inactive→approved runs the approval gates (photo, licence, verified WhatsApp) → 422; approved→inactive is never gated
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin

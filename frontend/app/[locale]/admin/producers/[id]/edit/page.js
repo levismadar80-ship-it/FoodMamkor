@@ -12,6 +12,7 @@ import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminProductImagesPanel from "@/components/admin/AdminProductImagesPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import AdminDeliveryPaymentPanel from "@/components/admin/AdminDeliveryPaymentPanel";
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
 import DraftPreviewLinkPanel from "@/components/admin/DraftPreviewLinkPanel";
@@ -189,6 +190,12 @@ export default function EditProducerPage() {
           the admin approves. Any status: Sandra's page is approved and live. */}
       <AdminProductImport producerId={String(id)} onApproved={refreshProducts} />
       <ProducerForm initial={producer} producerId={id} />
+      {/* MEH-3475: delivery day + minimum per city, order window, payment —
+          the owner's own editors, saved through the admin PUT. */}
+      <AdminDeliveryPaymentPanel
+        producerId={String(id)}
+        producer={producer}
+      />
     </div>
   );
 }

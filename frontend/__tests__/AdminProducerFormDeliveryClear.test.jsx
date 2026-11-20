@@ -57,7 +57,11 @@ beforeEach(() => {
 
 describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
   it("tick משלוחים → tick לכל הארץ → untick משלוחים submits no contradiction", async () => {
-    renderForm({ producerId: "p-1" });
+    // MEH-3475: the CREATE form. On an edit, this sequence lands back on the
+    // page-open values, and since MEH-3475 an unchanged delivery group is left
+    // out of the edit save entirely (nothing is sent, so nothing contradicts) —
+    // the edit path is the EXISTING-producer case below, which does change it.
+    renderForm({});
 
     await waitFor(() => expect(checkbox(F.offers_delivery)).toBeInTheDocument());
 
@@ -74,10 +78,10 @@ describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
       screen.queryByRole("checkbox", { name: F.delivery_nationwide }),
     ).not.toBeInTheDocument();
 
-    fireEvent.submit(screen.getByRole("button", { name: he.admin.producers.form.submit_update }).closest("form"));
+    fireEvent.submit(screen.getByRole("button", { name: he.admin.producers.form.submit_create }).closest("form"));
 
-    await waitFor(() => expect(api.put).toHaveBeenCalled());
-    const payload = api.put.mock.calls[0][1];
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    const payload = api.post.mock.calls[0][1];
 
     expect(payload.offers_delivery).toBe(false);
     // The 500: this was `true` before MEH-1879.
