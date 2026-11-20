@@ -21,7 +21,7 @@
  * THE FIVE STATES (CLAUDE.md conditional-UI rule)
  * -----------------------------------------------
  *   idle          form, nothing pending
- *   submitting    button disabled + "בשליחה..."; blocks a double submit
+ *   submitting    button disabled + "בשליחה…"; blocks a double submit
  *   success       form replaced by the thank-you panel
  *   error         form kept, generic message above the button
  *   rate_limited  form kept, its OWN message (429) — deliberately not folded

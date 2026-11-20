@@ -98,7 +98,7 @@ vi.mock("next-intl", () => {
     "admin.users.pagination.page_of": "עמוד {page} מתוך {total}",
     "admin.common.search": "חיפוש",
     "admin.common.cancel": "ביטול",
-    "admin.common.loading_f": "בטעינה...",
+    "admin.common.loading_f": "בטעינה…",
   };
   const resolve = (fullKey, values) => {
     const raw = flat[fullKey] ?? fullKey;

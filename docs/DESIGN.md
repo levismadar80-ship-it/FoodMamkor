@@ -295,6 +295,7 @@ DESIGN.md token transform briefly dropped it). The document root
 
 **Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
 Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
+One spelling per string (MEH-3462): the single «…» character, never three dots; no trailing «.» / «!» on a short label the site writes without one elsewhere («נשמר», «הועתק»); gershayim in acronyms («ט״ו»). `__tests__/CopyVariantsGuard.test.js` fails on three dots or a string spelled two ways in `he.json`.
 Cormorant has **no Hebrew glyphs**, and its size-adjusted fallback face
 (`local(Times New Roman)`, no unicode-range) catches every glyph it lacks — so
 Hebrew set in `.font-english` used to render in a system serif. Since MEH-2488

@@ -56,7 +56,7 @@ vi.mock("next-intl", () => {
     "recommend.error_contact_missing": "צריך לפחות דרך אחת ליצור קשר עם בית העסק",
     "recommend.error_rate_limited": "קיבלנו כבר כמה המלצות מכם. אפשר לנסות שוב בעוד שעה.",
     "recommend.error_generic": "משהו השתבש. נסו שוב בעוד רגע.",
-    "contact.submit_loading": "בשליחה...",
+    "contact.submit_loading": "בשליחה…",
     // The REAL string, markup included — a tag-free mock here is what let a
     // plain t() call ship once. The assertion below depends on these tags.
     "contact.privacy_notice":
@@ -341,7 +341,7 @@ describe("RecommendClient", () => {
 
     const btn = screen.getByTestId("recommend-submit");
     await waitFor(() => expect(btn).toBeDisabled());
-    expect(btn).toHaveTextContent("בשליחה...");
+    expect(btn).toHaveTextContent("בשליחה…");
 
     release({ data: { ok: true } });
     await screen.findByTestId("recommend-success");

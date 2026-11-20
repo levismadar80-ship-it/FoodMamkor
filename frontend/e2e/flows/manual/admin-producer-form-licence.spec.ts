@@ -563,7 +563,7 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await expect(nationwide(page)).not.toBeChecked();
     await expect(page.getByText("ערים שמשלוחים אליהן")).toBeVisible();
     await expect(cityInput(page)).toBeVisible();
-    await expect(cityInput(page)).toHaveAttribute("placeholder", "הקלידו שם עיר...");
+    await expect(cityInput(page)).toHaveAttribute("placeholder", "הקלידו שם עיר…");
   });
 
   // MT:MEH-213:4 — nationwide → the delivery-cities autocomplete is gone; save enabled. D4: the exclusion block appears.

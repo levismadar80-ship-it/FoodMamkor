@@ -28,7 +28,7 @@ vi.mock("next-intl", () => {
     "admin.reviews.count": "{filtered} מתוך {total}",
     "admin.reviews.empty": "אין ביקורות להצגה",
     // MEH-3346: the real he.json value — renderWith waits for this row to GO.
-    "admin.reviews.loading": "טעינת ביקורות...",
+    "admin.reviews.loading": "טעינת ביקורות…",
     "admin.reviews.hidden": "מוסתרת",
     "admin.reviews.hide": "הסתירי",
     "admin.reviews.unhide": "החזירי",
@@ -86,7 +86,7 @@ async function renderWith(rows) {
   // never resolves, that await still succeeded and the empty-list message was
   // absent. The loading row leaving is the one marker only a settled fetch can
   // produce, so wait for that first; the count is then a real count.
-  await waitForElementToBeRemoved(() => screen.queryByText("טעינת ביקורות..."));
+  await waitForElementToBeRemoved(() => screen.queryByText("טעינת ביקורות…"));
   await screen.findByText(`${rows.length} מתוך ${rows.length}`);
 }
 

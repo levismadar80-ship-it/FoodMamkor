@@ -9,9 +9,9 @@ import { SkeletonDetail } from "@/components/Skeleton";
  */
 describe("SkeletonDetail", () => {
   it("draws the hero band by default and keeps the label sr-only", () => {
-    const { container } = render(<SkeletonDetail label="טעינת החוויה..." />);
+    const { container } = render(<SkeletonDetail label="טעינת החוויה…" />);
     expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
-    expect(screen.getByRole("status").querySelector(".sr-only")).toHaveTextContent("טעינת החוויה...");
+    expect(screen.getByRole("status").querySelector(".sr-only")).toHaveTextContent("טעינת החוויה…");
     expect(container.querySelector('[data-skeleton="hero"]')).not.toBeNull();
   });
 
@@ -29,7 +29,7 @@ describe("SkeletonDetail", () => {
   });
 
   it("the hero band sits in the page column, like the loaded experience cover", () => {
-    const { container } = render(<SkeletonDetail width="max-w-[1100px]" label="טעינת החוויה..." />);
+    const { container } = render(<SkeletonDetail width="max-w-[1100px]" label="טעינת החוויה…" />);
     const hero = container.querySelector('[data-skeleton="hero"]');
     expect(hero.parentElement.className).toContain("max-w-[1100px]");
     expect(hero.className).toContain("lg:h-[380px]");
