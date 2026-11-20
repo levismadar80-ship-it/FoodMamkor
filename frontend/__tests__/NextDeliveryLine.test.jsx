@@ -109,3 +109,17 @@ describe("NextDeliveryLine in DeliveryChecker (MEH-3485)", () => {
     expect(screen.queryByTestId("next-delivery")).toBeNull();
   });
 });
+
+describe("NextDeliveryLine in English (MEH-3485)", () => {
+  it("spells the month, so the date can't be read the wrong way round", async () => {
+    const en = (await import("../messages/en.json")).default;
+    document.documentElement.lang = "en";
+    const areas = [{ id: 1, city: "Haifa", delivery_day: "שני", min_order: 100 }];
+    render(
+      <NextIntlClientProvider locale="en" messages={en} onError={() => {}} timeZone="Asia/Jerusalem">
+        <DeliveryBlock areas={areas} producer={producer()} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("next-delivery").textContent).toBe("Next delivery: Monday November 30");
+  });
+});

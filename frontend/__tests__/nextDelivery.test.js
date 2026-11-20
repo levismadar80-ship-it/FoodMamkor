@@ -55,6 +55,16 @@ describe("nextDeliveryDate — the rule", () => {
     expect(r?.date).toBe("2026-11-27");
   });
 
+  it("delivery on the cutoff day, read before the cutoff: today", () => {
+    // Orders until Friday 10:00, delivery Friday. Fri 27/11 09:00 → today.
+    const r = nextDeliveryDate({
+      days: ["שישי"],
+      orderWindow: onlyDay(5, "10:00"),
+      now: at("2026-11-27T07:00:00Z"),
+    });
+    expect(r?.date).toBe("2026-11-27");
+  });
+
   it("two order days: no single cutoff → the tomorrow rule", () => {
     const window = { ...onlyDay(1, "12:00"), ...onlyDay(3, "12:00") };
     // Sun 22/11 morning: a cutoff rule would say Tue 24/11 too; Monday-only

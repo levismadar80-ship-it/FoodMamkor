@@ -14,30 +14,24 @@
  *
  * The rule, as posted to Sapir 20/11:
  *   - one clear order cutoff (e.g. orders until Monday 12:00) → the first
- *     delivery day on or after the next cutoff's date;
+ *     delivery day on or after the next cutoff's date. That can be today:
+ *     orders until Friday 10:00 with a Friday run, read at 09:00, is today;
  *   - no cutoff, or several order days → the first delivery day from tomorrow.
  *     Never today: whether an order placed now still makes today's run is not
  *     something the data says;
  *   - no date for a city with no delivery day, or a business on vacation.
  */
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-import { getSingleOrderCutoff, israelNowParts } from "@/lib/orderWindow";
+import { getSingleOrderCutoff, israelNowParts, toMinutes } from "@/lib/orderWindow";
 import { israelToday } from "@/lib/israel-date";
 
 const DAYS_IN_WEEK = 7;
-const MINUTES_PER_HOUR = 60;
 
 /** @param {string} iso @param {number} days */
 function addDaysIso(iso, days) {
   const [y, m, d] = iso.split("-").map(Number);
   // guard-ok: UTC date arithmetic on a fixed ISO input, not a clock read
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
-}
-
-/** "HH:MM" → minutes since midnight; null when malformed. @param {string} hhmm */
-function toMinutes(hhmm) {
-  const m = /^(\d{2}):(\d{2})$/.exec(hhmm || "");
-  return m ? Number(m[1]) * MINUTES_PER_HOUR + Number(m[2]) : null;
 }
 
 /**

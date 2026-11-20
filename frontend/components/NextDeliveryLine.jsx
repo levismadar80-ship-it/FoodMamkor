@@ -38,7 +38,10 @@ export default function NextDeliveryLine({ days, producer = null, city = null, c
   // The page's own <html lang> (app/[locale]/layout.js), read after mount —
   // so this works under every test's next-intl mock, which rarely has useLocale.
   const locale = document.documentElement.lang || "he";
-  const date = `${tWeekdays(WEEKDAY_KEYS[next.dayIndex])} ${formatDate(next.date, locale, "dayMonthShort")}`;
+  // «24.11» in Hebrew; English spells the month («November 24»), since en-US
+  // «11/24» reads the other way round to most of the world.
+  const style = locale === "en" ? "dayMonth" : "dayMonthShort";
+  const date = `${tWeekdays(WEEKDAY_KEYS[next.dayIndex])} ${formatDate(next.date, locale, style)}`;
   return (
     <p className={`text-sm text-fg-muted ${className}`} data-testid="next-delivery">
       {city ? t("next_delivery_city", { city, date }) : t("next_delivery", { date })}
