@@ -20,6 +20,5 @@
 /producers/me/kashrut-requests
 /push-vapid-key
 /register/producer/prefill/{}
-/reviews/{}/reply
 /upload/avatar
 /users/me/favorites/{}/alerts

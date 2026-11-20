@@ -99,8 +99,8 @@ describe("ProductDescriptionSuggest (MEH-3479)", () => {
     api.post.mockResolvedValue({ data: { description: "לחם עם קרום פריך." } });
     mount();
     const cta = screen.getByRole("button", { name: D.cta });
-    expect(cta).toHaveAttribute("aria-describedby", "t-describe-hint");
-    expect(document.getElementById("t-describe-hint")).toHaveTextContent(D.hint);
+    expect(cta).toHaveAttribute("aria-describedby", "t-describe-suggest-hint");
+    expect(document.getElementById("t-describe-suggest-hint")).toHaveTextContent(D.hint);
     press();
     const box = await screen.findByLabelText(D.preview_label);
     await waitFor(() => expect(box).toHaveFocus());
