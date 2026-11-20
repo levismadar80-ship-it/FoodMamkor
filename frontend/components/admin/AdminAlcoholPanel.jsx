@@ -43,7 +43,8 @@ export default function AdminAlcoholPanel({ producerId }) {
         else setError(t("load_error"));
       });
     return () => { live = false; };
-  }, [producerId, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `t` is read only on failure; refetching when it changes identity would repeat the GET
+  }, [producerId]);
 
   if (hidden) return null;
 

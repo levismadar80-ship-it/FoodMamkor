@@ -219,13 +219,14 @@ export default function EditProducerPage() {
       {/* MEH-3524: the only way to give or remove «מאומת» (grant-verified /
           revoke-verified); the old checkbox in ProducerForm was removed in MEH-766. */}
       <AdminVerifiedPanel
+        key={`verified-${id}-${producer.verified_at ?? "none"}`}
         producerId={String(id)}
         kind={producer.kind}
         verifiedAt={producer.verified_at}
         docType={producer.verification_doc_type}
       />
       {/* MEH-3524: the alcohol mark; renders nothing while ordering is off. */}
-      <AdminAlcoholPanel producerId={String(id)} />
+      <AdminAlcoholPanel key={`alcohol-${id}`} producerId={String(id)} />
       {/* MEH-2312: catalog import from the business's existing store → drafts
           the admin approves. Any status: Sandra's page is approved and live. */}
       <AdminProductImport

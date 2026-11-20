@@ -2498,7 +2498,8 @@
         "heading": "Auto-hidden home products",
         "empty": "No hidden products",
         "restore": "Restore"
-      }
+      },
+      "page_hidden": "The page is already hidden"
     },
     "reviews": {
       "title": "Reviews",

@@ -56,13 +56,13 @@ export default function AdminVerifiedPanel({ producerId, kind = "producer", veri
     );
   }
 
-  const run = async (/** @type {() => Promise<any>} */ call, /** @type {() => void} */ after, /** @type {string} */ doneKey) => {
+  const run = async (/** @type {() => Promise<any>} */ call, /** @type {(data: any) => void} */ after, /** @type {string} */ doneKey) => {
     setBusy(true);
     setError(null);
     setDone(null);
     try {
-      await call();
-      after();
+      const res = await call();
+      after(res?.data);
       setDone(t(doneKey));
     } catch (err) {
       setError(detailToMessage(err?.response?.data?.detail) || t("error"));
@@ -75,7 +75,8 @@ export default function AdminVerifiedPanel({ producerId, kind = "producer", veri
   const grant = () =>
     run(
       () => api.post(`/admin/producers/${producerId}/grant-verified`, { doc_type: choice }),
-      () => setState({ at: new Date().toISOString(), doc: choice }),
+      // The server's stamp, not this browser's clock.
+      (data) => setState({ at: data?.verified_at || new Date().toISOString(), doc: data?.verification_doc_type || choice }),
       "done_granted",
     );
   const revoke = () =>
