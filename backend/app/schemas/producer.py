@@ -22,6 +22,8 @@ from pydantic import (
 )
 from app.limits import (
     DELIVERY_CITIES_DETAIL,
+    DELIVERY_ZONES_DETAIL,
+    MAX_DELIVERY_ZONES,
     GALLERY_IMAGES_DETAIL,
     MAX_DELIVERY_CITIES,
     MAX_GALLERY_IMAGES,
@@ -55,6 +57,8 @@ from app.schemas.schemas import (
 )
 from app.schemas.catalog import (
     DeliveryAreaCreate,
+    DeliveryZoneIn,
+    check_zones,
     ProducerOfferCreate,
 )
 
@@ -487,6 +491,12 @@ class ProducerUpdate(BaseModel):
     delivery_areas: list[DeliveryAreaCreate] | None = Field(
         None, max_length=MAX_DELIVERY_CITIES
     )
+    # MEH-3484: named zones. Omitted = zones and memberships stay as stored;
+    # [] = no zones (each city keeps the values it had). See
+    # services/delivery_zones.py for the write.
+    delivery_zones: list[DeliveryZoneIn] | None = Field(
+        None, max_length=MAX_DELIVERY_ZONES + 1
+    )
     # MEH-1823 chunk 2: the owner's single offer, written through the same PUT
     # as delivery_areas. Three-valued on purpose, and the distinction is
     # load-bearing because `exclude_unset` cannot tell the last two apart on
@@ -732,6 +742,20 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_images(cls, v: list[str] | None) -> list[str] | None:
         return _image_url_list_validator(v)
+
+    @field_validator("delivery_zones", mode="before")
+    @classmethod
+    def _cap_zones_meh3484(cls, v: Any) -> Any:
+        return cap_list(v, MAX_DELIVERY_ZONES, DELIVERY_ZONES_DETAIL)
+
+    @model_validator(mode="after")
+    def _validate_zones_meh3484(self) -> Self:
+        check_zones(self.delivery_zones)
+        if self.delivery_nationwide and any(
+            z.cities for z in self.delivery_zones or []
+        ):
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        return self
 
     @model_validator(mode="after")
     def _validate_location_mode(self) -> Self:

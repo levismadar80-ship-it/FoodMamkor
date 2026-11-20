@@ -57,7 +57,10 @@ export function buildDeliveryAnswer(producer) {
       .map((a) => a.min_order)
       .filter((m) => typeof m === "number" && m > 0);
     const minOrder = mins.length > 0 ? Math.min(...mins) : null;
-    const days = [...new Set(areas.map((a) => a.delivery_day).filter(Boolean))];
+    // MEH-3484: a city can go out on several days (a delivery zone).
+    const days = [
+      ...new Set(areas.flatMap((a) => (a.delivery_days?.length ? a.delivery_days : [a.delivery_day])).filter(Boolean)),
+    ];
     const deliveryDay = days.length > 0 ? days.join(", ") : null;
     return { kind: "areas", cities, moreCount, minOrder, deliveryDay };
   }

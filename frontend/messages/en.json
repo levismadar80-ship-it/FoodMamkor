@@ -5451,7 +5451,20 @@
         "errors": {
           "excluded_requires_nationwide": "Excluded cities are only possible with nationwide delivery",
           "nationwide_requires_delivery": "\"Nationwide\" is ticked but \"Delivery\" is not. Tick \"Delivery\", or untick \"Nationwide\"."
-        }
+        },
+        "zones_label": "Delivery zones",
+        "zones_hint": "Group several cities into one zone with the same days, minimum and fee. A city outside every zone keeps its own settings.",
+        "zone_empty": "No zones yet. You can leave it like this and set each city on its own.",
+        "zone_add": "Add a zone",
+        "zone_name_label": "Zone name",
+        "zone_name_placeholder": "Krayot",
+        "zone_cities_label": "Cities in the zone",
+        "zone_days_label": "Delivery days",
+        "zone_days_hint": "With none picked, “by arrangement” is shown.",
+        "zone_free_above_label": "Free delivery above (₪)",
+        "zone_free_above_hint": "If empty, the business's general amount applies.",
+        "zone_remove": "Delete the zone",
+        "city_in_zone": "In zone {zone}"
       },
       "order_window": {
         "heading": "When you take orders",

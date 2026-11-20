@@ -901,3 +901,30 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.queryByTestId("delivery-cities")).not.toBeInTheDocument();
   });
 });
+
+// MEH-3484: delivery zones — several days per city, a zone threshold.
+describe("DeliveryBlock — zones (MEH-3484)", () => {
+  const zoned = [
+    { id: "a", city: "קריית ביאליק", delivery_day: "שני", delivery_days: ["שני", "חמישי"], zone_name: "קריות", free_delivery_above: 300 },
+    { id: "b", city: "חיפה", delivery_day: "שני", free_delivery_above: null },
+  ];
+
+  it("lists a two-day city under both days", () => {
+    render(<DeliveryBlock areas={zoned} producer={{ free_delivery_above: 500 }} />);
+    expect(screen.getByText("ימי שני")).toBeTruthy();
+    expect(screen.getByText("ימי חמישי")).toBeTruthy();
+    expect(screen.getAllByText("קריית ביאליק")).toHaveLength(2);
+  });
+
+  it("shows the zone threshold on its cities when it is not the business's", () => {
+    render(<DeliveryBlock areas={zoned} producer={{ free_delivery_above: 500 }} />);
+    const own = screen.getAllByTestId("area-free-above");
+    expect(own).toHaveLength(2); // the one zoned city, under each of its days
+    expect(own[0].textContent).toContain("300");
+  });
+
+  it("does not repeat a threshold equal to the business's", () => {
+    render(<DeliveryBlock areas={zoned} producer={{ free_delivery_above: 300 }} />);
+    expect(screen.queryAllByTestId("area-free-above")).toHaveLength(0);
+  });
+});

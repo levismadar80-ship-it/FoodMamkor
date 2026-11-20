@@ -84,6 +84,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         // MEH-1577: the card always sends both cost fields; null = not stated.
         delivery_fee: null,
         free_delivery_above: null,
+        delivery_zones: [],
       }),
     );
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -123,6 +124,7 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_excluded_cities: ["אילת"],
         delivery_fee: null,
         free_delivery_above: null,
+        delivery_zones: [],
       }),
     );
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -208,13 +210,14 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
           // MEH-1772 chunk 3: delivery_fee rides the same row — null here
           // because neither seeded city states an override (= inherit the
           // business-wide rate).
-          { city: "חיפה", delivery_day: "שישי", min_order: 100, delivery_fee: null },
-          { city: "עכו", delivery_day: "שלישי", min_order: null, delivery_fee: null },
+          { city: "חיפה", delivery_day: "שישי", delivery_days: ["שישי"], min_order: 100, delivery_fee: null },
+          { city: "עכו", delivery_day: "שלישי", delivery_days: ["שלישי"], min_order: null, delivery_fee: null },
         ],
         delivery_excluded_cities: [],
         // MEH-1577: every save now carries the cost pair; null = not stated.
         delivery_fee: null,
         free_delivery_above: null,
+        delivery_zones: [],
       }),
     );
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -237,8 +240,8 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_nationwide: false,
         delivery_fee: 35,
         delivery_areas: [
-          { city: "עתלית", delivery_day: "שישי", min_order: null, delivery_fee: 0 },
-          { city: "חיפה", delivery_day: "שישי", min_order: 100, delivery_fee: null },
+          { city: "עתלית", delivery_day: "שישי", delivery_days: ["שישי"], min_order: null, delivery_fee: 0 },
+          { city: "חיפה", delivery_day: "שישי", delivery_days: ["שישי"], min_order: 100, delivery_fee: null },
         ],
       },
     });
@@ -262,8 +265,8 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         expect.objectContaining({
           delivery_areas: [
             // 0 round-trips as 0, NOT null — "free here" is not "inherit".
-            { city: "עתלית", delivery_day: "שישי", min_order: null, delivery_fee: 0 },
-            { city: "חיפה", delivery_day: "שישי", min_order: 100, delivery_fee: 40 },
+            { city: "עתלית", delivery_day: "שישי", delivery_days: ["שישי"], min_order: null, delivery_fee: 0 },
+            { city: "חיפה", delivery_day: "שישי", delivery_days: ["שישי"], min_order: 100, delivery_fee: 40 },
           ],
         }),
       ),
@@ -393,13 +396,14 @@ describe("MEH-1821 DeliveryCard defaults-first", () => {
         // and the structured save must not wipe it. Spelled out here so the
         // "payload unchanged" claim covers the whole row, not just the fee.
         delivery_areas: [
-          { city: "חיפה", delivery_day: null, min_order: null, delivery_fee: null },
-          { city: "עכו", delivery_day: null, min_order: null, delivery_fee: 0 },
-          { city: "נהריה", delivery_day: null, min_order: null, delivery_fee: 20 },
+          { city: "חיפה", delivery_day: null, delivery_days: [], min_order: null, delivery_fee: null },
+          { city: "עכו", delivery_day: null, delivery_days: [], min_order: null, delivery_fee: 0 },
+          { city: "נהריה", delivery_day: null, delivery_days: [], min_order: null, delivery_fee: 20 },
         ],
         delivery_excluded_cities: [],
         delivery_fee: 40,
         free_delivery_above: 250,
+        delivery_zones: [],
       }),
     );
   });

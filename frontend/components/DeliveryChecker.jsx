@@ -77,9 +77,19 @@ export function matchDeliveryCity({ city, nationwide, excluded = [], areas = [] 
   return {
     status: "yes",
     city: area.city,
-    day: area.delivery_day || null,
+    day: dayLine(area),
     minOrder: area.min_order ?? null,
   };
+}
+
+// MEH-3484: every day of the city, «שני וחמישי». The values are the Hebrew
+// day names the API stores, so the list is joined in Hebrew on every locale.
+const DAY_LIST = new Intl.ListFormat("he", { style: "long", type: "conjunction" });
+
+function dayLine(area) {
+  const days = (area.delivery_days || []).filter(Boolean);
+  if (days.length > 1) return DAY_LIST.format(days);
+  return days[0] || area.delivery_day || null;
 }
 
 // status → i18n key, so the verdict line stays a flat lookup rather than a

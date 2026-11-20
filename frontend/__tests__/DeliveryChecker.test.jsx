@@ -234,3 +234,20 @@ describe("matchDeliveryCity — pure logic (MEH-1536)", () => {
     expect(matchDeliveryCity({ city: "חיפ", areas: AREAS }).status).toBe("no");
   });
 });
+
+describe("matchDeliveryCity — several days per city (MEH-3484)", () => {
+  it("names every day of the city", () => {
+    const areas = [
+      { city: "קריית ביאליק", delivery_day: "שני", delivery_days: ["שני", "חמישי"], min_order: 120 },
+    ];
+    const r = matchDeliveryCity({ city: "קריית ביאליק", areas });
+    expect(r).toMatchObject({ status: "yes", day: "שני וחמישי", minOrder: 120 });
+  });
+
+  it("a row with one day answers as before", () => {
+    const one = matchDeliveryCity({ city: "חיפה", areas: [{ city: "חיפה", delivery_day: "שלישי" }] });
+    expect(one.day).toBe("שלישי");
+    const none = matchDeliveryCity({ city: "חיפה", areas: [{ city: "חיפה", delivery_days: [] }] });
+    expect(none.day).toBeNull();
+  });
+});

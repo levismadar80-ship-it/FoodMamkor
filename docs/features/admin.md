@@ -17,7 +17,7 @@
 * `backend/app/services/producer_risk.py` — דירוג סיכון לפני אישור.
 * `backend/app/routers/admin_whatsapp.py` + `frontend/components/admin/WhatsappBlockedSection.jsx` — במסך `frontend/app/[locale]/admin/whatsapp-failures/`: הודעות שלא נמסרו, ומחוץ ל-production גם הודעות שהשומר חסם, עם התוכן (MEH-3402; קוד כניסה מוסתר).
 * `frontend/components/admin/AdminProductImageButton.jsx` + `frontend/components/admin/AdminProductImagesPanel.jsx` — תמונה למוצר של כל בית עסק מעמוד העריכה (MEH-3456), דרך `POST /upload/product-image/{product_id}` ב-`backend/app/routers/upload.py`.
-* `frontend/components/admin/AdminDeliveryPaymentPanel.jsx` — משלוח (יום ומינימום לכל עיר, יום אחד לכמה ערים), חלון הזמנות ותשלום מעמוד העריכה (MEH-3475): העורכים של בעלת העסק, נשמרים ל-`PUT /admin/producers/{id}`. היום המשותף: `frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx`.
+* `frontend/components/admin/AdminDeliveryPaymentPanel.jsx` — משלוח (יום ומינימום לכל עיר, יום אחד לכמה ערים), חלון הזמנות ותשלום מעמוד העריכה (MEH-3475): העורכים של בעלת העסק, נשמרים ל-`PUT /admin/producers/{id}`. היום המשותף: `frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx`. אזורי משלוח (MEH-3484) באותו כרטיס, דרך `frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryZonesEditor.jsx`.
 * `frontend/components/admin/BlockUserConfirm.jsx` — אישור לפני חסימת משתמשת (MEH-3375): אם החסימה תסתיר בית עסק, החלון מציג את שמו וכמה הזמנות פתוחות של לקוחות יבוטלו. קריאה: `GET /admin/users/{id}/block-impact` ב-`backend/app/routers/admin_extra.py`, הספירה ב-`backend/app/services/booking_cancellations.py` (אותם מסננים כמו הביטול).
 
 **Flags.** אין. ‏`SUPER_ADMIN_EMAIL` הוא הגדרת סביבה, לא flag.

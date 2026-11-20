@@ -7,7 +7,18 @@ import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 // the CHECKLIST a delivery_areas column has to join — groupDeliveryAreas
 // forwards rows through an explicit whitelist, so anything missing from that
 // whitelist is dropped in silence between the API and DeliveryBlock.
-const AREA_FIELDS = ["id", "city", "min_order", "delivery_day", "delivery_fee"];
+// MEH-3484: delivery_days (several days per city), zone_name and the zone's
+// free_delivery_above join it.
+const AREA_FIELDS = [
+  "id",
+  "city",
+  "min_order",
+  "delivery_day",
+  "delivery_fee",
+  "delivery_days",
+  "zone_name",
+  "free_delivery_above",
+];
 
 describe("groupDeliveryAreas", () => {
   it("no areas → flat with empty rows", () => {
@@ -35,8 +46,8 @@ describe("groupDeliveryAreas", () => {
       day: "שישי",
       rows: [
         // MEH-1794: delivery_fee joins the forwarded shape (null = inherit).
-        { id: 1, city: "חיפה", min_order: 100, delivery_day: "שישי", delivery_fee: null },
-        { id: 2, city: "עכו", min_order: 80, delivery_day: "שישי", delivery_fee: null },
+        { id: 1, city: "חיפה", min_order: 100, delivery_day: "שישי", delivery_fee: null, delivery_days: ["שישי"], zone_name: null, free_delivery_above: null },
+        { id: 2, city: "עכו", min_order: 80, delivery_day: "שישי", delivery_fee: null, delivery_days: ["שישי"], zone_name: null, free_delivery_above: null },
       ],
     });
   });
@@ -57,6 +68,9 @@ describe("groupDeliveryAreas", () => {
       min_order: 100,
       delivery_day: "שישי",
       delivery_fee: 20,
+      delivery_days: ["שישי"],
+      zone_name: "קריות",
+      free_delivery_above: 300,
     };
     // The fixture must itself cover the checklist, or the assertion below is
     // measuring a subset and would pass while a real column goes missing.
@@ -100,5 +114,28 @@ describe("groupDeliveryAreas", () => {
     expect(res.groups.map((g) => g.day)).toEqual(["שישי"]);
     expect(res.groups[0].rows.map((r) => r.city)).toEqual(["חיפה"]);
     expect(res.arranged.map((r) => r.city)).toEqual(["עכו"]);
+  });
+
+  // MEH-3484: a city delivered on several days is listed under each of them.
+  it("a city with two days sits in both day groups", () => {
+    const res = groupDeliveryAreas([
+      { id: 1, city: "קריית ביאליק", delivery_day: "שני", delivery_days: ["שני", "חמישי"] },
+      { id: 2, city: "חיפה", delivery_day: "שני" },
+    ]);
+    expect(res.mode).toBe("group");
+    expect(res.groups.map((g) => g.day)).toEqual(["שני", "חמישי"]);
+    expect(res.groups[0].rows.map((r) => r.city)).toEqual(["קריית ביאליק", "חיפה"]);
+    expect(res.groups[1].rows.map((r) => r.city)).toEqual(["קריית ביאליק"]);
+    expect(res.arranged).toEqual([]);
+  });
+
+  it("every city on the same two days → one group per day, not a hoist", () => {
+    const both = ["שני", "חמישי"];
+    const res = groupDeliveryAreas([
+      { id: 1, city: "קריית ביאליק", delivery_day: "שני", delivery_days: both },
+      { id: 2, city: "קריית מוצקין", delivery_day: "שני", delivery_days: both },
+    ]);
+    expect(res.mode).toBe("group");
+    expect(res.groups.map((g) => g.rows.length)).toEqual([2, 2]);
   });
 });

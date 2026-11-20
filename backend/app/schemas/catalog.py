@@ -23,11 +23,18 @@ from pydantic import (
 )
 
 from app.limits import MAX_PRODUCTS  # MEH-2312
+from app.limits import (  # MEH-3484
+    MAX_CITIES_PER_ZONE,
+    ZONE_CITIES_DETAIL,
+    cap_list,
+)
 from app.schemas.product_order_offer import PriceUnit  # MEH-2936
+from app.data.cities import canonical_city  # MEH-3484
 from app.allergens import detail_if_declared, drop_contained, normalize_allergens
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 from app.schemas.schemas import (
+    DELIVERY_DAYS,
     DeliveryDayField,
     MAX_DELIVERY_MONEY,
     PhoneNumberField,
@@ -111,6 +118,26 @@ class ProducerRandomOut(BaseModel):
     slug: str | None = None
 
 
+# --- MEH-3484: several days per city, named zones ---
+ZONE_NAME_MAX = 40
+CITY_MAX = 100  # delivery_areas.city String(100)
+ZONE_NAME_REQUIRED = "צריך לתת שם לאזור."
+CITY_IN_TWO_ZONES = "כל עיר יכולה להיות רק באזור אחד. {city} מופיעה ביותר מאזור אחד."
+
+
+def week_order(days: list[str | None] | None) -> list[str] | None:
+    """Blank entries out, duplicates out, Sunday→Saturday. None stays None
+    (the field was not sent); an empty result is [] (= «בתיאום מראש»)."""
+    if days is None:
+        return None
+    return [d for d in DELIVERY_DAYS if d in set(days)]
+
+
+DeliveryDaysField = Annotated[
+    list[DeliveryDayField | None] | None, Field(default=None, max_length=14)
+]
+
+
 # --- Delivery Area ---
 class DeliveryAreaCreate(BaseModel):
     city: str
@@ -121,6 +148,9 @@ class DeliveryAreaCreate(BaseModel):
     # ProducerUpdate.delivery_areas (producer_me PUT) — so one field covers
     # them all. None allowed = "בתיאום מראש".
     delivery_day: DeliveryDayField | None = None
+    # MEH-3484: several days. When sent it wins, and delivery_day becomes its
+    # first day (single-day readers keep answering). [] = «בתיאום מראש».
+    delivery_days: DeliveryDaysField = None
     # MEH-1772: per-area override of producers.delivery_fee. NULL = inherit.
     # Same three-value semantics as the producer-level field (MEH-1577):
     # None = not stated, 0 = "משלוח חינם", positive = the fee.
@@ -163,6 +193,122 @@ class DeliveryAreaCreate(BaseModel):
             raise ValueError("מינימום הזמנה גבוה מדי")
         return v
 
+    @field_validator("delivery_days")
+    @classmethod
+    def _week_order(cls, v: list[str | None] | None) -> list[str] | None:
+        return week_order(v)
+
+    @model_validator(mode="after")
+    def _first_day(self) -> Self:
+        # MEH-3484: the single column stays true for every old reader.
+        if self.delivery_days is not None:
+            self.delivery_day = self.delivery_days[0] if self.delivery_days else None
+        return self
+
+
+def _money(v: int | None, negative: str, too_high: str) -> int | None:
+    if v is None:
+        return None
+    if v < 0:
+        raise ValueError(negative)
+    if v > MAX_DELIVERY_MONEY:
+        raise ValueError(too_high)
+    return v
+
+
+class DeliveryZoneIn(BaseModel):
+    """MEH-3484: one named zone on PUT /producers/me (and the admin PUT).
+    `cities` is membership; the services/delivery_zones.py writer stores the
+    zone on producers.delivery_zones and copies days / minimum / fee /
+    threshold onto each of its cities' delivery_areas rows."""
+
+    name: str
+    cities: list[str] = Field(default_factory=list, max_length=MAX_CITIES_PER_ZONE + 1)
+    delivery_days: DeliveryDaysField = None
+    min_order: int | None = None
+    delivery_fee: int | None = None
+    free_delivery_above: int | None = None
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, v: str) -> str:
+        # Shown back on the public delivery rows (zone_name): stripped of markup.
+        v = sanitize_text(v or "", ZONE_NAME_MAX) or ""
+        if not v:
+            raise ValueError(ZONE_NAME_REQUIRED)
+        return v
+
+    @field_validator("cities", mode="before")
+    @classmethod
+    def _cap_cities(cls, v: Any) -> Any:
+        return cap_list(v, MAX_CITIES_PER_ZONE, ZONE_CITIES_DETAIL)
+
+    @field_validator("cities")
+    @classmethod
+    def _clean_cities(cls, v: list[str]) -> list[str]:
+        # delivery_areas.city is String(100); a longer name is not a city.
+        return [c.strip() for c in v if c and c.strip() and len(c.strip()) <= CITY_MAX]
+
+    @field_validator("delivery_days")
+    @classmethod
+    def _days(cls, v: list[str | None] | None) -> list[str] | None:
+        return week_order(v)
+
+    @field_validator("min_order")
+    @classmethod
+    def _min(cls, v: int | None) -> int | None:
+        return _money(v, "מינימום הזמנה לא יכול להיות שלילי", "מינימום הזמנה גבוה מדי")
+
+    @field_validator("delivery_fee")
+    @classmethod
+    def _fee(cls, v: int | None) -> int | None:
+        return _money(v, "עלות משלוח לא יכולה להיות שלילית", "עלות משלוח גבוהה מדי")
+
+    @field_validator("free_delivery_above")
+    @classmethod
+    def _free(cls, v: int | None) -> int | None:
+        # Same rule as the business-level field: «free above ₪0» says nothing.
+        if v is not None and v <= 0:
+            raise ValueError("סף למשלוח חינם חייב להיות גדול מאפס")
+        return _money(v, "", "סף למשלוח חינם גבוה מדי")
+
+
+def check_zones(zones: list[DeliveryZoneIn] | None) -> None:
+    """Hebrew 422s that need the whole list: a city in two zones; two zones
+    with one name (the name is the zone's key on delivery_areas)."""
+    if not zones:
+        return
+    names: set[str] = set()
+    seen: dict[str, str] = {}
+    for zone in zones:
+        if zone.name in names:
+            raise ValueError(
+                f"יש שני אזורים בשם «{zone.name}». צריך לתת לכל אזור שם אחר."
+            )
+        names.add(zone.name)
+        for city in zone.cities:
+            key = canonical_city(city) or city
+            if key in seen and seen[key] != zone.name:
+                raise ValueError(CITY_IN_TWO_ZONES.format(city=city))
+            seen[key] = zone.name
+
+
+class DeliveryZoneOut(BaseModel):
+    """MEH-3484: a zone as the owner's editor reads it back. `cities` is
+    filled from delivery_areas.zone_name (ProducerOwnerOut)."""
+
+    name: str
+    cities: list[str] = []
+    delivery_days: list[str] = []
+    min_order: int | None = None
+    delivery_fee: int | None = None
+    free_delivery_above: int | None = None
+
+    @field_validator("delivery_days", mode="before")
+    @classmethod
+    def _none_days(cls, v: Any) -> Any:
+        return v or []
+
 
 class DeliveryAreaOut(BaseModel):
     id: UUID
@@ -176,8 +322,26 @@ class DeliveryAreaOut(BaseModel):
     # with the same number" and "this area inherits", which is the one thing
     # the "משלוח מ-X₪" variance line needs to distinguish.
     delivery_fee: int | None = None
+    # MEH-3484: every day of this city (falls back to [delivery_day] for a row
+    # saved before the column), its zone, and the zone's free-delivery
+    # threshold (NULL = the business-level one applies — resolved on the
+    # client, same reasoning as delivery_fee above).
+    delivery_days: list[str] = []
+    zone_name: str | None = None
+    free_delivery_above: int | None = None
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def _days_fallback(self) -> Self:
+        if not self.delivery_days and self.delivery_day:
+            self.delivery_days = [self.delivery_day]
+        return self
+
+    @field_validator("delivery_days", mode="before")
+    @classmethod
+    def _none_is_empty(cls, v: Any) -> Any:
+        return [] if v is None else v
 
 
 class ProducerLocationOut(BaseModel):
