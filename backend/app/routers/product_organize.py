@@ -21,6 +21,9 @@ from app.auth import require_producer
 from app.database import get_db
 from app.models import Producer, Product, User
 from app.rate_limit import limiter
+from app.routers.product_describe import (  # REUSES: per-business daily key
+    _business_key,
+)
 from app.schemas.product_organize import (
     GroupMovesIn,
     GroupSuggestionsOut,
@@ -110,11 +113,22 @@ def move_products_between_groups(
 
 # MEH-3478: an AI suggestion for the products in no group. Saves nothing; one
 # model call per press, so it is limited tighter than the writes.
+# MEH-3497: one Opus call per press, so a per-business daily cap on top of the
+# per-IP hourly one; a second device or IP does not reset it.
+GROUPS_DAILY_CAP = "10/day"
+
+
+def _mark_groups(request: Request, user: User = Depends(require_producer)) -> User:
+    request.state.ai_key = f"groups:{user.producer_id or user.id}"
+    return user
+
+
 @router.post("/product-groups/suggest", response_model=GroupSuggestionsOut)
 @limiter.limit("10/hour")
+@limiter.limit(GROUPS_DAILY_CAP, key_func=_business_key)
 def suggest_product_groups(
     request: Request,  # required by slowapi
-    user: User = Depends(require_producer),
+    user: User = Depends(_mark_groups),
     db: Session = Depends(get_db),
 ) -> dict[str, object]:
     return svc.suggestion_for(db, _my_producer(user, db), include_drafts=False)
