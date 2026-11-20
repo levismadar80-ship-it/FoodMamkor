@@ -11,7 +11,8 @@ import { usePreviewMode } from "@/lib/preview-mode";
 /**
  * BusinessChatPrompt — the business page's way into the site chat (MEH-3489).
  *
- * Placement: under «שאלות נפוצות», the page's question cluster. Amazon Rufus
+ * Placement: right after «מוצרים» (Sapir 20/11; was under «שאלות נפוצות»,
+ * near the page end). Amazon Rufus
  * (product page), Yelp Assistant (business page) and Google Maps «Ask about
  * this place» put the entry INSIDE the page, never as a second floating
  * button. The floating chat button stays off this page (MEH-1168: it covered
