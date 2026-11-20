@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { DraftProductSchema } from "@/lib/api-schemas";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
+import AdminProductImageButton from "@/components/admin/AdminProductImageButton";  // MEH-3456
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -19,14 +20,16 @@ import InlineMessage from "@/components/ui/InlineMessage";
  * Touches:  POST /admin/producers/{id}/products ·
  *           DELETE /admin/producers/{id}/products/{product_id}
  *           (producer_claim.py). Both answer 409 once the draft is claimed;
- *           that detail is shown verbatim.
+ *           that detail is shown verbatim. Each row's photo button
+ *           (AdminProductImageButton, MEH-3456) posts to
+ *           /upload/product-image/{product_id}.
  * Does NOT: set diet flags (the owner declares those herself after the claim —
- *           the server drops them too), upload images, or edit a product
+ *           the server drops them too), or edit a product's text
  *           (delete + re-add; the owner edits from her dashboard once it's hers).
  * Related:  components/ProductsSection.jsx (the owner's editor — same field
  *           labels and validation messages, reused from settings.products),
  *           app/[locale]/admin/producers/[id]/edit/page.js (gates on draft).
- * History:  MEH-2326.
+ * History:  MEH-2326; MEH-3456 (photo per product).
  */
 const EMPTY_FORM = { name: "", description: "", price_min: "", price_max: "" };
 
@@ -127,12 +130,23 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
               data-testid="draft-product-row"
               className="py-3 flex flex-wrap items-center gap-3"
             >
-              <span className="flex-1 min-w-0">
+              {/* MEH-3456: with the photo button the row is three controls
+                  wide; below sm the name takes its own line instead of being
+                  truncated to one word. */}
+              <span className="flex-1 min-w-0 basis-full sm:basis-auto">
                 <span className="font-medium block truncate">{p.name}</span>
                 <span className="text-sm text-muted">
                   <ProductPrice product={p} />
                 </span>
               </span>
+              <AdminProductImageButton
+                productId={p.id}
+                name={p.name}
+                imageUrl={p.image_url ?? null}
+                onUploaded={(url) =>
+                  setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, image_url: url } : x)))
+                }
+              />
               {confirmId === p.id ? (
                 <span className="flex items-center gap-2" data-testid="draft-product-confirm">
                   <span className="text-sm">{tConfirm("title", { name: p.name })}</span>

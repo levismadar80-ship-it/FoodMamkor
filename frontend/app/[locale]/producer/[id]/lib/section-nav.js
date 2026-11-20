@@ -1,6 +1,7 @@
 // @ts-check
 import { primaryPoint } from "@/lib/producerPoints";
 import { isPriceLabel } from "@/lib/utils";
+import { hasDeliverySection } from "@/lib/quickAnswers";
 import { parseHasLocation } from "../components/ProducerSections";
 
 /**
@@ -55,11 +56,8 @@ export function getSectionNavItems(producer, t) {
     {
       id: "section-delivery",
       label: t("producer.detail.tabs.delivery"),
-      show: !!(
-        producer.offers_delivery ||
-        producer.delivery_areas?.length > 0 ||
-        producer.pickup_points
-      ),
+      // The same gate the contact card's delivery question jumps on.
+      show: hasDeliverySection(producer),
     },
     {
       id: "section-location",

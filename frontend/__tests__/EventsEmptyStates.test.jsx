@@ -183,6 +183,10 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
       await mount();
 
       expect(screen.getByTestId("events-empty-dataset")).toBeInTheDocument();
+      // MEH-3466: the same disc as ui/EmptyState circle size="md" (group-buys tab).
+      const disc = screen.getByTestId("events-empty-dataset").firstElementChild;
+      expect(disc.className).toContain("bg-green-50");
+      expect(disc.className).toContain("w-20");
       expect(filterControlCount()).toBe(0);
       expect(screen.getByTestId("events-browse-producers")).toHaveAttribute("href", "/producers");
       // absence: a "clear filters" affordance here would be a no-op button and

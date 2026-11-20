@@ -15,12 +15,14 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
 
 - **JWT secret from env.** `JWT_SECRET_KEY` (or `SECRET_KEY`) is
   **required** in production — a missing secret raises `RuntimeError` at
-  boot (`config.py:161-166`), it does not fall back. Ephemeral in dev
-  only (`config.py:171`). HS256 (`config.py:28`).
+  boot (`_load_settings` in `config.py`), it does not fall back. Ephemeral
+  in dev only (same function, the branch after the `RuntimeError`). HS256 (`config.py:28`).
   **TTL: 15-minute access token** (`config.py:35`), 14-day refresh
   (`config.py:36`). The access token also carries a `scope` claim, a
   `token_version` counter, password-change invalidation and a fingerprint
-  binding, all enforced in `get_current_user` (`auth.py:261-275`). Do not
+  binding, all enforced in `get_current_user` (`auth.py`: `_validate_access_scope`,
+  `_check_password_change_invalidation`, `_check_token_version`,
+  `_check_fingerprint`). Do not
   weaken any of these to lengthen a session.
 - **Rate limiting via slowapi.** See `backend/app/rate_limit.py`.
   Per-route limits are set in the router file, not inline.

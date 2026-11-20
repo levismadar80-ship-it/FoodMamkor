@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
 import he from "../messages/he.json";
-import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
 
 // MEH-1302 — Quick Answers. Two layers under test:
-//   1. pure answer logic (buildDeliveryAnswer / buildOrderingAnswer) — every branch
+//   1. pure answer logic (buildDeliveryAnswer / hasDeliverySection) — every branch
 //   2. WhatsAppQuestionChips rendering — disclosure vs WhatsApp routing, no-phone edge
 
 // ── next-intl: resolve real he.json copy so assertions read the shipped strings.
@@ -20,7 +21,7 @@ vi.mock("next-intl", () => ({
 // Phosphor icons → inert spans.
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub };
 });
 
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
@@ -130,55 +131,17 @@ describe("buildDeliveryAnswer (MEH-1302)", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("buildOrderingAnswer (MEH-1302)", () => {
-  it("whatsapp (explicit or default) → { kind: whatsapp }", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "whatsapp" })).toEqual({ kind: "whatsapp" });
-    expect(buildOrderingAnswer({})).toEqual({ kind: "whatsapp" });
+describe("hasDeliverySection — the business page's own delivery-section gate", () => {
+  it("true for offers_delivery, delivery_areas rows or pickup_points", () => {
+    expect(hasDeliverySection({ offers_delivery: true })).toBe(true);
+    expect(hasDeliverySection({ delivery_areas: [{ city: "חדרה" }] })).toBe(true);
+    expect(hasDeliverySection({ pickup_points: "שוק" })).toBe(true);
   });
 
-  it("external_order with a form → external link", () => {
-    expect(
-      buildOrderingAnswer({ primary_contact_method: "external_order", external_order_form: "order.co.il" }),
-    ).toEqual({ kind: "external_order", href: "https://order.co.il" });
-  });
-
-  it("external_order without a form → null", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "external_order" })).toBeNull();
-  });
-
-  it("phone → tel href + display phone", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "phone", phone: PHONE })).toEqual({
-      kind: "phone",
-      href: `tel:${PHONE}`,
-      phone: PHONE,
-    });
-  });
-
-  it("phone without a number → null", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "phone" })).toBeNull();
-  });
-
-  it("website / instagram / facebook / email → channel link", () => {
-    expect(buildOrderingAnswer({ primary_contact_method: "website", website: "shop.co.il" })).toEqual({
-      kind: "website",
-      href: "https://shop.co.il",
-    });
-    expect(buildOrderingAnswer({ primary_contact_method: "instagram", instagram: "@handle" })).toEqual({
-      kind: "instagram",
-      href: "https://instagram.com/handle",
-    });
-    expect(buildOrderingAnswer({ primary_contact_method: "facebook", facebook: "fb.com/page" })).toEqual({
-      kind: "facebook",
-      href: "https://fb.com/page",
-    });
-    expect(buildOrderingAnswer({ primary_contact_method: "email", contact_email: "a@b.co.il" })).toEqual({
-      kind: "email",
-      href: "mailto:a@b.co.il",
-    });
-  });
-
-  it("null producer → null", () => {
-    expect(buildOrderingAnswer(null)).toBeNull();
+  it("false with none of them (nationwide flag alone, pickup-only, null)", () => {
+    expect(hasDeliverySection({ delivery_nationwide: true })).toBe(false);
+    expect(hasDeliverySection({ offers_delivery: false, has_physical_location: true })).toBe(false);
+    expect(hasDeliverySection(null)).toBe(false);
   });
 });
 
@@ -201,12 +164,19 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     expect(screen.getByText("כן! משלוחים לכל הארץ")).toBeInTheDocument();
   });
 
-  it("delivery_areas → cities + '+ עוד N' + min/day sub-line", () => {
+  // Sapir 19/11 (screenshot, prod): «משלוחים ל: … + עוד 44» answered with a
+  // cut list while the full «משלוח» section sat lower on the same page. When
+  // that section renders, the question is a jump to it, not a second copy.
+  it("delivery section on the page → the question is not asked at all", () => {
+    // Sapir 20/11: the FAQ section sits right under «משלוחים», so the
+    // section IS the answer — no cut list, no jump, no second copy.
     render(
       <WhatsAppQuestionChips
         producer={{
           phone: PHONE,
           city: "חיפה",
+          primary_contact_method: "whatsapp",
+          offers_delivery: true,
           delivery_areas: [
             { city: "חיפה", min_order: 150, delivery_day: "חמישי" },
             { city: "עכו", min_order: 200 },
@@ -214,15 +184,21 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
             { city: "כרמיאל" },
             { city: "צפת" },
           ],
+          // control: the block itself still renders (her own question)
+          custom_questions: ["יש חלה לשבת?"],
         }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /אפשר משלוח/ }));
-    expect(screen.getByText(/משלוחים ל: חיפה, עכו, נהריה, כרמיאל \+ עוד 1/)).toBeInTheDocument();
-    expect(screen.getByText(/מינימום 150₪ · ימי משלוח: חמישי/)).toBeInTheDocument();
+    expect(screen.getByTestId("question-link")).toHaveTextContent("יש חלה לשבת?");
+    expect(screen.queryByText(/אפשר משלוח/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\+ עוד/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("quick-answer-jump")).not.toBeInTheDocument();
   });
 
-  it("ordering via external_order → disclosure with the order-form link", () => {
+  // Sapir 19/11: «איך מזמינים?» sat right under the «להזמנה» button and
+  // answered with the same link. The answer was built FROM the button
+  // (getPrimaryContactHref), so it could only ever repeat it.
+  it("never asks «איך מזמינים?» — the button above already answers it", () => {
     render(
       <WhatsAppQuestionChips
         producer={{
@@ -230,14 +206,13 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
           city: "חיפה",
           primary_contact_method: "external_order",
           external_order_form: "order.example.com",
+          delivery_nationwide: true,
         }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /איך מזמינים/ }));
-    expect(screen.getByText(/מזמינים דרך טופס ההזמנות/)).toBeInTheDocument();
-    const link = screen.getByRole("link", { name: "למעבר" });
-    expect(link).toHaveAttribute("href", "https://order.example.com");
-    expect(link).toHaveAttribute("target", "_blank");
+    expect(screen.queryByText(/איך מזמינים/)).not.toBeInTheDocument();
+    // positive control: the block itself rendered
+    expect(screen.getByRole("button", { name: /אפשר משלוח/ })).toBeInTheDocument();
   });
 
   it("no delivery data → Q1 falls back to a WhatsApp link", () => {
@@ -248,17 +223,9 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     expect(links[0].getAttribute("href")).toContain("wa.me");
   });
 
-  // MEH-2154 changed the second half of this case ON PURPOSE. It used to assert
-  // `escalation-link` was ABSENT, because the escalation row was gated on a
-  // phone existing. The escalation row is the contact channel itself, so it now
-  // follows the declared primary channel and renders whenever ANY channel
-  // resolves — here, the order form. The WhatsApp half of the assertion is
-  // unchanged and is the half that still matters: zero wa.me rows.
-  //
-  // The replacement is stricter than what it replaces: `not.toBeInTheDocument`
-  // passes for a missing element AND for a broken render, while asserting the
-  // href value can only pass one way.
-  it("no phone but data present → answers render, zero WhatsApp items, escalation follows the order form", () => {
+  // MEH-3460: the «שאלה אחרת?» escalation row is gone (it opened the same
+  // channel as the primary button), so the answers are the whole block.
+  it("no phone but data present → answers render, zero WhatsApp items, no escalation row", () => {
     render(
       <WhatsAppQuestionChips
         producer={{
@@ -269,11 +236,9 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
         }}
       />,
     );
-    expect(screen.getAllByTestId("quick-answer-toggle")).toHaveLength(2); // delivery + ordering
+    expect(screen.getAllByTestId("quick-answer-toggle")).toHaveLength(1); // delivery only (ordering = the button)
     expect(screen.queryByTestId("question-link")).not.toBeInTheDocument();
-    const escalation = screen.getByTestId("escalation-link");
-    expect(escalation).toHaveAttribute("href", "https://order.example.com");
-    expect(escalation.getAttribute("href")).not.toContain("wa.me");
+    expect(screen.queryByTestId("escalation-link")).not.toBeInTheDocument();
   });
 
   it("no phone and no data → renders nothing", () => {
@@ -285,18 +250,13 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("escalation appears only when a phone exists", () => {
-    render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
-    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? צרו איתנו קשר");
-  });
-
   // MEH-2385 — the recipe-idea row (MEH-1462) and the category stock question
-  // are gone from the block. The escalation row is the positive control: a
+  // are gone from the block. The Q1 WhatsApp chip is the positive control: a
   // render that produced nothing would also pass the two negatives alone.
   it("renders neither the recipe-idea row nor a stock question, even with a phone", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה", categories: [{ name: "לחמים ואפייה" }] }} />);
     expect(screen.queryByTestId("recipe-idea-link")).not.toBeInTheDocument();
     expect(screen.queryByText("אילו לחמים יש השבוע?")).not.toBeInTheDocument();
-    expect(screen.getByTestId("escalation-link")).toHaveTextContent("שאלה אחרת? צרו איתנו קשר");
+    expect(screen.getByTestId("question-link").getAttribute("href")).toContain("wa.me");
   });
 });

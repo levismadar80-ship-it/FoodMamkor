@@ -35,7 +35,7 @@ concurrency:
 jobs:
   reconcile:
     name: Reconcile PRs <-> Linear (${{ github.event.inputs.mode || 'dry-run' }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7 # tag pin, same form as every other workflow in this repo

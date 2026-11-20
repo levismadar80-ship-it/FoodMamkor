@@ -6,6 +6,7 @@ import { Truck, Package, Phone, Clock } from "@phosphor-icons/react";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
+import { telHref } from "@/lib/contact-method";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
@@ -255,7 +256,7 @@ function PickupRow({ loc, t, tMap }) {
   const gmapsUrl = nav?.google ?? null;
   const heading = loc.label || loc.city;
   const phone = (loc.phone || "").trim();
-  const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : null;
+  const telLink = telHref(phone); // MEH-3461: the one tel: builder
   return (
     <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
       <div className="min-w-0">
@@ -272,9 +273,9 @@ function PickupRow({ loc, t, tMap }) {
             the click-to-call MEH-1509 served the field for. The number is its
             own label (as on a Google Maps place card); dir=ltr keeps
             «052-123 4567» from reordering inside the RTL row. */}
-        {telHref && (
+        {telLink && (
           <a
-            href={telHref}
+            href={telLink}
             dir="ltr"
             className="inline-flex items-center gap-1 min-h-touch text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary rounded"
           >

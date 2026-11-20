@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { IMAGE_RATIOS } from "@/lib/cloudinary";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { avatarInitial } from "@/components/ui/Avatar";
+import Avatar, { avatarInitial } from "@/components/ui/Avatar";
 
 /**
  * Module:   OwnerCard
@@ -73,14 +73,16 @@ export default function OwnerCard({ producer, heading, nested = false }) {
                 style={{ width: avatarSize, height: avatarSize }}
               />
             ) : initial ? (
-              <span
+              // MEH-3461: the shared Avatar (was a hand-drawn circle).
+              <Avatar
+                name={name}
+                size={avatarSize}
+                tone="soft"
                 aria-hidden="true"
                 data-testid="owner-initial"
-                className="rounded-full bg-green-50 text-primary flex items-center justify-center font-headline-md font-bold shrink-0"
-                style={{ width: avatarSize, height: avatarSize, fontSize: avatarSize * 0.42 }}
-              >
-                {initial}
-              </span>
+                letterClassName="font-headline-md font-bold"
+                style={{ fontSize: avatarSize * 0.42 }}
+              />
             ) : null}
             <div className="min-w-0">
               {name && <p className="font-headline-md text-lg font-bold text-text leading-tight">{name}</p>}
@@ -114,14 +116,16 @@ export default function OwnerCard({ producer, heading, nested = false }) {
               style={{ width: avatarSize, height: avatarSize }}
             />
           ) : initial ? (
-            <span
+            <Avatar
+              name={name}
+              size={avatarSize}
+              tone="none"
               aria-hidden="true"
               data-testid="owner-initial"
-              className="rounded-full bg-primary text-background flex items-center justify-center font-headline-md font-bold shrink-0"
-              style={{ width: avatarSize, height: avatarSize, fontSize: avatarSize * 0.4 }}
-            >
-              {initial}
-            </span>
+              className="bg-primary text-background"
+              letterClassName="font-headline-md font-bold"
+              style={{ fontSize: avatarSize * 0.4 }}
+            />
           ) : null}
           <div className="min-w-0">
             {name && <h3 className="font-headline-md text-lg font-bold text-text">{name}</h3>}

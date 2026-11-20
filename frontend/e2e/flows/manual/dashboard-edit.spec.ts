@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
 // Unstubbed, it reaches Railway staging on a staging push, where ordering is on,
@@ -207,6 +208,12 @@ async function openAt(page: Page, anchor: string): Promise<void> {
     card(page, anchor),
     `control: the #${anchor} deep link never brought its card on screen — every assertion here is void`,
   ).toBeVisible({ timeout: 15_000 });
+  // MEH-3449: the deep link is still settling (group switch, collapsing
+  // sections, smooth scroll) — a click into a moving card can be lost without
+  // an error (flows/_layout-settled.ts). The resolver's last navigation
+  // puts the card's group in the URL; wait for it, then for quiet.
+  await expect(page).toHaveURL(/[?&]group=/);
+  await layoutSettled(card(page, anchor));
 }
 
 /** The back link of whichever group is currently showing (each group has one). */

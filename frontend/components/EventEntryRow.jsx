@@ -14,6 +14,7 @@
  * prefix (next/link dropped it under localePrefix: as-needed).
  */
 
+import Avatar from "@/components/ui/Avatar";
 import { useLocale } from "next-intl";
 import {
   Basket,
@@ -120,12 +121,17 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   // uniform (Luma's host mark). A category tile has no photo to mark.
   const pictureFace = picture ? (
     !entry.ownerInitial ? null : (
-      <span
+      // MEH-3461: the shared Avatar (was a hand-drawn circle). The entry
+      // already holds the initial, so it is passed as the name.
+      <Avatar
+        name={entry.ownerInitial}
+        fallback=""
+        size={20}
+        tone="none"
         data-testid="event-row-owner-initial"
-        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-surface text-primary text-2xs font-bold grid place-items-center shadow-sm"
-      >
-        {entry.ownerInitial}
-      </span>
+        className="absolute bottom-1 end-1 bg-surface text-primary shadow-sm"
+        letterClassName="text-2xs font-bold"
+      />
     )
   ) : (
     <Icon size={24} weight="regular" />

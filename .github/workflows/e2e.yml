@@ -56,7 +56,10 @@ on:
   # hours of unknown). 01:30 UTC = 03:30/04:30 Israel, outside working hours.
   # Like workflow_dispatch it bypasses the paths filter (see the e2e job's if:).
   schedule:
-    - cron: "30 1 * * *"
+    # The jobs' if: conditions match these two cron strings verbatim
+    # (github.event.schedule). Change a cron here = change it there too.
+    - cron: "30 1 * * *"   # nightly Chromium suite on staging (both modes); WebKit too when public
+    - cron: "30 2 * * 0"   # PRIVATE MODE only: WebKit shadow run, weekly (Sunday)
 
 permissions:
   contents: read
@@ -81,7 +84,12 @@ concurrency:
 jobs:
   filter:
       name: Paths filter
-      runs-on: ubuntu-latest
+      # PRIVATE MODE (repo private, or repo variable CI_MODE=private — MEH-3453):
+      # an unlabeled PR and a push to staging start no job at all.
+      if: >-
+        !(vars.CI_MODE == 'private' || github.event.repository.private) || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-e2e'))
+      runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
       outputs:
         frontend: ${{ steps.filter.outputs.frontend }}
         backend: ${{ steps.filter.outputs.backend }}
@@ -123,14 +131,18 @@ jobs:
     # the two blob reports into ONE verdict. `e2e-gate` still reads
     # `needs.e2e.result`, which GitHub aggregates over the matrix: any red
     # shard is red.
-    name: Playwright E2E (Vercel preview) ${{ matrix.shard }}/2
-    runs-on: ubuntu-latest
+    name: Playwright E2E (Vercel preview) ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && !(vars.CI_MODE == 'private' || github.event.repository.private) && 4 || 2 }}
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 30
     needs: filter
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        # E2E speed (19/11): PR runs use 4 shards — each PR shard has its own
+        # local backend and its own runner IP, so nothing is shared and the
+        # per-IP limits stay per shard. Staging/nightly keep 2: they share the
+        # real staging backend (pool 10+5, MEH-2398), so they do not double load.
+        shard: ${{ fromJSON(github.event_name == 'pull_request' && !(vars.CI_MODE == 'private' || github.event.repository.private) && '[1, 2, 3, 4]' || '[1, 2]') }}
     # MEH-2895: one queue PER SHARD, so the two halves of one run go in
     # parallel. The shared-backend protection stays: at most one run's shard N
     # at a time, so at most two suites hit Railway staging together.
@@ -173,12 +185,15 @@ jobs:
     # often, not less. The `labeled` guard is kept so adding some OTHER label
     # to a PR does not start a fresh suite. schedule/workflow_dispatch are
     # unchanged.
+    # MEH-3453 — two modes, decided per run. PUBLIC (free minutes): unchanged
+    # — the paths decide. PRIVATE (the runner is Sapir's PC): only the
+    # merge-train PR (label run-e2e), the nightly run and a manual run.
     if: |
-      (needs.filter.outputs.frontend == 'true' ||
-       (github.event_name == 'pull_request' && needs.filter.outputs.backend == 'true') ||
+      ((!(vars.CI_MODE == 'private' || github.event.repository.private) && github.event.schedule != '30 2 * * 0' && (needs.filter.outputs.frontend == 'true' ||
+        (github.event_name == 'pull_request' && needs.filter.outputs.backend == 'true'))) ||
        contains(github.event.pull_request.labels.*.name, 'run-e2e') ||
        github.event_name == 'workflow_dispatch' ||
-       github.event_name == 'schedule') &&
+       github.event.schedule == '30 1 * * *') &&
       github.actor != 'dependabot[bot]' &&
       (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')
 
@@ -381,7 +396,7 @@ jobs:
         # Playwright jobs executed was red (5/5), each on 1–2 of ~1,550 tests,
         # and rule 41 then froze every PR. A test that FAILS both attempts is
         # still red everywhere.
-        run: npx playwright test ${{ github.event_name == 'pull_request' && '--fail-on-flaky-tests' || '' }} --shard=${{ matrix.shard }}/2
+        run: npx playwright test ${{ github.event_name == 'pull_request' && '--fail-on-flaky-tests' || '' }} --shard=${{ matrix.shard }}/${{ github.event_name == 'pull_request' && !(vars.CI_MODE == 'private' || github.event.repository.private) && 4 || 2 }}
         working-directory: frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
@@ -539,7 +554,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   e2e-report:
     name: E2E report (merged shards)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     needs: e2e
     if: >-
@@ -576,24 +591,26 @@ jobs:
       - name: Merge reports and count
         id: coverage-floor
         working-directory: frontend
+        env:
+          SHARD_TOTAL: ${{ github.event_name == 'pull_request' && !(vars.CI_MODE == 'private' || github.event.repository.private) && 4 || 2 }}
         run: |
           mkdir -p playwright-report merged-blobs
           PARTIAL=""
-          for N in 1 2; do
+          for N in $(seq 1 "$SHARD_TOTAL"); do
             DIR="all-blob-reports/blob-report-$N"
             ZIPS=$(find "$DIR" -name '*.zip' 2>/dev/null | wc -l)
             if [ "$ZIPS" -eq 0 ]; then
-              echo "::error::Shard $N/2 left no blob report — it timed out, was cancelled, or died before its report step."
-              PARTIAL="$PARTIAL shard $N/2: no report;"
+              echo "::error::Shard $N/$SHARD_TOTAL left no blob report — it timed out, was cancelled, or died before its report step."
+              PARTIAL="$PARTIAL shard $N/$SHARD_TOTAL: no report;"
               continue
             fi
             PLAYWRIGHT_JSON_OUTPUT_FILE="playwright-report/shard-$N.json" \
               npx playwright merge-reports --reporter json "$DIR"
             E=$(jq '(.stats.expected // 0) + (.stats.unexpected // 0) + (.stats.flaky // 0)' "playwright-report/shard-$N.json")
-            echo "shard $N/2: executed=$E"
+            echo "shard $N/$SHARD_TOTAL: executed=$E"
             if [ "$E" -eq 0 ]; then
-              echo "::error::Shard $N/2 executed 0 tests — its global-setup aborted (see that shard's log)."
-              PARTIAL="$PARTIAL shard $N/2: 0 executed;"
+              echo "::error::Shard $N/$SHARD_TOTAL executed 0 tests — its global-setup aborted (see that shard's log)."
+              PARTIAL="$PARTIAL shard $N/$SHARD_TOTAL: 0 executed;"
             fi
             cp "$DIR"/*.zip merged-blobs/
           done
@@ -808,7 +825,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────
   e2e-webkit:
     name: Playwright E2E (WebKit — shadow, non-blocking)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     # MEH-2972: was 20 and every run 10–12/11 hit it and was cancelled with no
     # report — 20 runner-minutes for zero information each time. The full
     # suite on one runner needs ~30 (the Chromium suite needed two shards to
@@ -839,7 +856,8 @@ jobs:
     # event for any other label does not start it. Push to staging and
     # workflow_dispatch are unchanged.
     if: |
-      (github.event_name == 'schedule' ||
+      ((github.event.schedule == '30 1 * * *' && !(vars.CI_MODE == 'private' || github.event.repository.private)) ||
+       (github.event.schedule == '30 2 * * 0' && (vars.CI_MODE == 'private' || github.event.repository.private)) ||
        github.event_name == 'workflow_dispatch') &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name != 'pull_request' ||
@@ -1000,9 +1018,13 @@ jobs:
 
   e2e-gate:
     name: E2E gate 
-    if: always()
+    # MEH-3453: in private mode no gate job where nothing was meant to run; never on the weekly WebKit cron.
+    if: >-
+      always() && github.event.schedule != '30 2 * * 0' &&
+      (!(vars.CI_MODE == 'private' || github.event.repository.private) || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-e2e')))
     needs: [filter, e2e]
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 3
     steps:
       - name: Aggregate E2E required-check result
@@ -1014,6 +1036,10 @@ jobs:
           # runs test Railway staging and ignore it, MEH-2973), so it only
           # makes `skipped` a failure on a PR.
           BACKEND_TOUCHED: ${{ github.event_name == 'pull_request' && needs.filter.outputs.backend || 'false' }}
+          # MEH-3453: in private mode the paths do not start the suite, so they
+          # cannot demand it either; the label, the nightly run and a manual run do.
+          PRIVATE_MODE: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) }}
+          MUST_RUN_PRIVATE: ${{ contains(github.event.pull_request.labels.*.name, 'run-e2e') || github.event_name == 'workflow_dispatch' || github.event.schedule == '30 1 * * *' }}
           # A labeled event for another label skips the suite by design (the
           # job's `labeled` guard); that run must not turn the gate red.
           OTHER_LABEL: ${{ github.event.action == 'labeled' && github.event.label.name != 'run-e2e' }}
@@ -1054,7 +1080,8 @@ jobs:
           # was supposed to run and must show `success`.
           # MEH-2956 adds backend/app (and the rest of the backend filter) on PRs.
           echo "Touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED other_label=$OTHER_LABEL dependabot=$IS_DEPENDABOT"
-          if [ "$OTHER_LABEL" != "true" ] && [ "$IS_DEPENDABOT" != "true" ] && { [ "$FRONTEND_TOUCHED" = "true" ] || [ "$BACKEND_TOUCHED" = "true" ]; }; then
+          # MEH-3453: public -> the paths demand a run; private -> the label/nightly/manual do.
+          if [ "$OTHER_LABEL" != "true" ] && [ "$IS_DEPENDABOT" != "true" ] && { { [ "$PRIVATE_MODE" != "true" ] && { [ "$FRONTEND_TOUCHED" = "true" ] || [ "$BACKEND_TOUCHED" = "true" ]; }; } || { [ "$PRIVATE_MODE" = "true" ] && [ "$MUST_RUN_PRIVATE" = "true" ]; }; }; then
             check_ran "Playwright E2E (Vercel preview)" "$R_E2E"
           else
             check "Playwright E2E (Vercel preview)" "$R_E2E"

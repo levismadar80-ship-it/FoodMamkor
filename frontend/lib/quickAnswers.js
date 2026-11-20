@@ -10,16 +10,16 @@
  *           the component + messages/*.json; here we only classify + shape).
  *           Consumes the PUBLIC ProducerDetailOut shape.
  * Does NOT: render, translate, or build WhatsApp hrefs — see
- *           WhatsAppQuestionChips.jsx (rendering) and lib/contact-method.js
- *           (primary-CTA hrefs, REUSED here for the ordering channel link).
- * Related:  frontend/lib/contact-method.js:34 (getPrimaryContactHref),
- *           backend/app/schemas/schemas.py:924-941 (public delivery fields:
+ *           WhatsAppQuestionChips.jsx (rendering). There is no «איך מזמינים?»
+ *           answer any more: it was built from the primary CTA's own href and
+ *           so could only repeat the button above it (Sapir 19/11).
+ * Related:  backend/app/schemas/schemas.py:924-941 (public delivery fields:
  *           has_physical_location, offers_delivery, delivery_nationwide,
  *           delivery_excluded_cities, delivery_areas).
  * History:  MEH-1302 (creation); MEH-1512 (pickup_only derives cities from
- *           locations[] so a multi-pickup business isn't reduced to one city).
+ *           locations[] so a multi-pickup business isn't reduced to one city);
+ *           19/11 buildOrderingAnswer removed, hasDeliverySection added.
  */
-import { getPrimaryMethod, getPrimaryContactHref } from "@/lib/contact-method";
 
 // Cap the delivery-city preview; the remainder is summarised as "+ N more".
 const MAX_DELIVERY_CITIES = 4;
@@ -88,27 +88,20 @@ export function buildDeliveryAnswer(producer) {
 }
 
 /**
- * Classify how to order, driven by primary_contact_method. Reuses
- * getPrimaryContactHref so the channel link matches the primary CTA exactly.
- * Returns `null` when the method's backing field is missing (→ WhatsApp
- * fallback). WhatsApp itself needs no link — the primary CTA already sends.
+ * Does the business page render its «משלוח» section (`#section-delivery`)?
+ * The ONE copy of that gate: ProducerSections renders the section on it,
+ * section-nav.js shows the «משלוח» pill on it, and WhatsAppQuestionChips does
+ * not ask the delivery question on it — the FAQ section sits right under the
+ * delivery section, which is the full answer (Sapir 19–20/11).
  *
  * @param {object|null|undefined} producer
- * @returns {
- *   | { kind: "whatsapp" }
- *   | { kind: "phone", href: string, phone: string }
- *   | { kind: "external_order"|"website"|"instagram"|"facebook"|"email", href: string }
- *   | null
- * }
+ * @returns {boolean}
  */
-export function buildOrderingAnswer(producer) {
-  if (!producer) return null;
-  const method = getPrimaryMethod(producer);
-  if (method === "whatsapp") return { kind: "whatsapp" };
-
-  const href = getPrimaryContactHref(producer);
-  if (!href) return null; // backing field missing → fall back to WhatsApp
-
-  if (method === "phone") return { kind: "phone", href, phone: producer.phone };
-  return { kind: method, href };
+export function hasDeliverySection(producer) {
+  return !!(
+    producer &&
+    (producer.offers_delivery ||
+      producer.delivery_areas?.length > 0 ||
+      producer.pickup_points)
+  );
 }

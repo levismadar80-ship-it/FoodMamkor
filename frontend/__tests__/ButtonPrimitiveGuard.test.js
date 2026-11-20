@@ -48,7 +48,6 @@ const ALLOWED = {
   "components/FilterSheet.jsx": 1,
   "components/InstallPrompt.jsx": 1,
   "components/ProducersClient.jsx": 2,
-  "components/admin/ClaimLinkPanel.jsx": 1,
   "components/dashboard/RescueTab.jsx": 1
 };
 

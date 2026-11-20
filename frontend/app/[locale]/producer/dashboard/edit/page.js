@@ -94,6 +94,7 @@ import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
 // live list instead of an empty state that contradicts it.
 import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
+import { resolveStoreHours } from "@/lib/hours";
 
 // MEH-2262: the anchor registry moved to lib/dashboard-edit-anchors.js so a
 // test can import it — a card missing from one of its three maps is
@@ -162,10 +163,13 @@ const GROUP_MEMBERS = {
   // duplicate "מיקום על המפה" editor) was deleted — LocationsEditor is now
   // the group's only location-writing surface and isn't tracked here (see
   // MEH-1544's note above for why an opt-in-shaped field stays out of the count).
-  // MEH-2142: `hours` was a member until its card was removed. The count is
-  // now "{done}/1" for this group, which is correct — a member with no card
-  // would make the group permanently incompletable.
-  location: ["delivery"],
+  // MEH-2142: `hours` was a member until its card was removed — a member with
+  // no card would make the group permanently incompletable.
+  // MEH-2930: store hours count again, through the locations card — the place
+  // they live since MEH-2142 — so this tile and the completeness checklist
+  // («שעות פתיחה») judge hours with the same resolveStoreHours and can no
+  // longer read «1 מתוך 1» beside «חסר».
+  location: ["delivery", "locations"],
   contact: ["contact", "questions"],
 };
 
@@ -272,6 +276,8 @@ function EditPageInner() {
   // (/producers/me joins products), then kept live by ProductsSection's
   // onCountChange as the owner adds/removes inside the card.
   const [productsCount, setProductsCount] = useState(null);
+  // MEH-2937: LocationsEditor reports its live list here (null until it loads).
+  const [liveLocations, setLiveLocations] = useState(null);
 
   // MEH-2207: the LIVE primary contact channel, as selected in the contact
   // card's form — not the saved value. Seeded from the profile so the notice
@@ -466,6 +472,9 @@ function EditPageInner() {
   // the summaries above compute (no producer-completeness import, no fetch).
   // Falls through to null when nothing is missing → no marker at all.
   const productsForMarker = productsCount ?? profile.products?.length ?? 0;
+  // MEH-2937: the live list from LocationsEditor, else the mount-time profile.
+  const currentLocations = liveLocations ?? profile.locations ?? [];
+  const locationCount = currentLocations.length;
   const nextStepKey =
     (profile.images?.length ?? 0) === 0
       ? "images"
@@ -608,6 +617,10 @@ function EditPageInner() {
     specialHours: upcomingSpecialCount(profile.special_hours) > 0,
     contact: contactFilled,
     questions: (profile.custom_questions || []).length > 0,
+    // MEH-2930: the locations card counts as done once the business has store
+    // hours — the same test the checklist runs (lib/producer-completeness.js) —
+    // read off the editor's live list, so saving hours there moves the tile.
+    locations: Boolean(resolveStoreHours({ ...profile, locations: currentLocations })),
   };
 
   // MEH-2155: the accordion header needs the same resolution the card body
@@ -619,7 +632,6 @@ function EditPageInner() {
       deliveryQuestion: tChips("delivery_to_my_area"),
       orderingQuestion: tChips("ordering_q"),
       paymentQuestion: tChips("payment_q"),
-      escalationQuestion: tChips("escalation"),
     });
     return { usesCustom, customCount, liveCount: items.length };
   })();
@@ -1047,14 +1059,15 @@ function EditPageInner() {
           title={tLoc("section_heading")}
           summary={
             // MEH-2430: was a bare number ("10"); now "N מיקומים".
-            profile.locations?.length
-              ? tLoc("count_summary", { count: profile.locations.length })
+            // MEH-2937: the editor's live list wins over the mount-time profile.
+            locationCount
+              ? tLoc("count_summary", { count: locationCount })
               : tLoc("empty_title")
           }
           open={openKey === "locations"}
           onToggle={() => toggleKey("locations")}
         >
-          <LocationsEditor />
+          <LocationsEditor onLocationsChange={setLiveLocations} />
         </EditAccordionCard>
 
         {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes

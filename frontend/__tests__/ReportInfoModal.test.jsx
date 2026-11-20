@@ -14,7 +14,7 @@ vi.mock("next-intl", () => ({
       placeholder: "מה לא מדויק? שעות, טלפון, כתובת — כל פרט עוזר",
       email_label: "מייל לעדכון חוזר (לא חובה)",
       submit: "שליחה",
-      submit_loading: "בשליחה...",
+      submit_loading: "בשליחה…",
       close: "סגרו",
       "toasts.success": "תודה! נבדוק ונעדכן בהקדם",
       "toasts.error": "שגיאה בשליחה — נסו שוב",

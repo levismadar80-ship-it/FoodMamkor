@@ -206,7 +206,7 @@ export default function ProducerDashboardPage() {
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
   // MEH-1261 F2: analytics/profile fetch failures used to collapse into their
-  // `null` loading states — analytics froze on "טעינת סטטיסטיקות..." forever
+  // `null` loading states — analytics froze on "טעינת סטטיסטיקות…" forever
   // and the completeness card silently unmounted. Each section now tracks its
   // own error + retry attempt-counter and fails independently of the others.
   const [analyticsError, setAnalyticsError] = useState(false);

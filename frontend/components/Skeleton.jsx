@@ -150,7 +150,7 @@ export function SkeletonProducerGrid({ count = 8 }) {
 
 /* ── MEH-2601 — shape skeletons for dashboard + admin wait states ──────────
    Where the coming content's SHAPE is known (a list, a table, a form, stat
-   tiles) draw it, instead of the bare «בטעינה...» line those screens showed.
+   tiles) draw it, instead of the bare «בטעינה…» line those screens showed.
    Unknown shape → components/BrandLoader.jsx (MEH-2599), never these.
    Each one mounts <SkeletonStyles/> itself, carries role="status" and keeps
    the screen's existing loading copy sr-only, so specs that wait for that

@@ -172,7 +172,7 @@ describe("ChatWidget copy lock (MEH-1617)", () => {
   it("keeps the pre-move Hebrew copy byte-for-byte", () => {
     expect(he.chat.launcher_open_label).toBe("שאלו אותנו");
     expect(he.chat.launcher_pill).toBe("שאלה? שאלו אותי");
-    expect(he.chat.input_placeholder).toBe("הקלידו שאלה...");
+    expect(he.chat.input_placeholder).toBe("הקלידו שאלה…");
     expect(he.chat.prompts.register).toBe("איך נרשמים כבית עסק?");
     // MEH-2100: the answer is ONE line now (the register flow gained a step,
     // and the copy was rewritten as a single sentence), so the embedded-newline

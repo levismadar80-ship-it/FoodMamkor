@@ -174,7 +174,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // The skeleton still reserves the same space on the no-server-data path.
   const [producersLoading, setProducersLoading] = useState(!initialProducers);
   // MEH-1269: geoLoading is now real — true while getCurrentPosition + the geo
-  // fetch are in flight, so the HomeHero home.hero.searching ("בחיפוש...")
+  // fetch are in flight, so the HomeHero home.hero.searching ("בחיפוש…")
   // spinner actually shows (previously a dead const with no setter).
   const [geoLoading, setGeoLoading] = useState(false);
   // MEH-1269: {lat, lng} while a geographic "קרוב אליי" filter is active, else

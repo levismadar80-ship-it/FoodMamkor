@@ -103,6 +103,7 @@ export named here no longer exists.
 | Email / password rules | `validators.js` | `validateEmail`, `passwordRules` |
 | WhatsApp link | `utils.js` | `getWhatsAppHref` |
 | A business's contact button (href, label) | `contact-method.js` | `getPrimaryContactHref`, `getPrimaryContactLabel` |
+| Phone call link (`tel:`) | `contact-method.js` | `telHref` |
 | Opening hours: parse, open-now | `hours.js` | `parseHours`, `computeStatus` |
 | Distance in km | `distance.js` | `haversineKm`, `formatDistance` |
 | Share / copy a link | `share-link.js` · `clipboard.js` | `shareOrCopy` · `copyText` |
@@ -303,6 +304,21 @@ only; the desktop chip stayed until MEH-2769.
   without a reason in `SHELL_ONLY`. Add a reason there; don't loosen it.
   Blind spot: the phone's region wrappers (`SHELL_WRAPPERS`) count as the
   shell, so a move between two of them is not caught.
+
+---
+
+## A route change goes through the router — never `history.pushState` (MEH-3463)
+
+Two routes that are one screen (tabs) share a **layout** that renders the
+screen once (`app/[locale]/(whats-on)/layout.js`); the page files carry only
+the route and its metadata, and the tab is read from `usePathname()`. Switch
+with `router.push(path, { scroll: false })` or `<Link>`. Writing another route
+with `history.pushState` leaves Next holding one URL with the other page's
+tree — on 20/11 that put half the hub on «אירועים» and half on «חוויות» in
+production. `pushState` is for a new **query on the same path** only, and each
+such file is listed with its reason in
+`frontend/__tests__/NoHandWrittenRouteChangeGuard.test.js`, which fails on any
+other caller.
 
 ---
 

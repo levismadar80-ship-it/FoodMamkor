@@ -51,13 +51,9 @@
  * filter does not work, which the dashboard must reflect rather than correct.
  */
 import { normalizePhone } from "@/lib/utils";
-import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
 import { paymentAnswer } from "@/lib/payment-info";
-import {
-  getPrimaryContactHref,
-  getPrimaryMethod,
-  isWhatsAppPrimary,
-} from "@/lib/contact-method";
+import { isWhatsAppPrimary } from "@/lib/contact-method";
 
 /**
  * The literal the component also strips, on top of the two resolved labels.
@@ -72,7 +68,7 @@ const DUPLICATE_OF_DELIVERY = "יש משלוח?";
  * note: it used to live twice, here and in WhatsAppQuestionChips.jsx, and
  * could drift). `[עיר]` is replaced with `city` when one is given; the two
  * canonical slots (delivery / ordering) and the legacy stock wording are
- * dropped so a row never duplicates Q1 / Q2.
+ * dropped so a row never duplicates Q1 or the primary button (MEH-3460).
  *
  * @param {object|null|undefined} producer
  * @param {{ city?: string, deliveryQuestion: string, orderingQuestion: string }} opts
@@ -88,7 +84,7 @@ export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, ord
 /**
  * Labels are resolved by the caller from `whatsapp.question_chips`:
  * `deliveryQuestion` = t("delivery_to_city", { city }), `orderingQuestion` =
- * t("ordering_q"), `escalationQuestion` = t("escalation"), `paymentQuestion` =
+ * t("ordering_q"), `paymentQuestion` =
  * t("payment_q") (MEH-3035).
  *
  * In each returned item, `answered` is true when the row is answered in-page
@@ -100,7 +96,6 @@ export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, ord
  * @param {{
  *   deliveryQuestion: string,
  *   orderingQuestion: string,
- *   escalationQuestion: string,
  *   paymentQuestion?: string,
  * }} labels
  * @returns {{
@@ -109,7 +104,7 @@ export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, ord
  *     label: string,
  *     answered: boolean,
  *     channel: string|null,
- *     source: "delivery"|"ordering"|"payment"|"custom"|"escalation",
+ *     source: "delivery"|"payment"|"custom",
  *   }>,
  *   usesCustom: boolean,
  *   customCount: number,
@@ -118,18 +113,20 @@ export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, ord
 export function resolveProducerQuestions(producer, labels) {
   const digits = normalizePhone(producer?.phone);
   const waEnabled = isWhatsAppPrimary(producer) && !!digits;
-  const method = getPrimaryMethod(producer);
   const delivery = buildDeliveryAnswer(producer);
-  const ordering = buildOrderingAnswer(producer);
 
   const custom = (producer?.custom_questions || []).filter(Boolean);
   const usesCustom = custom.length > 0;
 
-  /** @type {Array<{id: string, label: string, answered: boolean, channel: string|null, source: "delivery"|"ordering"|"payment"|"custom"|"escalation"}>} */
+  /** @type {Array<{id: string, label: string, answered: boolean, channel: string|null, source: "delivery"|"payment"|"custom"}>} */
   const items = [];
 
   // Q1 — answered from her delivery data, else a WhatsApp row, else absent.
-  if (delivery) {
+  // MEH-3460 (20/11): not asked at all when the page has its «משלוח» section —
+  // the FAQ section sits right under it and the section is the answer.
+  if (hasDeliverySection(producer)) {
+    // no row: the page answers it with the section itself
+  } else if (delivery) {
     items.push({
       id: "delivery",
       label: labels.deliveryQuestion,
@@ -147,28 +144,9 @@ export function resolveProducerQuestions(producer, labels) {
     });
   }
 
-  // Q2 — a "whatsapp" ordering answer needs a number to be worth showing; the
-  // component drops it otherwise rather than showing an answer that says
-  // "message her" with nowhere to send.
-  if (ordering && (ordering.kind !== "whatsapp" || digits)) {
-    items.push({
-      id: "ordering",
-      label: labels.orderingQuestion,
-      answered: true,
-      channel: null,
-      source: "ordering",
-    });
-  } else if (!ordering && waEnabled) {
-    items.push({
-      id: "ordering",
-      label: labels.orderingQuestion,
-      answered: false,
-      channel: "whatsapp",
-      source: "ordering",
-    });
-  }
+  // «איך מזמינים?» is no longer a row (19/11): it repeated the primary CTA.
 
-  // MEH-3035: «איך משלמים?» — answered from her payment_info, after Q2 and
+  // MEH-3035: «איך משלמים?» — answered from her payment_info, after Q1 and
   // before her custom questions, exactly where the page puts it.
   if (paymentAnswer(producer?.payment_info)) {
     items.push({
@@ -199,18 +177,7 @@ export function resolveProducerQuestions(producer, labels) {
     });
   }
 
-  // Escalation — the contact channel itself. Present whenever ANY channel
-  // resolves (MEH-2154); on WhatsApp it needs the number the deep-link uses.
-  const escalationLives = waEnabled || !!getPrimaryContactHref(producer);
-  if (escalationLives) {
-    items.push({
-      id: "escalation",
-      label: labels.escalationQuestion,
-      answered: false,
-      channel: waEnabled ? "whatsapp" : method,
-      source: "escalation",
-    });
-  }
+  // MEH-3460 (20/11): no escalation row — it repeated the primary CTA.
 
   return { items, usesCustom, customCount: custom.length };
 }

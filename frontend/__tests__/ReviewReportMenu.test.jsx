@@ -25,7 +25,7 @@ const he = {
   "reviews.report.success_toast": "תודה, הדיווח הגיע אלינו. נבדוק אותו בהקדם.",
   "modals.report_info.email_label": "מייל לעדכון חוזר (לא חובה)",
   "modals.report_info.submit": "שליחה",
-  "modals.report_info.submit_loading": "בשליחה...",
+  "modals.report_info.submit_loading": "בשליחה…",
   "modals.report_info.close": "סגרו",
   "modals.report_info.toasts.error": "שגיאה בשליחה — נסו שוב",
 };

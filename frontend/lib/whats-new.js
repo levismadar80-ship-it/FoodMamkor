@@ -38,6 +38,10 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.9 (20/11): weekly summary email with an owner on/off switch (MEH-3212);
+  // allergens emphasised in the ingredients list (MEH-3443); shorter business
+  // page FAQ, closed by default (MEH-3460). Lines approved by Sapir word for word.
+  { version: "1.5.9", key: "v1_5_9", date: "2026-11-20", items: 3 },
   // 1.5.8 (19/11): product price unit, optional price, allergens, storage
   // (MEH-2936, MEH-2924, MEH-3439/3442/3444/3445, tier ב׳); recurring workshop
   // dates (MEH-3441/3447); duplicate event/experience, group buy from a product

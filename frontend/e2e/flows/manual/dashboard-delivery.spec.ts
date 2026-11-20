@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import { REGIONS } from "../../../data/regions";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -184,6 +185,12 @@ async function openDelivery(page: Page): Promise<void> {
   await page.goto("/producer/dashboard/edit#delivery");
   await expect(card(page), "control: #delivery never came on screen — every assertion here is void").toBeVisible({ timeout: 15_000 });
   await expect(body(page)).toBeVisible();
+  // MEH-3449: the deep link is still settling (group switch, collapsing
+  // sections, smooth scroll) — a click into a moving card can be lost without
+  // an error (flows/_layout-settled.ts). The resolver's last navigation
+  // puts the card's group in the URL; wait for it, then for quiet.
+  await expect(page).toHaveURL(/[?&]group=/);
+  await layoutSettled(card(page));
 }
 
 /** Types a city into the mounted autocomplete and commits it from the listbox. */

@@ -10,13 +10,14 @@
  * review form (reviews.py guard 3 → 403).
  *
  * The load-bearing case is the NEGATIVE one: an answer-first disclosure
- * (delivery / ordering, when buildDeliveryAnswer / buildOrderingAnswer return
+ * (delivery / ordering — ordering left in MEH-3460 — when buildDeliveryAnswer returns
  * content) opens no conversation and must NOT fire. A test that only asserted
  * "the links fire" would pass just as well against a listener bolted onto a
  * shared ancestor, which would also fire on every disclosure toggle.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
@@ -93,13 +94,6 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
     links.forEach((l) => fireEvent.click(l));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(links.length);
     expect(markWhatsAppClickedLocal).toHaveBeenCalledTimes(links.length);
-  });
-
-  it("fires on the escalation link", () => {
-    render(<WhatsAppQuestionChips producer={base} />);
-    fireEvent.click(screen.getByTestId("escalation-link"));
-    expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
-    expect(markWhatsAppClickedLocal).toHaveBeenCalledTimes(1);
   });
 
   // THE DISCRIMINATING CASE. An answer-first disclosure opens no WhatsApp

@@ -5,31 +5,31 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
-import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { buildDeliveryAnswer, hasDeliverySection } from "@/lib/quickAnswers";
 import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
-import {
-  getPrimaryContactHref,
-  getPrimaryMethod,
-  isPrimaryExternal,
-  isWhatsAppPrimary,
-} from "@/lib/contact-method";
+import { isWhatsAppPrimary } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
 import { paymentAnswer } from "@/lib/payment-info";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
- * Quick Answers under the primary CTA in the producer contact card.
+ * «שאלות נפוצות» — the business page's FAQ section (under «משלוחים» since
+ * 20/11; before that, a block under the primary CTA in the contact card).
  *
  * MEH-1302 reworked this from WhatsApp-only chips into an answer-first
  * disclosure: the two canonical ready-made questions that CAN be answered
  * from existing data are answered in-page (delivery + how-to-order), and only
- * the dynamic stock question, any custom questions, and an "another question?"
- * escalation stay WhatsApp deep-links.
+ * the dynamic stock question and any custom questions stay WhatsApp
+ * deep-links (the "another question?" escalation left 20/11, see MEH-3460).
  *
- *   Q1  "אפשר משלוח ל{city}?"  → buildDeliveryAnswer disclosure, else WA link
- *   Q2  "איך מזמינים?"          → buildOrderingAnswer disclosure, else WA link
+ *   Q1  "אפשר משלוח ל{city}?"  → not asked when the page has its «משלוח»
+ *                                 section (20/11: this section sits right
+ *                                 under it), else buildDeliveryAnswer
+ *                                 disclosure, else WA link
+ *   Q2  "איך מזמינים?"          → REMOVED 19/11: it repeated the primary CTA
  *   Q3+ custom (owner-written)  → WhatsApp (MEH-2385: category stock set no longer renders)
- *   Escalation "שאלה אחרת?"     → the business's PRIMARY channel
+ *   Escalation "שאלה אחרת?"     → REMOVED 20/11: it repeated the primary CTA
  *
  * Unlike the pre-1302 version this no longer bails with `return null` when the
  * producer has no phone — the data-driven answers still render; only the
@@ -51,14 +51,14 @@ import { paymentAnswer } from "@/lib/payment-info";
  *   - (the category stock rows and the recipe-idea chip of MEH-1462 no longer
  *     exist at all — MEH-2385 cut the block to Q1 / Q2 / owner questions /
  *     escalation, so there is nothing channel-specific left to gate there)
- *   - escalation "שאלה אחרת?"        → **still rendered**, pointed at the
+ *   - escalation "שאלה אחרת?"        → (then) still rendered, pointed at the
  *     primary channel via getPrimaryContactHref. MEH-1538's lock is that the
  *     ready-made questions have no off switch; this ticket ROUTES them, it does
  *     not turn anything off, so the one row that is the contact channel itself
  *     must never vanish while any channel exists.
  *
  * Q1 and Q2 keep their answer-first disclosures untouched — they were already
- * channel-correct (Q2 reads getPrimaryContactHref through buildOrderingAnswer).
+ * channel-correct (Q2 read getPrimaryContactHref; Q2 itself left in MEH-3460).
  * Only their WhatsApp FALLBACKS move behind the new gate, because a fallback
  * that opens wa.me is a WhatsApp item like any other.
  *
@@ -79,13 +79,29 @@ import { paymentAnswer } from "@/lib/payment-info";
  *   - Q3+ owner `custom_questions`  → still rendered. She wrote them herself
  *     and there is no off switch for them (MEH-1538 lock, unchanged).
  *   - recipe-idea row (MEH-1462)    → gone; "שאלה אחרת?" covers it.
- *   - escalation "שאלה אחרת?"       → unchanged.
+ *   - escalation "שאלה אחרת?"       → unchanged (then; removed in MEH-3460).
  *
  * The hairline above the block is also conditional now: a producer with no
  * primary CTA (no channel resolves) used to get a card that opened with a
  * detached rule and a "שאלות נפוצות:" caption over one disclosure. The rule
  * separates the block from the button; with no button there is nothing to
  * separate from.
+ *
+ * MEH-3460 (Sapir 19/11) — NO ANSWER THAT REPEATS THE PAGE.
+ *   - Q2 «איך מזמינים?» → gone. Its answer was the primary CTA's own href, so
+ *     it could only ever repeat the button directly above it.
+ *   - Q1 delivery → a jump to #section-delivery whenever that section renders
+ *     (hasDeliverySection, the same gate the section uses). The section is the
+ *     full answer; the disclosure gave a cut copy («+ עוד 44»).
+ *   - The whole block is closed by default; the caption is the toggle.
+ *   - (20/11) The block left the contact card: it is its own page section
+ *     («שאלות נפוצות», #section-faq) mounted by ProducerSections right under
+ *     «משלוחים». The delivery question is not asked when that section exists
+ *     — it sits directly above. No outer toggle; each question opens alone.
+ *   - (20/11) The escalation row «שאלה אחרת? צרו איתנו קשר» → gone. It
+ *     opened the primary CTA's own channel, so it repeated the button too;
+ *     the button and the channel icons below already are "contact us". This
+ *     supersedes the MEH-2154 note above that it must always render.
  */
 
 // MEH-2592 C: ready-made questions are pills (like WhatsApp Business quick
@@ -219,41 +235,6 @@ function DeliveryContent({ answer, t }) {
   }
 }
 
-/** Render the ordering descriptor into localized disclosure content. */
-function OrderingContent({ answer, t }) {
-  if (answer.kind === "whatsapp") return <p>{t("ordering_whatsapp")}</p>;
-  if (answer.kind === "phone") {
-    return (
-      <p>
-        {t("ordering_phone_prefix")}{" "}
-        <a href={answer.href} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
-          {answer.phone}
-        </a>
-      </p>
-    );
-  }
-  const textKey = {
-    external_order: "ordering_external_order",
-    website: "ordering_website",
-    instagram: "ordering_instagram",
-    facebook: "ordering_facebook",
-    email: "ordering_email",
-  }[answer.kind];
-  return (
-    <p>
-      {t(textKey)}{" "}
-      <a
-        href={answer.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
-      >
-        {t("ordering_link_label")}
-      </a>
-    </p>
-  );
-}
-
 export default function WhatsAppQuestionChips({ producer }) {
   const t = useTranslations("whatsapp.question_chips");
   const { city: visitorCity } = useUserCity();
@@ -287,9 +268,12 @@ export default function WhatsAppQuestionChips({ producer }) {
   const deliveryQ = visitorCity
     ? t("delivery_to_city", { city: visitorCity })
     : t("delivery_to_my_area");
+  // «איך מזמינים?» is no longer asked (Sapir 19/11): its answer was built
+  // from the primary CTA's own href, so it only ever repeated the button right
+  // above it. The label is still resolved — an owner's custom question with
+  // the same wording is dropped as a duplicate of that button.
   const orderingQ = t("ordering_q");
   const delivery = buildDeliveryAnswer(producer);
-  const ordering = buildOrderingAnswer(producer);
 
   // MEH-1524: every prefill that opens a chat with a specific business ends
   // with a source line on its own final line, so the owner sees the referral
@@ -303,28 +287,9 @@ export default function WhatsAppQuestionChips({ producer }) {
         )
       : null;
 
-  // MEH-2154: the escalation row follows the declared channel. WhatsApp-primary
-  // keeps today's wa.me href byte-for-byte (same greeting_template + locked
-  // source_line); every other channel reuses getPrimaryContactHref, which is
-  // the SAME mapping the big primary CTA uses — no per-channel logic is
-  // introduced here.
-  //
-  // The one addition is a subject on the mailto:, because an email with no
-  // subject line is the one channel where the customer's intent is invisible
-  // in the owner's inbox. It is appended HERE rather than inside
-  // getPrimaryContactHref on purpose: that helper also builds the primary CTA,
-  // and changing it would put this subject on a button outside this ticket.
-  const escalationMethod = getPrimaryMethod(producer);
-  const primaryHref = waEnabled ? null : getPrimaryContactHref(producer);
-  // MEH-2603: the WhatsApp escalation opens the chat on the greeting alone
-  // ("שלום {name},") + the locked source line, so the customer types her own
-  // question. It used to pass t("escalation") as `q`, which put the LINK LABEL
-  // itself ("שאלה אחרת? צרו איתנו קשר") into the message the business received.
-  const escalationHref = waEnabled
-    ? waHref("")
-    : primaryHref && escalationMethod === "email"
-      ? `${primaryHref}?subject=${encodeURIComponent(t("escalation_email_subject"))}`
-      : primaryHref;
+  // MEH-3460 (Sapir 20/11): the «שאלה אחרת? צרו איתנו קשר» escalation row
+  // is gone. Its href was the primary CTA's own (WhatsApp greeting or
+  // getPrimaryContactHref), so it repeated the button right above the block.
 
   // MEH-2385: only the owner's own custom questions stay as WhatsApp rows —
   // the category stock set no longer renders. One derivation, shared with the
@@ -339,37 +304,25 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   const items = [];
 
-  // Q1 — delivery: answer-first, else WhatsApp fallback (today's behaviour).
-  if (delivery) {
+  // Q1 — delivery. When the page has its «משלוח» section the question is not
+  // asked: this section sits right under it and the section IS the answer
+  // (Sapir 19–20/11). Otherwise answer-first, else WhatsApp fallback.
+  const deliveryOnPage = hasDeliverySection(producer);
+  if (!deliveryOnPage && delivery) {
     items.push(
       <Disclosure key="delivery" question={deliveryQ}>
         <DeliveryContent answer={delivery} t={t} />
       </Disclosure>,
     );
-  } else if (waEnabled) {
+  } else if (!deliveryOnPage && waEnabled) {
     items.push(
       <WaItem key="delivery" href={waHref(deliveryQ)} question={deliveryQ} onTrack={trackWhatsAppOpen} />,
     );
   }
 
-  // Q2 — ordering: answer-first. A WhatsApp-method answer only makes sense
-  // with a phone; without one it collapses to the WA fallback (also gated on
-  // a phone), so it simply drops out.
-  if (ordering && (ordering.kind !== "whatsapp" || digits)) {
-    items.push(
-      <Disclosure key="ordering" question={orderingQ}>
-        <OrderingContent answer={ordering} t={t} />
-      </Disclosure>,
-    );
-  } else if (!ordering && waEnabled) {
-    items.push(
-      <WaItem key="ordering" href={waHref(orderingQ)} question={orderingQ} onTrack={trackWhatsAppOpen} />,
-    );
-  }
-
   // MEH-3035: «איך משלמים?» — answer-first, from her dashboard. No WhatsApp
-  // fallback when unset: the question simply does not appear (the escalation
-  // row still covers it), so a business that said nothing is not shown asking.
+  // fallback when unset: the question simply does not appear (the button
+  // and the channel icons cover it), so a business that said nothing is not shown asking.
   const payment = paymentAnswer(producer?.payment_info);
   if (payment) {
     items.push(
@@ -388,32 +341,10 @@ export default function WhatsAppQuestionChips({ producer }) {
     });
   }
 
-  // Nothing to show at all — no answers, no escalation channel.
-  // (Pre-MEH-2154 this read `items.length === 0 && !digits`, where `digits` was
-  // a proxy for "an escalation row will render". Now that the escalation can
-  // ride a non-WhatsApp channel, ask the real question instead of the proxy.)
-  if (items.length === 0 && !escalationHref) return null;
+  // Nothing to show at all → no block (MEH-3460: no escalation row either).
+  if (items.length === 0) return null;
 
-  // MEH-2385: the top spacing exists to separate this block from the primary
-  // CTA above it (MEH-2592 C replaced the hairline with space). When
-  // PrimaryContactButton returns null (getPrimaryContactHref → null) there is
-  // nothing above to separate from — the "empty white card" Sapir photographed
-  // on demo-delivery-pickup.
-  const underCta = !!getPrimaryContactHref(producer);
-
-  return (
-    <QuestionList
-      items={items}
-      escalationHref={escalationHref}
-      // The beacon belongs to wa.me rows only (MEH-1426): a tel:/mailto:/https:
-      // escalation opens no WhatsApp conversation and must not be counted as
-      // one. `null` here is the discriminating case, not an omission.
-      escalationOnTrack={waEnabled ? trackWhatsAppOpen : null}
-      escalationExternal={waEnabled || isPrimaryExternal(producer)}
-      underCta={underCta}
-      t={t}
-    />
-  );
+  return <QuestionList items={items} t={t} />;
 }
 
 // MEH-1334 chunk 2: progressive-disclosure wrapper — the first VISIBLE_MAX
@@ -424,25 +355,25 @@ export default function WhatsAppQuestionChips({ producer }) {
 // tighter row rhythm) per the approved mockup.
 const VISIBLE_MAX = 3;
 
-function QuestionList({
-  items,
-  escalationHref,
-  escalationOnTrack,
-  escalationExternal,
-  underCta,
-  t,
-}) {
+function QuestionList({ items, t }) {
   const [expanded, setExpanded] = useState(false);
   const hasMore = items.length > VISIBLE_MAX;
   const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
 
+  // MEH-3460 (Sapir 20/11, decision card): the questions are their own page
+  // section under «משלוחים», not a block inside the contact card. The card
+  // keeps one job (the button + the channel icons); FAQs are an extension of
+  // the page's details (Airbnb «Things to know», Etsy shop FAQ, Baymard).
+  // Each question is still closed until tapped, so no outer toggle.
   return (
-    <div
+    <section
+      id="section-faq"
       data-testid="question-chips"
-      data-under-cta={underCta ? "true" : "false"}
-      className={underCta ? "mb-4 mt-4" : "mb-4"}
+      className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
-      <p className="text-sm mb-2 font-body-md text-fg-muted">{t("common_questions")}</p>
+      <SectionHeading size="content" className="mb-4">
+        {t("common_questions")}
+      </SectionHeading>
       <ul className="flex flex-wrap gap-2">{visible}</ul>
 
       {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
@@ -459,26 +390,6 @@ function QuestionList({
           {t("more_questions")}
         </button>
       )}
-
-      {/* Escalation — the contact channel itself, so it renders whenever ANY
-          channel resolves (MEH-2154). WhatsApp-primary keeps the greeting
-          template; other channels get the primary CTA's own href. tel: and
-          mailto: must NOT carry target="_blank" — a new tab that immediately
-          hands off to the OS leaves a blank window behind on mobile. */}
-      {escalationHref && (
-        <a
-          href={escalationHref}
-          {...(escalationExternal
-            ? { target: "_blank", rel: "noopener noreferrer" }
-            : {})}
-          onClick={escalationOnTrack ?? undefined}
-          data-testid="escalation-link"
-          className={`${QUESTION_PILL} mt-2 border-border text-fg-muted hover:bg-background`}
-        >
-          <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
-          {t("escalation")}
-        </a>
-      )}
-    </div>
+    </section>
   );
 }

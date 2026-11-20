@@ -241,7 +241,7 @@ const posts = (writes: Rec[], tail: string) => writes.filter((w) => w.method ===
 async function openRecipes(page: Page): Promise<void> {
   await page.goto("/admin/recipes");
   await expect(page.getByTestId("admin-recipes-title"), "control: the recipes page never rendered").toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("בטעינה...", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("בטעינה…", { exact: true })).toHaveCount(0);
 }
 
 const rowOf = (page: Page, name: string) => page.locator("tbody tr").filter({ has: page.getByText(name, { exact: true }) });

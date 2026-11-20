@@ -218,13 +218,14 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     // Both href forms count (header note): a desktop run that only looked for
     // wa.me would find 0 here after hydration — and then every 0 below would
     // be worthless in exactly the way this control exists to catch.
+    // 20/11 (MEH-3460): the «שאלה אחרת?» row is gone and sdot-zahav answers
+    // its delivery question in the page, so its chips carry no wa.me any more.
+    // The control is now the WhatsApp primary CTA: it proves the href half of
+    // the locator (WA_HREF_SELECTOR) still matches a real WhatsApp link.
     await page.goto(url("sdot-zahav"), { waitUntil: "domcontentloaded" });
-    const controlChips = waHrefLocator(page, "question-link").or(
-      waHrefLocator(page, "escalation-link")
-    );
     await expect(
-      controlChips,
-      "CONTROL: the whatsapp-primary page MUST produce WhatsApp chips. " +
+      waHrefLocator(page, "primary-contact-button"),
+      "CONTROL: the whatsapp-primary page MUST produce a WhatsApp link. " +
         "If this is 0 the locator is broken and every 0 below is worthless."
     ).not.toHaveCount(0);
 
@@ -234,10 +235,10 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
       // Wait for hydration (the CTA becomes visible only then) so the zero
       // below is asserted on the FINAL DOM, not the SSR snapshot. The edge
       // row renders no CTA by design, so it has nothing to wait on.
-      if (hrefPrefix !== null) await expect(visibleCta(page)).toHaveCount(1);
-      const stray = waHrefLocator(page, "question-link").or(
-        waHrefLocator(page, "escalation-link")
-      );
+      if (hrefPrefix !== null) {
+        await expect(visibleCta(page)).toHaveCount(1);
+      }
+      const stray = waHrefLocator(page, "question-link");
       await expect(
         stray,
         `${slug} (${method}-primary): question chips must contain no WhatsApp link, ` +
@@ -275,12 +276,13 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     // display:none copy and the click times out. The href form is no longer
     // device-dependent (MEH-2189 ruling ב'), so this is wa.me on both projects;
     // the locator still accepts either form per the header.
-    // MEH-2385: the stock question chip no longer renders, so the escalation
-    // row ("שאלה אחרת?") is the wa.me item every whatsapp-primary page carries.
-    const waChip = waHrefLocator(page, "escalation-link", true).first();
+    // 20/11 (MEH-3460): the escalation row is gone, so the wa.me item every
+    // whatsapp-primary page carries is its primary CTA (trackPrimaryCtaClick
+    // fires the same beacon, lib/contact-tracking.js).
+    const waChip = waHrefLocator(page, "primary-contact-button", true).first();
     await expect(
       waChip,
-      "CONTROL: a visible WhatsApp escalation row must exist on the whatsapp-primary page"
+      "CONTROL: a visible WhatsApp primary CTA must exist on the whatsapp-primary page"
     ).toBeVisible();
     // MEH-2985: wait until React has attached its handlers to THIS element.
     // The page is opened at domcontentloaded, and a click that lands before
@@ -289,7 +291,7 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     // `__reactProps$…` key once it owns it; the product cannot move that.
     await expect
       .poll(() => waChip.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps"))), {
-        message: "the WhatsApp escalation row never hydrated",
+        message: "the WhatsApp primary CTA never hydrated",
         timeout: 15_000,
       })
       .toBe(true);

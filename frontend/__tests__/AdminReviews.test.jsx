@@ -18,7 +18,7 @@ vi.mock("next-intl", () => {
   const flat = {
     "admin.reviews.title": "ביקורות",
     "admin.reviews.count": "{filtered} מתוך {total}",
-    "admin.reviews.search_placeholder": "חיפוש לפי עסק, משתמש, כותרת או טקסט...",
+    "admin.reviews.search_placeholder": "חיפוש לפי עסק, משתמש, כותרת או טקסט…",
     "admin.reviews.filter_aria": "סינון לפי דירוג",
     "admin.reviews.all_ratings": "כל הדירוגים",
     "admin.reviews.empty": "אין ביקורות להצגה",
@@ -127,7 +127,7 @@ describe("AdminReviewsPage", () => {
     await waitFor(() => expect(screen.getByText("חוות השקמה")).toBeInTheDocument());
 
     const searchInput = screen.getByPlaceholderText(
-      "חיפוש לפי עסק, משתמש, כותרת או טקסט...",
+      "חיפוש לפי עסק, משתמש, כותרת או טקסט…",
     );
     fireEvent.change(searchInput, { target: { value: "מאפיית" } });
 

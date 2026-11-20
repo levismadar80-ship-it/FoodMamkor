@@ -13,7 +13,7 @@ vi.mock("next-intl", () => ({
       name_placeholder: "שם הקטגוריה המוצעת *",
       name_example: "לדוגמה: משקאות מותססים",
       examples_placeholder: "דוגמאות למוצרים (אופציונלי)",
-      examples_hint: "קומבוצ'ה, קפיר, וואטר קפיר...",
+      examples_hint: "קומבוצ'ה, קפיר, וואטר קפיר…",
       submit: "שלחי בקשה",
       submit_loading: "שולחת...",
       close: "סגרי",
