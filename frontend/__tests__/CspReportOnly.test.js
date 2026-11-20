@@ -12,18 +12,21 @@ const SCRIPT = `require("./next.config.js").headers().then((r) => {
   process.stdout.write("@@" + JSON.stringify(Object.fromEntries(h.map((x) => [x.key, x.value]))));
 });`;
 
-const out = execFileSync(process.execPath, ["-e", SCRIPT], {
-  cwd: process.cwd(),
-  env: {
-    ...process.env,
-    NEXT_PUBLIC_API_URL: "https://example.test/api",
-    NEXT_PUBLIC_SENTRY_DSN: "https://k@o1.ingest.sentry.io/123",
-    VERCEL_ENV: "",
-  },
-  timeout: 60000,
-  stdio: ["ignore", "pipe", "ignore"],
-}).toString();
-const headers = JSON.parse(out.slice(out.indexOf("@@") + 2));
+const readHeaders = (dsn) => {
+  const out = execFileSync(process.execPath, ["-e", SCRIPT], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_API_URL: "https://example.test/api",
+      NEXT_PUBLIC_SENTRY_DSN: dsn,
+      VERCEL_ENV: "",
+    },
+    timeout: 60000,
+    stdio: ["ignore", "pipe", "ignore"],
+  }).toString();
+  return JSON.parse(out.slice(out.indexOf("@@") + 2));
+};
+const headers = readHeaders("https://k@o1.ingest.sentry.io/123");
 
 const directives = (csp) =>
   Object.fromEntries(
@@ -51,5 +54,14 @@ describe("CSP Report-Only (MEH-3304)", () => {
     expect(directives(headers["Content-Security-Policy-Report-Only"])).toEqual(
       enforced,
     );
+  });
+
+  // MEH-3286: no DSN → no report-uri → no twin. WebKit logs a console error
+  // for a Report-Only policy with nowhere to report, on every page.
+  it("without a Sentry DSN there is no Report-Only header, and the enforced CSP stays", () => {
+    const bare = readHeaders("");
+    expect(bare["Content-Security-Policy"], "control: the enforced CSP is still sent").toContain("default-src 'self'");
+    expect(bare["Content-Security-Policy"]).not.toContain("report-uri");
+    expect(bare["Content-Security-Policy-Report-Only"]).toBeUndefined();
   });
 });
