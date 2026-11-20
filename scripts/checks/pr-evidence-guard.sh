@@ -4,7 +4,9 @@
 # Purpose:  WARN until BLOCK_FROM, BLOCKING from that date. A PR must carry the
 #           evidence that four workflow rules ask for, decided by what its diff
 #           touches (Danger-style PR checks):
-#             rule 23 — UI change → at least 2 files under qa-artifacts/ in the diff
+#             rule 23 — UI change → a `Screenshots:` line (or `## Screenshots`) in the
+#                       body with an https link to the 375 + 1440 captures (MEH-3534:
+#                       screenshots are no longer committed)
 #             rule 38 — UI change → a `Self-check:` line (or `## Self-check`) in the body
 #             rule 22 — Hebrew added to he.json → a `Copy approved:` line in the body
 #             rule 40 — frontend/ or backend/app change → the `run-e2e` label
@@ -31,6 +33,9 @@
 #           22, 23, 38, 40.
 # History:  MEH-3176 follow-up, 18/11/2026 — inventory of memory-only rules;
 #           these four were the top risks a mechanical check can reach.
+#           MEH-3534 (20/11): rule 23 reads a `Screenshots:` link in the body
+#           instead of counting files under qa-artifacts/ — heavy-media-guard.sh
+#           now fails any screenshot committed there.
 #           18/11 later: the 15–18/11 audit found 32 router PRs merged without
 #           /security-review and 19 RED PRs naming no Fable reviewer, and the
 #           retroactive review then found real bugs (#4811–#4813) — so the
@@ -118,7 +123,18 @@ answered() {
   grep -qiE "^[[:space:]]*([-*][[:space:]]+)?(\*\*)?$1:(\*\*)?[[:space:]]*(\*\*)?[[:space:]]*[^[:space:]*]|^#{2,3}[[:space:]]+$1[[:space:]]*\$" <<<"$2"
 }
 
-# reviewed BODY — a `Reviewer:` line, or a heading that names a reviewer
+# screenshots_linked BODY — rule 23 evidence: a `Screenshots: <https link>` line,
+# or a `## Screenshots` heading with an https link before the next heading.
+# A label with no link does not count: the reviewer has to be able to open it.
+screenshots_linked() {
+  grep -qiE '^[[:space:]]*([-*][[:space:]]+)?(\*\*)?Screenshots:(\*\*)?.*https://[^[:space:])]+' <<<"$1" && return 0
+  awk 'tolower($0) ~ /^#{2,3}[[:space:]]+screenshots/ {inside=1; next}
+       /^#{1,3}[[:space:]]/ {inside=0}
+       inside && /https:\/\/[^[:space:])]+/ {found=1}
+       END {exit !found}' <<<"$1"
+}
+
+# reviewed BODY —a `Reviewer:` line, or a heading that names a reviewer
 # (`## Fresh reviewer (rule 5a)`, `## Independent review`): the shapes PR
 # bodies used 15–18/11.
 reviewed() {
@@ -126,7 +142,7 @@ reviewed() {
 }
 
 check() {
-  local body labels files rc he ui="" code="" router="" red="" qa=0 missing=()
+  local body labels files rc he ui="" code="" router="" red="" missing=()
   body="$(pr_body)"; rc=$?
   if [ "$rc" -eq 1 ]; then echo "pr-evidence-guard: skipped — not a pull request"; return 0; fi
   [ "$rc" -eq 3 ] && missing+=("this is a pull_request event but its payload could not be read")
@@ -145,14 +161,13 @@ check() {
       [ -z "$f" ] && continue
       is_ui_file "$f" && ui="$f"
       case "$f" in frontend/*|backend/app/*) code="$f" ;; esac
-      case "$f" in qa-artifacts/*) qa=$((qa + 1)) ;; esac
       case "$f" in backend/app/routers/*|backend/app/auth.py) router="$f" ;; esac
       case "$f" in backend/alembic/versions/*|backend/app/auth.py|backend/app/routers/upload.py) red="$f" ;; esac
     done <<<"$files"
     he="$(he_added)"; rc=$?
     [ "$rc" -eq 2 ] && missing+=("could not read the $HE_FILE diff")
     if [ -n "$ui" ]; then
-      [ "$qa" -ge 2 ] || missing+=("rule 23: UI change ($ui) but $qa file(s) under qa-artifacts/ — add the 375 + 1440 screenshots")
+      screenshots_linked "$body" || missing+=("rule 23: UI change ($ui) but no 'Screenshots:' line with an https link to the 375 + 1440 captures (not committed since MEH-3534)")
       answered "Self-check" "$body" || missing+=("rule 38: UI change ($ui) but no 'Self-check:' line in the PR body")
     fi
     if [ "$rc" -eq 0 ] && printf '%s\n' "$he" | has_hebrew; then
@@ -189,17 +204,22 @@ self_test() {
     got=PASS; [ "$rc" -ne 0 ] && got=FAIL
     if [ "$got" = "$2" ]; then echo "  [ok] $1 → $got"; else echo "  [XX] $1 → $got, expected $2"; status=1; fi
   }
-  local ui=$'frontend/components/Header.jsx\nqa-artifacts/MEH-1/a-375.webp\nqa-artifacts/MEH-1/a-1440.webp'
-  local good=$'Self-check: 1-5 done\nCopy approved: thread 18/11\nReviewer: Sonnet, no findings'
+  local ui='frontend/components/Header.jsx'
+  local shots='Screenshots: https://drive.google.com/drive/folders/MEH-1'
+  local good=$'Self-check: 1-5 done\nCopy approved: thread 18/11\nReviewer: Sonnet, no findings\n'"$shots"
+  local ok=$'Self-check: ok\nReviewer: x\n'"$shots"
   local he='+  "x": "שלום",'
   echo "pr-evidence-guard --self-test"
   run_case "docs-only PR, empty body"           PASS ""      ""        "docs/README.md" ""
   run_case "UI change with everything"          PASS "$good" "run-e2e" "$ui" ""
-  run_case "UI change, no screenshots"          FAIL "$good" "run-e2e" "frontend/components/Header.jsx" ""
-  run_case "UI change, one screenshot"          FAIL "$good" "run-e2e" $'frontend/components/Header.jsx\nqa-artifacts/MEH-1/a.webp' ""
-  run_case "UI change, no Self-check line"      FAIL "Copy approved: x" "run-e2e" "$ui" ""
-  run_case "UI change, empty Self-check:"       FAIL $'Self-check:\n' "run-e2e" "$ui" ""
-  run_case "Self-check as a heading"            PASS $'## Self-check\n1. green\nReviewer: x' "run-e2e" "$ui" ""
+  run_case "UI change, no Screenshots line"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" ""
+  run_case "Screenshots: with no link"          FAIL $'Self-check: ok\nReviewer: x\nScreenshots: attached' "run-e2e" "$ui" ""
+  run_case "committed screenshots, no link"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" $'frontend/components/Header.jsx\nqa-artifacts/MEH-1/a-375.webp\nqa-artifacts/MEH-1/a-1440.webp' ""
+  run_case "## Screenshots heading + link"      PASS $'Self-check: ok\nReviewer: x\n## Screenshots\n- 390: https://drive.google.com/x' "run-e2e" "$ui" ""
+  run_case "link only under a later heading"    FAIL $'Self-check: ok\nReviewer: x\n## Screenshots\nsoon\n## Notes\nhttps://example.com' "run-e2e" "$ui" ""
+  run_case "UI change, no Self-check line"      FAIL $'Copy approved: x\n'"$shots" "run-e2e" "$ui" ""
+  run_case "UI change, empty Self-check:"       FAIL $'Self-check:\n'"$shots" "run-e2e" "$ui" ""
+  run_case "Self-check as a heading"            PASS $'## Self-check\n1. green\nReviewer: x\n'"$shots" "run-e2e" "$ui" ""
   run_case "UI change, no run-e2e label"        FAIL "$good" "bug"     "$ui" ""
   run_case "test-only frontend change, label"   PASS "Reviewer: x" "run-e2e" "frontend/__tests__/A.test.js" ""
   run_case "backend change, no label"           FAIL ""      ""        "backend/app/main.py" ""
@@ -212,14 +232,14 @@ self_test() {
   run_case "auth.py, Fable refused + Opus"      PASS $'Reviewer: Opus (Fable refused)\nSecurity review: none' "run-e2e" "backend/app/auth.py" ""
   run_case "reviewer as a heading"              PASS $'## Fresh reviewer (rule 5a)\nNo findings' "run-e2e" "backend/app/main.py" ""
   run_case "Fable named elsewhere, not Reviewer" FAIL $'Reviewer: Sonnet\nWe skipped Fable' "run-e2e" "backend/alembic/versions/a.py" ""
-  run_case "Hebrew added, no Copy approved"     FAIL $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" "$he"
+  run_case "Hebrew added, no Copy approved"     FAIL "$ok" "run-e2e" "$ui" "$he"
   run_case "Hebrew added, Copy approved"        PASS "$good" "run-e2e" "$ui" "$he"
-  run_case "English-only he.json change"        PASS $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" '+  "id": "x",'
+  run_case "English-only he.json change"        PASS "$ok" "run-e2e" "$ui" '+  "id": "x",'
   PR_EVIDENCE_HEAD=staging PR_EVIDENCE_BASE=main run_case "release PR staging → main skipped" PASS "" "" "$ui" "$he"
   PR_EVIDENCE_HEAD=staging PR_EVIDENCE_BASE=staging run_case "head named staging into staging still checked" FAIL "" "" "backend/app/main.py" ""
   PR_EVIDENCE_HEAD=dependabot/npm/x run_case "dependabot PR skipped" PASS "" "" "frontend/package-lock.json" ""
-  run_case "he.json line moved, not new"            PASS $'Self-check: ok\nReviewer: x' "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "שלום",'
-  run_case "he.json line changed = new copy"        FAIL "Self-check: ok" "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "להתראות",'
+  run_case "he.json line moved, not new"            PASS "$ok" "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "שלום",'
+  run_case "he.json line changed = new copy"        FAIL "$ok" "run-e2e" "$ui" $'-  "x": "שלום"\n+  "x": "להתראות",'
   CASE_TODAY="2026-11-21" run_case "before BLOCK_FROM only warns" PASS "" "" "backend/app/main.py" ""
   local got; got="$(GITHUB_HEAD_REF= GITHUB_BASE_REF= GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/nonexistent PR_EVIDENCE_TODAY="$BLOCK_FROM" \
     PR_EVIDENCE_FILES="docs/a.md" PR_EVIDENCE_HE_ADDED="" check >/dev/null 2>&1; echo $?)"

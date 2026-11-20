@@ -417,8 +417,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     ### Amendment 2026-10-22 (MEH-2302) — there is no human mobile-QA pass. CC owns UI QA end to end
 
     Never wait for or report "waiting on Sapir's mobile check". Before merging
-    UI: both gates green on the head · 375 + 1440 screenshots in
-    `qa-artifacts/MEH-XXXX/` (compressed), **read** by CC, linked · VRT clean (add
+    UI: both gates green on the head · 375 + 1440 screenshots, compressed,
+    **read** by CC, uploaded to the card's evidence folder and linked with a
+    `Screenshots:` line — never committed (MEH-3534, testing.md «QA
+    screenshots live outside the repo») · VRT clean (add
     the `run-e2e` label to get the run, MEH-2779) or each re-baselined PNG
     reviewed · say when only Chromium covered it. Rules 22 and 30 and the
     permission gates still apply.
@@ -562,7 +564,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     [RELEASE_CHECKLIST](../../docs/RELEASE_CHECKLIST.md); an Alembic revision
     waits for her OK; a `do-not-merge` label, a card or batch that says Sapir
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
-    ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
+    ADR-016 amendment). This adds to rule 23 (375/1440 linked from the PR, not committed) and
     replaces none of it. `scripts/checks/pr-evidence-guard.sh` checks the
     evidence of rules 5a, 22, 23, 38, 40 + the security-review and Fable-reviewer lines is in the PR (warns until 22/11).
 39. **A red E2E gate blocks a merge to staging unless all three hold, and the
