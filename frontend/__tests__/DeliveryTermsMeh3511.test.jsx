@@ -165,6 +165,24 @@ describe("plain towns in a day group read as one line", () => {
     expect(screen.getByText("זכרון יעקב")).toBeInTheDocument();
   });
 
+  it("fees vary: towns on the business fee still read as one line, with that fee once", () => {
+    renderBlock({
+      offers_delivery: true,
+      delivery_fee: 25,
+      delivery_areas: [
+        town("z", "קריית ביאליק", "שני", { delivery_fee: 15, min_order: 120 }),
+        ...["קיסריה", "אור עקיבא", "חדרה", "עין שמר", "בנימינה", "גבעת עדה", "עמיקם"].map((c, i) =>
+          town(`p${i}`, c, "חמישי"),
+        ),
+      ],
+    });
+    const names = screen.getByTestId("area-plain-cities-names").textContent;
+    expect(names).toBe("קיסריה, אור עקיבא, חדרה, עין שמר, בנימינה, גבעת עדה, עמיקם");
+    expect(screen.getByTestId("area-plain-cities").textContent).toContain("משלוח: 25₪");
+    // Two drawn rows, under the cap of 6: no «הצגת עוד».
+    expect(screen.queryByText(/הצגת עוד/)).toBeNull();
+  });
+
   it("no plain town: no line", () => {
     renderBlock({ ...producer, delivery_areas: [town("3", "זכרון יעקב", "רביעי", { min_order: 120 }), town("5", "חדרה", "חמישי", { min_order: 90 })] });
     expect(screen.queryByTestId("area-plain-cities")).toBeNull();

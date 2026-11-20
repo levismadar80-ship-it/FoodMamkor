@@ -777,7 +777,9 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     // 25 is the minimum even though no AREA declares it.
     expect(feeLine()).toHaveTextContent("משלוח מ-25₪");
-    expect(areaFees()).toEqual(["משלוח: 40₪", "משלוח: 25₪"]);
+    // MEH-3511 (Sapir 20/11): the inheriting town reads in the plain line,
+    // which leads the group; the town with its own fee keeps its row.
+    expect(areaFees()).toEqual(["משלוח: 25₪", "משלוח: 40₪"]);
   });
 
   it("MEH-1772 (3/6) uniform fees → rendering is unchanged: no per-row fee, no 'מ-'", () => {

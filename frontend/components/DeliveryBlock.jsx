@@ -87,14 +87,18 @@ const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 // `fee != null` and not `fee ?` for the same reason the producer-level line
 // uses explicit null gates (MEH-1577): 0 is a VALUE ("משלוח חינם"), and a
 // truthiness test would silently render the free case as "no fee stated".
-function AreaRow({ da, t, fee = null, next = null }) {
+function AreaRow({ da, t, fee = null, next = null, testid = undefined }) {
   const feeLabel =
     fee === 0 ? null : splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL }));
   const freeAbove = splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL }));
   return (
-    <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
+    <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm" data-testid={testid}>
       <span className="min-w-0">
-        <span className="block font-medium text-text">{da.city}</span>
+        {testid ? (
+          <span className="block text-text" data-testid={`${testid}-names`}>{da.city}</span>
+        ) : (
+          <span className="block font-medium text-text">{da.city}</span>
+        )}
         {/* MEH-3511: a zone row's own delivery time and order cutoff. */}
         <DeliveryTerms
           daysMin={da.delivery_days_min}
@@ -193,16 +197,27 @@ function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
 // the caller contract guarantees the section's own rows are non-empty. Neither
 // alone is sufficient — a caller that passed an empty section would put an
 // empty one straight through.
-function capSections(sections, limit) {
+/** @param {any[]} sections @param {number} limit @param {(da: any) => boolean} [isPlain] */
+function capSections(sections, limit, isPlain = (_da) => false) {
   let budget = limit;
   const visible = [];
   for (const section of sections) {
     if (budget <= 0) break;
-    const rows = section.rows.slice(0, budget);
-    visible.push({ ...section, rows });
-    budget -= rows.length;
+    // Sapir 20/11: a section's plain towns are ONE line, so they cost one row
+    // and are never cut in half.
+    const plain = section.rows.filter(isPlain);
+    const lineCost = plain.length > 0 ? 1 : 0;
+    const rest = section.rows.filter((da) => !isPlain(da)).slice(0, Math.max(0, budget - lineCost));
+    visible.push({ ...section, rows: [...plain, ...rest] });
+    budget -= lineCost + rest.length;
   }
   return visible;
+}
+
+/** Rows as drawn: the plain towns of a section are one line. @param {any[]} rows @param {(da: any) => boolean} isPlain */
+function drawnRows(rows, isPlain) {
+  const plain = rows.filter(isPlain).length;
+  return (plain > 0 ? 1 : 0) + rows.length - plain;
 }
 
 // A day-headed group (2+ distinct days) or the trailing "arranged" bucket.
@@ -217,9 +232,10 @@ function capSections(sections, limit) {
  *   feeOf?: (da: object) => number | null,
  *   days?: string[] | null,
  *   producer?: object | null,
+ *   isPlain?: (da: object) => boolean,
  * }} props
  */
-function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer = null }) {
+function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer = null, isPlain = (_da) => false }) {
   return (
     <div>
       {/* MEH-2592 C: the day reads as a small gold heading. MEH-3028: text
@@ -228,7 +244,7 @@ function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer =
       <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
       {/* MEH-3485: the date of the next run, under its day heading. */}
       {groupNext(rows, days, producer)}
-      <AreaList rows={rows} t={t} feeOf={feeOf} days={days} producer={producer} />
+      <AreaList rows={rows} t={t} feeOf={feeOf} days={days} producer={producer} isPlain={isPlain} />
     </div>
   );
 }
@@ -236,9 +252,10 @@ function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer =
 /**
  * The rows of one day set (a group, or the hoisted single day).
  * @param {{ rows: any[], t: any, feeOf: (da: any) => number | null,
- *   days: string[] | null, producer: any, allRows?: any[] }} props
+ *   days: string[] | null, producer: any, allRows?: any[],
+ *   isPlain?: (da: any) => boolean }} props
  */
-function AreaList({ rows, t, feeOf, days, producer, allRows = rows }) {
+function AreaList({ rows, t, feeOf, days, producer, allRows = rows, isPlain = (_da) => false }) {
   const shared = sharedCutoff(allRows);
   return (
     <ul className={LIST_CARD}>
@@ -246,8 +263,8 @@ function AreaList({ rows, t, feeOf, days, producer, allRows = rows }) {
           row — the plain towns read as one line, the way Google Business
           lists service areas; only towns with their own fee, minimum or
           terms keep a row. */}
-      {plainLine(rows, feeOf)}
-      {rows.filter((da) => !isPlainArea(da, feeOf(da))).map((da) => (
+      {plainLine(rows, { feeOf, isPlain, t })}
+      {rows.filter((da) => !isPlain(da)).map((da) => (
         <AreaRow
           key={da.id ?? da.city}
           da={da}
@@ -277,10 +294,14 @@ function groupNext(rows, days, producer, className = "-mt-1 mb-1.5") {
   return <NextDeliveryLine days={days} producer={producer} cutoff={shared} className={className} />;
 }
 
-/** A row with nothing beyond its town name. @param {any} da @param {number | null} fee */
-function isPlainArea(da, fee) {
+/**
+ * A row with nothing beyond its town name: no fee of its own (the business
+ * fee, or none) and no minimum, threshold, time or cutoff.
+ * @param {any} da @param {number | null} fee @param {number | null} businessFee
+ */
+function isPlainArea(da, fee, businessFee) {
   return (
-    fee == null &&
+    (fee == null || (da.delivery_fee == null && fee === businessFee)) &&
     !da.min_order &&
     typeof da.free_delivery_above !== "number" &&
     !da.delivery_days_min &&
@@ -289,14 +310,22 @@ function isPlainArea(da, fee) {
   );
 }
 
-/** @param {any[]} rows @param {(da: any) => number | null} feeOf */
-function plainLine(rows, feeOf) {
-  const plain = rows.filter((da) => isPlainArea(da, feeOf(da)));
+/**
+ * The plain towns as one row; when fees vary it carries the business fee
+ * they all share.
+ * @param {any[]} rows
+ * @param {{ feeOf: (da: any) => number | null, isPlain: (da: any) => boolean, t: any }} ctx
+ */
+function plainLine(rows, { feeOf, isPlain, t }) {
+  const plain = rows.filter(isPlain);
   if (plain.length === 0) return null;
   return (
-    <li className="px-3.5 py-3 text-sm text-text" data-testid="area-plain-cities">
-      {plain.map((da) => da.city).join(", ")}
-    </li>
+    <AreaRow
+      da={{ city: plain.map((da) => da.city).join(", ") }}
+      t={t}
+      fee={feeOf(plain[0])}
+      testid="area-plain-cities"
+    />
   );
 }
 
@@ -612,6 +641,7 @@ export default function DeliveryBlock({
   // null unless fees vary → AreaRow renders exactly as it did pre-ticket.
   // `?? null` (not `||`) so a resolved 0 survives as "משלוח חינם".
   const feeOf = (da) => (feeVaries ? (feeByKey.get(da.id ?? da.city) ?? null) : null);
+  const isPlain = (da) => isPlainArea(da, feeOf(da), producerFee);
   // MEH-1577: null when the owner stated neither value → no line renders.
   // MEH-2602: the top line reads the shared resolver, so the card and this
   // block can never state two different prices. (It also fixes the uniform
@@ -681,16 +711,18 @@ export default function DeliveryBlock({
               : []),
           ]
         : [{ key: "bucket:rows", label: null, rows: grouped.rows }];
-  const areaRowCount = areaSections.reduce((n, s) => n + s.rows.length, 0);
+  const areaRowCount = areaSections.reduce((n, s) => n + drawnRows(s.rows, isPlain), 0);
   const areasOverLimit = areaRowCount > AREA_PREVIEW_LIMIT;
-  const areasHiddenCount = areaRowCount - AREA_PREVIEW_LIMIT;
   // At or under the cap this is the identity, so the markup is byte-identical
   // to the pre-ticket render — the "≤6 rows changes nothing" criterion is
   // enforced here, by the pass-through, not by a separate branch below.
   const showAllAreas = areasExpanded || !areasOverLimit;
   const visibleSections = showAllAreas
     ? areaSections
-    : capSections(areaSections, AREA_PREVIEW_LIMIT);
+    : capSections(areaSections, AREA_PREVIEW_LIMIT, isPlain);
+  // Towns, not drawn rows: «הצגת עוד N אזורי משלוח» counts the towns it hides.
+  const townCount = (list) => list.reduce((n, s) => n + s.rows.length, 0);
+  const areasHiddenCount = townCount(areaSections) - townCount(capSections(areaSections, AREA_PREVIEW_LIMIT, isPlain));
   // hoist/flat read the single section's rows back out. Explicitly empty in
   // group mode: `visibleSections[0]` is the first DAY GROUP there, so an
   // unguarded read would hand a group's rows to a branch that renders them
@@ -821,6 +853,7 @@ export default function DeliveryBlock({
                 feeOf={feeOf}
                 days={daysOfRow(grouped.rows[0])}
                 producer={producer}
+                isPlain={isPlain}
               />
               {areaToggle}
             </>
@@ -828,7 +861,15 @@ export default function DeliveryBlock({
 
           {grouped.mode === "flat" && (
             <>
-              <AreaList rows={visibleAreaRows} allRows={grouped.rows} t={t} feeOf={feeOf} days={null} producer={producer} />
+              <AreaList
+                rows={visibleAreaRows}
+                allRows={grouped.rows}
+                t={t}
+                feeOf={feeOf}
+                days={null}
+                producer={producer}
+                isPlain={isPlain}
+              />
               {areaToggle}
             </>
           )}
@@ -858,6 +899,7 @@ export default function DeliveryBlock({
                   feeOf={feeOf}
                   days={s.days ?? null}
                   producer={producer}
+                  isPlain={isPlain}
                 />
               ))}
               {areaToggle}
