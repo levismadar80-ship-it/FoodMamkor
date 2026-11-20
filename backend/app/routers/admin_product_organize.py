@@ -77,11 +77,9 @@ def admin_set_product_order(
     return svc.set_order(db, producer_id, body.product_ids, include_drafts=True)
 
 
-@router.put(
-    "/{producer_id}/products/{product_id}/group", response_model=ProductOut
-)
+@router.put("/{producer_id}/products/{product_id}/group", response_model=ProductOut)
 @limiter.limit("120/hour")  # MEH-3022
-def admin_set_product_group(
+def admin_set_product_group(  # noqa: PLR0913 — FastAPI-injected parameters
     request: Request,  # required by slowapi
     producer_id: UUID,
     product_id: UUID,

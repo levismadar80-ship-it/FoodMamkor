@@ -37,7 +37,9 @@ def groups_of(producer: Producer) -> list[dict[str, str]]:
     return [g for g in raw if isinstance(g, dict) and g.get("id") and g.get("name")]
 
 
-def replace_groups(db: Session, producer: Producer, body: ProductGroupsIn) -> list[dict[str, str]]:
+def replace_groups(
+    db: Session, producer: Producer, body: ProductGroupsIn
+) -> list[dict[str, str]]:
     """The whole ordered list in one write: add (no id), rename, reorder,
     delete (absent). Products of a deleted group become ungrouped — drafts
     included, so a draft never points at a group that no longer exists.

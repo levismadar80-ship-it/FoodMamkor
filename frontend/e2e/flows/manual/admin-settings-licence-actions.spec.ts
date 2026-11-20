@@ -215,6 +215,10 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<{ items: () =
   // MEH-2312: the edit page also mounts the product-import panel, which lists
   // drafts on load. A stub, not a mock: nothing here asserts on drafts.
   await page.route((u) => /\/api\/admin\/producers\/[^/]+\/product-drafts\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-3472: the import panel also reads the business's product groups on
+  // load. Unstubbed, it reached the real backend with the fake token, drew a
+  // 401, and api.js ended the session mid-test — the form detached.
+  await page.route((u) => /\/api\/admin\/producers\/[^/]+\/product-groups\/?$/.test(u.pathname), (r) => json(r, []));
   // /admin/reports + its two actions; /admin/users + block.
   await page.route((u) => /\/api\/admin\/reports\/?$/.test(u.pathname), (r) => json(r, reports));
   await page.route("**/admin/reports/*/dismiss", async (r) => { rec(r, writes); await sleep(postDelayMs); return json(r, { detail: "Report closed", status: "dismissed" }); });
