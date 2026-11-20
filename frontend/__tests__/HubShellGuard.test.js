@@ -21,10 +21,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { routeEntryFiles } from "./helpers/route-entry-files";
 import { HUB_TABS } from "@/components/ListingHubTabs";
 
 const ROOT = path.resolve(__dirname, "..");
-const LOCALE_APP = path.join(ROOT, "app", "[locale]");
 
 /** Strip comments so a comment that mentions <h1> or HubShell does not count. */
 function code(text) {
@@ -46,15 +46,19 @@ function resolveImport(fromFile, spec) {
 /** The route's page file plus the repo files it imports directly (app/,
  *  components/, lib/ — every local module, so a child component that brings
  *  its own <h1> is seen too). HubShell itself is the one allowed h1 owner. */
+// MEH-3463: + the route-group layouts above the page ((whats-on)/layout.js
+// renders the events/experiences screen; the pages there only carry metadata).
 function routeFiles(href) {
-  const dir = path.join(LOCALE_APP, ...href.split("/").filter(Boolean));
-  const page = ["page.jsx", "page.js"].map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
+  const { page, layouts } = routeEntryFiles(href);
   if (!page) return [];
-  const files = [page];
-  const specs = [...fs.readFileSync(page, "utf8").matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
-  for (const spec of specs) {
-    const file = resolveImport(page, spec);
-    if (file && !file.endsWith(path.join("components", "HubShell.jsx")) && !files.includes(file)) files.push(file);
+  const entries = [page, ...layouts];
+  const files = [...entries];
+  for (const entry of entries) {
+    const specs = [...fs.readFileSync(entry, "utf8").matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
+    for (const spec of specs) {
+      const file = resolveImport(entry, spec);
+      if (file && !file.endsWith(path.join("components", "HubShell.jsx")) && !files.includes(file)) files.push(file);
+    }
   }
   return files;
 }

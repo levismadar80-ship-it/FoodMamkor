@@ -1,7 +1,5 @@
 // @ts-check
 import { getTranslations } from "next-intl/server";
-import EventsClient from "../events/EventsClient";
-import { hubTabTitles } from "../events/hub-tab-titles";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
@@ -16,15 +14,15 @@ import { getHubCount, hubRobots } from "@/lib/listing-supply";
 // revalidates hourly (lib/listing-supply.js).
 // DO NOT add useSearchParams back to EventsClient without re-reading this.
 
-// MEH-740: static metadata → generateMetadata so og:url can be per-locale self.
-// MEH-475 Wave 6: metadata strings → seo.experiences.* (was hardcoded HE) +
-// hreflang leftover fixed (canonical-only → buildAlternates). Refs MEH-476.
+// MEH-739: per-locale hreflang + self canonical via buildAlternates (was a
+// hand-built single-canonical entry with no hreflang languages map).
+// MEH-475 Wave 6: metadata strings → seo.events.* (was hardcoded HE). Refs MEH-476.
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "seo.experiences" });
+  const t = await getTranslations({ locale, namespace: "seo.events" });
   // MEH-2369: a hub that is KNOWN to be empty is noindex (an empty listing
   // reads to Google as a soft 404); an unknown count stays indexable.
-  const robots = hubRobots(await getHubCount("experiences"));
+  const robots = hubRobots(await getHubCount("events"));
   return {
     ...(robots ? { robots } : {}),
     // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
@@ -34,20 +32,29 @@ export async function generateMetadata({ params }) {
       title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "website",
-      url: urlForLocalePath("/experiences", locale),
+      // MEH-740: per-page og:url = self (mirrors #916 terms/privacy).
+      url: urlForLocalePath("/events", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
+      // Next.js replaces openGraph object on override — re-declare image.
       images: ["/og-image.png"],
     },
-    alternates: buildAlternates("/experiences", locale),
+    // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
+    // layout's generic site card).
+    twitter: {
+      card: "summary_large_image",
+      title: buildEntityTitle(t("og_title"), locale),
+      description: t("og_description"),
+      images: ["/og-image.png"],
+    },
+    alternates: buildAlternates("/events", locale),
   };
 }
 
-// MEH-2245: the tab is the route — this page is the experiences tab; the other
-// route mounts the same EventsClient on the other tab.
-export default async function ExperiencesPage({ params }) {
-  const { locale } = await params;
-  // MEH-2980: both tab titles, so an in-place tab switch can retitle the page.
-  const titles = await hubTabTitles(locale);
-  return <EventsClient initialTab="experiences" titles={titles} />;
+// MEH-3463: the hub itself (hero, tab row, filters, list) is rendered once by
+// the shared (whats-on)/layout.js, which reads the tab from the URL. This page
+// only owns the route and its metadata, so a tab switch is a real Next
+// navigation that keeps the layout mounted — and Next retitles the document.
+export default function EventsPage() {
+  return null;
 }
