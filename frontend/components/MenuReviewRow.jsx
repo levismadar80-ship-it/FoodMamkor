@@ -44,7 +44,7 @@ export function rowProblem(row) {
 
 /**
  * @typedef {{ key: string, name: string, description: string, price_min: string,
- *   price_max: string, price_unit: string, uncertain: string[] }} MenuDraftRow
+ *   price_max: string, price_unit: string, uncertain: string[], section?: string }} MenuDraftRow
  */
 
 /** @param {{ flag: boolean }} props */

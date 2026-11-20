@@ -35,7 +35,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_producer
 from app.database import get_db
-from app.limits import enforce_cap
+from app.limits import MAX_PRODUCT_GROUPS, enforce_cap
 from app.models import Producer, Product, User
 from app.rate_limit import limiter
 from app.routers.upload import _sniff_image_type
@@ -47,6 +47,7 @@ from app.schemas.menu_import import (
 )
 from app.services import approved_edit_moderation as approved_edit
 from app.services.menu_reader import read_menu
+from app.services.product_import import _Groups, _group_name  # MEH-3478
 
 router = APIRouter(prefix="/producers/me/menu-import", tags=["producer-management"])
 logger = logging.getLogger(__name__)
@@ -150,6 +151,26 @@ def _new_items(
     return kept, skipped
 
 
+def _section_groups(producer: Producer, items: list[MenuProductIn]) -> list[str | None]:
+    """MEH-3478: each item's group id from its menu heading, matched by name to
+    the business's groups, new ones added in menu order. A heading the owner
+    could not have typed, or one past MAX_PRODUCT_GROUPS, leaves the product
+    ungrouped — a menu is never refused over its headings. Call under the
+    producer row lock; sets producer.product_groups when groups were added."""
+    # REUSES: backend/app/services/product_import.py:_Groups / _group_name — one
+    # name rule and one match rule for every path that creates groups.
+    groups = _Groups(producer)
+    ids: list[str | None] = []
+    for item in items:
+        name, _ = _group_name(item.section)
+        known = name is not None and name.strip().casefold() in groups.by_key
+        room = len(groups.existing) + len(groups.new) < MAX_PRODUCT_GROUPS
+        ids.append(groups.id_for(name) if name and (known or room) else None)
+    if groups.new:
+        producer.product_groups = [*groups.existing, *groups.new]  # type: ignore[assignment]
+    return ids
+
+
 @router.post("/publish", response_model=MenuPublishOut, status_code=201)
 @limiter.limit("10/hour")
 def publish_my_menu(
@@ -183,7 +204,9 @@ def publish_my_menu(
         )
     # Two publishes at once must not both pass the cap: lock the business row.
     # REUSES: backend/app/services/product_import.py:import_drafts
-    db.query(Producer).filter(Producer.id == producer.id).with_for_update().first()
+    # MEH-3478: refresh, not a bare query — the lock must also reload
+    # product_groups, which _section_groups extends.
+    db.refresh(producer, with_for_update=True)
     kept, skipped = _new_items(db, producer.id, body.products)
     if not kept:
         db.rollback()
@@ -192,7 +215,11 @@ def publish_my_menu(
     # MEH-3022: enforce_cap refuses at count >= cap for ONE insert; for n
     # inserts the last one lands at current + n - 1.
     enforce_cap(existing + len(kept) - 1, "products")
-    db.add_all(Product(producer_id=producer.id, **p.model_dump()) for p in kept)
+    group_ids = _section_groups(producer, kept)
+    db.add_all(
+        Product(producer_id=producer.id, group_id=gid, **p.model_dump(exclude={"section"}))
+        for p, gid in zip(kept, group_ids)
+    )
     db.commit()
     logger.info("menu published: producer=%s created=%s", producer.id, len(kept))
     return MenuPublishOut(created=len(kept), skipped_duplicates=skipped)

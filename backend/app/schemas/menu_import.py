@@ -8,7 +8,8 @@ Does NOT: validate a product's fields itself — MenuProductIn IS ProductCreate,
           to the five fields the review screen sends.
 Related:  app/routers/menu_import.py · app/services/menu_reader.py ·
           app/limits.py MAX_PRODUCTS
-History:  MEH-3430 (creation; review: publish accepts only the menu fields)
+History:  MEH-3430 (creation; review: publish accepts only the menu fields);
+          MEH-3478 (a row's menu heading rides along as `section`)
 """
 
 from decimal import Decimal
@@ -48,7 +49,7 @@ class MenuReadOut(BaseModel):
 # ingredients, allergens, diet flags, the legacy price text) is refused, not
 # ignored: a photo would skip the MEH-3247 ownership check and ingredients
 # the batch text check, and a silent drop would hide that from the caller.
-MENU_FIELDS = frozenset({"name", "description", "price_min", "price_max", "price_unit"})
+MENU_FIELDS = frozenset({"name", "description", "price_min", "price_max", "price_unit", "section"})
 
 
 class MenuProductIn(ProductCreate):
@@ -57,6 +58,9 @@ class MenuProductIn(ProductCreate):
     # review screen says («הוסיפו מחיר כדי לפרסם») — re-required here.
     price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
     price_unit: PriceUnit = "unit"
+    # MEH-3478: the menu heading the row sat under. Not a product field — the
+    # publish route turns it into a product group (or none) and drops it.
+    section: str | None = Field(None, max_length=200)
 
     @model_validator(mode="before")
     @classmethod

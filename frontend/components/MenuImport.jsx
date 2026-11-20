@@ -50,6 +50,8 @@ function toDraft(r, i) {
     price_max: num(r.price_max),
     price_unit: r.price_unit ?? DEFAULT_UNIT,
     uncertain: Array.isArray(r.uncertain) ? r.uncertain : [],
+    // MEH-3478: the menu heading; the server turns it into a product group.
+    section: typeof r.section === "string" ? r.section : "",
   };
 }
 
@@ -61,6 +63,7 @@ function toPayload(r) {
     price_min: Number(r.price_min),
     price_max: r.price_max.trim() ? Number(r.price_max) : null,
     price_unit: r.price_unit,
+    ...(r.section?.trim() ? { section: r.section.trim() } : {}),
   };
 }
 
