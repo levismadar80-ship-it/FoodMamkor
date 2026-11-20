@@ -286,8 +286,8 @@ function useBadgesThatFit(lineRef, earned) {
   return Math.min(shown, cap);
 }
 
-/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode }} props */
-export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false }) {
+/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode, eagerImage?: boolean }} props */
+export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false, eagerImage = false }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // MEH-2676: a free-delivery offer with a threshold moves into the delivery
@@ -462,6 +462,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                 fill
                 className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                // MEH-2233: a card in the first screen of a grid is the page's
+                // LCP element; lazy makes the browser wait for layout before
+                // it asks for the file. `preload` is NOT used — Next's docs
+                // rule it out when several images could be the LCP.
+                {...(eagerImage ? { loading: "eager", fetchPriority: "high" } : {})}
                 onError={() => setImgError(true)}
               />
             ) : (

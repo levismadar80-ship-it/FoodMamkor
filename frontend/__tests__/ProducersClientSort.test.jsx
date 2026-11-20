@@ -76,7 +76,10 @@ vi.mock("@/components/CategoryIcons", () => {
   };
 });
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
-vi.mock("@/components/ProducerCard", () => ({ default: () => <div data-testid="card" /> }));
+// MEH-2233: forwards eagerImage so the first-screen eager set is observable.
+vi.mock("@/components/ProducerCard", () => ({
+  default: ({ eagerImage }) => <div data-testid="card" data-eager={eagerImage ? "1" : "0"} />,
+}));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
@@ -410,5 +413,16 @@ describe("ProducersClient distance as a location trigger (MEH-2616)", () => {
     fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
     expect(getCurrentPosition).not.toHaveBeenCalled();
     await waitFor(() => expect(distanceCalls().length).toBeGreaterThan(0));
+  });
+});
+
+// MEH-2233: one of the first cards' photos is the /producers LCP element.
+// Exactly the first four (one row at xl, two on a phone) load eagerly.
+describe("ProducersClient first-screen card photos (MEH-2233)", () => {
+  it("marks the first four cards eager and the rest lazy", () => {
+    const items = Array.from({ length: 6 }, (_, i) => ({ id: String(i + 1), categories: [] }));
+    render(<ProducersClient {...PROPS} initialItems={items} initialTotal={6} />);
+    const flags = screen.getAllByTestId("card").map((c) => c.getAttribute("data-eager"));
+    expect(flags).toEqual(["1", "1", "1", "1", "0", "0"]);
   });
 });
