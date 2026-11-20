@@ -1,4 +1,3 @@
-# guard-ok: backend/pyproject.toml is edit-denied for CC; Sapir adds this file to [tool.mypy].files (MEH-2952 chunk 4 PR)
 """
 Module:   admin_test_business
 Purpose:  The admin's «עסק בדיקה — מוסתר מהאתר» switch: marks a business as a
@@ -10,7 +9,8 @@ Does NOT: Expose `is_test` in any schema. The request field is `hidden`, the
           column (tests/test_meh2952_is_test_guards.py guard 3). Does not
           change status — a hidden approved business is still approved, and
           shows again exactly as it was when the switch is turned off.
-Related:  services/producer_listing.py:111 (not_test_producer),
+Related:  schemas/admin_block.py (the request / response models),
+          services/producer_listing.py:111 (not_test_producer),
           services/indexnow.py:51 (producer_urls returns [] for a test row,
           so the URL is read BEFORE the flip when hiding).
 History:  MEH-2952 chunk 4 (creation).
@@ -19,34 +19,21 @@ History:  MEH-2952 chunk 4 (creation).
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
 from app.models import Producer, User
+from app.schemas.admin_block import (
+    TestBusinessFlag,
+    TestBusinessFlagOut,
+    TestBusinessIdsOut,
+)
 from app.services import indexnow
 
 # Admin-only routes: exempt from the MEH-3022 per-route rate limit and cap
 # (security.md: «every non-admin write route»), like the rest of /admin.
 router = APIRouter(prefix="/admin/test-businesses", tags=["admin-test-business"])
-
-
-class TestBusinessFlag(BaseModel):
-    """`hidden` and not `is_test`: guard 3 keeps the column name out of every
-    schema, so no response can ever carry it by accident."""
-
-    model_config = ConfigDict(extra="forbid")
-    hidden: bool
-
-
-class TestBusinessFlagOut(BaseModel):
-    producer_id: UUID
-    hidden: bool
-
-
-class TestBusinessIdsOut(BaseModel):
-    producer_ids: list[UUID]
 
 
 @router.get("", response_model=TestBusinessIdsOut)
