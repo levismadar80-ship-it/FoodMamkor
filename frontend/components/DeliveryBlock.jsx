@@ -13,7 +13,9 @@ import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
 import PickupSchedule from "@/components/PickupSchedule"; // MEH-3512
-import { daysOfRow } from "@/lib/nextDelivery";
+import DeliveryTerms from "@/components/DeliveryTerms"; // MEH-3511
+import NationwideZones from "@/components/NationwideZones"; // MEH-3511
+import { daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
@@ -91,7 +93,17 @@ function AreaRow({ da, t, fee = null }) {
   const freeAbove = splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL }));
   return (
     <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
-      <span className="font-medium text-text">{da.city}</span>
+      <span className="min-w-0">
+        <span className="block font-medium text-text">{da.city}</span>
+        {/* MEH-3511: a zone row's own delivery time and order cutoff. */}
+        <DeliveryTerms
+          daysMin={da.delivery_days_min}
+          daysMax={da.delivery_days_max}
+          cutoffRow={da}
+          className="text-xs text-fg-muted"
+          testid="area-terms"
+        />
+      </span>
       <span className="flex items-center gap-2">
         {fee != null ? (
           <span className="text-fg-muted" data-testid="area-fee">
@@ -212,7 +224,7 @@ function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer =
           on every day (Sapir, option א, 13/11). */}
       <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
       {/* MEH-3485: the date of the next run, under its day heading. */}
-      <NextDeliveryLine days={days} producer={producer} className="-mt-1 mb-1.5" />
+      <NextDeliveryLine days={days} producer={producer} cutoff={sharedCutoff(rows)} className="-mt-1 mb-1.5" />
       <ul className={LIST_CARD}>
         {rows.map((da) => (
           <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
@@ -539,7 +551,9 @@ export default function DeliveryBlock({
   // block can never state two different prices. (It also fixes the uniform
   // case: every area overriding to the same 20₪ used to print the producer's
   // 25₪ here.)
-  const topFee = resolveDeliveryFee(producerFee, areas);
+  // MEH-3511: a nationwide business's only rows are zones on other terms —
+  // the top line states «כל הארץ», so the zones never turn it into «מ-X».
+  const topFee = resolveDeliveryFee(producerFee, nationwide ? [] : areas);
   const feeSegments = buildFeeSegments(topFee.fee, producer?.free_delivery_above, t, {
     from: topFee.from,
   });
@@ -670,6 +684,14 @@ export default function DeliveryBlock({
           </span>
         </FactLine>
       )}
+      {/* MEH-3511: business-wide delivery time and order minimum. */}
+      <DeliveryTerms
+        daysMin={producer?.delivery_days_min}
+        daysMax={producer?.delivery_days_max}
+        minOrder={producer?.delivery_min_order}
+        className="text-sm text-fg-muted -mt-2 mb-4"
+        testid="delivery-business-terms"
+      />
 
       {nationwide ? (
         <>
@@ -694,6 +716,8 @@ export default function DeliveryBlock({
                 <WhatsAppUpdatesPill producer={producer} />
               </div>
             )}
+          {/* MEH-3511: areas on other terms («גוש דן, אקספרס»). */}
+          <NationwideZones areas={areas} producer={producer} />
         </>
       ) : bare ? (
         <CompactCities areas={areas} t={t} />
@@ -725,6 +749,7 @@ export default function DeliveryBlock({
               <NextDeliveryLine
                 days={daysOfRow(grouped.rows[0])}
                 producer={producer}
+                cutoff={sharedCutoff(grouped.rows)}
                 className="-mt-1 mb-2"
               />
               {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}

@@ -84,8 +84,8 @@ describe("DeliveryZonesEditor (MEH-3484)", () => {
     save();
     await waitFor(() => expect(api.put).toHaveBeenCalled());
     expect(sent().delivery_zones).toEqual([
-      { name: "קריות", cities: ["קריית ביאליק"], delivery_days: ["שני", "חמישי"], min_order: 120, delivery_fee: 25, free_delivery_above: 300 },
-      { name: "חיפה והסביבה", cities: ["קריית מוצקין"], delivery_days: ["ראשון"], min_order: null, delivery_fee: null, free_delivery_above: null },
+      { name: "קריות", cities: ["קריית ביאליק"], delivery_days: ["שני", "חמישי"], min_order: 120, delivery_fee: 25, free_delivery_above: 300, delivery_days_min: null, delivery_days_max: null, order_cutoff_day: null, order_cutoff_time: null },
+      { name: "חיפה והסביבה", cities: ["קריית מוצקין"], delivery_days: ["ראשון"], min_order: null, delivery_fee: null, free_delivery_above: null, delivery_days_min: null, delivery_days_max: null, order_cutoff_day: null, order_cutoff_time: null },
     ]);
   });
 
@@ -108,9 +108,23 @@ describe("DeliveryZonesEditor (MEH-3484)", () => {
     expect(sent().delivery_areas[0].delivery_days).toEqual(["שלישי", "שישי"]);
   });
 
-  it("nationwide sends no zones", async () => {
+  // MEH-3511 reversed this (was «nationwide sends no zones»): a nationwide
+  // business keeps its zones as areas on other terms, and their cities are
+  // its own — there is no city list to drop them against.
+  it("nationwide keeps its zones and their cities (MEH-3511)", async () => {
     renderCard(base);
     fireEvent.click(screen.getByLabelText(D.delivery_nationwide));
+    save();
+    await waitFor(() => expect(api.put).toHaveBeenCalled());
+    expect(sent().delivery_areas).toEqual([]);
+    expect(sent().delivery_zones.map((z) => [z.name, z.cities])).toEqual([
+      ["קריות", ["קריית ביאליק", "קריית מוצקין"]],
+    ]);
+  });
+
+  it("pickup only sends no zones", async () => {
+    renderCard(base);
+    fireEvent.click(screen.getByLabelText(D.offers_delivery));
     save();
     await waitFor(() => expect(api.put).toHaveBeenCalled());
     expect(sent().delivery_zones).toEqual([]);

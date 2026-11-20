@@ -34,6 +34,7 @@ from app.allergens import detail_if_declared, drop_contained, normalize_allergen
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
 from app.schemas import order_cutoff  # MEH-3512
+from app.schemas import delivery_time  # MEH-3511
 from app.schemas.schemas import (
     DELIVERY_DAYS,
     DeliveryDayField,
@@ -229,6 +230,32 @@ class DeliveryZoneIn(BaseModel):
     min_order: int | None = None
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
+    # MEH-3511: delivery time in business days and the zone's own cutoff.
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    order_cutoff_day: str | None = None
+    order_cutoff_time: str | None = None
+
+    @field_validator("delivery_days_min", "delivery_days_max")
+    @classmethod
+    def _business_days(cls, v: int | None) -> int | None:
+        return delivery_time.business_days(v)
+
+    @field_validator("order_cutoff_day")
+    @classmethod
+    def _cut_day(cls, v: str | None) -> str | None:
+        return order_cutoff.cutoff_day(v)
+
+    @field_validator("order_cutoff_time")
+    @classmethod
+    def _cut_time(cls, v: str | None) -> str | None:
+        return order_cutoff.cutoff_time(v)
+
+    @model_validator(mode="after")
+    def _pairs(self) -> Self:
+        delivery_time.check_range(self.delivery_days_min, self.delivery_days_max)
+        order_cutoff.check_pair(self.order_cutoff_day, self.order_cutoff_time)
+        return self
 
     @field_validator("name")
     @classmethod
@@ -304,6 +331,11 @@ class DeliveryZoneOut(BaseModel):
     min_order: int | None = None
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
+    # MEH-3511
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    order_cutoff_day: str | None = None
+    order_cutoff_time: str | None = None
 
     @field_validator("delivery_days", mode="before")
     @classmethod
@@ -330,6 +362,12 @@ class DeliveryAreaOut(BaseModel):
     delivery_days: list[str] = []
     zone_name: str | None = None
     free_delivery_above: int | None = None
+    # MEH-3511: the zone's delivery time and own order cutoff (NULL = the
+    # business-level ones apply — resolved on the client, as above).
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    order_cutoff_day: str | None = None
+    order_cutoff_time: str | None = None
 
     model_config = {"from_attributes": True}
 

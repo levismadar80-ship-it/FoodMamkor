@@ -937,6 +937,10 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
         # matching order_window above.
         "delivery_fee",
         "free_delivery_above",
+        # MEH-3511: business-wide delivery time + minimum (ProducerUpdate).
+        "delivery_days_min",
+        "delivery_days_max",
+        "delivery_min_order",
     }
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)

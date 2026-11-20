@@ -239,6 +239,11 @@ class ProducerListOut(BaseModel):
     # owner dashboard prefill read the same value).
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
+    # MEH-3511: business-wide delivery time (business days) and order minimum.
+    # NULL = not stated → nothing renders. A zone's own values win per city.
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    delivery_min_order: int | None = None
     # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
     # market_stand). selectinload'd on both LIST branches + the DETAIL query
     # (producer_listing.py + producers.py) so from_attributes reads the loaded

@@ -99,6 +99,12 @@ def _free_above(area: DeliveryArea | None, producer: Producer) -> int | None:
     return cast("int | None", producer.free_delivery_above)
 
 
+def _min_order(area: DeliveryArea | None, producer: Producer) -> int | None:
+    if area is not None and area.min_order is not None:
+        return int(area.min_order)
+    return cast("int | None", producer.delivery_min_order)
+
+
 def facts_for(db: Session, producer: Producer, city: str) -> DeliveryFacts:
     areas = db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).all()
     area = next((a for a in areas if canonical_city(str(a.city)) == city), None)
@@ -111,5 +117,6 @@ def facts_for(db: Session, producer: Producer, city: str) -> DeliveryFacts:
         free_above=_free_above(area, producer),
         has_area=area is not None,
         area_fee=area.delivery_fee if area is not None else None,  # type: ignore[arg-type]
-        area_min_order=area.min_order if area is not None else None,  # type: ignore[arg-type]
+        # MEH-3511: the city's own minimum, else the business-wide one.
+        area_min_order=_min_order(area, producer),
     )

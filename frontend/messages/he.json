@@ -1415,7 +1415,11 @@
       "next_delivery": "המשלוח הבא: {date}",
       "next_delivery_city": "המשלוח הבא ל{city}: {date}",
       "pickup_days": "{count, plural, one {איסוף ביום {days}} other {איסוף בימים {days}}}",
-      "next_pickup": "האיסוף הבא: {date}"
+      "next_pickup": "האיסוף הבא: {date}",
+      "business_days_range": "מגיע תוך {min}–{max} ימי עסקים",
+      "business_days_upto": "{max, plural, one {מגיע תוך יום עסקים אחד} other {מגיע תוך עד # ימי עסקים}}",
+      "business_days_exact": "{days, plural, one {מגיע תוך יום עסקים אחד} other {מגיע תוך # ימי עסקים}}",
+      "zones_other_terms": "באזורים האלה התנאים אחרים:"
     },
     "friday_delivery": {
       "today": "שישי",
@@ -5460,7 +5464,7 @@
         "area_fee_inherits": "יורש {fee} ₪",
         "area_fee_inherits_free": "יורש: משלוח חינם",
         "default_block_title_nationwide": "עלות משלוח לכל הארץ",
-        "default_block_hint_nationwide": "העלות הזו חלה על כל המשלוחים שלכם.",
+        "default_block_hint_nationwide": "העלות הזו חלה על כל המשלוחים שלכם, חוץ מאזורים בתנאים אחרים שמוגדרים למטה.",
         "area_fee_free": "משלוח חינם",
         "default_block_title": "ברירת מחדל לכל האזורים",
         "default_block_hint": "העלות הזו חלה על כל אזורי המשלוח. אפשר לדרוס אותה לאזור מסוים ברשימה שלמטה.",
@@ -5484,7 +5488,16 @@
         "zone_free_above_label": "משלוח חינם מעל (₪)",
         "zone_free_above_hint": "אם ריק, חל הסכום הכללי של העסק.",
         "zone_remove": "מחיקת האזור",
-        "city_in_zone": "באזור {zone}"
+        "city_in_zone": "באזור {zone}",
+        "business_min_label": "מינימום הזמנה למשלוח (₪)",
+        "business_min_hint": "חל על כל ההזמנות במשלוח. עיר או אזור עם מינימום משלהם גוברים עליו.",
+        "time_label": "זמן משלוח (ימי עסקים)",
+        "time_hint": "מכמה עד כמה ימי עסקים ההזמנה מגיעה. אפשר למלא רק «עד», למשל עד 5.",
+        "time_from": "מ-",
+        "time_to": "עד",
+        "zone_cutoff_hint": "לא חובה. בלי יום ושעה, חלות שעות קבלת ההזמנות של העסק.",
+        "zones_label_nationwide": "אזורים בתנאים אחרים",
+        "zones_hint_nationwide": "אזורים עם תנאים אחרים מ«כל הארץ», למשל «גוש דן, אקספרס». בערים של האזור, התנאים שלו גוברים."
       },
       "order_window": {
         "heading": "מתי מקבלים הזמנות",

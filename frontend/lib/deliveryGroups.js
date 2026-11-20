@@ -36,7 +36,7 @@
  * When adding a delivery_areas column, add it here in the same PR; the
  * exact-shape assertion in deliveryGroups.test.js is what reds if you don't.
  *
- * @param {Array<{id?: any, city?: string, min_order?: number, delivery_day?: string, delivery_fee?: number, delivery_days?: string[] | null, zone_name?: string | null, free_delivery_above?: number | null}>} areas
+ * @param {Array<{id?: any, city?: string, min_order?: number, delivery_day?: string, delivery_fee?: number, delivery_days?: string[] | null, zone_name?: string | null, free_delivery_above?: number | null, delivery_days_min?: number | null, delivery_days_max?: number | null, order_cutoff_day?: string | null, order_cutoff_time?: string | null}>} areas
  */
 export function groupDeliveryAreas(areas = []) {
   const rows = areas.map((a) => ({
@@ -52,6 +52,11 @@ export function groupDeliveryAreas(areas = []) {
     delivery_days: daysOf(a),
     zone_name: a.zone_name ?? null,
     free_delivery_above: a.free_delivery_above ?? null,
+    // MEH-3511: the zone's delivery time and own order cutoff.
+    delivery_days_min: a.delivery_days_min ?? null,
+    delivery_days_max: a.delivery_days_max ?? null,
+    order_cutoff_day: a.order_cutoff_day ?? null,
+    order_cutoff_time: a.order_cutoff_time ?? null,
   }));
 
   const missing = rows.filter((r) => r.delivery_days.length === 0);

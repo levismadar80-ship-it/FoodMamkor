@@ -55,6 +55,7 @@ from app.schemas.schemas import (
     _url_scheme_validator,
     _whatsapp_group_validator,
 )
+from app.schemas import delivery_time  # MEH-3511
 from app.schemas.catalog import (
     DeliveryAreaCreate,
     DeliveryZoneIn,
@@ -548,6 +549,12 @@ class ProducerUpdate(BaseModel):
     # path opened in producer_me.py (_PRODUCER_WRITABLE_FIELDS).
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
+    # MEH-3511: business-wide delivery time (business days) and order minimum.
+    # Validated below; owner-writable via producer_me.py
+    # (_PRODUCER_WRITABLE_FIELDS). Explicit null clears.
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    delivery_min_order: int | None = None
 
     # MEH-1297: cap categories (admin/owner update); 5 since MEH-2925. None passes through.
     @field_validator("category_ids")
@@ -751,10 +758,30 @@ class ProducerUpdate(BaseModel):
     @model_validator(mode="after")
     def _validate_zones_meh3484(self) -> Self:
         check_zones(self.delivery_zones)
-        if self.delivery_nationwide and any(
-            z.cities for z in self.delivery_zones or []
-        ):
-            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-3511: a nationwide business MAY have zones — areas on other
+        # terms («גוש דן, אקספרס») that win over «כל הארץ» in their cities.
+        # The flat city list stays exclusive with nationwide (DB CHECK).
+        return self
+
+    @field_validator("delivery_days_min", "delivery_days_max")
+    @classmethod
+    def _business_days_meh3511(cls, v: int | None) -> int | None:
+        return delivery_time.business_days(v)
+
+    @field_validator("delivery_min_order")
+    @classmethod
+    def _min_order_meh3511(cls, v: int | None) -> int | None:
+        if v is None:
+            return None
+        if v < 0:
+            raise ValueError("מינימום הזמנה לא יכול להיות שלילי")
+        if v > MAX_DELIVERY_MONEY:
+            raise ValueError("מינימום הזמנה גבוה מדי")
+        return v
+
+    @model_validator(mode="after")
+    def _days_range_meh3511(self) -> Self:
+        delivery_time.check_range(self.delivery_days_min, self.delivery_days_max)
         return self
 
     @model_validator(mode="after")

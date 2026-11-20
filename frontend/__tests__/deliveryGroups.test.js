@@ -18,6 +18,11 @@ const AREA_FIELDS = [
   "delivery_days",
   "zone_name",
   "free_delivery_above",
+  // MEH-3511
+  "delivery_days_min",
+  "delivery_days_max",
+  "order_cutoff_day",
+  "order_cutoff_time",
 ];
 
 describe("groupDeliveryAreas", () => {
@@ -46,8 +51,8 @@ describe("groupDeliveryAreas", () => {
       day: "שישי",
       rows: [
         // MEH-1794: delivery_fee joins the forwarded shape (null = inherit).
-        { id: 1, city: "חיפה", min_order: 100, delivery_day: "שישי", delivery_fee: null, delivery_days: ["שישי"], zone_name: null, free_delivery_above: null },
-        { id: 2, city: "עכו", min_order: 80, delivery_day: "שישי", delivery_fee: null, delivery_days: ["שישי"], zone_name: null, free_delivery_above: null },
+        { id: 1, city: "חיפה", min_order: 100, delivery_day: "שישי", delivery_fee: null, delivery_days: ["שישי"], zone_name: null, free_delivery_above: null, delivery_days_min: null, delivery_days_max: null, order_cutoff_day: null, order_cutoff_time: null },
+        { id: 2, city: "עכו", min_order: 80, delivery_day: "שישי", delivery_fee: null, delivery_days: ["שישי"], zone_name: null, free_delivery_above: null, delivery_days_min: null, delivery_days_max: null, order_cutoff_day: null, order_cutoff_time: null },
       ],
     });
   });
@@ -71,6 +76,10 @@ describe("groupDeliveryAreas", () => {
       delivery_days: ["שישי"],
       zone_name: "קריות",
       free_delivery_above: 300,
+      delivery_days_min: 1,
+      delivery_days_max: 3,
+      order_cutoff_day: "רביעי",
+      order_cutoff_time: "15:00",
     };
     // The fixture must itself cover the checklist, or the assertion below is
     // measuring a subset and would pass while a real column goes missing.

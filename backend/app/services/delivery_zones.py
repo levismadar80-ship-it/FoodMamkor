@@ -13,7 +13,8 @@ Does NOT: validate (schemas/catalog.py DeliveryZoneIn + check_zones), or
 Related:  services/product_order_delivery.py (reads the copied threshold),
           services/producer_listing.py _delivery_day_condition (reads
           delivery_days).
-History:  MEH-3484 (creation)
+History:  MEH-3484 (creation); MEH-3511 (delivery time + own cutoff copied
+          too; a nationwide business may hold zones — areas on other terms).
 
 Why copy instead of resolving at read time: every reader of a city's day,
 minimum and fee (the public page, DeliveryChecker, the «משלוחים» filter, the
@@ -84,6 +85,19 @@ def _copy(area: DeliveryArea, name: str, zone: dict[str, Any]) -> None:
     area.min_order = zone.get("min_order")  # type: ignore[assignment]
     area.delivery_fee = zone.get("delivery_fee")  # type: ignore[assignment]
     area.free_delivery_above = zone.get("free_delivery_above")  # type: ignore[assignment]
+    # MEH-3511
+    for key in _ZONE_ONLY:
+        setattr(area, key, zone.get(key))
+
+
+# MEH-3511: values a city has only through its zone — there is no per-city
+# editor for them, so a city that leaves every zone loses them.
+_ZONE_ONLY = (
+    "delivery_days_min",
+    "delivery_days_max",
+    "order_cutoff_day",
+    "order_cutoff_time",
+)
 
 
 def sync(
@@ -96,10 +110,12 @@ def sync(
     did not send them: keep the stored zones and `before` memberships.
     Returns the cities this added (for the new-delivery-city alert)."""
     db.flush()
-    if producer.delivery_nationwide or not producer.offers_delivery:
-        # Nationwide or not delivering: no city rows, so no zones either —
-        # judged on the saved state, not only on what this body sent.
+    if not producer.offers_delivery:
+        # Not delivering: no city rows, so no zones either — judged on the
+        # saved state, not only on what this body sent.
         zones = []
+    # MEH-3511: nationwide keeps its zones (areas on other terms); the loop
+    # below drops any city row of a nationwide business that is in no zone.
     areas = _areas(db, producer)
     added: list[str] = []
     if zones is not None:
@@ -121,8 +137,16 @@ def sync(
         if zone is None:
             # Out of every zone: the city keeps the day, minimum and fee it
             # had; only the zone-only threshold goes.
+            if producer.delivery_nationwide and stored:
+                # MEH-3511: a nationwide business with zones keeps only zone
+                # rows — a city outside every zone is just «כל הארץ». Without
+                # zones its rows are left exactly as before this card.
+                db.delete(area)
+                continue
             area.zone_name = None  # type: ignore[assignment]
             area.free_delivery_above = None  # type: ignore[assignment]
+            for key in _ZONE_ONLY:
+                setattr(area, key, None)
             continue
         _copy(area, str(name), zone)
     return added
