@@ -11,8 +11,9 @@ import { QUEUES } from "@/app/[locale]/admin/queues";
  * production. The check is textual on purpose: the backend builds `stats` as a
  * literal dict, so `"<key>":` is the contract line itself.
  */
+// MEH-3538: the stats dict moved from routers/admin_extra.py to this service.
 const ADMIN_EXTRA = readFileSync(
-  resolve(__dirname, "../../backend/app/services/admin_dashboard.py", // MEH-3538: moved from routers/admin_extra.py),
+  resolve(__dirname, "../../backend/app/services/admin_dashboard.py"),
   "utf8",
 );
 // From `stats = {` to the dict's closing brace (4-space indent), so a key that
