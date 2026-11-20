@@ -17,11 +17,18 @@ const mount = () =>
     </NextIntlClientProvider>,
   );
 
+// The GET's real shape (GetOrderSettingsAsAdmin… in lib/generated/api.zod.js).
+const settings = (alcohol) => ({
+  producer_id: "7d1f5f3e-1c2b-4e5a-9f00-000000000001", enabled: false, alcohol_licensed: alcohol,
+  auto_confirm: false, auto_confirm_slot_cap: null, business_id_number: null, cancel_cutoff_hours: 24,
+  lead_time_hours: 24, min_order_agorot: null, shabbat_observant: false, slot_minutes: 60,
+});
+
 describe("AdminAlcoholPanel", () => {
   beforeEach(() => { api.get.mockReset(); api.put.mockReset(); });
 
   it("reads the mark, then turns it on through the admin PUT", async () => {
-    api.get.mockResolvedValueOnce({ data: { alcohol_licensed: false } });
+    api.get.mockResolvedValueOnce({ data: settings(false) });
     api.put.mockResolvedValueOnce({ data: { alcohol_licensed: true } });
     mount();
     const sw = await screen.findByTestId("alcohol-switch");
@@ -40,12 +47,18 @@ describe("AdminAlcoholPanel", () => {
   });
 
   it("a failed save keeps the old state and shows the server's reason", async () => {
-    api.get.mockResolvedValueOnce({ data: { alcohol_licensed: true } });
+    api.get.mockResolvedValueOnce({ data: settings(true) });
     api.put.mockRejectedValueOnce({ response: { data: { detail: "בית עסק לא נמצא" } } });
     mount();
     const sw = await screen.findByTestId("alcohol-switch");
     fireEvent.click(sw);
     await waitFor(() => expect(screen.getByTestId("alcohol-error")).toHaveTextContent("בית עסק לא נמצא"));
     expect(sw).toHaveAttribute("aria-checked", "true");
+  });
+  it("a malformed body is a load error, not a switch set to off (rule 19)", async () => {
+    api.get.mockResolvedValueOnce({ data: { ...settings(false), alcohol_licensed: "yes" } });
+    mount();
+    expect(await screen.findByTestId("alcohol-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("alcohol-switch")).toBeNull();
   });
 });

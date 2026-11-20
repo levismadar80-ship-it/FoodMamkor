@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Switch from "@/components/ui/Switch";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { GetOrderSettingsAsAdminAdminProducersProducerIdOrderSettingsGetResponse as SettingsSchema } from "@/lib/generated/api.zod";
 
 /**
  * Module:   AdminAlcoholPanel
@@ -36,7 +37,12 @@ export default function AdminAlcoholPanel({ producerId }) {
     let live = true;
     api
       .get(`/admin/producers/${producerId}/order-settings`)
-      .then((r) => live && setOn(!!r.data?.alcohol_licensed))
+      .then((r) => {
+        if (!live) return;
+        const parsed = SettingsSchema.safeParse(r.data) // rule 19;
+        if (parsed.success) setOn(parsed.data.alcohol_licensed);
+        else setError(t("load_error"));
+      })
       .catch((err) => {
         if (!live) return;
         if (err?.response?.status === 404) setHidden(true);
