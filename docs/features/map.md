@@ -12,6 +12,8 @@
 * `frontend/components/MapBottomSheet.jsx` — הגיליון התחתון.
 * `frontend/app/[locale]/map/state/useProducersFeed.js` — הזנת הנתונים, עם אימות Zod.
 * `frontend/lib/producerPoints.js` — מאיפה מגיעה נקודה לכל בית עסק.
+* `frontend/components/MiniMap.jsx` — המפה הקטנה בעמוד בית העסק (ובאירוע / חוויה / הרשמה), והמסך המלא שלה.
+* `frontend/lib/use-visual-viewport-box.js` — מצמיד את המסך המלא של המפה הקטנה לחלון הנראה, כדי שכפתור הסגירה לא ייצא מהמסך בדף מוגדל באייפון (MEH-3509).
 
 **Flags.** אין. ה-FAB של הצ'אט כבוי ב-`/map` לפי pathname — ראו `.claude/rules/rtl.md` «Floating-elements corner ownership».
 
@@ -20,5 +22,6 @@
 * `frontend/e2e/flows/manual/map.spec.ts` — כולל המקרה של MEH-2776 (פקד אחד, שתי מעטפות).
 * `frontend/e2e/flows/manual/map-back-restore.spec.ts` · `frontend/e2e/flows/manual/map-banner-controls.spec.ts`
 * `frontend/e2e/flows/07-gps-button.spec.ts` · `frontend/e2e/flows/43-minimap-buttons-over-tiles.spec.ts`
+* `frontend/__tests__/MiniMap.test.jsx` — כולל MEH-3509 (המסך המלא מכסה את החלון הנראה).
 
 **מזהי רישום שזה מכסה.** `map_precision`, `multi_locations` (הצד הציבורי).
