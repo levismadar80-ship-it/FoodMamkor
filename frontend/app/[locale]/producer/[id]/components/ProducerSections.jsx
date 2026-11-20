@@ -705,6 +705,14 @@ export default function ProducerSections({
         </section>
       )}
 
+      {/* MEH-3489: the way into the site chat, scoped to this business — a
+          block in the page, not a floating button (MEH-1168). Sapir 20/11:
+          moved up from under «שאלות נפוצות» (after delivery, near the page
+          end) to right after «מוצרים», where most questions come up; Google
+          Maps puts «Ask» in the top action row, so the entry belongs high.
+          BusinessChatPlacement.test.js holds the order. */}
+      <BusinessChatPrompt producer={producer} signatureProduct={signatureProduct} />
+
       {/* MEH-591: Producer recipes (chunk 4/4). Section is hidden entirely
           when the producer has no published+approved recipes — empty state
           is silent per spec. Anchor id matches the breadcrumb in
@@ -810,10 +818,6 @@ export default function ProducerSections({
           section right under «משלוחים», not a block in the contact card.
           Self-gating: renders nothing when no question is left. */}
       <WhatsAppQuestionChips producer={producer} />
-
-      {/* MEH-3489: the way into the site chat, scoped to this business — in
-          the page's question cluster, not a floating button (MEH-1168). */}
-      <BusinessChatPrompt producer={producer} signatureProduct={signatureProduct} />
 
       {/* MEH-1875 (history — MEH-2803 below supersedes the placement): the
           weekly order schedule, immediately BEFORE the location

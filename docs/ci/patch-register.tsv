@@ -1,0 +1,71 @@
+# patch	state	target	marker	note
+adversarial-review-blocking	dead	-	-	claude-review.yml disabled until MEH-569
+adversarial-review	dead	-	-	claude-review.yml disabled until MEH-569
+check-bash-safety	unverified	-	-	
+check-semantics	unverified	-	-	
+ci-gate-skip-green	unverified	-	-	
+claude-review-status	unverified	-	-	
+cls-measure	unverified	-	-	
+deferral-and-e2e-lint	decision	frontend/eslint.config.mjs	allowWarningComments: false	lint config is CC-deny; Gate 2 needs a decision
+deploy-gate-strict-skip	applied	.github/workflows/deploy.yml	strict_ok	
+dnm-gate-regex	dead	-	-	
+e2e-auth-fixtures	unverified	-	-	
+e2e-concurrency	unverified	-	-	
+e2e-gate-strict-skip	applied	.github/workflows/e2e.yml	check_ran	
+e2e-gate	unverified	-	-	
+e2e-local-backend	unverified	-	-	
+e2e-one-backend-queue	dead	-	-	
+e2e-release-coverage	decision	.github/workflows/e2e.yml	branches: [staging, main]	
+e2e-skip-green	unverified	-	-	
+e2e-stability	unverified	-	-	
+e2e-two-shards	unverified	-	-	
+i18n-lint	unverified	-	-	
+meh-0000-deploy-sha-gate	unverified	-	-	
+meh-1511-rule23-amendment	unverified	-	-	
+meh-1516-qa-screenshots	dead	-	-	obsolete after E2E sharding
+meh-1517-staging-drill	unverified	-	-	
+meh-1603-automerge	external	-	-	repo setting allow_auto_merge, not a file
+meh-1603-merge-queue	dead	-	-	
+meh-1868-knip-ratchet	applied	.github/workflows/pr-checks.yml	npm run lint:ratchet	
+meh-1868-mypy-ratchet	applied	.github/workflows/pr-checks.yml	scripts/mypy_baseline.py	
+meh-1873-checkout-timeout	unverified	-	-	
+meh-1905-railway-healthcheck-path	unverified	-	-	
+meh-1907-cancelled-guard-f9	decision	.github/workflows/pr-checks.yml	SUPERSEDED — the paths-filter job was cancelled	
+meh-1907-workflows-only-enforcement	unverified	-	-	
+meh-1910-ci-speedup	dead	-	-	PR-A/caches judged low value; other halves landed elsewhere
+meh-1911-pytest-parallel	unverified	-	-	
+meh-1912-vitest-shard	dead	-	-	
+meh-1980-coverage-ratchet	applied	.github/workflows/pr-checks.yml	coverage-ratchet.mjs	
+meh-2052-bash-safety-sed-regex	decision	.claude/hooks/check-bash-safety.sh	sed[[:space:]]+-i.*[[:space:]]	hook: Sapir only
+meh-2062-vercel-git-deployments	unverified	-	-	
+meh-2077-branch-name-delete	unverified	-	-	
+meh-2079-expected-tables-43	unverified	-	-	
+meh-2117-stop-hook-in-repo	applied	.claude/settings.json	scripts/hooks/stop-build-and-test.sh	
+meh-2202-uptime-workflow	unverified	-	-	
+meh-2212-actions-cost	dead	-	-	case rested on private-repo billing; repo is public
+meh-2244-reconcile	unverified	-	-	
+meh-2244-stale	decision	.github/workflows/stale.yml	do-not-merge	stale.yml exists; the gap is do-not-merge exemption
+meh-2244	pending	.github/workflows/pr-checks.yml	PR_AUTHOR:	
+meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]refs/tags/	hook: Sapir only
+meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	
+meh-2749-post-deploy-checks	unverified	-	-	
+meh-2779-ci-sharding	unverified	-	-	
+meh-3151-pr-template	pending	.github/pull_request_template.md	Self-checks by the session	
+meh-3153-webkit-alert	applied	.github/workflows/e2e.yml	Alert on a red WebKit night	
+meh-3308-pin-actions-sha	applied	.github/workflows/pr-checks.yml	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	
+meh-3507-nightly-skip	applied	.github/workflows/e2e.yml	nightly_unchanged	
+meh-449-settings-hook-registration	unverified	-	-	
+meh-784-protected-path-gate	decision	.github/workflows/pr-checks.yml	protected-path-gate	
+osm-tile-probe	applied	.github/workflows/uptime.yml	TILE_URL	
+palette-selector-widen	applied	frontend/eslint.config.mjs	Literal[value=	
+placeholder-search-cron	decision	.github/workflows/placeholder-search-cron.yml	check_placeholder_search	needs VERCEL_AUTOMATION_BYPASS_SECRET checked + SHA-pinned actions
+places-health-probe	pending	.github/workflows/uptime.yml	PLACES_URL	
+post-deploy-trim	applied	.github/workflows/post-deploy-checks.yml	17 3 * * 0	
+pr-checks-cancelled-not-failure	unverified	-	-	
+repo-guards	unverified	-	-	
+settings-hooks-cleanup	unverified	-	-	
+staging-co-il	applied	.claude/hooks/check-webfetch-allowlist.sh	staging.mehamakor.co.il	
+staging-health	applied	.github/workflows/staging-health.yml	name: Staging health	
+uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	
+vrt-label-trigger	unverified	-	-	
+webkit-project	unverified	-	-	

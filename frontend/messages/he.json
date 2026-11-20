@@ -6594,9 +6594,9 @@
     "input_placeholder": "הקלידו שאלה…",
     "send_label": "שלחו שאלה",
     "business": {
-      "page_title": "שאלו על {name}",
-      "page_button": "שאלו את העוזרת",
-      "page_other": "שאלה אחרת",
+      "page_title": "שאלו את העוזרת על {name}",
+      "page_ai_note": "עוזרת AI שעונה לפי המידע בעמוד הזה",
+      "page_other": "כתבו שאלה משלכם…",
       "panel_title": "שאלו על {name}",
       "opening": "אפשר לשאול אותי על {name}: שעות פתיחה, משלוחים, מוצרים ואלרגנים. אני עונה רק ממה שכתוב בעמוד של בית העסק.",
       "prompts": {
