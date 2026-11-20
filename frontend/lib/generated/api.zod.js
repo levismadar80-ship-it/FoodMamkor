@@ -8429,6 +8429,17 @@ export const SetReviewReplyReviewsReviewIdReplyPutResponse = /*#__PURE__*/ zod.o
 
 
 /**
+ * Owner of the reviewed business only; anyone else gets the same 404 as
+ * the reply route (MEH-1001), and there is no admin override (MEH-1039) —
+ * a reply is the business's own voice.
+ * @summary Suggest Review Reply
+ */
+export const SuggestReviewReplyReviewsReviewIdReplySuggestPostResponse = /*#__PURE__*/ zod.object({
+  "reply": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * @summary Smart Search
  */
 export const smartSearchSearchGetResponseCategoriesDefault = [];

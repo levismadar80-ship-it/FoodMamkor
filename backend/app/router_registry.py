@@ -58,6 +58,7 @@ from app.routers import (
     report_info,
     reports,
     reviews,
+    review_reply_suggest,
     saved_items,
     search,
     system,
@@ -77,6 +78,9 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(menu_import.router)  # MEH-3430: /producers/me/menu-import
     # MEH-3479: owner + admin «הצעת תיאור» (no /producers/me prefix on the router)
     app.include_router(product_describe.router)
+    # MEH-3480: owner «הצעת תשובה» to a review (/reviews/{id}/reply/suggest),
+    # here beside its sibling AI suggestion to keep register_routers short.
+    app.include_router(review_reply_suggest.router)
 
 
 def _include_owner_links(app: FastAPI) -> None:
