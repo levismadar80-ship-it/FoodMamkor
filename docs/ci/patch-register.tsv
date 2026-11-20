@@ -50,7 +50,7 @@ meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]re
 meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	
 meh-2749-post-deploy-checks	unverified	-	-	
 meh-2779-ci-sharding	unverified	-	-	
-meh-3151-pr-template	pending	.github/pull_request_template.md	Self-checks by the session	
+meh-3151-pr-template	applied	.github/pull_request_template.md	Self-checks by the session	
 meh-3153-webkit-alert	applied	.github/workflows/e2e.yml	Alert on a red WebKit night	
 meh-3308-pin-actions-sha	applied	.github/workflows/pr-checks.yml	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	
 meh-3507-nightly-skip	applied	.github/workflows/e2e.yml	nightly_unchanged	
@@ -59,7 +59,7 @@ meh-784-protected-path-gate	decision	.github/workflows/pr-checks.yml	protected-p
 osm-tile-probe	applied	.github/workflows/uptime.yml	TILE_URL	
 palette-selector-widen	applied	frontend/eslint.config.mjs	Literal[value=	
 placeholder-search-cron	decision	.github/workflows/placeholder-search-cron.yml	check_placeholder_search	needs VERCEL_AUTOMATION_BYPASS_SECRET checked + SHA-pinned actions
-places-health-probe	pending	.github/workflows/uptime.yml	PLACES_URL	
+places-health-probe	applied	.github/workflows/uptime.yml	PLACES_URL	
 post-deploy-trim	applied	.github/workflows/post-deploy-checks.yml	17 3 * * 0	
 pr-checks-cancelled-not-failure	unverified	-	-	
 repo-guards	unverified	-	-	
