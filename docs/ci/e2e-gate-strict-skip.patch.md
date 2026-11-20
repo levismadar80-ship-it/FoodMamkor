@@ -7,7 +7,7 @@ itself. This doc is the exact edit for **Sapir** to make in
 Same shape and same precedent as
 [`docs/ci/ci-gate-skip-green.patch.md`](./ci-gate-skip-green.patch.md) (MEH-1582
 — **applied**, `pr-checks.yml:767-821`) and
-[`scripts/ci-gate-selftest.sh`](../../scripts/ci-gate-selftest.sh), whose
+[`scripts/checks/ci-gate-selftest.sh`](../../scripts/checks/ci-gate-selftest.sh), whose
 `strict_ok`/`check_ran` split this patch reuses verbatim on the `e2e-gate` job.
 
 **Not the same bug as** [`e2e-skip-green.patch.md`](./e2e-skip-green.patch.md)
