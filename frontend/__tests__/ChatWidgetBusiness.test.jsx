@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent, act, waitFor } from "@testing-library/react";
+import { render, screen, within, cleanup, fireEvent, act, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
@@ -23,7 +23,17 @@ import BusinessChatPrompt from "@/app/[locale]/producer/[id]/components/Business
 import { PreviewModeProvider } from "@/lib/preview-mode";
 
 const B = he.chat.business;
-const PRODUCER = { id: "11111111-2222-3333-4444-555555555555", name: "מאפיית הדגמה", status: "approved" };
+// MEH-3505: the page's data decides the questions — this one has a vegan
+// product, delivery and hours, and no featured product.
+const PRODUCER = {
+  id: "11111111-2222-3333-4444-555555555555",
+  name: "מאפיית הדגמה",
+  status: "approved",
+  offers_delivery: true,
+  delivery_nationwide: true,
+  opening_hours: "א׳-ה׳ 08:00-14:00",
+  products: [{ id: "p1", name: "חלה", is_vegan: true }],
+};
 
 function mockMatchMedia(matches) {
   window.matchMedia = vi.fn().mockImplementation((query) => ({
@@ -54,19 +64,26 @@ describe.each([["desktop", true], ["phone", false]])("business page chat (%s)", 
 
   it("shows no floating launcher and no panel until the page's button is tapped", () => {
     renderPage();
-    expect(screen.getByTestId("business-chat-prompt")).toHaveTextContent(B.page_lead);
+    expect(screen.getByTestId("business-chat-prompt")).toHaveTextContent(B.page_title.replace("{name}", PRODUCER.name));
+    // Sapir 20/11 «האם יבינו שזה עוזרת»: the card says in words it is an AI.
+    expect(screen.getByTestId("business-chat-ai-note")).toHaveTextContent(B.page_ai_note);
+    expect(B.page_ai_note).toContain("AI");
     expect(screen.queryByTestId("chat-launcher")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("opens scoped to the business: title, opening line, three business questions", () => {
+  it("opens scoped to the business: title, opening line, the questions its page can answer", () => {
     renderPage();
     fireEvent.click(screen.getByTestId("business-chat-open"));
     const dialog = screen.getByRole("dialog");
     expect(screen.queryByTestId("chat-launcher")).not.toBeInTheDocument(); // the X lives in the panel
     expect(dialog).toHaveTextContent(B.panel_title.replace("{name}", PRODUCER.name));
     expect(dialog).toHaveTextContent(B.opening.replace("{name}", PRODUCER.name));
-    for (const q of Object.values(B.prompts)) expect(screen.getByRole("button", { name: q })).toBeInTheDocument();
+    for (const q of [B.prompts.diet_vegan, B.prompts.delivery, B.prompts.hours]) {
+      expect(within(dialog).getByRole("button", { name: q })).toBeInTheDocument();
+    }
+    // MEH-3505: no gluten-free product on this page → no gluten question.
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: B.prompts.diet_gluten_free })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: he.chat.prompts.register })).not.toBeInTheDocument();
   });
 
@@ -74,7 +91,7 @@ describe.each([["desktop", true], ["phone", false]])("business page chat (%s)", 
     renderPage();
     fireEvent.click(screen.getByTestId("business-chat-open"));
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: B.prompts.delivery }));
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: B.prompts.delivery }));
     });
     await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
     expect(post).toHaveBeenCalledWith("/chat", {
@@ -103,6 +120,112 @@ describe.each([["desktop", true], ["phone", false]])("business page chat (%s)", 
     fireEvent.click(screen.getByTestId("business-chat-open"));
     rerender(withIntl(<><BusinessChatPrompt producer={PRODUCER} /><ChatWidget businessOnly /></>));
     expect(screen.getByRole("dialog")).toHaveTextContent(B.opening.replace("{name}", PRODUCER.name));
+  });
+});
+
+describe("MEH-3505: the questions differ per business", () => {
+  beforeEach(() => mockMatchMedia(false));
+  const withIntl = (ui) => <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>{ui}</NextIntlClientProvider>;
+
+  it("a page with nothing to answer from opens with no suggested questions, and typing still works", async () => {
+    const bare = { id: PRODUCER.id, name: PRODUCER.name, status: "approved" };
+    render(withIntl(<><BusinessChatPrompt producer={bare} /><ChatWidget businessOnly /></>));
+    fireEvent.click(screen.getByTestId("business-chat-open"));
+    // Only the panel's own controls remain: close + send, no suggested chip.
+    const names = within(screen.getByRole("dialog")).getAllByRole("button").map((b) => b.getAttribute("aria-label") || b.textContent);
+    expect(names.sort()).toEqual([he.chat.panel_close_label, he.chat.send_label].sort());
+    fireEvent.change(screen.getByLabelText(he.chat.input_label), { target: { value: "יש חניה?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: he.chat.send_label }));
+    });
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].producer_id).toBe(PRODUCER.id);
+  });
+
+  it("reopening the same business shows the page's current questions", () => {
+    const { rerender } = render(withIntl(<><BusinessChatPrompt producer={PRODUCER} /><ChatWidget businessOnly /></>));
+    fireEvent.click(screen.getByTestId("business-chat-open"));
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: B.prompts.hours })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: he.chat.panel_close_label }));
+    rerender(withIntl(<><BusinessChatPrompt producer={{ ...PRODUCER, opening_hours: null }} /><ChatWidget businessOnly /></>));
+    fireEvent.click(screen.getByTestId("business-chat-open"));
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: B.prompts.hours })).not.toBeInTheDocument();
+  });
+
+  it("the featured product is named in its question", () => {
+    const cake = { id: "p2", name: "עוגת שמרים", ingredients: "קמח, חמאה" };
+    render(withIntl(<><BusinessChatPrompt producer={{ ...PRODUCER, products: [cake] }} signatureProduct={cake} /><ChatWidget businessOnly /></>));
+    fireEvent.click(screen.getByTestId("business-chat-open"));
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: B.prompts.signature.replace("{product}", "עוגת שמרים") })).toBeInTheDocument();
+  });
+});
+
+describe("MEH-3505: the business's questions on the page itself", () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  it("shows the page's own questions, no generic lead, and «שאלה אחרת»", () => {
+    renderPage();
+    const section = screen.getByTestId("business-chat-prompt");
+    for (const q of [B.prompts.diet_vegan, B.prompts.delivery, B.prompts.hours]) {
+      expect(within(section).getByRole("button", { name: q })).toBeInTheDocument();
+    }
+    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_other);
+  });
+
+  it("tapping a question on the page opens the panel and sends it with producer_id", async () => {
+    renderPage();
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId("business-chat-prompt")).getByRole("button", { name: B.prompts.delivery }));
+    });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post).toHaveBeenCalledWith("/chat", {
+      messages: [{ role: "user", content: B.prompts.delivery }],
+      producer_id: PRODUCER.id,
+    });
+  });
+
+  it("a page with one question shows that question and «שאלה אחרת», two buttons", () => {
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <BusinessChatPrompt producer={{ ...PRODUCER, products: [], opening_hours: null }} />
+      </NextIntlClientProvider>,
+    );
+    const section = screen.getByTestId("business-chat-prompt");
+    expect(within(section).getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.delivery, B.page_other]);
+  });
+
+  it("«שאלה אחרת» opens the panel and sends nothing", async () => {
+    renderPage();
+    await act(async () => { fireEvent.click(screen.getByTestId("business-chat-open")); });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("a question tapped while the last reply is still on its way is sent when it lands", async () => {
+    let answer;
+    post.mockImplementationOnce(() => new Promise((resolve) => { answer = resolve; }));
+    renderPage();
+    const page = () => within(screen.getByTestId("business-chat-prompt"));
+    await act(async () => { fireEvent.click(page().getByRole("button", { name: B.prompts.hours })); });
+    fireEvent.click(screen.getByRole("button", { name: he.chat.panel_close_label }));
+    await act(async () => { fireEvent.click(page().getByRole("button", { name: B.prompts.delivery })); });
+    expect(post).toHaveBeenCalledTimes(1);
+    await act(async () => { answer({ data: { reply: "תשובה ראשונה" } }); });
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+    expect(post.mock.calls[1][1].messages.at(-1)).toEqual({ role: "user", content: B.prompts.delivery });
+  });
+
+  it("a page with no questions keeps one button, the question field", () => {
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <BusinessChatPrompt producer={{ id: PRODUCER.id, name: PRODUCER.name, status: "approved" }} />
+      </NextIntlClientProvider>,
+    );
+    const section = screen.getByTestId("business-chat-prompt");
+    expect(within(section).queryByTestId("business-chat-questions")).not.toBeInTheDocument();
+    expect(within(section).getAllByRole("button")).toHaveLength(1);
+    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_other);
   });
 });
 
