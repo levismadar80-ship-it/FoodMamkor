@@ -23,9 +23,10 @@ vi.mock("next-intl", () => {
   return { useLocale: () => "he", useTranslations: () => t };
 });
 
-const { reviewsRef, failRef, putMock } = vi.hoisted(() => ({
+const { reviewsRef, failRef, meRef, putMock } = vi.hoisted(() => ({
   reviewsRef: { current: [] },
   failRef: { current: false },
+  meRef: { current: { id: "p1" } },
   putMock: { fn: null },
 }));
 vi.mock("@/lib/api", () => {
@@ -37,7 +38,7 @@ vi.mock("@/lib/api", () => {
     default: {
       get: vi.fn((url) => {
         if (failRef.current) return Promise.reject(new Error("boom"));
-        if (url === "/producers/me") return Promise.resolve({ data: { id: "p1" } });
+        if (url === "/producers/me") return Promise.resolve({ data: meRef.current });
         if (url === "/reviews") return Promise.resolve({ data: reviewsRef.current });
         return Promise.resolve({ data: null });
       }),
@@ -62,6 +63,7 @@ const review = (id, reply = null) => ({
 describe("dashboard reviews page (MEH-3107)", () => {
   beforeEach(() => {
     failRef.current = false;
+    meRef.current = { id: "p1" };
   });
 
   it("0 reviews: the owner empty state, no list, no summary", async () => {
@@ -114,6 +116,26 @@ describe("dashboard reviews page (MEH-3107)", () => {
     renderPage();
     expect(await screen.findByTestId("owner-reviews-error")).toBeInTheDocument();
     expect(screen.queryByText("owner_empty_title")).toBeNull();
+  });
+
+  // MEH-3536: the retry button asks again, and the list arrives.
+  it("a failed load, then «retry»: the list loads", async () => {
+    failRef.current = true;
+    reviewsRef.current = [review("a")];
+    renderPage();
+    const retry = within(await screen.findByTestId("owner-reviews-error")).getByText("section_errors.retry_cta");
+    failRef.current = false;
+    fireEvent.click(retry);
+    expect(await screen.findAllByTestId("owner-review")).toHaveLength(1);
+    expect(screen.queryByTestId("owner-reviews-error")).toBeNull();
+  });
+
+  // MEH-3536 review: a business answer with no id must not leave the skeleton
+  // up forever.
+  it("/producers/me without an id shows the retry row, not an endless skeleton", async () => {
+    meRef.current = {};
+    renderPage();
+    expect(await screen.findByTestId("owner-reviews-error")).toBeInTheDocument();
   });
 
   it("the «ביקורות» tile in «כלים» links here, not to the public page", () => {

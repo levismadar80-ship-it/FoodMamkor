@@ -112,13 +112,19 @@ export default function ProducerDashboardReviewsPage() {
     transform: (data) => unansweredFirst(Array.isArray(data) ? data : []),
   });
 
-  const failed = Boolean(me.error || list.error) && !me.isValidating && !list.isValidating;
-  const reviews = failed ? null : /** @type {any[] | undefined} */ (list.data) ?? null;
+  // `/producers/me` answered without an id: the reviews can never be asked
+  // for, so it is a failure, not an endless skeleton.
+  const noId = Boolean(me.data) && (producerId === undefined || producerId === null);
+  const failed = (noId || Boolean(me.error || list.error)) && !me.isValidating && !list.isValidating;
+  // A retry after a failure shows the skeleton, as the old reload did — not
+  // whatever list was cached before the failure.
+  const retrying = Boolean(me.error || list.error) && (me.isValidating || list.isValidating);
+  const reviews = failed || retrying ? null : /** @type {any[] | undefined} */ (list.data) ?? null;
 
   // Retry: ask again for whichever read failed. While it runs the skeleton
   // shows, as the old reload did.
   const load = () => {
-    if (me.error) me.mutate();
+    if (me.error || noId) me.mutate();
     else list.mutate();
   };
 

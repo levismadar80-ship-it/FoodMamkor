@@ -16,7 +16,7 @@ const { getMock, authRef } = vi.hoisted(() => ({
 vi.mock("@/lib/api", () => ({ default: { get: getMock } }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => authRef.current }));
 
-import { useApi, useUserApi, invalidateApi, apiKey, API_DEFAULTS } from "@/lib/use-api";
+import { useApi, useUserApi, invalidateApi, apiKey } from "@/lib/use-api";
 
 // A fresh cache per test; deduping left at the layer's own default so the
 // dedup case measures the real setting.
@@ -78,12 +78,36 @@ describe("useApi (MEH-3536)", () => {
 
   it("a failed read shows the error and is not retried automatically", async () => {
     getMock.mockRejectedValue(new Error("boom"));
-    render(<Fresh><Reader path="/a" /></Fresh>);
+    // A 5 ms retry interval: if the layer retried, the second call would land
+    // well inside the 150 ms below (SWR's default 5 s would hide it).
+    render(
+      <SWRConfig value={{ provider: () => new Map(), errorRetryInterval: 5 }}>
+        <Reader path="/a" />
+      </SWRConfig>,
+    );
     expect(await screen.findByText("error")).toBeInTheDocument();
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 150));
     expect(getMock).toHaveBeenCalledTimes(1);
-    expect(API_DEFAULTS.shouldRetryOnError).toBe(false);
-    expect(API_DEFAULTS.revalidateOnFocus).toBe(false);
+  });
+
+  it("regaining focus does not refetch", { timeout: 6000 }, async () => {
+    getMock.mockResolvedValue({ data: 1 });
+    render(
+      <SWRConfig value={{ provider: () => new Map(), focusThrottleInterval: 0, dedupingInterval: 0 }}>
+        <Reader path="/a" />
+      </SWRConfig>,
+    );
+    expect(await screen.findByText("1")).toBeInTheDocument();
+    // Past the layer's 2 s dedup window (a hook option, so it beats the
+    // SWRConfig above): inside it a focus refetch would be deduped and this
+    // case could not tell revalidateOnFocus on from off.
+    await new Promise((r) => setTimeout(r, 2100));
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    expect(getMock).toHaveBeenCalledTimes(1);
   });
 
   it("a transform without a view name throws, with one it shapes the cached answer", async () => {

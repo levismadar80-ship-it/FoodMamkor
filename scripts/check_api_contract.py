@@ -82,8 +82,11 @@ API_CALL_RE = re.compile(
 )
 # MEH-3536: a read through the shared data layer, useApi("/x") /
 # useUserApi("/x") (frontend/lib/use-api.js). Always a GET — the layer only reads.
+# Only a whole literal first argument counts: the closing quote must be followed
+# by `,` or `)`, so `useApi("/x/" + id)` is not read as a call to `/x/`. A path
+# held in a variable or a ternary is not seen (same limit as api.get above).
 USE_API_CALL_RE = re.compile(
-    r"""\buse(?:User)?Api\s*\(\s*(?P<quote>["'`])(?P<path>[^"'`]+)(?P=quote)""",
+    r"""\buse(?:User)?Api\s*\(\s*(?P<quote>["'`])(?P<path>[^"'`]+)(?P=quote)\s*[,)]""",
     re.VERBOSE | re.DOTALL,
 )
 # fetch("..."). The method option, if present, is read from the balanced

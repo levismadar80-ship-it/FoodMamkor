@@ -199,3 +199,6 @@ def test_reads_through_the_shared_data_layer_are_frontend_calls():
     # A path that is not a literal starting with "/" is not a call.
     assert not cac.USE_API_CALL_RE.search("useApi(path)")
     assert cac.USE_API_CALL_RE.search('useUserApi(\n  "/a")').group("path") == "/a"
+    assert cac.USE_API_CALL_RE.search('useApi("/a", { params })').group("path") == "/a"
+    # A concatenated path is not a call to its first piece.
+    assert not cac.USE_API_CALL_RE.search('useApi("/x/" + id)')
