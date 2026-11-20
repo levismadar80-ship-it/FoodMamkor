@@ -1414,7 +1414,7 @@
       },
       "next_delivery": "המשלוח הבא: {date}",
       "next_delivery_city": "המשלוח הבא ל{city}: {date}",
-      "pickup_days": "{count, plural, one {איסוף ביום {days}} other {איסוף בימים {days}}}",
+      "pickup_days": "{count, plural, one {איסוף ביום {days}} two {איסוף בימים {days}} other {איסוף בימים {days}}}",
       "next_pickup": "האיסוף הבא: {date}"
     },
     "friday_delivery": {

@@ -12479,12 +12479,18 @@
             "title": "Phone"
           },
           "pickup_days": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Pickup Days",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Days"
           },
           "precision": {
             "default": "exact",
@@ -12620,12 +12626,18 @@
             "title": "Phone"
           },
           "pickup_days": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Pickup Days",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Days"
           }
         },
         "required": [

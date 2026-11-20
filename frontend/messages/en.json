@@ -1414,7 +1414,7 @@
       },
       "next_delivery": "Next delivery: {date}",
       "next_delivery_city": "Next delivery to {city}: {date}",
-      "pickup_days": "Pickup on {days}",
+      "pickup_days": "{count, plural, one {Pickup on {days}} other {Pickup on {days}}}",
       "next_pickup": "Next pickup: {date}"
     },
     "friday_delivery": {
