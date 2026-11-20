@@ -65,9 +65,11 @@ if [ "${1:-}" = "--self-test" ]; then
   run_case "unknown state"                      1 'a\tunverified\t-\t-\t-\t-'
   run_case "row with a missing column"          1 'a\tapplied\tsrc/t.txt\tMARK'
   run_case "row without a doc"                  1 'a\tdead\t-\t-\t-\t-' 'zzz\tdead\t-\t-\t-\t-'
+  run_case "same patch on two rows"             1 'a\tdead\t-\t-\t-\t-' 'a\tdead\t-\t-\t-\t-'
+  run_case "pending dated in the future"        1 'a\tpending\tsrc/t.txt\tNOPE\t2027-01-01\t-'
   run_case "doc without a row"                  1 'a\tdead\t-\t-\t-\t-'
   echo "cases ran=$ran"
-  [ "$ran" -eq 13 ] || { echo "SELF-TEST BROKEN: expected 13 cases"; exit 1; }
+  [ "$ran" -eq 15 ] || { echo "SELF-TEST BROKEN: expected 15 cases"; exit 1; }
   [ "$bad" -eq 0 ] && { echo "SELF-TEST PASS"; exit 0; }
   echo "SELF-TEST FAIL"; exit 1
 fi
@@ -113,6 +115,11 @@ while IFS= read -r line; do
   fi
   IFS=$'\t' read -r patch state target marker since _note <<< "$line"
   doc="docs/ci/$patch.patch.md"
+  if [ -n "${seen[$patch]:-}" ]; then
+    echo "$loc: '$patch' has two rows — keep one"
+    fail=1
+    continue
+  fi
   seen["$patch"]=1
   if [ ! -f "$doc" ]; then
     echo "$loc: row '$patch' has no $doc"
@@ -141,6 +148,11 @@ while IFS= read -r line; do
       fi
       if ! age=$(age_days "$since"); then
         echo "$loc: '$patch' is $state and needs a since date (YYYY-MM-DD), got '$since'"
+        fail=1
+        continue
+      fi
+      if [ "$age" -lt 0 ]; then
+        echo "$loc: '$patch' has a since date in the future ($since) — it would never expire"
         fail=1
         continue
       fi

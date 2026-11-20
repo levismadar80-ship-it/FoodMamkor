@@ -42,9 +42,7 @@ if grep -q 'check_ran "Frontend build' "$WF"; then
   echo "  APPLIED   — gate uses check_ran/strict_ok; skipped required jobs FAIL."
 else
   APPLIED=0
-  echo "  NOT YET   — gate still accepts 'skipped' for enforced jobs (the MEH-1582 hole)."
-  echo "              Fix is staged in docs/ci/ci-gate-skip-green.patch.md (Sapir applies;"
-  echo "              .github/workflows/** is CC-deny, MEH-671)."
+  echo "  MISSING   — the MEH-1582 fix is not in the workflow file. It was applied; this is a regression."
 fi
 
 DRAFT_GATED=$(grep -c "github.event.pull_request.draft == false" "$WF")

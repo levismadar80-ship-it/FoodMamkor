@@ -45,9 +45,7 @@ if grep -q 'is_cancelled()' "$WF"; then
   echo "  APPLIED   — ci-gate's check()/check_ran() treat 'cancelled' as SUPERSEDED, not FAIL."
 else
   APPLIED=0
-  echo "  NOT YET   — ci-gate still maps 'cancelled' to FAIL via ok()/strict_ok() (the MEH-1907 hole)."
-  echo "              Fix is staged under docs/ci/ for Sapir to apply — see the MEH-1907 patch doc"
-  echo "              there (.github/workflows/** is CC-deny, MEH-671)."
+  echo "  MISSING   — the MEH-1907 fix is not in the workflow file. It was applied; this is a regression."
 fi
 
 # ---------------------------------------------------------------- Pass 2
