@@ -56,8 +56,10 @@ describe("the Leaf is retired as the brand mark", () => {
     for (const f of ["app/[locale]/not-found.js", "app/[locale]/producer/[id]/not-found.js", "app/[locale]/[slug]/ProducerGone.jsx", "app/[locale]/delivery-waitlist/host-confirm/HostConfirmClient.jsx"]) {
       expect(read(f)).toContain('icon="seed"');
     }
-    for (const f of ["app/[locale]/delivery-waitlist/unsubscribe/UnsubscribeClient.jsx", "app/[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx"]) {
-      expect(read(f)).toContain('icon={ok ? "seed" : LinkBreak}');
+    // MEH-3464: the email unsubscribe landings render through one component.
+    expect(read("components/EmailLinkUnsubscribe.jsx")).toContain('icon={ok ? "seed" : LinkBreak}');
+    for (const f of ["app/[locale]/delivery-waitlist/unsubscribe/UnsubscribeClient.jsx", "app/[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx", "app/[locale]/unsubscribe/weekly/UnsubscribeClient.jsx"]) {
+      expect(read(f)).toContain("<EmailLinkUnsubscribe");
     }
   });
 

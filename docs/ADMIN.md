@@ -29,7 +29,7 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 לעמוד העריכה שלו. לא מסומן → הבקשה זהה למה שהייתה (אין מפתח `as_draft` בכלל).
 
 בעמוד העריכה של טיוטה מופיע הפאנל **«קישור הזמנה לבעלת העסק»**
-(`components/admin/ClaimLinkPanel.jsx`): «יצירת קישור» → `POST
+(`components/admin/ClaimLinkPanel.jsx`, שמציג את `components/admin/AdminLinkPanel.jsx` — אותו פאנל כמו «קישור תצוגה מקדימה», MEH-3464): «יצירת קישור» → `POST
 /admin/producers/{id}/claim-link` → קישור `/claim/<token>` לתוקף 14 יום + כפתור
 העתקה. כל לחיצה מנפיקה טוקן חדש (stateless, בלי כתיבה ל-DB). טיוטה שכבר שויכה
 עדיין מציגה את הפאנל — השרת עונה 409 וההודעה שלו מוצגת כמו שהיא.
