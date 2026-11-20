@@ -6598,9 +6598,9 @@
     "input_placeholder": "Type a question...",
     "send_label": "Send question",
     "business": {
-      "page_title": "Ask about {name}",
-      "page_button": "Ask the assistant",
-      "page_other": "Another question",
+      "page_title": "Ask the assistant about {name}",
+      "page_ai_note": "An AI assistant that answers from this page",
+      "page_other": "Write your own question…",
       "ask_business": "Ask {name} directly",
       "ask_business_aria": "Ask {name} directly (opens in a new tab)",
       "panel_title": "Ask about {name}",

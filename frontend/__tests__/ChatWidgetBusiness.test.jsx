@@ -67,6 +67,9 @@ describe.each([["desktop", true], ["phone", false]])("business page chat (%s)", 
   it("shows no floating launcher and no panel until the page's button is tapped", () => {
     renderPage();
     expect(screen.getByTestId("business-chat-prompt")).toHaveTextContent(B.page_title.replace("{name}", PRODUCER.name));
+    // Sapir 20/11 «האם יבינו שזה עוזרת»: the card says in words it is an AI.
+    expect(screen.getByTestId("business-chat-ai-note")).toHaveTextContent(B.page_ai_note);
+    expect(B.page_ai_note).toContain("AI");
     expect(screen.queryByTestId("chat-launcher")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -215,7 +218,7 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     expect(post.mock.calls[1][1].messages.at(-1)).toEqual({ role: "user", content: B.prompts.delivery });
   });
 
-  it("a page with no questions keeps one button, «שאלו את העוזרת»", () => {
+  it("a page with no questions keeps one button, the question field", () => {
     render(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
         <BusinessChatPrompt producer={{ id: PRODUCER.id, name: PRODUCER.name, status: "approved" }} />
@@ -224,7 +227,7 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     const section = screen.getByTestId("business-chat-prompt");
     expect(within(section).queryByTestId("business-chat-questions")).not.toBeInTheDocument();
     expect(within(section).getAllByRole("button")).toHaveLength(1);
-    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_button);
+    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_other);
   });
 });
 

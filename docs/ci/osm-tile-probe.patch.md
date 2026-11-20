@@ -1,8 +1,8 @@
 # Patch — `uptime.yml`: also probe one OpenStreetMap map tile (MEH-3356)
 
-> **Status: ⏳ NOT APPLIED — written 17/11/2026.** `.github/workflows/**` is
-> CC-deny, so CC prepared and checked this patch and Sapir (or Claude in
-> Chrome) commits it. See [§5](#5--how-to-apply).
+> **Status: ✅ APPLIED (PR #4741, 17/11/2026).** Checked 20/11/2026 against
+> `origin/staging`: `TILE_URL` / `TILE_REFERER` are in `uptime.yml`. Kept as the
+> record of why the probe exists; do not paste it again.
 
 ## 1 · Why
 

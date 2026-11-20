@@ -12,6 +12,7 @@ import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { useFocusReturn } from "@/lib/use-focus-return";
+import { useVisualViewportBox } from "@/lib/use-visual-viewport-box";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { coordsNavLinks } from "@/lib/nav-links";
 
@@ -158,7 +159,7 @@ function toUsablePoints(locations) {
 // Frame every point the business has. lat/lng here are geographic values, not
 // layout directions — the RTL logical-property rule does not apply (documented
 // exception, .claude/rules/rtl.md "Map geographic controls").
-function FitToPoints({ points, zoom }) {
+function FitToPoints({ points, zoom, refitKey = "" }) {
   const map = useMap();
   useEffect(() => {
     if (points.length === 0) return;
@@ -170,7 +171,9 @@ function FitToPoints({ points, zoom }) {
       points.map((point) => [point.lat, point.lng]),
       { padding: [FIT_PADDING_PX, FIT_PADDING_PX], maxZoom: FIT_MAX_ZOOM },
     );
-  }, [map, points, zoom]);
+    // MEH-3509: `refitKey` changes when the overlay's visible box does — the
+    // map was first sized against inset-0, so it frames again in the real box.
+  }, [map, points, zoom, refitKey]);
   return null;
 }
 
@@ -259,6 +262,22 @@ function InteractionMode({ interactive }) {
   return null;
 }
 
+// MEH-3509: the overlay follows the visible window (useVisualViewportBox), so
+// its size can change while the map is up. Leaflet only re-measures on a
+// window resize, so a changed box is pushed to it here. `box` is null inline.
+function boxKey(box) {
+  return box ? `${box.width}x${box.height}` : "";
+}
+
+function InvalidateOnBox({ box }) {
+  const map = useMap();
+  const key = boxKey(box);
+  useEffect(() => {
+    if (key) map.invalidateSize();
+  }, [map, key]);
+  return null;
+}
+
 // MEH-1659: a tap on the map BACKGROUND expands it. Leaflet's own controls call
 // DomEvent.disableClickPropagation on their containers — zoom buttons at
 // leaflet-src.js:5559-5560, attribution at :5774 — so pressing +/− or the OSM
@@ -310,8 +329,8 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // competes with that button in the parent's stacking context and wins: the
 // button stayed visible only over the grey not-yet-loaded area, and vanished as
 // soon as a pan or zoom put tiles under it — the overlay lost its only exit.
-/** @param {{ interactive?: boolean, onExpand?: () => void, mapKey?: string, center: { lat: number | string, lng: number | string }, points?: object[], lat?: number | string, lng?: number | string, name?: string, fallbackLabel?: string, producer?: import("@/types/entities").ProducerSummary, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props */
-function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
+/** @param {{ box?: { top: number, left: number, width: number, height: number } | null, interactive?: boolean, onExpand?: () => void, mapKey?: string, center: { lat: number | string, lng: number | string }, points?: object[], lat?: number | string, lng?: number | string, name?: string, fallbackLabel?: string, producer?: import("@/types/entities").ProducerSummary, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props */
+function MapSurface({ box = null, interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
       key={mapKey}
@@ -382,7 +401,9 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           eventHandlers={singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand })}
         />
       )}
-      <FitToPoints points={points} zoom={zoom} />
+      {/* MEH-3509: before FitToPoints, so a re-fit reads the new size. */}
+      <InvalidateOnBox box={box} />
+      <FitToPoints points={points} zoom={zoom} refitKey={boxKey(box)} />
       <InteractionMode interactive={interactive} />
       <CanvasClickToExpand onExpand={onExpand} />
     </MapContainer>
@@ -440,6 +461,8 @@ export default function MiniMap({
   // a fresh arrow each render would re-bind the Leaflet listener every time.
   const expand = useCallback(() => setExpanded(true), []);
   const collapse = useCallback(() => setExpanded(false), []);
+  // MEH-3509: the visible window, so the overlay (and its X) is always on screen.
+  const viewportBox = useVisualViewportBox(expanded);
 
   // Focus returns to whatever opened the overlay once it closes (WCAG 2.4.3).
   // REUSES: frontend/components/LoginPromptModal.jsx:39.
@@ -590,6 +613,12 @@ export default function MiniMap({
           aria-modal="true"
           aria-label={t("expanded_aria")}
           className="fixed inset-0 z-minimap-fullscreen bg-surface"
+          // MEH-3509: `inset-0` is the LAYOUT viewport. On a pinch-zoomed or
+          // drifted iPhone page the visible window is smaller, and the X sat
+          // off-screen with no way out. The inline box wins over inset-0;
+          // right/bottom go to auto, or an over-constrained box in an RTL
+          // document drops `left` (CSS 2.1 §10.3.7) and pins to the right.
+          style={viewportBox ? { ...viewportBox, right: "auto", bottom: "auto" } : undefined}
         >
           {/* MEH-2182: `surfaceProps` carries `draggableMarker` / `onMarkerDragEnd`
               here too, so the overlay marker is draggable as well — deliberately.
@@ -601,7 +630,7 @@ export default function MiniMap({
               callback, so the two cannot disagree. Covered by the (open ×
               draggable) tests in MiniMap.test.jsx — dropping the forwarding here
               reddens exactly one of them. */}
-          <MapSurface {...surfaceProps} interactive mapKey={`overlay-${coordKeyPart}-${points.length}`} />
+          <MapSurface {...surfaceProps} box={viewportBox} interactive mapKey={`overlay-${coordKeyPart}-${points.length}`} />
           <button
             type="button"
             ref={closeRef}
