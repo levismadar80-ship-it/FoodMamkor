@@ -238,7 +238,9 @@ def next_opening(raw: str | None, now: datetime) -> str | None:
         starts = [o for o, _ in hours.get(day, []) if ahead > 0 or o > minute]
         if starts:
             o = min(starts)
-            when = "היום" if ahead == 0 else ("מחר" if ahead == 1 else _DAY_NAMES_HE[day])
+            when = (
+                "היום" if ahead == 0 else ("מחר" if ahead == 1 else _DAY_NAMES_HE[day])
+            )
             if ahead == 7:
                 when += " הבא"  # same weekday as today, a week on
             return f"{when} {o // 60:02d}:{o % 60:02d}"
