@@ -504,16 +504,16 @@ async function revealMarkerAboveSheet(page: Page, shell: Locator, marker: Locato
     await page.mouse.move(x, y1, { steps: 10 });
     // Hold still before lifting, as a person placing the map does. Leaflet's
     // inertia (Map.Drag `_onDragEnd`) prunes drag samples older than 50 ms at
-    // mouseup and glides by the speed of what is left; after a 120 ms hold only
-    // the final sample remains, so the speed is 0 and the map stops where the
-    // drag put it. Without the hold the glide carried the pin on: into the
+    // mouseup and glides by what is left; after a 120 ms hold only the final
+    // sample remains, the computed offset is not a number, and Leaflet fires
+    // `moveend` with no glide — the map stops where the drag put it. Without the hold the glide carried the pin on: into the
     // «search this area» pill on Chromium (measured), and on WebKit off the top
     // of the map for the deepest pin (Ashkelon, 20/11 run 44797982552), where
     // markercluster's `removeOutsideVisibleBounds` takes the marker out of the
     // DOM and every later read times out on a locator that no longer exists.
     await page.waitForTimeout(120);
     await page.mouse.up();
-    await expect(marker, "the marker must still be on the map after the drag — a glide took it off-screen").toHaveCount(1);
+    await expect(marker, "the marker must still be on the map after the drag — it left the visible map, and markercluster removed it").toHaveCount(1);
     await expect.poll(async () => (await box(marker)).y, "control: the drag must move the map").not.toBe(m.y);
     // The «search this area» pill lands on `moveend`: hit-test only once it is
     // up and the pin is still, or the check passes on a layout that is still
