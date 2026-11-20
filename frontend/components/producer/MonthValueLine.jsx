@@ -34,7 +34,7 @@ const AGOROT_PER_SHEKEL = 100;
  * @param {{ bookings: number, value_agorot: number }} s
  * @returns {[string, Record<string, string | number>]}
  */
-export function monthValueMessage(s) {
+function monthValueMessage(s) {
   if (s.bookings <= 0) return ["none", {}];
   const value = s.value_agorot > 0 ? formatPrice(s.value_agorot / AGOROT_PER_SHEKEL) : null;
   const base = s.bookings === 1 ? "one" : "many";
