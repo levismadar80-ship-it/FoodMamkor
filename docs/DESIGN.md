@@ -553,8 +553,9 @@ front matter for the normative token bindings.
     they open above it, over the photo. (MEH-3321, 15/11, had moved the whole
     row into the body; it added rows to the card and was reversed.)
   - **Fact lines (MEH-3508):** below the category, every fact is a plain 12px
-    line with one 14px icon, in this order: delivery (truck; «משלוחים בלבד»
-    opens it, the fee sits under it on the same icon column — no pill), order
+    line with one 14px icon, in this order: delivery (truck; one fact, one
+    line — a delivery-only business reads «משלוחים בלבד» and its fee stays on
+    the business page, as MEH-2744 did for the threshold; no pill), order
     window (clock, `primary`), then offer and favourites. No pills in the body
     except TrustBadge.
   - **No photo plate, history:** it replaces the MEH-643 leaf glyph + wordmark on

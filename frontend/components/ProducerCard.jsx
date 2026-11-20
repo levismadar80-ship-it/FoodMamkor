@@ -807,21 +807,21 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             when delivery_fee is null/undefined — no "no delivery" row. */}
         {/* MEH-2602: the same resolver as DeliveryBlock's top line — per-area
             overrides included — so card and page state one price. */}
-        {/* MEH-3508: «משלוחים בלבד» is no longer a pill: it opens this fact
-            line, and the fee sits under it on the same icon column — one
-            delivery fact, one truck (Wolt/Airbnb: listing facts as plain
-            muted text lines, one icon each). */}
+        {/* MEH-3508: «משלוחים בלבד» is no longer a pill: it IS this fact
+            line. One delivery fact per card, on one line, the truck standing
+            for the word (MEH-2744's rule, Wolt/Uber Eats) — so for a
+            delivery-only business the fee moves to the business page, the
+            same trade MEH-2744 made for the free-above threshold. */}
         {(cardFee.fee != null || freeAbove || showDeliveryOnly) && (
           <p className="flex items-start gap-1 text-xs text-fg-muted" data-testid="card-delivery-fee">
             <Truck size={14} className="shrink-0 mt-[1px]" aria-hidden="true" />
             <span className="min-w-0">
-              {showDeliveryOnly && (
-                <span className="block" data-testid="card-delivery-only">
+              {showDeliveryOnly ? (
+                <span data-testid="card-delivery-only">
                   {t("producer.card.badges.delivery_only")}
                 </span>
-              )}
-              {(cardFee.fee != null || freeAbove) && (
-              <span className="block">
+              ) : (
+              <span>
               {alwaysFree ? (
                 t("group_buys.delivery.fee_free")
               ) : freeAbove ? (

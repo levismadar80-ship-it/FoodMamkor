@@ -643,6 +643,19 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(line.textContent).not.toMatch(/🚚/);
   });
 
+  // MEH-3508: one delivery fact per card, one line — for a delivery-only
+  // business the line says «משלוחים בלבד» and the fee stays on the page.
+  it("delivery-only with a fee: one line, «משלוחים בלבד», no fee on the card", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, has_physical_location: false, offers_delivery: true, delivery_fee: 35 }}
+      />,
+    );
+    const line = screen.getByTestId("card-delivery-fee");
+    expect(line).toHaveTextContent("משלוחים בלבד");
+    expect(line.textContent).not.toMatch(/35/);
+  });
+
   it("does not render the delivery-only badge for a physical producer", () => {
     render(
       <ProducerCard
