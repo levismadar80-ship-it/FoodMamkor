@@ -553,3 +553,43 @@ def test_auto_confirm_without_a_slot_cap_is_refused_in_hebrew(client, db, flag_o
     assert res.status_code == 422
     assert "לכל מועד" in res.text
     assert db.query(ProducerOrderSettings).count() == 0
+
+
+# MEH-3524: the admin's alcohol switch reads the mark before it writes it.
+def test_admin_reads_a_never_saved_business_as_defaults_without_a_row(client, db, flag_on):
+    _, producer = _owner(db)
+    admin = make_user(db, role="admin")
+    res = client.get(
+        f"/admin/producers/{producer.id}/order-settings", headers=auth_header(admin)
+    )
+    assert res.status_code == 200
+    assert (res.json()["alcohol_licensed"], res.json()["enabled"]) == (False, False)
+    assert db.query(ProducerOrderSettings).count() == 0
+
+
+def test_admin_read_shows_the_mark_the_admin_set(client, db, flag_on):
+    _, producer = _owner(db)
+    admin = make_user(db, role="admin")
+    client.put(
+        f"/admin/producers/{producer.id}/order-settings/alcohol",
+        json={"alcohol_licensed": True},
+        headers=auth_header(admin),
+    )
+    res = client.get(
+        f"/admin/producers/{producer.id}/order-settings", headers=auth_header(admin)
+    )
+    assert res.json()["alcohol_licensed"] is True
+
+
+def test_admin_read_refuses_everyone_but_an_admin_and_404s_when_off(client, db, monkeypatch):
+    owner, producer = _owner(db)
+    admin = make_user(db, role="admin")
+    url = f"/admin/producers/{producer.id}/order-settings"
+    assert client.get(url, headers=auth_header(admin)).status_code == 404  # flag off
+    monkeypatch.setattr(orders_module, "product_orders_enabled", lambda: True)
+    assert client.get(url).status_code == 401
+    assert client.get(url, headers=auth_header(owner)).status_code == 403
+    missing = client.get(
+        f"/admin/producers/{uuid.uuid4()}/order-settings", headers=auth_header(admin)
+    )
+    assert missing.status_code == 404
