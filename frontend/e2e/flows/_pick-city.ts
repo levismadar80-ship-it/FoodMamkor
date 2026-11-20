@@ -37,7 +37,10 @@ export async function pickCity(scope: Locator, typed: string, option: string | R
   await expect(row, `a suggestion for «${typed}» must appear`).toBeVisible();
   await layoutSettled(row);
   const name = (await row.innerText()).trim();
-  await row.click();
+  // Click the row by the name just read, not `.first()` again: if the
+  // debounced /cities merge reorders the list in between, `.first()` could be
+  // a different town from the one the assertions below expect.
+  await scope.getByRole("option", { name, exact: true }).click();
   await expect(scope.getByRole("listbox"), `the pick of «${name}» must close the list`).toHaveCount(0);
   await expect(input, `the field must hold the picked town «${name}»`).toHaveValue(name);
   return name;

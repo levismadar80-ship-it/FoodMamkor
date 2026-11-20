@@ -494,7 +494,11 @@ async function revealMarkerAboveSheet(page: Page, shell: Locator, marker: Locato
     const x = c.x + c.width / 2;
     const y0 = sheetTop - 12; // on the canvas, just above the sheet's edge
     // Lift the pin's bottom 48px clear of the sheet, never past the canvas top.
-    const y1 = Math.max(c.y + 12, y0 - (m.y + m.height - sheetTop + 48));
+    // Always upward: a pin covered by something ABOVE the sheet (a top pill) is
+    // not this helper's case, and the named expect below reports it.
+    const lift = m.y + m.height - sheetTop + 48;
+    if (lift <= 0) break;
+    const y1 = Math.max(c.y + 12, y0 - lift);
     await page.mouse.move(x, y0);
     await page.mouse.down();
     await page.mouse.move(x, y1, { steps: 10 });
@@ -503,7 +507,8 @@ async function revealMarkerAboveSheet(page: Page, shell: Locator, marker: Locato
     // Leaflet's inertia keeps the map gliding after mouseup, and the «search
     // this area» pill lands on `moveend`: hit-test only once both are done, or
     // the check passes on a pin that is still moving (measured: it glided into
-    // the pill and the tap went to the pill).
+    // the pill and the tap went to the pill). On a second pass the pill is
+    // already up, so `layoutSettled` alone covers the inertia there.
     await expect(shell.getByTestId("map-search-this-area"), "control: the drag must register as a user move").toBeVisible();
     await layoutSettled(marker);
   }
