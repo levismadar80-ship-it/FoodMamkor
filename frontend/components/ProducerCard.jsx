@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
-import { HeartStraight, Truck } from "@phosphor-icons/react";
+import { Clock, HeartStraight, Truck } from "@phosphor-icons/react";
 import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import OfferBadge, { freeDeliveryThreshold } from "./OfferBadge";
@@ -320,7 +320,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   // still cost a gap in its flex column.
   const showTrust = (producer.trust_tier ?? 1) >= 4;
   const showDeliveryOnly = producer.has_physical_location === false && !!producer.offers_delivery;
-  const hasMetaPills = showTrust || showDeliveryOnly;
+  const hasMetaPills = showTrust;
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -752,9 +752,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
         </p>
         )}
 
-        {/* MEH-3508: recognition tier + «משלוחים בלבד» — business facts, not
-            BADGE_CONFIG badges — stay in the body under the category line, so
-            the photo strip is always one line. Rendered only with content. */}
+        {/* MEH-3508: the recognition tier (a business fact, not a BADGE_CONFIG
+            badge) stays in the body under the category line, so the photo
+            strip is always one line. «משלוחים בלבד» moved into the delivery
+            fact line below. Rendered only with content. */}
         {hasMetaPills && (
         <div
           className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-full"
@@ -768,46 +769,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           {showTrust && (
             <TrustBadge tier={producer.trust_tier} compact avoidRef={cardBodyRef} />
           )}
-          {showDeliveryOnly && (
-            // MEH-1459: Emoji-LOCK — the delivery emoji baked into the i18n string
-            // is replaced by the MEH-1418 delivery glyph (Phosphor Truck, currentColor via the
-            // pill's text-text) so it matches the delivery toggle chip. size 14
-            // keeps the pill height in line with the sibling text badges.
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-2xs">
-              <Truck size={14} className="shrink-0" aria-hidden="true" />
-              {t("producer.card.badges.delivery_only")}
-            </span>
-          )}
         </div>
-        )}
-
-        {/* MEH-1880: rendered ONLY when the declared window is open right now.
-            Closed, absent, or pre-mount → this whole node is absent, so a card
-            without an open window is byte-identical to before this ticket (no
-            reserved space, no layout shift). Copy is reused verbatim from the
-            producer page's status branch — zero new keys in either locale. */}
-        {showOrderWindowLine && (
-          // `text-primary` is not a free choice: it is the tone the producer
-          // page's own `open` branch resolves to (order-status.js:99), so the
-          // card says the same thing in the same colour. No new colour token.
-          //
-          // NOT `truncate`, and that is a measured decision. At 375px the card
-          // body is 132px wide and this string needs 138 — a 6px overflow, the
-          // only width where it does not fit (414/768/1440 all clear). In RTL
-          // the ellipsis lands at the visual left, which is exactly where the
-          // cutoff time sits, so truncating drops the ONE datum the line
-          // carries and leaves a line that says "open · until…". Wrapping
-          // keeps the time. It costs a second line at 375px on open cards
-          // only; the closed/null/vacation states render no node at all, so
-          // the AC's "no layout shift" case is untouched.
-          <p
-            className="text-sm text-primary"
-            data-testid="card-order-window"
-          >
-            {t("producer.detail.header.status.orders_open", {
-              time: humanTime(israelTime(orderStatus.nextChange)),
-            })}
-          </p>
         )}
 
         {descriptionText && (
@@ -820,26 +782,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             data-testid="card-description"
           >
             {descriptionText}
-          </p>
-        )}
-
-        {/* MEH-2759: the Friday «מגיעה היום» pill (fridayMode + available_today)
-            is gone with the state; the Friday strip now lists businesses that
-            deliver on Friday. */}
-
-        {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
-            when active_offer is absent, so a business without an offer renders
-            byte-identically to before — no wrapper, no gap, no flow change. */}
-        {/* MEH-2676: a thresholded free-delivery offer renders in the
-            delivery row below instead — one delivery item, amount visible. */}
-        {!freeAbove && <OfferBadge offer={producer.active_offer} variant="chip" />}
-        {/* /MEH-1823 */}
-
-        {localFavCount >= 5 && (
-          <p className="flex items-center gap-1 text-xs text-fg-muted">
-            {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
-            <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
-            {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>
         )}
 
@@ -865,10 +807,21 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             when delivery_fee is null/undefined — no "no delivery" row. */}
         {/* MEH-2602: the same resolver as DeliveryBlock's top line — per-area
             overrides included — so card and page state one price. */}
-        {(cardFee.fee != null || freeAbove) && (
+        {/* MEH-3508: «משלוחים בלבד» is no longer a pill: it opens this fact
+            line, and the fee sits under it on the same icon column — one
+            delivery fact, one truck (Wolt/Airbnb: listing facts as plain
+            muted text lines, one icon each). */}
+        {(cardFee.fee != null || freeAbove || showDeliveryOnly) && (
           <p className="flex items-start gap-1 text-xs text-fg-muted" data-testid="card-delivery-fee">
             <Truck size={14} className="shrink-0 mt-[1px]" aria-hidden="true" />
             <span className="min-w-0">
+              {showDeliveryOnly && (
+                <span className="block" data-testid="card-delivery-only">
+                  {t("producer.card.badges.delivery_only")}
+                </span>
+              )}
+              {(cardFee.fee != null || freeAbove) && (
+              <span className="block">
               {alwaysFree ? (
                 t("group_buys.delivery.fee_free")
               ) : freeAbove ? (
@@ -898,7 +851,63 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                   );
                 })()
               )}
+              </span>
+              )}
             </span>
+          </p>
+        )}
+
+        {/* MEH-1880: rendered ONLY when the declared window is open right now.
+            Closed, absent, or pre-mount → this whole node is absent, so a card
+            without an open window is byte-identical to before this ticket (no
+            reserved space, no layout shift). Copy is reused verbatim from the
+            producer page's status branch — zero new keys in either locale. */}
+        {showOrderWindowLine && (
+          // `text-primary` is not a free choice: it is the tone the producer
+          // page's own `open` branch resolves to (order-status.js:99), so the
+          // card says the same thing in the same colour. No new colour token.
+          //
+          // NOT `truncate`, and that is a measured decision. At 375px the card
+          // body is 132px wide and this string needs 138 — a 6px overflow, the
+          // only width where it does not fit (414/768/1440 all clear). In RTL
+          // the ellipsis lands at the visual left, which is exactly where the
+          // cutoff time sits, so truncating drops the ONE datum the line
+          // carries and leaves a line that says "open · until…". Wrapping
+          // keeps the time. It costs a second line at 375px on open cards
+          // only; the closed/null/vacation states render no node at all, so
+          // the AC's "no layout shift" case is untouched.
+          // MEH-3508: a fact line like delivery — 12px, 14px icon, same gap.
+          <p
+            className="flex items-start gap-1 text-xs text-primary"
+            data-testid="card-order-window"
+          >
+            <Clock size={14} className="shrink-0 mt-[1px]" aria-hidden="true" />
+            <span className="min-w-0">{t("producer.detail.header.status.orders_open", {
+              time: humanTime(israelTime(orderStatus.nextChange)),
+            })}</span>
+          </p>
+        )}
+
+
+        {/* MEH-3508: order — what (category, description), then logistics
+            (delivery, order window), then extras (offer, favourites). */}
+        {/* MEH-2759: the Friday «מגיעה היום» pill (fridayMode + available_today)
+            is gone with the state; the Friday strip now lists businesses that
+            deliver on Friday. */}
+
+        {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
+            when active_offer is absent, so a business without an offer renders
+            byte-identically to before — no wrapper, no gap, no flow change. */}
+        {/* MEH-2676: a thresholded free-delivery offer renders in the
+            delivery row below instead — one delivery item, amount visible. */}
+        {!freeAbove && <OfferBadge offer={producer.active_offer} variant="chip" />}
+        {/* /MEH-1823 */}
+
+        {localFavCount >= 5 && (
+          <p className="flex items-center gap-1 text-xs text-fg-muted">
+            {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
+            <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
+            {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>
         )}
 

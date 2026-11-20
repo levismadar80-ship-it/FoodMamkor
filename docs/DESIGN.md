@@ -547,11 +547,16 @@ front matter for the normative token bindings.
     Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned.
   - **Badges on the photo, one line (MEH-3508, Sapir 20/11/2026):** the badge
     row (max 2 + «+N») sits bottom-start on the photo (`bottom-3 start-3`) and
-    never wraps. TrustBadge and the delivery-only pill sit in the card body
-    under the name / category line (`card-meta-pills`). Nothing to show →
+    never wraps. TrustBadge sits in the card body under the category line
+    (`card-meta-pills`). Nothing to show →
     no strip, no row. The «+N» panel and badge tooltips avoid the strip, so
     they open above it, over the photo. (MEH-3321, 15/11, had moved the whole
     row into the body; it added rows to the card and was reversed.)
+  - **Fact lines (MEH-3508):** below the category, every fact is a plain 12px
+    line with one 14px icon, in this order: delivery (truck; «משלוחים בלבד»
+    opens it, the fee sits under it on the same icon column — no pill), order
+    window (clock, `primary`), then offer and favourites. No pills in the body
+    except TrustBadge.
   - **No photo plate, history:** it replaces the MEH-643 leaf glyph + wordmark on
     `green-50`, which read as a template when most cards had no photo.
     **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in a

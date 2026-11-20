@@ -636,9 +636,11 @@ describe("ProducerCard — Phase B anatomy", () => {
     );
     const label = screen.getByText("משלוחים בלבד");
     expect(label).toBeInTheDocument();
-    const badge = label.closest("span");
-    expect(badge.querySelector('[data-testid="icon-truck"]')).toBeInTheDocument();
-    expect(badge.textContent).not.toMatch(/🚚/);
+    // MEH-3508: the label opens the delivery fact line, whose one Truck it uses.
+    const line = label.closest('[data-testid="card-delivery-fee"]');
+    expect(line, "delivery-only sits in the delivery fact line").not.toBeNull();
+    expect(line.querySelectorAll('[data-testid="icon-truck"]')).toHaveLength(1);
+    expect(line.textContent).not.toMatch(/🚚/);
   });
 
   it("does not render the delivery-only badge for a physical producer", () => {

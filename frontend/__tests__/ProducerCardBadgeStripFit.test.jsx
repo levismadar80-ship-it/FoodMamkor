@@ -315,17 +315,17 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
   // (MEH-3321 had put them under the name, which added rows to the card).
   // What MEH-3321 fixed must not return: the photo strip carries only the
   // badge line — «משלוחים בלבד» stays in the body, under the name.
-  it("the badge strip is on the photo; «משלוחים בלבד» stays in the body", () => {
+  it("the badge strip is on the photo; «משלוחים בלבד» is in the body's delivery line", () => {
     room = 400;
     render(<ProducerCard producer={{ ...threeBadges, has_physical_location: false, offers_delivery: true }} />);
     const strip = screen.getByTestId("card-badge-strip");
     expect(strip.className.split(/\s+/)).toEqual(expect.arrayContaining(["absolute", "bottom-3", "start-3"]));
     const body = screen.getByTestId("card-body");
     expect(body.contains(strip), "strip is not in the card body").toBe(false);
-    const meta = screen.getByTestId("card-meta-pills");
-    expect(body.contains(meta)).toBe(true);
-    expect(strip.contains(meta)).toBe(false);
-    expect(meta).toHaveTextContent("משלוחים בלבד");
+    const only = screen.getByTestId("card-delivery-only");
+    expect(body.contains(only)).toBe(true);
+    expect(strip.contains(only)).toBe(false);
+    expect(only).toHaveTextContent("משלוחים בלבד");
   });
 
   it("0 badges: no strip at all, so the body has no empty gap (MEH-3321)", () => {
@@ -335,12 +335,13 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     expect(screen.queryByTestId("card-meta-pills"), "no empty body row either (MEH-3508)").toBeNull();
   });
 
-  it("0 badges + delivery-only: no photo strip, the body row alone (MEH-3508)", () => {
+  it("0 badges + delivery-only, no fee: no strip, no pill row — one delivery line (MEH-3508)", () => {
     const deliveryOnly = { ...base, has_physical_location: false, offers_delivery: true };
     expect(allBadges(deliveryOnly), "control: still no BADGE_CONFIG badge").toHaveLength(0);
     render(<ProducerCard producer={deliveryOnly} />);
     expect(screen.queryByTestId("card-badge-strip")).toBeNull();
-    expect(screen.getByTestId("card-meta-pills")).toHaveTextContent("משלוחים בלבד");
+    expect(screen.queryByTestId("card-meta-pills")).toBeNull();
+    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוחים בלבד");
   });
 
   it("StrictMode (dev) runs the fit effect twice — still exactly one pill, never 0", () => {
