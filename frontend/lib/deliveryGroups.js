@@ -26,7 +26,7 @@
  *
  * Row shape is preserved from the input
  * ({ id, city, min_order, delivery_day, delivery_fee }), original order kept;
- * day groups are ordered by first appearance.
+ * day groups are ordered by weekday (Sunday first; MEH-3511), ties by first appearance.
  *
  * ⚠️ The map below is an EXPLICIT WHITELIST, not a spread — every field a row
  * needs downstream must be named here or it is silently dropped on the way to
@@ -73,14 +73,26 @@ export function groupDeliveryAreas(areas = []) {
     return { mode: "hoist", day: distinctDays[0], rows };
   }
 
-  const groups = distinctDays.map((day) => ({
-    day,
-    rows: rows.filter((r) => r.delivery_days.length && labelOf(r) === day),
-  }));
+  const groups = distinctDays
+    .map((day) => ({
+      day,
+      rows: rows.filter((r) => r.delivery_days.length && labelOf(r) === day),
+    }))
+    // MEH-3511 (Sapir 20/11): day groups read in week order, Sunday first;
+    // first appearance breaks a tie («שני» before «שני וחמישי»).
+    .sort((a, b) => firstWeekday(a.rows[0]) - firstWeekday(b.rows[0]));
   return { mode: "group", groups, arranged: missing };
 }
 
 const DAY_LIST = new Intl.ListFormat("he", { style: "long", type: "conjunction" });
+
+const WEEK = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+
+/** The earliest weekday of a row, Sunday = 0; an unknown day sorts last. @param {{delivery_days: string[]}} r */
+function firstWeekday(r) {
+  const idx = r.delivery_days.map((d) => WEEK.indexOf(d)).filter((i) => i >= 0);
+  return idx.length ? Math.min(...idx) : WEEK.length;
+}
 
 /** @param {string[]} days — one day reads as itself («שני»), two as «שני וחמישי». */
 function dayLabel(days) {

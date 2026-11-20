@@ -101,16 +101,17 @@ describe("groupDeliveryAreas", () => {
     expect(res.rows.map((r) => r.delivery_fee)).toEqual([20, 0, null]);
   });
 
-  it("2+ distinct days → group, one group per day in first-appearance order", () => {
+  // MEH-3511 (Sapir 20/11): week order, not first appearance — «שלישי» first.
+  it("2+ distinct days → group, one group per day in week order", () => {
     const res = groupDeliveryAreas([
       { id: 1, city: "חיפה", min_order: 100, delivery_day: "שישי" },
       { id: 2, city: "עכו", min_order: 80, delivery_day: "שלישי" },
       { id: 3, city: "כרמיאל", min_order: 90, delivery_day: "שישי" },
     ]);
     expect(res.mode).toBe("group");
-    expect(res.groups.map((g) => g.day)).toEqual(["שישי", "שלישי"]);
-    expect(res.groups[0].rows.map((r) => r.city)).toEqual(["חיפה", "כרמיאל"]);
-    expect(res.groups[1].rows.map((r) => r.city)).toEqual(["עכו"]);
+    expect(res.groups.map((g) => g.day)).toEqual(["שלישי", "שישי"]);
+    expect(res.groups[0].rows.map((r) => r.city)).toEqual(["עכו"]);
+    expect(res.groups[1].rows.map((r) => r.city)).toEqual(["חיפה", "כרמיאל"]);
     expect(res.arranged).toEqual([]);
   });
 
