@@ -19,7 +19,7 @@
  * Route regexes are anchored the same way as qa-meh1611-producer-locations.mjs
  * — a `**​/producers?*` glob would also swallow the collection endpoint.
  *
- * Run: node e2e/qa-meh1840-canonical-trust-link.mjs   (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh1840-canonical-trust-link.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

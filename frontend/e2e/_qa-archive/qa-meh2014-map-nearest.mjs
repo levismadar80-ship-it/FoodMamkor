@@ -35,8 +35,8 @@
  * reproduced by discarding the page and opening a new one in a fresh context
  * that shares the same storage origin.
  *
- * Run manually:  node e2e/qa-meh2014-map-nearest.mjs
- * REUSES: e2e/qa-meh2013-experience-required.mjs (harness shape).
+ * Run manually:  node e2e/_qa-archive/qa-meh2014-map-nearest.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2013-experience-required.mjs (harness shape).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

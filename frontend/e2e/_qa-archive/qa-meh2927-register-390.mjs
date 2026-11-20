@@ -76,7 +76,7 @@ const browser = await chromium.launch({
     // MEH-2927: since the B3c fix this is the CORRECT state, not a failure to
     // measure. This probe is the BEFORE artifact and is kept for the record;
     // left reporting `false` it would read as a red against the fix it
-    // documents. The after-probe is e2e/qa-meh2927-register-chrome.mjs.
+    // documents. The after-probe is e2e/_qa-archive/qa-meh2927-register-chrome.mjs.
     record(
       "B3c BottomNav covers «מתחילים»",
       false,

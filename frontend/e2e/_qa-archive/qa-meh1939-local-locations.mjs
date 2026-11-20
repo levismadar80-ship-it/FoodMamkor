@@ -16,8 +16,8 @@
  * the local FastAPI app, so the 422 captured below is the genuine server
  * response, not a fixture.
  *
- * Usage: node e2e/qa-meh1939-local-locations.mjs [outdir] [/path/to/chrome]
- * REUSES: e2e/qa-meh1937-single-check.mjs (route stubs, token seeding, viewport loop)
+ * Usage: node e2e/_qa-archive/qa-meh1939-local-locations.mjs [outdir] [/path/to/chrome]
+ * REUSES: e2e/_qa-archive/qa-meh1937-single-check.mjs (route stubs, token seeding, viewport loop)
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";

@@ -18,7 +18,7 @@
  *   P4  website + no phone → the primary still renders and NO wa.me link exists
  *   P5  every CTA node clears a 44px tap target
  *
- * Usage: node e2e/qa-meh1916-cta.mjs [outDir]
+ * Usage: node e2e/_qa-archive/qa-meh1916-cta.mjs [outDir]
  * Prereq: MEH1916_QA=1 npx vitest run __tests__/qa-meh1916-markup.test.jsx
  *         && npm run build   (for the CSS)
  */

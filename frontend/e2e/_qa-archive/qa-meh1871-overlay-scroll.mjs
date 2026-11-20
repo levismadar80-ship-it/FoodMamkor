@@ -1,7 +1,7 @@
 /**
  * MEH-1871 self-QA harness — overlay Popover/Tooltip dismiss on scroll.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1871-overlay-scroll.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1871-overlay-scroll.mjs [baseURL] [chromiumPath]
  *
  * The backend is unreachable from the CC sandbox (MEH-360), so the producers
  * feed is intercepted at the Playwright layer and served a fixture.
@@ -14,7 +14,7 @@
  *          bottom SHEET (`sheetOnMobile`), which is fixed BY DESIGN and is
  *          deliberately NOT covered by this change.
  *
- * REUSES: frontend/e2e/qa-meh1646-deliveryblock.mjs (manual QA-harness pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1646-deliveryblock.mjs (manual QA-harness pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

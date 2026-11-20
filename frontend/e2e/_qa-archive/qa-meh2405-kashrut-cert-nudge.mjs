@@ -9,9 +9,9 @@
  *   2-covered  — badge approved, approved request carries a cert → no row
  *
  * Not part of the Playwright suite; run manually:
- *   node e2e/qa-meh2405-kashrut-cert-nudge.mjs
+ *   node e2e/_qa-archive/qa-meh2405-kashrut-cert-nudge.mjs
  *
- * REUSES: e2e/qa-meh2264-special-hours.mjs (route-fixture + dual-viewport harness).
+ * REUSES: e2e/_qa-archive/qa-meh2264-special-hours.mjs (route-fixture + dual-viewport harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -1,6 +1,6 @@
 /**
  * MEH-1577 bidi probe (NOT part of the e2e suite — run manually):
- *   node e2e/qa-meh1577-bidi-probe.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1577-bidi-probe.mjs [baseURL] [chromiumPath]
  *
  * Question: does <bdi>{formatPrice(x)}</bdi> in the new fee line render the ₪
  * amount the SAME WAY as the established `<span dir="ltr">` in AreaRow's

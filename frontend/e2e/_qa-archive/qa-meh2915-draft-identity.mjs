@@ -13,7 +13,7 @@
  *   · e2e/flows/22-register-personas.spec.ts      P5 (both cells)
  * and adds the on-disk scrub, which no spec covers.
  *
- * Run from frontend/:  node e2e/qa-meh2915-draft-identity.mjs
+ * Run from frontend/:  node e2e/_qa-archive/qa-meh2915-draft-identity.mjs
  *   QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH override the target and the browser.
  *   Those two names on purpose: they are the harness knobs check_env_drift.sh
  *   already classes as runner config rather than app config (MEH-1516).

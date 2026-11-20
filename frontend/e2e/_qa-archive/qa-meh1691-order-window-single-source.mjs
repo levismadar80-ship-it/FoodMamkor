@@ -20,8 +20,8 @@
  * "fix" that deleted the meta line instead of the strip. Neither leg can carry the
  * other — they are separate named checks, not an `||`.
  *
- * Run manually:  node e2e/qa-meh1691-order-window-single-source.mjs
- * REUSES: e2e/qa-meh1546-order-window.mjs (mock-API + dual-viewport harness).
+ * Run manually:  node e2e/_qa-archive/qa-meh1691-order-window-single-source.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1546-order-window.mjs (mock-API + dual-viewport harness).
  */
 import { chromium } from "@playwright/test";
 import http from "node:http";

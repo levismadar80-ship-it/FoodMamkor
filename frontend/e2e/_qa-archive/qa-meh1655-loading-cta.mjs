@@ -14,13 +14,13 @@
  *      approved, so 1 applies there too)
  *   3. header row height identical during load vs after load (no jump)
  *
- * Usage: node e2e/qa-meh1655-loading-cta.mjs [outDir] [baseUrl]
+ * Usage: node e2e/_qa-archive/qa-meh1655-loading-cta.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = process.argv[2] || "../qa-artifacts/MEH-1655";
-// REUSES: e2e/qa-meh1632-owner-404.mjs:14-22 — argv override, NOT env vars
+// REUSES: e2e/_qa-archive/qa-meh1632-owner-404.mjs:14-22 — argv override, NOT env vars
 // (Env drift gate scans for process.env reads; a one-off harness earns none).
 const BASE = process.argv[3] || "http://localhost:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";

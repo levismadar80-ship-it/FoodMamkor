@@ -8,7 +8,7 @@
  * Drives the REAL pages against `next start` on :3100 (built with
  * NEXT_PUBLIC_RESCUE_BAGS_ENABLED=true; the SSR producer read from the mock on
  * :8099), /api/** from fixtures. 375 + 1440. Chromium only.
- * Run manually:  node e2e/qa-meh2738-rescue-business-cancel.mjs
+ * Run manually:  node e2e/_qa-archive/qa-meh2738-rescue-business-cancel.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

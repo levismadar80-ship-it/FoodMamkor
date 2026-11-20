@@ -1,10 +1,10 @@
 /**
  * MEH-1821 self-QA harness — dashboard DeliveryCard defaults-first ordering.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1821-delivery-defaults.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1821-delivery-defaults.mjs [baseURL] [chromiumPath]
  * Auth + profile APIs are intercepted (backend unreachable from the CC
  * sandbox): a fake token in localStorage + fixture /auth/me + /producers/me.
- * REUSES: frontend/e2e/qa-meh1644-delivery-day-select.mjs (same card, same
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1644-delivery-day-select.mjs (same card, same
  * fixture-intercept pattern).
  *
  * The fixture deliberately carries all three per-city fee states so one

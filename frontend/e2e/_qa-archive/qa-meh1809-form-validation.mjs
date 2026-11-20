@@ -15,7 +15,7 @@
  * moved to the first invalid field" is not visible in a screenshot.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1809-form-validation.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh1809-form-validation.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

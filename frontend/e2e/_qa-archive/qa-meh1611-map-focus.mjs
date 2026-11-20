@@ -15,7 +15,7 @@
  * e2e/visual/parity.spec.ts:60. A `**​/producers?*` glob is WRONG here: it also
  * swallows /api/producers/{id}, /count, /cities and /random.
  *
- * Run: node e2e/qa-meh1611-map-focus.mjs   (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh1611-map-focus.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

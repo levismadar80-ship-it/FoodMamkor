@@ -4,7 +4,7 @@
  *
  * Run manually against a local `next start` (NOT part of the e2e suite —
  * playwright.config.ts testMatch excludes .mjs):
- *   node e2e/qa-meh1879-admin-delivery-clear.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1879-admin-delivery-clear.mjs [baseURL] [chromiumPath]
  *
  * WHY THE ASSERTION IS ON THE INTERCEPTED PAYLOAD, NOT ON THE UI:
  * the visible behaviour was never wrong. The nationwide block is conditionally
@@ -24,7 +24,7 @@
  * would then read `undefined` and pass vacuously. Same failure the MEH-1859
  * sibling documents.
  *
- * REUSES: frontend/e2e/qa-meh1859-admin-badge-column.mjs — the addInitScript
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1859-admin-badge-column.mjs — the addInitScript
  * token seed and the /api-prefixed route patterns (an unprefixed pattern also
  * matches the PAGE url and fulfils the document navigation with JSON).
  */

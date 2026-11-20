@@ -26,7 +26,7 @@
  * not the `משהו השתבש` error boundary before measuring. A modal that fails to
  * open is a FAIL, never a skip (#2786).
  *
- * Run: node e2e/qa-meh2039-modal-a11y.mjs   (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh2039-modal-a11y.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

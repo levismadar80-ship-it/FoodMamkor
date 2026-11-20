@@ -1,7 +1,7 @@
 /**
  * MEH-1643 self-QA harness — hero delivery-CTA screenshots + interaction probe.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1643-hero-delivery-cta.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1643-hero-delivery-cta.mjs [baseURL] [chromiumPath]
  * Captures 375px + 1440px in both label states (no city / saved user_city)
  * and verifies the no-city click opens the LocationModal.
  * REUSES: frontend/e2e/qa-meh1619-visual-noop.mjs (manual QA-harness pattern).

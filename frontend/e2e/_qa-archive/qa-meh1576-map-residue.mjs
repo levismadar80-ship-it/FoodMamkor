@@ -12,7 +12,7 @@
  * Railway — CLAUDE.md "Known Bug Patterns"). Captures 375px + 1440px.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1576-map-residue.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh1576-map-residue.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

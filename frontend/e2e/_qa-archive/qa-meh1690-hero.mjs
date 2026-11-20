@@ -9,7 +9,7 @@
  *           parity.spec.ts (runner-generated) and the curl probe in the PR body.
  * History:  MEH-1690 (creation).
  *
- * Usage: node e2e/qa-meh1690-hero.mjs   (needs `next start` on :3000)
+ * Usage: node e2e/_qa-archive/qa-meh1690-hero.mjs   (needs `next start` on :3000)
  *
  * Constants, not env vars, on purpose: `scripts/check_env_drift.sh:65` fails any
  * frontend `process.env` name absent from `.env.example`, and a throwaway QA

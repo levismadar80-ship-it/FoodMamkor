@@ -11,7 +11,7 @@
  * `Ignored` for a commit with no `[preview]` token (deployment.md), so there
  * is no preview URL for this branch and the PR says so rather than citing one.
  *
- * Run from frontend/:  node e2e/qa-meh2927-step-scroll-1280.mjs
+ * Run from frontend/:  node e2e/_qa-archive/qa-meh2927-step-scroll-1280.mjs
  *   QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH override the target and the browser.
  */
 import { chromium } from "playwright";

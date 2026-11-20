@@ -5,7 +5,7 @@
  * so the assertions are about absence and are counted, not eyeballed.
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1688-new-section-removal.mjs [baseURL] [outSuffix] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1688-new-section-removal.mjs [baseURL] [outSuffix] [chromiumPath]
  *
  * Run it TWICE — once on the pre-removal build, once after — and diff the block
  * counts. An absolute count proves nothing here (see the counting rule below);
@@ -25,8 +25,8 @@
  * the original forms were unreachable: an absolute 12/13 is not reproducible,
  * and `grep = 0` would have required deleting an in-use admin label.
  *
- * REUSES: frontend/e2e/qa-meh1704-badge-parity.mjs (fixture + data-badge
- * counting), frontend/e2e/qa-meh1686-social-proof-strip.mjs (argv baseURL,
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1704-badge-parity.mjs (fixture + data-badge
+ * counting), frontend/e2e/_qa-archive/qa-meh1686-social-proof-strip.mjs (argv baseURL,
  * never process.env — the MEH-491 env-drift gate blocks undocumented env reads).
  */
 import { chromium } from "@playwright/test";

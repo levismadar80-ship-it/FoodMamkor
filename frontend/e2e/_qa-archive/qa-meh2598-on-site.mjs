@@ -8,8 +8,8 @@
  * mount snapshot — run A has 5 (chip shown), run B has 1 (chip hidden).
  *
  * Every /api/** call is fulfilled from fixtures (no backend in the sandbox).
- * Run manually against `next start` on 3100:  node e2e/qa-meh2598-on-site.mjs
- * REUSES: e2e/qa-meh2133-map-no-added-sugar.mjs.
+ * Run manually against `next start` on 3100:  node e2e/_qa-archive/qa-meh2598-on-site.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2133-map-no-added-sugar.mjs.
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

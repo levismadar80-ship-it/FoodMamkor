@@ -29,7 +29,7 @@
  *
  * Not a spec — a one-off harness, run by hand against `npx next start`:
  *   cd frontend && npm run build && npx next start &
- *   node e2e/qa-meh2185-register-duration.mjs
+ *   node e2e/_qa-archive/qa-meh2185-register-duration.mjs
  *
  * The backend is stubbed at the route level (same two stubs as
  * qa-meh2183-register-polish.mjs, which this REUSES for its navigation): the
@@ -42,7 +42,7 @@ import { existsSync } from "node:fs";
 const BASE = process.env.QA_BASE_URL || "http://localhost:3000";
 const THRESHOLD_MIN = 8;
 
-// REUSES: frontend/e2e/qa-meh2183-register-polish.mjs:55 — probe the sandbox
+// REUSES: frontend/e2e/_qa-archive/qa-meh2183-register-polish.mjs:55 — probe the sandbox
 // build on the filesystem rather than reading an env var. check_env_drift.sh
 // BLOCKS on any process.env name absent from .env.example, and a throwaway QA
 // harness is not a reason to add one.

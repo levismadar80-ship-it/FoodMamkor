@@ -23,8 +23,8 @@
  * drives the real page. Auth is a real localStorage token + a mocked
  * GET /auth/me, because the panel only exists for a logged-in saver.
  *
- * Run manually:  node e2e/qa-meh1693-actions-row.mjs
- * REUSES: e2e/qa-meh1691-order-window-single-source.mjs (mock-API harness).
+ * Run manually:  node e2e/_qa-archive/qa-meh1693-actions-row.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1691-order-window-single-source.mjs (mock-API harness).
  */
 import { chromium } from "@playwright/test";
 import http from "node:http";

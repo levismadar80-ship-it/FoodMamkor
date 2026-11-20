@@ -9,13 +9,13 @@
  * Control (run first): the existing Instagram link must be found and
  * measured — if the probe cannot see that one, every other result is void.
  *
- * Usage: node e2e/qa-meh2311-footer-social.mjs [outDir] [baseUrl]
+ * Usage: node e2e/_qa-archive/qa-meh2311-footer-social.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = process.argv[2] || "../qa-artifacts/MEH-2311";
-// REUSES: e2e/qa-meh2314-views-chart.mjs — argv override, no env read.
+// REUSES: e2e/_qa-archive/qa-meh2314-views-chart.mjs — argv override, no env read.
 const BASE = process.argv[3] || "http://localhost:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium"; // the sandbox build; CI falls back to the default
 const EXPECTED = [

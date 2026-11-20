@@ -5,7 +5,7 @@
  * the ticket is actually about.
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1704-badge-parity.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1704-badge-parity.mjs [baseURL] [chromiumPath]
  *
  * The fixture carries a DISCRIMINATING PAIR, which is the whole point:
  *   · `verification_tier` was ALREADY declared before this ticket, so its badge
@@ -19,7 +19,7 @@
  * every other badge), never off rendered text: a text match cannot tell a badge
  * from the same word appearing elsewhere in the card.
  *
- * REUSES: frontend/e2e/qa-meh1686-social-proof-strip.mjs (argv baseURL +
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1686-social-proof-strip.mjs (argv baseURL +
  * chromiumPath, never process.env — the MEH-491 env-drift gate blocks
  * undocumented env reads).
  */

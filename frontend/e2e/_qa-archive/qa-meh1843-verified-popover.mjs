@@ -1,10 +1,10 @@
 /**
  * MEH-1843 self-QA harness — the verified-badge popover body per doc type.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1843-verified-popover.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1843-verified-popover.mjs [baseURL] [chromiumPath]
  * The backend is unreachable from the CC sandbox, so the producer API is
  * intercepted at the Playwright layer and served a fixture.
- * REUSES: frontend/e2e/qa-meh1577-delivery-fee.mjs (manual QA-harness pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1577-delivery-fee.mjs (manual QA-harness pattern).
  *
  * WHY A VISUAL PASS AND NOT JUST THE VITEST CASES: the retired sentence was one
  * short line; every replacement is longer, and the popover is a fixed `w-64`.

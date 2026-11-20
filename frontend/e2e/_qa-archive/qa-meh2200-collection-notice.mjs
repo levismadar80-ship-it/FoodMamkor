@@ -9,7 +9,7 @@ import { mkdirSync } from "node:fs";
 // `process` `.env.NAME` in the repo as an undeclared var, and a one-off QA
 // harness has no business adding a line to .env.example. Same convention the
 // qa-meh1390 / qa-meh1539 siblings already follow.
-//   usage: node e2e/qa-meh2200-collection-notice.mjs [baseUrl] [chromiumPath]
+//   usage: node e2e/_qa-archive/qa-meh2200-collection-notice.mjs [baseUrl] [chromiumPath]
 const BASE = process.argv[2] || "http://localhost:3300";
 const OUT = "qa-artifacts/MEH-2200";
 mkdirSync(OUT, { recursive: true });

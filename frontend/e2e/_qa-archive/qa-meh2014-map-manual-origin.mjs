@@ -38,8 +38,8 @@
  *   3. origin-switch-gps-to-city — a GPS fix is replaced by a later city pick
  *   4. after-clear               — clearing drops the record AND the label
  *
- * Run manually:  node e2e/qa-meh2014-map-manual-origin.mjs
- * REUSES: e2e/qa-meh2014-map-nearest.mjs (harness shape, PR 1).
+ * Run manually:  node e2e/_qa-archive/qa-meh2014-map-manual-origin.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2014-map-nearest.mjs (harness shape, PR 1).
  */
 import { chromium, devices } from "@playwright/test";
 import fs from "node:fs";

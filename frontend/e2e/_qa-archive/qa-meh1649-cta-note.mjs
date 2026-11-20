@@ -6,7 +6,7 @@
  * own mock backend on the port the bundle already points at (NEXT_PUBLIC_* are
  * inlined at BUILD time, so a runtime override would NOT reach serverFetch) —
  * the page under test is the real one, SSR included.
- * REUSES: e2e/qa-meh1546-order-window.mjs (dual-viewport capture harness).
+ * REUSES: e2e/_qa-archive/qa-meh1546-order-window.mjs (dual-viewport capture harness).
  *
  * What it asserts, per state x viewport:
  *   - POSITIVE LOCATION (the point of the ticket): the note is a DOM
@@ -25,7 +25,7 @@
  * written assuming a single mount; the invariant that actually holds — and
  * that this harness pins — is exactly one VISIBLE note, inside the card.
  *
- * Run manually:  node e2e/qa-meh1649-cta-note.mjs
+ * Run manually:  node e2e/_qa-archive/qa-meh1649-cta-note.mjs
  */
 import { chromium } from "@playwright/test";
 import http from "node:http";

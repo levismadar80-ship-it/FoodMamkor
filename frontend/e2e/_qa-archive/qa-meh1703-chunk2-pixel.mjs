@@ -8,7 +8,7 @@
  * not evidence of zero visual change. This captures the raw PNG so the two
  * sides can be compared byte-for-byte, with NO tolerance at all.
  *
- * Run:  node e2e/qa-meh1703-chunk2-pixel.mjs <out.png>
+ * Run:  node e2e/_qa-archive/qa-meh1703-chunk2-pixel.mjs <out.png>
  * Needs `next start` on :3000.
  *
  * CONTROL: the run asserts the page is not the `משהו השתבש` error boundary and

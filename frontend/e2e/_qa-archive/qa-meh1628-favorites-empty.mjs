@@ -7,7 +7,7 @@
  * route-intercepted at the network layer — the component, its i18n messages and
  * its CSS are all the shipped ones. Nothing about the render is stubbed.
  *
- * Usage: node e2e/qa-meh1628-favorites-empty.mjs [baseURL] [chromiumPath]
+ * Usage: node e2e/_qa-archive/qa-meh1628-favorites-empty.mjs [baseURL] [chromiumPath]
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";

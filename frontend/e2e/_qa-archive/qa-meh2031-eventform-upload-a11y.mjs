@@ -18,8 +18,8 @@
  * e2e/flows + e2e/visual only, so this never runs in the CI suite. Same
  * placement as the MEH-2012 harness it reuses.
  *
- * Run manually:  node e2e/qa-meh2031-eventform-upload-a11y.mjs
- * REUSES: e2e/qa-meh2012-experience-image-upload.mjs (context + auth + mocks).
+ * Run manually:  node e2e/_qa-archive/qa-meh2031-eventform-upload-a11y.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2012-experience-image-upload.mjs (context + auth + mocks).
  */
 import { chromium, devices } from "@playwright/test";
 import fs from "node:fs";

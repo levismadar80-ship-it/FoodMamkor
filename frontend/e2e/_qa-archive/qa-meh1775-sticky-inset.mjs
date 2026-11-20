@@ -29,9 +29,9 @@
  * Both runs are required in the PR body; run --break FIRST, because a harness
  * that cannot produce a red is not evidence when it produces a green.
  *
- * Run:  node e2e/qa-meh1775-sticky-inset.mjs [--break]
+ * Run:  node e2e/_qa-archive/qa-meh1775-sticky-inset.mjs [--break]
  *
- * REUSES: e2e/qa-meh1851-grass-fed.mjs (route-fixture + dual-viewport harness,
+ * REUSES: e2e/_qa-archive/qa-meh1851-grass-fed.mjs (route-fixture + dual-viewport harness,
  *         he.json-sourced chrome strings, env-noise filter).
  */
 import { chromium } from "@playwright/test";

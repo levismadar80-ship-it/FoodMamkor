@@ -22,9 +22,9 @@
  * localePrefix is "as-needed" (i18n/routing.js): Hebrew is the bare path and
  * English is /en/*. So the Hebrew twin of `/en/producers?q=X` is `/producers?q=X`.
  *
- * Run:  node e2e/qa-meh1812-en-notice.mjs
+ * Run:  node e2e/_qa-archive/qa-meh1812-en-notice.mjs
  *
- * REUSES: e2e/qa-meh1775-sticky-inset.mjs (route-fixture + dual-viewport
+ * REUSES: e2e/_qa-archive/qa-meh1775-sticky-inset.mjs (route-fixture + dual-viewport
  *         harness, he.json/en.json-sourced strings, env-noise filter).
  */
 import { chromium } from "@playwright/test";

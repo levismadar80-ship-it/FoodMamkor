@@ -28,7 +28,7 @@
  * Run it where egress exists — a CI runner, or a local machine. A green run
  * there is the evidence for MEH-1727 §5's "all 11 .woff2 return 200".
  *
- * Run:  node e2e/qa-meh1727-font-cors.mjs
+ * Run:  node e2e/_qa-archive/qa-meh1727-font-cors.mjs
  */
 import { chromium } from "@playwright/test";
 import http from "http";
@@ -63,7 +63,7 @@ async function probe(label, extraHTTPHeaders) {
   // reds it. Exactly this happened to MEH-1643's harness with this exact name
   // (`PW_CHROMIUM`, CHANGELOG.md:54); the fix there was argv, and this matches
   // it rather than inventing a second convention. Regression rule 8.
-  //   node e2e/qa-meh1727-font-cors.mjs [/path/to/chrome]
+  //   node e2e/_qa-archive/qa-meh1727-font-cors.mjs [/path/to/chrome]
   const browser = await chromium.launch(
     BROWSER_PATH ? { executablePath: BROWSER_PATH } : {}
   );

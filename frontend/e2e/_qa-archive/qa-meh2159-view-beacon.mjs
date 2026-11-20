@@ -9,7 +9,7 @@
  * Run against a local stack (see the PR body for the exact commands):
  *   backend  uvicorn app.main:app --port 8000
  *   frontend next start -p 3000
- *   node e2e/qa-meh2159-view-beacon.mjs   # flags: --base --id --slug --name --chromium
+ *   node e2e/_qa-archive/qa-meh2159-view-beacon.mjs   # flags: --base --id --slug --name --chromium
  *
  * ── Why this file has a CONTROL, and why it runs first ────────────────────
  * "0 POSTs to /view" is produced by two different worlds: the beacon is
@@ -36,7 +36,7 @@ import path from "node:path";
 // explaining such a removal re-tripped the gate by quoting the very form it
 // was removing — so this note names no variable.)
 //
-//   node e2e/qa-meh2159-view-beacon.mjs [--id UUID] [--slug S] [--name N] [--chromium PATH]
+//   node e2e/_qa-archive/qa-meh2159-view-beacon.mjs [--id UUID] [--slug S] [--name N] [--chromium PATH]
 function arg(flag, fallback) {
   const i = process.argv.indexOf(flag);
   return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;

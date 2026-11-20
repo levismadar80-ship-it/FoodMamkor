@@ -12,13 +12,13 @@
  * Pin B: unauthenticated behaviour UNCHANGED — no token still redirects to
  *        /login and never renders the real settings content.
  *
- * Usage: node e2e/qa-meh1638-settings-skeleton.mjs [outDir] [baseUrl]
+ * Usage: node e2e/_qa-archive/qa-meh1638-settings-skeleton.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = process.argv[2] || "../qa-artifacts/MEH-1638";
-// REUSES: e2e/qa-meh1638-entry-skeleton.mjs:18-21 — constant + argv override,
+// REUSES: e2e/_qa-archive/qa-meh1638-entry-skeleton.mjs:18-21 — constant + argv override,
 // never an environment read (the "Env drift" gate blocks undocumented ones).
 const BASE = process.argv[3] || "http://localhost:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";

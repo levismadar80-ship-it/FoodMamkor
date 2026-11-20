@@ -11,13 +11,13 @@
  * Pin B: default-he navigation is regression-free (no /he/ prefix appears,
  *        localePrefix is "as-needed").
  *
- * Usage: node e2e/qa-meh1639-locale-nav.mjs [outDir] [baseUrl]
+ * Usage: node e2e/_qa-archive/qa-meh1639-locale-nav.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = process.argv[2] || "../qa-artifacts/MEH-1639";
-// REUSES: e2e/qa-meh1611-map-focus.mjs:25-29 — constant + argv override, never
+// REUSES: e2e/_qa-archive/qa-meh1611-map-focus.mjs:25-29 — constant + argv override, never
 // an environment read (the "Env drift" gate blocks undocumented ones).
 const BASE = process.argv[3] || "http://localhost:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";

@@ -4,7 +4,7 @@
  * jsdom, which cannot see layout or computed style).
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1684-hero-search-zone.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1684-hero-search-zone.mjs [baseURL] [chromiumPath]
  *
  * Captures 375px + 1440px of the hero zone, the Header search circle at both
  * widths (verification_step #6 — must be unchanged vs staging), and probes:
@@ -13,7 +13,7 @@
  *   #4 focus pauses the placeholder rotation; reduced-motion keeps it static
  *   #5 typing 2+ chars opens the dropdown aligned to the pill
  *
- * REUSES: frontend/e2e/qa-meh1643-hero-delivery-cta.mjs (manual QA-harness
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1643-hero-delivery-cta.mjs (manual QA-harness
  * pattern — argv baseURL + chromiumPath, never process.env: the MEH-491
  * env-drift gate blocks undocumented env reads).
  */

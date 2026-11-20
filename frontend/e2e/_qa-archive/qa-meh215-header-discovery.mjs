@@ -12,7 +12,7 @@
  * desktop>0 / mobile=0, the probe is broken and its /register zeros mean
  * nothing. Report the control alongside the finding, never the finding alone.
  *
- * Run:  node e2e/qa-meh215-header-discovery.mjs [--base http://localhost:3000]
+ * Run:  node e2e/_qa-archive/qa-meh215-header-discovery.mjs [--base http://localhost:3000]
  */
 import { chromium } from "@playwright/test";
 

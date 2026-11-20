@@ -15,7 +15,7 @@
  * A missing or 300×150 canvas means the panel never drew, and every PNG
  * below would be void.
  *
- * Run: node e2e/qa-meh2589-story-card.mjs /path/to/photo.png
+ * Run: node e2e/_qa-archive/qa-meh2589-story-card.mjs /path/to/photo.png
  *      (PLAYWRIGHT_CHROMIUM_PATH=<chrome> where Playwright's own browser is absent)
  */
 import { chromium } from "@playwright/test";
@@ -27,7 +27,7 @@ const BASE = process.env.QA_BASE_URL || "http://localhost:3100";
 const PHOTO = process.argv[2];
 const OUT = process.argv[3] || "qa-artifacts/MEH-2589";
 if (!PHOTO) {
-  console.log("usage: node e2e/qa-meh2589-story-card.mjs <photo.png> [outDir]");
+  console.log("usage: node e2e/_qa-archive/qa-meh2589-story-card.mjs <photo.png> [outDir]");
   process.exit(2);
 }
 const ADMIN = { id: 1, email: "admin@example.com", role: "admin", name: "ספיר" };

@@ -4,7 +4,7 @@
  *
  * Run manually against a local `next start` (NOT part of the e2e suite —
  * playwright.config.ts:35 testMatch excludes .mjs):
- *   node e2e/qa-meh1859-admin-badge-column.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1859-admin-badge-column.mjs [baseURL] [chromiumPath]
  *
  * WHY A RENDERED CHECK AND NOT A JSON DIFF:
  * the key was never missing — `admin.kashrut.columns.badge` existed and
@@ -26,7 +26,7 @@
  * assertion below would then pass vacuously against `undefined`. That exact
  * vacuous pass is what the sibling MEH-1852 probe hit on its first run.
  *
- * REUSES: frontend/e2e/qa-meh1852-admin-kashrut-labels.mjs — the addInitScript
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1852-admin-kashrut-labels.mjs — the addInitScript
  * token seed (the admin layout redirects before issuing ANY request when
  * localStorage has no token) and the /api-prefixed route patterns (an unprefixed
  * /admin/kashrut pattern also matches the PAGE url and fulfils the document

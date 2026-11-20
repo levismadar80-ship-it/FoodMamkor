@@ -7,7 +7,7 @@
  * criteria are all about which of delivery_city / delivery_day reach the API,
  * and a screenshot cannot show that.
  *
- * Run:  node e2e/qa-meh1825-producers-day-axis.mjs [--base http://localhost:3100]
+ * Run:  node e2e/_qa-archive/qa-meh1825-producers-day-axis.mjs [--base http://localhost:3100]
  *
  * The city precondition is asserted in BOTH directions, because a check that
  * only ever sees the happy path cannot tell a working precondition from an

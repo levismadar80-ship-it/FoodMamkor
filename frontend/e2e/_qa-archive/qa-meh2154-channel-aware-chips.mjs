@@ -39,7 +39,7 @@
  *   DATABASE_URL=postgresql://postgres@127.0.0.1:5432/mehamakor_qa \
  *     JWT_SECRET_KEY=dev uvicorn app.main:app --port 8000     # from backend/
  *   BACKEND_URL=http://127.0.0.1:8000 npx next start -p 3000  # from frontend/
- *   node e2e/qa-meh2154-channel-aware-chips.mjs               # from frontend/
+ *   node e2e/_qa-archive/qa-meh2154-channel-aware-chips.mjs               # from frontend/
  *
  * The sandbox has no Playwright browser download, so the launch is pinned to
  * the pre-installed binary at /opt/pw-browsers/chromium.

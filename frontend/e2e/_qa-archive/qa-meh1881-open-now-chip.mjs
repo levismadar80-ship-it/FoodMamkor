@@ -2,8 +2,8 @@
  * MEH-1881 self-QA harness — the open-now chip's data gate on the real
  * /producers page. Run manually against a local `next start` (NOT part of the
  * e2e suite):
- *   node e2e/qa-meh1881-open-now-chip.mjs [baseURL] [chromiumPath]
- * REUSES: frontend/e2e/qa-meh1880-card-order-window.mjs (fixture-intercept +
+ *   node e2e/_qa-archive/qa-meh1881-open-now-chip.mjs [baseURL] [chromiumPath]
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1880-card-order-window.mjs (fixture-intercept +
  * DOM-count probe + element-framed screenshot).
  *
  * ── WHAT THIS HARNESS CAN AND CANNOT SHOW (measured, not assumed) ──────────

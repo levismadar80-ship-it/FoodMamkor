@@ -17,7 +17,7 @@
  *   P5  times render humanised (no "09:") and the numerals stay dir=ltr
  *   P6  the toggle clears a 44px tap target, and an unmerged window shows none
  *
- * Usage: node e2e/qa-meh1917-order-window.mjs [outDir]
+ * Usage: node e2e/_qa-archive/qa-meh1917-order-window.mjs [outDir]
  * Prereq: MEH1917_QA=1 npx vitest run __tests__/qa-meh1917-markup.test.jsx
  *         && npm run build   (for the CSS)
  */

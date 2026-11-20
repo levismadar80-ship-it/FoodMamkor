@@ -1,5 +1,5 @@
 // MEH-1663 local-stack QA. Phase A (pre-fix discriminator) + Phase B (post-fix AC).
-// Usage (from frontend/): node e2e/qa-meh1663-card-fly.mjs <phase: a|b> <width>
+// Usage (from frontend/): node e2e/_qa-archive/qa-meh1663-card-fly.mjs <phase: a|b> <width>
 import { chromium } from "playwright";
 import fs from "fs";
 import path from "path";
@@ -10,7 +10,7 @@ const WIDTH = parseInt(process.argv[3] || "1440", 10);
 // Fail fast: an unrecognised phase used to fall silently into the Phase-B branch,
 // so a typo produced a full run of the wrong assertions.
 if (!["a", "b"].includes(PHASE)) {
-  console.error("usage: node e2e/qa-meh1663-card-fly.mjs <a|b> [width]");
+  console.error("usage: node e2e/_qa-archive/qa-meh1663-card-fly.mjs <a|b> [width]");
   process.exit(1);
 }
 // Resolved from this file's own location, not the sandbox's absolute path — an

@@ -2,7 +2,7 @@
  * MEH-1847 self-QA — the +N panel's rows now carry an explanation line.
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1847-overflow-explainers.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1847-overflow-explainers.mjs [baseURL] [chromiumPath]
  *
  * Two questions vitest cannot answer, which is why this exists:
  *
@@ -20,7 +20,7 @@
  * resolver while its description comes from BADGE_CONFIG, so it is the one row
  * where the two halves have different sources and could disagree.
  *
- * REUSES: frontend/e2e/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
  * never process.env — the MEH-491 env-drift gate blocks undocumented env reads).
  */
 import { chromium } from "@playwright/test";

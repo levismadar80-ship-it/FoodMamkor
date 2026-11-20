@@ -15,7 +15,7 @@
  * 0 is a documented failure in this repo (#2786) — the control is what makes
  * the null case loud instead of reassuring.
  *
- * Usage: node e2e/qa-meh2100-draft-live.mjs
+ * Usage: node e2e/_qa-archive/qa-meh2100-draft-live.mjs
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
@@ -81,7 +81,7 @@ const EMAIL = "qa-meh2100-live@example.com";
 // removal would have kept the block alive. Same shape as the stale `z-[9998]`
 // comment noted in .claude/rules/rtl.md — a scanner reading prose as code.
 //
-//   node e2e/qa-meh2100-draft-live.mjs --password=<the throwaway account's>
+//   node e2e/_qa-archive/qa-meh2100-draft-live.mjs --password=<the throwaway account's>
 const passArg = process.argv.find((a) => a.startsWith("--password="));
 const PASSWORD = passArg ? passArg.slice("--password=".length) : "changeme-local-example";
 

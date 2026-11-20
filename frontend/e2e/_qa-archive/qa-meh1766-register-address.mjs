@@ -11,7 +11,7 @@
  *   B — Nominatim answers 403                 -> visible hint, free text kept
  *
  * Run from frontend/ with `next start` on :3000:
- *   node e2e/qa-meh1766-register-address.mjs [outdir]
+ *   node e2e/_qa-archive/qa-meh1766-register-address.mjs [outdir]
  * Exits non-zero if any check fails.
  */
 import { chromium } from "@playwright/test";

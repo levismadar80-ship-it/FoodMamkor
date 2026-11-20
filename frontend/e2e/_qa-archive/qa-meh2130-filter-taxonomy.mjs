@@ -8,7 +8,7 @@
  * backend, and it is Chromium-only, so it is not engine evidence either
  * (workflow rule 23 carve-out (e)).
  *
- * Run:  node e2e/qa-meh2130-filter-taxonomy.mjs
+ * Run:  node e2e/_qa-archive/qa-meh2130-filter-taxonomy.mjs
  * Out:  qa-artifacts/MEH-2130/*.png  (compress before committing — MEH-1156)
  *
  * CONTROL FIRST. Every assertion below is a presence check, and a presence

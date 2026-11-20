@@ -5,7 +5,7 @@
  *           serving pre-fix code" before attributing a failure to the code.
  * Does NOT: judge whether the handler WORKS. That is qa-meh1893-phase0.mjs.
  *           Presence in a chunk says nothing about whether it ever attaches.
- * Related:  frontend/e2e/qa-meh1893-handler-snippet.mjs (prints the matched
+ * Related:  frontend/e2e/_qa-archive/qa-meh1893-handler-snippet.mjs (prints the matched
  *           source, which is the stronger evidence — prefer it when the answer
  *           is load-bearing), frontend/components/ui/Popover.jsx:199-207.
  * History:  MEH-1893 — created during Phase 0; hardened with a self-test after

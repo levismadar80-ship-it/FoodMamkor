@@ -13,7 +13,7 @@
  * A tab that is present, targetless AND inert is a dead click. Any one of the
  * three alone is not.
  *
- * Run: node e2e/qa-meh1390-dead-tab.mjs [baseURL]
+ * Run: node e2e/_qa-archive/qa-meh1390-dead-tab.mjs [baseURL]
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -14,7 +14,7 @@
  * is present, so no account walk is needed.
  *
  * Run from frontend/ with `next start` on :3000:
- *   node e2e/qa-meh1808-address-confirm.mjs [outdir]
+ *   node e2e/_qa-archive/qa-meh1808-address-confirm.mjs [outdir]
  * Exits non-zero if any check fails.
  */
 import { chromium } from "@playwright/test";

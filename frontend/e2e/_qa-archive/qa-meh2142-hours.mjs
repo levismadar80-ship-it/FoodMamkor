@@ -25,9 +25,9 @@
  * what make the PNGs worth looking at.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2142-hours.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh2142-hours.mjs
  *
- * REUSES: e2e/qa-meh1544-order-window.mjs (route-fixture + dual-viewport harness).
+ * REUSES: e2e/_qa-archive/qa-meh1544-order-window.mjs (route-fixture + dual-viewport harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

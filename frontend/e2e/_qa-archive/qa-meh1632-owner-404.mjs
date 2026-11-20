@@ -5,13 +5,13 @@
  * one pending (owner: the logged-in user), one approved. Asserts the six pins
  * from the ticket, plus screenshots of the pending-owner page at 375 + 1440.
  *
- * Usage: node e2e/qa-meh1632-owner-404.mjs [outDir] [baseUrl]
+ * Usage: node e2e/_qa-archive/qa-meh1632-owner-404.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = process.argv[2] || "../qa-artifacts/MEH-1632";
-// REUSES: e2e/qa-meh1611-map-focus.mjs:25-29 — deliberately a constant +
+// REUSES: e2e/_qa-archive/qa-meh1611-map-focus.mjs:25-29 — deliberately a constant +
 // optional argv override, NOT an env var: every `process.env.*` read in the
 // repo must be declared in .env.example or the "Env drift" gate blocks the PR
 // (scripts/check_env_drift.sh), and a one-off QA harness is not worth a new

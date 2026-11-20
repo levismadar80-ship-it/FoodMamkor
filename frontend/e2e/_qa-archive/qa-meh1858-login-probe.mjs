@@ -22,7 +22,7 @@
  * anywhere other than a CC sandbox).
  *
  * Run:
- *   TEST_URL=https://staging.mehamakor.online node e2e/qa-meh1858-login-probe.mjs 30
+ *   TEST_URL=https://staging.mehamakor.online node e2e/_qa-archive/qa-meh1858-login-probe.mjs 30
  */
 import { chromium, devices } from "@playwright/test";
 

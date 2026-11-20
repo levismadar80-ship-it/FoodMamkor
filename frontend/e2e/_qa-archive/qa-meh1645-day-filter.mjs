@@ -1,11 +1,11 @@
 /**
  * MEH-1645 self-QA harness — home delivery-day filter (progressive disclosure).
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1645-day-filter.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1645-day-filter.mjs [baseURL] [chromiumPath]
  * The producers API is intercepted (backend unreachable from the CC sandbox):
  * a fixture list normally; [] when delivery_day is present with day=שלישי so
  * the empty-state suggestion state can be captured.
- * REUSES: frontend/e2e/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

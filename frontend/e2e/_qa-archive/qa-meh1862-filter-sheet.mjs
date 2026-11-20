@@ -13,7 +13,7 @@
  * horizontal scroll in both states — the failure mode a new inline-flex row
  * beside a scrollable chip row would actually produce.
  *
- * Run: node e2e/qa-meh1862-filter-sheet.mjs [baseURL]
+ * Run: node e2e/_qa-archive/qa-meh1862-filter-sheet.mjs [baseURL]
  */
 import { chromium, devices } from "@playwright/test";
 import { mkdirSync, existsSync, readdirSync } from "node:fs";

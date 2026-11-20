@@ -16,8 +16,8 @@
  *   5. a LEGACY single-range string still prefills as one range
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1870-opening-hours-ranges.mjs
- * REUSES: e2e/qa-meh1539-categories.mjs (dashboard fixture + PUT-capture pattern).
+ * run manually:  node e2e/_qa-archive/qa-meh1870-opening-hours-ranges.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1539-categories.mjs (dashboard fixture + PUT-capture pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

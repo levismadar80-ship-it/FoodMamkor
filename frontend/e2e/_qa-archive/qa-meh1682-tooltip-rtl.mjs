@@ -22,10 +22,10 @@
  *      within a few px of the pin's top edge (not floating off in space);
  *   4. the same holds for a SECONDARY (24px) pin, whose offset differs.
  *
- * Route mocks + the demo fixture mirror e2e/qa-meh1611-producer-locations.mjs
+ * Route mocks + the demo fixture mirror e2e/_qa-archive/qa-meh1611-producer-locations.mjs
  * (same component, same producer shape) so the two harnesses can't drift.
  *
- * Run: node e2e/qa-meh1682-tooltip-rtl.mjs   (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh1682-tooltip-rtl.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

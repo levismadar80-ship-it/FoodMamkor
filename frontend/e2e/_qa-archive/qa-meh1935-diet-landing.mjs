@@ -10,14 +10,14 @@
  *           (see MEH-1788). Not a substitute for the e2e suite.
  * History:  MEH-1935 (creation, 2026-08-07).
  *
- * Usage: node e2e/qa-meh1935-diet-landing.mjs <preview-base-url>
+ * Usage: node e2e/_qa-archive/qa-meh1935-diet-landing.mjs <preview-base-url>
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 
 const BASE = process.argv[2];
 if (!BASE) {
-  console.error("usage: node e2e/qa-meh1935-diet-landing.mjs <preview-base-url>");
+  console.error("usage: node e2e/_qa-archive/qa-meh1935-diet-landing.mjs <preview-base-url>");
   process.exit(2);
 }
 const OUT = "../qa-artifacts/MEH-1935";

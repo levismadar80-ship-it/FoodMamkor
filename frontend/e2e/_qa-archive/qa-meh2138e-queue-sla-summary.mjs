@@ -13,7 +13,7 @@
  * unconditionally — which is precisely the «0 ממתינים» line this refuses.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2138e-queue-sla-summary.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh2138e-queue-sla-summary.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

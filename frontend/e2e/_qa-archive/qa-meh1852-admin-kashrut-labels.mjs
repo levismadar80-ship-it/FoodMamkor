@@ -3,7 +3,7 @@
  * now reads the CANONICAL `kashrut.badges.*` namespace.
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1852-admin-kashrut-labels.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1852-admin-kashrut-labels.mjs [baseURL] [chromiumPath]
  *
  * WHY THIS ASSERTS RENDERED TEXT AND NOT "no error":
  * next-intl renders the KEY STRING when a key is missing — silently, with no
@@ -26,7 +26,7 @@
  * `table-rendered-all-8-rows` assertion is what caught it: without that load
  * check the "no raw key" assertion passed VACUOUSLY on an empty row set.
  *
- * REUSES: frontend/e2e/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
  * never process.env — the MEH-491 env-drift gate blocks undocumented env reads).
  */
 import { chromium } from "@playwright/test";

@@ -6,8 +6,8 @@
  * Captures 375px + 1440px in two states: arranged (tag + hint) and
  * delivery+pickup (two green tags, no hint).
  *
- * Run manually:  node e2e/qa-meh2561-map-tag-preview.mjs
- * REUSES: e2e/qa-meh2264-special-hours.mjs (route-fixture + dual-viewport harness).
+ * Run manually:  node e2e/_qa-archive/qa-meh2561-map-tag-preview.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2264-special-hours.mjs (route-fixture + dual-viewport harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

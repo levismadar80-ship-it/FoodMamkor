@@ -16,7 +16,7 @@
  * comboboxes and the Leaflet map actually mount and lay out inside this form.
  *
  * Run from frontend/ with `next start` on :3000:
- *   node e2e/qa-meh1936-locations-geocode.mjs [outdir] [/path/to/chrome]
+ *   node e2e/_qa-archive/qa-meh1936-locations-geocode.mjs [outdir] [/path/to/chrome]
  * Exits non-zero if any check fails.
  */
 import { chromium } from "@playwright/test";
@@ -28,7 +28,7 @@ const OUT = path.resolve(
 );
 // Optional browser path via ARGV, never an env var — a new `process.env.*` read
 // is a new undocumented variable and the Env drift gate (MEH-491) reds it.
-// Regression rule 8. REUSES: e2e/qa-meh1727-font-cors.mjs:37,61-66, which is
+// Regression rule 8. REUSES: e2e/_qa-archive/qa-meh1727-font-cors.mjs:37,61-66, which is
 // where this repo already settled the question. Needed because the CC sandbox
 // ships a Chromium whose revision does not match this repo's @playwright/test.
 const BROWSER_PATH = process.argv[3];

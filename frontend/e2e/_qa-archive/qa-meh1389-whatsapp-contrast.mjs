@@ -2,7 +2,7 @@
  * MEH-1389 self-QA — the WhatsApp CTA passes WCAG AA contrast (>= 4.5:1).
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1389-whatsapp-contrast.mjs [baseURL] [producerSlug] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1389-whatsapp-contrast.mjs [baseURL] [producerSlug] [chromiumPath]
  *
  * WHY THIS RUNS ITS OWN AXE PASS INSTEAD OF TRUSTING THE SUITE:
  * `e2e/flows/12-axe-a11y.spec.ts` puts `color-contrast` in GATE_IGNORE_RULES
@@ -17,7 +17,7 @@
  * computed from the CTA's own computed styles, so a "0 violations" result cannot
  * be produced by an absent button.
  *
- * REUSES: frontend/e2e/qa-meh1852-admin-kashrut-labels.mjs (argv, never
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1852-admin-kashrut-labels.mjs (argv, never
  * process.env — the MEH-491 env-drift gate blocks undocumented env reads).
  */
 import { chromium } from "@playwright/test";

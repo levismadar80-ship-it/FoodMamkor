@@ -5,7 +5,7 @@
  * Drives the REAL pages in Chromium against a `next start` server with every
  * /api/** call fulfilled from fixtures (the CC sandbox has no backend and cannot
  * reach Railway — CLAUDE.md "Known Bug Patterns").
- * REUSES: e2e/qa-meh1566-admin-settings.mjs (auth fixture + route shape).
+ * REUSES: e2e/_qa-archive/qa-meh1566-admin-settings.mjs (auth fixture + route shape).
  *
  * ── The instrument, and why it is not the obvious one ────────────────────────
  * The obvious probe is `document.elementFromPoint()` over the header strip. It
@@ -26,7 +26,7 @@
  * reading in the run is void — including the reassuring ones.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2093-modal-z.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh2093-modal-z.mjs
  */
 import { chromium } from "@playwright/test";
 import sharp from "sharp";

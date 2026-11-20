@@ -10,7 +10,7 @@
  * then the copy click (toast), then 0 drafts. At 375 it also asserts the copy
  * button is on-screen (x >= 0) — the MEH-2070 actions-column question.
  *
- * Run: node e2e/qa-meh2495-draft-claim-actions.mjs   (next start -p 3100 first)
+ * Run: node e2e/_qa-archive/qa-meh2495-draft-claim-actions.mjs   (next start -p 3100 first)
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";

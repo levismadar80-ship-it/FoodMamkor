@@ -78,6 +78,9 @@ count=$(printf '%s\n' "$files" | grep -c . || true)
 tfiles="$(list_tests_and_scripts)"
 tcount=$(printf '%s\n' "$tfiles" | grep -c . || true)
 [ "$tcount" -gt 500 ] || { echo "file-size-ratchet: listed only $tcount test/script files — the listing is broken, every pass is void"; exit 1; }
+for root in tests/ frontend/__tests__/ frontend/e2e/ scripts/ backend/scripts/; do
+  grep -q "^$root" <<<"$tfiles" || { echo "file-size-ratchet: no file listed under $root — the listing is broken, every pass is void"; exit 1; }
+done
 if printf '%s\n%s\n' "$files" "$tfiles" | check; then
   echo "file-size-ratchet: $count source + $tcount test/script files, none new over $LIMIT lines"
 else

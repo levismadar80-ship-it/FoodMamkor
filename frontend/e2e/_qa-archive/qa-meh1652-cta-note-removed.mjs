@@ -6,7 +6,7 @@
  * mock backend on the port the bundle already points at (NEXT_PUBLIC_* are
  * inlined at BUILD time, so a runtime override would NOT reach serverFetch) —
  * the page under test is the real one, SSR included.
- * REUSES: e2e/qa-meh1649-cta-note.mjs (mock-API + dual-viewport harness, the
+ * REUSES: e2e/_qa-archive/qa-meh1649-cta-note.mjs (mock-API + dual-viewport harness, the
  * clock pinning, and the visibility measure). That harness asserted the note
  * was inside ContactCard; this one asserts it does not exist at all, which is
  * why it is a new file rather than an edit — the old capture stays valid as a
@@ -25,7 +25,7 @@
  *     `order-window-schedule` block (MEH-1875) still renders. §7 removed the
  *     promise, not the information.
  *
- * Run manually:  node e2e/qa-meh1652-cta-note-removed.mjs
+ * Run manually:  node e2e/_qa-archive/qa-meh1652-cta-note-removed.mjs
  */
 import { chromium } from "@playwright/test";
 import http from "node:http";

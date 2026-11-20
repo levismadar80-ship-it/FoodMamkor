@@ -13,9 +13,9 @@
  * Also fails loudly on any console error (self_qa_protocol step 4).
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1851-grass-fed.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh1851-grass-fed.mjs
  *
- * REUSES: e2e/qa-meh1544-order-window.mjs (route-fixture + dual-viewport
+ * REUSES: e2e/_qa-archive/qa-meh1544-order-window.mjs (route-fixture + dual-viewport
  *         harness, cookie-banner dismissal, accordion-by-heading expansion).
  */
 import { chromium } from "@playwright/test";

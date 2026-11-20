@@ -24,7 +24,7 @@
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual).
  * Run manually, against a `next start` on 3100:
- *     node e2e/qa-meh2133-map-no-added-sugar.mjs
+ *     node e2e/_qa-archive/qa-meh2133-map-no-added-sugar.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

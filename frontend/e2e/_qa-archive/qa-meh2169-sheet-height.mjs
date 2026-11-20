@@ -23,7 +23,7 @@
  * state for this change: no chip is active, so nothing is hidden and every axis
  * is painted. Measuring a filtered state would flatter the result.
  *
- * Run:  node e2e/qa-meh2169-sheet-height.mjs [baseURL]
+ * Run:  node e2e/_qa-archive/qa-meh2169-sheet-height.mjs [baseURL]
  * PNGs are raw; compress before staging (2 MB per-PR cap, MEH-1156):
  *   node scripts/compress-qa-screenshots.mjs ../qa-artifacts/meh-2169/
  */
@@ -32,7 +32,7 @@ import { mkdirSync, existsSync, readdirSync } from "node:fs";
 
 /**
  * Resolve a Chromium binary WITHOUT reading an environment variable.
- * REUSES: frontend/e2e/qa-meh1945-sticky-apply.mjs:44-56 — same sandbox
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1945-sticky-apply.mjs:44-56 — same sandbox
  * constraint, same reasoning (a bespoke env var trips the "Env drift" gate).
  */
 function resolveChromium() {

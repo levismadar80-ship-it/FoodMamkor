@@ -15,7 +15,7 @@
  * compared, because boundingBox() is viewport-relative and clicks auto-scroll.
  * If the control line says CONTROL FAILED, every verdict in that run is void.
  *
- * Usage: node e2e/qa-meh2102-dropdown-vs-map.mjs   (needs `next start` on :3000)
+ * Usage: node e2e/_qa-archive/qa-meh2102-dropdown-vs-map.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

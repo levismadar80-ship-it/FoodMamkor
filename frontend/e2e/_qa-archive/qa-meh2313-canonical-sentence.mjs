@@ -9,13 +9,13 @@
  * Control (run first): the about page's <h1> must be found and non-empty —
  * if the probe cannot read that, every text check below is void.
  *
- * Usage: node e2e/qa-meh2313-canonical-sentence.mjs [outDir] [baseUrl]
+ * Usage: node e2e/_qa-archive/qa-meh2313-canonical-sentence.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = process.argv[2] || "../qa-artifacts/MEH-2313";
-// REUSES: e2e/qa-meh2311-footer-social.mjs — argv override, no env read.
+// REUSES: e2e/_qa-archive/qa-meh2311-footer-social.mjs — argv override, no env read.
 const BASE = process.argv[3] || "http://localhost:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium"; // the sandbox build; CI falls back to the default
 const EXPECTED = {

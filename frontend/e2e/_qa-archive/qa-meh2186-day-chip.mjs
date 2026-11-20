@@ -26,7 +26,7 @@
  * assertion in the run is void — so it aborts rather than reporting sixteen
  * green captures of a broken page.
  *
- * Run:  node e2e/qa-meh2186-day-chip.mjs [baseURL]
+ * Run:  node e2e/_qa-archive/qa-meh2186-day-chip.mjs [baseURL]
  * PNGs are raw; compress before staging (2 MB per-PR cap, MEH-1156):
  *   node scripts/compress-qa-screenshots.mjs ../qa-artifacts/meh-2186/
  */
@@ -35,7 +35,7 @@ import { mkdirSync, existsSync, readdirSync } from "node:fs";
 
 /**
  * Resolve a Chromium binary WITHOUT reading an environment variable.
- * REUSES: frontend/e2e/qa-meh2169-sheet-height.mjs:38-47 — same sandbox
+ * REUSES: frontend/e2e/_qa-archive/qa-meh2169-sheet-height.mjs:38-47 — same sandbox
  * constraint, same reasoning (a bespoke env var trips the "Env drift" gate).
  */
 function resolveChromium() {

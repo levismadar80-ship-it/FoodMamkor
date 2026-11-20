@@ -1,10 +1,10 @@
 /**
  * MEH-1644 self-QA harness — dashboard DeliveryCard per-city day select.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1644-delivery-day-select.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1644-delivery-day-select.mjs [baseURL] [chromiumPath]
  * Auth + profile APIs are intercepted (backend unreachable from the CC
  * sandbox): a fake token in localStorage + fixture /auth/me + /producers/me.
- * REUSES: frontend/e2e/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

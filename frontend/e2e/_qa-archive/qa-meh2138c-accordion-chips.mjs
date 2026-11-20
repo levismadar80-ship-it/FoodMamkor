@@ -15,7 +15,7 @@
  * completely broken one — the exact failure MEH-2148's harness shipped.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2138c-accordion-chips.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh2138c-accordion-chips.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -17,7 +17,7 @@
  * KashrutBadgeStrip's ancestors re-render on. If that produces no re-render
  * the control says so.
  *
- * Run: node e2e/qa-meh2129-cert-focus.mjs [outdir] [base]   (needs `next start`)
+ * Run: node e2e/_qa-archive/qa-meh2129-cert-focus.mjs [outdir] [base]   (needs `next start`)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -19,8 +19,8 @@
  * (which must be 0 in every state).
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2013-experience-required.mjs
- * REUSES: e2e/qa-meh1809-form-validation.mjs (harness shape).
+ * run manually:  node e2e/_qa-archive/qa-meh2013-experience-required.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1809-form-validation.mjs (harness shape).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

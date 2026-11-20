@@ -8,7 +8,7 @@
  * Drives the REAL business page against `next start` on :3100 (built with
  * NEXT_PUBLIC_RESCUE_BAGS_ENABLED=true), /api/** from fixtures. 375 + 1440.
  * Chromium only.
- * Run manually:  node e2e/qa-meh2737-rescue-buyer-cancel.mjs
+ * Run manually:  node e2e/_qa-archive/qa-meh2737-rescue-buyer-cancel.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -17,7 +17,7 @@
  * output and reporting encoder noise as a visual change.)
  *
  * Usage:
- *   node e2e/qa-meh2029-visual-parity.mjs <oldBaseUrl> <newBaseUrl>
+ *   node e2e/_qa-archive/qa-meh2029-visual-parity.mjs <oldBaseUrl> <newBaseUrl>
  *
  * Exits 1 if any route's cross-build difference exceeds its own noise floor,
  * or if RTL / horizontal-overflow assertions fail.

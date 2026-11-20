@@ -19,7 +19,7 @@
  * shared-localStorage path a second open tab produces in production.
  *
  * Run from frontend/ with `next start` on :3000:
- *   node e2e/qa-meh1807-cross-step-validation.mjs [outdir]
+ *   node e2e/_qa-archive/qa-meh1807-cross-step-validation.mjs [outdir]
  * Exits non-zero if any check fails.
  */
 import { chromium } from "@playwright/test";

@@ -2,8 +2,8 @@
  * MEH-1880 self-QA harness — the order-window line on ProducerCard, on the
  * surface it actually ships to (the home grid), in every state the ticket
  * names. Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1880-card-order-window.mjs [baseURL] [chromiumPath]
- * REUSES: frontend/e2e/qa-meh1823-offers.mjs (fixture-intercept + DOM probe).
+ *   node e2e/_qa-archive/qa-meh1880-card-order-window.mjs [baseURL] [chromiumPath]
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1823-offers.mjs (fixture-intercept + DOM probe).
  *
  * ── Why the fixture windows are COMPUTED and not literal ────────────────────
  * The line is a function of wall time in Asia/Jerusalem. A hardcoded

@@ -1,11 +1,11 @@
 /**
  * MEH-1646 self-QA harness — DeliveryBlock order-cutoff line + pickup חינם tag.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1646-deliveryblock.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1646-deliveryblock.mjs [baseURL] [chromiumPath]
  * The backend is unreachable from the CC sandbox, so the producer API is
  * intercepted at the Playwright layer and served a fixture (client-side fetch
  * path — ProducerDetail renders from /api/producers/{id}).
- * REUSES: frontend/e2e/qa-meh1643-hero-delivery-cta.mjs (manual QA-harness pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1643-hero-delivery-cta.mjs (manual QA-harness pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

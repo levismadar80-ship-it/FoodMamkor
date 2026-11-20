@@ -9,7 +9,7 @@
  * only evidence: the banner is there, favourite + share are gone, and the
  * contact CTA is present but carries no href.
  *
- * Run from frontend/:  node e2e/qa-meh2916-owner-preview.mjs
+ * Run from frontend/:  node e2e/_qa-archive/qa-meh2916-owner-preview.mjs
  *   QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH override the target and the browser.
  */
 import { chromium } from "playwright";

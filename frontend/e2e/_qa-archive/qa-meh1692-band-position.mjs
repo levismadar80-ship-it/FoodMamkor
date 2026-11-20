@@ -8,7 +8,7 @@
  * Prints the band's bounding box against each project's viewport, and the
  * rendered lead string, at both VRT viewports.
  *
- * Usage: node e2e/qa-meh1692-band-position.mjs [baseURL]
+ * Usage: node e2e/_qa-archive/qa-meh1692-band-position.mjs [baseURL]
  */
 import { chromium } from "@playwright/test";
 import { existsSync } from "node:fs";

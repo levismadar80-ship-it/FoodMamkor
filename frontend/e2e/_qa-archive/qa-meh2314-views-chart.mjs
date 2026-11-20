@@ -9,13 +9,13 @@
  * Control (run first): the y-axis tick texts must be found and measured —
  * if the probe cannot see those, every "0 clipped" below is void.
  *
- * Usage: node e2e/qa-meh2314-views-chart.mjs [outDir] [baseUrl]
+ * Usage: node e2e/_qa-archive/qa-meh2314-views-chart.mjs [outDir] [baseUrl]
  */
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
 const OUT = process.argv[2] || "../qa-artifacts/MEH-2314";
-// REUSES: e2e/qa-meh1638-entry-skeleton.mjs:18-22 — argv override, no env read.
+// REUSES: e2e/_qa-archive/qa-meh1638-entry-skeleton.mjs:18-22 — argv override, no env read.
 const BASE = process.argv[3] || "http://localhost:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium"; // the sandbox build; CI falls back to the default
 

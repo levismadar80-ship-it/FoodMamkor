@@ -13,7 +13,7 @@
  *           present first, so the zero cannot also mean "page never rendered")
  *   denied — role!=admin      -> access-denied state, no admin nav at all
  *
- * Run:  node e2e/qa-meh1701-admin-mobile-badge.mjs [--before]
+ * Run:  node e2e/_qa-archive/qa-meh1701-admin-mobile-badge.mjs [--before]
  * --before captures only the desktop-1440 many-state shot (for the
  * no-visual-change proof against the pre-change build).
  */

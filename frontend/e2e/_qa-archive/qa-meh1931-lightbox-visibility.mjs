@@ -1,7 +1,7 @@
 /**
  * MEH-1931 Lightbox desktop-visibility probe (NOT part of the e2e suite — run
  * manually):
- *   node e2e/qa-meh1931-lightbox-visibility.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1931-lightbox-visibility.mjs [baseURL] [chromiumPath]
  *
  * Four claims are measured here, none inferred:
  *

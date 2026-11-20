@@ -1,10 +1,10 @@
 /**
  * MEH-1577 self-QA harness — DeliveryBlock structured delivery-cost line.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1577-delivery-fee.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1577-delivery-fee.mjs [baseURL] [chromiumPath]
  * The backend is unreachable from the CC sandbox, so the producer API is
  * intercepted at the Playwright layer and served a fixture.
- * REUSES: frontend/e2e/qa-meh1646-deliveryblock.mjs (manual QA-harness pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1646-deliveryblock.mjs (manual QA-harness pattern).
  *
  * Six states, matching the vitest cases 1:1. The sixth exists because neither
  * MEH-1577 nor MEH-1646 could see it alone: 1646 put a bare "חינם" tag on

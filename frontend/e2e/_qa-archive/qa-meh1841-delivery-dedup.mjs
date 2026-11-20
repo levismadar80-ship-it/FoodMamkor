@@ -3,7 +3,7 @@
  * on a producer card, in a real browser.
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1841-delivery-dedup.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1841-delivery-dedup.mjs [baseURL] [chromiumPath]
  *
  * The fixture is a DISCRIMINATING PAIR — the vitest guard proves `allBadges`
  * drops the key, this proves the card paints one chip instead of two:
@@ -25,7 +25,7 @@
  * option, and it is disambiguated from the generic badge by the badge count
  * being read separately.
  *
- * REUSES: frontend/e2e/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
  * never process.env — the MEH-491 env-drift gate blocks undocumented env reads;
  * route-fulfil fixture shape; per-viewport context loop).
  */

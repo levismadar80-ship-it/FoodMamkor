@@ -19,8 +19,8 @@
  * markup a visible-wait dies on TimeoutError before any named assertion).
  *
  * Artifact generation, NOT a spec (testMatch covers e2e/flows + e2e/visual).
- * Run manually:  node e2e/qa-meh2033-file-inputs.mjs
- * REUSES: e2e/qa-meh2031-eventform-upload-a11y.mjs (context + auth + mocks).
+ * Run manually:  node e2e/_qa-archive/qa-meh2033-file-inputs.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2031-eventform-upload-a11y.mjs (context + auth + mocks).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

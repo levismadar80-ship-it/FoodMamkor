@@ -26,7 +26,7 @@
  *   5. register_producer is rate-limited 3/hour per IP. Repeated runs 429;
  *      restart uvicorn to reset the in-memory slowapi counters.
  *
- * Run from frontend/: node e2e/qa-meh1627-optional-auth.mjs [outdir]
+ * Run from frontend/: node e2e/_qa-archive/qa-meh1627-optional-auth.mjs [outdir]
  * Exits non-zero if any check fails.
  */
 import { chromium } from "@playwright/test";

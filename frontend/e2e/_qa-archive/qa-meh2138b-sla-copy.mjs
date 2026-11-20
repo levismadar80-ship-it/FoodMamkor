@@ -19,7 +19,7 @@
  * thinks and every later PASS is void.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2138b-sla-copy.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh2138b-sla-copy.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -26,7 +26,7 @@
  * is a documented failure in this repo (#2786) — an absent modal is a FAIL
  * here, never a skip.
  *
- * Run: node e2e/qa-meh2038-rtl-close-buttons.mjs   (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh2038-rtl-close-buttons.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
@@ -35,7 +35,7 @@ import path from "node:path";
 const OUT = path.resolve(process.argv[2] || "../qa-artifacts/MEH-2038");
 // Constant + argv override, not an env var: every process.env read must be
 // declared in .env.example or the "Env drift" gate blocks the PR
-// (regression rule 8). REUSES: e2e/qa-meh1611-map-focus.mjs:27.
+// (regression rule 8). REUSES: e2e/_qa-archive/qa-meh1611-map-focus.mjs:27.
 const BASE = process.argv[3] || "http://127.0.0.1:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const VIEWPORT = { width: 390, height: 844 };

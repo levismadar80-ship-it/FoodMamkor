@@ -21,8 +21,8 @@
  * :8000, the API_URL the build is made with (NEXT_PUBLIC_API_URL=http://localhost:8000).
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2330-review-invite.mjs
- * REUSES: e2e/qa-meh1875-order-window-schedule.mjs (fixture-route + capture shape).
+ * run manually:  node e2e/_qa-archive/qa-meh2330-review-invite.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1875-order-window-schedule.mjs (fixture-route + capture shape).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

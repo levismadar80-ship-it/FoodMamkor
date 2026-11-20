@@ -2,7 +2,7 @@
  * MEH-1845 self-QA — proves the new chalak label reaches a rendered surface.
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1845-chalak-label.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1845-chalak-label.mjs [baseURL] [chromiumPath]
  *
  * The label change is a single i18n value, so the risk is not "does the string
  * exist" — vitest already proves that — but whether the MEH-1711/MEH-1745
@@ -21,7 +21,7 @@
  * check is useless here: the new string CONTAINS the old one ("בשר חלק (גלאט)"),
  * so `includes("חלק")` is true in both the fixed and the broken tree.
  *
- * REUSES: frontend/e2e/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
  * never process.env — the MEH-491 env-drift gate blocks undocumented env reads).
  */
 import { chromium } from "@playwright/test";

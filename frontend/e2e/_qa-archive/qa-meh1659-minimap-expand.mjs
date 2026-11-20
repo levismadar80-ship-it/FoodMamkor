@@ -23,8 +23,8 @@
  * `**​/producers?*` glob would also swallow the collection endpoint and the
  * /count, /cities, /random siblings.
  *
- * REUSES: frontend/e2e/qa-meh1611-producer-locations.mjs (mock shape + runner).
- * Run: node e2e/qa-meh1659-minimap-expand.mjs   (needs `next start` on :3000)
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1611-producer-locations.mjs (mock shape + runner).
+ * Run: node e2e/_qa-archive/qa-meh1659-minimap-expand.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -23,8 +23,8 @@
  * prove localhost, because __Secure-/__Host- prefix handling on localhost is
  * engine-dependent (rfc6265bis#2605):
  *
- *   TEST_URL=https://staging.mehamakor.online node e2e/qa-meh1858-fingerprint-proof.mjs
- *   TEST_URL=http://localhost:3000            node e2e/qa-meh1858-fingerprint-proof.mjs
+ *   TEST_URL=https://staging.mehamakor.online node e2e/_qa-archive/qa-meh1858-fingerprint-proof.mjs
+ *   TEST_URL=http://localhost:3000            node e2e/_qa-archive/qa-meh1858-fingerprint-proof.mjs
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * ⚠️  THIS PROBE CANNOT ANSWER ENGINE-DIVERGENCE QUESTIONS (MEH-1788, 06/08)

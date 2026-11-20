@@ -1,14 +1,14 @@
 /**
  * MEH-1672 self-QA harness — kashrut certificate proxy + modal.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1672-kashrut-cert.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1672-kashrut-cert.mjs [baseURL] [chromiumPath]
  * The backend is unreachable from the CC sandbox, so BOTH the producer detail
  * API and the certificate proxy route are intercepted at the Playwright layer.
  * The proxy interception stands in for `GET /producers/{id}/kashrut-cert/{code}`
  * returning real image bytes — proving the FRONTEND wiring (tap → modal →
  * proxy URL, never Cloudinary), not backend authorization (that's pytest's job,
  * see tests/test_meh1672_kashrut_cert_public.py).
- * REUSES: frontend/e2e/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

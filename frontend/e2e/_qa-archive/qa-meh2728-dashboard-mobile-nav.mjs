@@ -7,8 +7,8 @@
  * Drives the REAL pages against `next start` on :3100 (built with
  * NEXT_PUBLIC_RESCUE_BAGS_ENABLED=true) with every /api/** call fulfilled from
  * fixtures (the CC sandbox has no backend). 375 + 1440.
- * Run manually:  node e2e/qa-meh2728-dashboard-mobile-nav.mjs
- * REUSES: e2e/qa-meh2695-badge-request-line.mjs (route-fixture harness).
+ * Run manually:  node e2e/_qa-archive/qa-meh2728-dashboard-mobile-nav.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2695-badge-request-line.mjs (route-fixture harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

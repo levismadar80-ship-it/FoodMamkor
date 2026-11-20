@@ -7,7 +7,7 @@
  * "Heebo rendered the Hebrew". A computed `font-family` string cannot — it lists
  * candidates, not the winner.
  *
- * Usage:  node e2e/qa-meh2029-font-resolution.mjs [baseUrl]
+ * Usage:  node e2e/_qa-archive/qa-meh2029-font-resolution.mjs [baseUrl]
  * Exits 1 if the CONTROL fails. The control is the whole point: it queries a
  * node whose typeface is not in question (a headline, which must resolve to
  * Frank Ruhl Libre). If the control comes back empty, every other line in the

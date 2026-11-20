@@ -32,13 +32,13 @@
  * is under test (placeholder first, component second, same height), and the
  * delay only widens the window in which the first can be read.
  *
- * REUSES: e2e/qa-meh1652-cta-note-removed.mjs — mock-API + real-SSR harness
+ * REUSES: e2e/_qa-archive/qa-meh1652-cta-note-removed.mjs — mock-API + real-SSR harness
  * shape, the dual-viewport loop, and the "fail loud if the mock never bound"
  * rule. Same reason as there: NEXT_PUBLIC_* are inlined at BUILD time, so the
  * page must be served the real way and fed by a real server on the port the
  * bundle already points at.
  *
- * Run manually:  node e2e/qa-meh1853-placeholder-fit.mjs
+ * Run manually:  node e2e/_qa-archive/qa-meh1853-placeholder-fit.mjs
  */
 import { chromium } from "@playwright/test";
 import http from "node:http";

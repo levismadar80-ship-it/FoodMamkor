@@ -6,7 +6,7 @@
  * backend and cannot reach Railway — CLAUDE.md "Known Bug Patterns"). The page
  * is auth-gated (the dashboard layout redirects to /login without a
  * user), so a token is seeded and `GET /auth/me` is stubbed — the same pattern
- * as `e2e/qa-meh1638-settings-skeleton.mjs`.
+ * as `e2e/_qa-archive/qa-meh1638-settings-skeleton.mjs`.
  *
  * `POST /upload/image` is route-mocked in three shapes, because the three are
  * what the real endpoint can actually answer with and each drives a different
@@ -24,8 +24,8 @@
  *
  * States captured per viewport: empty · uploading · uploaded · upload-error.
  *
- * Run manually:  node e2e/qa-meh2012-experience-image-upload.mjs
- * REUSES: e2e/qa-meh2014-map-manual-origin.mjs (harness shape).
+ * Run manually:  node e2e/_qa-archive/qa-meh2012-experience-image-upload.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2014-map-manual-origin.mjs (harness shape).
  */
 import { chromium, devices } from "@playwright/test";
 import fs from "node:fs";

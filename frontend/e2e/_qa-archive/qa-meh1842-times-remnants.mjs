@@ -22,10 +22,10 @@
  * assertion is shown discriminating rather than asserted to.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1842-times-remnants.mjs
- *                node e2e/qa-meh1842-times-remnants.mjs --prove-p
+ * run manually:  node e2e/_qa-archive/qa-meh1842-times-remnants.mjs
+ *                node e2e/_qa-archive/qa-meh1842-times-remnants.mjs --prove-p
  *
- * REUSES: e2e/qa-meh1830-times-copy.mjs (route-fixture + dual-viewport harness).
+ * REUSES: e2e/_qa-archive/qa-meh1830-times-copy.mjs (route-fixture + dual-viewport harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

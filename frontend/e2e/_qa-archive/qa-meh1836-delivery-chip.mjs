@@ -5,7 +5,7 @@
  * and ZERO delivery_areas rows was invisible to this chip before the fix and
  * must be visible now.
  *
- * Run: node e2e/qa-meh1836-delivery-chip.mjs [baseURL]
+ * Run: node e2e/_qa-archive/qa-meh1836-delivery-chip.mjs [baseURL]
  *
  * Sandbox notes (both are documented repo constraints, not guesses):
  *  - TLS is capped at 1.2 — the sandbox's Chromium offers a TLS-1.3 ClientHello

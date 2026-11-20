@@ -17,8 +17,8 @@
  * the form is the reassuring null, not a finding.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2047-diet-definitions.mjs
- * REUSES: e2e/qa-meh1539-categories.mjs (fixture-route + auth-stub harness).
+ * run manually:  node e2e/_qa-archive/qa-meh2047-diet-definitions.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1539-categories.mjs (fixture-route + auth-stub harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

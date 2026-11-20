@@ -9,7 +9,7 @@
  *
  * Prints a table per class; the audit doc quotes these numbers verbatim.
  *
- * Run: node e2e/qa-meh1619-silent-failure-probe.mjs   (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh1619-silent-failure-probe.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

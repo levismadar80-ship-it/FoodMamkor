@@ -15,11 +15,11 @@
  * Either cue alone would let the other regress unnoticed.
  *
  * Scaffolding (route stubs, token seeding, pickSuggestion) is lifted from
- * e2e/qa-meh1808-address-confirm.mjs — same screen, same wizard entry point.
- * REUSES: frontend/e2e/qa-meh1808-address-confirm.mjs:56-106
+ * e2e/_qa-archive/qa-meh1808-address-confirm.mjs — same screen, same wizard entry point.
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1808-address-confirm.mjs:56-106
  *
  * Run from frontend/ with `next start` on :3000:
- *   node e2e/qa-meh1937-single-check.mjs [outdir] [/path/to/chrome]
+ *   node e2e/_qa-archive/qa-meh1937-single-check.mjs [outdir] [/path/to/chrome]
  * Exits non-zero if any check fails.
  *
  * It writes PNGs. Compress before committing — the 2 MB-per-PR cap in

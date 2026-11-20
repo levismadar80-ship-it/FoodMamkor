@@ -13,7 +13,7 @@
  *   <out>-pill.png   the floating BottomNav pill (sheet closed)
  *   <out>-sheet.png  the AccountSheet, opened from the account tab
  *
- * Run:  node e2e/qa-meh1703-chunk3-pixel.mjs <out-prefix> [baseURL]
+ * Run:  node e2e/_qa-archive/qa-meh1703-chunk3-pixel.mjs <out-prefix> [baseURL]
  * Needs `next start` on :3000.
  *
  * CONTROLS. The run refuses to write a PNG unless it has proved the capture is
@@ -23,7 +23,7 @@
  * "identical" vacuous, which is the #2786 failure (six PNGs of an error
  * boundary, logged as six successes and exit 0).
  *
- * Sibling: e2e/qa-meh1703-chunk2-pixel.mjs (the same instrument at 1440).
+ * Sibling: e2e/_qa-archive/qa-meh1703-chunk2-pixel.mjs (the same instrument at 1440).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

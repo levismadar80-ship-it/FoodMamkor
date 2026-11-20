@@ -14,7 +14,7 @@
  * `**​/producers?*` glob would also swallow the collection endpoint and the
  * /count, /cities, /random siblings.
  *
- * Run: node e2e/qa-meh1611-producer-locations.mjs   (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh1611-producer-locations.mjs   (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

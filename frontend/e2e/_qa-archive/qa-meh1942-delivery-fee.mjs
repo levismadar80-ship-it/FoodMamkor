@@ -20,7 +20,7 @@
  * first version routed three narrow patterns, believed it covered the surface,
  * and leaked one.
  *
- * Run: node e2e/qa-meh1942-delivery-fee.mjs [baseURL]
+ * Run: node e2e/_qa-archive/qa-meh1942-delivery-fee.mjs [baseURL]
  */
 import { chromium, devices } from "@playwright/test";
 import { mkdirSync, existsSync, readdirSync } from "node:fs";

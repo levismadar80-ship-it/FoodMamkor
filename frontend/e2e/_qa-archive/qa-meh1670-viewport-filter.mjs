@@ -7,7 +7,7 @@
 //       → and its category chip still counts it (:326 moved with the list)
 //   S2  toggle the secondary layer OFF → it leaves the map AND the list together
 //
-// Usage (from frontend/): node e2e/qa-meh1670-viewport-filter.mjs <width>
+// Usage (from frontend/): node e2e/_qa-archive/qa-meh1670-viewport-filter.mjs <width>
 import { chromium } from "playwright";
 import fs from "fs";
 import path from "path";

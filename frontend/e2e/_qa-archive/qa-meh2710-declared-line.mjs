@@ -4,7 +4,7 @@
  * «מאומת» chip. Producer endpoint route-mocked (same pattern as
  * qa-meh1611-producer-locations.mjs); asserts on rendered text, not testids.
  *
- * Run: node e2e/qa-meh2710-declared-line.mjs [outDir] [base]  (needs `next start` on :3000)
+ * Run: node e2e/_qa-archive/qa-meh2710-declared-line.mjs [outDir] [base]  (needs `next start` on :3000)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

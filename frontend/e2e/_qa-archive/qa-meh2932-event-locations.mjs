@@ -11,7 +11,7 @@
  *   one  — a single saved point beside «כתובת אחרת»
  *   zero — no picker at all, the form exactly as it was
  *
- * Run from frontend/:  node e2e/qa-meh2932-event-locations.mjs
+ * Run from frontend/:  node e2e/_qa-archive/qa-meh2932-event-locations.mjs
  *   QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH override the target and the browser
  *   (the names check_env_drift.sh classes as harness config, MEH-1516).
  */

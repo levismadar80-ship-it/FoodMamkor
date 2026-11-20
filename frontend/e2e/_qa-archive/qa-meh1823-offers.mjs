@@ -1,8 +1,8 @@
 /**
  * MEH-1823 self-QA harness — the offer across all four required states.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1823-offers.mjs [baseURL] [chromiumPath]
- * REUSES: frontend/e2e/qa-meh1821-delivery-defaults.mjs (fixture-intercept).
+ *   node e2e/_qa-archive/qa-meh1823-offers.mjs [baseURL] [chromiumPath]
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1821-delivery-defaults.mjs (fixture-intercept).
  *
  * The four states the ticket asks for, and the reason each is captured:
  *   business page WITH an offer    — the badge renders above the delivery block

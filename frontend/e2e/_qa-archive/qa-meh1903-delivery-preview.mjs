@@ -2,11 +2,11 @@
  * MEH-1903 self-QA harness — AREA_PREVIEW_LIMIT=6 on the editorial delivery
  * rows (hoist/flat/group) + PICKUP_PREVIEW_LIMIT 5→3.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1903-delivery-preview.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1903-delivery-preview.mjs [baseURL] [chromiumPath]
  * The backend is unreachable from the CC sandbox (CLAUDE.md "Known Bug
  * Patterns" — *.up.railway.app egress is blocked), so the producer API is
  * intercepted at the Playwright layer and served a fixture.
- * REUSES: frontend/e2e/qa-meh1646-deliveryblock.mjs (manual QA-harness pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1646-deliveryblock.mjs (manual QA-harness pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

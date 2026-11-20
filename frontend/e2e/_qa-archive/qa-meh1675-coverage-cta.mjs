@@ -3,11 +3,11 @@
  * The CTA lives on the DeliveryChecker's negative verdict; `user_city` seeds
  * the checker so the "no" state is reached with zero typing.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1675-coverage-cta.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1675-coverage-cta.mjs [baseURL] [chromiumPath]
  * The backend is unreachable from the CC sandbox, so the producer API is
  * intercepted at the Playwright layer and served a fixture. `user_city` is
  * seeded into localStorage per case — that is the input the CTA gates on.
- * REUSES: frontend/e2e/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1646-deliveryblock.mjs (fixture-intercept pattern).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

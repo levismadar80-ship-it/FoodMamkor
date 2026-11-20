@@ -5,7 +5,7 @@
  * backdrop-filter compositing result).
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1686-social-proof-strip.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1686-social-proof-strip.mjs [baseURL] [chromiumPath]
  *
  * Probes, at 375 + 1440:
  *   #1 the /stats strip's computed padding — the ticket's py-4 → py-8
@@ -18,7 +18,7 @@
  *      does — the `supports-[backdrop-filter]:` opacity gate tests *support*,
  *      not usage, so the translucency survives either way.
  *
- * REUSES: frontend/e2e/qa-meh1684-hero-search-zone.mjs (manual QA-harness
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1684-hero-search-zone.mjs (manual QA-harness
  * pattern — argv baseURL + chromiumPath, never process.env: the MEH-491
  * env-drift gate blocks undocumented env reads).
  */

@@ -15,7 +15,7 @@
  * have made this harness pass or fail by the hour — the exact defect it found
  * in the MEH-1881 spec.
  *
- * Run:  node e2e/qa-meh2131-open-now-chip.mjs
+ * Run:  node e2e/_qa-archive/qa-meh2131-open-now-chip.mjs
  * Out:  qa-artifacts/MEH-2131/*.png  (compress before committing — MEH-1156)
  */
 import { chromium } from "@playwright/test";

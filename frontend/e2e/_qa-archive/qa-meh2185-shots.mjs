@@ -7,7 +7,7 @@
  * If any control below prints FAIL, every image in this run is void.
  *
  * Run by hand against `npx next start`:
- *   node e2e/qa-meh2185-shots.mjs
+ *   node e2e/_qa-archive/qa-meh2185-shots.mjs
  * then compress before committing (MEH-1156, 2 MB per-PR cap):
  *   node scripts/compress-qa-screenshots.mjs ../qa-artifacts/MEH-2185/
  * and delete the .png sources — the helper writes .webp beside them.

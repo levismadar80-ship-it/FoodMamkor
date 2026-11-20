@@ -55,8 +55,8 @@
  * reading.
  *
  * Usage:
- *   node e2e/qa-meh2108-citysearch-occlusion.mjs --self-test
- *   node e2e/qa-meh2108-citysearch-occlusion.mjs [--surface=register|map|absence] [--label=before] [--force-z=1000]
+ *   node e2e/_qa-archive/qa-meh2108-citysearch-occlusion.mjs --self-test
+ *   node e2e/_qa-archive/qa-meh2108-citysearch-occlusion.mjs [--surface=register|map|absence] [--label=before] [--force-z=1000]
  *
  * Needs `next start` on :3000.
  */

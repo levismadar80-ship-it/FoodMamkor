@@ -5,7 +5,7 @@
  *
  * Local `next start` only. Backend stubbed with page.route().
  *
- * Run from frontend/:  node e2e/qa-meh2927-register-chrome.mjs
+ * Run from frontend/:  node e2e/_qa-archive/qa-meh2927-register-chrome.mjs
  *   QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH override the target and the browser.
  */
 import { chromium } from "playwright";

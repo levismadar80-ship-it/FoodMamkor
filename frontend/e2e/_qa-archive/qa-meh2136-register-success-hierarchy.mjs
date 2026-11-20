@@ -22,7 +22,7 @@
  * PASS after it is void. Stated in the failure message, not just implied.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2136-register-success-hierarchy.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh2136-register-success-hierarchy.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

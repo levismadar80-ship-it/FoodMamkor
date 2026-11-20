@@ -4,8 +4,8 @@
  *
  * Drives the REAL page against `next start` on :3100 with every /api/** call
  * fulfilled from fixtures (the CC sandbox has no backend). 375 + 1440.
- * Run manually:  node e2e/qa-meh2695-badge-request-line.mjs
- * REUSES: e2e/qa-meh2561-map-tag-preview.mjs (route-fixture harness).
+ * Run manually:  node e2e/_qa-archive/qa-meh2695-badge-request-line.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2561-map-tag-preview.mjs (route-fixture harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

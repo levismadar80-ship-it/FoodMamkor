@@ -7,7 +7,7 @@
  * runs: fresh (1 h ago), 8 days, 20 days (expired), never sent, and a claimed
  * draft with an old stamp (must show nothing). CONTROL first: the rows render.
  *
- * Run: node e2e/qa-meh2496-claim-link-age.mjs   (next start -p 3100 first)
+ * Run: node e2e/_qa-archive/qa-meh2496-claim-link-age.mjs   (next start -p 3100 first)
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";

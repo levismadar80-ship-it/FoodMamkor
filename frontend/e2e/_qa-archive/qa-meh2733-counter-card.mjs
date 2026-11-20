@@ -5,8 +5,8 @@
  *   - print media keeps the exact A5 width (148mm ≈ 559px) and hides the links
  * Drives the REAL page against `next start` on :3100 (built with
  * NEXT_PUBLIC_RESCUE_BAGS_ENABLED=true), /api/** from fixtures. 375 + 1440.
- * Run manually:  node e2e/qa-meh2733-counter-card.mjs
- * REUSES: e2e/qa-meh2730-rescue-notices.mjs (route-fixture harness).
+ * Run manually:  node e2e/_qa-archive/qa-meh2733-counter-card.mjs
+ * REUSES: e2e/_qa-archive/qa-meh2730-rescue-notices.mjs (route-fixture harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

@@ -28,7 +28,7 @@
  * scroll range a non-sticky footer is visible too (you scrolled to it), so a
  * check that only looked there could not tell the two implementations apart.
  *
- * Run: node e2e/qa-meh1945-sticky-apply.mjs [baseURL]
+ * Run: node e2e/_qa-archive/qa-meh1945-sticky-apply.mjs [baseURL]
  *
  * This writes raw PNGs (~1.8 MB for the eight captures), which is most of the
  * 2 MB per-PR budget the `qa-artifacts size cap` job enforces. ALWAYS follow a
@@ -42,7 +42,7 @@ import { mkdirSync, existsSync, readdirSync } from "node:fs";
 
 /**
  * Resolve a Chromium binary WITHOUT reading an environment variable.
- * REUSES: frontend/e2e/qa-meh1862-filter-sheet.mjs:39-47 — same sandbox
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1862-filter-sheet.mjs:39-47 — same sandbox
  * constraint, same reasoning (a bespoke env var trips the "Env drift" gate).
  */
 function resolveChromium() {

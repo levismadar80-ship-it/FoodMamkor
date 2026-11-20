@@ -8,7 +8,7 @@
  * asserting the PUT body is the category_ids contract.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1539-categories.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh1539-categories.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

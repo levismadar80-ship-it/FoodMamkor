@@ -17,7 +17,7 @@
  * "the page never rendered" are the same reading — the null that is also the
  * reassuring answer.
  *
- * Run: node e2e/qa-meh2070-admin-mobile.mjs
+ * Run: node e2e/_qa-archive/qa-meh2070-admin-mobile.mjs
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";

@@ -25,8 +25,8 @@
  *      status — MEH-1305 A)
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1875-order-window-schedule.mjs
- * REUSES: e2e/qa-meh1869-order-window-ranges.mjs (fixture-route + capture shape).
+ * run manually:  node e2e/_qa-archive/qa-meh1875-order-window-schedule.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1869-order-window-ranges.mjs (fixture-route + capture shape).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

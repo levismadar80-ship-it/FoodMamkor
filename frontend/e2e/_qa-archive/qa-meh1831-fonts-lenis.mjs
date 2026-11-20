@@ -13,7 +13,7 @@
  * History:  MEH-1831 (creation)
  *
  * Run against a local `next start`:
- *   node e2e/qa-meh1831-fonts-lenis.mjs
+ *   node e2e/_qa-archive/qa-meh1831-fonts-lenis.mjs
  */
 
 import { chromium, devices } from "@playwright/test";

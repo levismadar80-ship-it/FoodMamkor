@@ -17,7 +17,7 @@
  *   P4  the WhatsApp CTA href carries the encoded product name
  *   P5  every grid row is a <button> and clears a 44px tap target
  *
- * Usage: node e2e/qa-meh1901-sheet.mjs [outDir]
+ * Usage: node e2e/_qa-archive/qa-meh1901-sheet.mjs [outDir]
  * Prereq: MEH1901_QA=1 npx vitest run __tests__/qa-meh1901-markup.test.jsx
  *         && npm run build   (for the CSS)
  */

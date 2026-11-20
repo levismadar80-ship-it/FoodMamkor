@@ -7,7 +7,7 @@
  * businesses with sells_on_site so the gated chip renders. /producers lists
  * server-side (no backend here → empty), so it is deep-linked ?on_site=1 —
  * an active gated axis keeps its chip.
- * Run against `next start` on 3100:  node e2e/qa-meh2598-unified-row.mjs
+ * Run against `next start` on 3100:  node e2e/_qa-archive/qa-meh2598-unified-row.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

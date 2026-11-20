@@ -8,7 +8,7 @@
  * surviving section still renders.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1566-admin-settings.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh1566-admin-settings.mjs
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

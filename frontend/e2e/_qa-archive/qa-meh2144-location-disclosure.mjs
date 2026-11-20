@@ -21,9 +21,9 @@
  * paired with a presence assertion on the same screen.
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh2144-location-disclosure.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh2144-location-disclosure.mjs
  *
- * REUSES: e2e/qa-meh2142-hours.mjs (route-fixture + dual-viewport harness).
+ * REUSES: e2e/_qa-archive/qa-meh2142-hours.mjs (route-fixture + dual-viewport harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";

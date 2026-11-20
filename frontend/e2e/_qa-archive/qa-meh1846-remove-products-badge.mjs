@@ -3,7 +3,7 @@
  * including the `+N` overflow panel where it mostly lived.
  *
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1846-remove-products-badge.mjs [baseURL] [chromiumPath]
+ *   node e2e/_qa-archive/qa-meh1846-remove-products-badge.mjs [baseURL] [chromiumPath]
  *
  * A removal is easy to "verify" vacuously: assert a string is absent and the
  * probe passes on a page that rendered nothing at all. So every absence
@@ -17,7 +17,7 @@
  * new, delivery) and sets products_count: 12 — deliberately, so the count also
  * asserts that the field now contributes nothing.
  *
- * REUSES: frontend/e2e/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1704-badge-parity.mjs (argv baseURL + chromiumPath,
  * never process.env — the MEH-491 env-drift gate blocks undocumented env reads).
  */
 import { chromium } from "@playwright/test";

@@ -18,8 +18,8 @@
  * The clock is mocked (page.clock) so open/closed are deterministic rather
  * than depending on when the harness runs.
  *
- * Run manually:  node e2e/qa-meh1546-order-window.mjs
- * REUSES: e2e/qa-meh1544-order-window.mjs (dual-viewport capture harness).
+ * Run manually:  node e2e/_qa-archive/qa-meh1546-order-window.mjs
+ * REUSES: e2e/_qa-archive/qa-meh1544-order-window.mjs (dual-viewport capture harness).
  */
 import { chromium } from "@playwright/test";
 import http from "node:http";

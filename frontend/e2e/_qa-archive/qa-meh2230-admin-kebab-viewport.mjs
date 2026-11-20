@@ -12,7 +12,7 @@
  * triggers are absent, every "panel is off-screen" reading below is void —
  * "off-screen" and "never opened" are indistinguishable otherwise.
  *
- * Run: node e2e/qa-meh2230-admin-kebab-viewport.mjs
+ * Run: node e2e/_qa-archive/qa-meh2230-admin-kebab-viewport.mjs
  */
 import { chromium } from "@playwright/test";
 

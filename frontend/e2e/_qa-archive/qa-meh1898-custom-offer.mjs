@@ -1,8 +1,8 @@
 /**
  * MEH-1898 self-QA harness — the fifth offer type, `custom`.
  * Run manually against a local `next start` (NOT part of the e2e suite):
- *   node e2e/qa-meh1898-custom-offer.mjs [baseURL] [chromiumPath]
- * REUSES: frontend/e2e/qa-meh1823-offers.mjs (fixture-intercept + probe shape).
+ *   node e2e/_qa-archive/qa-meh1898-custom-offer.mjs [baseURL] [chromiumPath]
+ * REUSES: frontend/e2e/_qa-archive/qa-meh1823-offers.mjs (fixture-intercept + probe shape).
  *
  * Four states, and the reason each is captured:
  *   business page, custom offer   — the headline IS the offer text, rendered once

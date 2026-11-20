@@ -11,9 +11,9 @@
  * and asserts the PUT body is the order_window contract (incl. the null-clear).
  *
  * Not part of the Playwright suite (testMatch covers e2e/flows + e2e/visual);
- * run manually:  node e2e/qa-meh1544-order-window.mjs
+ * run manually:  node e2e/_qa-archive/qa-meh1544-order-window.mjs
  *
- * REUSES: e2e/qa-meh1539-categories.mjs (route-fixture + dual-viewport harness).
+ * REUSES: e2e/_qa-archive/qa-meh1539-categories.mjs (route-fixture + dual-viewport harness).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
