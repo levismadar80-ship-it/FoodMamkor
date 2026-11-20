@@ -209,7 +209,7 @@ test.describe("MEH-3153 — «הכל» is visible right after load", () => {
   });
 
   test("/favorites: with saved items of every type, «הכל» is in view", async ({ page }) => {
-    const token = "meh3153-stub-token";
+    const token = "example-stub-token-meh3153"; // placeholder, not a credential
     // Strip the stub token from anything not stubbed below (same reason as
     // flows/31-favorites-journey-d.spec.ts stubSignedIn, MEH-2531).
     await page.route("**/api/**", (route) => {
