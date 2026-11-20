@@ -2,6 +2,7 @@
 // («בעמוד «מחירון»») must carry a link tag (<pricinglink>…</pricinglink>),
 // or the visitor is left to find the page alone (20/11, the chat answer that
 // named «מחירון» with no link). The page names come from the chat's page list
+// Limit: it catches «עמוד/דף «שם»» phrasings, not a bare «שם» without the word.
 // (messages chat.pages + lib/site-pages.js), so a new page is covered too.
 import { describe, it, expect } from "vitest";
 import he from "../messages/he.json";
@@ -29,8 +30,12 @@ export function unlinkedPageMentions(messages) {
   const re = /(?:עמוד|דף|לעמוד|בעמוד|בדף|לדף)\s+[«"]([^»"]+)[»"]/g;
   const hits = [];
   for (const [key, value] of strings(messages)) {
-    if (value.includes("<")) continue;
-    for (const m of value.matchAll(re)) if (names.has(m[1].trim())) hits.push(key);
+    for (const m of value.matchAll(re)) {
+      // Linked = the mention sits inside a <…link>…</…link> tag pair.
+      const before = value.slice(0, m.index);
+      const insideLink = /<[a-z_]*link>[^<]*$/i.test(before);
+      if (names.has(m[1].trim()) && !insideLink) hits.push(key);
+    }
   }
   return hits;
 }
