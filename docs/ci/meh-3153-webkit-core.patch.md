@@ -3,7 +3,7 @@
 **Who applies it:** Claude in Chrome, in GitHub's web editor, on the PR branch
 (`.github/**` is denied to Claude Code, security.md). The whole change is the
 diff at the end. The patched `.github/workflows/e2e.yml` has sha256
-`bdf0fda5c457ec34fa7bbe593a6d4da197f6391986b0f2d24ec67ca71e16bd3d`.
+`4c36ed670b04fcacd2f4dddee77ba7d24ae3fbf25f9e0bc87679f9659af1a813`.
 
 ## What it does
 
@@ -52,6 +52,17 @@ One `ubuntu-latest` job per staging push and per labelled PR, ~10 minutes
 (build plus 50 tests on 2 workers). In private mode it runs on the self-hosted
 runner only for a labelled PR, the same as the Chromium suite.
 
+**Load on staging.** A push or manual run joins `e2e-staging-backend-webkit`,
+the queue the nightly shadow job already holds (`queue: max`), so it waits for
+that job instead of loading the one Railway backend beside it (MEH-2398). A PR
+run gets its own group, the same shape as the Chromium shards on a PR.
+
+**Risk, stated plainly.** The list rests on two clean nights. The job runs
+with `--fail-on-flaky-tests`, so one flaky test reds it, and on a push that
+makes staging red under rule 41 until a green push run lands. If that happens,
+the flaky spec comes off the list in a normal PR with a card, rather than the
+gate being loosened.
+
 ## How to check it after it lands
 
 - The PR that carries this patch has `run-e2e`, so its own run must show the
@@ -63,8 +74,8 @@ runner only for a labelled PR, the same as the Chromium suite.
 
 ```diff
 --- e2e.orig.yml	2026-11-20 22:45:35.674249016 +0000
-+++ e2e.yml	2026-11-20 22:46:13.984482185 +0000
-@@ -1083,6 +1083,166 @@
++++ e2e.yml	2026-11-20 22:54:57.114698632 +0000
+@@ -1083,6 +1083,171 @@
              frontend/test-results/**/trace.zip
            retention-days: 7
  
@@ -75,9 +86,10 @@ runner only for a labelled PR, the same as the Chromium suite.
 +  # nothing. This one runs only the specs in frontend/e2e/webkit-core.txt (core
 +  # pages, green on the nightly runs it was chosen from) and it DOES vote:
 +  #   - it is a leg of `E2E gate` (needs + check below), so a red here reds the
-+  #     required check on a PR and on the staging push;
++  #     required check on a PR, and on a staging push where the gate posts
++  #     (the gate posts nothing on a push whose Chromium suite skipped);
 +  #   - scripts/ci/staging_health.py counts a red run of it as a red staging
-+  #     (rule 41), also on a push where the Chromium suite skipped.
++  #     (rule 41) on every push, including the ones where the gate is silent.
 +  #
 +  # When it runs:
 +  #   - every push to staging, PUBLIC mode only (in private mode a push runs
@@ -100,11 +112,15 @@ runner only for a labelled PR, the same as the Chromium suite.
 +    runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
 +    timeout-minutes: 30
 +    needs: filter
-+    # One run at a time against staging per PR (or for staging pushes). The
-+    # workflow-level group already cancels a PR's older run.
++    # Same shape as the Chromium shards: a PR run gets its own group (the
++    # workflow-level group already cancels a PR's older run); a push or manual
++    # run joins the staging-backend queue the shadow WebKit job uses, so it
++    # waits for it instead of loading the one Railway backend in parallel
++    # (MEH-2398). queue: max so a waiting run is queued, never cancelled.
 +    concurrency:
-+      group: ${{ github.event_name == 'pull_request' && format('e2e-webkit-core-pr-{0}', github.run_id) || 'e2e-webkit-core-staging' }}
++      group: ${{ github.event_name == 'pull_request' && format('e2e-webkit-core-pr-{0}', github.run_id) || 'e2e-staging-backend-webkit' }}
 +      cancel-in-progress: false
++      queue: max
 +    if: |
 +      ((github.event_name == 'push' && !(vars.CI_MODE == 'private' || github.event.repository.private)) ||
 +       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
@@ -231,7 +247,7 @@ runner only for a labelled PR, the same as the Chromium suite.
    e2e-gate:
      name: E2E gate 
      # MEH-3453: in private mode no gate job where nothing was meant to run; never on the weekly WebKit cron.
-@@ -1096,7 +1256,8 @@
+@@ -1096,7 +1261,8 @@
      # change), publish no gate status at all instead of a fresh `success` on
      # the staging tip. PRs are untouched. If the paths filter itself failed the
      # gate still runs, so its R_FILTER guard can go red.
@@ -241,7 +257,7 @@ runner only for a labelled PR, the same as the Chromium suite.
      runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
      timeout-minutes: 3
      steps:
-@@ -1104,6 +1265,10 @@
+@@ -1104,6 +1270,10 @@
          env:
            R_FILTER: ${{ needs.filter.result }}
            R_E2E: ${{ needs.e2e.result }}
@@ -252,7 +268,7 @@ runner only for a labelled PR, the same as the Chromium suite.
            FRONTEND_TOUCHED: ${{ needs.filter.outputs.frontend }}
            # MEH-2956: the backend output only starts the suite on a PR (push
            # runs test Railway staging and ignore it, MEH-2973), so it only
-@@ -1160,6 +1325,14 @@
+@@ -1160,6 +1330,14 @@
              check "Playwright E2E (Vercel preview)" "$R_E2E"
            fi
  

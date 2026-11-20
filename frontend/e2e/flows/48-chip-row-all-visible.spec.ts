@@ -21,10 +21,11 @@ import { israelToday } from "../../lib/israel-date";
  *           pin does not. Measured 20/11 against a local build, 3 runs each:
  *           with the fix, 9/9 green in webkit-iphone13 and in mobile; with the
  *           MEH-2823 pin reverted (mount-only, no rAF), /events red 3/3 in both
- *           engines («הכל» at x=538–595 in a 16–374 row). /favorites stayed
- *           green with the fix reverted (its row overflows from its first
- *           render, and the mount pin alone covers the emulated re-snap), and
- *           /producers did not overflow on the local data. Both are kept as
+ *           engines («הכל» at x=538–595 in a 16–374 row), and /events is now
+ *           required to overflow before it measures, so a row that never
+ *           overflowed cannot pass silently. /favorites stayed green with the
+ *           fix reverted because its row does not overflow at 390 px (its
+ *           chips fit), and /producers did not overflow on the local data. Both are kept as
  *           coverage of the card's surfaces, not as the red-proof. This is an emulation of the engine bug, not
  *           the bug: only a real iPhone shows the real one.
  * Touches:  /favorites: /api/auth/me, /api/users/me/favorites, /api/users/me/saved*
@@ -107,11 +108,22 @@ function chipRow(page: Page) {
     .first();
 }
 
-/** Measure «הכל» against the row's own scroll box, after the row settles. */
-async function settledGeometry(page: Page): Promise<RowGeometry> {
+/** Measure «הכל» against the row's own scroll box, after the row settles.
+ *  `mustOverflow`: the stubbed pages wait for the row to overflow first. A
+ *  row measured before it overflows never meets the emulated re-snap, and
+ *  would pass with the fix reverted (rule MEH-1619: a guard that can't fail). */
+async function settledGeometry(page: Page, mustOverflow = false): Promise<RowGeometry> {
   const row = chipRow(page);
   await expect(row).toBeVisible();
-  return row.evaluate(async (toolbar, frames) => {
+  if (mustOverflow) {
+    await expect
+      // ChipScrollRow mounts its end spacer only when it measured overflow.
+      .poll(() => row.evaluate((el) => !!el.querySelector(':scope > [aria-hidden="true"]:not([data-roving-chip])')), {
+        message: "the chip row never overflowed, so this run proves nothing about the re-snap",
+      })
+      .toBe(true);
+  }
+  return row.evaluate(async (toolbar, [frames, label]) => {
     const scroller = /** scroll container = the toolbar or its nearest scrolling ancestor */ (
       (el: HTMLElement | null): HTMLElement => {
         let cur = el;
@@ -124,7 +136,13 @@ async function settledGeometry(page: Page): Promise<RowGeometry> {
       }
     )(toolbar as HTMLElement);
     for (let i = 0; i < frames; i++) await new Promise((r) => requestAnimationFrame(r));
-    const all = toolbar.querySelector("button[data-roving-chip]") as HTMLElement;
+    // The reset chip by its name, not "the first chip": a reorder would
+    // otherwise measure another chip and stay green.
+    const re = new RegExp(label);
+    const all = Array.from(toolbar.querySelectorAll<HTMLElement>("button[data-roving-chip]")).find((b) =>
+      re.test((b.textContent || "").trim()),
+    );
+    if (!all) throw new Error(`no chip matching ${label} in the row`);
     const c = all.getBoundingClientRect();
     const s = scroller.getBoundingClientRect();
     return {
@@ -135,7 +153,7 @@ async function settledGeometry(page: Page): Promise<RowGeometry> {
       rowStart: s.left,
       rowEnd: s.right,
     };
-  }, SETTLE_FRAMES);
+  }, [SETTLE_FRAMES, ALL_LABEL.source] as const);
 }
 
 function expectAllInside(g: RowGeometry) {
@@ -185,7 +203,7 @@ test.describe("MEH-3153 — «הכל» is visible right after load", () => {
     }));
     await page.route(/\/api\/events(?:\?|$)/, (route) => json(route, rows));
     await page.goto("/events");
-    const g = await settledGeometry(page);
+    const g = await settledGeometry(page, true);
     test.info().annotations.push({ type: "overflow", description: String(g.overflow) });
     expectAllInside(g);
   });
@@ -225,6 +243,8 @@ test.describe("MEH-3153 — «הכל» is visible right after load", () => {
       );
     });
     await page.goto("/favorites");
+    // Not required to overflow: measured 20/11 after the review, its five
+    // filter chips fit the 390 px row, so this is coverage, not red-proof.
     const g = await settledGeometry(page);
     test.info().annotations.push({ type: "overflow", description: String(g.overflow) });
     expectAllInside(g);

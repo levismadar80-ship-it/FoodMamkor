@@ -998,6 +998,7 @@ Secrets and variables → Actions → Variables); **public** otherwise.
 | E2E on push to staging | yes, 2 shards | none |
 | Nightly 01:30 UTC | Chromium + WebKit, skipped when staging is unchanged since a green run (MEH-3507) | Chromium, same skip |
 | WebKit | nightly | weekly, Sunday 02:30 UTC |
+| WebKit core, blocking (MEH-3153) | every push to staging + every `run-e2e` PR | every `run-e2e` PR only |
 | pytest / vitest | 3 shards each | 1 shard each |
 
 In private mode a red staging is seen only by the nightly run, so
