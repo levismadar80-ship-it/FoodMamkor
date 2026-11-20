@@ -2150,6 +2150,16 @@ POST /upload/owner-photo/{producer_id}  admin — MEH-3338: the same upload for 
                                  `_store_owner_photo`: same size cap, magic-byte sniff, fixed slot.
                                  Owner → 403 (she has the route above); unknown business → 404. 30/hr.
                                  `ProducerAdminCreate` also accepts `owner_bio` (sanitized, ≤300).
+POST /upload/product-image/{product_id}  admin — MEH-3456: the admin uploads or replaces the photo
+                                 of ANY business's product (live page or ownerless draft). Same
+                                 `read_validated_image` (5MB cap + magic-byte sniff) as every upload
+                                 route, stored like /upload/image (uploader's own folder, MEH-3247);
+                                 writes products.image_url, destroys the old image after commit.
+                                 Non-admin (owner included) → 403; unknown product → 404. 60/hr.
+                                 Logged in admin_audit_log (target product). Returns {url}.
+                                 Any product, an import draft included. The URL sits in the admin's
+                                 folder: the owner keeps it on that product (grandfathered) but cannot
+                                 reuse it on another product or her gallery (403, MEH-3247).
 ```
 
 > **Destroying an old photo (MEH-3247).** Every post-commit cleanup
