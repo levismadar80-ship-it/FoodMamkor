@@ -189,6 +189,8 @@ function capSections(sections, limit) {
  *   rows: object[],
  *   t: (key: string, values?: Record<string, string | number>) => string,
  *   feeOf?: (da: object) => number | null,
+ *   days?: string[] | null,
+ *   producer?: object | null,
  * }} props
  */
 function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer = null }) {
