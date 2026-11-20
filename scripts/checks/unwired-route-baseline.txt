@@ -4,7 +4,6 @@
 # gets a caller (or is deleted) must leave it, and a new unwired route fails.
 #
 # --- the scanner misses a call built from a variable; DETAIL is the real caller
-GET	/producers/cities	scanner-miss	frontend/app/sitemap.js
 GET	/producers/by-slug/{_}	scanner-miss	frontend/app/[locale]/[slug]/page.js
 POST	/delivery-waitlist/unsubscribe	scanner-miss	frontend/app/[locale]/delivery-waitlist/unsubscribe/UnsubscribeClient.jsx
 GET	/producers/{_}/kashrut-cert/{_}	scanner-miss	frontend/components/KashrutBadgeStrip.jsx
@@ -38,11 +37,11 @@ PUT	/producers/me/product-order	scanner-miss	frontend/components/ProductOrganize
 PUT	/producers/me/products/{_}/group	scanner-miss	frontend/components/ProductOrganizer.jsx
 PUT	/producers/me/product-groups/assign	scanner-miss	frontend/components/ProductOrganizer.jsx
 POST	/producers/me/product-groups/suggest	scanner-miss	frontend/components/ProductGroupSuggest.jsx
-GET	/health	scanner-miss	frontend/app/[locale]/admin/page.js
 #
 # --- outside callers
 GET	/webhook/whatsapp	webhook
 POST	/webhook/whatsapp	webhook
+GET	/health	health
 GET	/health/places	health
 GET	/health/liveness	health
 GET	/health/readiness	health
@@ -59,6 +58,7 @@ GET	/admin/rescue/metrics	admin-no-ui	MEH-3524
 POST	/admin/reports/{_}/resolve	admin-no-ui	MEH-3524
 PUT	/admin/producers/{_}/order-settings/alcohol	admin-no-ui	MEH-3524
 GET	/organizers	unused	MEH-3527
+GET	/producers/cities	unused	MEH-3527
 GET	/admin/producers/pending	unused	MEH-3527
 GET	/admin/recipes/pending	unused	MEH-3527
 POST	/admin/producers/{_}/set-ambassador	unused	MEH-3527

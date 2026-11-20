@@ -112,12 +112,25 @@ def parse_baseline(text: str) -> tuple[dict[tuple[str, str], tuple[str, str, int
     return rows, errors
 
 
+_BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+# `//` at line start or after whitespace: a comment. Not `https://` inside a string.
+_LINE_COMMENT = re.compile(r"(^|\s)//[^\n]*")
+
+
+def strip_comments(src: str) -> str:
+    """JS/JSX source minus comments, so a path named only in prose (MEH-3523
+    review: sitemap.js explained why it did NOT call /producers/cities) does
+    not count as a caller."""
+    return _LINE_COMMENT.sub(r"\1", _BLOCK_COMMENT.sub("", src))
+
+
 def check_scanner_miss(path: str, detail: str, where: str) -> str | None:
     target = REPO / detail
     if not target.is_file():
         return f"{where}: scanner-miss file {detail} does not exist"
-    body = target.read_text(encoding="utf-8", errors="replace")
-    missing = [s for s in required_literals(path) if s not in body]
+    body = strip_comments(target.read_text(encoding="utf-8", errors="replace"))
+    # Path-shaped: `/cities`, not the word `cities` in a variable name.
+    missing = [s for s in required_literals(path) if f"/{s}" not in body]
     if missing:
         return f"{where}: {detail} does not contain {missing} — is it really the caller of {path}?"
     return None
@@ -167,12 +180,24 @@ def self_test() -> int:
         ("scanner-miss, wrong file → red",
          {("GET", "/producers/me/weekly-summary"): ("r.py", 1)},
          "GET\t/producers/me/weekly-summary\tscanner-miss\tfrontend/components/ShareButton.jsx\n", 1),
+        # Real repo file: sitemap.js names /producers/cities only in comments.
+        ("scanner-miss, named only in a comment → red",
+         {("GET", "/producers/cities"): ("r.py", 1)},
+         "GET\t/producers/cities\tscanner-miss\tfrontend/app/sitemap.js\n", 1),
+        ("strip_comments keeps code, drops prose", None, None, None),
         ("scanner-miss, missing file → red",
          {("GET", "/producers/me/weekly-summary"): ("r.py", 1)},
          "GET\t/producers/me/weekly-summary\tscanner-miss\tfrontend/nope.jsx\n", 1),
     ]
     failed = 0
     for name, f, text, want in cases:
+        if f is None:
+            src = 'const u = "https://x/a"; // calls /cities\n/* /cities */ api.get(`/cities`)'
+            out = strip_comments(src)
+            verdict = "https://x/a" in out and out.count("/cities") == 1
+            print(f"{'ok  ' if verdict else 'FAIL'} {name}")
+            failed += 0 if verdict else 1
+            continue
         got = len(evaluate(f, text))
         verdict = (got == 0) if want == 0 else (got >= want)
         print(f"{'ok  ' if verdict else 'FAIL'} {name} (errors={got})")
