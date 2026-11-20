@@ -55,7 +55,11 @@ export default function ChatWidgetLazy() {
   // the card's CTA/channels at 375. A second mark on the inline card is needed
   // first (outside MEH-2835's file list — open for Sapir). The sticky bar
   // already carries data-chat-hide, ready for that switch.
-  if (isProducerDetail(pathname)) return null;
+  // MEH-3489: the business page mounts the widget WITHOUT a launcher — the
+  // floating button stays off (MEH-1168); a button inside the page opens the
+  // panel for that business (BusinessChatPrompt). Keyed by path, so the
+  // conversation about one business never carries to another page.
+  if (isProducerDetail(pathname)) return <ChatWidget key={`business:${pathname}`} businessOnly />;
   // MEH-1203: /favorites is the third page where the FAB does damage — at the
   // canonical 2-col grid the launcher's bottom-END corner (insetInlineEnd,
   // z-9999) sits over the first card. Same pathname-gate pattern as /map and

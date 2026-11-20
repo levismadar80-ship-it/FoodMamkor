@@ -14,7 +14,8 @@ Does NOT: call the model or phrase anything (routers/chat.py does), run the
 Related:  routers/producers.py get_producer (the same "is a public business"
           rule, services/producer_listing.is_business); frontend/lib/hours.js
           parseHours (the grammar ported in _parse_hours).
-History:  MEH-3481 (creation)
+History:  MEH-3481 (creation); MEH-3489 (the business page the chat
+          was opened from: by_id, find(page_producer_id))
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
 
@@ -31,8 +33,8 @@ from app.data.cities import CITY_ALIASES, ISRAEL_CITIES, canonical_city, city_ke
 from app.models import Producer
 from app.models.product_orders import ProducerOrderSettings
 from app.schemas.catalog import ProductOut
-from app.services.product_order_menu import takes_orders
 from app.services.producer_listing import is_business
+from app.services.product_order_menu import takes_orders
 from app.utils.clock import israel_now, israel_today
 
 MAX_PRODUCTS = 60  # a page's worth; keeps the prompt bounded
@@ -113,14 +115,27 @@ def _from_name(db: Session, text: str) -> Producer | None:
     return _loaded(db).filter(Producer.id == ids.pop()).first()  # type: ignore[no-any-return]
 
 
-def find(db: Session, questions: list[str]) -> Producer | None:
+def by_id(db: Session, producer_id: UUID) -> Producer | None:
+    """MEH-3489: the business page the chat was opened from. Public
+    businesses only, the same rule as a name match."""
+    return (  # type: ignore[no-any-return]
+        _loaded(db).filter(is_business(), Producer.id == producer_id).first()
+    )
+
+
+def find(
+    db: Session, questions: list[str], page_producer_id: UUID | None = None
+) -> Producer | None:
     """The one business the visitor's latest questions name, newest first.
-    Not the page she is on: the chat is not shown on a business page
-    (MEH-1168)."""
+    A business named in a question wins over the page she asked from
+    (MEH-3489: «ויש להם משלוח?» on page A means A; «ומה עם מאפיית ב?» means
+    B). With no name, the page."""
     for question in questions[:QUESTION_TURNS]:
         producer = _from_name(db, question)
         if producer is not None:
             return producer
+    if page_producer_id is not None:
+        return by_id(db, page_producer_id)
     return None
 
 

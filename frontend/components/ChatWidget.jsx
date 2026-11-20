@@ -1,13 +1,14 @@
 // @ts-check
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
 import { INERT_PRESENT } from "@/lib/inert-attr";
 import { COLOR } from "@/lib/color-tokens";
+import { useBusinessChatRequest } from "@/lib/business-chat";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -88,12 +89,22 @@ const SUGGESTED_PROMPT_IDS = [
 // they're registering. That copy now lives verbatim at chat.answers.*.
 const ANSWERED_PROMPT_IDS = new Set(["register", "find_nearby"]);
 
+// MEH-3489: the business-page chat's suggested questions. None is canned —
+// each goes to the model with the page's facts (routers/chat.py).
+const BUSINESS_PROMPT_IDS = ["hours", "delivery", "gluten"];
+
 // MEH-2835: the mobile launcher is `w-12 h-12` (48px); + the 16px gap it keeps
 // above the BottomNav pill.
 const CHAT_FAB_CLEARANCE_VAR = "--chat-fab-clearance";
 const CHAT_FAB_CLEARANCE = "64px";
 
-export default function ChatWidget({ hideOnMobile = false } = {}) {
+/**
+ * @param {{ hideOnMobile?: boolean, businessOnly?: boolean }} [props]
+ * businessOnly (MEH-3489, the business page): no launcher at all; the panel
+ * opens only when the page asks (lib/business-chat.js), scoped to that
+ * business.
+ */
+export default function ChatWidget({ hideOnMobile = false, businessOnly = false } = {}) {
   const t = useTranslations("chat");
   // MEH-1981: notice-at-collection. The line names Anthropic itself — "to whom
   // the data is passed" is a mandatory §11 item, not something a link can
@@ -111,6 +122,11 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([openingMessage]);
+  // MEH-3489: the business the panel is scoped to (null = the site chat).
+  // The opening line is kept in a ref so the API filter below drops it by
+  // reference, whichever opening is showing.
+  const [business, setBusiness] = useState(/** @type {{ id: string, name: string } | null} */ (null));
+  const openingRef = useRef(openingMessage);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -237,6 +253,23 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
     catch (e) { setWasOpened(false); }
   }, []);
 
+  // MEH-3489: a business page asked for its chat — a fresh conversation about
+  // that business (a site conversation is not carried into it).
+  const tBusiness = useTranslations("chat.business");
+  const businessIdRef = useRef(/** @type {string | null} */ (null));
+  const openForBusiness = useCallback((next) => {
+    if (businessIdRef.current !== next.id) {
+      businessIdRef.current = next.id;
+      const opening = { role: "assistant", content: tBusiness("opening", { name: next.name }) };
+      openingRef.current = opening;
+      setMessages([opening]);
+      setError("");
+      setBusiness(next);
+    }
+    setOpen(true);
+  }, [tBusiness]);
+  useBusinessChatRequest(openForBusiness);
+
   const handleOpen = () => {
     setOpen(true);
     if (!wasOpened) {
@@ -276,7 +309,8 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
     const nextMessages = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
     setInput("");
-    const answeredId = promptId || promptIdByLabel[trimmed];
+    // MEH-3489: no canned site answers inside a business conversation.
+    const answeredId = business ? undefined : promptId || promptIdByLabel[trimmed];
     if (answeredId && ANSWERED_PROMPT_IDS.has(answeredId)) {
       setMessages((prev) => [...prev, { role: "assistant", content: t(`answers.${answeredId}`) }]);
       return;
@@ -284,9 +318,11 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
     setSending(true);
     try {
       const apiMessages = nextMessages
-        .filter((m, i) => !(i === 0 && m === openingMessage))
+        .filter((m, i) => !(i === 0 && m === openingRef.current))
         .map(({ role, content }) => ({ role, content }));
-      const res = await api.post("/chat", { messages: apiMessages });
+      // MEH-3489: the page's business travels with the question.
+      const payload = business ? { messages: apiMessages, producer_id: business.id } : { messages: apiMessages };
+      const res = await api.post("/chat", payload);
       const reply = res.data?.reply || t("fallback_reply");
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (e) {
@@ -350,14 +386,16 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   if (!viewportKnown) return null;
   // MEH-2512: form pages (ChatWidgetLazy) keep the launcher off phones.
   if (hideOnMobile && !isDesktop) return null;
+  // MEH-3489: the business page has no floating button (MEH-1168).
+  if (businessOnly && !open) return null;
 
   // Desktop pill with text on first visit, icon-only after; mobile always icon-only.
   const showPillText = isDesktop && !wasOpened;
 
   return (
     <>
-      {/* ── Launcher ── */}
-      <button
+      {/* ── Launcher ── (none on the business page, MEH-3489) */}
+      {!businessOnly && <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
         style={launcherStyle}
@@ -392,7 +430,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       >
         {open ? <X size={24} weight="bold" /> : <ChatCircleDots size={24} />}
         {showPillText && !open && <span className="font-body-md text-sm">{t("launcher_pill")}</span>}
-      </button>
+      </button>}
 
       {/* ── Chat panel ── */}
       {open && (
@@ -405,9 +443,11 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         >
           {/* Header */}
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ChatCircleDots size={20} aria-hidden="true" />
-              <span className="font-headline-md font-bold text-base">{t("panel_title")}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <ChatCircleDots size={20} aria-hidden="true" className="flex-shrink-0" />
+              <span className="font-headline-md font-bold text-base truncate">
+                {business ? tBusiness("panel_title", { name: business.name }) : t("panel_title")}
+              </span>
             </div>
             <button
               type="button"
@@ -452,10 +492,10 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             )}
             {messages.length === 1 && !sending && (
               <div className="flex flex-col gap-2 pt-1">
-                {SUGGESTED_PROMPT_IDS.map((id) => {
-                  const label = t(`prompts.${id}`);
+                {(business ? BUSINESS_PROMPT_IDS : SUGGESTED_PROMPT_IDS).map((id) => {
+                  const label = business ? tBusiness(`prompts.${id}`) : t(`prompts.${id}`);
                   return (
-                    <button key={id} type="button" onClick={() => sendMessage(label, id)}
+                    <button key={id} type="button" onClick={() => sendMessage(label, business ? undefined : id)}
                       className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary"
                     >{label}</button>
                   );
