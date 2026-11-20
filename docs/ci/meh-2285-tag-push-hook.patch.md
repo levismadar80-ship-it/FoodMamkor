@@ -1,3 +1,5 @@
+> **Status: NOT APPLIED, declined 20/11/2026.** Hunk 1 exits 0 when `--tags` or a `refs/tags/` token appears anywhere in the push, so `git push origin <non-conforming-branch> --tags` would skip the branch check. That is wider than the stated intent. Tag pushes stay a human step. A version that exits only when every pushed ref is a tag would need a new card.
+
 # `check-branch-name.sh` — exempt tag pushes (MEH-2285)
 
 **Status: STAGED, not applied.** `.claude/hooks/**` is CC-deny, so this is Sapir's paste.
