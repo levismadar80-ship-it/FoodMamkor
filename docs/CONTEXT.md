@@ -9,7 +9,7 @@
 
 ## 1 · What Mehamakor is
 
-Mehamakor (`mehamakor.co.il` — the canonical production origin, MEH-1322; staging is `staging.mehamakor.online`) is a Hebrew-RTL editorial directory for Israeli local food businesses. Magazine, not marketplace. Licensing is two-tier (ADR-022, §2): the license decides the badge, not entry.
+Mehamakor (`mehamakor.co.il` — the canonical production origin, MEH-1322; staging is `staging.mehamakor.co.il` since MEH-3405) is a Hebrew-RTL editorial directory for Israeli local food businesses. Magazine, not marketplace. Licensing is two-tier (ADR-022, §2): the license decides the badge, not entry.
 
 **Founder + developer:** Sapir Levi (solo).
 

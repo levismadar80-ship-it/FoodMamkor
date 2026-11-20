@@ -48,7 +48,7 @@ All three live on the free tier. Total checks/day: `3 × (1440/5) = 864` — ord
 |---|---|---|---|---|---|---|
 | 1 | `backend-health` | `https://foodmamkor-production.up.railway.app/health` | HTTPS | 5 min | HTTP 200 | FastAPI health endpoint; cheapest possible probe, no DB read |
 | 2 | `backend-producers` | `https://foodmamkor-production.up.railway.app/producers?page_size=1` | HTTPS | 5 min | HTTP 200, response body contains `"producers"` | Smoke-test that DB is reachable and query path works |
-| 3 | `frontend-home` | `https://mehamakor.online/` | HTTPS | 5 min | HTTP 200 | Vercel frontend reachable; catches CDN / deploy / DNS issues |
+| 3 | `frontend-home` | `https://mehamakor.co.il/` | HTTPS | 5 min | HTTP 200 | Vercel frontend reachable; catches CDN / deploy / DNS issues |
 
 For monitor 2, use UptimeRobot's **Keyword** monitor type so a 200 with an empty/error JSON body still alerts. The keyword field: `producers`.
 
@@ -106,7 +106,7 @@ Cap each branch at 5 steps per `<constraints>` in MEH-563.
 
 ### Alert: monitor 3 (`frontend-home`) DOWN, monitors 1 + 2 GREEN
 1. Frontend-only. Backend is fine.
-2. Vercel dashboard → mehamakor.online → check most recent deployment status.
+2. Vercel dashboard → project `food-mamkor` → check most recent deployment status.
 3. If most recent deploy failed: roll back via Vercel UI to the last green deployment.
 4. If deploys are green but the site is 5xx: check Vercel status (<https://www.vercel-status.com>).
 5. Severity: SEV-1 (site visibly down) per `docs/BUG_SEVERITY.md`.
