@@ -82,7 +82,7 @@ export default function AreaTermsRow({ rows, fee = null, next = null }) {
         {towns}
         {zone ? (
           <span
-            className="ms-1.5 inline-block rounded-full bg-gray-100 px-2 py-0.5 align-middle text-xs font-normal text-fg-muted"
+            className="ms-1.5 inline-block rounded-full bg-background-alt px-2 py-0.5 align-middle text-xs font-normal text-fg-muted"
             data-testid="area-zone-tag"
           >
             {zone}
