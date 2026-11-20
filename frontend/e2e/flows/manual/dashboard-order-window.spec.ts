@@ -221,19 +221,27 @@ test.describe("order-window card — several ranges per day", () => {
   test("the X removes only its own range, and the last range cannot be removed", async ({ page }) => {
     await stubEdit(page);
     await openWindow(page);
+    // MEH-3519: each click re-renders the card (a new row; on the first one the
+    // unsaved banner too), so the next button moves. Gate every click on a
+    // settled layout, as the cap test above does (MEH-3449). Without it the
+    // second add-click was lost on CI and row 3 never appeared (line 227).
+    await layoutSettled(addRange(page, 0));
     await addRange(page, 0).click();
     await expect(from(page, SUN, 2)).toBeVisible(); // MEH-3434: same double-click shape as the cap test
+    await layoutSettled(addRange(page, 0));
     await addRange(page, 0).click();
     await expect(from(page, SUN, 3)).toBeVisible();
     await from(page, SUN, 3).fill("18:00");
     await to(page, SUN, 3).fill("21:00");
 
+    await layoutSettled(page.getByTestId("order-window-remove-0-1"));
     await page.getByTestId("order-window-remove-0-1").click();
     await expect(from(page, SUN, 3)).toHaveCount(0);
     await expect(from(page, SUN, 1)).toHaveValue("09:00");
     await expect(from(page, SUN, 2)).toHaveValue("18:00");
     await expect(to(page, SUN, 2)).toHaveValue("21:00");
 
+    await layoutSettled(page.getByTestId("order-window-remove-0-1"));
     await page.getByTestId("order-window-remove-0-1").click();
     await expect(from(page, SUN, 2)).toHaveCount(0);
     await expect(removeBtns(page)).toHaveCount(0);

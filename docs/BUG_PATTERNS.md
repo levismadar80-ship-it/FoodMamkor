@@ -252,3 +252,28 @@ CC session with no live backend/Sentry access. Left for a session that can
 verify a real event lands in the dashboard before claiming Done.
 
 **Regression spec:** `frontend/__tests__/MiddlewareSlugErrorSeparation.test.jsx`.
+
+## A full-screen overlay with no scrim must cover the VISUAL viewport (MEH-3509)
+
+**Symptom:** iPhone, business page: the fullscreen map opened with no X, no
++/− and no OSM credit on screen, and nothing closed it.
+
+**Root cause:** `fixed inset-0` is the LAYOUT viewport. After a pinch on the
+page (the inline mini map has its gestures off, so a pinch on it zooms the
+whole page) or with iOS 26 drift (`IosViewportPin.jsx`), the visible window is
+a smaller part of it, so a control in the overlay's corner is off-screen. The
+map then takes every touch, so the page cannot be zoomed back out either.
+
+**Fix:** `lib/use-visual-viewport-box.js` gives the overlay the visual
+viewport's box (`offsetTop/offsetLeft/width/height`, with `right/bottom: auto`
+so an RTL document does not drop `left`). `MiniMap.jsx` uses it and re-fits
+the map when the box changes.
+
+**Siblings, not changed (checked 20/11, 14 sites):** the other `fixed inset-0`
+overlays either close on a backdrop tap (scrims, `Lightbox.jsx`) or hold
+nothing that captures the pinch (`RegistrationOverlays.jsx`), so the page can
+still be zoomed back out and the way out found. A new overlay
+that fills the screen with something that eats every touch (a map, a canvas,
+an image viewer) uses the hook.
+
+**Regression spec:** `frontend/__tests__/MiniMap.test.jsx` «MEH-3509».

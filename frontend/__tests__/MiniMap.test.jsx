@@ -56,7 +56,16 @@ vi.mock("react-leaflet", async () => {
 
   const makeMapStub = () => ({
     setView: () => {},
-    fitBounds: () => {},
+    fitBoundsCalls: 0,
+    fitBounds() {
+      this.fitBoundsCalls += 1;
+    },
+    // MEH-3509: counted, so a test can prove the overlay map is re-measured
+    // when the visible box it sits in changes.
+    invalidateSizeCalls: 0,
+    invalidateSize() {
+      this.invalidateSizeCalls += 1;
+    },
     dragging: makeHandler(),
     touchZoom: makeHandler(),
     doubleClickZoom: makeHandler(),
@@ -853,5 +862,168 @@ describe("MEH-2148 — the mini-map contains its own z-index", () => {
 
     expect(isolatedWrapper.contains(overlay)).toBe(false);
     expect(zTokenOf(overlay.className)).toBeGreaterThan(1100);
+  });
+});
+
+// MEH-3509 — Sapir, iPhone, 20/11: the fullscreen overlay opened with no X, no
+// +/− and no attribution on screen, and nothing closed it. The overlay was
+// `fixed inset-0`, i.e. sized to the LAYOUT viewport. When the page is
+// pinch-zoomed (a pinch on the gesture-less inline map zooms the page) or iOS
+// 26 has drifted the layout viewport, the VISUAL viewport is a smaller window
+// inside it, so the X at the overlay's top corner was off-screen, and every
+// touch inside the overlay went to Leaflet, so the page could not be zoomed
+// back out. The overlay now covers the visual viewport exactly.
+describe("MEH-3509 — the fullscreen overlay covers what is on screen", () => {
+  const EXPAND_LABEL = "הגדלת המפה למסך מלא";
+  const CLOSE_LABEL = "סגירת המפה במסך מלא";
+  let original;
+
+  const fakeViewport = (box) => {
+    const listeners = {};
+    return {
+      ...box,
+      listeners,
+      addEventListener(type, fn) {
+        (listeners[type] ||= []).push(fn);
+      },
+      removeEventListener(type, fn) {
+        listeners[type] = (listeners[type] ?? []).filter((f) => f !== fn);
+      },
+      fire(type) {
+        for (const fn of listeners[type] ?? []) fn();
+      },
+    };
+  };
+
+  beforeEach(() => {
+    leafletStubs.maps.length = 0;
+    original = Object.getOwnPropertyDescriptor(window, "visualViewport");
+  });
+
+  const restore = () => {
+    if (original) Object.defineProperty(window, "visualViewport", original);
+    else delete window.visualViewport;
+  };
+
+  const setViewport = (value) =>
+    Object.defineProperty(window, "visualViewport", { value, configurable: true });
+
+  // Two points, so the overlay frames them with fitBounds (one point → setView).
+  const twoPoints = [
+    { id: "a", kind: "branch", label: "סניף", lat: 32.08, lng: 34.78, is_primary: true },
+    { id: "b", kind: "pickup", label: "איסוף", lat: 32.32, lng: 34.85, is_primary: false },
+  ];
+  const openOverlay = () => {
+    render(<MiniMap lat={32.08} lng={34.78} name="השיקוי" locations={twoPoints} />);
+    fireEvent.click(screen.getAllByLabelText(EXPAND_LABEL)[0]);
+    return screen.getByRole("dialog");
+  };
+
+  it("a pinch-zoomed page: the overlay sits on the visible window, not on the layout viewport", () => {
+    // Page zoomed ×2 and panned: the visible window is 195×422 css px, 300px
+    // down and 40px in. With `inset-0` alone the X (top corner) is outside it.
+    setViewport(fakeViewport({ offsetTop: 300, offsetLeft: 40, width: 195, height: 422, scale: 2 }));
+    try {
+      const dialog = openOverlay();
+      expect(dialog.style.top).toBe("300px");
+      expect(dialog.style.left).toBe("40px"); // rtl-ok: viewport geometry, not layout direction
+      expect(dialog.style.width).toBe("195px");
+      expect(dialog.style.height).toBe("422px");
+      // Over-constrained in an RTL document, `left` would be dropped.
+      expect(dialog.style.right).toBe("auto"); // rtl-ok: viewport geometry
+      expect(dialog.style.bottom).toBe("auto");
+      // The X is a child of that box, so it is on screen with it.
+      expect(within(dialog).getByLabelText(CLOSE_LABEL)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("follows the visible window when it moves, and re-measures the overlay map", () => {
+    // iOS drift: the visible window sits 200px down and is shorter.
+    const vv = fakeViewport({ offsetTop: 200, offsetLeft: 0, width: 390, height: 420, scale: 1 });
+    setViewport(vv);
+    try {
+      const dialog = openOverlay();
+      expect(dialog.style.top).toBe("200px");
+      expect(dialog.style.height).toBe("420px");
+      const overlayStub = leafletStubs.maps[Number(within(dialog).getByTestId("map").dataset.stubIndex)];
+      const before = overlayStub.invalidateSizeCalls;
+      const fitsBefore = overlayStub.fitBoundsCalls;
+
+      act(() => {
+        Object.assign(vv, { offsetTop: 120, height: 500 });
+        vv.fire("resize");
+      });
+      expect(dialog.style.top).toBe("120px");
+      expect(dialog.style.height).toBe("500px");
+      expect(overlayStub.invalidateSizeCalls).toBeGreaterThan(before);
+      // …and frames the points again in the new box, so none is cut off.
+      expect(overlayStub.fitBoundsCalls).toBeGreaterThan(fitsBefore);
+
+      act(() => {
+        Object.assign(vv, { offsetTop: 60 });
+        vv.fire("scroll");
+      });
+      expect(dialog.style.top).toBe("60px");
+    } finally {
+      restore();
+    }
+  });
+
+  it("healthy viewport (desktop, unzoomed phone): no inline box, inset-0 as before", () => {
+    // Full height, no zoom, no offset; narrower than innerWidth like a desktop
+    // with a classic scrollbar. Nothing to correct, so nothing is applied.
+    setViewport(
+      fakeViewport({ offsetTop: 0, offsetLeft: 0, width: window.innerWidth - 15, height: window.innerHeight, scale: 1 }),
+    );
+    try {
+      const dialog = openOverlay();
+      expect(dialog.style.top).toBe("");
+      expect(dialog.style.width).toBe("");
+      expect(dialog.className).toContain("inset-0");
+    } finally {
+      restore();
+    }
+  });
+
+  it("closed × zoomed: nothing listens and nothing is styled until it opens", () => {
+    const vv = fakeViewport({ offsetTop: 300, offsetLeft: 40, width: 195, height: 422, scale: 2 });
+    setViewport(vv);
+    try {
+      render(<MiniMap lat={32.08} lng={34.78} name="השיקוי" locations={twoPoints} />);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(vv.listeners.resize ?? []).toHaveLength(0);
+      expect(vv.listeners.scroll ?? []).toHaveLength(0);
+    } finally {
+      restore();
+    }
+  });
+
+  it("closed: no listener is left on the visual viewport", () => {
+    const vv = fakeViewport({ offsetTop: 300, offsetLeft: 40, width: 195, height: 422, scale: 2 });
+    setViewport(vv);
+    try {
+      openOverlay();
+      expect(vv.listeners.resize).toHaveLength(1);
+      fireEvent.click(screen.getByLabelText(CLOSE_LABEL));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(vv.listeners.resize).toHaveLength(0);
+      expect(vv.listeners.scroll).toHaveLength(0);
+    } finally {
+      restore();
+    }
+  });
+
+  it("no visualViewport (old browser): falls back to inset-0 with no inline box", () => {
+    setViewport(undefined);
+    try {
+      const dialog = openOverlay();
+      expect(dialog.className).toContain("inset-0");
+      expect(dialog.style.top).toBe("");
+      expect(dialog.style.height).toBe("");
+    } finally {
+      restore();
+    }
   });
 });
