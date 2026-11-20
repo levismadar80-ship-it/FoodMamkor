@@ -37,7 +37,9 @@ from app.services.producer_listing import is_business  # MEH-2459
 from app.services.page_freshness import stale_clause
 from app.services.producer_duplicates import attach_duplicate_signals  # MEH-3408
 from app.routers.producer_me import reconcile_secondary_phone  # MEH-3339
-from app.routers.producer_me import _apply_delivery_rows  # MEH-3475: one writer for structured rows
+from app.routers.producer_me import (
+    _apply_delivery_rows,
+)  # MEH-3475: one writer for structured rows
 from app.data.cities import canonical_city  # MEH-3475
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
@@ -139,7 +141,11 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -
     kept = {
         # Keyed canonically: a row stored before MEH-2602 may carry another
         # spelling of the same city.
-        (canonical_city(a.city) or a.city): (a.delivery_day, a.min_order, a.delivery_fee)
+        (canonical_city(str(a.city)) or str(a.city)): (
+            a.delivery_day,
+            a.min_order,
+            a.delivery_fee,
+        )
         for a in db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id)
     }
     db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
