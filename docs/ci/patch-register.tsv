@@ -45,12 +45,12 @@ meh-2202-uptime-workflow	unverified	-	-
 meh-2212-actions-cost	dead	-	-	case rested on private-repo billing; repo is public
 meh-2244-reconcile	unverified	-	-	
 meh-2244-stale	decision	.github/workflows/stale.yml	do-not-merge	stale.yml exists; the gap is do-not-merge exemption
-meh-2244	pending	.github/workflows/pr-checks.yml	PR_AUTHOR:	
+meh-2244	applied	.github/workflows/pr-checks.yml	PR_AUTHOR:	
 meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]refs/tags/	hook: Sapir only
 meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	
 meh-2749-post-deploy-checks	unverified	-	-	
 meh-2779-ci-sharding	unverified	-	-	
-meh-3151-pr-template	pending	.github/pull_request_template.md	Self-checks by the session	
+meh-3151-pr-template	applied	.github/pull_request_template.md	Self-checks by the session	
 meh-3153-webkit-alert	applied	.github/workflows/e2e.yml	Alert on a red WebKit night	
 meh-3308-pin-actions-sha	applied	.github/workflows/pr-checks.yml	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	
 meh-3507-nightly-skip	applied	.github/workflows/e2e.yml	nightly_unchanged	
