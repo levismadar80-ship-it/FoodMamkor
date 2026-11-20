@@ -7,8 +7,9 @@
 #           past its frozen count (warning only, pre-launch) — and when it
 #           shrinks, lower its number in the baseline.
 # Touches:  nothing — reads tracked files, prints file:line, exits 0/1.
-# Does NOT: count tests, alembic revisions (outside backend/app), scripts, or
-#           generated files (frontend/lib/generated/). Does not force anyone to split a file
+# Does NOT: count alembic revisions (outside backend/app) or generated
+#           files (frontend/lib/generated/). Tests and scripts are counted
+#           since 20/11/2026 (list_tests_and_scripts). Does not force anyone to split a file
 #           they are not touching.
 # Related:  scripts/checks/file-size-baseline.txt, .claude/rules/code-execution.md
 #           § File size.
@@ -28,6 +29,14 @@ list_sources() {
   git ls-files 'backend/app/*.py' 'frontend/app/*' 'frontend/components/*' 'frontend/lib/*' \
     | grep -E '\.(py|js|jsx|ts|tsx|mjs)$' \
     | grep -vE '(^|/)(__tests__|tests?|e2e)/|\.test\.|\.spec\.|^frontend/lib/generated/' || true
+}
+
+# list_tests_and_scripts — test files and scripts, under the same LIMIT
+# (20/11/2026: Sapir's "I blocked this — how did it happen?"; the guard had
+# covered product source only, and 11 test/script files had passed 1,500).
+list_tests_and_scripts() {
+  git ls-files 'tests/*.py' 'frontend/__tests__/*' 'frontend/e2e/*' 'scripts/*' 'backend/scripts/*' \
+    | grep -E '\.(py|js|jsx|ts|tsx|mjs|cjs|sh)$' || true
 }
 
 # check <file-list-on-stdin> — prints violations, returns 1 on a fail
@@ -66,8 +75,11 @@ fi
 files="$(list_sources)"
 count=$(printf '%s\n' "$files" | grep -c . || true)
 [ "$count" -gt 100 ] || { echo "file-size-ratchet: listed only $count source files — the listing is broken, every pass is void"; exit 1; }
-if printf '%s\n' "$files" | check; then
-  echo "file-size-ratchet: $count source files, none new over $LIMIT lines"
+tfiles="$(list_tests_and_scripts)"
+tcount=$(printf '%s\n' "$tfiles" | grep -c . || true)
+[ "$tcount" -gt 500 ] || { echo "file-size-ratchet: listed only $tcount test/script files — the listing is broken, every pass is void"; exit 1; }
+if printf '%s\n%s\n' "$files" "$tfiles" | check; then
+  echo "file-size-ratchet: $count source + $tcount test/script files, none new over $LIMIT lines"
 else
   exit 1
 fi
