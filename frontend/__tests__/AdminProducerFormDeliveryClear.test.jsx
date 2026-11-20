@@ -14,6 +14,9 @@
  * that asserted "the checkbox is gone" would have passed against the broken
  * form — it is exactly the assertion that let this ship.
  *
+ * MEH-3475: create form only — the edit page has no delivery controls
+ * here (AdminProducerFormDeliveryUnchanged.test.jsx).
+ *
  * All THREE fields the block owns are checked. delivery_cities matters
  * independently of the 500: it submits as delivery_area_cities ungated, so
  * leaving it stale writes delivery_areas rows onto a business declaring no
@@ -57,7 +60,10 @@ beforeEach(() => {
 
 describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
   it("tick משלוחים → tick לכל הארץ → untick משלוחים submits no contradiction", async () => {
-    renderForm({ producerId: "p-1" });
+    // MEH-3475: the CREATE form. On the edit page these controls are gone —
+    // the owner's DeliveryCard there owns the fields, and its own contradiction
+    // handling is covered by the owner-card tests (EditTabDeliveryCard).
+    renderForm({});
 
     await waitFor(() => expect(checkbox(F.offers_delivery)).toBeInTheDocument());
 
@@ -74,10 +80,10 @@ describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
       screen.queryByRole("checkbox", { name: F.delivery_nationwide }),
     ).not.toBeInTheDocument();
 
-    fireEvent.submit(screen.getByRole("button", { name: he.admin.producers.form.submit_update }).closest("form"));
+    fireEvent.submit(screen.getByRole("button", { name: he.admin.producers.form.submit_create }).closest("form"));
 
-    await waitFor(() => expect(api.put).toHaveBeenCalled());
-    const payload = api.put.mock.calls[0][1];
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    const payload = api.post.mock.calls[0][1];
 
     expect(payload.offers_delivery).toBe(false);
     // The 500: this was `true` before MEH-1879.
@@ -87,39 +93,8 @@ describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
     expect(payload.delivery_excluded_cities).toEqual([]);
   });
 
-  it("an EXISTING producer with both flags true clears them the same way", async () => {
-    // Initial state comes from the `initial` prop (:263-264), not the empty
-    // default — the path an admin actually takes when editing a live business.
-    renderForm({
-      producerId: "p-2",
-      initial: {
-        name: "עסק ארצי קיים",
-        offers_delivery: true,
-        delivery_nationwide: true,
-        delivery_excluded_cities: ["אילת"],
-        has_physical_location: true,
-      },
-    });
-
-    await waitFor(() => expect(checkbox(F.offers_delivery)).toBeInTheDocument());
-    // Precondition: the form really did load the contradictory-capable state.
-    expect(checkbox(F.offers_delivery).checked).toBe(true);
-    expect(checkbox(F.delivery_nationwide).checked).toBe(true);
-
-    fireEvent.click(checkbox(F.offers_delivery)); // untick delivery
-
-    fireEvent.submit(screen.getByRole("button", { name: he.admin.producers.form.submit_update }).closest("form"));
-
-    await waitFor(() => expect(api.put).toHaveBeenCalled());
-    const payload = api.put.mock.calls[0][1];
-
-    expect(payload.offers_delivery).toBe(false);
-    expect(payload.delivery_nationwide).toBe(false);
-    expect(payload.delivery_excluded_cities).toEqual([]);
-  });
-
   it("CONTROL — leaving משלוחים ticked keeps nationwide, so the clear is not unconditional", async () => {
-    renderForm({ producerId: "p-3" });
+    renderForm({});
 
     await waitFor(() => expect(checkbox(F.offers_delivery)).toBeInTheDocument());
     fireEvent.click(checkbox(F.offers_delivery));
@@ -128,10 +103,10 @@ describe("Admin ProducerForm — delivery clear on untick (MEH-1879)", () => {
     );
     fireEvent.click(checkbox(F.delivery_nationwide));
 
-    fireEvent.submit(screen.getByRole("button", { name: he.admin.producers.form.submit_update }).closest("form"));
+    fireEvent.submit(screen.getByRole("button", { name: he.admin.producers.form.submit_create }).closest("form"));
 
-    await waitFor(() => expect(api.put).toHaveBeenCalled());
-    const payload = api.put.mock.calls[0][1];
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    const payload = api.post.mock.calls[0][1];
 
     expect(payload.offers_delivery).toBe(true);
     expect(payload.delivery_nationwide).toBe(true);

@@ -91,9 +91,10 @@ function SelectAllSwitch({ on, label, onToggle }) {
  *   profile: any,
  *   onSave: any,
  *   reportDirty?: (key: string, dirty: boolean) => void,
+ *   saveUrl?: string,
  * }} props
  */
-export default function PaymentInfoEditor({ profile, onSave, reportDirty = () => {} }) {
+export default function PaymentInfoEditor({ profile, onSave, reportDirty = () => {}, saveUrl = "/producers/me" }) {
   const t = useTranslations("dashboard.producer.payment_info");
   const seed = profile?.payment_info ?? null;
   const seedPayload = useMemo(() => JSON.stringify(serializePaymentInfo(paymentStateFrom(seed))), [seed]);
@@ -147,7 +148,7 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
     setErrorMsg(null);
     try {
       const payload = { payment_info: current };
-      await api.put("/producers/me", payload);
+      await api.put(saveUrl, payload);
       onSave(payload);
       setSaved(true);
     } catch (err) {
