@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 /**
  * Module:   use-visual-viewport-box
@@ -27,50 +27,43 @@ import { useLayoutEffect, useState } from "react";
  * exactly as before. Width is not compared on purpose: a desktop scrollbar
  * makes `vv.width` narrower than `innerWidth` with nothing wrong.
  *
- * A layout effect, so the box lands before paint and the overlay never shows a
- * frame with its X off-screen.
+ * Read through useSyncExternalStore: the box is right on the first render of
+ * the overlay (no frame with the X off-screen) and no state is set in an effect.
+ * The snapshot is a string, so a scroll event that moves nothing compares equal
+ * and does not re-render the map.
  *
  * @param {boolean} active
  * @returns {{ top: number, left: number, width: number, height: number } | null}
  */
 export function useVisualViewportBox(active) {
-  const [box, setBox] = useState(
-    /** @type {{ top: number, left: number, width: number, height: number } | null} */ (null),
+  const subscribe = useCallback(
+    /** @param {() => void} onChange */
+    (onChange) => {
+      const vv = active && typeof window !== "undefined" ? window.visualViewport : null;
+      if (!vv) return () => {};
+      vv.addEventListener("resize", onChange);
+      vv.addEventListener("scroll", onChange);
+      return () => {
+        vv.removeEventListener("resize", onChange);
+        vv.removeEventListener("scroll", onChange);
+      };
+    },
+    [active],
   );
-
-  useLayoutEffect(() => {
-    const vv = typeof window === "undefined" ? undefined : window.visualViewport;
-    if (!active || !vv) {
-      setBox(null);
-      return undefined;
-    }
-    const read = () => {
-      const shifted =
-        vv.scale > 1.01 || vv.offsetTop > 1 || vv.offsetLeft > 1 || vv.height < window.innerHeight - 1;
-      const next = shifted
-        ? { top: vv.offsetTop, left: vv.offsetLeft, width: vv.width, height: vv.height }
-        : null;
-      // Same box → same object, so a scroll event that moves nothing does not
-      // re-render the map.
-      setBox((prev) => (sameBox(prev, next) ? prev : next));
-    };
-    read();
-    vv.addEventListener("resize", read);
-    vv.addEventListener("scroll", read);
-    return () => {
-      vv.removeEventListener("resize", read);
-      vv.removeEventListener("scroll", read);
-    };
-  }, [active]);
-
-  return box;
+  const getSnapshot = useCallback(() => (active ? snapshotKey() : ""), [active]);
+  const key = useSyncExternalStore(subscribe, getSnapshot, () => "");
+  return useMemo(() => {
+    if (!key) return null;
+    const [top, left, width, height] = key.split(",").map(Number);
+    return { top, left, width, height };
+  }, [key]);
 }
 
-/**
- * @param {{ top: number, left: number, width: number, height: number } | null} a
- * @param {{ top: number, left: number, width: number, height: number } | null} b
- */
-function sameBox(a, b) {
-  if (a === null || b === null) return a === b;
-  return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
+/** "" when there is nothing to correct, else "top,left,width,height". */
+function snapshotKey() {
+  const vv = typeof window === "undefined" ? null : window.visualViewport;
+  if (!vv) return "";
+  const shifted =
+    vv.scale > 1.01 || vv.offsetTop > 1 || vv.offsetLeft > 1 || vv.height < window.innerHeight - 1;
+  return shifted ? `${vv.offsetTop},${vv.offsetLeft},${vv.width},${vv.height}` : "";
 }
