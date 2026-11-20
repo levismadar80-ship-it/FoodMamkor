@@ -9,6 +9,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import { INERT_PRESENT } from "@/lib/inert-attr";
 import { COLOR } from "@/lib/color-tokens";
 import { useBusinessChatRequest } from "@/lib/business-chat";
+import BusinessChatAfterAnswer from "@/components/BusinessChatAfterAnswer";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -520,6 +521,10 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
               <p role="status" className="text-xs text-danger-700 bg-danger-50 border border-danger-200 rounded-sm px-3 py-2">
                 {error}
               </p>
+            )}
+            {/* MEH-3513: follow-ups + «ask the business» under the latest answer. */}
+            {business && messages.length > 1 && !sending && messages[messages.length - 1].role === "assistant" && (
+              <BusinessChatAfterAnswer business={business} messages={messages} onAsk={(label) => sendMessage(label)} />
             )}
             {messages.length === 1 && !sending && (!business || (business.prompts || []).length > 0) && (
               <div className="flex flex-col gap-2 pt-1">
