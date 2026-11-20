@@ -108,7 +108,7 @@ Only CI-run specs matter. `parity.spec.ts` is converted;
 ## E2E flake prevention — four shapes that kept staging red (MEH-2972)
 
 With ~1,550 tests, a tiny per-test flake rate makes most full runs red. Review
-every new E2E assertion for these four shapes:
+every new E2E assertion for these shapes (a fifth, MEH-3449, added since):
 
 - **No wall-clock budget on a CI runner.** "X within N ms" fails on a loaded
   runner with no product change. Count frames (`requestAnimationFrame` ticks)
@@ -123,6 +123,14 @@ every new E2E assertion for these four shapes:
 - **The whole CI suite comes from one IP.** Per-IP limits (120/min on events
   and group-buys) answer 429 to nav-gate reads; MEH-2947 is the durable fix.
   Don't add a per-page-load read without checking its limit.
+
+- **A click into a moving element can be lost with no error (MEH-3449).**
+  Playwright checks the hit target on the first pointer event only; a layout
+  shift between mousedown and mouseup sends `click` to a common ancestor and
+  the handler never runs, while the click "succeeds". Before clicking into a
+  deep-linked or just-re-rendered card, gate on `layoutSettled`
+  (`e2e/flows/_layout-settled.ts`). The symptom is a write or request that
+  "never left the browser", first attempt only.
 
 **A flaky warning on staging gets a Linear card the same day.** From the
 MEH-2972 workflow change on, a test that passes only on retry no longer fails a

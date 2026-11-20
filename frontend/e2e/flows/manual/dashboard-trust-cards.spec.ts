@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import { LICENSE_REQUIRED_CATEGORIES, PRODUCER_LICENSE_REGEX } from "../../../lib/license-required-categories";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -148,6 +149,12 @@ async function openAt(page: Page, anchor: string): Promise<void> {
   await page.goto(`/producer/dashboard/edit#${anchor}`);
   await expect(card(page, anchor), `control: the card for #${anchor} never came on screen — every assertion here is void`).toBeVisible({ timeout: 15_000 });
   await expect(body(page, anchor), `control: the #${anchor} section never became visible`).toBeVisible();
+  // MEH-3449: the deep link is still settling (group switch, collapsing
+  // sections, smooth scroll) — a click into a moving card can be lost without
+  // an error (flows/_layout-settled.ts). The resolver's last navigation
+  // puts the card's group in the URL; wait for it, then for quiet.
+  await expect(page).toHaveURL(/[?&]group=/);
+  await layoutSettled(card(page, anchor));
 }
 /** Exact alternation — a bare `name: "שמירה"` is a substring match blind to the other labels (chunk 11d). */
 const saveBtn = (page: Page, anchor: string) => body(page, anchor).getByRole("button", { name: /^(שמירה|בשמירה…|נשמר ✓)$/ });

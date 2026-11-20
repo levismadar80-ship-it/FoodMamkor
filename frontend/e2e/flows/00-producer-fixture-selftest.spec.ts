@@ -33,7 +33,11 @@ const OK_DOC = `<!doctype html><html><head><meta charset="utf-8"></head><body><h
 
 // Never reached over the network — every request below is fulfilled by a route.
 // Not port 9: WebKit blocks restricted ports before page.route() sees the request (MEH-3153).
-const UNUSED_ORIGIN = "http://localhost:39009";
+// Not 39009 either (MEH-3451): that is inside the OS ephemeral range, and this
+// test's failure-branch probes, addressed at this origin, landed in the recorder
+// of 00-producer-fixture-probe-origin (running beside it as test 2 of the shard)
+// whenever the kernel gave that recorder 39009. Same port as that spec's DEAD_PORT.
+const UNUSED_ORIGIN = "http://localhost:29009";
 
 test.describe("_producer-fixture self-test", () => {
   test("assertDetailRendered is silent on a healthy page and reports on the error document", async ({

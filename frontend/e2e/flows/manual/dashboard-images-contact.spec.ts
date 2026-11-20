@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import type { Route } from "@playwright/test";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -119,6 +120,12 @@ async function openAt(page: Page, anchor: string): Promise<void> {
   await page.goto(`/producer/dashboard/edit#${anchor}`);
   await expect(card(page, anchor), `control: the card for #${anchor} never came on screen — every assertion here is void`).toBeVisible({ timeout: 15_000 });
   await expect(body(page, anchor)).toBeVisible();
+  // MEH-3449: the deep link is still settling (group switch, collapsing
+  // sections, smooth scroll) — a click into a moving card can be lost without
+  // an error (flows/_layout-settled.ts). The resolver's last navigation
+  // puts the card's group in the URL; wait for it, then for quiet.
+  await expect(page).toHaveURL(/[?&]group=/);
+  await layoutSettled(card(page, anchor));
 }
 const banner = (page: Page) => page.getByTestId("unsaved-banner");
 
@@ -250,6 +257,13 @@ test.describe("contact channels — the wire", () => {
     // `disabled={!dirty}`) — so a lost edit fails HERE, by name, and not as a
     // missing PUT. After the click, a failure says what the card showed.
     await expect(save(page), "the save button never enabled — the card did not see the edit").toBeEnabled();
+    // MEH-3449 cause: a layout shift between the click's mousedown and mouseup
+    // loses the click silently (Playwright checks the hit target on mousedown
+    // only — flows/_layout-settled.ts). The edit has one more render to come
+    // (the unsaved banner, a render after the button enables); wait for it and
+    // for the button to stop moving before clicking.
+    await expect(banner(page)).toBeVisible();
+    await layoutSettled(save(page));
     const seen: string[] = [];
     page.on("request", (r) => seen.push(`${r.method()} ${new URL(r.url()).pathname}`));
     await save(page).click();
