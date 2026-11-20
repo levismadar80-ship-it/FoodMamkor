@@ -9,6 +9,7 @@ the clock frozen; activities go through the site's own «public» queries, so a
 hidden one stays out.
 """
 
+import json
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -245,3 +246,47 @@ def test_another_business_activities_stay_out_and_none_is_null(db):
 
 def test_the_preamble_says_the_dates_are_computed():
     assert "next_delivery" in ctx.PREAMBLE and "activities" in ctx.PREAMBLE
+
+
+# ---------- reviews ----------
+
+
+def test_the_reviews_the_page_shows_without_names_and_hidden_ones_out(db):
+    from app.models.engagement import ProducerReview
+
+    p = make_producer(db, name="מאפיית הדגמה")
+    writer = make_user(db, email=f"r-{uuid4().hex[:8]}@example.com", name="שם המבקרת")
+    hider = make_user(db, email=f"h-{uuid4().hex[:8]}@example.com")
+    db.add_all(
+        [
+            ProducerReview(
+                producer_id=p.id,
+                user_id=writer.id,
+                stars=5,
+                body="הלחם הכי טרי שיש",
+                reply="תודה רבה!",
+            ),
+            ProducerReview(
+                producer_id=p.id,
+                user_id=hider.id,
+                stars=1,
+                body="ביקורת מוסתרת",
+                is_hidden=True,
+            ),
+        ]
+    )
+    p.avg_rating, p.reviews_count = 5.0, 1
+    db.commit()
+    db.refresh(p)
+    got = ctx.facts(p, "מה אומרים על הלחם?")
+    assert got["reviews"] == [
+        {"stars": 5, "text": "הלחם הכי טרי שיש", "business_reply": "תודה רבה!"}
+    ]
+    assert got["rating"] == {"average": 5.0, "count": 1}
+    assert "שם המבקרת" not in json.dumps(got, ensure_ascii=False)
+
+
+def test_no_reviews_is_null(db):
+    p = make_producer(db, name="מאפיית הדגמה")
+    got = ctx.facts(p, "ביקורות?")
+    assert got["reviews"] is None and got["rating"] is None

@@ -15,7 +15,7 @@ Related:  frontend/lib/nextDelivery.js (the rule ported in `next_delivery`);
           frontend/lib/orderWindow.js getSingleOrderCutoff;
           routers/experiences.py _public_listing_query;
           routers/group_buys.py _status_tab_query.
-History:  MEH-3510 (creation)
+History:  MEH-3510 (creation; reviews the page shows, no names)
 """
 
 from __future__ import annotations
@@ -51,6 +51,7 @@ PRICE_UNIT_HE = {
     "pack": "למארז",
 }
 MAX_ACTIVITIES = 10  # per kind; a page's worth
+MAX_REVIEWS = 20  # newest with text; the page's first two pages
 _HHMM = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 _WEEK = 7
 
@@ -223,3 +224,44 @@ def activities(producer: Any) -> dict[str, list[dict[str, Any]]] | None:
         ],
     }
     return out if any(out.values()) else None
+
+
+def reviews(producer: Any) -> list[dict[str, Any]] | None:
+    """The reviews the page shows (routers/reviews.py list_reviews_nested's
+    filter), newest first, text only — never the reviewer's name or id."""
+    try:
+        db = object_session(producer)
+    except UnmappedInstanceError:
+        return None
+    if db is None:
+        return None
+    from app.models import Producer
+    from app.models.engagement import ProducerReview
+    from app.services.review_conflicts import conflict_free
+
+    # REUSES: backend/app/routers/reviews.py list_reviews_nested — the page's
+    # visibility predicate (hidden, organizer, conflict of interest).
+    rows = (
+        db.query(ProducerReview)
+        .join(Producer, Producer.id == ProducerReview.producer_id)
+        .filter(
+            ProducerReview.producer_id == producer.id,
+            ProducerReview.is_hidden.is_(False),
+            Producer.kind == "producer",
+            conflict_free(),
+            ProducerReview.body.isnot(None),
+            ProducerReview.body != "",
+        )
+        .order_by(ProducerReview.created_at.desc())
+        .limit(MAX_REVIEWS)
+        .all()
+    )
+    out = [
+        {
+            "stars": r.stars,
+            "text": (r.body or "")[:300],
+            "business_reply": (r.reply or "")[:200] or None,
+        }
+        for r in rows
+    ]
+    return out or None

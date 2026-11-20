@@ -133,6 +133,8 @@ def test_the_keys_are_the_whitelist(db):
         "payment",
         "whole_kitchen",
         "products",
+        "rating",  # MEH-3510: the page's average and count
+        "reviews",  # MEH-3510: review text the page shows, no names
         "activities",  # MEH-3510: the public events / workshops / group buys lists
         "asked_city",
         "delivers_to_asked_city",

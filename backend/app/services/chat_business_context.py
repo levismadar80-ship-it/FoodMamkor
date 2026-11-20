@@ -447,6 +447,14 @@ def facts(
         "products": [_product(p, groups) for p in producer.products][:MAX_PRODUCTS],
         # MEH-3510: events, workshops and open group buys on the page.
         "activities": extras.activities(producer),
+        # MEH-3510: what customers wrote, as the page shows it; no names.
+        "rating": {
+            "average": round(producer.avg_rating or 0, 1),
+            "count": producer.reviews_count,
+        }
+        if getattr(producer, "reviews_count", 0)
+        else None,
+        "reviews": extras.reviews(producer),
     }
     city = asked_city(question)
     if city:
@@ -480,6 +488,8 @@ PREAMBLE = (
     "מתי המשלוח הבא לעיר: next_delivery של אותה עיר הוא התשובה (null = אין "
     "תאריך שאפשר לחשב); אל תחשבי תאריכים בעצמך. "
     "על סדנאות, אירועים וקבוצות רכישה: activities הוא התשובה. "
+    "מה לקוחות אומרים: reviews (מה שלקוחות כתבו, לא בית העסק). ציטטי "
+    "«לקוחות כתבו ש…», אל תציגי ביקורת כעובדה ואל תמציאי ביקורת. "
     "על אלרגנים ותזונה: אל תתני עצה רפואית ואל תבטיחי שמוצר בטוח. אמרי מה כתוב "
     "בעמוד («כתוב בעמוד ש…») והוסיפי שכדאי לוודא מול בית העסק לפני הזמנה."
 )
