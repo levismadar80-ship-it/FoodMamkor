@@ -359,12 +359,13 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
   // MEH-3505: send the page's tapped question after the render that set the
   // business, so it carries producer_id. Read once, then cleared.
   useEffect(() => {
-    if (!open || !business || !pendingAskRef.current) return;
+    // MEH-3505: wait out a reply still in flight, or sendMessage drops the ask.
+    if (!open || !business || sending || !pendingAskRef.current) return;
     const ask = pendingAskRef.current;
     pendingAskRef.current = null;
     sendMessage(ask);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sendMessage is recreated each render; the ref gates it
-  }, [open, business]);
+  }, [open, business, sending]);
 
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
 

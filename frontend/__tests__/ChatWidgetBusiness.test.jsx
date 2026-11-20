@@ -184,6 +184,37 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     });
   });
 
+  it("a page with one question shows that question and «שאלה אחרת», two buttons", () => {
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <BusinessChatPrompt producer={{ ...PRODUCER, products: [], opening_hours: null }} />
+      </NextIntlClientProvider>,
+    );
+    const section = screen.getByTestId("business-chat-prompt");
+    expect(within(section).getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.delivery, B.page_other]);
+  });
+
+  it("«שאלה אחרת» opens the panel and sends nothing", async () => {
+    renderPage();
+    await act(async () => { fireEvent.click(screen.getByTestId("business-chat-open")); });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("a question tapped while the last reply is still on its way is sent when it lands", async () => {
+    let answer;
+    post.mockImplementationOnce(() => new Promise((resolve) => { answer = resolve; }));
+    renderPage();
+    const page = () => within(screen.getByTestId("business-chat-prompt"));
+    await act(async () => { fireEvent.click(page().getByRole("button", { name: B.prompts.hours })); });
+    fireEvent.click(screen.getByRole("button", { name: he.chat.panel_close_label }));
+    await act(async () => { fireEvent.click(page().getByRole("button", { name: B.prompts.delivery })); });
+    expect(post).toHaveBeenCalledTimes(1);
+    await act(async () => { answer({ data: { reply: "תשובה ראשונה" } }); });
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+    expect(post.mock.calls[1][1].messages.at(-1)).toEqual({ role: "user", content: B.prompts.delivery });
+  });
+
   it("a page with no questions keeps one button, «שאלו את העוזרת»", () => {
     render(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
