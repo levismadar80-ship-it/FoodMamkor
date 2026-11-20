@@ -7,7 +7,7 @@ name: Deploy
 #   1. Vercel auto-deploys via its own GitHub integration — that
 #      keeps working with no help from this workflow. Vercel handles
 #      both production (main → mehamakor.online) and preview/staging
-#      (staging → staging.mehamakor.online) on its own.
+#      (staging → staging.mehamakor.co.il) on its own.
 #   2. Railway needs a kick because its own watch-paths config can
 #      legitimately skip deploys (e.g. doc-only PRs that don't touch
 #      backend/) and previously left main and Railway out of sync.
@@ -378,7 +378,7 @@ jobs:
       - name: Probe staging
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: python scripts/check_api_contract.py --probe https://staging.mehamakor.online
+        run: python scripts/check_api_contract.py --probe https://staging.mehamakor.co.il
   # ──────────────────────────────────────────────────────────────────
   # DEPLOY GATE (MEH-892 completion) — deploy-side required-check aggregator.
   # ──────────────────────────────────────────────────────────────────
