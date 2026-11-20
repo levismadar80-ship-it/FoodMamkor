@@ -231,7 +231,7 @@ SWEEP_PASSWORD=… node ../scripts/checks/console-sweep.mjs --dashboard --base h
 # sandbox's Chromium offers a TLS-1.3 ClientHello the Vercel edge drops,
 # which surfaces as ERR_CONNECTION_CLOSED and looks like the site is down.
 # Opt-in, because real browsers and CI runners must NOT be downgraded.
-SWEEP_TLS_MAX_12=1 node ../scripts/checks/console-sweep.mjs --base https://staging.mehamakor.online
+SWEEP_TLS_MAX_12=1 node ../scripts/checks/console-sweep.mjs --base https://staging.mehamakor.co.il
 ```
 
 Other env vars: `SWEEP_CHROMIUM_PATH` (point at an existing Chromium instead of

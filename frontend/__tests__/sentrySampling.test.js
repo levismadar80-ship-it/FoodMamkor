@@ -8,7 +8,7 @@ describe("traces sample rate (MEH-2887)", () => {
   it("browser: 0.1 on the production host, 0.01 elsewhere", () => {
     expect(clientTracesSampleRate("mehamakor.co.il")).toBe(0.1);
     expect(clientTracesSampleRate("www.mehamakor.co.il")).toBe(0.1);
-    for (const h of ["staging.mehamakor.online", "food-mamkor-abc.vercel.app", "localhost", ""]) {
+    for (const h of ["staging.mehamakor.online", "staging.mehamakor.co.il", "food-mamkor-abc.vercel.app", "localhost", ""]) {
       expect(clientTracesSampleRate(h)).toBe(0.01);
     }
   });

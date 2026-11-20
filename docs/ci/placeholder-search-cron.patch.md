@@ -58,7 +58,7 @@ on:
       base:
         description: "Base URL to check"
         required: false
-        default: "https://staging.mehamakor.online"
+        default: "https://staging.mehamakor.co.il"
 
 permissions:
   contents: read
@@ -77,7 +77,7 @@ jobs:
         id: check
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          PLACEHOLDER_CHECK_BASE: ${{ inputs.base || 'https://staging.mehamakor.online' }}
+          PLACEHOLDER_CHECK_BASE: ${{ inputs.base || 'https://staging.mehamakor.co.il' }}
         run: |
           set +e
           python3 scripts/check_placeholder_search.py | tee /tmp/placeholder-report.txt

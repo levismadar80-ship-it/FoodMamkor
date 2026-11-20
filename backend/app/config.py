@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
 
     # MEH-3305: admin passkeys (WebAuthn). The relying-party id is the bare
-    # domain the passkey is bound to (mehamakor.co.il / staging.mehamakor.online)
+    # domain the passkey is bound to (mehamakor.co.il / staging.mehamakor.co.il)
     # and the origin is the exact https URL the browser reports. Either empty =
     # the feature is off (local, vercel.app previews): admins sign in with
     # their password only, as today. Not secrets — they are public names.

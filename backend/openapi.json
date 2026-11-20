@@ -4885,6 +4885,107 @@
         "title": "GroupBuyStatusUpdate",
         "type": "object"
       },
+      "GroupMoveIn": {
+        "description": "MEH-3477: these products go into `group_id` (None = out of any group).",
+        "properties": {
+          "group_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "product_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "title": "GroupMoveIn",
+        "type": "object"
+      },
+      "GroupMovesIn": {
+        "description": "MEH-3477: several moves in one write — «העברה לקבוצה» for the products\nthe owner marked, and the approval (and undo) of a group suggestion.",
+        "properties": {
+          "moves": {
+            "items": {
+              "$ref": "#/components/schemas/GroupMoveIn"
+            },
+            "maxItems": 21,
+            "minItems": 1,
+            "title": "Moves",
+            "type": "array"
+          }
+        },
+        "required": [
+          "moves"
+        ],
+        "title": "GroupMovesIn",
+        "type": "object"
+      },
+      "GroupSuggestionOut": {
+        "description": "MEH-3478: one suggested group. `id` is set when the name matches a group\nthe business already has; None = a new group. Nothing is saved.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "product_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "product_ids"
+        ],
+        "title": "GroupSuggestionOut",
+        "type": "object"
+      },
+      "GroupSuggestionsOut": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupSuggestionOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "GroupSuggestionsOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -5483,6 +5584,18 @@
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
           },
           "storage_info": {
             "anyOf": [
@@ -23105,6 +23218,116 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/product-groups/assign": {
+      "put": {
+        "operationId": "admin_move_products_between_groups_admin_producers__producer_id__product_groups_assign_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMovesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Admin Move Products Between Groups Admin Producers  Producer Id  Product Groups Assign Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Move Products Between Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-groups/suggest": {
+      "post": {
+        "operationId": "admin_suggest_product_groups_admin_producers__producer_id__product_groups_suggest_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSuggestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Suggest Product Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/product-import": {
       "post": {
         "operationId": "admin_import_products_admin_producers__producer_id__product_import_post",
@@ -30376,6 +30599,82 @@
           }
         ],
         "summary": "Replace My Product Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-groups/assign": {
+      "put": {
+        "operationId": "move_products_between_groups_producers_me_product_groups_assign_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMovesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Move Products Between Groups Producers Me Product Groups Assign Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Move Products Between Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-groups/suggest": {
+      "post": {
+        "operationId": "suggest_product_groups_producers_me_product_groups_suggest_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSuggestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Suggest Product Groups",
         "tags": [
           "producer-management"
         ]
