@@ -21,7 +21,7 @@ const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 /**
  * @param {{ days?: string[] | null, producer?: any, city?: string | null,
  *   cutoff?: { dayIndex: number, close: string } | null, pickup?: boolean,
- *   className?: string }} props
+ *   className?: string, textClass?: string }} props
  */
 export default function NextDeliveryLine({
   days,
@@ -30,6 +30,9 @@ export default function NextDeliveryLine({
   cutoff = null,
   pickup = false,
   className = "",
+  // Size and colour, replaced whole (two font sizes in one class list resolve
+  // by stylesheet order, not by the order written).
+  textClass = "text-sm text-fg-muted",
 }) {
   const t = useTranslations("group_buys.delivery");
   const tWeekdays = useTranslations("opening_hours.weekdays");
@@ -53,7 +56,7 @@ export default function NextDeliveryLine({
   const style = locale === "en" ? "dayMonth" : "dayMonthShort";
   const date = `${tWeekdays(WEEKDAY_KEYS[next.dayIndex])} ${formatDate(next.date, locale, style)}`;
   return (
-    <p className={`text-sm text-fg-muted ${className}`} data-testid="next-delivery">
+    <p className={`${textClass} ${className}`} data-testid="next-delivery">
       {pickup
         ? t("next_pickup", { date })
         : city

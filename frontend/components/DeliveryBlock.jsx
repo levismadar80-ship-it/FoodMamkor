@@ -84,6 +84,8 @@ const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 // row here carries min_order and (under MEH-1772 variance) a per-area fee,
 // while a compact entry is a bare middot-separated name.
 const AREA_PREVIEW_LIMIT = 6;
+// Up to this many drawn rows the list stays open even beside the checker.
+const LIST_COLLAPSE_FROM = 2;
 
 // MEH-1903: the area section's show-more/less control. Anatomy is copied from
 // CompactCities' toggle verbatim — same Phosphor carets, same aria-expanded and
@@ -173,9 +175,12 @@ function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer =
       {/* MEH-2592 C: the day reads as a small gold heading. MEH-3028: text
           only — the truck now leads the fee line once, instead of repeating
           on every day (Sapir, option א, 13/11). */}
-      <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
-      {/* MEH-3485: the date of the next run, under its day heading. */}
-      {groupNext(rows, days, producer)}
+      {/* MEH-3485: the date of the next run. Sapir 20/11 («עמוס»): on the
+          heading's row, at its far end, instead of a line of its own. */}
+      <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3">
+        <p className="text-sm font-bold text-gold-deep">{label}</p>
+        {groupNext(rows, days, producer, "", "text-xs text-fg-muted")}
+      </div>
       <AreaList rows={rows} feeOf={feeOf} days={days} producer={producer} keyOf={keyOf} />
     </div>
   );
@@ -198,7 +203,7 @@ function AreaList({ rows, feeOf, days, producer, allRows = rows, keyOf }) {
           fee={feeOf(bucket[0])}
           next={
             !shared && cutoffOfRow(bucket[0]) ? (
-              <NextDeliveryLine days={days} producer={producer} cutoff={cutoffOfRow(bucket[0])} className="text-xs" />
+              <NextDeliveryLine days={days} producer={producer} cutoff={cutoffOfRow(bucket[0])} textClass="text-xs text-fg-muted" />
             ) : null
           }
         />
@@ -214,10 +219,10 @@ function AreaList({ rows, feeOf, days, producer, allRows = rows, keyOf }) {
  * @param {any[]} rows @param {string[] | null} days @param {any} producer
  * @param {string} [className]
  */
-function groupNext(rows, days, producer, className = "-mt-1 mb-1.5") {
+function groupNext(rows, days, producer, className = "-mt-1 mb-1.5", textClass = undefined) {
   const shared = sharedCutoff(rows);
   if (!shared && rows.every((da) => cutoffOfRow(da))) return null;
-  return <NextDeliveryLine days={days} producer={producer} cutoff={shared} className={className} />;
+  return <NextDeliveryLine days={days} producer={producer} cutoff={shared} className={className} textClass={textClass} />;
 }
 
 // MEH-1435: when every area carries a city name ONLY (no min_order, no
@@ -291,17 +296,25 @@ function PickupRow({ loc, t, tMap, producer = null }) {
   return (
     <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
       <div className="min-w-0">
-        <p className="font-medium text-text">{heading}</p>
-        {/* city as a subline only when a distinct label already owns the top line */}
-        {loc.city && loc.label && <p className="text-sm text-fg-muted">{loc.city}</p>}
-        {/* MEH-2604: time ranges isolated LTR — raw «16:00–19:00» read «19:00–16:00» here. */}
-        {loc.opening_hours && (
-          <p className="text-sm text-fg-muted">
-            <HoursText text={loc.opening_hours} />
-          </p>
-        )}
-        {/* MEH-3512: pickup days + own cutoff + next pickup, from fields. */}
-        <PickupSchedule loc={loc} producer={producer} />
+        {/* Sapir 20/11 («עמוס»): the city joins the name's line, muted, only
+            when a distinct label owns it. */}
+        <p className="font-medium text-text">
+          {heading}
+          {loc.city && loc.label && (
+            <span className="font-normal text-fg-muted" data-testid="pickup-city">
+              {" · "}
+              {loc.city}
+            </span>
+          )}
+        </p>
+        {/* MEH-3512: hours, pickup days and own cutoff on one line, then the
+            next pickup. MEH-2604: the hours stay isolated LTR (HoursText). */}
+        <PickupSchedule
+          loc={loc}
+          producer={producer}
+          hours={loc.opening_hours ? <HoursText text={loc.opening_hours} /> : null}
+          hoursText={loc.opening_hours || ""}
+        />
         {/* MEH-2477: the stand's own number (LocationsEditor), tap-to-call —
             the click-to-call MEH-1509 served the field for. The number is its
             own label (as on a Google Maps place card); dir=ltr keeps
@@ -494,6 +507,11 @@ export default function DeliveryBlock({
   // the TOTAL row count across modes, so a per-group state would be a different
   // feature (and is explicitly out of scope).
   const [areasExpanded, setAreasExpanded] = useState(false);
+  // Sapir 20/11 («מרגיש שיש מלא מידע»): when the checker can answer «מגיעים
+  // אליי?», the per-town list is detail on demand — summary first, the list
+  // behind one button (Shopify's pickup pattern: one summary, details in a
+  // drawer). Not a search box: every town is one tap away (MEH-1435).
+  const [listOpen, setListOpen] = useState(false);
   const hasAreas = areas.length > 0;
   // MEH-1646 (a): non-null ONLY when order_window has exactly one open day —
   // the one unambiguous "מקבלים הזמנות עד" case. Clock-free → SSR-safe.
@@ -618,7 +636,12 @@ export default function DeliveryBlock({
   // At or under the cap this is the identity, so the markup is byte-identical
   // to the pre-ticket render — the "≤6 rows changes nothing" criterion is
   // enforced here, by the pass-through, not by a separate branch below.
-  const showAllAreas = areasExpanded || !areasOverLimit;
+  const listCollapsible =
+    !!grouped &&
+    !nationwide &&
+    areaRowCount > LIST_COLLAPSE_FROM &&
+    isDeliveryCheckerUsable({ offersDelivery: !!producer?.offers_delivery, nationwide, excluded, areas });
+  const showAllAreas = areasExpanded || !areasOverLimit || listCollapsible;
   const visibleSections = showAllAreas
     ? areaSections
     : capSections(areaSections, AREA_PREVIEW_LIMIT, keyOf);
@@ -632,7 +655,7 @@ export default function DeliveryBlock({
   // cannot fire today — the guard is here so that stays true if one moves.
   const visibleAreaRows =
     grouped?.mode === "group" ? [] : (visibleSections[0]?.rows ?? []);
-  const areaToggle = areasOverLimit ? (
+  const areaToggle = areasOverLimit && !listCollapsible ? (
     <AreaToggle
       expanded={areasExpanded}
       onToggle={() => setAreasExpanded((v) => !v)}
@@ -689,7 +712,8 @@ export default function DeliveryBlock({
         daysMin={producer?.delivery_days_min}
         daysMax={producer?.delivery_days_max}
         minOrder={producer?.delivery_min_order}
-        className="text-sm text-fg-muted -mt-2 mb-4"
+        // One «·» line, not a stack (Sapir 20/11).
+        className="-mt-2 mb-4 flex flex-wrap gap-x-1.5 text-sm text-fg-muted [&>*:not(:last-child)]:after:ms-1.5 [&>*:not(:last-child)]:after:content-['·']"
         testid="delivery-business-terms"
       />
 
@@ -721,6 +745,15 @@ export default function DeliveryBlock({
         </>
       ) : bare ? (
         <CompactCities areas={areas} t={t} />
+      ) : listCollapsible && !listOpen ? (
+        <ShowMore
+          size="inline"
+          className="mb-4"
+          onClick={() => setListOpen(true)}
+          expanded={false}
+          data-testid="delivery-list-toggle"
+          label={t("show_area_list", { count: areas.length })}
+        />
       ) : hasAreas ? (
         <div className="mb-4">
           {/* MEH-1305 A — dispatch-day pivot. hoist: one shared day stated once
@@ -804,6 +837,15 @@ export default function DeliveryBlock({
               ))}
               {areaToggle}
             </div>
+          )}
+          {listCollapsible && (
+            <ShowMore
+              size="inline"
+              onClick={() => setListOpen(false)}
+              expanded
+              data-testid="delivery-list-toggle"
+              label={t("show_less")}
+            />
           )}
         </div>
       ) : producer?.offers_delivery === false ? null : (

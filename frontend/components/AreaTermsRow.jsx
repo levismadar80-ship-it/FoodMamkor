@@ -17,7 +17,7 @@ import { deliveryTermTexts } from "@/components/DeliveryTerms";
 
 // «·» after every term but the last, drawn by CSS so a missing term leaves no
 // stray dot, and a wrapped line ends with the dot instead of starting with it.
-const TERMS_LINE =
+export const TERMS_LINE =
   "mt-0.5 flex flex-wrap gap-x-1.5 text-xs text-fg-muted [&>*:not(:last-child)]:after:ms-1.5 [&>*:not(:last-child)]:after:content-['·']";
 const SENTINEL = "\u0000";
 

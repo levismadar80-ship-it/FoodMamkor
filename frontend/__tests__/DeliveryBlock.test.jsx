@@ -292,10 +292,11 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
     expect(screen.getByText("דוכן השוק")).toBeInTheDocument();
     expect(screen.getByText("יריד אורגני")).toBeInTheDocument();
-    expect(screen.getByText("חיפה")).toBeInTheDocument(); // city subline (label present)
+    // City beside the label, muted (Sapir 20/11), only when a label owns the line.
+    expect(screen.getAllByTestId("pickup-city").map((el) => el.textContent)).toContain(" · חיפה");
     // opening_hours — MEH-2604 wraps the range in an LTR span, so the text is
     // split across nodes; match the row's whole text, then the isolated range.
-    const hoursRow = screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "שישי 8-13");
+    const hoursRow = screen.getByText((_, el) => el?.dataset?.testid === "pickup-hours" && el.textContent === "שישי 8-13");
     expect(hoursRow.querySelector('[dir="ltr"]').textContent).toBe("8-13");
     expect(screen.queryByText("הסניף הראשי")).not.toBeInTheDocument(); // branch out of scope
     // Outbound Waze nav link built from lat/lng (no second in-page map).

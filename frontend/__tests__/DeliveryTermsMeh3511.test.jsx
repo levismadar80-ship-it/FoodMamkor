@@ -161,6 +161,7 @@ describe("plain towns in a day group read as one line", () => {
 
   it("many plain + one detailed: one line of names, one row", () => {
     renderBlock(producer);
+    fireEvent.click(screen.getByTestId("delivery-list-toggle"));
     const lines = screen.getAllByTestId("area-plain-cities").map((el) => el.textContent);
     expect(lines).toEqual(["עמיקם, אביאל", "קיסריה"]);
     expect(screen.getByText("זכרון יעקב")).toBeInTheDocument();
@@ -225,5 +226,38 @@ describe("a day group whose rows do not share a cutoff", () => {
     expect(lines).toHaveLength(2);
     expect(lines.some((l) => l.includes("24.11"))).toBe(true);
     expect(lines.some((l) => l.includes("1.12"))).toBe(true);
+  });
+});
+
+// Sapir 20/11 («מרגיש שיש מלא מידע»): beside a checker that can answer, the
+// per-town list is detail on demand. 0 / 1-2 / many rows × closed / open.
+describe("the town list beside the checker", () => {
+  const town = (id, city, day, extra = {}) => ({ id, city, delivery_day: day, delivery_days: [day], ...extra });
+  const towns = (n) =>
+    Array.from({ length: n }, (_, i) => town(`t${i}`, ["חיפה", "עכו", "נהריה", "כרמיאל"][i], i % 2 ? "שני" : "חמישי", { min_order: 100 + i }));
+
+  it("many: closed behind one button naming the towns; open shows them; close hides them again", () => {
+    renderBlock({ offers_delivery: true, delivery_areas: towns(4) });
+    const toggle = screen.getByTestId("delivery-list-toggle");
+    expect(toggle.textContent).toBe("לכל אזורי המשלוח (4 יישובים)");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("כרמיאל")).toBeNull();
+    fireEvent.click(toggle);
+    expect(screen.getByText("כרמיאל")).toBeInTheDocument();
+    // Open, the list is whole: no «הצגת עוד» cap inside it.
+    expect(screen.queryByText(/הצגת עוד/)).toBeNull();
+    fireEvent.click(screen.getByTestId("delivery-list-toggle"));
+    expect(screen.queryByText("כרמיאל")).toBeNull();
+  });
+
+  it("two rows: open, no button", () => {
+    renderBlock({ offers_delivery: true, delivery_areas: towns(2) });
+    expect(screen.queryByTestId("delivery-list-toggle")).toBeNull();
+    expect(screen.getByText("עכו")).toBeInTheDocument();
+  });
+
+  it("no checker (delivery not offered): the list stays open whatever its size", () => {
+    renderBlock({ offers_delivery: false, delivery_areas: towns(4) });
+    expect(screen.queryByTestId("delivery-list-toggle")).toBeNull();
   });
 });

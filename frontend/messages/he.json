@@ -1385,6 +1385,7 @@
       "show_all_cities": "{count, plural, one {הצגת עיר נוספת} two {הצגת שתי ערים נוספות} other {הצגת עוד {count} ערים}}",
       "show_all_pickup": "{count, plural, one {הצגת נקודת איסוף נוספת} two {הצגת שתי נקודות איסוף נוספות} other {הצגת עוד {count} נקודות איסוף}}",
       "show_all_areas": "{count, plural, one {הצגת אזור משלוח נוסף} two {הצגת שני אזורי משלוח נוספים} other {הצגת עוד {count} אזורי משלוח}}",
+      "show_area_list": "{count, plural, one {לאזור המשלוח} two {לכל אזורי המשלוח (# יישובים)} other {לכל אזורי המשלוח (# יישובים)}}",
       "show_less": "הצגת פחות",
       "checker": {
         "label": "יש משלוח לעיר שלך?",
