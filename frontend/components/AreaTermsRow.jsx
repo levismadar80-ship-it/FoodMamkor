@@ -48,12 +48,12 @@ export default function AreaTermsRow({ rows, fee = null, next = null }) {
   const zone = da.zone_name && rows.every((r) => r.zone_name === da.zone_name) ? da.zone_name : null;
   const free = typeof da.free_delivery_above === "number" && fee !== 0 ? da.free_delivery_above : null;
   const terms = [
-    fee == null ? null : (
+    fee === null ? null : (
       <span key="fee" data-testid="area-fee">
         {fee === 0 ? t("fee_free") : withAmount(t("fee", { amount: SENTINEL }), fee)}
       </span>
     ),
-    free == null ? null : (
+    free === null ? null : (
       <span key="free" data-testid="area-free-above">
         {withAmount(t("free_above", { amount: SENTINEL }), free)}
       </span>
@@ -73,7 +73,7 @@ export default function AreaTermsRow({ rows, fee = null, next = null }) {
   ].filter(Boolean);
   // A row with nothing but the towns (and the shared business fee) — the
   // plain line of a day.
-  const plain = !zone && terms.length <= (fee == null ? 0 : 1);
+  const plain = !zone && terms.length <= (fee === null ? 0 : 1);
   return (
     <li className="px-3.5 py-3 text-sm" data-testid={plain ? "area-plain-cities" : "area-row"}>
       {/* Sapir 20/11: a visitor looks for her own town, so the towns are the
