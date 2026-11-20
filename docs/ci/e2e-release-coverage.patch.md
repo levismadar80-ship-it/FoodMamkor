@@ -1,3 +1,8 @@
+> **✅ Status: APPLIED 20/11/2026 (MEH-3520)** — Option A, through the GitHub web
+> editor: `pull_request.branches` in `.github/workflows/e2e.yml` is now
+> `[staging, main]`, so a release PR gets an E2E run. Checked by sha256 against
+> the prepared file. The text below is the record of why.
+
 # Staged patch — give release PRs E2E coverage (`e2e.yml`)
 
 > **Staged, not applied.** `.github/workflows/**` is CC-deny (MEH-671), same as the 19
