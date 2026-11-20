@@ -24,6 +24,8 @@ from app.database import get_db
 from app.models import Producer, Product, User
 from app.rate_limit import limiter
 from app.schemas.product_organize import (
+    GroupMovesIn,
+    GroupSuggestionsOut,
     ProductGroupAssignIn,
     ProductGroupsIn,
     ProductOrderIn,
@@ -92,3 +94,33 @@ def admin_set_product_group(  # noqa: PLR0913 — FastAPI-injected parameters
     return svc.assign_group(
         db, _producer(db, producer_id), product_id, body.group_id, include_drafts=True
     )
+
+
+# MEH-3477: «העברה לקבוצה» for many products, and a suggestion's approval /
+# undo — one transaction, all or nothing.
+@router.put("/{producer_id}/product-groups/assign", response_model=list[ProductOut])
+@limiter.limit("120/hour")  # MEH-3022
+def admin_move_products_between_groups(
+    request: Request,  # required by slowapi
+    producer_id: UUID,
+    body: GroupMovesIn,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> list[Product]:
+    moves = [(m.group_id, m.product_ids) for m in body.moves]
+    return svc.assign_many(db, _producer(db, producer_id), moves, include_drafts=True)
+
+
+# MEH-3478: an AI suggestion for the products in no group. Saves nothing; one
+# model call per press, so it is limited tighter than the writes.
+@router.post(
+    "/{producer_id}/product-groups/suggest", response_model=GroupSuggestionsOut
+)
+@limiter.limit("30/hour")
+def admin_suggest_product_groups(
+    request: Request,  # required by slowapi
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, object]:
+    return svc.suggestion_for(db, _producer(db, producer_id), include_drafts=True)

@@ -17,6 +17,7 @@ describe("Sentry environment label", () => {
     expect(clientSentryEnvironment("mehamakor.co.il")).toBe("production");
     expect(clientSentryEnvironment("WWW.mehamakor.co.il")).toBe("production");
     expect(clientSentryEnvironment("staging.mehamakor.online")).toBe("staging");
+    expect(clientSentryEnvironment("staging.mehamakor.co.il")).toBe("staging");
     expect(clientSentryEnvironment("food-mamkor-abc123.vercel.app")).toBe("preview");
     expect(clientSentryEnvironment("localhost")).toBe("development");
     expect(clientSentryEnvironment("")).toBe("development");

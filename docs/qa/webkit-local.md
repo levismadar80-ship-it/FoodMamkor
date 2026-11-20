@@ -70,7 +70,7 @@ Two domains were added to the environment's Network access (Limited mode) on 31/
 | Domain | Needed for |
 |---|---|
 | `playwright.download.prss.microsoft.com` | downloading the webkit binary |
-| `staging.mehamakor.online` | running specs against live staging |
+| `staging.mehamakor.co.il` | running specs against live staging |
 
 Without the first, the install 403s at the proxy.
 
@@ -85,7 +85,7 @@ cd frontend
 PW_WEBKIT=1 npx playwright test e2e/flows/<spec> --project=webkit-iphone13
 
 # live staging
-TEST_URL=https://staging.mehamakor.online PW_WEBKIT=1 \
+TEST_URL=https://staging.mehamakor.co.il PW_WEBKIT=1 \
   npx playwright test e2e/flows/<spec> --project=webkit-iphone13
 ```
 

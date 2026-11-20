@@ -61,8 +61,6 @@ export default function AdminProductImport({ producerId, onApproved, onDraftsCha
   // MEH-3472: group id → name, for the «קבוצה: …» line under each draft.
   const [groupNames, setGroupNames] = useState(/** @type {Record<string, string>} */ ({}));
   const onDraftsChangeRef = useRef(onDraftsChange);
-  // Kept current in an effect, not during render (react-hooks/refs); it runs
-  // before the drafts effect below, so that one always calls the latest.
   useEffect(() => {
     onDraftsChangeRef.current = onDraftsChange;
   }, [onDraftsChange]);

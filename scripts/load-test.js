@@ -2,7 +2,7 @@
  * MEH-559 — k6 load test for Mehamakor backend (FastAPI on Railway).
  *
  * Run target: Railway staging backend (foodmamkor-staging.up.railway.app),
- * NOT the Vercel frontend domain. Hitting staging.mehamakor.online routes
+ * NOT the Vercel frontend domain. Hitting staging.mehamakor.co.il routes
  * to Next.js page handlers (see frontend/app/[locale]/producers/) — the
  * frontend only proxies /api/:path* (next.config.js:130-134). The Vercel
  * Deployment Protection bypass header is preserved harmlessly so the
@@ -46,7 +46,7 @@
  *
  * Required env vars (set before `k6 run`):
  *   BASE_URL              default https://foodmamkor-staging.up.railway.app
- *                         (DO NOT override to staging.mehamakor.online —
+ *                         (DO NOT override to staging.mehamakor.co.il —
  *                         that's the Vercel frontend; /producers there
  *                         resolves to a Next.js page handler returning
  *                         HTML, not the FastAPI JSON endpoint. See

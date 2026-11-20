@@ -8,7 +8,7 @@ Does NOT: the response side — ProductOut.position/group_id and
           ProducerDetailOut.product_groups live in schemas.py with the rest of
           the public payload.
 Related:  app/routers/product_organize.py · app/limits.py MAX_PRODUCT_GROUPS
-History:  MEH-3055 (creation)
+History:  MEH-3055 (creation); MEH-3477 (moves); MEH-3478 (suggestion out)
 """
 
 from uuid import UUID
@@ -75,3 +75,43 @@ class ProductOrderIn(BaseModel):
 
 class ProductGroupAssignIn(BaseModel):
     group_id: str | None = Field(None, max_length=36)
+
+
+class GroupMoveIn(BaseModel):
+    """MEH-3477: these products go into `group_id` (None = out of any group)."""
+
+    group_id: str | None = Field(None, max_length=36)
+    product_ids: list[UUID] = Field(..., min_length=1, max_length=MAX_PRODUCTS)
+
+
+class GroupMovesIn(BaseModel):
+    """MEH-3477: several moves in one write — «העברה לקבוצה» for the products
+    the owner marked, and the approval (and undo) of a group suggestion."""
+
+    # One move per group plus one «no group».
+    moves: list[GroupMoveIn] = Field(
+        ..., min_length=1, max_length=MAX_PRODUCT_GROUPS + 1
+    )
+
+    @field_validator("moves")
+    @classmethod
+    def _each_product_once(cls, v: list[GroupMoveIn]) -> list[GroupMoveIn]:
+        ids = [pid for m in v for pid in m.product_ids]
+        if len(ids) > MAX_PRODUCTS:
+            raise ValueError(f"אפשר להעביר עד {MAX_PRODUCTS} מוצרים בבת אחת")
+        if len(set(ids)) != len(ids):
+            raise ValueError("אותו מוצר מופיע פעמיים ברשימה")
+        return v
+
+
+class GroupSuggestionOut(BaseModel):
+    """MEH-3478: one suggested group. `id` is set when the name matches a group
+    the business already has; None = a new group. Nothing is saved."""
+
+    id: str | None
+    name: str
+    product_ids: list[str]
+
+
+class GroupSuggestionsOut(BaseModel):
+    groups: list[GroupSuggestionOut]

@@ -37,8 +37,8 @@ AUTO_CONFIRM_NEEDS_CAP_DETAIL = (
 
 
 # MEH-3216 — Sapir approved NEEDS_ID 19/11 06:05Z.
-BUSINESS_ID_NEEDED_DETAIL = "כדי לקבל הזמנות באתר צריך למלא מספר עוסק."
-BUSINESS_ID_FORMAT_DETAIL = "מספר עוסק או ח״פ הוא 9 ספרות."
+BUSINESS_ID_NEEDED_DETAIL = "כדי לקבל הזמנות באתר צריך למלא מספר עוסק או תעודת זהות."
+BUSINESS_ID_FORMAT_DETAIL = "המספר צריך להיות 9 ספרות."
 BUSINESS_ID_DIGITS = 9
 _BUSINESS_ID_SHORT = (
     8  # a ת״ז-based number typed without its leading zero (shape below)

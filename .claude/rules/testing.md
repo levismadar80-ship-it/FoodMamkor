@@ -358,7 +358,7 @@ push). Staging only — the seed refuses production. Details:
 ### Corollary — a Railway `000` from the sandbox is NOT an outage
 
 `*.up.railway.app` is egress-blocked here. Probe the backend through
-`staging.mehamakor.online/api/…` with the headers above.
+`staging.mehamakor.co.il/api/…` with the headers above.
 
 ---
 
