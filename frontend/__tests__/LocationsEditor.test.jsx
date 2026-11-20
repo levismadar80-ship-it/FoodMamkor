@@ -635,3 +635,45 @@ describe("place hint, said once (MEH-2931)", () => {
     expect(he.more_summary).toContain("דיוק");
   });
 });
+
+// MEH-3512: a pickup point's days + own order cutoff are fields. A branch has
+// no such block and sends them empty; a pickup point round-trips them.
+describe("pickup schedule (MEH-3512)", () => {
+  it("a branch shows no pickup block and sends the fields empty", async () => {
+    await openAddForm();
+    expect(screen.queryByTestId("pickup-schedule")).toBeNull();
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() =>
+      expect(apiMock.post).toHaveBeenCalledWith(
+        LOCATIONS_URL,
+        expect.objectContaining({ pickup_days: [], order_cutoff_day: null, order_cutoff_time: null }),
+      ),
+    );
+  });
+
+  it("an edited pickup point loads its days and sends the changed ones in week order", async () => {
+    await openEditForm({
+      id: 7,
+      kind: "pickup",
+      city: "הבונים",
+      lat: 32.6,
+      lng: 34.9,
+      pickup_days: ["חמישי"],
+      order_cutoff_day: "רביעי",
+      order_cutoff_time: "15:00",
+    });
+    expect(screen.getByTestId("pickup-day-חמישי").checked).toBe(true);
+    fireEvent.click(screen.getByTestId("pickup-day-שלישי"));
+    fireEvent.click(screen.getByTestId("location-save"));
+    await waitFor(() =>
+      expect(apiMock.put).toHaveBeenCalledWith(
+        `${LOCATIONS_URL}/7`,
+        expect.objectContaining({
+          pickup_days: ["שלישי", "חמישי"],
+          order_cutoff_day: "רביעי",
+          order_cutoff_time: "15:00",
+        }),
+      ),
+    );
+  });
+});

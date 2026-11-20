@@ -19,6 +19,7 @@
 * `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון.
 * `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. כשאין רכיבים ואין אחסון, אין שורה (MEH-3450). ברשימת הרכיבים מודגשות המילים של אלרגנים שסומנו ב«מכיל» (MEH-3443).
 * `frontend/components/ProductPrice.jsx` · `frontend/lib/product-price.js` — המחיר עם היחידה («80₪ לבקבוק», MEH-2936). המחיר ב-span של `dir="ltr"`, היחידה אחריו ומחוץ לו. התוויות ב-namespace ‏`price_unit`, שנשלח לכל דף.
+* `frontend/components/PickupSchedule.jsx` — מתחת לנקודת איסוף: ימי האיסוף, שעת סגירת ההזמנה של הנקודה, ו«האיסוף הבא» (MEH-3512, החישוב ב-`frontend/lib/nextDelivery.js`).
 * `frontend/lib/hours.js` — פענוח שעות ומצב «פתוח עכשיו».
 * `frontend/lib/contact-method.js` — הבעלים היחיד של «מה הכפתור הראשי ולאן הוא מוביל».
 * `backend/app/routers/producers.py` — הפרט; `backend/app/services/producer_listing.py` — הרשימה.
