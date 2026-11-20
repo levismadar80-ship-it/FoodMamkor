@@ -106,10 +106,14 @@ async function mockProducers(page: Page) {
  *  and rating row — i.e. everything the panel is forbidden to touch. */
 async function collisionTargets(chip: Locator): Promise<{ name: string; box: Box }[]> {
   const card = chip.locator("xpath=ancestor::article[1]");
-  const strip = chip.locator("xpath=ancestor::div[contains(@class,'flex-wrap')][1]");
+  // MEH-3508: found by id — the photo strip no longer carries `flex-wrap`,
+  // and a class-based xpath that matches nothing would empty this loop.
+  const strip = card.locator('[data-testid="card-badge-strip"]');
   const targets: { name: string; box: Box }[] = [];
 
   const pills = strip.locator("button[data-badge], [aria-label]");
+  // A «+N» means at least one visible pill beside it (plus the +N itself).
+  expect(await pills.count(), "the strip's pills must be found").toBeGreaterThan(1);
   for (let i = 0; i < (await pills.count()); i++) {
     const pill = pills.nth(i);
     // Skip the +N trigger itself — a popover may touch its own trigger.

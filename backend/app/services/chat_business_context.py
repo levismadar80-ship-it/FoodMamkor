@@ -428,6 +428,13 @@ def facts(
                 "label": loc.label,
                 "city": loc.city,
                 "hours": loc.opening_hours,
+                # MEH-3512: the pickup weekdays and this point's own cutoff.
+                "pickup_days": loc.pickup_days or [],
+                "order_cutoff": (
+                    f"{loc.order_cutoff_day} {loc.order_cutoff_time}"
+                    if loc.order_cutoff_day and loc.order_cutoff_time
+                    else None
+                ),
             }
             for loc in producer.locations
             if loc.city
