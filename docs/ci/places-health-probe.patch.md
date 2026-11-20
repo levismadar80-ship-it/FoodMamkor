@@ -6,6 +6,13 @@
 > OSM tile probe added later (MEH-3356) is untouched. The replacement block in §2
 > below predates the tile probe — do not paste it as written.
 >
+> **Changed the same day, after review: every tick, not hourly.** The outage
+> issue opens after two consecutive failing ticks, and a URL probed on every
+> other tick can never fail twice in a row, so an hourly Places probe would
+> never have alerted. It now runs on every 30-minute tick (~1,440 requests a
+> month) and also fails on `{"status":"disabled"}`, which is a 200 that means
+> the key is missing. "Hourly" in the title and in §1–§2 is the original design.
+>
 > _Original status:_ ⏳ NOT APPLIED — written 28/10/2026. `.github/workflows/**` is
 > CC-deny for the filesystem tools (`.claude/settings.json`, MEH-671); Sapir
 > pastes the block below, or CC lands it through the Contents API per the
