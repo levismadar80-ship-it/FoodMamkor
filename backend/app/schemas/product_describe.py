@@ -1,3 +1,4 @@
+# guard-ok: backend/pyproject.toml is edit-denied for CC; Sapir adds this file to [tool.mypy].files (MEH-3479 PR)
 """
 Module:   product_describe (schemas)
 Purpose:  The request and answer of «הצעת תיאור» (MEH-3479). Every string is

@@ -1,3 +1,4 @@
+# guard-ok: backend/pyproject.toml is edit-denied for CC; Sapir adds this file to [tool.mypy].files (MEH-3479 PR)
 """
 Module:   product_describe
 Purpose:  «הצעת תיאור» (MEH-3479): Claude suggests a short description for one
@@ -34,12 +35,14 @@ DAILY_CAP = "30/day"
 
 
 def _business_key(request: Request) -> str:
-    key = getattr(request.state, "describe_key", None)
+    key = getattr(request.state, "ai_key", None)
     return key or get_real_client_ip(request)
 
 
 def _mark_owner(request: Request, user: User = Depends(require_producer)) -> User:
-    request.state.describe_key = f"describe:{user.producer_id}"
+    # producer_id is set for every owner require_producer admits; the user id
+    # is the fallback so a missing link can never share one bucket.
+    request.state.ai_key = f"describe:{user.producer_id or user.id}"
     return user
 
 
@@ -63,23 +66,19 @@ def suggest_my_product_description(
     return _answer(body)
 
 
-def _mark_admin_target(
-    request: Request, producer_id: UUID, user: User = Depends(require_admin)
-) -> User:
-    request.state.describe_key = f"describe:{producer_id}"
-    return user
-
-
 @router.post(
     "/admin/producers/{producer_id}/product-description/suggest",
     response_model=ProductDescribeOut,
 )
+# Admin: the hourly per-IP limit only, no daily business cap — the admin is
+# filling many businesses' drafts in one sitting (DraftProductsPanel), and the
+# route is behind require_admin.
 @limiter.limit("60/hour")
 def admin_suggest_product_description(
     request: Request,
     producer_id: UUID,
     body: ProductDescribeIn,
-    user: User = Depends(_mark_admin_target),
+    user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> ProductDescribeOut:
     if not db.query(Producer.id).filter(Producer.id == producer_id).first():

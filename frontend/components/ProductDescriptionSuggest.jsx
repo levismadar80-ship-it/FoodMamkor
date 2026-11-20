@@ -10,9 +10,11 @@
  * Does NOT: save the product, or moderate (the product POST/PUT does both).
  * Used by:  ProductsSection.jsx (owner, new + edit) and
  *           admin/DraftProductsPanel.jsx (admin, basePath /admin/producers/{id}).
+ * Focus:    the preview's textarea takes focus when it opens; «שימוש בהצעה» /
+ *           «ביטול» hand it back to the «הצעת תיאור» button (review, MEH-3479).
  * History:  MEH-3479 (creation)
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import Button from "@/components/ui/Button";
@@ -22,7 +24,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 const TOO_MANY = 429;
 
 /**
- * @typedef {{ name: string, description?: string|null, group?: string|null,
+ * @typedef {{ name?: string, description?: string|null, group?: string|null,
  *   price_min?: string|number|null, price_unit?: string|null }} DescribeInput
  */
 
@@ -30,7 +32,7 @@ const TOO_MANY = 429;
 function payload(input) {
   const price = input.price_min === "" || input.price_min == null ? null : String(input.price_min);
   return {
-    name: input.name.trim(),
+    name: (input.name || "").trim(),
     ...(input.group ? { group: input.group } : {}),
     ...(price ? { price_min: price, price_unit: input.price_unit || null } : {}),
     ...(input.description?.trim() ? { description: input.description.trim() } : {}),
@@ -49,9 +51,27 @@ export default function ProductDescriptionSuggest({ basePath = "/producers/me", 
   const t = useTranslations("settings.products.describe");
   const [phase, setPhase] = useState(/** @type {"idle"|"loading"|"preview"|"failed"|"limit"|"no_name"} */ ("idle"));
   const [text, setText] = useState("");
+  // By id, not a ref: ui/Button and ui/Textarea do not forward refs (React 18).
+  const previewId = `${idPrefix}-suggested-description`;
+  const ctaId = `${idPrefix}-describe-cta`;
+  const returnFocus = useRef(false);
+  const hintId = `${idPrefix}-describe-hint`;
+
+  useEffect(() => {
+    if (phase === "preview") document.getElementById(previewId)?.focus();
+    else if (phase === "idle" && returnFocus.current) {
+      returnFocus.current = false;
+      document.getElementById(ctaId)?.focus();
+    }
+  }, [phase, previewId, ctaId]);
+
+  const close = () => {
+    returnFocus.current = true;
+    setPhase("idle");
+  };
 
   const ask = async () => {
-    if (!input.name.trim()) {
+    if (!(input.name || "").trim()) {
       setPhase("no_name");
       return;
     }
@@ -74,7 +94,7 @@ export default function ProductDescriptionSuggest({ basePath = "/producers/me", 
     return (
       <div data-testid="description-suggestion" className="mt-2 border border-primary/30 rounded-md p-3 space-y-2">
         <Textarea
-          id={`${idPrefix}-suggested-description`}
+          id={previewId}
           label={t("preview_label")}
           value={text}
           rows={3}
@@ -88,12 +108,12 @@ export default function ProductDescriptionSuggest({ basePath = "/producers/me", 
             disabled={!text.trim()}
             onClick={() => {
               onUse(text.trim());
-              setPhase("idle");
+              close();
             }}
           >
             {t("use")}
           </Button>
-          <Button type="button" size="sm" variant="outlined" onClick={() => setPhase("idle")}>
+          <Button type="button" size="sm" variant="outlined" onClick={close}>
             {t("cancel")}
           </Button>
         </div>
@@ -104,10 +124,18 @@ export default function ProductDescriptionSuggest({ basePath = "/producers/me", 
   const message = { loading: "loading", failed: "failed", limit: "limit", no_name: "no_name" }[phase];
   return (
     <div data-testid="description-suggest" className="mt-2">
-      <Button type="button" size="sm" variant="secondary" onClick={ask} disabled={phase === "loading"}>
+      <Button
+        id={ctaId}
+        type="button"
+        size="sm"
+        variant="secondary"
+        onClick={ask}
+        disabled={phase === "loading"}
+        aria-describedby={hintId}
+      >
         {t("cta")}
       </Button>
-      <p className="text-xs text-fg-muted mt-1">{t("hint")}</p>
+      <p id={hintId} className="text-xs text-fg-muted mt-1">{t("hint")}</p>
       {message && <InlineMessage tone="info" className="mt-2">{t(message)}</InlineMessage>}
     </div>
   );

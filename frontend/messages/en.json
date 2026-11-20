@@ -6203,7 +6203,7 @@
         "cancel": "Cancel",
         "no_name": "Add the product's name first.",
         "failed": "We couldn't suggest a description this time. You can write it yourself.",
-        "limit": "You've reached today's number of suggestions. Try again tomorrow."
+        "limit": "You've reached the number of suggestions for now. Try again later."
       }
     },
     "locations": {

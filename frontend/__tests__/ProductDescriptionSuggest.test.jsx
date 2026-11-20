@@ -67,7 +67,7 @@ describe("ProductDescriptionSuggest (MEH-3479)", () => {
     expect(onUse).not.toHaveBeenCalled();
   });
 
-  it("a 503 shows the fallback line; a 429 the daily-limit line", async () => {
+  it("a 503 shows the fallback line; a 429 (hourly or daily) the limit line", async () => {
     mount();
     api.post.mockRejectedValueOnce({ response: { status: 503 } });
     press();
@@ -94,5 +94,17 @@ describe("ProductDescriptionSuggest (MEH-3479)", () => {
         description: "עוגת שמרים",
       }),
     );
+  });
+  it("focus: the preview takes it, «ביטול» hands it back to the button; the hint describes the button", async () => {
+    api.post.mockResolvedValue({ data: { description: "לחם עם קרום פריך." } });
+    mount();
+    const cta = screen.getByRole("button", { name: D.cta });
+    expect(cta).toHaveAttribute("aria-describedby", "t-describe-hint");
+    expect(document.getElementById("t-describe-hint")).toHaveTextContent(D.hint);
+    press();
+    const box = await screen.findByLabelText(D.preview_label);
+    await waitFor(() => expect(box).toHaveFocus());
+    fireEvent.click(screen.getByRole("button", { name: D.cancel }));
+    await waitFor(() => expect(screen.getByRole("button", { name: D.cta })).toHaveFocus());
   });
 });
