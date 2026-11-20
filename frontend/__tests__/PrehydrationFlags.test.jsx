@@ -76,10 +76,35 @@ describe("the inline flags script", () => {
     expect(authCtx).toContain('localStorage.getItem("token")');
   });
 
+  it("stops a native submit of a form marked data-no-native-submit, and only that form", () => {
+    runScript();
+    const guarded = document.createElement("form");
+    guarded.setAttribute("data-no-native-submit", "");
+    const plain = document.createElement("form");
+    document.body.append(guarded, plain);
+    const fire = (f) => {
+      const e = new Event("submit", { bubbles: true, cancelable: true });
+      f.dispatchEvent(e);
+      return e.defaultPrevented;
+    };
+    expect(fire(guarded)).toBe(true);
+    expect(fire(plain)).toBe(false);
+    guarded.remove();
+    plain.remove();
+  });
+
+  it("answering the banner flags <html> at once (a remount stays hidden)", async () => {
+    const { setCookieConsent } = await import("@/lib/cookie-consent");
+    setCookieConsent("essential");
+    expect(html.hasAttribute("data-cookie-answered")).toBe(true);
+  });
+
   it("the CSS hides only the pre-mount copies", () => {
     const css = fs.readFileSync(path.resolve(__dirname, "../app/globals.css"), "utf8");
     expect(css).toMatch(/html\[data-cookie-answered\] \.cookie-banner\[data-prehydration\]\s*\{\s*display: none;/);
     expect(css).toMatch(/html\[data-has-token\] \[data-auth-pending\]\s*\{\s*visibility: hidden;/);
+    expect(css).toMatch(/html\[data-has-token\] \[data-auth-pending\] \[data-auth-pending-note\]\s*\{\s*display: block;\s*visibility: visible;/);
+    expect(css).toMatch(/\n\[data-prehydration\]\s*\{\s*pointer-events: none;/);
   });
 });
 
@@ -102,10 +127,18 @@ describe("cookie banner", () => {
 });
 
 describe("/login", () => {
-  it("the server HTML holds the form while auth is resolving, marked pending", () => {
+  it("the server HTML holds the form while auth is resolving, marked pending and pre-mount", () => {
     const out = renderToString(<LoginClient />);
     expect(out).toContain('data-testid="login-email"');
     expect(out).toContain("data-auth-pending");
+    expect(out).toContain("data-auth-pending-note");
+    expect(out).toContain("data-prehydration");
+    expect(out).toMatch(/<form[^>]*method="post"[^>]*data-no-native-submit/);
+  });
+
+  it("after mount the login page takes taps (no pre-mount marker)", () => {
+    const { container } = render(<LoginClient />);
+    expect(container.querySelector("[data-prehydration]")).toBeNull();
   });
 
   it("once auth has decided for a guest, the form is unmarked and ?email= is prefilled", () => {

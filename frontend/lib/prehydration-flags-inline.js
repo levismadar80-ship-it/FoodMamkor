@@ -22,5 +22,9 @@
  */
 
 // Keys and values are written out, not interpolated: no value is spliced into
-// code. PrehydrationFlags.test.js pins them to cookie-consent.js and auth.
-export const PREHYDRATION_FLAGS_SCRIPT = `(function(){try{var d=document.documentElement,s=window.localStorage,c=s.getItem("cookieConsent");if(c==="all"||c==="essential")d.setAttribute("data-cookie-answered","");if(s.getItem("token"))d.setAttribute("data-has-token","")}catch(e){}})();`;
+// code. PrehydrationFlags.test.jsx pins them to cookie-consent.js and auth.
+// It also stops the browser's own submit of a form marked
+// data-no-native-submit (the login form): before hydration that would be a GET
+// with the password in the URL. React's own onSubmit still runs after
+// hydration, because preventDefault does not stop propagation.
+export const PREHYDRATION_FLAGS_SCRIPT = `(function(){document.addEventListener("submit",function(e){var f=e.target;if(f&&f.hasAttribute&&f.hasAttribute("data-no-native-submit"))e.preventDefault()},true);try{var d=document.documentElement,s=window.localStorage,c=s.getItem("cookieConsent");if(c==="all"||c==="essential")d.setAttribute("data-cookie-answered","");if(s.getItem("token"))d.setAttribute("data-has-token","")}catch(e){}})();`;

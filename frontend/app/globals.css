@@ -497,6 +497,17 @@ html[data-cookie-answered] .cookie-banner[data-prehydration] {
 html[data-has-token] [data-auth-pending] {
   visibility: hidden;
 }
+/* A stored session sees a «loading» line instead of an empty pane. */
+html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
+  display: block;
+  visibility: visible;
+}
+/* Server-rendered controls do nothing until React owns them, so they take no
+   taps until then (a tap would be lost): the banner and the login page drop
+   the marker once mounted. Text typed early is replayed (MEH-3164). */
+[data-prehydration] {
+  pointer-events: none;
+}
 /* Map z-index token system (see .claude/rules/rtl.md § "Map z-index tokens").
    The --z-* properties are emitted on :root from the Z_INDEX scale in
    tailwind.config.js (MEH-3169), so each value is written once:

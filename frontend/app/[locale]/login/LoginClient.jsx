@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -76,6 +76,7 @@ function QueryReader({ onRead }) {
 }
 
 const NO_QUERY = new URLSearchParams();
+const noSubscribe = () => () => {};
 
 function LoginPageBody() {
   const t = useTranslations("auth.login");
@@ -105,8 +106,18 @@ function LoginPageBody() {
   // a fresh owner was dropped on "/" with no path to the three required
   // items. An explicit, clamped ?redirect= still wins (review links,
   // MEH-1428), and consumers keep the MEH-810 default.
-  const landingFor = (me) =>
-    passedRedirect === null && me?.producer_id ? "/producer/dashboard" : redirectTo;
+  // MEH-2233: called only from effects and handlers. If the URL has not been
+  // read yet (a submit right after hydration), it reads it here, so an early
+  // submit still honours ?redirect= (clamped by safeInternalRedirect).
+  const landingFor = (me) => {
+    const q = query ?? new URLSearchParams(window.location.search);
+    const passed = safeInternalRedirect(q.get("redirect"), null);
+    return passed === null && me?.producer_id ? "/producer/dashboard" : safeInternalRedirect(q.get("redirect"));
+  };
+  // MEH-2233: false in the server HTML and the first client render. Until it
+  // flips, the page carries data-prehydration, which app/globals.css makes
+  // non-interactive: a tap on a control React does not own yet would be lost.
+  const mounted = useSyncExternalStore(noSubscribe, () => true, () => false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -120,14 +131,16 @@ function LoginPageBody() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Once the URL is read: ?email= prefills an untouched field, ?reset=1 toasts.
-  useEffect(() => {
-    if (!query) return;
-    const prefill = query.get("email");
+  // Stable on purpose: QueryReader re-runs on a new identity, and a second run
+  // would toast twice.
+  const onQuery = useCallback((/** @type {URLSearchParams} */ q) => {
+    setQuery(q);
+    const prefill = q.get("email");
     if (prefill) setEmail((current) => current || prefill);
-    if (query.get("reset") === "1") {
+    if (q.get("reset") === "1") {
       showToast.success(t("reset_success"));
     }
-  }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-1489 chunk C: an already-authenticated visitor never needs the login
   // form — bounce to the clamped ?redirect= target (falls back to "/" via the
@@ -224,7 +237,7 @@ function LoginPageBody() {
   // branches: the URL must be read even when the form never shows.
   const queryReader = (
     <Suspense fallback={null}>
-      <QueryReader onRead={setQuery} />
+      <QueryReader onRead={onQuery} />
     </Suspense>
   );
   if (user) {
@@ -240,7 +253,15 @@ function LoginPageBody() {
     <div
       className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2"
       data-auth-pending={authLoading ? "" : undefined}
+      data-prehydration={mounted ? undefined : ""}
     >
+      {/* Shown only to a stored session while auth decides (the form above is
+          hidden for her then): app/globals.css, html[data-has-token]. */}
+      {authLoading && (
+        <p data-auth-pending-note className="hidden max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
+          {t("loading")}
+        </p>
+      )}
       {queryReader}
 
       {/* Image pane — END (left) on desktop only (MEH-788). MEH-2397: the
@@ -347,9 +368,13 @@ function LoginPageBody() {
 
         {/* Email + password — labels above, 54px field rhythm */}
         {/* MEH-2623: noValidate — our inline Hebrew messages replace the
-            browser's own bubble; `required` stays on the inputs for a11y. */}
+            browser's own bubble; `required` stays on the inputs for a11y.
+            MEH-2233: the form is in the server HTML now. method="post" and
+            data-no-native-submit (stopped by lib/prehydration-flags-inline.js)
+            keep a submit before hydration from sending the fields as a GET
+            query string, i.e. the password in the URL. */}
         {!passkeyTicket && (
-        <form onSubmit={handleSubmit} noValidate className="grid gap-4">
+        <form onSubmit={handleSubmit} noValidate method="post" data-no-native-submit className="grid gap-4">
           <div className="grid gap-2 text-start">
             <label htmlFor="login-email" className="text-sm font-semibold text-text">
               {t("email_label")}
