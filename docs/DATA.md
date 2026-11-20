@@ -315,7 +315,7 @@ products       (id, producer_id FK, name, description,
                 is_no_added_sugar Boolean NOT NULL DEFAULT FALSE, -- MEH-1934: 5th dietary axis ("ללא סוכר מוסף"). NO backfill — no existing flag implies it, so seeding would invent a nutrition claim on the business's behalf
                 is_low_carb Boolean NOT NULL DEFAULT FALSE,
                 ingredients Text NULL,                           -- MEH-2662: owner-declared free-text ingredient list; NULL = not filled
-                price_unit String(8) NOT NULL DEFAULT 'unit',    -- MEH-3218: unit | kg | 100g; MEH-2936: + bottle | box; MEH-3474: + pack (CHECK products_price_unit_check). The price itself stays price_min/price_max; min == max is an exact price
+                price_unit String(10) NOT NULL DEFAULT 'unit',   -- MEH-3218: unit | kg | 100g; MEH-2936: + bottle | box; MEH-3474: + pack (CHECK products_price_unit_check). The price itself stays price_min/price_max; min == max is an exact price
                 is_draft Boolean NOT NULL DEFAULT false,         -- MEH-2312 (b1d19ee0e8c1): an admin-imported product waiting for approval. Invisible to every public read: the Producer.products relationship filters it (page, list, ?q=, diet/pickup .any(), favorites) and search.py / producer_listing.py has_product filter it too; the owner's own list / edit / reorder / featured / recipe-link skip it
                 source_image_url Text NULL,                      -- MEH-2312: the source store's image URL, stored only (MEH-1184 pending); never on a public schema, never uploaded
                 is_orderable Boolean NOT NULL DEFAULT TRUE,      -- MEH-3218: the opt-in is per BUSINESS (producer_order_settings.enabled); the owner can take a single product out
