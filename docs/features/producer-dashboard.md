@@ -17,6 +17,7 @@
 * `backend/app/routers/producer_me.py` — כל המספרים שהלוח מציג.
 * `frontend/lib/producer-completeness.js` · `frontend/components/ProfileCompletenessCard.jsx`
 * `frontend/components/MenuImport.jsx` · `frontend/components/MenuReviewRow.jsx` · `frontend/lib/menu-image.js` — «העלו תפריט» בכרטיס המוצרים (MEH-3430): צילום או PDF של תפריט, השרת קורא אותו עם Claude (`backend/app/services/menu_reader.py`, ‏`backend/app/routers/menu_import.py`), בעלת העסק בודקת ומפרסמת. רצועה עם הסבר כשיש 0–2 מוצרים, כפתור כשיש 3 ומעלה, ושורה ב«מה מחכה לך» כשאין מוצרים בכלל. בלי `ANTHROPIC_API_KEY` הקריאה עונה 503 והמסך מציג את שורת הכישלון.
+* `frontend/components/ProductDescriptionSuggest.jsx` — «הצעת תיאור» מתחת לשדה התיאור של מוצר (MEH-3479), בטופס של בעלת העסק (`frontend/components/ProductsSection.jsx`) ובטופס הטיוטה של האדמין (`frontend/components/admin/DraftProductsPanel.jsx`). השרת (`backend/app/routers/product_describe.py`, ‏`backend/app/services/description_writer.py`) מחזיר הצעה ולא שומר כלום; «שימוש בהצעה» ממלא את השדה, ושמירת המוצר שומרת ובודקת אותו.
 * `frontend/components/producer/OwnerAttentionCard.jsx` · `backend/app/services/owner_attention.py` — «מה מחכה לך» בבית הלוח (MEH-3108): הזמנות, ביקורות, הרשמות, קבוצות רכישה, «העלו תפריט» (MEH-3430), ומוצרים שלא סומנו בהם אלרגנים (MEH-3445).
 * `frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx` — שעות הפתיחה של מיקום. «אותן שעות לכל הימים הפתוחים» מעתיק את הטווחים של היום הפתוח הראשון לכל יום אחר שמסומן כפתוח (MEH-3438). הטסט `frontend/__tests__/MEH3438LessTyping.test.jsx`.
 
@@ -29,6 +30,7 @@
 * `tests/test_producer_me_delivery_fields.py` · `tests/test_producers_me_schema.py` · `tests/test_meh2697_availability_confirmed.py`
 * `frontend/components/ProductPriceUnitField.jsx` — «לפי מה המחיר?» בטופס המוצר, הוספה ועריכה (MEH-2936); הטסט `frontend/__tests__/ProductPriceUnit.test.jsx`.
 * `tests/test_meh3430_menu_import.py` · `frontend/__tests__/MenuImport.test.jsx` — העלאת תפריט: בדיקת הבייטים, מגבלות קבצים, 503 בלי AI, כפולים, תקרת 100 המוצרים, ומטריצת המצבים במסך.
+* `tests/test_meh3479_product_description.py` · `frontend/__tests__/ProductDescriptionSuggest.test.jsx` — הצעת תיאור: הרשאות, 503 בלי AI, טענות שלא בקלט נמחקות, תקרה יומית לבית עסק, ומצבי הכפתור.
 * `tests/test_meh3108_owner_attention.py` · `tests/test_meh3445_allergen_reminder.py` · `frontend/__tests__/OwnerAttentionCard.test.jsx` — «מה מחכה לך»: כל ספירה, ומטריצת 0 / 1 / רבים של השורות.
 
 **מזהי רישום שזה מכסה.** כל קבוצת `insights`, ‏`vanity_link`, ‏`qr_code`, ‏`completeness`, ‏`multi_locations`.

@@ -9,6 +9,7 @@ import { DraftProductSchema } from "@/lib/api-schemas";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import AdminProductImageButton from "@/components/admin/AdminProductImageButton";  // MEH-3456
 import Input from "@/components/ui/Input";
+import ProductDescriptionSuggest from "@/components/ProductDescriptionSuggest"; // MEH-3479
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 
@@ -207,6 +208,12 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
           placeholder={tForm("description_placeholder")}
           value={form.description}
           onChange={set("description")}
+        />
+        <ProductDescriptionSuggest
+          basePath={`/admin/producers/${producerId}`}
+          idPrefix="draft-product"
+          input={form}
+          onUse={(d) => setForm((f) => ({ ...f, description: d }))}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
