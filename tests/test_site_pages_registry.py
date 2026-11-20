@@ -52,6 +52,41 @@ def test_route_check_sees_a_missing_page() -> None:
     assert _route_exists("/events")  # lives under the (whats-on) group
 
 
+_UNCHECKED_TREES = ("admin", "dev")
+
+
+def _static_pages() -> set[str]:
+    # Every page.js(x) URL with no [param] segment, outside the admin/dev trees
+    # and the dashboard's own sub-pages.
+    found = set()
+    for page in APP.rglob("page.js*"):
+        rel = [p for p in page.parent.relative_to(APP).parts if not p.startswith("(")]
+        if any(p.startswith("[") for p in rel) or (rel and rel[0] in _UNCHECKED_TREES):
+            continue
+        if rel[:2] == ["producer", "dashboard"] and len(rel) > 2:
+            continue
+        found.add("/" + "/".join(rel))
+    return found
+
+
+def test_every_new_page_is_known_to_the_assistant() -> None:
+    # MEH-3528: a new page lands either on the assistant's list
+    # (app/site_pages.py SITE_PAGES) or in NOT_FOR_ASSISTANT with a reason.
+    pages = _static_pages() - {"/"}
+    known = site_pages.PATHS | set(site_pages.NOT_FOR_ASSISTANT)
+    assert sorted(pages - known) == []
+    # And the exclusion list holds no page that is gone.
+    assert sorted(set(site_pages.NOT_FOR_ASSISTANT) - pages) == []
+    assert not set(site_pages.NOT_FOR_ASSISTANT) & site_pages.PATHS
+
+
+def test_static_page_scan_sees_real_pages() -> None:
+    # Control: the scan above must find pages, or its check passes on nothing.
+    pages = _static_pages()
+    assert {"/join/pricing", "/events", "/map", "/producer/dashboard"} <= pages
+    assert not any("[" in p or p.startswith("/admin") for p in pages)
+
+
 def test_every_page_has_a_link_label_in_both_locales() -> None:
     for locale in ("he", "en"):
         labels = json.loads(

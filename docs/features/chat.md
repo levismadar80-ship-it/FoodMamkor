@@ -26,7 +26,7 @@
 * `frontend/__tests__/businessChatPrompts.test.js` — 0 / 1 / רבות שאלות, עסק בלי משלוחים לא מקבל שאלת משלוחים.
 * `frontend/__tests__/ChatWidgetBusiness.test.jsx` — אין כפתור צף בדף, החלון נפתח לבית העסק ושולח `producer_id`, הפוקוס חוזר לכפתור.
 * `tests/test_meh3384_prompt_caching.py` — מבנה ה-system וה-cache, ושהתשובה יוצאת גם בלי מוני cache.
-* `tests/test_site_pages_registry.py` — MEH-3528: שתי הרשימות שוות, כל נתיב הוא עמוד אמיתי, אין בהנחיה עמוד בשם בלי נתיב, אין «בלי עמלה», והכלים מהרישום נמצאים בהנחיה.
+* `tests/test_site_pages_registry.py` — MEH-3528: שתי הרשימות שוות, כל נתיב הוא עמוד אמיתי, אין בהנחיה עמוד בשם בלי נתיב, אין «בלי עמלה», והכלים מהרישום נמצאים בהנחיה. וגם: כל עמוד חדש באתר נמצא ברשימת העוזרת או ב-`NOT_FOR_ASSISTANT` עם סיבה, אחרת הטסט נכשל.
 * `frontend/__tests__/ChatSiteLinks.test.jsx` — נתיב מהרשימה הופך לקישור, נתיב מומצא / URL / תשובה ריקה נשארים טקסט.
 * `frontend/__tests__/ChatKnowledgeSync.test.js` — העותק של הכלים שה-backend קורא מעודכן.
 * `frontend/__tests__/PageMentionLinkGuard.test.js` — בכל האתר: מחרוזת שמפנה לעמוד שלנו בשם צריכה תג קישור.

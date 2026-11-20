@@ -53,6 +53,43 @@ RESCUE_PAGE: Final = ("rescue", "/rescue", "סלי הפתעה")
 
 PATHS: Final = frozenset(path for _, path, _ in (*SITE_PAGES, RESCUE_PAGE))
 
+# MEH-3528: every static page on the site is either on the list above or here,
+# with the reason the assistant does not send visitors to it.
+# tests/test_site_pages_registry.py fails on a new page that is in neither, so
+# nobody has to remember to tell the assistant about a new page.
+# Not checked: pages with a [param] segment (one per business, event, token),
+# and the /admin, /dev and /producer/dashboard/* subtrees (the assistant
+# points to /producer/dashboard itself).
+_FLOW = "reached from an email or a step in a flow, not a place to send a visitor"
+_ABOUT = "a content page under /about; the assistant points to /about or /join"
+NOT_FOR_ASSISTANT: Final[dict[str, str]] = {
+    "/about/badges": _ABOUT,
+    "/about/for-businesses": _ABOUT,
+    "/about/for-businesses/guides": _ABOUT,
+    "/about/for-businesses/guides/business-story": _ABOUT,
+    "/about/for-businesses/guides/customer-messages": _ABOUT,
+    "/about/for-businesses/guides/product-photography": _ABOUT,
+    "/about/process": _ABOUT,
+    "/about/why-local": _ABOUT,
+    "/account-deleted": _FLOW,
+    "/business-gone": _FLOW,
+    "/claim": "a business owner claims a listing from its business page",
+    "/delivery-waitlist/host-confirm": _FLOW,
+    "/delivery-waitlist/unsubscribe": _FLOW,
+    "/forgot-password": "reached from /login",
+    "/freshness/confirm": _FLOW,
+    "/messages": "the signed-in visitor's own inbox, reached from the header",
+    "/newsletter/confirm": _FLOW,
+    "/newsletter/unsubscribe": _FLOW,
+    "/owner-invite": _FLOW,
+    "/producers": "the directory list; the assistant sends visitors to /map",
+    "/register/organizer": "event organizers are outside the assistant's knowledge",
+    "/reset-password": _FLOW,
+    "/settings": "the signed-in visitor's own settings, reached from the header",
+    "/unsubscribe/weekly": _FLOW,
+    "/verify-email": _FLOW,
+}
+
 
 def pages_prompt_section(*, include_rescue: bool = False) -> str:
     pages = (*SITE_PAGES, RESCUE_PAGE) if include_rescue else SITE_PAGES
