@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.limits import enforce_cap
 from app.auth import require_producer
 from app.database import get_db
+from app.services import pickup_schedule  # MEH-3512
 from app.services.city_centroid import city_centroid  # MEH-2480
 from app.rate_limit import limiter
 from app.models import Producer, ProducerLocation, User
@@ -394,6 +395,7 @@ def create_my_location(
     enforce_cap(existing_count, "locations")  # MEH-3022
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
     _fill_centroid_when_unpinned(db, loc)
+    pickup_schedule.settle(loc)  # MEH-3512
 
     # MEH-1938 follow-up (Sapir, 02/09) — branch-only primaries are enforced
     # HERE too, not only on the update path. A rule that the create path can
@@ -471,6 +473,7 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
     for field, value in patch.items():
         setattr(loc, field, value)
     _fill_centroid_when_unpinned(db, loc)
+    pickup_schedule.settle(loc)  # MEH-3512
 
     if want_primary is True:
         # MEH-1938 follow-up (Sapir, 02/09): promotion is BRANCH-ONLY, and this

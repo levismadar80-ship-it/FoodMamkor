@@ -516,12 +516,9 @@ class ProducerLocationUpdate(BaseModel):
     def _cut_time(cls, v: str | None) -> str | None:
         return order_cutoff.cutoff_time(v)
 
-    @model_validator(mode="after")
-    def _cutoff_pair(self) -> Self:
-        sent = self.model_fields_set & {"order_cutoff_day", "order_cutoff_time"}
-        if sent:
-            order_cutoff.check_pair(self.order_cutoff_day, self.order_cutoff_time)
-        return self
+    # MEH-3512: no pair check here — a partial PUT may send one half while the
+    # other is stored. services/pickup_schedule.settle() checks the pair on the
+    # merged row, after the patch is applied.
 
     # MEH-3342 finding 2: `kind` and `location_precision` are NOT NULL columns
     # (models/catalog.py:231, :244). `None` is this schema's "not supplied"
