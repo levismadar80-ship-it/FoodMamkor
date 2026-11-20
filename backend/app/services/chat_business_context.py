@@ -219,6 +219,30 @@ def open_now(raw: str | None, now: datetime) -> bool | None:
     return any(o <= minute < c for o, c in hours.get(weekday, []))
 
 
+_DAY_NAMES_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
+
+
+def next_opening(raw: str | None, now: datetime) -> str | None:
+    """MEH-3504: the next opening from now, e.g. «ראשון 07:00» (or «היום 07:00»),
+    computed here so the model never works out the week itself. None when the
+    hours cannot be read, or when the business is open now."""
+    hours = _parse_hours(raw)
+    if hours is None:
+        return None
+    today = (now.weekday() + 1) % 7  # Python Mon=0 → Sun=0
+    minute = now.hour * 60 + now.minute
+    if any(o <= minute < c for o, c in hours.get(today, [])):
+        return None
+    for ahead in range(8):
+        day = (today + ahead) % 7
+        starts = [o for o, _ in hours.get(day, []) if ahead > 0 or o > minute]
+        if starts:
+            o = min(starts)
+            when = "היום" if ahead == 0 else ("מחר" if ahead == 1 else _DAY_NAMES_HE[day])
+            return f"{when} {o // 60:02d}:{o % 60:02d}"
+    return None
+
+
 # ---------- the asked city ----------
 
 _CITY_NAMES = sorted({*ISRAEL_CITIES, *CITY_ALIASES}, key=len, reverse=True)
@@ -365,6 +389,10 @@ def facts(
         "now_in_israel": now.strftime("%A %H:%M"),
         "opening_hours": hours,
         "open_now": is_open,
+        # MEH-3504: None while open, on vacation or paused (no promise to make).
+        "next_opening": None
+        if is_open or state not in (None, "accepting_orders")
+        else next_opening(hours, now),
         "special_hours": producer.special_hours,
         "order_window": producer.order_window,
         "on_vacation_until": until,
@@ -421,7 +449,8 @@ PREAMBLE = (
     "לפנות אליו דרך העמוד שלו באתר (page). "
     "על משלוח לעיר: delivers_to_asked_city הוא התשובה; אל תנחשי. "
     "על שעות: open_now הוא התשובה (null = השעות כתובות בצורה שאי אפשר לחשב, "
-    "ציטטי את opening_hours). "
+    "ציטטי את opening_hours). מתי נפתחים שוב: next_opening הוא התשובה; "
+    "אל תחשבי ימים או שעות בעצמך. "
     "על אלרגנים ותזונה: אל תתני עצה רפואית ואל תבטיחי שמוצר בטוח. אמרי מה כתוב "
     "בעמוד («כתוב בעמוד ש…») והוסיפי שכדאי לוודא מול בית העסק לפני הזמנה."
 )

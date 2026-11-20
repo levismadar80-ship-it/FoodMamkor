@@ -2165,7 +2165,7 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  business's facts in a <business_page> block:
                                  services/chat_business_context.py facts() — store hours
                                  (primary location, then the legacy column) + open_now (Israel
-                                 clock; false on vacation/paused), special_hours, order_window,
+                                 clock; false on vacation/paused) + next_opening (MEH-3504, computed, never left to the model), special_hours, order_window,
                                  delivery areas/days/min order/fee, nationwide and excluded
                                  cities, delivers_to_asked_city (false when offers_delivery is
                                  off), pickup points (kind, label, city, hours), contact method
