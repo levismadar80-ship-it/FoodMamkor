@@ -2166,11 +2166,18 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  services/chat_business_context.py facts() — store hours
                                  (primary location, then the legacy column) + open_now (Israel
                                  clock; false on vacation/paused) + next_opening (MEH-3504, computed, never left to the model), special_hours, order_window,
-                                 delivery areas/days/min order/fee, nationwide and excluded
+                                 delivery areas (MEH-3510: every day, zone, min order, fee,
+                                 free_above, next_delivery computed from the order cutoff and
+                                 vacation), nationwide and excluded
                                  cities, delivers_to_asked_city (false when offers_delivery is
                                  off), pickup points (kind, label, city, hours), contact method
                                  (not the contact), site ordering, payment methods, whole-kitchen
-                                 dietary scope, up to 60 non-draft products through ProductOut.
+                                 dietary scope, non-draft products up to limits.MAX_PRODUCTS
+                                 (MEH-3505; price unit in Hebrew + product group, MEH-3510).
+                                 MEH-3510: activities (public events, workshops/experiences,
+                                 open group buys, 10 each), rating {average, count} and up to
+                                 20 newest public reviews with text (stars, text, business
+                                 reply; no reviewer name, hidden and conflict reviews out).
                                  Lookup failure → the block is left out, the chat still answers.
                                  MEH-3489: optional body field producer_id (UUID) = the business
                                  page the chat was opened from. Read only as a public business

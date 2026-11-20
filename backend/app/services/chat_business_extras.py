@@ -21,13 +21,13 @@ History:  MEH-3510 (creation; reviews the page shows, no names)
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
-from app.utils.clock import israel_now, israel_today
+from app.utils.clock import ISRAEL_TZ, israel_now, israel_today
 
 # frontend/lib/delivery-days.js DELIVERY_DAYS (Sunday = 0).
 DAYS_HE = ("ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת")
@@ -148,6 +148,14 @@ def _money(value: Any) -> str | None:
     return None if value is None or value == 0 else f"{value} ₪"
 
 
+def _israel_date(at: datetime | None) -> str | None:
+    """A stored deadline (naive UTC) as the Israel date the page shows."""
+    if at is None:
+        return None
+    aware = at if at.tzinfo else at.replace(tzinfo=UTC)
+    return aware.astimezone(ISRAEL_TZ).date().isoformat()
+
+
 def activities(producer: Any) -> dict[str, list[dict[str, Any]]] | None:
     """The business's public events, workshops/experiences and open group
     buys — the same «public» predicates the site's lists use."""
@@ -218,7 +226,7 @@ def activities(producer: Any) -> dict[str, list[dict[str, Any]]] | None:
                 "group_price": _money(g.price_per_unit_group),
                 "regular_price": _money(g.price_per_unit_regular),
                 "unit": g.unit,
-                "until": g.deadline.date().isoformat() if g.deadline else None,
+                "until": _israel_date(g.deadline),
             }
             for g in buys
         ],

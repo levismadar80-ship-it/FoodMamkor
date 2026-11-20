@@ -12,6 +12,7 @@ hidden one stays out.
 import json
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 from uuid import uuid4
 
 from conftest import make_producer, make_user
@@ -180,7 +181,13 @@ def test_public_activities_reach_the_chat_and_hidden_ones_do_not(db):
     future = israel_today() + timedelta(days=10)
     db.add_all(
         [
-            Event(producer_id=p.id, title="שוק איכרים", event_date=future, price=0, category="שוק"),
+            Event(
+                producer_id=p.id,
+                title="שוק איכרים",
+                event_date=future,
+                price=0,
+                category="שוק",
+            ),
             Event(
                 producer_id=p.id,
                 title="אירוע שבוטל",
@@ -244,8 +251,54 @@ def test_another_business_activities_stay_out_and_none_is_null(db):
     assert ctx.facts(mine, "יש אירועים?")["activities"] is None
 
 
-def test_the_preamble_says_the_dates_are_computed():
-    assert "next_delivery" in ctx.PREAMBLE and "activities" in ctx.PREAMBLE
+def test_the_preamble_says_the_dates_are_computed_and_reviews_are_opinions():
+    assert "next_delivery" in ctx.PREAMBLE
+    assert "activities" in ctx.PREAMBLE
+    assert "reviews" in ctx.PREAMBLE
+    assert "לקוחות כתבו ש" in ctx.PREAMBLE
+    assert "אל תציגי ביקורת כעובדה" in ctx.PREAMBLE
+
+
+def test_the_order_cutoff_moves_the_next_delivery_through_facts(db):
+    p = _business(db, order_window=TUESDAY_ORDERS)
+
+    def wednesday_after(now):
+        areas = ctx.facts(p, "מתי משלוח?", now=now)["delivery"]["areas"]
+        return next(a for a in areas if a["city"] == "קריית ביאליק")["next_delivery"]
+
+    assert wednesday_after(_at(2, 17, 59)) == {"date": "2026-11-25", "day": "רביעי"}
+    assert wednesday_after(_at(2, 18, 0)) == {"date": "2026-12-02", "day": "רביעי"}
+
+
+def test_a_producer_without_a_db_session_gives_no_activities_or_reviews():
+    bare = SimpleNamespace(id=uuid4())
+    assert extras.activities(bare) is None
+    assert extras.reviews(bare) is None
+    area = SimpleNamespace(
+        city="חיפה", delivery_day="שני", min_order=None, delivery_fee=None
+    )
+    producer = SimpleNamespace(
+        offers_delivery=True,
+        delivery_nationwide=False,
+        delivery_excluded_cities=None,
+        delivery_areas=[area],
+        delivery_fee=None,
+        free_delivery_above=None,
+    )
+    got = ctx._delivery(producer, False, _at(0, 10))["areas"][0]
+    assert got["zone"] is None and got["free_above"] is None
+    assert got["next_delivery"] == {"date": "2026-11-23", "day": "שני"}
+
+
+def test_a_group_buy_deadline_is_the_israel_date(db):
+    p = make_producer(db, name="מאפיית הדגמה")
+    late = datetime.now(UTC).replace(hour=22, minute=30, second=0, microsecond=0)
+    late += timedelta(days=3)
+    _group_buy(db, p, "קמח בקבוצה", deadline=late.replace(tzinfo=None))
+    db.commit()
+    buys = extras.activities(p)["open_group_buys"]
+    assert buys[0]["until"] == late.astimezone(ISRAEL_TZ).date().isoformat()
+    assert buys[0]["until"] != late.date().isoformat()
 
 
 # ---------- reviews ----------

@@ -362,7 +362,7 @@ def _availability(producer: Any) -> tuple[str | None, str | None]:
 
 
 def _delivery(producer: Any, on_vacation: bool, now: datetime) -> dict[str, Any]:
-    window = producer.order_window
+    window = getattr(producer, "order_window", None)
     return {
         "offers_delivery": bool(producer.offers_delivery),
         "nationwide": bool(producer.delivery_nationwide),
@@ -376,10 +376,10 @@ def _delivery(producer: Any, on_vacation: bool, now: datetime) -> dict[str, Any]
                 "next_delivery": extras.next_delivery(
                     extras.row_days(a), window, on_vacation, now
                 ),
-                "zone": a.zone_name,
+                "zone": getattr(a, "zone_name", None),
                 "min_order": _money(a.min_order),
                 "fee": _money(a.delivery_fee),
-                "free_above": _money(a.free_delivery_above),
+                "free_above": _money(getattr(a, "free_delivery_above", None)),
             }
             for a in producer.delivery_areas
         ],
@@ -488,7 +488,8 @@ PREAMBLE = (
     "מתי המשלוח הבא לעיר: next_delivery של אותה עיר הוא התשובה (null = אין "
     "תאריך שאפשר לחשב); אל תחשבי תאריכים בעצמך. "
     "על סדנאות, אירועים וקבוצות רכישה: activities הוא התשובה. "
-    "מה לקוחות אומרים: reviews (מה שלקוחות כתבו, לא בית העסק). ציטטי "
+    "מה לקוחות אומרים: reviews (מה שלקוחות כתבו, לא בית העסק; רק הביקורות "
+    "האחרונות עם טקסט, והמספר המלא ב-rating.count). ציטטי "
     "«לקוחות כתבו ש…», אל תציגי ביקורת כעובדה ואל תמציאי ביקורת. "
     "על אלרגנים ותזונה: אל תתני עצה רפואית ואל תבטיחי שמוצר בטוח. אמרי מה כתוב "
     "בעמוד («כתוב בעמוד ש…») והוסיפי שכדאי לוודא מול בית העסק לפני הזמנה."
