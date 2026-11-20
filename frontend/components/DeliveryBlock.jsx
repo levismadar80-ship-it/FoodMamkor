@@ -12,6 +12,7 @@ import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
+import PickupSchedule from "@/components/PickupSchedule"; // MEH-3512
 import { daysOfRow } from "@/lib/nextDelivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
@@ -280,7 +281,7 @@ function CompactCities({ areas, t }) {
 // producer's locations[] — label (falls back to city) · city · opening_hours ·
 // phone as tel: (MEH-2477) · an outbound Waze nav link built from lat/lng (lib/nav-links.js coordsNavLinks; no
 // second in-page map — NN/g scroll-trap). Street address stays off (MEH-829).
-function PickupRow({ loc, t, tMap }) {
+function PickupRow({ loc, t, tMap, producer = null }) {
   // MEH-2592 C: Google Maps beside Waze. MEH-2994: both from lib/nav-links.js,
   // the builder MiniMap uses — null when the point is missing.
   const nav = coordsNavLinks(loc.lat, loc.lng);
@@ -301,6 +302,8 @@ function PickupRow({ loc, t, tMap }) {
             <HoursText text={loc.opening_hours} />
           </p>
         )}
+        {/* MEH-3512: pickup days + own cutoff + next pickup, from fields. */}
+        <PickupSchedule loc={loc} producer={producer} />
         {/* MEH-2477: the stand's own number (LocationsEditor), tap-to-call —
             the click-to-call MEH-1509 served the field for. The number is its
             own label (as on a Google Maps place card); dir=ltr keeps
@@ -363,7 +366,7 @@ function PickupRow({ loc, t, tMap }) {
 // Only the number changes — the component below is untouched.
 const PICKUP_PREVIEW_LIMIT = 3;
 
-function PickupRows({ locations, t, tMap }) {
+function PickupRows({ locations, t, tMap, producer = null }) {
   const [expanded, setExpanded] = useState(false);
   const sorted = [...locations].sort(
     (a, b) =>
@@ -385,7 +388,7 @@ function PickupRows({ locations, t, tMap }) {
       </FactLine>
       <ul className={LIST_CARD}>
         {visible.map((loc, i) => (
-          <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} t={t} tMap={tMap} />
+          <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} t={t} tMap={tMap} producer={producer} />
         ))}
       </ul>
       {overLimit && (
@@ -789,7 +792,7 @@ export default function DeliveryBlock({
           location rows → today's generic single line, so no producer loses
           information. MEH-1461 language lock: "איסוף עצמי" only. */}
       {hasPickupRows ? (
-        <PickupRows locations={pickupLocations} t={t} tMap={tMap} />
+        <PickupRows locations={pickupLocations} t={t} tMap={tMap} producer={producer} />
       ) : (
         pickup && (
           <FactLine icon={Package} className="text-base font-bold text-text mb-4" data-testid="pickup-heading">

@@ -1,3 +1,11 @@
+> **✅ Status: APPLIED 20/11/2026 (MEH-3520)** — option (b), through the GitHub
+> web editor, adapted to the gate's current `if:` (MEH-3453, MEH-3507 added
+> conjuncts since this was written): the `e2e-gate` job does not run on a
+> `push` whose suite was skipped while the paths filter succeeded. Line numbers
+> below are from 08/2026. Appendix B (a `testing.md` line) was not added:
+> rule 41 and `scripts/ci/staging_health.py` already say that a skipped run
+> is not a green.
+
 # `E2E gate` — skip-green on `push` to `staging` (MEH-1799)
 
 `.github/workflows/**` is **CC-deny (MEH-671)**, so Claude Code cannot apply this

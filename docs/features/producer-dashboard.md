@@ -10,7 +10,7 @@
 
 **קבצים מרכזיים**
 * `frontend/lib/business-features.js` — הרישום שמכתיב מה קיים ואיפה זה יושב (`dashboard: { home, href }`).
-* `frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx` — מיקומים ואזורי משלוח.
+* `frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx` — מיקומים ואזורי משלוח. לנקודת איסוף ולדוכן: ימי איסוף ושעת סגירת הזמנה משלה (MEH-3512) ב-`frontend/app/[locale]/producer/dashboard/edit/PickupScheduleField.jsx`. הטסטים `tests/test_meh3512_pickup_days.py` · `frontend/__tests__/LocationsEditor.test.jsx`.
 * `frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx` — משלוחים: ערים, יום ומינימום הזמנה לכל עיר (MEH-3475), ו-`frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx` ליום אחד לכמה ערים. אותו כרטיס מוצג גם בעמוד העריכה של האדמין. «אזורי משלוח» (MEH-3484) ב-`frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryZonesEditor.jsx`: אזור עם שם, ערים מתוך רשימת הערים, כמה ימים, מינימום, עלות וסף משלוח חינם; השרת מעתיק את הערכים לערים (`backend/app/services/delivery_zones.py`). הטסטים `frontend/__tests__/DeliveryZonesEditor.test.jsx` · `tests/test_meh3484_delivery_zones.py`.
 * `frontend/app/[locale]/producer/dashboard/insights/page.js` — תובנות.
 * `frontend/components/producer/WeeklySummaryToggle.jsx` — «סיכום שבועי במייל» בתחתית תובנות (MEH-3212): מתג שמחזיר את המייל אחרי הסרה. מוסתר כשהמייל כבוי לכל האתר; הטסט `frontend/__tests__/WeeklySummaryToggle.test.jsx`.
