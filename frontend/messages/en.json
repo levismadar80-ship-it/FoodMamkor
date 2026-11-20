@@ -1021,7 +1021,7 @@
         "total_estimate": "Total, approximately: ₪{total}",
         "payment_line": "You pay the business directly: {methods}. No payment on the site.",
         "cancel_line": "You can cancel or change until {cutoff}.",
-        "seller_line": "Seller: {name} · Business no. {number}{city, select, none {} other { · {city}}}",
+        "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}",
         "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
         "send": "Send the request",
         "close": "Close",
@@ -5775,10 +5775,10 @@
           "saved": "Saved",
           "cap_required": "To confirm automatically, choose how many orders per slot",
           "bad_amount": "Write the amount in numbers",
-          "business_id": "Business or company number",
-          "business_id_help": "Shown to customers on the order form, as the law requires.",
-          "business_id_required": "To take orders on the site, fill in your business number.",
-          "business_id_format": "A business or company number has 9 digits.",
+          "business_id": "Business, company or ID number",
+          "business_id_help": "Shown to customers on the order form, as the law requires. No business number? You can fill in your ID number.",
+          "business_id_required": "To take orders on the site, fill in your business or ID number.",
+          "business_id_format": "The number must have 9 digits.",
           "commission": "Orders through the site carry a commission according to your plan. <link>Details in the terms</link>."
         },
         "windows": {
@@ -5875,7 +5875,7 @@
         },
         "checklist": {
           "title": "What's missing to take orders",
-          "business_id": "Business or company number",
+          "business_id": "Business, company or ID number",
           "windows": "Hand-over hours",
           "product": "At least one product open for ordering",
           "enabled": "Turn on \"Take orders on the site\"",
