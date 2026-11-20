@@ -6173,7 +6173,7 @@
         "saved": "נשמר",
         "save_failed": "השמירה לא הצליחה. כדאי לנסות שוב.",
         "order_where_sections": "המוצרים מוצגים לפי הקבוצות, כמו בדף שלכם. אפשר לסמן כמה מוצרים ולהעביר אותם לקבוצה בבת אחת.",
-        "selected_count": "{count, plural, one {מוצר אחד נבחר} other {# מוצרים נבחרו}}",
+        "selected_count": "{count, plural, one {מוצר אחד נבחר} two {# מוצרים נבחרו} other {# מוצרים נבחרו}}",
         "move_to_group": "העברה לקבוצה",
         "clear_selection": "ביטול הבחירה",
         "select_aria": "סימון {name}",
