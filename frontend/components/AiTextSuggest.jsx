@@ -6,7 +6,8 @@
  *           an editable preview, and on «שימוש ב…» hands it to the caller's
  *           field. The caller's own save stores it — never this component.
  * Touches:  whatever `request` calls (the caller owns the endpoint).
- * Does NOT: save, send or moderate. Copy comes from the caller's namespace:
+ * Does NOT: save, send or moderate. Copy comes from the caller's `t`, built
+ *           from a literal namespace so the messages scan (MEH-2233) sees it:
  *           cta, hint, loading, preview_label, use, cancel, failed, limit,
  *           and no_name when `ready` can say no.
  * Focus:    the preview's textarea takes focus when it opens; «ביטול» hands
@@ -17,7 +18,6 @@
  * History:  MEH-3479 (as ProductDescriptionSuggest); MEH-3480 (made generic)
  */
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -26,7 +26,7 @@ const TOO_MANY = 429;
 
 /**
  * @param {{
- *   namespace: string,
+ *   t: (key: string) => string,
  *   request: () => Promise<string>,
  *   ready?: () => boolean,
  *   onUse: (text: string) => void,
@@ -37,7 +37,7 @@ const TOO_MANY = 429;
  * }} props
  */
 export default function AiTextSuggest({
-  namespace,
+  t,
   request,
   ready,
   onUse,
@@ -46,7 +46,6 @@ export default function AiTextSuggest({
   maxLength = 2000,
   focusAfterUse,
 }) {
-  const t = useTranslations(namespace);
   const [phase, setPhase] = useState(/** @type {"idle"|"loading"|"preview"|"failed"|"limit"|"no_name"} */ ("idle"));
   const [text, setText] = useState("");
   // By id, not a ref: ui/Button and ui/Textarea do not forward refs (React 18).

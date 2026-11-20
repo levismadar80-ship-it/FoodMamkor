@@ -13,6 +13,7 @@
  * History:  MEH-3479 (creation); MEH-3480 (the button + preview moved to
  *           AiTextSuggest.jsx, shared with the review-reply draft)
  */
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import AiTextSuggest from "@/components/AiTextSuggest";
 
@@ -41,9 +42,10 @@ function payload(input) {
  * }} props
  */
 export default function ProductDescriptionSuggest({ basePath = "/producers/me", input, onUse, idPrefix }) {
+  const t = useTranslations("settings.products.describe");
   return (
     <AiTextSuggest
-      namespace="settings.products.describe"
+      t={t}
       testId="description"
       idPrefix={`${idPrefix}-describe`}
       ready={() => Boolean((input.name || "").trim())}

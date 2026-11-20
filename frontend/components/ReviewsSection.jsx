@@ -188,6 +188,7 @@ function RatingDistribution({ counts, total, t }) {
 export function ReviewReply({ review, isOwner, onSaved }) {
   const t = useTranslations("reviews");
   const tError = useTranslations("error");
+  const tSuggest = useTranslations("reviews.reply_suggest");
   const locale = useLocale();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(review.reply || "");
@@ -215,7 +216,7 @@ export function ReviewReply({ review, isOwner, onSaved }) {
       <div className="mt-3">
         {/* MEH-3480: an editable AI draft above the box; only «שמירה» sends it. */}
         <AiTextSuggest
-          namespace="reviews.reply_suggest"
+          t={tSuggest}
           testId="reply"
           idPrefix={`reply-${review.id}-ai`}
           maxLength={1000}

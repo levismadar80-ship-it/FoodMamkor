@@ -59,11 +59,27 @@ arguing and without admitting facts the review does not state.
 - Never offer a refund, a credit, a discount, a gift or anything free, and \
 never invent facts about the business, its products or its staff.
 - No customer name, no emoji, no hashtags, no links, no phone numbers.
+- Sound like the owner wrote it, not a template: if the review mentions a \
+product or a moment, refer to that one thing. No praise that would fit any \
+review, no slogans or wordplay, no "not X but Y", no list of three \
+adjectives, no exclamation marks, no long dashes, and plain spoken Hebrew \
+(never אנו, הינו, על מנת, יתרה מזאת, ללא ספק).
 - Answer with the reply only."""
 
 
 # A link or a phone number in a public reply is the owner's to add, not ours.
 _CONTACT = re.compile(r"https?://|www\.|\d[\d\- ]{6,}\d")
+
+
+# MEH-3480 (Sapir 20/11, the «signs of AI writing» list of her
+# hebrew-human-comments skill): the two signs code can fix without the model.
+_DASH = re.compile(r"\s*[—–]\s*")
+_BANG = re.compile(r"!+")
+
+
+def _plain_marks(text: str) -> str:
+    """A long dash becomes a comma, an exclamation mark a full stop."""
+    return _BANG.sub(".", _DASH.sub(", ", text)).replace("..", ".")
 
 
 def _no_contact(text: str) -> str:
@@ -80,5 +96,7 @@ def draft(stars: int, body: str | None) -> str | None:
     if not answer:
         return None
     # The review is not a source of promises: only the owner makes them.
-    text = ai_text.drop_unbacked(_no_contact(answer), "", _PROMISES, MAX_DRAFT)
+    text = ai_text.drop_unbacked(
+        _no_contact(_plain_marks(answer)), "", _PROMISES, MAX_DRAFT
+    )
     return text or None

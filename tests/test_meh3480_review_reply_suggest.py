@@ -160,3 +160,25 @@ def test_a_link_or_phone_number_is_dropped(monkeypatch):
     answer = "תודה רבה. דברו איתנו ב-050-123-4567. פרטים ב-https://example.com. שמחנו."
     monkeypatch.setattr(ai_text, "ask", lambda *_a, **_k: answer)
     assert reply_writer.draft(4, "טעים") == "תודה רבה. שמחנו."
+
+
+def test_a_long_dash_and_exclamation_marks_are_plain_punctuation(monkeypatch):
+    # MEH-3480: two «signs of AI writing» (hebrew-human-comments) the code fixes.
+    answer = "תודה רבה!! שמחנו שהחלה אהבתם — נתראה בשבוע הבא!"
+    monkeypatch.setattr(ai_text, "ask", lambda *_a, **_k: answer)
+    assert reply_writer.draft(5, "החלה מעולה") == (
+        "תודה רבה. שמחנו שהחלה אהבתם, נתראה בשבוע הבא."
+    )
+
+
+def test_the_prompt_asks_for_one_concrete_detail_and_no_ai_signs(monkeypatch):
+    seen = {}
+
+    def fake(prompt, **_k):
+        seen["prompt"] = prompt
+        return "תודה."
+
+    monkeypatch.setattr(ai_text, "ask", fake)
+    reply_writer.draft(5, "החלה מעולה")
+    for cue in ("refer to that one thing", "no exclamation marks", "על מנת"):
+        assert cue in seen["prompt"], cue
