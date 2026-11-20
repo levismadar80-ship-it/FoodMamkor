@@ -32,14 +32,28 @@ import { showToast } from "@/lib/toast";
 import MenuImport from "@/components/MenuImport";
 import { ReadMyPageTextProducersMePageFillReadPostResponse as PageFillOut } from "@/lib/generated/api.zod";
 
-/** @param {string} raw @param {(k: string) => string} tDay */
+/**
+ * One line per day; the ranges are LTR so «08:00–18:00» reads as written
+ * (REUSES: app/[locale]/producer/[id]/components/OrderWindowStrip.jsx:321).
+ * @param {string} raw @param {(k: string) => string} tDay
+ * @returns {{ day: string, ranges: string }[]}
+ */
 function hoursLines(raw, tDay) {
   const map = parseHours(raw);
-  if (!map) return [raw];
-  return Object.keys(map).map((i) => {
-    const ranges = map[i].map((/** @type {any} */ r) => `${r.open}–${r.close}`).join(", ");
-    return `${tDay(DAY_KEYS[Number(i)])} ${ranges}`;
-  });
+  if (!map) return [{ day: "", ranges: raw }];
+  return Object.keys(map).map((i) => ({
+    day: tDay(DAY_KEYS[Number(i)]),
+    ranges: map[i].map((/** @type {any} */ r) => `${r.open}–${r.close}`).join(", "),
+  }));
+}
+
+/** @param {{ lines: { day: string, ranges: string }[] }} props */
+function HoursText({ lines }) {
+  return lines.map(({ day, ranges }) => (
+    <span key={day + ranges} className="block">
+      {day} <span dir="ltr">{ranges}</span>
+    </span>
+  ));
 }
 
 /**
@@ -53,12 +67,13 @@ function RowValue({ row, categoryNames }) {
     return <p className="text-sm text-text">{names.filter(Boolean).join(" · ")}</p>;
   }
   if (row.key === "hours") {
-    return <p className="text-sm text-text whitespace-pre-line">{hoursLines(row.value, tDay).join("\n")}</p>;
+    return <p className="text-sm text-text"><HoursText lines={hoursLines(row.value, tDay)} /></p>;
   }
   if (row.key === "primary_contact_method") {
     return <p className="text-sm text-text">{t(`methods.${row.value}`)}</p>;
   }
-  return <p className="text-sm text-text whitespace-pre-line break-words">{row.value}</p>;
+  // dir="auto": an @handle, a site or an email reads LTR inside the RTL page.
+  return <p className="text-sm text-text whitespace-pre-line break-words"><span dir="auto">{row.value}</span></p>;
 }
 
 /**
@@ -71,6 +86,7 @@ function RowValue({ row, categoryNames }) {
  */
 export default function PageFillPanel({ profile, readUrl, saveUrl, owner = true, blocked = false, onSaved }) {
   const t = useTranslations("page_fill");
+  const tDay = useTranslations("opening_hours.weekdays");
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [phase, setPhase] = useState(/** @type {"write"|"reading"|"preview"|"saving"} */ ("write"));
@@ -185,7 +201,7 @@ export default function PageFillPanel({ profile, readUrl, saveUrl, owner = true,
                     {row.note && <p className="text-xs text-fg-muted">{t(row.note)}</p>}
                     {row.replaces && (
                       <p className="text-xs text-fg-muted">
-                        {t("replaces")} · {t("now", { value: row.key === "hours" ? hoursLines(row.current, (k) => k).join(", ") : String(row.current).slice(0, 80) })}
+                        {t("replaces")} · {t("now", { value: row.key === "hours" ? hoursLines(row.current, tDay).map((l) => `${l.day} \u2066${l.ranges}\u2069`).join(", ") : String(row.current).slice(0, 80) })}
                       </p>
                     )}
                     {row.adds && <p className="text-xs text-fg-muted">{t("adds")}</p>}

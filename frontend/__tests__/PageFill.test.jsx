@@ -145,6 +145,22 @@ describe("PageFillPanel", () => {
     await waitFor(() => expect(api.put).toHaveBeenCalledWith("/producers/me/locations/L1", { opening_hours: "Sun-Thu 08:00-18:00" }));
   });
 
+  it("hours that replace show today's hours by day name, and the ranges read left to right", async () => {
+    const profile = { ...fresh, locations: [{ id: "L1", is_primary: true, opening_hours: "Sun 09:00-12:00" }] };
+    renderPanel({ profile });
+    await readWith(draft({ opening_hours: "Sun-Thu 08:00-18:00" }));
+    const row = screen.getByTestId("page-fill-row-hours");
+    expect(row).toHaveTextContent(he.opening_hours.weekdays.sun);
+    expect(row).not.toHaveTextContent(/\bsun\b/);
+    expect(row.querySelector('[dir="ltr"]')).toHaveTextContent("08:00–18:00");
+  });
+
+  it("an @handle is isolated so it reads left to right", async () => {
+    renderPanel();
+    await readWith(draft({ instagram: "@bakery_haifa" }));
+    expect(screen.getByTestId("page-fill-row-instagram").querySelector('[dir="auto"]')).toHaveTextContent("@bakery_haifa");
+  });
+
   it("unsaved cards elsewhere on the page block the save and say why", async () => {
     renderPanel({ blocked: true });
     await readWith(draft({ phone: "054-1234567" }));
