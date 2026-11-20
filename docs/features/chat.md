@@ -8,12 +8,14 @@
 **קבצים מרכזיים**
 * `frontend/components/ChatWidget.jsx` — ‏z-index דרך inline style, ולכן grep על `z-<name>` לבדו מפספס אותו.
 * `backend/app/routers/chat.py` — הלקוח של Anthropic נבנה תמיד עם `http_client=httpx.Client()`.
+* `backend/app/services/chat_business_context.py` — ‏MEH-3481: שאלה שמזכירה בית עסק אחד בשמו מקבלת את הנתונים הציבוריים שלו (שעות ו«פתוח עכשיו», אזורי משלוח וימים, מוצרים ואלרגנים, איך מזמינים). רשימה סגורה של שדות; טלפון, מייל, כתובת וקבוצת וואטסאפ לא נכנסים. לא לפי הדף: הווידג'ט לא מוצג בדף בית עסק (MEH-1168). השם נבדק כמילה שלמה בשלוש השאלות האחרונות; שם שמוכל בשם ארוך יותר נותן לו קדימות, ושני שמות שונים = אין התאמה. ה-route מקבל עכשיו session של DB; הקריאה רצה לפני קריאות המודל וה-session מוחזר מיד אחריה.
 * `backend/app/services/chat_intent_router.py` — המסווג (שאלה על נתונים חיים או שאלה כללית). ה-system של שתי הקריאות נשלח כרשימת בלוקים: החלק הקבוע נושא `cache_control` (prompt caching, ‏MEH-3384), והנתונים החיים יושבים בבלוק נפרד אחריו, כדי ששאלה משתנה לא תבטל את ה-cache.
 
 **Flags.** אין. בלי `ANTHROPIC_API_KEY` הצ'אט מחזיר הודעת «לא זמין» בעברית ולא קורס.
 
 **טסטים**
 * `tests/test_meh3004_chat_group_buys_rescue.py`
+* `tests/test_meh3481_chat_business_context.py` — שדות פרטיים לא נכנסים, משלוח לעיר, «פתוח עכשיו», שני שמות תואמים = אין התאמה.
 * `tests/test_meh3384_prompt_caching.py` — מבנה ה-system וה-cache, ושהתשובה יוצאת גם בלי מוני cache.
 * `frontend/e2e/flows/23-ai-artifact-probe.spec.ts`
 
