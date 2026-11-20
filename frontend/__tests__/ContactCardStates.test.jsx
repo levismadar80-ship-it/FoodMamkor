@@ -187,17 +187,25 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
   // ...and these, the box that read as one more question, must never return.
   const BOX_CLASSES = ["border", "bg-surface", "bg-background", "px-3", "rounded-full", "inline-flex"];
 
-  it("(1 x closed) the sole-channel row is an unboxed line under a hairline", () => {
+  it("(1 x closed) the sole-channel row is an unboxed line, with no hairline above it", () => {
     renderCard({ phone: "0501234567" });
     const row = screen.getByTestId("contact-single-row");
     const cls = row.className.split(/\s+/);
     for (const c of ROW_GEOMETRY) expect(cls).toContain(c);
     for (const c of BOX_CLASSES) expect(cls).not.toContain(c);
-    // the same hairline the circle grid has, so it is set apart from the
-    // ready-made questions above it.
+    // MEH-3460 (Sapir 20/11, option ב): the hairline set the channels apart
+    // from the questions block; the questions left the card, so the button and
+    // the channels are one unit with no rule between them.
     const wrap = row.parentElement.className.split(/\s+/);
-    expect(wrap).toContain("border-t");
-    expect(wrap).toContain("border-border");
+    expect(wrap).toContain("flex"); // control: this is the channels wrapper
+    expect(wrap).not.toContain("border-t");
+  });
+
+  it("(many x closed) the circle grid has no hairline above it either", () => {
+    renderCard({ phone: "0501234567", instagram: "@shikma", website: "shikma.example.com" });
+    const grid = screen.getByLabelText("אינסטגרם").parentElement.className.split(/\s+/);
+    expect(grid).toContain("grid-cols-4"); // control: this is the circle grid
+    expect(grid).not.toContain("border-t");
   });
 
   it("(survivor x open) the revealed number and the lone survivor share one geometry", () => {

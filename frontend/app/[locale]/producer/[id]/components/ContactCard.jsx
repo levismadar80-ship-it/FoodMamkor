@@ -14,7 +14,6 @@ import {
 } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
-import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
 import { instagramHandle } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
@@ -84,9 +83,9 @@ function armMailtoFallback(email, t) {
  *           MEH-1583 (reveal adopts the geometry of the element it replaces —
  *           one row anatomy across every cell of the count x state matrix);
  *           MEH-2626 (whatsapp_group circle → tracked «עדכונים» bell);
- *           MEH-3459 (also the organizer page's contact card — `questions`
- *           off there: the ready-made questions are about a business's
- *           delivery and ordering).
+ *           MEH-3459 (also the organizer page's contact card). MEH-3460 moved
+ *           the ready-made questions out of this card into the business page's
+ *           own «שאלות נפוצות» section, so the organizer page shows none.
  */
 
 // Secondary contact channels rendered as the quiet icon row. Each entry's
@@ -181,9 +180,9 @@ const ROW_ANATOMY = "flex w-full min-w-0 items-center gap-2 min-h-touch text-sm 
 const isLatinValue = (v) => /[a-z0-9]/i.test(v) && !/[\u0590-\u05FF]/.test(v);
 
 /**
- * @param {{ producer: any, isVacation?: boolean, questions?: boolean }} props
+ * @param {{ producer: any, isVacation?: boolean }} props
  */
-export default function ContactCard({ producer, isVacation, questions = true }) {
+export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);
 
@@ -285,9 +284,9 @@ export default function ContactCard({ producer, isVacation, questions = true }) 
             ProducerHeader. Do NOT re-add a note here without a claim the site
             can actually verify. */}
 
-        {/* Ready-made questions as quiet text links under the CTA. */}
-        {/* MEH-3459: off on the organizer page (no delivery / ordering to ask about). */}
-        {questions && <WhatsAppQuestionChips producer={producer} />}
+        {/* MEH-3460 (Sapir 20/11): «שאלות נפוצות» left this card for its own
+            section under «משלוחים» (ProducerSections). The card keeps one job:
+            the button and the channel icons. */}
 
         {/* Secondary channels — MEH-2592 C: a four-column grid of 44px cream
             circles, each with its name under it (the existing aria strings,
@@ -296,9 +295,12 @@ export default function ContactCard({ producer, isVacation, questions = true }) 
         {showChannelRow && (
           <div
             className={
+              // MEH-3460 (Sapir 20/11, option ב): no hairline. It separated the
+              // button from the questions block; with the questions gone from
+              // the card, the button and the channels read as one unit.
               single
-                ? "flex flex-col gap-1 mt-4 pt-3 border-t border-border"
-                : "grid grid-cols-4 gap-x-1 gap-y-3 mt-4 pt-4 border-t border-border"
+                ? "flex flex-col gap-1 mt-4"
+                : "grid grid-cols-4 gap-x-1 gap-y-3 mt-5"
             }
             // MEH-3191: no list roles — a listitem role on an <a> replaces the
             // link role (axe aria-allowed-role), so a screen reader lost "link".

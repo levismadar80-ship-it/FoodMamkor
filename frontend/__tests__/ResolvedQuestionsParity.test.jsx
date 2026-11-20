@@ -27,6 +27,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
 import he from "../messages/he.json";
 
 // Resolve the real he.json copy, exactly as quickAnswers.test.js does, so both
@@ -42,7 +43,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CaretDown: Stub, ChatCircle: Stub };
+  return { CaretDown: Stub, ChatCircle: Stub, ArrowDown: Stub };
 });
 
 vi.mock("@/lib/contact-tracking", () => ({
@@ -65,15 +66,15 @@ const labelsFor = () => ({
   deliveryQuestion: chips.delivery_to_my_area,
   orderingQuestion: chips.ordering_q,
   paymentQuestion: chips.payment_q,
-  escalationQuestion: chips.escalation,
 });
 
 /**
  * Every question label the component put on screen, in render order.
  *
  * Reads the row types the component emits — the disclosure buttons, the
- * WhatsApp chips, and the escalation anchor (the recipe anchor stays in the
- * selector so its return would surface as a mismatch, MEH-2385) — and strips
+ * WhatsApp chips — plus the retired jump, escalation and recipe anchors, kept in
+ * the selector so a return of any of them surfaces as a mismatch (MEH-2385,
+ * MEH-3460) — and strips
  * nothing else,
  * so a row the helper forgets shows up as a length mismatch rather than being
  * quietly skipped.
@@ -82,7 +83,7 @@ function renderedLabels(container) {
   const more = screen.queryByTestId("more-questions");
   if (more) fireEvent.click(more);
   const rows = container.querySelectorAll(
-    "[data-testid='quick-answer-toggle'],[data-testid='question-link'],[data-testid='escalation-link']",
+    "[data-testid='quick-answer-toggle'],[data-testid='quick-answer-jump'],[data-testid='question-link'],[data-testid='escalation-link']",
   );
   // MEH-2634: a wa.me chip renders the question PLUS a " (וואטסאפ)"
   // destination suffix. That suffix is presentation local to the chip row —
@@ -182,6 +183,23 @@ const FIXTURES = [
     },
   },
   {
+    // 19/11: the delivery question is a jump to #section-delivery (the
+    // business in Sapir's screenshot: external order form + 48 areas).
+    name: "(i) external-order primary, delivery section on the page → no delivery row (MEH-3460)",
+    producer: {
+      id: 7,
+      name: "פרדס הדגמה",
+      city: "פרדס חנה כרכור",
+      phone: "0501234567",
+      primary_contact_method: "external_order",
+      external_order_form: "order.example.com",
+      offers_delivery: true,
+      delivery_areas: [{ city: "כפר חיים" }, { city: "חדרה" }, { city: "תלמי אלעזר" }, { city: "גבעת ניל״י" }, { city: "עין שמר" }],
+      // keeps the section alive: the delivery row is gone, payment stays
+      payment_info: { methods: ["bit"], timing: null, note: null },
+    },
+  },
+  {
     name: "(h) email-primary, payment timing only (MEH-3035)",
     producer: {
       id: 6,
@@ -218,7 +236,7 @@ describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", 
         return n;
       },
     );
-    expect(counts.length).toBe(7); // (a) (b) (c) (e) (c2) (g) (h)
+    expect(counts.length).toBe(8); // (a) (b) (c) (e) (c2) (g) (h) (i)
     for (const n of counts) expect(n).toBeGreaterThan(0);
   });
 
@@ -248,10 +266,10 @@ describe("the annotations the dashboard renders", () => {
 
     // Q1 is answered from her own delivery data — never a chip.
     expect(byId.delivery).toMatchObject({ answered: true, channel: null });
-    // Q2 likewise, via getPrimaryContactHref.
-    expect(byId.ordering).toMatchObject({ answered: true, channel: null });
-    // The escalation carries the channel it will actually open.
-    expect(byId.escalation).toMatchObject({ answered: false, channel: "email" });
+    // «איך מזמינים?» is gone (19/11): it only repeated the primary CTA.
+    expect(byId.ordering).toBeUndefined();
+    // MEH-3460: no escalation row — it repeated the primary button.
+    expect(byId.escalation).toBeUndefined();
     // …and no WhatsApp-only rows survive for a non-WhatsApp business.
     expect(byId.recipe).toBeUndefined();
     expect(items.some((i) => i.source === "category")).toBe(false);
@@ -281,8 +299,8 @@ describe("the annotations the dashboard renders", () => {
     expect(usesCustom).toBe(false);
     expect(customCount).toBe(0);
     // The stock question is gone from the public block, so the live list is
-    // exactly the two answered rows + the escalation — nothing she never wrote.
-    expect(items.map((i) => i.source)).toEqual(["delivery", "ordering", "escalation"]);
+    // exactly the rows the page shows — nothing she never wrote.
+    expect(items.map((i) => i.source)).toEqual(["delivery"]);
     expect(items.some((i) => i.source === "category")).toBe(false);
   });
 });

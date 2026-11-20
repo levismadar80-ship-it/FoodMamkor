@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
+
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
 }));
@@ -85,16 +86,19 @@ describe("«איך משלמים?» chip (MEH-3035)", () => {
     expect(a.querySelectorAll("svg").length).toBe(1);
   });
 
-  it("sits right after «איך מזמינים?»", () => {
+  // «איך מזמינים?» left the block 19/11 (it repeated the CTA), so payment
+  // now follows the delivery question directly.
+  it("sits right after the delivery question", () => {
     render(
       <WhatsAppQuestionChips
         producer={{ ...base, delivery_nationwide: true, payment_info: { methods: ["bit"], timing: null, note: null } }}
       />,
     );
     const labels = screen.getAllByTestId("quick-answer-toggle").map((b) => b.textContent);
-    const iOrder = labels.findIndex((l) => l.includes("ordering_q"));
-    expect(iOrder).toBeGreaterThanOrEqual(0);
-    expect(labels[iOrder + 1]).toContain("payment_q");
+    expect(labels.some((l) => l.includes("ordering_q"))).toBe(false);
+    const iDelivery = labels.findIndex((l) => l.includes("delivery_to"));
+    expect(iDelivery).toBeGreaterThanOrEqual(0);
+    expect(labels[iDelivery + 1]).toContain("payment_q");
   });
 
   it("renders even without any contact channel (data-driven answer)", () => {

@@ -236,7 +236,7 @@ export default async function OrganizerPage(props) {
               named circles). No ready-made questions — they ask about a
               business's delivery and ordering. Renders nothing visible when
               the organizer filled no channel. */}
-          {hasAnyChannel(organizer) && <ContactCard producer={organizer} questions={false} />}
+          {hasAnyChannel(organizer) && <ContactCard producer={organizer} />}
         </div>
       </header>
 
