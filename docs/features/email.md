@@ -14,7 +14,7 @@
 * `backend/app/services/email_branding.py` — הלוגו.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py` · `backend/app/services/pending_nudge.py`
 * `backend/app/services/push.py` — התראות דפדפן.
-* `backend/app/services/weekly_owner_summary.py` · `backend/app/routers/producer_me_weekly_summary.py` — הסיכום השבועי לבית העסק. כל מייל נושא `List-Unsubscribe` ו-one-click לפי RFC 8058 (`send_email(..., headers=)`), ובעלת העסק מחזירה או מפסיקה אותו במתג ב«תובנות» (MEH-3212).
+* `backend/app/services/weekly_owner_summary.py` · `backend/app/routers/producer_me_weekly_summary.py` — הסיכום השבועי לבית העסק. כל מייל נושא `List-Unsubscribe` ו-one-click לפי RFC 8058 (`send_email(..., headers=)`), ובעלת העסק מחזירה או מפסיקה אותו במתג ב«תובנות» (MEH-3212). נשלח רק מ-5 צפיות בשבוע, או פחות כשהייתה לחיצה על וואטסאפ או קשר (`MIN_VIEWS`, `worth_sending`, MEH-3476).
 * `backend/app/services/job_heartbeat.py` — ה-heartbeat של משימות הרקע; כשל בשליחה נרשם ב-WARNING ולא נבלע.
 
 **Flags.** `WEEKLY_OWNER_SUMMARY_ENABLED` — הסיכום השבועי (כבוי עד שהשדה נוסף ל-`config.py`). בלי `ANTHROPIC_API_KEY` תכונות ה-AI מתדרדרות, שכבת ההזדהות לא.

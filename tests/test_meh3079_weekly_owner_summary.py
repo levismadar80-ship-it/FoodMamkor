@@ -185,7 +185,7 @@ class TestSharedNumbers:
 class TestWhoGetsIt:
     def test_sends_and_stamps_sent_at(self, db, sent):
         producer, owner = _business(db)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         counters = wos.send_weekly_summaries(db)
         assert counters["sent"] == 1
         assert [c["to"] for c in sent] == [owner.email]
@@ -204,7 +204,7 @@ class TestWhoGetsIt:
 
     def test_skips_opted_out(self, db, sent):
         producer, _ = _business(db)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         producer.weekly_summary_opt_out = True
         db.commit()
         wos.send_weekly_summaries(db)
@@ -212,7 +212,7 @@ class TestWhoGetsIt:
 
     def test_skips_recently_sent(self, db, sent):
         producer, _ = _business(db)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         producer.weekly_summary_sent_at = israel_days_ago(3)
         db.commit()
         wos.send_weekly_summaries(db)
@@ -220,7 +220,7 @@ class TestWhoGetsIt:
 
     def test_sends_again_a_week_later(self, db, sent):
         producer, _ = _business(db)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         producer.weekly_summary_sent_at = israel_days_ago(7)
         db.commit()
         wos.send_weekly_summaries(db)
@@ -228,20 +228,20 @@ class TestWhoGetsIt:
 
     def test_second_run_same_day_sends_nothing(self, db, sent):
         producer, _ = _business(db)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         wos.send_weekly_summaries(db)
         wos.send_weekly_summaries(db)
         assert len(sent) == 1
 
     def test_skips_a_business_that_is_not_live(self, db, sent):
         producer, _ = _business(db, status="pending")
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         wos.send_weekly_summaries(db)
         assert sent == []
 
     def test_skips_a_test_business(self, db, sent):
         producer, _ = _business(db)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         producer.is_test = True
         db.commit()
         wos.send_weekly_summaries(db)
@@ -249,18 +249,53 @@ class TestWhoGetsIt:
 
     def test_skips_an_owner_without_a_verified_email(self, db, sent):
         producer, _ = _business(db, email_verified=False)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         counters = wos.send_weekly_summaries(db)
         assert sent == []
         assert counters["no_owner"] == 1
 
     def test_one_live_one_zero_sends_exactly_one(self, db, sent):
         live, owner = _business(db, name="עם צפיות")
-        _views(db, live.id, 2)
+        _views(db, live.id, wos.MIN_VIEWS)
         _business(db, name="בלי צפיות")
         counters = wos.send_weekly_summaries(db)
         assert [c["to"] for c in sent] == [owner.email]
         assert counters["scanned"] == 2
+
+
+class TestMinimumViews:
+    """MEH-3476: a near-empty week sends only when it also had a lead."""
+
+    def test_one_below_the_minimum_with_no_click_is_skipped_and_not_stamped(self, db, sent):
+        producer, _ = _business(db)
+        _views(db, producer.id, wos.MIN_VIEWS - 1)
+        _favorite(db, producer.id)  # a save is not a lead
+        counters = wos.send_weekly_summaries(db)
+        assert sent == []
+        assert counters["below_threshold"] == 1
+        assert counters["zero_views"] == 0
+        db.refresh(producer)
+        assert producer.weekly_summary_sent_at is None  # looked at again next week
+
+    def test_exactly_the_minimum_sends(self, db, sent):
+        producer, _ = _business(db)
+        _views(db, producer.id, wos.MIN_VIEWS)
+        assert wos.send_weekly_summaries(db)["sent"] == 1
+
+    def test_one_view_and_a_whatsapp_click_sends(self, db, sent):
+        producer, _ = _business(db)
+        _views(db, producer.id, 1)
+        _whatsapp(db, producer.id, 1)
+        assert wos.send_weekly_summaries(db)["sent"] == 1
+
+    def test_one_view_and_a_contact_click_sends(self, db, sent):
+        producer, _ = _business(db)
+        _views(db, producer.id, 1)
+        _contact(db, producer.id, 1)
+        assert wos.send_weekly_summaries(db)["sent"] == 1
+
+    def test_the_minimum_is_five(self):
+        assert wos.MIN_VIEWS == 5
 
 
 # ---------------------------------------------------------------------------
@@ -434,7 +469,7 @@ class TestSendLoopSafety:
         """Rolling deploy: run A picked its candidates, then run B stamped the
         row. A must not send — the claim re-checks sent_at in the UPDATE."""
         producer, _ = _business(db)
-        _views(db, producer.id, 4)
+        _views(db, producer.id, wos.MIN_VIEWS)
         now = datetime.now(timezone.utc)
         stale = wos._candidates(db, now)
         assert [p.id for p in stale] == [producer.id]
@@ -459,8 +494,8 @@ class TestSendLoopSafety:
         returns None (MEH-1613), so that claim stands."""
         a, owner_a = _business(db, name="נכשל")
         b, owner_b = _business(db, name="עובר")
-        _views(db, a.id, 2)
-        _views(db, b.id, 2)
+        _views(db, a.id, wos.MIN_VIEWS)
+        _views(db, b.id, wos.MIN_VIEWS)
         real = wos.build_email
 
         def flaky(m):
@@ -484,7 +519,7 @@ class TestSendLoopSafety:
         per-business try and end the run for everyone after it."""
         made = [_business(db, name=f"עסק {i}") for i in range(3)]
         for p, _ in made:
-            _views(db, p.id, 1)
+            _views(db, p.id, wos.MIN_VIEWS)
         first, gone, last = sorted(made, key=lambda pair: str(pair[0].id))
         gone_id = gone[0].id
         real_claim = wos._claim
@@ -520,14 +555,14 @@ class TestSendLoopSafety:
         )
         for i in range(3):
             p, _ = _business(db, name=f"עסק {i}")
-            _views(db, p.id, 1)
+            _views(db, p.id, wos.MIN_VIEWS)
         wos.send_weekly_summaries(db)
         assert events == ["claim", "sleep", "claim", "sleep", "claim"]
 
     def test_throttle_between_sends(self, db, sent, pauses):
         for i in range(3):
             p, _ = _business(db, name=f"עסק {i}")
-            _views(db, p.id, 1)
+            _views(db, p.id, wos.MIN_VIEWS)
         wos.send_weekly_summaries(db)
         assert len(sent) == 3
         assert pauses == [wos.SEND_INTERVAL_SECONDS] * 2
@@ -538,11 +573,12 @@ class TestSendLoopSafety:
         """A run at a frozen `now` counts THAT week, not the wall clock's."""
         producer, _ = _business(db)
         seeded = datetime(2026, 3, 1, 12, 0)  # naive UTC, like the column
-        db.add(ProducerPageView(producer_id=producer.id, viewer_ip_hash="a" * 64,
-                                created_at=seeded))
+        for i in range(wos.MIN_VIEWS):  # MEH-3476: enough views to send
+            db.add(ProducerPageView(producer_id=producer.id, viewer_ip_hash=f"{i:064d}",
+                                    created_at=seeded))
         db.commit()
         wos.send_weekly_summaries(db, now=(seeded + timedelta(days=1)).replace(tzinfo=timezone.utc))
-        assert [c["subject"] for c in sent] == ["השבוע הייתה צפייה אחת בעמוד שלכם"]
+        assert [c["subject"] for c in sent] == [wos.subject_for(wos.MIN_VIEWS)]
 
 
 class TestWindowEdge:
