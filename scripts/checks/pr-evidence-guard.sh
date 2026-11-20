@@ -134,7 +134,7 @@ screenshots_linked() {
        END {exit !found}' <<<"$1"
 }
 
-# reviewed BODY —a `Reviewer:` line, or a heading that names a reviewer
+# reviewed BODY — a `Reviewer:` line, or a heading that names a reviewer
 # (`## Fresh reviewer (rule 5a)`, `## Independent review`): the shapes PR
 # bodies used 15–18/11.
 reviewed() {
