@@ -17,7 +17,9 @@
  */
 
 const PRODUCTION_HOSTS = new Set(["mehamakor.co.il", "www.mehamakor.co.il"]);
-const STAGING_HOSTS = new Set(["staging.mehamakor.online"]);
+// MEH-3405: staging moved to staging.mehamakor.co.il; the .online host stays
+// until it only redirects there.
+const STAGING_HOSTS = new Set(["staging.mehamakor.co.il", "staging.mehamakor.online"]);
 
 /** Browser: decide by the hostname the page was served from. */
 export function clientSentryEnvironment(hostname) {
