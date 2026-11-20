@@ -96,9 +96,9 @@ const envStub = {
       contents:
         'const env=new Proxy({},{get:()=>""});\n' +
         'export {env};\n' +
-        'export const SITE_URL="https://mehamakor.online";\n' +
+        'export const SITE_URL="https://mehamakor.co.il";\n' +
         'export const API_URL="";\n' +
-        'export const CONTACT_EMAIL="info@mehamakor.online";\n' +
+        'export const CONTACT_EMAIL="contact@mehamakor.co.il";\n' +
         'export default env;',
       loader: "js",
     }));
