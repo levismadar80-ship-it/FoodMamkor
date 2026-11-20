@@ -47,6 +47,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
 | Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` (imports only) |
+| A page's contact channels (primary button + named circles) — business and organizer pages | `app/[locale]/producer/[id]/components/ContactCard.jsx` (`questions={false}` off the business page) | `ContactCardOneOwnerGuard` (look), `ContactChannelsOneOwner` (hrefs) |
 | Head of a «מה קורה» hub tab | `HubShell.jsx` | `HubShellGuard` |
 | Print a date | `lib/format-date.js` | `DateFormatGuard` |
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
