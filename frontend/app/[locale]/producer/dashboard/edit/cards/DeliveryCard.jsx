@@ -25,6 +25,7 @@ import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import DeliveryBulkDay from "./DeliveryBulkDay";
+import DeliveryZonesEditor, { zonesFromProfile, zonesForSave, zoneOfCity } from "./DeliveryZonesEditor";
 
 // MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
 // importable across the Python/JS boundary, so kept in sync by hand — the
@@ -46,6 +47,14 @@ const MAX_DELIVERY_MONEY = 1_000_000;
 // of being wiped by the flat delete+insert path. The admin form still uses
 // the flat list (it has no day input — nothing to align).
 // ============================================================
+
+// MEH-3484: a city's stored days survive a save that left its select on the
+// first of them; picking another day (or none) replaces the list.
+function keepDays(stored, day) {
+  const days = stored || [];
+  if (days.length > 1 && (day || "") === days[0]) return days;
+  return day ? [day] : [];
+}
 
 // Exported for isolation tests (EditTabDeliveryCard.test.jsx).
 // MEH-3475: `saveUrl` lets the admin edit page mount this same card against
@@ -93,6 +102,15 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         .filter((d) => d.city)
         .map((d) => [d.city, d.min_order ?? ""]),
     ),
+    // MEH-3484: named zones (the server copies their values onto their
+    // cities), and each city's stored day list so a save that leaves a
+    // city's select alone does not drop its other days.
+    zones: zonesFromProfile(profile?.delivery_zones),
+    storedDays: Object.fromEntries(
+      (profile?.delivery_areas ?? [])
+        .filter((d) => d.city)
+        .map((d) => [d.city, d.delivery_days ?? []]),
+    ),
   };
   const [baseline, setBaseline] = useState(initial);
   const [form, setForm] = useState(initial);
@@ -128,13 +146,16 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     ) ||
     form.cities.some(
       (c) => String(form.mins[c] ?? "") !== String(baseline.mins[c] ?? ""),
-    );
+    ) ||
+    JSON.stringify(zonesForSave(form.zones, form.cities)) !==
+      JSON.stringify(zonesForSave(baseline.zones, baseline.cities));
   useEffect(() => {
     reportDirty("delivery", dirty);
     return () => reportDirty("delivery", false);
   }, [dirty, reportDirty]);
 
   const neitherType = !form.hasPhysical && !form.offersDelivery;
+  const zoneOf = zoneOfCity(form.zones);
   // MEH-2561: the tag her /map card shows, from the SAME function the card
   // uses. Delivery reads the live form (mirrors producer_queries.py:185 —
   // offers_delivery AND (an area OR nationwide)), so toggling here updates the
@@ -183,7 +204,15 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       days: form.days,
       fees: form.fees,
       mins: form.mins,
+      zones: form.zones,
+      storedDays: form.storedDays,
     };
+    // MEH-3484: zones only exist with a city list; nationwide / pickup-only
+    // sends none (the server clears them).
+    const zones =
+      form.offersDelivery && !form.nationwide
+        ? zonesForSave(normalized.zones, cities).filter((z) => z.name || z.cities.length)
+        : [];
     // MEH-1644: structured rows replace the flat delivery_area_cities send —
     // each city carries its optional canonical day ("" → null = בתיאום מראש)
     // and preserves any registration-captured min_order (previously wiped by
@@ -194,6 +223,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     const rows = normalized.cities.map((c) => ({
       city: c,
       delivery_day: normalized.days[c] || null,
+      delivery_days: keepDays(normalized.storedDays[c], normalized.days[c]),
       min_order: toNullableInt(normalized.mins[c] ?? ""),
       delivery_fee: toNullableInt(normalized.fees[c] ?? ""),
     }));
@@ -206,6 +236,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
+        delivery_zones: zones,
       });
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
       onSave({
@@ -216,6 +247,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
+        delivery_zones: zones,
       });
       // MEH-1577: back to "" for the inputs — normalized carries null, and a
       // null <input value> makes React warn about an uncontrolled component.
@@ -467,7 +499,14 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                       {t("area_min_hint")}
                     </p>
                     <ul className="space-y-1.5">
-                      {form.cities.map((c) => (
+                      {form.cities.map((c) => zoneOf[c] ? (
+                        // MEH-3484: a zoned city takes the zone's values, so
+                        // its own boxes would be overwritten on save.
+                        <li key={c} className="flex items-center justify-between gap-2 text-sm min-h-11" data-testid={`delivery-city-zone-${c}`}>
+                          <span className="min-w-0 flex-1 truncate">{c}</span>
+                          <span className="text-xs text-fg-muted">{t("city_in_zone", { zone: zoneOf[c] })}</span>
+                        </li>
+                      ) : (
                         <li
                           key={c}
                           className="flex flex-wrap items-center justify-between gap-2 text-sm"
@@ -541,6 +580,11 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                         </li>
                       ))}
                     </ul>
+                    <DeliveryZonesEditor
+                      zones={form.zones}
+                      cities={form.cities}
+                      onChange={(zones) => set({ zones })}
+                    />
                   </div>
                 )}
               </div>

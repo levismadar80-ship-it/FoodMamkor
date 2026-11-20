@@ -60,6 +60,7 @@ This page links to those and does not repeat their numbers.
 |---|---|---|
 | Accounts, businesses, products, events, workshops, sign-ups, reviews, bags, group buys, billing ledger | Postgres | the only system of record |
 | Passwords | Postgres, bcrypt hash | never logged |
+| A business's delivery zones (MEH-3484) | Postgres, `producers.delivery_zones` (the zone) + `delivery_areas.zone_name` (which cities) | each zone's days, minimum, fee and free-delivery threshold are copied onto its cities' `delivery_areas` rows by `services/delivery_zones.py`, the one writer, so every reader of a city row is unchanged |
 | Admin audit log (who changed what, when, from which IP) | Postgres, `admin_audit_log` | append-only: one INSERT per successful change by an admin account, scheduled in `auth.get_current_user` and written by `services/admin_audit.py`; no update or delete in the code. Reduced before/after only, no names or contact details (MEH-3306) |
 | An admin's passkeys and recovery codes (MEH-3305) | Postgres, `admin_passkeys` + `admin_recovery_codes` | public keys only (the private key never leaves her device); recovery codes as hashes, shown once; both go with the account |
 | Access token (15 minutes) | browser `localStorage` | sent as a Bearer header |

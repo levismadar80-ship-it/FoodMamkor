@@ -72,7 +72,14 @@ function deliveryDaysForCity(producer, city) {
     (row) => typeof row?.city === "string" && row.city.toLowerCase() === target,
   );
   if (rows.length === 0) return null;
-  const days = [...new Set(rows.map((row) => row?.delivery_day).filter(Boolean))];
+  // MEH-3484: a city delivered on several days carries them all.
+  const days = [
+    ...new Set(
+      rows
+        .flatMap((row) => (row?.delivery_days?.length ? row.delivery_days : [row?.delivery_day]))
+        .filter(Boolean),
+    ),
+  ];
   // The SORT KEY is shared, not copied: DELIVERY_DAYS is imported from
   // lib/delivery-days.js, so a change to week order cannot make this and
   // DeliveryDayRow disagree. What is duplicated is only the two-term

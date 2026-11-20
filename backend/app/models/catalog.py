@@ -209,6 +209,16 @@ class DeliveryArea(Base):
     # DO NOT add the column here without the paired Alembic revision —
     # Alembic is the sole schema authority since MEH-267 (a4f7c2e91b58).
     delivery_fee = Column(Integer)
+    # MEH-3484 (f2c6a8e4b0d7). Several days per city; NULL = read
+    # delivery_day, which stays written (the first day) so single-day readers
+    # answer as before. zone_name = the producers.delivery_zones entry this
+    # city belongs to; free_delivery_above = that zone's threshold (NULL =
+    # the business-level one). Zone values are COPIED onto the row by
+    # services/delivery_zones.py — the one writer — so every reader of
+    # min_order / delivery_fee / delivery_day stays unchanged.
+    zone_name = Column(String(40))
+    delivery_days: Column[list[str]] = Column(ARRAY(String(10)), nullable=True)
+    free_delivery_above = Column(Integer)
 
     producer = relationship("Producer", back_populates="delivery_areas")
 

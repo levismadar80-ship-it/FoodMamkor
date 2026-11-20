@@ -16,7 +16,7 @@ History:  MEH-3263 (creation; stage 2b of MEH-3216)
 """
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
@@ -92,6 +92,13 @@ def _canonical_set(values: Any) -> frozenset[str]:
     return frozenset(canonical_city(v) or "" for v in (values or []))
 
 
+def _free_above(area: DeliveryArea | None, producer: Producer) -> int | None:
+    # MEH-3484: the city's zone threshold first, else the business's.
+    if area is not None and area.free_delivery_above is not None:
+        return int(area.free_delivery_above)
+    return cast("int | None", producer.free_delivery_above)
+
+
 def facts_for(db: Session, producer: Producer, city: str) -> DeliveryFacts:
     areas = db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).all()
     area = next((a for a in areas if canonical_city(str(a.city)) == city), None)
@@ -101,7 +108,7 @@ def facts_for(db: Session, producer: Producer, city: str) -> DeliveryFacts:
         cities=_canonical_set(producer.delivery_cities),
         excluded_cities=_canonical_set(producer.delivery_excluded_cities),
         fee=producer.delivery_fee,  # type: ignore[arg-type]
-        free_above=producer.free_delivery_above,  # type: ignore[arg-type]
+        free_above=_free_above(area, producer),
         has_area=area is not None,
         area_fee=area.delivery_fee if area is not None else None,  # type: ignore[arg-type]
         area_min_order=area.min_order if area is not None else None,  # type: ignore[arg-type]

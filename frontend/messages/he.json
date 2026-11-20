@@ -5458,7 +5458,20 @@
         "errors": {
           "excluded_requires_nationwide": "ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ",
           "nationwide_requires_delivery": "\"לכל הארץ\" מסומן, אבל \"משלוחים\" לא. סמנו \"משלוחים\", או בטלו את \"לכל הארץ\"."
-        }
+        },
+        "zones_label": "אזורי משלוח",
+        "zones_hint": "מקבצים כמה ערים לאזור אחד עם אותם ימים, מינימום ועלות. עיר שלא שייכת לאזור נשארת עם ההגדרות שלה.",
+        "zone_empty": "אין עדיין אזורים. אפשר להשאיר כך ולהגדיר כל עיר לחוד.",
+        "zone_add": "הוספת אזור",
+        "zone_name_label": "שם האזור",
+        "zone_name_placeholder": "קריות",
+        "zone_cities_label": "ערים באזור",
+        "zone_days_label": "ימי משלוח",
+        "zone_days_hint": "בלי בחירה יוצג «בתיאום מראש».",
+        "zone_free_above_label": "משלוח חינם מעל (₪)",
+        "zone_free_above_hint": "אם ריק, חל הסכום הכללי של העסק.",
+        "zone_remove": "מחיקת האזור",
+        "city_in_zone": "באזור {zone}"
       },
       "order_window": {
         "heading": "מתי מקבלים הזמנות",

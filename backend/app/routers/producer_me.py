@@ -45,6 +45,7 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services import indexnow  # MEH-2852
+from app.services import delivery_zones  # MEH-3484
 from app.services import approved_edit_moderation as approved_edit  # MEH-3261
 from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.gallery_cap import assert_free_gallery_cap  # MEH-3220
@@ -102,11 +103,29 @@ def _sync_delivery_areas(
     producer: Producer,
     delivery_rows: list[dict[str, Any]] | None,
     delivery_cities: list[str] | None,
+    zones: list[Any] | None = None,
 ) -> list[str]:
     """MEH-1644: route the two delivery-area write shapes (structured rows
     take precedence over the flat city list) and return the newly-added
     cities for the MEH-54/MEH-1360 delivery_area alert — identical semantics
-    on both paths."""
+    on both paths. MEH-3484: then the zones (None = not sent)."""
+    if delivery_rows is None and delivery_cities is None and zones is None:
+        return []
+    zone_before = delivery_zones.memberships(db, producer)
+    had = {delivery_zones.city_key(da.city) for da in producer.delivery_areas or []}
+    added = _replace_city_rows(db, producer, delivery_rows, delivery_cities)
+    # A zone can re-add a city this body's rows dropped: only a city that was
+    # not there before the save is new (the MEH-54 alert).
+    zone_added = delivery_zones.sync(db, producer, zones, zone_before)
+    return added + [c for c in zone_added if delivery_zones.city_key(c) not in had]
+
+
+def _replace_city_rows(
+    db: Session,
+    producer: Producer,
+    delivery_rows: list[dict[str, Any]] | None,
+    delivery_cities: list[str] | None,
+) -> list[str]:
     if delivery_rows is None and delivery_cities is None:
         return []
     existing_cities = (
@@ -149,6 +168,7 @@ def _apply_delivery_rows(
                 city=city,
                 min_order=row.get("min_order"),
                 delivery_day=row.get("delivery_day"),
+                delivery_days=row.get("delivery_days"),  # MEH-3484
                 delivery_fee=row.get("delivery_fee"),
             )
         )
@@ -924,6 +944,9 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
     # dashboard DeliveryCard. Takes precedence over the flat city list when
     # both are sent; absent (exclude_unset) → the flat path behaves as before.
     delivery_rows = payload.pop("delivery_areas", None)
+    # MEH-3484: None = not sent (zones and memberships stay as stored).
+    zones_sent = data.delivery_zones if "delivery_zones" in payload else None
+    payload.pop("delivery_zones", None)
     # MEH-1823 chunk 2: three-valued. `in payload` (post-exclude_unset) is the
     # ONLY way to tell "omitted" from "explicit null" — popping the value alone
     # collapses them, and that difference is whether an unrelated dashboard save
@@ -995,7 +1018,9 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
 
     # Handle delivery areas (replaces existing rows like the admin endpoint).
     # MEH-1644: structured rows take precedence over the flat city list.
-    new_cities = _sync_delivery_areas(db, producer, delivery_rows, delivery_cities)
+    new_cities = _sync_delivery_areas(
+        db, producer, delivery_rows, delivery_cities, zones_sent
+    )
 
     # MEH-1823 chunk 2: the owner's single offer (replace-or-deactivate).
     if offer_sent:

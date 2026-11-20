@@ -96,7 +96,7 @@ export const BUSINESS_FEATURES = [
   { id: "wa_prefill", group: "contact", status: "live", tile: { icon: "PaperPlaneTilt" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "product_wa", group: "contact", status: "live", codeRef: ["frontend/components/public/ProductSheet.jsx"] },
   { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },
-  { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx"] },
+  { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryCard.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryBulkDay.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/DeliveryZonesEditor.jsx"] },
   { id: "delivery_checker", group: "contact", status: "live", tile: { icon: "Truck" }, codeRef: ["frontend/components/DeliveryChecker.jsx"] },
   // MEH-3216: on-site ordering («בקשת הזמנה»). he/en copy approved word for word
   // by Sapir 19/11. Live: she approved turning PRODUCT_ORDERS_ENABLED on in

@@ -42,6 +42,10 @@ MAX_PRODUCT_GROUPS = 20
 
 MAX_GALLERY_IMAGES = 20
 MAX_DELIVERY_CITIES = 300
+# MEH-3484: named delivery zones (producers.delivery_zones JSONB) — a
+# request-list cap like product groups, and cities per zone.
+MAX_DELIVERY_ZONES = 20
+MAX_CITIES_PER_ZONE = 100
 # Safety ceiling for lists whose real, friendlier cap lives in a validator
 # (category_ids ≤ MAX_PRODUCER_CATEGORIES = 5 since MEH-2925, custom_questions ≤ 5) or that only an admin sends. Set
 # ABOVE the validator's cap on purpose: pydantic checks max_length before an
@@ -65,6 +69,8 @@ _CAP_DETAIL = {
 GALLERY_IMAGES_DETAIL = f"אפשר להוסיף עד {MAX_GALLERY_IMAGES} תמונות. כדי להוסיף תמונה חדשה, צריך קודם למחוק אחת קיימת."
 PRODUCT_GROUPS_DETAIL = f"אפשר ליצור עד {MAX_PRODUCT_GROUPS} קבוצות מוצרים. כדי להוסיף קבוצה חדשה, צריך קודם למחוק אחת קיימת."
 DELIVERY_CITIES_DETAIL = f"אפשר להוסיף עד {MAX_DELIVERY_CITIES} ערי משלוח. כדי להוסיף עיר חדשה, צריך קודם להסיר אחת קיימת."
+DELIVERY_ZONES_DETAIL = f"אפשר עד {MAX_DELIVERY_ZONES} אזורי משלוח."
+ZONE_CITIES_DETAIL = f"אפשר עד {MAX_CITIES_PER_ZONE} ערים באזור אחד."
 
 
 def enforce_cap(current_count: int, kind: str) -> None:
@@ -109,7 +115,7 @@ OWNED_TABLE_CAPS = {
 }
 
 OWNED_TABLE_EXEMPT = {
-    "delivery_areas": "written only as the delivery_areas list on ProducerUpdate, capped by MAX_DELIVERY_CITIES",
+    "delivery_areas": "written as the delivery_areas list on ProducerUpdate and as zone cities (services/delivery_zones.py), both capped by MAX_DELIVERY_CITIES",
     "producer_categories": "written only from category_ids, capped at MAX_PRODUCER_CATEGORIES (5, MEH-2925) by _cap_categories_validator",
     "rescue_typical_items": "one row per business (PUT replaces it)",
     "producer_offers": "history rows: each save deactivates the old offer and inserts one (producer_me.py ~190), so growth is bounded by the PUT /producers/me rate limit",

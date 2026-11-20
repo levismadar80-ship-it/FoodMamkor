@@ -127,6 +127,10 @@ export const ProducerListSchema = z.object({
     min_order: z.number().nullable().optional(),
     delivery_day: z.string().nullable().optional(),
     delivery_fee: z.number().nullable().optional(),
+    // MEH-3484: several days per city, the zone, the zone's threshold.
+    delivery_days: z.array(z.string()).nullable().optional(),
+    zone_name: z.string().nullable().optional(),
+    free_delivery_above: z.number().nullable().optional(),
   })).optional().default([]),
   // MEH-1412 (MEH-1388 chunk 3): physical presence points from chunk 2's
   // serializer (backend ProducerLocationOut) — {kind, label, city, lat, lng,

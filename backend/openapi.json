@@ -1910,6 +1910,28 @@
             ],
             "title": "Delivery Day"
           },
+          "delivery_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -1956,6 +1978,14 @@
             ],
             "title": "Delivery Day"
           },
+          "delivery_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Days",
+            "type": "array"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -1966,6 +1996,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
           },
           "id": {
             "format": "uuid",
@@ -1982,6 +2023,17 @@
               }
             ],
             "title": "Min Order"
+          },
+          "zone_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Name"
           }
         },
         "required": [
@@ -2082,6 +2134,146 @@
           "token"
         ],
         "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
+      "DeliveryZoneIn": {
+        "description": "MEH-3484: one named zone on PUT /producers/me (and the admin PUT).\n`cities` is membership; the services/delivery_zones.py writer stores the\nzone on producers.delivery_zones and copies days / minimum / fee /\nthreshold onto each of its cities' delivery_areas rows.",
+        "properties": {
+          "cities": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 101,
+            "title": "Cities",
+            "type": "array"
+          },
+          "delivery_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days"
+          },
+          "delivery_fee": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
+          },
+          "min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DeliveryZoneIn",
+        "type": "object"
+      },
+      "DeliveryZoneOut": {
+        "description": "MEH-3484: a zone as the owner's editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).",
+        "properties": {
+          "cities": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cities",
+            "type": "array"
+          },
+          "delivery_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Days",
+            "type": "array"
+          },
+          "delivery_fee": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
+          },
+          "min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DeliveryZoneOut",
         "type": "object"
       },
       "DraftConsentPublishIn": {
@@ -8551,6 +8743,14 @@
             "title": "Delivery Nationwide",
             "type": "boolean"
           },
+          "delivery_zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DeliveryZoneOut"
+            },
+            "title": "Delivery Zones",
+            "type": "array"
+          },
           "description": {
             "anyOf": [
               {
@@ -9673,6 +9873,21 @@
               }
             ],
             "title": "Delivery Nationwide"
+          },
+          "delivery_zones": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryZoneIn"
+                },
+                "maxItems": 21,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zones"
           },
           "description": {
             "anyOf": [
@@ -13132,6 +13347,14 @@
             "title": "Delivery Nationwide",
             "type": "boolean"
           },
+          "delivery_zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DeliveryZoneOut"
+            },
+            "title": "Delivery Zones",
+            "type": "array"
+          },
           "description": {
             "anyOf": [
               {
@@ -14848,6 +15071,21 @@
               }
             ],
             "title": "Delivery Nationwide"
+          },
+          "delivery_zones": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryZoneIn"
+                },
+                "maxItems": 21,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zones"
           },
           "description": {
             "anyOf": [
