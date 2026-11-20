@@ -52,7 +52,7 @@ import urllib.request
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTRY_PATH = os.path.join(REPO_ROOT, "scripts", "search-placeholder-keys.json")
 
-DEFAULT_BASE = "https://staging.mehamakor.online"
+DEFAULT_BASE = "https://staging.mehamakor.co.il"
 SCOPES = ("producers", "products", "cities", "categories")
 TIMEOUT = 30
 

@@ -88,7 +88,7 @@ const STAGING_SAMPLE_PAGES = 40;
 // The host post-deploy-checks.yml crawls on a staging push. --self-test reads
 // that workflow and fails if its staging host is not in this set, so renaming
 // the host there cannot silently put staging back on the full crawl.
-const STAGING_HOSTS = new Set(["staging.mehamakor.online"]);
+const STAGING_HOSTS = new Set(["staging.mehamakor.co.il", "staging.mehamakor.online"]); // MEH-3405
 // Hosts allowed the full crawl without IS_PRODUCTION=true. Everything else
 // samples: a missed signal must cost coverage, never another suspension.
 const FULL_CRAWL_HOSTS = new Set(["mehamakor.co.il", "www.mehamakor.co.il", "localhost", "127.0.0.1", "[::1]", "::1"]);
