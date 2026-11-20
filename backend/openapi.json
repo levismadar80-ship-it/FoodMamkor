@@ -12315,6 +12315,28 @@
             ],
             "title": "Opening Hours"
           },
+          "order_cutoff_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Day"
+          },
+          "order_cutoff_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Time"
+          },
           "phone": {
             "anyOf": [
               {
@@ -12326,6 +12348,28 @@
               }
             ],
             "title": "Phone"
+          },
+          "pickup_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Days"
           }
         },
         "required": [
@@ -12401,6 +12445,28 @@
             ],
             "title": "Opening Hours"
           },
+          "order_cutoff_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Day"
+          },
+          "order_cutoff_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Time"
+          },
           "phone": {
             "anyOf": [
               {
@@ -12411,6 +12477,14 @@
               }
             ],
             "title": "Phone"
+          },
+          "pickup_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Pickup Days",
+            "type": "array"
           },
           "precision": {
             "default": "exact",
@@ -12512,6 +12586,28 @@
             ],
             "title": "Opening Hours"
           },
+          "order_cutoff_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Day"
+          },
+          "order_cutoff_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Time"
+          },
           "phone": {
             "anyOf": [
               {
@@ -12522,6 +12618,14 @@
               }
             ],
             "title": "Phone"
+          },
+          "pickup_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Pickup Days",
+            "type": "array"
           }
         },
         "required": [
@@ -12648,6 +12752,28 @@
             ],
             "title": "Opening Hours"
           },
+          "order_cutoff_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Day"
+          },
+          "order_cutoff_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Time"
+          },
           "phone": {
             "anyOf": [
               {
@@ -12659,6 +12785,28 @@
               }
             ],
             "title": "Phone"
+          },
+          "pickup_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Days"
           }
         },
         "title": "ProducerLocationUpdate",

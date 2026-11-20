@@ -642,4 +642,8 @@ export const LocationInputSchema = z.object({
   phone: z.string().trim().max(20).nullable().optional(),
   is_primary: z.boolean().optional(),
   location_precision: z.enum(["exact", "approximate"]).optional(),
+  // MEH-3512: the server whitelists the days and the HH:MM (Hebrew 422).
+  pickup_days: z.array(z.string()).max(14).optional(),
+  order_cutoff_day: z.string().nullable().optional(),
+  order_cutoff_time: z.string().nullable().optional(),
 });

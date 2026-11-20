@@ -1413,7 +1413,9 @@
         "host_limit_reached": "נשלחו היום כבר כמה מיילים לכתובת הזאת. אפשר לנסות שוב מחר."
       },
       "next_delivery": "המשלוח הבא: {date}",
-      "next_delivery_city": "המשלוח הבא ל{city}: {date}"
+      "next_delivery_city": "המשלוח הבא ל{city}: {date}",
+      "pickup_days": "{count, plural, one {איסוף ביום {days}} other {איסוף בימים {days}}}",
+      "next_pickup": "האיסוף הבא: {date}"
     },
     "friday_delivery": {
       "today": "שישי",
@@ -6309,7 +6311,15 @@
         "precision_exact": "מדויק",
         "precision_approximate": "משוער",
         "primary_label": "מיקום ראשי",
-        "hours_copy_all": "אותן שעות לכל הימים הפתוחים"
+        "hours_copy_all": "אותן שעות לכל הימים הפתוחים",
+        "pickup_days_label": "ימי איסוף",
+        "pickup_days_hint": "הימים שבהם אפשר לאסוף מהנקודה. הם יופיעו בעמוד העסק ליד הנקודה, עם תאריך האיסוף הבא.",
+        "pickup_cutoff_label": "מקבלים הזמנות עד",
+        "pickup_cutoff_hint": "לא חובה. למשל רביעי 15:00 לאיסוף ביום חמישי. בלי יום ושעה, חלות שעות קבלת ההזמנות של העסק.",
+        "pickup_cutoff_half": "צריך לבחור גם יום וגם שעה.",
+        "pickup_cutoff_none": "בלי יום",
+        "pickup_cutoff_day_aria": "יום אחרון להזמנה",
+        "pickup_cutoff_time_aria": "שעה אחרונה להזמנה"
       },
       "save_cta": "שמרו",
       "saving": "בשמירה…",

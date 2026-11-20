@@ -33,6 +33,7 @@ from app.data.cities import canonical_city  # MEH-3484
 from app.allergens import detail_if_declared, drop_contained, normalize_allergens
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
+from app.schemas import order_cutoff  # MEH-3512
 from app.schemas.schemas import (
     DELIVERY_DAYS,
     DeliveryDayField,
@@ -378,12 +379,22 @@ class ProducerLocationOut(BaseModel):
     # show a pickup point's hours + phone. address stays off (MEH-829).
     opening_hours: str | None = None
     phone: str | None = None
+    # MEH-3512: pickup weekdays + this point's own order cutoff ([] / None =
+    # «בתיאום» and the business-wide order_window — rendered as before).
+    pickup_days: list[str] = []
+    order_cutoff_day: str | None = None
+    order_cutoff_time: str | None = None
     # Field name matches the ORM attribute (from_attributes reads it directly);
     # serialization_alias emits the epic's contract key `precision` on the wire
     # (FastAPI dumps response models with by_alias=True).
     location_precision: str = Field(default="exact", serialization_alias="precision")
 
     model_config = {"from_attributes": True}
+
+    @field_validator("pickup_days", mode="before")
+    @classmethod
+    def _none_days(cls, v: Any) -> Any:
+        return v or []
 
 
 # MEH-1421 (MEH-1388 chunk 4a): shared enums — same value sets as the ORM CHECK
@@ -428,11 +439,35 @@ class ProducerLocationCreate(BaseModel):
     phone: PhoneNumberField | None = None
     is_primary: bool = False
     location_precision: _LOCATION_PRECISION = "exact"
+    # MEH-3512: see ProducerLocationOut.
+    pickup_days: DeliveryDaysField = None
+    order_cutoff_day: str | None = None
+    order_cutoff_time: str | None = None
 
     @field_validator("label")
     @classmethod
     def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
+
+    @field_validator("pickup_days")
+    @classmethod
+    def _pickup(cls, v: list[str | None] | None) -> list[str] | None:
+        return week_order(v)
+
+    @field_validator("order_cutoff_day")
+    @classmethod
+    def _cut_day(cls, v: str | None) -> str | None:
+        return order_cutoff.cutoff_day(v)
+
+    @field_validator("order_cutoff_time")
+    @classmethod
+    def _cut_time(cls, v: str | None) -> str | None:
+        return order_cutoff.cutoff_time(v)
+
+    @model_validator(mode="after")
+    def _cutoff_pair(self) -> Self:
+        order_cutoff.check_pair(self.order_cutoff_day, self.order_cutoff_time)
+        return self
 
 
 class ProducerLocationUpdate(BaseModel):
@@ -454,11 +489,39 @@ class ProducerLocationUpdate(BaseModel):
     phone: PhoneNumberField | None = None
     is_primary: bool | None = None
     location_precision: _LOCATION_PRECISION | None = None
+    # MEH-3512: same three fields as the Create twin. [] clears the days;
+    # null/"" clears the cutoff. Day and time are sent together (the editor
+    # always does) — one alone is a 422, never half a cutoff.
+    pickup_days: DeliveryDaysField = None
+    order_cutoff_day: str | None = None
+    order_cutoff_time: str | None = None
 
     @field_validator("label")
     @classmethod
     def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
+
+    @field_validator("pickup_days")
+    @classmethod
+    def _pickup(cls, v: list[str | None] | None) -> list[str] | None:
+        return week_order(v)
+
+    @field_validator("order_cutoff_day")
+    @classmethod
+    def _cut_day(cls, v: str | None) -> str | None:
+        return order_cutoff.cutoff_day(v)
+
+    @field_validator("order_cutoff_time")
+    @classmethod
+    def _cut_time(cls, v: str | None) -> str | None:
+        return order_cutoff.cutoff_time(v)
+
+    @model_validator(mode="after")
+    def _cutoff_pair(self) -> Self:
+        sent = self.model_fields_set & {"order_cutoff_day", "order_cutoff_time"}
+        if sent:
+            order_cutoff.check_pair(self.order_cutoff_day, self.order_cutoff_time)
+        return self
 
     # MEH-3342 finding 2: `kind` and `location_precision` are NOT NULL columns
     # (models/catalog.py:231, :244). `None` is this schema's "not supplied"
@@ -506,8 +569,17 @@ class ProducerLocationOwnerOut(BaseModel):
     phone: str | None = None
     is_primary: bool = False
     location_precision: str = "exact"
+    # MEH-3512
+    pickup_days: list[str] = []
+    order_cutoff_day: str | None = None
+    order_cutoff_time: str | None = None
 
     model_config = {"from_attributes": True}
+
+    @field_validator("pickup_days", mode="before")
+    @classmethod
+    def _none_days(cls, v: Any) -> Any:
+        return v or []
 
 
 # --- Producer offers (MEH-1823 chunk 2) ---
