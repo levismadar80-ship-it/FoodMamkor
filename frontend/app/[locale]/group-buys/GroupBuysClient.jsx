@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { ShoppingCart, Clock, MapPin, Truck } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -149,23 +149,37 @@ function GroupBuyCard({ gb }) {
   );
 }
 
-export default function GroupBuysClient() {
+/**
+ * @param {{ initialItems?: any[] | null, initialCounts?: object | null }} props
+ *   MEH-2233: the server's first list (status «open», no city) and its counts;
+ *   null or absent = the client fetches, as before.
+ */
+export default function GroupBuysClient({ initialItems = null, initialCounts = null }) {
   const t = useTranslations("group_buys.list");
   const tHub = useTranslations("events.list");
   // home.whats_on.eyebrow: «קרוב לבית» / "Close to home" — the tab-neutral
   // eyebrow (events.list.eyebrow_events reads "EVENTS" in en).
   const tWhatsOn = useTranslations("home.whats_on");
   const tErr = useTranslations();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // MEH-2233: the server's list is used once, for the first load only, which
+  // is always status «open» with no city. Every later load fetches as before.
+  const seed = useRef(Array.isArray(initialItems) ? initialItems : null);
+  const [items, setItems] = useState(() => seed.current ?? []);
+  const [loading, setLoading] = useState(() => !seed.current);
   const [error, setError] = useState(false);
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
   // MEH-3128: rows per status tab for this city — a tab with 0 is not drawn.
   // null = unknown (loading or failed) → every tab, as before.
-  const [statusCounts, setStatusCounts] = useState(null);
+  const countsSeed = useRef(initialCounts ? StatusCountsOut.safeParse(initialCounts) : null);
+  const [statusCounts, setStatusCounts] = useState(() =>
+    countsSeed.current?.success ? countsSeed.current.data : null,
+  );
   useEffect(() => {
+    const seeded = countsSeed.current?.success && !city;
+    countsSeed.current = null; // one use only
+    if (seeded) return; // MEH-2233: the server already answered this request
     let live = true;
     // The last city's counts stand in while this one loads (no flicker per
     // keystroke); a response for an older city is dropped (`live`).
@@ -184,6 +198,9 @@ export default function GroupBuysClient() {
   }, [city]);
 
   useEffect(() => {
+    const first = seed.current;
+    seed.current = null; // one use only
+    if (first && !city && statusFilter === "open") return; // MEH-2233
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, statusFilter]);
