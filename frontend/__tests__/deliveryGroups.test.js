@@ -117,25 +117,26 @@ describe("groupDeliveryAreas", () => {
   });
 
   // MEH-3484: a city delivered on several days is listed under each of them.
-  it("a city with two days sits in both day groups", () => {
+  it("a city with two days is listed once, under its day set", () => {
     const res = groupDeliveryAreas([
       { id: 1, city: "קריית ביאליק", delivery_day: "שני", delivery_days: ["שני", "חמישי"] },
       { id: 2, city: "חיפה", delivery_day: "שני" },
     ]);
     expect(res.mode).toBe("group");
-    expect(res.groups.map((g) => g.day)).toEqual(["שני", "חמישי"]);
-    expect(res.groups[0].rows.map((r) => r.city)).toEqual(["קריית ביאליק", "חיפה"]);
-    expect(res.groups[1].rows.map((r) => r.city)).toEqual(["קריית ביאליק"]);
+    expect(res.groups.map((g) => g.day)).toEqual(["שני וחמישי", "שני"]);
+    expect(res.groups[0].rows.map((r) => r.city)).toEqual(["קריית ביאליק"]);
+    expect(res.groups[1].rows.map((r) => r.city)).toEqual(["חיפה"]);
     expect(res.arranged).toEqual([]);
   });
 
-  it("every city on the same two days → one group per day, not a hoist", () => {
+  it("every city on the same two days → the day set is hoisted once", () => {
     const both = ["שני", "חמישי"];
     const res = groupDeliveryAreas([
       { id: 1, city: "קריית ביאליק", delivery_day: "שני", delivery_days: both },
       { id: 2, city: "קריית מוצקין", delivery_day: "שני", delivery_days: both },
     ]);
-    expect(res.mode).toBe("group");
-    expect(res.groups.map((g) => g.rows.length)).toEqual([2, 2]);
+    expect(res.mode).toBe("hoist");
+    expect(res.day).toBe("שני וחמישי");
+    expect(res.rows).toHaveLength(2);
   });
 });

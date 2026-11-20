@@ -909,17 +909,17 @@ describe("DeliveryBlock — zones (MEH-3484)", () => {
     { id: "b", city: "חיפה", delivery_day: "שני", free_delivery_above: null },
   ];
 
-  it("lists a two-day city under both days", () => {
+  it("lists a two-day city once, under its day set", () => {
     render(<DeliveryBlock areas={zoned} producer={{ free_delivery_above: 500 }} />);
+    expect(screen.getByText("ימי שני וחמישי")).toBeTruthy();
     expect(screen.getByText("ימי שני")).toBeTruthy();
-    expect(screen.getByText("ימי חמישי")).toBeTruthy();
-    expect(screen.getAllByText("קריית ביאליק")).toHaveLength(2);
+    expect(screen.getAllByText("קריית ביאליק")).toHaveLength(1);
   });
 
   it("shows the zone threshold on its cities when it is not the business's", () => {
     render(<DeliveryBlock areas={zoned} producer={{ free_delivery_above: 500 }} />);
     const own = screen.getAllByTestId("area-free-above");
-    expect(own).toHaveLength(2); // the one zoned city, under each of its days
+    expect(own).toHaveLength(1); // the one zoned city, listed once
     expect(own[0].textContent).toContain("300");
   });
 

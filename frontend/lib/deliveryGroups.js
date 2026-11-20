@@ -11,7 +11,7 @@
  *           JSX + i18n; nationwide / arranged (no-areas) states never reach here.
  * Related:  frontend/components/DeliveryBlock.jsx (sole consumer).
  * History:  MEH-1305 A (creation — dispatch-day pivot); MEH-3484 (several
- *           days per city: a city sits in each of its day groups).
+ *           days per city: grouped by the city's whole day set).
  */
 
 /**
@@ -55,7 +55,10 @@ export function groupDeliveryAreas(areas = []) {
   }));
 
   const missing = rows.filter((r) => r.delivery_days.length === 0);
-  const distinctDays = [...new Set(rows.flatMap((r) => r.delivery_days))];
+  // MEH-3484: a city on several days is grouped by its whole day set
+  // («שני וחמישי»), so it is listed once, not once per day.
+  const labelOf = (r) => dayLabel(r.delivery_days);
+  const distinctDays = [...new Set(rows.filter((r) => r.delivery_days.length).map(labelOf))];
 
   if (distinctDays.length === 0) {
     return { mode: "flat", rows };
@@ -65,12 +68,18 @@ export function groupDeliveryAreas(areas = []) {
     return { mode: "hoist", day: distinctDays[0], rows };
   }
 
-  // MEH-3484: a city on several days is listed under each of them.
   const groups = distinctDays.map((day) => ({
     day,
-    rows: rows.filter((r) => r.delivery_days.includes(day)),
+    rows: rows.filter((r) => r.delivery_days.length && labelOf(r) === day),
   }));
   return { mode: "group", groups, arranged: missing };
+}
+
+const DAY_LIST = new Intl.ListFormat("he", { style: "long", type: "conjunction" });
+
+/** @param {string[]} days — one day reads as itself («שני»), two as «שני וחמישי». */
+function dayLabel(days) {
+  return DAY_LIST.format(days);
 }
 
 /** @param {{delivery_day?: string | null, delivery_days?: string[] | null}} a */
