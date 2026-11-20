@@ -1,0 +1,65 @@
+# MEH-3523 — backend routes with no caller in frontend/, each with a reason.
+# Format: METHOD<TAB>PATH<TAB>REASON[<TAB>DETAIL]. Reasons and rules:
+# scripts/checks/lib/unwired_routes.py. This file only shrinks: a route that
+# gets a caller (or is deleted) must leave it, and a new unwired route fails.
+#
+# --- the scanner misses a call built from a variable; DETAIL is the real caller
+GET	/producers/by-slug/{_}	scanner-miss	frontend/app/[locale]/[slug]/page.js
+POST	/delivery-waitlist/unsubscribe	scanner-miss	frontend/app/[locale]/delivery-waitlist/unsubscribe/UnsubscribeClient.jsx
+GET	/producers/{_}/kashrut-cert/{_}	scanner-miss	frontend/components/KashrutBadgeStrip.jsx
+POST	/newsletter/unsubscribe	scanner-miss	frontend/app/[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx
+POST	/weekly-summary/unsubscribe	scanner-miss	frontend/app/[locale]/unsubscribe/weekly/UnsubscribeClient.jsx
+GET	/organizers/{_}	scanner-miss	frontend/app/[locale]/organizers/[slug]/page.js
+POST	/producers/me/page-fill/read	scanner-miss	frontend/app/[locale]/producer/dashboard/edit/page.js
+POST	/admin/producers/{_}/page-fill/read	scanner-miss	frontend/app/[locale]/admin/producers/[id]/edit/page.js
+GET	/producers/me/weekly-summary	scanner-miss	frontend/components/producer/WeeklySummaryToggle.jsx
+PATCH	/producers/me/weekly-summary	scanner-miss	frontend/components/producer/WeeklySummaryToggle.jsx
+POST	/producers/me/verify-phone	scanner-miss	frontend/components/PhoneVerifyCard.jsx
+POST	/producers/me/verify-phone/confirm	scanner-miss	frontend/components/PhoneVerifyCard.jsx
+POST	/users/me/verify-phone	scanner-miss	frontend/components/PhoneVerifyCard.jsx
+POST	/users/me/verify-phone/confirm	scanner-miss	frontend/components/PhoneVerifyCard.jsx
+POST	/producers/me/product-description/suggest	scanner-miss	frontend/components/ProductDescriptionSuggest.jsx
+POST	/admin/producers/{_}/product-description/suggest	scanner-miss	frontend/components/ProductDescriptionSuggest.jsx
+GET	/events/{_}/registrations	scanner-miss	frontend/components/RegistrationsList.jsx
+POST	/events/{_}/registrations	scanner-miss	frontend/components/RegistrationCta.jsx
+GET	/admin/producers/{_}/locations	scanner-miss	frontend/components/admin/ProducerForm.jsx
+POST	/admin/producers/{_}/locations	scanner-miss	frontend/components/admin/ProducerForm.jsx
+PUT	/admin/producers/{_}/locations/{_}	scanner-miss	frontend/components/admin/ProducerForm.jsx
+DELETE	/admin/producers/{_}/locations/{_}	scanner-miss	frontend/components/admin/ProducerForm.jsx
+GET	/producers/{_}/recipes/{_}	scanner-miss	frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx
+PUT	/admin/producers/{_}/product-order	scanner-miss	frontend/components/ProductOrganizer.jsx
+PUT	/admin/producers/{_}/products/{_}/group	scanner-miss	frontend/components/ProductOrganizer.jsx
+PUT	/admin/producers/{_}/product-groups/assign	scanner-miss	frontend/components/ProductOrganizer.jsx
+POST	/admin/producers/{_}/product-groups/suggest	scanner-miss	frontend/components/ProductGroupSuggest.jsx
+GET	/producers/me/product-groups	scanner-miss	frontend/components/ProductOrganizer.jsx
+PUT	/producers/me/product-groups	scanner-miss	frontend/components/ProductOrganizer.jsx
+PUT	/producers/me/product-order	scanner-miss	frontend/components/ProductOrganizer.jsx
+PUT	/producers/me/products/{_}/group	scanner-miss	frontend/components/ProductOrganizer.jsx
+PUT	/producers/me/product-groups/assign	scanner-miss	frontend/components/ProductOrganizer.jsx
+POST	/producers/me/product-groups/suggest	scanner-miss	frontend/components/ProductGroupSuggest.jsx
+#
+# --- outside callers
+GET	/webhook/whatsapp	webhook
+POST	/webhook/whatsapp	webhook
+GET	/health	health
+GET	/health/places	health
+GET	/health/liveness	health
+GET	/health/readiness	health
+#
+# --- real gaps: built on the server, no screen yet. Each has its card.
+GET	/users/me/product-orders	pending-ui	MEH-3525
+GET	/producers/me/billing/summary	pending-ui	MEH-3194
+POST	/producers/me/availability-confirm	pending-ui	MEH-2697
+POST	/admin/producers/{_}/grant-verified	admin-no-ui	MEH-3524
+POST	/admin/producers/{_}/revoke-verified	admin-no-ui	MEH-3524
+GET	/admin/producers/{_}/risk-score	admin-no-ui	MEH-3524
+GET	/admin/license-expiry-reminders	admin-no-ui	MEH-3524
+GET	/admin/rescue/metrics	admin-no-ui	MEH-3524
+POST	/admin/reports/{_}/resolve	admin-no-ui	MEH-3524
+PUT	/admin/producers/{_}/order-settings/alcohol	admin-no-ui	MEH-3524
+GET	/organizers	unused	MEH-3527
+GET	/producers/cities	unused	MEH-3527
+GET	/admin/producers/pending	unused	MEH-3527
+GET	/admin/recipes/pending	unused	MEH-3527
+POST	/admin/producers/{_}/set-ambassador	unused	MEH-3527
+POST	/admin/seed-cities	unused	MEH-3527
