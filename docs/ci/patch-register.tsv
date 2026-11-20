@@ -69,4 +69,4 @@ staging-health	applied	.github/workflows/staging-health.yml	name: Staging health
 uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	-	-
 vrt-label-trigger	applied	.github/workflows/vrt-update.yml	vrt-regen:	-	-
 webkit-project	applied	frontend/playwright.config.ts	webkit-iphone13	-	-
-meh-3153-webkit-core	pending	.github/workflows/e2e.yml	e2e-webkit-core:	2026-11-20	applied by Claude in Chrome on its own PR branch
+meh-3153-webkit-core	applied	.github/workflows/e2e.yml	e2e-webkit-core:	2026-11-20	applied by Claude in Chrome in 0b55272ae (sha256 4c36ed67…, verified byte for byte)
