@@ -334,11 +334,11 @@ test.describe("hours in the completeness card", () => {
   }
 
   // MT:MEH-1884:1 — everything but hours → the card, with hours the one open step.
-  test("a full profile without hours shows the card at 86% with «שעות פתיחה» open", async ({ page }) => {
+  test("a full profile without hours shows the card at 86% with «שעות שפתוח למבקרים» open", async ({ page }) => {
     await overview(page, { ...BASE, locations: [LOC_NO_HOURS] }, "pending");
     await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
     await expect(cardRoot(page).getByTestId("completeness-chip-hours")).toBeVisible();
-    await expect(cardRoot(page)).toContainText("שעות פתיחה");
+    await expect(cardRoot(page)).toContainText("שעות שפתוח למבקרים");
   });
 
   // MT:MEH-1884:2 — with hours filled, an approved business no longer sees the card.

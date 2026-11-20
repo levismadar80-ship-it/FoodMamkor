@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user, require_admin
 from app.config import settings
 from app.database import get_db
-from app.models import Producer, User
+from app.models import Producer, Product, User
 from app.rate_limit import limiter
 from app.services.image_ownership import owner_key  # MEH-3247
 
@@ -65,6 +65,33 @@ def _sniff_image_type(header: bytes) -> str | None:
     return "heic" if is_heif else None
 
 
+async def read_validated_image(file: UploadFile) -> bytes:
+    """Read the upload once, enforce MAX_FILE_SIZE, and sniff magic bytes.
+
+    MEH-3456: moved verbatim out of the four routes below, which each carried
+    a copy, so every image route (and the admin's product photo) shares ONE
+    size cap and ONE sniff.
+    """
+    # Capped at MAX_FILE_SIZE + 1 so oversized uploads still fail cheaply
+    # without OOM-ing the process.
+    contents = await file.read(MAX_FILE_SIZE + 1)
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
+        )
+    if not contents:
+        raise HTTPException(status_code=400, detail="קובץ ריק")
+    # SECURITY FIX #6: sniff the real format from magic bytes, don't trust
+    # the client-reported content_type.
+    if _sniff_image_type(contents[:32]) is None:
+        raise HTTPException(
+            status_code=400,
+            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
+        )
+    return contents
+
+
 @router.post("/image", response_model=None)
 @limiter.limit("20/hour")
 async def upload_image(
@@ -76,36 +103,28 @@ async def upload_image(
     """Upload image to Cloudinary. Validates size and real content type.
     The free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).
     """
-    # Read the whole file once so we can size-check and content-sniff. We cap
-    # at MAX_FILE_SIZE + 1 so oversized uploads still fail cheaply without
-    # OOM-ing the process.
-    contents = await file.read(MAX_FILE_SIZE + 1)
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
-        )
-    if not contents:
-        raise HTTPException(status_code=400, detail="קובץ ריק")
-
-    # SECURITY FIX #6: sniff the real format from magic bytes, don't trust
-    # the client-reported content_type.
-    detected = _sniff_image_type(contents[:32])
-    if detected is None:
-        raise HTTPException(
-            status_code=400,
-            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
-        )
+    contents = await read_validated_image(
+        file
+    )  # MEH-3456: shared with every image route
 
     # MEH-3220: no plan cap here. This endpoint also serves product photos,
     # event covers, recipes and workshops; the free-plan 3-photo cap is a
     # GALLERY cap (MEH-1335) and lives in services/gallery_cap.py, called
     # from PUT /producers/me.
 
+    return {"url": await _upload_to_own_folder(contents, user)}
+
+
+async def _upload_to_own_folder(contents: bytes, user: User) -> str:
+    """Store validated bytes in the uploader's own folder and return the URL.
+
+    Moved out of upload_image (MEH-3456) so the admin's product-photo route
+    stores exactly the way the general upload does.
+    """
     if not settings.cloudinary_cloud_name:
         # Dev fallback: return a local placeholder URL that won't trigger
         # the Next.js remote-image SVG guard.
-        return {"url": f"/placeholder-image.png?name={uuid.uuid4().hex[:8]}"}
+        return f"/placeholder-image.png?name={uuid.uuid4().hex[:8]}"
 
     try:
         import cloudinary
@@ -129,7 +148,7 @@ async def upload_image(
             resource_type="image",
             transformation=[{"width": 1200, "crop": "limit"}],
         )
-        return {"url": result["secure_url"]}
+        return str(result["secure_url"])
     except HTTPException:
         raise
     except Exception as e:
@@ -153,21 +172,7 @@ async def upload_avatar(
     Saves avatar_url to users table atomically so the caller needs no
     separate PATCH /users/me call.
     """
-    contents = await file.read(MAX_FILE_SIZE + 1)
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
-        )
-    if not contents:
-        raise HTTPException(status_code=400, detail="קובץ ריק")
-
-    detected = _sniff_image_type(contents[:32])
-    if detected is None:
-        raise HTTPException(
-            status_code=400,
-            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
-        )
+    contents = await read_validated_image(file)  # MEH-3456: one size cap, one sniff
 
     if not settings.cloudinary_cloud_name:
         url = f"/placeholder-image.png?avatar={uuid.uuid4().hex[:8]}"
@@ -272,21 +277,7 @@ async def _store_owner_photo(
     and the admin route cannot drift: one size cap, one magic-byte sniff, one
     public_id rule (MEH-375).
     """
-    contents = await file.read(MAX_FILE_SIZE + 1)
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
-        )
-    if not contents:
-        raise HTTPException(status_code=400, detail="קובץ ריק")
-
-    detected = _sniff_image_type(contents[:32])
-    if detected is None:
-        raise HTTPException(
-            status_code=400,
-            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
-        )
+    contents = await read_validated_image(file)  # MEH-3456: one size cap, one sniff
 
     if not settings.cloudinary_cloud_name:
         url = f"/placeholder-image.png?owner={uuid.uuid4().hex[:8]}"
@@ -351,21 +342,7 @@ async def upload_kashrut_cert(
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="אין בית עסק משויך לחשבון")
 
-    contents = await file.read(MAX_FILE_SIZE + 1)
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
-        )
-    if not contents:
-        raise HTTPException(status_code=400, detail="קובץ ריק")
-
-    detected = _sniff_image_type(contents[:32])
-    if detected is None:
-        raise HTTPException(
-            status_code=400,
-            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
-        )
+    contents = await read_validated_image(file)  # MEH-3456: one size cap, one sniff
 
     if not settings.cloudinary_cloud_name:
         return {"url": f"/placeholder-image.png?cert={uuid.uuid4().hex[:8]}"}
@@ -395,3 +372,60 @@ async def upload_kashrut_cert(
         raise HTTPException(
             status_code=500, detail="שגיאה בהעלאת התמונה — נסו שוב בעוד רגע"
         )
+
+
+@router.post("/product-image/{product_id}", response_model=None)
+@limiter.limit("60/hour")
+async def admin_upload_product_image(
+    request: Request,
+    product_id: UUID,
+    file: UploadFile,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3456: the admin uploads or replaces the photo of ANY business's
+    product — a live page or an ownerless draft — from the admin edit page.
+
+    Same validation as every other image route (read_validated_image) and the
+    same storage as /upload/image (the uploader's own folder, MEH-3247). The
+    product comes from the PATH and only an admin reaches it: 403 for anyone
+    else, the owner included (she sets her photos through PUT
+    /producers/me/products/{id}). The admin audit row is written by
+    get_current_user for every admin POST (services/admin_audit.py), targeting
+    `product_id`. Only this one column changes: no other product field is in
+    the request.
+
+    Any product of any business, an import draft (`is_draft`) included: the
+    admin may set a photo before she approves the draft. The stored URL lives
+    in the ADMIN's folder, so the owner keeps it on this product (grandfathered
+    by image_ownership) but cannot reuse that URL on another product or in her
+    gallery (403, MEH-3247) — she uploads her own copy for that.
+    """
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if product is None:
+        raise HTTPException(status_code=404, detail="מוצר לא נמצא")
+    contents = await read_validated_image(file)
+    url = await _upload_to_own_folder(contents, user)
+    # Same external-cleanup order as producer_me.delete_my_product (MEH-375):
+    # capture the old image, commit the new one, destroy the old after commit.
+    old_image_url = product.image_url
+    product.image_url = url  # type: ignore[assignment]
+    db.commit()
+    if old_image_url and old_image_url != url:
+        from app.cloudinary_utils import destroy_image
+
+        # MEH-2551: the SDK is sync — off the event loop like every other
+        # Cloudinary call in this file (this route is `async def`).
+        await asyncio.to_thread(
+            destroy_image,
+            old_image_url,  # type: ignore[arg-type]
+            context="upload.admin_upload_product_image old image",
+            db=db,  # MEH-3247: skips an asset another row still uses
+        )
+    log.info(
+        "admin product image set: product=%s producer=%s admin=%s",
+        product.id,
+        product.producer_id,
+        user.id,
+    )
+    return {"url": url}

@@ -47,8 +47,8 @@ function parseRows(text) {
   }
 }
 
-/** @param {{ producerId: string }} props */
-export default function AdminProductImport({ producerId }) {
+/** @param {{ producerId: string, onApproved?: () => void }} props */
+export default function AdminProductImport({ producerId, onApproved }) {
   const t = useTranslations("admin.producers.product_import");
   const tUnit = useTranslations("price_unit");  // MEH-2936
   const [text, setText] = useState("");
@@ -132,6 +132,9 @@ export default function AdminProductImport({ producerId }) {
       });
       setResult({ approved: r.data.approved });
       await load();
+      // MEH-3456: the page's product list (and its photo panel) now has new
+      // rows — let it re-read them.
+      onApproved?.();
     });
 
   const onDelete = (/** @type {string} */ id) =>
