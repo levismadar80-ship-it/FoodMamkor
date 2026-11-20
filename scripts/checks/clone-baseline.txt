@@ -121,6 +121,7 @@
 9 frontend/components/FavoriteButton.jsx|frontend/components/ProducerUpdatesButton.jsx
 1 frontend/components/FilterSheet.jsx|frontend/components/LocationModal.jsx
 1 frontend/components/HomepageMiniMap.jsx|frontend/components/HomepageMiniMapSkeleton.jsx
+1 frontend/components/admin/AdminOwnerStoryFields.jsx|frontend/components/admin/AdminProductImageButton.jsx
 2 frontend/components/ui/Popover.jsx|frontend/components/ui/Tooltip.jsx
 1 frontend/components/ui/Select.jsx|frontend/components/ui/Textarea.jsx
 1 frontend/lib/env.client.js|frontend/lib/env.server.js
