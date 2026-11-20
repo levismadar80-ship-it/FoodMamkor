@@ -1,5 +1,6 @@
 import type { Locator } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { pickCity } from "../_pick-city";
 import { LICENSE_REQUIRED_CATEGORIES } from "../../../lib/license-required-categories";
 
 /**
@@ -102,8 +103,7 @@ async function gotoCategory(page: Page) {
   await page.getByTestId("register-details-name").fill("העסק שלי");
   await page.getByTestId("register-details-phone").fill(PHONE);
   const city = page.getByTestId("register-details-city");
-  await city.getByRole("combobox").fill(CITY_QUERY);
-  await city.getByRole("option").first().click();
+  await pickCity(city, CITY_QUERY, /./); // MEH-3488: the first suggestion, and proof it was picked
   await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the one required question on DETAILS
   await page.getByTestId("register-details-next").click();
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
