@@ -381,8 +381,14 @@ def _delivery(producer: Any, on_vacation: bool, now: datetime) -> dict[str, Any]
                 "fee": _money(a.delivery_fee),
                 "free_above": _money(getattr(a, "free_delivery_above", None)),
                 # MEH-3511: the zone's delivery time and own order cutoff.
-                "business_days": _days(getattr(a, "delivery_days_min", None), getattr(a, "delivery_days_max", None)),
-                "orders_until": _cutoff(getattr(a, "order_cutoff_day", None), getattr(a, "order_cutoff_time", None)),
+                "business_days": _days(
+                    getattr(a, "delivery_days_min", None),
+                    getattr(a, "delivery_days_max", None),
+                ),
+                "orders_until": _cutoff(
+                    getattr(a, "order_cutoff_day", None),
+                    getattr(a, "order_cutoff_time", None),
+                ),
             }
             for a in producer.delivery_areas
         ],
