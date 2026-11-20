@@ -19955,6 +19955,57 @@
         "title": "StoryCardUploadRequest",
         "type": "object"
       },
+      "TestBusinessFlag": {
+        "additionalProperties": false,
+        "description": "`hidden` and not `is_test`: guard 3 keeps the column name out of every\nschema, so no response can ever carry it by accident.",
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ],
+        "title": "TestBusinessFlag",
+        "type": "object"
+      },
+      "TestBusinessFlagOut": {
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "hidden"
+        ],
+        "title": "TestBusinessFlagOut",
+        "type": "object"
+      },
+      "TestBusinessIdsOut": {
+        "properties": {
+          "producer_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Producer Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "producer_ids"
+        ],
+        "title": "TestBusinessIdsOut",
+        "type": "object"
+      },
       "Token": {
         "properties": {
           "access_token": {
@@ -25675,6 +25726,91 @@
         "summary": "Get Stats",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/test-businesses": {
+      "get": {
+        "description": "The ids the admin views mark «עסק בדיקה». Ids only, nothing else.",
+        "operationId": "list_test_businesses_admin_test_businesses_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestBusinessIdsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Test Businesses",
+        "tags": [
+          "admin-test-business"
+        ]
+      }
+    },
+    "/admin/test-businesses/{producer_id}": {
+      "put": {
+        "operationId": "set_test_business_admin_test_businesses__producer_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestBusinessFlag"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestBusinessFlagOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Test Business",
+        "tags": [
+          "admin-test-business"
         ]
       }
     },

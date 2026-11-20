@@ -22,6 +22,8 @@
 * `frontend/components/PageFillPanel.jsx` — «ספרו לנו על העסק» גם בראש עמוד העריכה של בית עסק (MEH-3483), דרך `POST /admin/producers/{producer_id}/page-fill/read` ושמירה ל-`PUT /admin/producers/{id}`. בלי שעות (אין שם נתיב מיקום) ובלי תמונות תפריט.
 * `frontend/components/admin/BlockUserConfirm.jsx` — אישור לפני חסימת משתמשת (MEH-3375): אם החסימה תסתיר בית עסק, החלון מציג את שמו וכמה הזמנות פתוחות של לקוחות יבוטלו. קריאה: `GET /admin/users/{id}/block-impact` ב-`backend/app/routers/admin_extra.py`, הספירה ב-`backend/app/services/booking_cancellations.py` (אותם מסננים כמו הביטול).
 
+* `backend/app/routers/admin_test_business.py` + `frontend/components/admin/TestBusinessToggle.jsx` + `frontend/components/admin/TestBusinessTag.jsx` — «עסק בדיקה — מוסתר מהאתר» (MEH-2952 חלק 4): מתג בעמוד העריכה ותגית ברשימה. מסתיר את העסק מכל משטח ציבורי ומכל שליחה, בלי לשנות סטטוס. המצב נקרא מ-`GET /admin/test-businesses` (מזהים בלבד) דרך `frontend/lib/use-test-business-ids.js`. הצד של ה-seed: `backend/scripts/seed_demo_business.py --mark-test`, כבוי כברירת מחדל.
+
 **Flags.** אין. ‏`SUPER_ADMIN_EMAIL` הוא הגדרת סביבה, לא flag.
 
 **טסטים**
@@ -32,6 +34,7 @@
 * `tests/test_admin_product_organize.py` — **השומר** של קבוצות וסדר מהאדמין: 401/403 לכל מי שאינה אדמין, מוצר של עסק אחר → 404, סדר שכולל טיוטות; `tests/test_admin_product_import.py` — קבוצה בייבוא ותקרת 20 הקבוצות.
 * `tests/test_meh3475_admin_delivery_payment.py` — **השומר** של משלוח ותשלום מהאדמין (שורות, 422 על יום לא חוקי, שמירת ימים ברשימת ערים, 403/401); `frontend/__tests__/AdminDeliveryPaymentPanel.test.jsx` — המסך (עיר אחת / רבות × בלי סימון / עם).
 * `tests/test_meh3483_page_fill.py` — הנתיב של האדמין: 404 לעסק שלא קיים, 403 לבעלת עסק.
+* `tests/test_meh2952_test_business_toggle.py` — **השומר** של המתג: 401/403, הסתרה והחזרה, IndexNow, ודגל ה-seed כבוי כברירת מחדל; `frontend/__tests__/AdminTestBusinessToggle.test.jsx` — המתג והתגית. `tests/test_meh2952_is_test_guards.py` מתיר כתיבה רק משני הקבצים.
 * `tests/test_meh3402_blocked_capture.py` — **השומר** של לכידת ההודעות שנחסמו.
 * `tests/test_expansion_admin_authz.py` · `tests/test_meh2900_admin_role_endpoint.py` · `tests/test_meh2890_super_admin_env.py`
 * `frontend/e2e/flows/30-admin-panel-tabs.spec.ts` · `frontend/e2e/flows/33-admin-producers-tab.spec.ts`

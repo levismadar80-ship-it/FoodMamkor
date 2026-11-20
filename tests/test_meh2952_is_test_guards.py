@@ -286,9 +286,16 @@ class TestInlineApprovedChecks:
 
 # ── guard 2 · no writer before chunk 4 ─────────────────────────────────────
 
-#: Repo-relative paths allowed to write is_test. Chunk 4 adds the seed script
-#: and the admin toggle — not before chunks 1–3 are on staging.
-WRITERS_ALLOWED: frozenset[str] = frozenset()
+#: Repo-relative paths allowed to write is_test. Chunk 4 (MEH-2952): the
+#: admin toggle «עסק בדיקה — מוסתר מהאתר» and the seed script's opt-in flag
+#: (off by default — the staging demo businesses stay visible, MEH-2794).
+#: Nothing else; a new writer is a decision, not an allowlist line.
+WRITERS_ALLOWED: frozenset[str] = frozenset(
+    {
+        "backend/app/routers/admin_test_business.py",
+        "backend/scripts/seed_demo_business.py",
+    }
+)
 
 #: Where the column is DECLARED, which is not a write.
 _DECLARATIONS = {"backend/app/models/models.py"}

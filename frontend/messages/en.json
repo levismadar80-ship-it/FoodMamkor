@@ -2103,6 +2103,9 @@
         "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
         "load_failed": "Couldn't load the drafts. Try refreshing.",
         "draft_group": "Group: {name}"
+      },
+      "test_business": {
+        "label": "Test business — hidden from the site"
       }
     },
     "users": {

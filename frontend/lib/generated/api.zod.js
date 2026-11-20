@@ -3351,6 +3351,24 @@ export const GetStatsAdminStatsGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * The ids the admin views mark «עסק בדיקה». Ids only, nothing else.
+ * @summary List Test Businesses
+ */
+export const ListTestBusinessesAdminTestBusinessesGetResponse = /*#__PURE__*/ zod.object({
+  "producer_ids": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.uuid())
+})
+
+
+/**
+ * @summary Set Test Business
+ */
+export const SetTestBusinessAdminTestBusinessesProducerIdPutResponse = /*#__PURE__*/ zod.object({
+  "hidden": /*#__PURE__*/ zod.boolean(),
+  "producer_id": /*#__PURE__*/ zod.uuid()
+})
+
+
+/**
  * @summary List Users
  */
 export const listUsersAdminUsersGetResponseFavoritesCountDefault = 0;

@@ -24,7 +24,8 @@ Related:  backend/seed_data.py (base seed patterns) · MEH-999 (producer
 History:  MEH-1074 Wave 3 (creation); MEH-1241 (--sync-users QA passwords);
           MEH-1432 (multi-location + delivery-only demo); MEH-1528 (QA admin
           account + dietary-scope demo producers for auth-free QA); MEH-2897
-          (--golden: the seven golden-path personas, see GOLDEN_BUSINESSES).
+          (--golden: the seven golden-path personas, see GOLDEN_BUSINESSES);
+          MEH-2952 chunk 4 (--mark-test: opt-in is_test, off by default).
 
 Run (Sapir, Git Bash, after approving the demo identity below):
     railway run python backend/scripts/seed_demo_business.py
@@ -33,6 +34,7 @@ Local:
     python backend/scripts/seed_demo_business.py            # skip-if-exists
     python backend/scripts/seed_demo_business.py --refresh  # recreate
     python backend/scripts/seed_demo_business.py --golden   # golden personas only
+    python backend/scripts/seed_demo_business.py --mark-test  # hide the demos (local only)
 """
 
 import argparse
@@ -2484,6 +2486,38 @@ def seed_golden_personas(db) -> dict[str, list[str]]:
     return result
 
 
+def demo_business_slugs() -> list[str]:
+    """Every business slug a plain run (or --refresh) seeds. The golden
+    personas are not here: --golden is its own mode and never combines with
+    --mark-test."""
+    return [
+        DEMO_SLUG,
+        DELIVERY_ONLY_SLUG,
+        *(spec["slug"] for spec in DIETARY_SCOPE_DEMOS),
+        *(spec["slug"] for spec in AVAILABILITY_DEMOS),
+    ]
+
+
+def mark_demo_businesses_as_test(db, *, hidden: bool) -> int:
+    """MEH-2952 chunk 4: the seed's side of the «עסק בדיקה» switch.
+
+    OPT-IN ONLY (`--mark-test`, off by default). The staging demo businesses
+    must stay visible: the /join clips (MEH-2794) and the E2E run read them
+    from public pages, and a hidden row 404s for a visitor. So a plain run,
+    and --refresh, never call this. Returns the number of rows changed.
+    """
+    changed = 0
+    for producer in (
+        db.query(Producer).filter(Producer.slug.in_(demo_business_slugs())).all()
+    ):
+        if bool(producer.is_test) != hidden:
+            producer.is_test = hidden
+            changed += 1
+    db.commit()
+    print(f"MEH-2952: {changed} demo business(es) set is_test={hidden}.")
+    return changed
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -2519,9 +2553,28 @@ def main() -> None:
             "with --refresh and --sync-users."
         ),
     )
+    parser.add_argument(
+        "--mark-test",
+        action="store_true",
+        help=(
+            "MEH-2952: after seeding, mark the demo businesses as test rows "
+            "(«עסק בדיקה — מוסתר מהאתר»), hidden from every public page and "
+            "every send. OFF by default, local databases only (refused when "
+            "RAILWAY_ENVIRONMENT=staging): the /join clips (MEH-2794) and the "
+            "E2E run need the staging demos visible. Not with --sync-users or "
+            "--golden."
+        ),
+    )
     args = parser.parse_args()
     if sum((args.sync_users, args.refresh, args.golden)) > 1:
         sys.exit("--sync-users, --refresh and --golden are mutually exclusive.")
+    if args.mark_test and (args.sync_users or args.golden):
+        sys.exit("--mark-test seeds the demo businesses; not with --sync-users or --golden.")
+    # MEH-2952 (rule-5a review): the staging demos must stay public (the /join
+    # clips, MEH-2794, and the E2E run), and no CLI path unmarks them. Local
+    # databases only; on staging the admin switch is the one way to hide a row.
+    if args.mark_test and os.environ.get("RAILWAY_ENVIRONMENT") == "staging":
+        sys.exit("--mark-test is for a local database only — the staging demos must stay visible.")
     _assert_not_production()
     db = SessionLocal()
     try:
@@ -2544,6 +2597,9 @@ def main() -> None:
             # MEH-2981: same contract — a live demo group buy, added only if
             # none is open, so a plain run (no --refresh) restores the tab.
             seed_open_group_buy(db)
+            # MEH-2952 chunk 4: opt-in only — see mark_demo_businesses_as_test.
+            if args.mark_test:
+                mark_demo_businesses_as_test(db, hidden=True)
     finally:
         db.close()
 
