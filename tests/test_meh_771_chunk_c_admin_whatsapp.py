@@ -225,10 +225,11 @@ _FROZEN_NOW = datetime(2026, 11, 10, 9, 0, tzinfo=timezone.utc)
 
 
 def _freeze(monkeypatch):
-    from app.routers import admin_extra, admin_whatsapp
+    from app.routers import admin_whatsapp
+    from app.services import admin_dashboard  # MEH-3538: the dashboard count moved here
 
     monkeypatch.setattr(admin_whatsapp, "utc_now", lambda: _FROZEN_NOW)
-    monkeypatch.setattr(admin_extra, "utc_now", lambda: _FROZEN_NOW)
+    monkeypatch.setattr(admin_dashboard, "utc_now", lambda: _FROZEN_NOW)
 
 
 def test_accepted_for_two_days_is_listed_as_stuck(client, db, monkeypatch):

@@ -30,7 +30,7 @@ def read_vacation_state(db: Session) -> tuple[bool, date | None]:
     Returns `(active, return_date)`. Corrupt persisted state — invalid
     ISO date OR `active="true"` + empty `return_date` — coerces to
     `(False, None)` rather than raising. PR2a's
-    `admin_extra._read_vacation_state` wraps this into a Pydantic
+    `admin_settings.read_vacation_mode` wraps this into a Pydantic
     `VacationModeState`; PR2b's watchdog consumes the tuple directly.
 
     Behavior matrix:

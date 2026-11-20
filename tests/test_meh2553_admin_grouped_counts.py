@@ -158,10 +158,10 @@ def test_month_bucket_starts_at_midnight_not_at_the_current_hour(
     """
     from datetime import datetime, timezone
 
-    from app.routers import admin_extra
+    from app.services import admin_dashboard  # MEH-3538: the month math moved here
 
     frozen = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
-    monkeypatch.setattr(admin_extra, "utc_now", lambda: frozen)
+    monkeypatch.setattr(admin_dashboard, "utc_now", lambda: frozen)
     admin = make_user(db, role="admin")
     p = make_producer(db, name="חוות הבוקר")
     p.created_at = datetime(2026, 11, 1, 8, 0, tzinfo=timezone.utc)
@@ -185,7 +185,7 @@ def test_six_month_window_is_six_consecutive_months_across_february():
     """Fixed 30-day steps from 15/03/2027 gave 2026-12 twice and no 2027-02."""
     from datetime import datetime, timezone
 
-    from app.routers.admin_extra import _last_six_months
+    from app.services.admin_dashboard import last_six_months as _last_six_months  # MEH-3538: moved
 
     for now in (
         datetime(2027, 3, 15, tzinfo=timezone.utc),
