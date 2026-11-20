@@ -50,13 +50,11 @@ import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
 import ButtonSpinner from "@/components/ButtonSpinner";
+// MEH-2233: first-screen card photos load eagerly; the LCP row at high priority.
+import { cardImagePriority } from "@/lib/card-image-priority";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
-// MEH-2233: the first screen of the grid — one row at xl (4 columns), two
-// rows on a phone (2 columns). These photos load eagerly at high priority,
-// because one of them is the page's LCP; the rest stay lazy.
-const EAGER_CARD_IMAGES = 4;
 
 // MEH-1483: the backend-driven sort axis (?sort=). "newest" is the default —
 // omitted from the request so the default listing stays byte-identical to
@@ -1285,7 +1283,7 @@ export default function ProducersClient({
               <ProducerCard
                 key={p.id}
                 producer={p}
-                eagerImage={i < EAGER_CARD_IMAGES}
+                imagePriority={cardImagePriority(i)}
                 referrer="producers-index"
                 highlightQuery={searchQ || undefined}
               />
