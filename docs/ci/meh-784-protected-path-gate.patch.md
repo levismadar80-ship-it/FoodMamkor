@@ -1,3 +1,5 @@
+> **Status: NOT APPLIED, declined 20/11/2026.** The gate needs a label from Sapir on every PR that touches a workflow, a lockfile, `package.json` or an Alembic revision, and CC can add that label itself, so it records and does not prevent. The PR and its diff are already the record. `scripts/ci/protected-path-gate.sh` stays in the tree, unused.
+
 # MEH-784 — protected-path gate: the server-side half of the deny layer
 
 **Staged for Sapir.** `.github/workflows/**` is CC-deny for the filesystem
