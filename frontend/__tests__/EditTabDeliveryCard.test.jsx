@@ -243,7 +243,8 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
       },
     });
 
-    expect(screen.getByText(D.area_fee_label)).toBeInTheDocument();
+    // MEH-3475: the label now also captions each row's fee box (header + 2 rows).
+    expect(screen.getAllByText(D.area_fee_label)).toHaveLength(3);
     const atlit = screen.getByTestId("delivery-fee-input-עתלית");
     const haifa = screen.getByTestId("delivery-fee-input-חיפה");
     // 0 survives the load; the un-overridden row stays empty (= inherit).

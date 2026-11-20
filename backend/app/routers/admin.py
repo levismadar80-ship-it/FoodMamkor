@@ -37,6 +37,10 @@ from app.services.producer_listing import is_business  # MEH-2459
 from app.services.page_freshness import stale_clause
 from app.services.producer_duplicates import attach_duplicate_signals  # MEH-3408
 from app.routers.producer_me import reconcile_secondary_phone  # MEH-3339
+from app.routers.producer_me import (
+    _apply_delivery_rows,
+)  # MEH-3475: one writer for structured rows
+from app.data.cities import canonical_city  # MEH-3475
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
@@ -116,13 +120,49 @@ def _apply_categories(db: Session, producer: Producer, category_ids: list[int]) 
         db.add(ProducerCategory(producer_id=producer.id, category_id=cid, position=pos))
 
 
+def _write_delivery_areas(
+    db: Session,
+    producer: Producer,
+    rows: list[dict[str, Any]] | None,
+    cities: list[str] | None,
+) -> None:
+    """MEH-3475: structured rows (the DeliveryCard shape) win over the flat
+    city list (ProducerForm), the same precedence as the owner PUT."""
+    if rows is not None:
+        _apply_delivery_rows(db, producer, rows)
+    elif cities is not None:
+        _apply_delivery_cities(db, producer, cities)
+
+
 def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -> None:
+    # MEH-3475: the admin ProducerForm sends the flat city list on every save.
+    # A city that stays keeps its day / minimum / fee; only new cities start
+    # empty. Before, every admin save wiped the per-city details.
+    kept = {
+        # Keyed canonically: a row stored before MEH-2602 may carry another
+        # spelling of the same city.
+        (canonical_city(str(a.city)) or str(a.city)): (
+            a.delivery_day,
+            a.min_order,
+            a.delivery_fee,
+        )
+        for a in db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id)
+    }
     db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
     for city in cities:
         city = (city or "").strip()
         if not city:
             continue
-        db.add(DeliveryArea(producer_id=producer.id, city=city))
+        day, min_order, fee = kept.get(canonical_city(city) or city, (None, None, None))
+        db.add(
+            DeliveryArea(
+                producer_id=producer.id,
+                city=city,
+                delivery_day=day,
+                min_order=min_order,
+                delivery_fee=fee,
+            )
+        )
 
 
 def _attach_has_owner(db: Session, producers: list[Any]) -> None:
@@ -694,6 +734,10 @@ def admin_update_producer(
         )
     category_ids = payload.pop("category_ids", None)
     delivery_area_cities = payload.pop("delivery_area_cities", None)
+    # MEH-3475: structured rows (city · delivery_day · min_order · fee), the
+    # owner DeliveryCard's shape, written by the owner's own writer. Without
+    # this pop the setattr loop below assigned dicts to the relationship (500).
+    delivery_rows = payload.pop("delivery_areas", None)
     # MEH-903 A: stop writing the legacy delivery_cities column — delivery_areas
     # is the single store now. Pop it out of the payload so the bulk setattr loop
     # below can't resurrect the write. Column stays declared (drop = Chunk C).
@@ -763,8 +807,7 @@ def admin_update_producer(
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
-    if delivery_area_cities is not None:
-        _apply_delivery_cities(db, producer, delivery_area_cities)
+    _write_delivery_areas(db, producer, delivery_rows, delivery_area_cities)
 
     # MEH-2059 (MEH-1938 chunk 4b): the admin EDIT half of the dual-write.
     # Gated on the payload rather than on the resulting values, because

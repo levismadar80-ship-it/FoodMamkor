@@ -234,6 +234,15 @@ const EMPTY = {
   vacation_until: "",
 };
 
+/** MEH-3475: the delivery fields the edit page's panel owns. */
+const DELIVERY_GROUP = [
+  "has_physical_location",
+  "offers_delivery",
+  "delivery_nationwide",
+  "delivery_area_cities",
+  "delivery_excluded_cities",
+];
+
 /**
  * MEH-3333 — the edit PUT drops city / lat / lng unless the admin changed them.
  *
@@ -269,6 +278,11 @@ function changedOnly(payload, form, seed) {
   if (same(form.secondary_phone_label?.trim(), String(seed.secondary_phone_label ?? "").trim())) {
     delete out.secondary_phone_label;
   }
+  // MEH-3475: on the edit page the delivery block is the owner's DeliveryCard
+  // (AdminDeliveryPaymentPanel), the one writer of these fields there. This
+  // form renders no delivery controls on edit, so it never sends them — a
+  // page-open copy could only put old cities back over the panel's save.
+  for (const k of DELIVERY_GROUP) delete out[k];
   return out;
 }
 
@@ -1089,7 +1103,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         />
       </Section>
 
-      {/* MEH-213 — location type */}
+      {/* MEH-213 — location type. MEH-3475: create only — on the edit page
+          the owner's DeliveryCard below the form owns these fields. */}
+      {!producerId && (
       <Section title={t("producers.form.sections.business_type")} testId="business-type-section">
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -1178,6 +1194,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           )}
         </div>
       </Section>
+      )}
 
       <Section title={t("producers.form.sections.delivery_pickup")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1352,8 +1369,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           type="submit"
           disabled={
             isBusy("producer-save") ||
-            (!form.has_physical_location && !form.offers_delivery) ||
-            (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
+            (!producerId && !form.has_physical_location && !form.offers_delivery) ||
+            (!producerId && form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
           variant="primary" size="lg"
         >

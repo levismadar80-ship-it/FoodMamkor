@@ -2527,6 +2527,14 @@ export const CreatePreviewLinkAdminProducersProducerIdPreviewLinkPostResponse = 
 
 
 /**
+ * @summary Admin Suggest Product Description
+ */
+export const AdminSuggestProductDescriptionAdminProducersProducerIdProductDescriptionSuggestPostResponse = /*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * @summary Admin List Product Drafts
  */
 export const AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponseItem = /*#__PURE__*/ zod.object({
@@ -6592,6 +6600,14 @@ export const PutMyOrderWindowsProducersMeOrderWindowsPutResponse = /*#__PURE__*/
   "start_time": /*#__PURE__*/ zod.iso.time({}),
   "weekday": /*#__PURE__*/ zod.int()
 }))
+})
+
+
+/**
+ * @summary Suggest My Product Description
+ */
+export const SuggestMyProductDescriptionProducersMeProductDescriptionSuggestPostResponse = /*#__PURE__*/ zod.object({
+  "description": /*#__PURE__*/ zod.string()
 })
 
 
