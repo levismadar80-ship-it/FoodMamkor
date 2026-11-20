@@ -22,6 +22,24 @@ and don't need ANTHROPIC_API_KEY.
 # below, so each one can be read whole. pytest collects the imported
 # tests here, so every node id is unchanged. DO NOT rename this file —
 # the Stop hook, DoD rules and CI reference it by path.
+# Re-export every module-level name of the old module (helpers, constants,
+# fixtures): other test modules import them from here, and pytest registers
+# fixtures where they are imported.
+from _test_experiences__common import (  # noqa: F401
+    time,
+    timedelta,
+    Decimal,
+    Experience,
+    User,
+    israel_today,
+    auth_header,
+    make_producer,
+    make_user,
+    _make_host,
+    _payload,
+    _make_experience,
+    _mock_moderation,
+)
 from _test_experiences__p01 import (  # noqa: F401
     TestExperienceSubmission,
     TestExperienceValidate,

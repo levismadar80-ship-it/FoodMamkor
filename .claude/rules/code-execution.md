@@ -175,6 +175,11 @@ An agent reads a big file in slices and misses what is outside the slice.
   before launch. **Exception (Sapir 20/11):** the 11 test/script files that were
   over the cap when tests joined the scan are split on purpose, mechanically
   (move whole groups, prove the same test IDs collect before and after).
+- **How a test file was split (MEH-3540).** pytest: `tests/<stem>.py` imports
+  its tests from `tests/_<stem>__pNN.py` (node ids unchanged; a test missing
+  from that import list never runs, and `tests/test_meh3540_split_parts_collected.py`
+  catches it). Playwright: `<name>-NN.spec.ts` + `_<name>-shared.ts`. vitest:
+  `<name>-NN.test.jsx`, with the `vi.mock` header repeated in each file.
 
 ---
 

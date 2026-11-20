@@ -13,6 +13,31 @@ Coverage:
 # below, so each one can be read whole. pytest collects the imported
 # tests here, so every node id is unchanged. DO NOT rename this file —
 # the Stop hook, DoD rules and CI reference it by path.
+# Re-export every module-level name of the old module (helpers, constants,
+# fixtures): other test modules import them from here, and pytest registers
+# fixtures where they are imported.
+from _test_api__common import (  # noqa: F401
+    pytest,
+    AdminSetting,
+    ContactClick,
+    ContactMessage,
+    Producer,
+    ProducerReview,
+    ProducerWhatsAppClick,
+    StaticPage,
+    User,
+    israel_today,
+    auth_header,
+    make_category,
+    make_producer,
+    make_submit_ready_producer,
+    make_user,
+    valid_producer_register_payload,
+    valid_review_payload,
+    utc_now,
+    _REGISTER_ACK_DETAIL,
+    _signup_cookie_shape,
+)
 from _test_api__p01 import (  # noqa: F401
     TestAuth,
 )
