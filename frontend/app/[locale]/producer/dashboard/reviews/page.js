@@ -15,15 +15,15 @@
  *           the list is what customers see on the public page.
  * Related:  components/ReviewsSection.jsx (ReviewReply, StarRow, the name
  *           format) · dashboard/tools/page.js (the «ביקורות» tile).
- * History:  MEH-3107 (creation).
+ * History:  MEH-3107 (creation). MEH-3536 (reads move onto lib/use-api.js).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Star } from "@phosphor-icons/react";
 import { useRouter } from "@/i18n/navigation";
-import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useUserApi } from "@/lib/use-api";
 import { formatEventDate } from "@/lib/format-date";
 import BackLink from "@/components/ui/BackLink";
 import EmptyState from "@/components/ui/EmptyState";
@@ -96,37 +96,46 @@ export default function ProducerDashboardReviewsPage() {
   const tRecipes = useTranslations("recipes.dashboard");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [reviews, setReviews] = useState(/** @type {any[] | null} */ (null));
-  const [failed, setFailed] = useState(false);
+  const isOwner = Boolean(user) && user?.role === "producer";
 
-  const load = useCallback(async () => {
-    setFailed(false);
-    setReviews(null);
-    try {
-      const me = await api.get("/producers/me");
-      const res = await api.get("/reviews", { params: { producer_id: me.data.id } });
-      setReviews(unansweredFirst(Array.isArray(res.data) ? res.data : []));
-    } catch {
-      setFailed(true);
-    }
-  }, []);
+  // MEH-3536: both reads go through the shared data layer. `/producers/me` is
+  // the same cached answer every dashboard screen on the layer reads; the
+  // reviews wait for it (a dependent read: no request until the id exists).
+  const me = useUserApi("/producers/me", { enabled: isOwner });
+  const producerId = me.data?.id;
+  const list = useUserApi("/reviews", {
+    enabled: isOwner && producerId !== undefined && producerId !== null,
+    params: { producer_id: producerId },
+    view: "owner-unanswered-first",
+    // Sorted once, when the list arrives — not on every render — so a reply
+    // saved below does not move its row (see handleSaved).
+    transform: (data) => unansweredFirst(Array.isArray(data) ? data : []),
+  });
+
+  const failed = Boolean(me.error || list.error) && !me.isValidating && !list.isValidating;
+  const reviews = failed ? null : /** @type {any[] | undefined} */ (list.data) ?? null;
+
+  // Retry: ask again for whichever read failed. While it runs the skeleton
+  // shows, as the old reload did.
+  const load = () => {
+    if (me.error) me.mutate();
+    else list.mutate();
+  };
 
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== "producer") {
       router.push("/login");
-      return;
     }
-    load();
-    // `router` is left out on purpose: a new object per render would reload
-    // the list on every render (same choice as recipes/page.js).
+    // `router` is left out on purpose: a new object per render would push on
+    // every render (same choice as recipes/page.js).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading, load]);
+  }, [user, authLoading]);
 
   // A saved reply replaces the row in place — re-sorting would move the
   // review the owner just answered out from under her.
   const handleSaved = (/** @type {any} */ updated) =>
-    setReviews((list) => (list || []).map((r) => (r.id === updated.id ? updated : r)));
+    list.mutate((rows) => (rows || []).map((r) => (r.id === updated.id ? updated : r)), { revalidate: false });
 
   if (authLoading || !user || user.role !== "producer") return null;
 

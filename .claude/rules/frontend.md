@@ -111,6 +111,7 @@ export named here no longer exists.
 | Toast | `toast.js` | `showToast` |
 | Login link that returns here · safe redirect target | `safe-redirect.js` | `loginHrefBackHere`, `safeInternalRedirect` |
 | Image URL / ratio | `cloudinary.js` | `optimizeCloudinary`, `IMAGE_RATIOS` |
+| Read from the API in a client component (MEH-3536) | `use-api.js` | `useApi`, `useUserApi`, `invalidateApi` |
 | Fetch in a server component | `server-fetch.js` | `serverFetch` |
 
 ---

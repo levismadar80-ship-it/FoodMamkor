@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import fs from "node:fs";
+import { SWRConfig } from "swr";
 import ReviewsPage from "@/app/[locale]/producer/dashboard/reviews/page";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -45,6 +46,14 @@ vi.mock("@/lib/api", () => {
   };
 });
 
+// MEH-3536: the page reads through the shared SWR cache, which outlives a
+// test's render. Each render gets an empty cache so one case's reviews never
+// answer the next case's request.
+const FreshCache = ({ children }) => (
+  <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{children}</SWRConfig>
+);
+const renderPage = () => render(<ReviewsPage />, { wrapper: FreshCache });
+
 const review = (id, reply = null) => ({
   id, user_name: `לקוחה ${id}`, stars: 5, body: `גוף ${id}`,
   created_at: "2026-11-10T10:00:00Z", reply, reply_at: reply ? "2026-11-11T10:00:00Z" : null,
@@ -57,7 +66,7 @@ describe("dashboard reviews page (MEH-3107)", () => {
 
   it("0 reviews: the owner empty state, no list, no summary", async () => {
     reviewsRef.current = [];
-    render(<ReviewsPage />);
+    renderPage();
     expect(await screen.findByText("owner_empty_title")).toBeInTheDocument();
     expect(screen.queryByTestId("owner-review")).toBeNull();
     expect(screen.queryByTestId("owner-reviews-summary")).toBeNull();
@@ -65,7 +74,7 @@ describe("dashboard reviews page (MEH-3107)", () => {
 
   it("1 review, form closed → open: «הוספת תגובה» opens the reply box", async () => {
     reviewsRef.current = [review("a")];
-    render(<ReviewsPage />);
+    renderPage();
     const rows = await screen.findAllByTestId("owner-review");
     expect(rows).toHaveLength(1);
     expect(screen.getByTestId("owner-reviews-summary").textContent).toContain('"unanswered":1,"total":1');
@@ -77,7 +86,7 @@ describe("dashboard reviews page (MEH-3107)", () => {
   it("many: unanswered first, newest first inside each group", async () => {
     // API order = newest first: c (answered), b (open), a (answered), d (open)
     reviewsRef.current = [review("c", "תודה"), review("b"), review("a", "תודה"), review("d")];
-    render(<ReviewsPage />);
+    renderPage();
     const rows = await screen.findAllByTestId("owner-review");
     expect(rows.map((r) => r.textContent.match(/גוף (\w)/)[1])).toEqual(["b", "d", "c", "a"]);
     expect(rows.map((r) => r.dataset.answered)).toEqual(["false", "false", "true", "true"]);
@@ -86,7 +95,7 @@ describe("dashboard reviews page (MEH-3107)", () => {
 
   it("many, form open: saving a reply PUTs it and the row stays in place, counted as answered", async () => {
     reviewsRef.current = [review("b"), review("c", "תודה")];
-    render(<ReviewsPage />);
+    renderPage();
     const rows = await screen.findAllByTestId("owner-review");
     fireEvent.click(within(rows[0]).getByText("reply_add"));
     fireEvent.change(within(rows[0]).getByRole("textbox"), { target: { value: "תודה רבה!" } });
@@ -102,7 +111,7 @@ describe("dashboard reviews page (MEH-3107)", () => {
 
   it("a failed load shows the retry row, not an empty state", async () => {
     failRef.current = true;
-    render(<ReviewsPage />);
+    renderPage();
     expect(await screen.findByTestId("owner-reviews-error")).toBeInTheDocument();
     expect(screen.queryByText("owner_empty_title")).toBeNull();
   });
