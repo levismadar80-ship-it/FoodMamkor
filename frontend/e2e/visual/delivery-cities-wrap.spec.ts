@@ -57,7 +57,7 @@ const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
 type Box = { x: number; y: number; width: number; height: number };
 type Item = { sep: Box; city: Box };
 
-async function measure(page: Page): Promise<{ clip: Box; items: Item[] }> {
+async function measure(page: Page): Promise<{ clip: Box; items: Item[]; overflowX: string }> {
   return page.getByTestId("delivery-cities-clip").evaluate((clipEl) => {
     const r = (el: Element) => {
       const b = el.getBoundingClientRect();
@@ -67,14 +67,18 @@ async function measure(page: Page): Promise<{ clip: Box; items: Item[] }> {
       sep: r(li.querySelector('[data-testid="delivery-city-sep"]')!),
       city: r(li.lastElementChild!),
     }));
-    return { clip: r(clipEl), items };
+    // The box geometry below is the same with or without the clip, so the
+    // clip itself is read from the computed style (fresh-review finding).
+    const overflowX = getComputedStyle(clipEl).overflowX;
+    return { clip: r(clipEl), items, overflowX };
   });
 }
 
 const inside = (b: Box, c: Box) => b.x >= c.x - 0.5 && b.x + b.width <= c.x + c.width + 0.5;
 const outside = (b: Box, c: Box) => b.x >= c.x + c.width - 0.5 || b.x + b.width <= c.x + 0.5;
 
-function assertLines({ clip, items }: { clip: Box; items: Item[] }, label: string): number {
+function assertLines({ clip, items, overflowX }: { clip: Box; items: Item[]; overflowX: string }, label: string): number {
+  expect(overflowX, `${label}: the wrapper must clip the overhanging separators`).toBe("hidden");
   // Group into visual lines by the city's top edge.
   const lines: Item[][] = [];
   for (const it of items) {
