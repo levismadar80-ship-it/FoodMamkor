@@ -36,7 +36,8 @@ DAILY_CAP = "20/day"
 
 
 def _categories(db: Session) -> list[tuple[int, str]]:
-    return [(c.id, c.name) for c in db.query(Category).order_by(Category.id).all()]
+    rows = db.query(Category.id, Category.name).order_by(Category.id).all()
+    return [(int(cid), str(name)) for cid, name in rows]
 
 
 async def _answer(body: PageFillIn, db: Session) -> PageFillOut:
