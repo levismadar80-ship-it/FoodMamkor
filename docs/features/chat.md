@@ -22,7 +22,7 @@
 * `tests/test_meh3481_chat_business_context.py` — שדות פרטיים לא נכנסים, משלוח לעיר, «פתוח עכשיו», שני שמות תואמים = אין התאמה.
 * `tests/test_meh3489_chat_business_page.py` — שאלה בלי שם עונה על הדף, שם אחר גובר, דף לא ציבורי לא מוסיף כלום.
 * `frontend/__tests__/businessChatPrompts.test.js` — 0 / 1 / רבות שאלות, עסק בלי משלוחים לא מקבל שאלת משלוחים.
-* `frontend/__tests__/ChatWidgetBusiness.test.jsx` — אין כפתור צף בדף, החלון נפתח לבית העסק ושולח `producer_id`, הפוקוס חוזר לכפתור.
+* `frontend/__tests__/ChatWidgetBusiness.test.jsx` — אין כפתור צף בדף, החלון נפתח לבית העסק ושולח `producer_id`, הפוקוס חוזר לכפתור. ‏MEH-3513: שאלות ההמשך (רבות / אחת / אף אחת, עם ובלי ערוץ קשר), לחיצה על שאלת המשך שולחת אותה, הקישור לוואטסאפ נושא את השאלה, וערוץ אחר נספר כמו כפתור יצירת הקשר.
 * `tests/test_meh3384_prompt_caching.py` — מבנה ה-system וה-cache, ושהתשובה יוצאת גם בלי מוני cache.
 * `frontend/e2e/flows/23-ai-artifact-probe.spec.ts`
 

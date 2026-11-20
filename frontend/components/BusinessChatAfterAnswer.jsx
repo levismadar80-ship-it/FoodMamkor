@@ -32,19 +32,20 @@ export default function BusinessChatAfterAnswer({ business, messages, onAsk }) {
   const t = useTranslations("chat.business");
   const asked = new Set(messages.filter((m) => m.role === "user").map((m) => m.content.trim()));
   const lastQuestion = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+  // Exact match on the label the chip sends; a typed paraphrase is not matched.
   const followUps = (business.prompts || [])
-    .map((p) => t(`prompts.${p.id}`, p.values))
-    .filter((label) => !asked.has(label.trim()));
+    .map((p) => ({ id: p.id, label: t(`prompts.${p.id}`, p.values) }))
+    .filter(({ label }) => !asked.has(label.trim()));
   const href = business.handoff ? business.handoff.href(lastQuestion) : null;
   if (followUps.length === 0 && !href) return null;
   return (
     <div className="flex flex-col gap-2 pt-1" data-testid="business-chat-after-answer">
-      {followUps.map((label) => (
+      {followUps.map(({ id, label }) => (
         <button
-          key={label}
+          key={id}
           type="button"
           onClick={() => onAsk(label)}
-          className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary"
+          className="min-h-11 text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           {label}
         </button>
@@ -55,8 +56,9 @@ export default function BusinessChatAfterAnswer({ business, messages, onAsk }) {
           target="_blank"
           rel="noopener noreferrer"
           data-testid="business-chat-handoff"
+          aria-label={t("ask_business_aria", { name: business.name })}
           onClick={() => trackPrimaryCtaClick(business.id, business.handoff?.method)}
-          className="inline-flex items-center gap-1.5 self-start text-xs font-medium text-primary underline underline-offset-2 px-1 py-2 focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+          className="min-h-11 inline-flex items-center gap-1.5 self-start text-xs font-medium text-primary underline underline-offset-2 px-1 py-2 focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
         >
           <ChatCircleText size={16} aria-hidden="true" />
           {t("ask_business", { name: business.name })}

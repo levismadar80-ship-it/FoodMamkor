@@ -249,15 +249,42 @@ describe("MEH-3513: after an answer — follow-ups and «ask the business»", ()
     const link = after.getByTestId("business-chat-handoff");
     expect(link).toHaveTextContent(B.ask_business.replace("{name}", producer.name));
     const text = decodeURIComponent(new URL(link.getAttribute("href")).searchParams.get("text"));
-    expect(text).toContain(B.prompts.delivery);
-    expect(text).toContain(he.whatsapp.question_chips.source_line);
+    expect(link.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/972501234567\?/);
+    expect(text.startsWith(`שלום ${producer.name}, ${B.prompts.delivery}`)).toBe(true);
+    expect(text.endsWith(he.whatsapp.question_chips.source_line)).toBe(true);
     fireEvent.click(link);
     expect(trackPrimaryCtaClick).toHaveBeenCalledWith(producer.id, "whatsapp");
   });
 
-  it("a follow-up tap sends it; when every question was asked only the link stays", async () => {
-    const producer = { ...PRODUCER, phone: "050-1234567", products: [] , opening_hours: null };
-    // one prompt only: delivery
+  it("a follow-up tap sends it with producer_id, hides the block while waiting, then drops it from the list", async () => {
+    const producer = { ...PRODUCER, phone: "050-1234567" };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    let answer;
+    post.mockImplementationOnce(() => new Promise((resolve) => { answer = resolve; }));
+    await act(async () => {
+      fireEvent.click(within(dialog.getByTestId("business-chat-after-answer")).getByRole("button", { name: B.prompts.hours }));
+    });
+    expect(post).toHaveBeenCalledTimes(2);
+    const sent = post.mock.calls[1][1];
+    expect(sent.producer_id).toBe(producer.id);
+    expect(sent.messages.at(-1)).toEqual({ role: "user", content: B.prompts.hours });
+    expect(dialog.queryByTestId("business-chat-after-answer")).not.toBeInTheDocument();
+    await act(async () => { answer({ data: { reply: "תשובה שנייה" } }); });
+    const after = within(dialog.getByTestId("business-chat-after-answer"));
+    expect(after.queryByRole("button", { name: B.prompts.hours })).not.toBeInTheDocument();
+    expect(after.getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.diet_vegan]);
+  });
+
+  it("one question left and no contact channel: that question and no link", async () => {
+    const producer = { ...PRODUCER, products: [] };
+    const dialog = await askFromPage(producer, B.prompts.delivery);
+    const after = within(dialog.getByTestId("business-chat-after-answer"));
+    expect(after.getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.hours]);
+    expect(after.queryByTestId("business-chat-handoff")).not.toBeInTheDocument();
+  });
+
+  it("every question asked: only the link stays", async () => {
+    const producer = { ...PRODUCER, phone: "050-1234567", products: [], opening_hours: null };
     const dialog = await askFromPage(producer, B.prompts.delivery);
     const after = within(dialog.getByTestId("business-chat-after-answer"));
     expect(after.queryAllByRole("button")).toHaveLength(0);
@@ -273,6 +300,9 @@ describe("MEH-3513: after an answer — follow-ups and «ask the business»", ()
   it("a non-WhatsApp channel links to the contact button's own href, without the question", async () => {
     const producer = { ...PRODUCER, primary_contact_method: "website", website: "example.com" };
     const dialog = await askFromPage(producer, B.prompts.delivery);
-    expect(dialog.getByTestId("business-chat-handoff")).toHaveAttribute("href", "https://example.com");
+    const link = dialog.getByTestId("business-chat-handoff");
+    expect(link).toHaveAttribute("href", "https://example.com");
+    fireEvent.click(link);
+    expect(trackPrimaryCtaClick).toHaveBeenCalledWith(producer.id, "website");
   });
 });
