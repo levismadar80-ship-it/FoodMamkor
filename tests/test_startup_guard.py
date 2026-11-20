@@ -55,6 +55,18 @@ def test_development_pointing_at_prod_domain_warns():
     assert "mehamakor.online" in issues[0]
 
 
+# MEH-3490: production has been mehamakor.co.il since May 2026; the guard
+# knew only the old .online host, so dev pointed at the real prod URL passed.
+def test_development_pointing_at_co_il_prod_domain_warns():
+    issues = _check_frontend_url_consistency("development", "https://mehamakor.co.il")
+    assert len(issues) == 1
+    assert "mehamakor.co.il" in issues[0]
+
+
+def test_development_on_localhost_does_not_warn():
+    assert _check_frontend_url_consistency("development", "http://localhost:3000") == []
+
+
 # MEH-674: an unrecognized ENV value (typo) matches none of the drift branches
 # and would otherwise pass silently, disabling the guard. It must warn.
 @pytest.mark.parametrize("env", ["stage", "prod", "dev", "STAGNG", "qa"])

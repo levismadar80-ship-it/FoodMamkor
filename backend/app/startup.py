@@ -75,6 +75,9 @@ def _schema_is_alembic_owned(env: str | None) -> bool:
     return (env or "").lower() in _ALEMBIC_OWNED_ENVS
 
 
+_PRODUCTION_HOSTS = ("mehamakor.co.il", "mehamakor.online")
+
+
 def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
     """MEH-334: defense-in-depth boot guard for FRONTEND_URL drift.
 
@@ -102,8 +105,12 @@ def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
         issues.append("env=staging but frontend_url missing 'staging.' prefix")
     if e == "production" and ("staging" in url or "localhost" in url):
         issues.append("env=production but frontend_url points at staging/localhost")
-    if e == "development" and "mehamakor.online" in url:
-        issues.append("env=development but frontend_url points at mehamakor.online")
+    # MEH-3490: production is mehamakor.co.il (since May 2026); .online only
+    # redirects there until it is released, so both still mean "production".
+    for prod_host in _PRODUCTION_HOSTS:
+        if e == "development" and prod_host in url:
+            issues.append(f"env=development but frontend_url points at {prod_host}")
+            break
     return issues
 
 

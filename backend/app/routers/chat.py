@@ -1,4 +1,4 @@
-"""Chat assistant router — answers questions about mehamakor.online via Claude.
+"""Chat assistant router — answers questions about mehamakor.co.il via Claude.
 
 A small Q&A bot users can open from the floating widget on the homepage.
 Users get answers to "how do I register?", "how do I find a producer?",

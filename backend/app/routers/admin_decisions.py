@@ -408,7 +408,7 @@ def request_producer_changes(
 
     p_name = producer.name
     # Env-aware link (mirrors auth_emails.py:159) — staging emails must point
-    # at staging, not production. On prod frontend_url == mehamakor.online.
+    # at staging, not production. On prod frontend_url == https://mehamakor.co.il.
     dashboard_link = f"{settings.frontend_url}/producer/dashboard"
 
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
