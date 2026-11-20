@@ -2125,7 +2125,24 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  MEH-586: hybrid — an intent router (Haiku, structured output)
                                  may run ONE of four bounded read-only tools and append the JSON
                                  to the system prompt; otherwise the fixed-knowledge flow.
+                                 MEH-3481: a question that names exactly ONE public business
+                                 (whole-word name ≥ 3 letters in the last 3 user turns; a name
+                                 inside a longer matching one gives way) also gets that
+                                 business's facts in a <business_page> block:
+                                 services/chat_business_context.py facts() — store hours
+                                 (primary location, then the legacy column) + open_now (Israel
+                                 clock; false on vacation/paused), special_hours, order_window,
+                                 delivery areas/days/min order/fee, nationwide and excluded
+                                 cities, delivers_to_asked_city (false when offers_delivery is
+                                 off), pickup points (kind, label, city, hours), contact method
+                                 (not the contact), site ordering, payment methods, whole-kitchen
+                                 dietary scope, up to 60 non-draft products through ProductOut.
+                                 Lookup failure → the block is left out, the chat still answers.
 ```
+
+The business facts are read through the app's own session, **not** the `mcp_reader`
+role below: the whitelist is the `facts()` dict itself, and `tests/test_meh3481_chat_business_context.py`
+fails if phone, email, contact name, address or WhatsApp group reach the prompt.
 
 `mcp_reader` role (revision `a29c7a4a41e7`, `app/services/chat_db_tools.py`):
 
