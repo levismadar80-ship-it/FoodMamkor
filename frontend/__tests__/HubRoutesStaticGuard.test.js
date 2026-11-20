@@ -12,7 +12,7 @@
  * rescue flag off, notFound() runs before the translation call, and the 404
  * prerenders. So this guard reads the files instead: for every route in
  * HUB_TABS, the page file and every server file it imports directly (no
- * "use client" — e.g. events/hub-tab-titles.js) must pass a locale to every
+ * "use client"), plus the route-group layouts above it (MEH-3463), must pass a locale to every
  * getTranslations call, must not alias getTranslations, and must not read
  * headers() / cookies() (both make the route per-request).
  */
@@ -22,7 +22,7 @@ import { describe, expect, it } from "vitest";
 
 import { HUB_TABS } from "@/components/ListingHubTabs";
 
-const LOCALE_APP = path.resolve(__dirname, "..", "app", "[locale]");
+import { LOCALE_APP, routeEntryFiles } from "./helpers/route-entry-files";
 
 /** Strip comments so a comment that quotes the bad call does not count. */
 function code(text) {
@@ -30,10 +30,16 @@ function code(text) {
 }
 
 function pageFile(href) {
-  const dir = path.join(LOCALE_APP, href.replace(/^\//, ""));
-  const file = ["page.js", "page.jsx"].map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
-  if (!file) throw new Error(`no page file for hub route ${href} under ${dir}`);
-  return file;
+  const { page } = routeEntryFiles(href);
+  if (!page) throw new Error(`no page file for hub route ${href} under ${LOCALE_APP}`);
+  return page;
+}
+
+/** The page, the route-group layouts above it, and their server imports. */
+function routeServerFiles(href) {
+  const { page, layouts } = routeEntryFiles(href);
+  if (!page) throw new Error(`no page file for hub route ${href} under ${LOCALE_APP}`);
+  return [page, ...layouts].flatMap((f) => serverFiles(f));
 }
 
 /** Blank out string literals so a word inside quotes never counts as code. */
@@ -103,10 +109,11 @@ describe("MEH-3049: classifier self-test", () => {
   it("ignores a commented-out call", () => {
     expect(localelessCalls('// getTranslations("rescue")\nconst x = 1;')).toEqual([]);
   });
-  it("follows a page's server imports — /events reaches hub-tab-titles.js", () => {
-    const names = serverFiles(pageFile("/events")).map((f) => path.basename(f));
-    expect(names).toContain("hub-tab-titles.js");
-    expect(names).not.toContain("EventsClient.jsx");
+  it("reads a route's group layout too, and skips client files — /events reaches (whats-on)/layout.js", () => {
+    const rel = routeServerFiles("/events").map((f) => path.relative(LOCALE_APP, f));
+    expect(rel).toContain(path.join("(whats-on)", "events", "page.js"));
+    expect(rel).toContain(path.join("(whats-on)", "layout.js"));
+    expect(rel.map((f) => path.basename(f))).not.toContain("EventsClient.jsx");
   });
   it("is anchored to a real hub page that passes (group-buys)", () => {
     const text = fs.readFileSync(pageFile("/group-buys"), "utf8");
@@ -118,7 +125,7 @@ describe("MEH-3049: classifier self-test", () => {
 describe("MEH-3049: hub routes keep a locale on every server translation call", () => {
   for (const tab of HUB_TABS) {
     it(`${tab.href} passes a locale to getTranslations`, () => {
-      for (const file of serverFiles(pageFile(tab.href))) {
+      for (const file of routeServerFiles(tab.href)) {
         const rel = path.relative(LOCALE_APP, file);
         expect({ file: rel, problems: localelessCalls(fs.readFileSync(file, "utf8")) }).toEqual({ file: rel, problems: [] });
       }

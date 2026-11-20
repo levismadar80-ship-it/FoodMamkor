@@ -24,8 +24,8 @@ vi.mock("@/lib/env", () => ({
   API_URL: "https://api.example.test",
 }));
 
-import { generateMetadata as eventsMeta } from "@/app/[locale]/events/page";
-import { generateMetadata as experiencesMeta } from "@/app/[locale]/experiences/page";
+import { generateMetadata as eventsMeta } from "@/app/[locale]/(whats-on)/events/page";
+import { generateMetadata as experiencesMeta } from "@/app/[locale]/(whats-on)/experiences/page";
 import { generateMetadata as groupBuysMeta } from "@/app/[locale]/group-buys/page";
 
 const params = { params: Promise.resolve({ locale: "he" }) };

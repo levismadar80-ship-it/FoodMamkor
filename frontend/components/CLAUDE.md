@@ -34,7 +34,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
-| Person's photo or initial | `ui/Avatar.jsx` | `AvatarGuard` |
+| Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`) | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
@@ -47,18 +47,22 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
 | Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` (imports only) |
+| A page's contact channels (primary button + named circles) — business and organizer pages | `app/[locale]/producer/[id]/components/ContactCard.jsx` (no ready-made questions in it — MEH-3460) | `ContactCardOneOwnerGuard` (look), `ContactChannelsOneOwner` (hrefs) |
 | Head of a «מה קורה» hub tab | `HubShell.jsx` | `HubShellGuard` |
 | Print a date | `lib/format-date.js` | `DateFormatGuard` |
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
 | Horizontal chip row | `ChipScrollRow.jsx` | — |
 | City / address field | `CitySearch.jsx` · `AddressSearch.jsx` | ESLint `no-restricted-syntax` |
 | Image with branded fallback | `ImageWithFallback.jsx` | — |
+| Landing for an email «unsubscribe» link (POST on mount, retry, token stripped) | `EmailLinkUnsubscribe.jsx` | `EmailLinkUnsubscribe` |
+| Admin panel that mints + copies a signed 14-day link for a draft | `admin/AdminLinkPanel.jsx` | `AdminClaimLink` (+ `scripts/checks/clone-ratchet.sh` for copies) |
 
 `Link`, `Badge`, `Heading`, `Card` have no product call sites yet (only
 `app/[locale]/dev/components`, the dev-only gallery). Prefer them over new
 copies, but check the look against the page you are matching.
 
-**When none fits:** extend the owner with a prop before writing a sibling. A
+**When none fits:** extend the owner with a prop before writing a sibling.
+Copying 8+ lines from another file fails `scripts/checks/clone-ratchet.sh` (MEH-3464). A
 genuinely new primitive goes in `ui/` with the `Module / Purpose / Does NOT`
 header, a row here, and a guard when a hand-written copy would be easy to write.
 

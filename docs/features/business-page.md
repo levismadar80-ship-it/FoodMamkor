@@ -12,7 +12,7 @@
 
 **קבצים מרכזיים**
 * `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` — כותרת, מצב חופשה.
-* `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, קבוצת WhatsApp.
+* `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, קבוצת WhatsApp. גם דף המארגן מציג אותו (MEH-3459), בלי שאלות מוכנות — הן בסעיף «שאלות נפוצות» של דף העסק (MEH-3460); השומר `frontend/__tests__/ContactCardOneOwnerGuard.test.js`.
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
 * `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quickAnswers.js` — סעיף «שאלות נפוצות» (`#section-faq`) בגוף הדף, מתחת ל«משלוחים», ולא בכרטיס הקשר. כשסעיף המשלוח מוצג (`hasDeliverySection`) לא שואלים על משלוח. אין «איך מזמינים?» ואין «שאלה אחרת? צרו איתנו קשר», כי שתיהן רק חזרו על הכפתור (MEH-3460).
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים.

@@ -154,11 +154,11 @@
 >
 > **MEH-2938 (2026-11-19):** `POST /auth/register/producer` accepts an optional `external_order_form` (online shop / order-form link, ≤500, same http(s)-only guard as `ProducerUpdate`) and writes it to the existing `producers.external_order_form` column (MEH-296) on both the new-account and MEH-143 upgrade paths. No migration. Same request, MEH-2925: `MAX_PRODUCER_CATEGORIES` is 5 (was 3) on every schema that carries `category_ids`.
 
-> **MEH-1471 (2026-07-22):** self-reported attribution ("מאיפה שמעת עלינו?"). `producers.referral_source` (`VARCHAR(40)`, **nullable**) + `producers.referral_source_other` (`VARCHAR(120)`, **nullable**), migration `d7b2f4a9c6e1`. `referral_source` stores an **English key** from `constants.REFERRAL_SOURCE_KEYS` (`business_referral`\|`friends_family`\|`instagram`\|`facebook`\|`google`\|`whatsapp_group`\|`direct_outreach`\|`other`\|`prefer_not_to_say`) chosen at the final registration step; Hebrew labels are rendered from i18n. `referral_source_other` holds the optional free-text answer, revealed only when the key is `other`. Validated at the API boundary (`ProducerRegister._validate_referral_source` → **422** on an unknown key; `referral_source_other` bleach-sanitised) — **no DB CHECK/enum** (app-layer, like `availability_state`/`verification_doc_type`). Field is optional at the Pydantic layer (nullable column, MEH-143 upgrade path); required-ness is a **front-end** registration gate only. **No `server_default`, NO backfill** (ADR-007 Expand-only) — existing rows stay NULL (admin renders "—"). **Admin-only** — `ProducerAdminOut` surfaces both; public `ProducerListOut`/`ProducerDetailOut` do NOT (internal supply-side data, MEH-530 privacy precedent). Displayed read-only under the producer name in the `/admin/producers` table (`AdminProducersTable.jsx`, `"אחר: <text>"` for the `other` case).
+> **MEH-1471 (2026-07-22):** self-reported attribution ("מאיפה שמעת עלינו?"). `producers.referral_source` (`VARCHAR(40)`, **nullable**) + `producers.referral_source_other` (`VARCHAR(120)`, **nullable**), migration `d7b2f4a9c6e1`. `referral_source` stores an **English key** from `constants.REFERRAL_SOURCE_KEYS` (`business_referral`\|`friends_family`\|`instagram`\|`facebook`\|`google`\|`whatsapp_group`\|`direct_outreach`\|`other`\|`prefer_not_to_say`) chosen at the final registration step; Hebrew labels are rendered from i18n. `referral_source_other` holds the optional free-text answer, revealed only when the key is `other`. Validated at the API boundary (`ProducerRegister._validate_referral_source` → **422** on an unknown key; `referral_source_other` bleach-sanitised) — **no DB CHECK/enum** (app-layer, like `availability_state`/`verification_doc_type`). Field is optional at the Pydantic layer (nullable column, MEH-143 upgrade path); required-ness is a **front-end** registration gate only. **No `server_default`, NO backfill** (ADR-007 Expand-only) — existing rows stay NULL (admin renders "—"). **Admin-only** — `ProducerAdminOut` surfaces both; public `ProducerListOut`/`ProducerDetailOut` do NOT (internal supply-side data, MEH-530 privacy precedent). Displayed read-only under the producer name in the `/admin/producers` table (`AdminProducersTable.jsx`, `"אחר: <text>"` for the `other` case). **MEH-2937 (2026-11-19):** a supplied `referral_source_other` must hold ≥3 letters after sanitising (`_min_letters_validator`, 422 «שדה זה חייב להכיל לפחות 3 תווים»); an empty or whitespace-only answer is accepted and stored as NULL.
 
 > **MEH-2286 (2026-10-21):** `direct_outreach` («מהמקור פנו אליי ישירות») added to `REFERRAL_SOURCE_KEYS` — 9 keys. Code-side allowlist only; no migration.
 
-> **MEH-3079 (2026-11-14):** weekly summary email to business owners. `producers.weekly_summary_opt_out` (`BOOLEAN NOT NULL`, `server_default false`) and `producers.weekly_summary_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**), migration `0cfa83f0f53e`, Expand-only (ADR-007), no backfill. opt_out is written only by `POST /weekly-summary/unsubscribe` (signed token, scope `weekly_summary_unsubscribe`, sub = producer id); sent_at only by `services/weekly_owner_summary.py::send_weekly_summaries` (Sunday 08:00 Asia/Jerusalem, registered only when `WEEKLY_OWNER_SUMMARY_ENABLED`). A business is skipped when stamped within the last 6 days, opted out, not live (`is_business()`), its owner has no verified email, or its deduped 7-day page views are 0. **Not exposed on any response schema.**
+> **MEH-3079 (2026-11-14):** weekly summary email to business owners. `producers.weekly_summary_opt_out` (`BOOLEAN NOT NULL`, `server_default false`) and `producers.weekly_summary_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**), migration `0cfa83f0f53e`, Expand-only (ADR-007), no backfill. opt_out is written by `POST /weekly-summary/unsubscribe` and its one-click twin (signed token, scope `weekly_summary_unsubscribe`, sub = producer id), and since MEH-3212 by the owner's own `PATCH /producers/me/weekly-summary`, which can also turn it back off; sent_at only by `services/weekly_owner_summary.py::send_weekly_summaries` (Sunday 08:00 Asia/Jerusalem, registered only when `WEEKLY_OWNER_SUMMARY_ENABLED`). A business is skipped when stamped within the last 6 days, opted out, not live (`is_business()`), its owner has no verified email, or its deduped 7-day page views are 0. Exposed to the owner only, as `enabled` on `GET /producers/me/weekly-summary` (MEH-3212). Each email carries `List-Unsubscribe` + `List-Unsubscribe-Post: List-Unsubscribe=One-Click` (RFC 8058).
 
 > **Page freshness (2026-11-18):** the monthly "is everything still correct?" email. `producers.last_confirmed_at` and `producers.freshness_email_sent_at` (both `TIMESTAMP WITH TIME ZONE`, **nullable**), migration `a8d41c2e7f90`, Expand-only (ADR-007), no backfill. `freshness_email_sent_at` is written only by `services/page_freshness.py::send_freshness_emails` (daily tick, off until `PAGE_FRESHNESS_ENABLED`); a live business older than 30 days whose owner has a verified email gets at most one email per 30 days, and none while she confirmed within them. `last_confirmed_at` is written only by `POST /page-freshness/confirm` (signed token, scope `page_freshness_confirm`, `exp` 21 days). `last_confirmed_at` is on `ProducerAdminOut` only. `GET /admin/producers?freshness_stale=true` lists live businesses older than 60 days not confirmed within 60 days, ownerless pages included.
 
@@ -1531,6 +1531,8 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               column, so `total` is raw-only and shrinks once raw
                                                               page views are purged (MEH-2283 chunk C); read
                                                               last_7d / last_30d. The dashboard reads last_30d only)
+GET    /producers/me/weekly-summary               producer  — { enabled, available } (MEH-3212); available = WEEKLY_OWNER_SUMMARY_ENABLED
+PATCH  /producers/me/weekly-summary               producer  — { enabled } → producers.weekly_summary_opt_out = !enabled; own business only; 30/hour
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row
@@ -1997,6 +1999,10 @@ POST /newsletter/unsubscribe     public — { token } → deletes the row
 POST /weekly-summary/unsubscribe public — { token } → producers.weekly_summary_opt_out = true (MEH-3079)
                                  rate-limited 20/hour per IP; token scope `weekly_summary_unsubscribe`,
                                  sub = producer id; 400 «הקישור אינו תקין או שפג תוקפו.»; idempotent 200
+POST /weekly-summary/unsubscribe/one-click?token=  public — RFC 8058 one-click target of the summary's
+                                 List-Unsubscribe header (MEH-3212); same token and effect as above, 300/hour (shared mail-provider IPs).
+GET  /weekly-summary/unsubscribe/one-click?token=  public — changes nothing; 303 to the /unsubscribe/weekly
+                                 page with the same token (a client that opens the header URL); 60/hour
 POST /page-freshness/confirm     public — { token } → producers.last_confirmed_at = now (page freshness)
                                  rate-limited 20/hour per IP; token scope `page_freshness_confirm`,
                                  sub = producer id, exp 21 days; one 404 body for every dead link
@@ -2144,6 +2150,16 @@ POST /upload/owner-photo/{producer_id}  admin — MEH-3338: the same upload for 
                                  `_store_owner_photo`: same size cap, magic-byte sniff, fixed slot.
                                  Owner → 403 (she has the route above); unknown business → 404. 30/hr.
                                  `ProducerAdminCreate` also accepts `owner_bio` (sanitized, ≤300).
+POST /upload/product-image/{product_id}  admin — MEH-3456: the admin uploads or replaces the photo
+                                 of ANY business's product (live page or ownerless draft). Same
+                                 `read_validated_image` (5MB cap + magic-byte sniff) as every upload
+                                 route, stored like /upload/image (uploader's own folder, MEH-3247);
+                                 writes products.image_url, destroys the old image after commit.
+                                 Non-admin (owner included) → 403; unknown product → 404. 60/hr.
+                                 Logged in admin_audit_log (target product). Returns {url}.
+                                 Any product, an import draft included. The URL sits in the admin's
+                                 folder: the owner keeps it on that product (grandfathered) but cannot
+                                 reuse it on another product or her gallery (403, MEH-3247).
 ```
 
 > **Destroying an old photo (MEH-3247).** Every post-commit cleanup

@@ -1,4 +1,6 @@
 // @ts-check
+"use client";
+
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -80,7 +82,10 @@ function armMailtoFallback(email, t) {
  *           phone reveal swaps in place instead of appending a sibling);
  *           MEH-1583 (reveal adopts the geometry of the element it replaces —
  *           one row anatomy across every cell of the count x state matrix);
- *           MEH-2626 (whatsapp_group circle → tracked «עדכונים» bell).
+ *           MEH-2626 (whatsapp_group circle → tracked «עדכונים» bell);
+ *           MEH-3459 (also the organizer page's contact card). MEH-3460 moved
+ *           the ready-made questions out of this card into the business page's
+ *           own «שאלות נפוצות» section, so the organizer page shows none.
  */
 
 // Secondary contact channels rendered as the quiet icon row. Each entry's
@@ -174,6 +179,9 @@ const ROW_ANATOMY = "flex w-full min-w-0 items-center gap-2 min-h-touch text-sm 
 /** MEH-2775: a value in Latin script runs LTR so "@handle" keeps its "@" first. */
 const isLatinValue = (v) => /[a-z0-9]/i.test(v) && !/[\u0590-\u05FF]/.test(v);
 
+/**
+ * @param {{ producer: any, isVacation?: boolean }} props
+ */
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);

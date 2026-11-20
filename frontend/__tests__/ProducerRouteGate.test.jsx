@@ -111,6 +111,15 @@ describe("MEH-2148 — RESERVED does not drift from the router", () => {
   const dirs = fs
     .readdirSync(LOCALE_DIR, { withFileTypes: true })
     .filter((e) => e.isDirectory())
+    // MEH-3463: a route group `(name)` is not a URL segment — its children
+    // are. Expand it so the routes inside it (events, experiences) are checked.
+    .flatMap((e) =>
+      /^\(.+\)$/.test(e.name)
+        ? fs
+            .readdirSync(path.join(LOCALE_DIR, e.name), { withFileTypes: true })
+            .filter((c) => c.isDirectory())
+        : [e]
+    )
     // Dynamic segments (`[slug]`, `[id]`) are not literal paths — `[slug]` IS
     // the business route this whole gate exists to identify.
     .filter((e) => !e.name.startsWith("["))

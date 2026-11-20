@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import { MAX_ORDER_RANGES_PER_DAY, nextOrderRange } from "../../../lib/order-window";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -142,6 +143,12 @@ async function openWindow(page: Page): Promise<void> {
   await page.goto("/producer/dashboard/edit#order-window");
   await expect(card(page), "control: #order-window never came on screen — every assertion here is void").toBeVisible({ timeout: 15_000 });
   await expect(body(page)).toBeVisible();
+  // MEH-3449: the deep link is still settling (group switch, collapsing
+  // sections, smooth scroll) — a click into a moving card can be lost without
+  // an error (flows/_layout-settled.ts). The resolver's last navigation
+  // puts the card's group in the URL; wait for it, then for quiet.
+  await expect(page).toHaveURL(/[?&]group=/);
+  await layoutSettled(card(page));
   await expect(dayToggle(page, SUN), "fixture precondition: Sunday is seeded open").toBeChecked();
   await expect(from(page, SUN, 1)).toHaveValue("09:00");
   await expect(to(page, SUN, 1)).toHaveValue("13:00");
@@ -198,6 +205,10 @@ test.describe("order-window card — several ranges per day", () => {
     // clicks left only two rows once; with a wait per click a lost click and a
     // re-seed that wipes an added row fail on different lines.
     for (let n = 1; n < MAX_ORDER_RANGES_PER_DAY; n++) {
+      // MEH-3449: each click re-renders the card (a new row, and on the first
+      // one the unsaved banner); a click into a moving button can be lost
+      // silently (flows/_layout-settled.ts).
+      await layoutSettled(addRange(page, 0));
       await addRange(page, 0).click();
       await expect(from(page, SUN, n + 1), `row ${n + 1} after click ${n}`).toBeVisible();
     }

@@ -20,7 +20,7 @@ const FULL = {
 describe("contactHref", () => {
   it("builds each channel from the same fields, trimmed and scheme-safe", () => {
     expect(contactHref("whatsapp", FULL, "היי")).toBe(`https://wa.me/972521234567?text=${encodeURIComponent("היי")}`);
-    expect(contactHref("phone", FULL)).toBe("tel:052-123-4567");
+    expect(contactHref("phone", FULL)).toBe("tel:0521234567");
     expect(contactHref("email", FULL)).toBe("mailto:a@b.co");
     expect(contactHref("instagram", FULL)).toBe("https://instagram.com/meshek");
     expect(contactHref("website", FULL)).toBe("https://meshek.co.il");
@@ -35,7 +35,7 @@ describe("contactHref", () => {
   });
   it("a landline has a call link and no WhatsApp link", () => {
     expect(contactHref("whatsapp", { phone: "04-6123456" })).toBeNull();
-    expect(contactHref("phone", { phone: "04-6123456" })).toBe("tel:04-6123456");
+    expect(contactHref("phone", { phone: "04-6123456" })).toBe("tel:046123456");
   });
   it("httpUrl: blank → null, scheme kept, bare host → https", () => {
     expect([httpUrl("  "), httpUrl(null), httpUrl("http://x.il"), httpUrl("x.il")]).toEqual([

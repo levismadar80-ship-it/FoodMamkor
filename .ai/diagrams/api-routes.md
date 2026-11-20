@@ -133,6 +133,7 @@ graph TD
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
+    AdminEdit[/admin/producers/:id/edit] --> UploadProductImg[POST /upload/product-image/:product_id<br/>🛡️ MEH-3456 admin-only product photo, any business;<br/>same size cap + magic-byte sniff, writes products.image_url]
     Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending: notification-only, no DB write;<br/>MEH-2210 rejected: cap 3 → 409, completeness gate → 422, else → pending + resubmission_count+1; other statuses 409; 3/hr]
     Dashboard --> ReviewLink[GET /producers/me/review-link<br/>👤 MEH-1428 signed "request a review" URL — approved-only 403, 30/min,<br/>30-day HS256 token scope=review_invite bound to producer_id, not single-use;<br/>presented as review_token on POST /producers/:id/reviews it replaces the<br/>contact-click gate for that producer only → row source=invite_link]
     Dashboard --> SubmitReview[POST /producers/me/submit-for-review<br/>👤 MEH-2100 draft→pending — draft-only 409, 5/hr,<br/>server-side completeness gate → 422 with params.missing,<br/>stamps submitted_for_review_at + pings admin]
@@ -232,6 +233,8 @@ graph LR
     Confirm -.->|background: sync, clears opt-out| ResendContacts
     Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
     WeeklyUnsub[POST /weekly-summary/unsubscribe<br/>🌐 20/hour · signed token, MEH-3079] -->|weekly_summary_opt_out = true| ProducersTable[(producers)]
+    WeeklyOneClick[POST /weekly-summary/unsubscribe/one-click<br/>🌐 300/hour · List-Unsubscribe header, MEH-3212<br/>GET → 303 to the page, changes nothing] -->|weekly_summary_opt_out = true| ProducersTable
+    WeeklyToggle[GET·PATCH /producers/me/weekly-summary<br/>👤 owner switch on «תובנות», MEH-3212] -->|weekly_summary_opt_out = !enabled| ProducersTable
     FreshConfirm[POST /page-freshness/confirm<br/>🌐 20/hour · signed token, 404 on any dead link] -->|last_confirmed_at = now| ProducersTable
 
     ContactForm[/contact page form] --> Contact[POST /contact<br/>🌐 5/hour per IP<br/>persists to contact_messages +<br/>SMTP email to CONTACT_EMAIL,<br/>fail-open on SMTP errors]

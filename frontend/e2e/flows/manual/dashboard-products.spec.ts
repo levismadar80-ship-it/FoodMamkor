@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import type { Route } from "@playwright/test";
 
 // MEH-3446: the dashboard layout reads order-settings (lib/use-orders-tab.js).
@@ -120,6 +121,12 @@ async function openProducts(page: Page) {
   await page.goto("/producer/dashboard/edit#products");
   await expect(card(page), "control: the products card never came on screen — every assertion here is void").toBeVisible({ timeout: 15_000 });
   await expect(body(page)).toBeVisible();
+  // MEH-3449: the deep link is still settling (group switch, collapsing
+  // sections, smooth scroll) — a click into a moving card can be lost without
+  // an error (flows/_layout-settled.ts). The resolver's last navigation
+  // puts the card's group in the URL; wait for it, then for quiet.
+  await expect(page).toHaveURL(/[?&]group=/);
+  await layoutSettled(card(page));
 }
 async function openAddForm(page: Page) {
   await body(page).getByRole("button", { name: /הוסיפו מוצר/ }).first().click();
@@ -244,18 +251,18 @@ test.describe("products card — add form validation", () => {
     }
   });
 
-  // MT:MEH-295:19 — submit copy. Doc: «הוסיפי מוצר» / «מוסיפה...» (feminine); live: «הוסיפו מוצר» / «בהוספה...».
-  test("the submit reads «הוסיפו מוצר», and «בהוספה...» while the POST is in flight", async ({ page }) => {
+  // MT:MEH-295:19 — submit copy. Doc: «הוסיפי מוצר» / «מוסיפה...» (feminine); live: «הוסיפו מוצר» / «בהוספה…».
+  test("the submit reads «הוסיפו מוצר», and «בהוספה…» while the POST is in flight", async ({ page }) => {
     const writes: Rec[] = [];
     await stubEdit(page, [product({ id: 1, name: "חלה" })], writes, { postDelayMs: 1_200 });
     await openProducts(page);
     await openAddForm(page);
-    const submit = addForm(page).getByRole("button", { name: /^(הוסיפו מוצר|בהוספה\.\.\.)$/ });
+    const submit = addForm(page).getByRole("button", { name: /^(הוסיפו מוצר|בהוספה…)$/ });
     await expect(submit).toHaveText("הוסיפו מוצר");
     await addForm(page).getByLabel("שם המוצר").fill("טסט-קופי");
     await addForm(page).getByLabel(/^מחיר מ-/).fill("12");
     await submit.click();
-    await expect(submit).toHaveText("בהוספה...");
+    await expect(submit).toHaveText("בהוספה…");
     await expect(submit).toBeDisabled();
     await expect(rowOf(page, "טסט-קופי")).toBeVisible();
   });

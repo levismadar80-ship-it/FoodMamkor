@@ -295,6 +295,7 @@ DESIGN.md token transform briefly dropped it). The document root
 
 **Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
 Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
+One spelling per string (MEH-3462): the single «…» character, never three dots; no trailing «.» / «!» on a short label the site writes without one elsewhere («נשמר», «הועתק»); gershayim in acronyms («ט״ו»). `__tests__/CopyVariantsGuard.test.js` fails on three dots or a string spelled two ways in `he.json`.
 Cormorant has **no Hebrew glyphs**, and its size-adjusted fallback face
 (`local(Times New Roman)`, no unicode-range) catches every glyph it lacks — so
 Hebrew set in `.font-english` used to render in a system serif. Since MEH-2488
@@ -586,6 +587,14 @@ front matter for the normative token bindings.
   «כל התמונות (N)» pill sits in the cover's bottom inline-END corner (the avatar
   holds the start corner) and opens the shared `Lightbox`. **0** = green band,
   **1** = cover only — no pill in either.
+- **Organizer contact = the business `ContactCard` (MEH-3459):** the organizer
+  page renders the same card as the business page — the preferred channel as the
+  big button, the others as the named circles. No ready-made questions: they
+  live in the business page's own «שאלות נפוצות» section (MEH-3460), not the card. No card at all when the organizer filled no channel.
+- **Event cover fallback (MEH-3459):** an event without its own photo opens on
+  its owner's first photo (`owner_image_url`), the photo its card and list row
+  already show (MEH-2546); the green band only when neither exists. The share
+  preview (OG / Twitter) follows the same order.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
@@ -632,7 +641,7 @@ front matter for the normative token bindings.
   collapsed neutral hours "היום · 9:00–17:00" (no green, no "פתוח", ranges
   `dir="ltr"`, expand → weekly table with font-weight-only today), Waze/Google
   **brand SVGs** (not mirrored, not recolored) on the standard deep links.
-  **OwnerCard "מאחורי העסק":** data-gated — compact (single-letter avatar at
+  **OwnerCard "מאחורי העסק":** data-gated — compact (single-letter `ui/Avatar` at
   inline-start + name + city) is the live variant; bio/photo variants dormant
   until MEH-1335; hidden entirely without contact_name.
 - **Producer trust strip (`ProducerHeader` + `ReviewExcerpt`, MEH-1048):** social
@@ -746,6 +755,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
   `components/ui/Avatar.jsx` — photo, else ONE initial from `avatarInitial()`
   (first code point, upper-cased, «?» when empty). Header 34px, BottomNav 24px,
   account sheet 40px (`tone="none"` inside its own ring), settings 64px.
+  **Owner / host initial on public pages (MEH-3461)** uses the same component:
+  organizer page 80px, event and experience bylines, `OwnerRow`, `OwnerCard`,
+  the `EventEntryRow` mark. `tone="soft"` (green-50 + primary letter) is that
+  look; `letterClassName` sets the letter's type; a caller placing it
+  `absolute` keeps its own position. Never hand-draw an initial circle.
   Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts

@@ -219,7 +219,9 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
               value={code}
               onChange={handleCodeChange}
               placeholder={t("code_placeholder")}
-              className="w-40 text-center tracking-[0.3em]"
+              // MEH-2937: the wide tracking is for the six digits; on the
+              // Hebrew placeholder it pushed «קוד» out of the 160px field.
+              className="w-40 text-center tracking-[0.3em] placeholder:tracking-normal"
             />
             <Button
               type="button"

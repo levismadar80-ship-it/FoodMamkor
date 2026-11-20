@@ -113,6 +113,11 @@ export async function generateMetadata(props) {
     };
   }
 
+  // MEH-3459: the same picture the card and the page cover show — the event's
+  // photo, else its owner's first photo (MEH-2546), else the site image.
+  const cover = event?.image_url || event?.owner_image_url;
+  const shareImage = cover ? [cover] : ["/og-image.png"];
+
   return {
     // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
     title: entityName,
@@ -124,7 +129,7 @@ export async function generateMetadata(props) {
       url: alternates.canonical,
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: event?.image_url ? [event.image_url] : ["/og-image.png"],
+      images: shareImage,
     },
     // MEH-1062 (SEO-05): entity-specific Twitter/X card reusing the event's
     // own image + title instead of the layout's generic site card.
@@ -132,7 +137,7 @@ export async function generateMetadata(props) {
       card: "summary_large_image",
       title: buildEntityTitle(entityName, locale),
       description: event?.description || t("description_fallback"),
-      images: event?.image_url ? [event.image_url] : ["/og-image.png"],
+      images: shareImage,
     },
     alternates,
   };

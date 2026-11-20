@@ -179,7 +179,7 @@ function AdminShell({ children }) {
   if (isUnreachable) return <AuthUnreachableState className="max-w-7xl mx-auto px-4" />;
 
   if (loading || !user) {
-    // MEH-2599: brand mark instead of the bare «בטעינה...» line; same copy, sr-only.
+    // MEH-2599: brand mark instead of the bare «בטעינה…» line; same copy, sr-only.
     return <BrandLoader label={t("common.loading_f")} className="max-w-7xl mx-auto px-4 py-12" />;
   }
 

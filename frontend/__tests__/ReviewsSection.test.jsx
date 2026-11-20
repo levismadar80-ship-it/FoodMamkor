@@ -18,7 +18,7 @@ vi.mock("next-intl", () => ({
       reply_placeholder: "כתבו תגובה ללקוח…",
       reply_save: "שמירה",
       cancel: "ביטול",
-      submit_saving: "בשמירה...",
+      submit_saving: "בשמירה…",
       owner_only_eyebrow: "מוצג רק לך",
     };
     const t = (key) => flat[key] || key;
