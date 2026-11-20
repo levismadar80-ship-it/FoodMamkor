@@ -5,7 +5,8 @@ Purpose:  Assert the producer-approval email at the ONE boundary no other test
           in the locked copy are proven to survive the wire, and the MEH-331
           `Content-Transfer-Encoding: base64` header is proven to still ride
           along with the HTML part.
-Touches:  Nothing. `resend.Emails.send` is monkeypatched; no network, no DB.
+Touches:  `resend.Emails.send` is monkeypatched; no network. MEH-3535: the
+          send goes through the email_outbox table (test DB).
 Does NOT: re-assert the block ORDER, the link destinations, the RTL markup or
           the escaping — `tests/test_meh2151_approval_email_cta.py` owns all of
           those against the builders. This file asserts only what changes when
@@ -76,12 +77,24 @@ def wire(monkeypatch):
 
 
 def _send_approval(slug="teva-pure"):
-    admin_module._send_notification_email(
-        "owner@sample.co.il",
-        "ברוכים הבאים",
-        admin_module._producer_approved_body("טעם הבית", slug),
-        html=admin_module._producer_approved_html("טעם הבית", slug),
-    )
+    """MEH-3535: the approval email is queued, then sent by the outbox
+    dispatcher — so the wire is reached through BOTH, the real path."""
+    from app.database import SessionLocal
+    from app.services.email_outbox import dispatch_due
+
+    db = SessionLocal()
+    try:
+        admin_module._send_notification_email(
+            db,
+            "producer_approved",
+            "owner@sample.co.il",
+            "ברוכים הבאים",
+            admin_module._producer_approved_body("טעם הבית", slug),
+            html=admin_module._producer_approved_html("טעם הבית", slug),
+        )
+        dispatch_due(db)
+    finally:
+        db.close()
 
 
 def test_control_the_transport_is_actually_reached(wire):
@@ -178,9 +191,17 @@ def test_a_text_only_send_carries_no_html_and_no_cte_header(wire):
     the three pre-existing callers' payloads exactly as they were. That is a
     claim about the payload, so it is checked against the payload.
     """
-    admin_module._send_notification_email(
-        "owner@sample.co.il", "נושא", "גוף"
-    )
+    from app.database import SessionLocal
+    from app.services.email_outbox import dispatch_due
+
+    db = SessionLocal()
+    try:
+        admin_module._send_notification_email(
+            db, "producer_changes_requested", "owner@sample.co.il", "נושא", "גוף"
+        )
+        dispatch_due(db)
+    finally:
+        db.close()
     assert len(wire) == 1
     assert "html" not in wire[0]
     assert "headers" not in wire[0]

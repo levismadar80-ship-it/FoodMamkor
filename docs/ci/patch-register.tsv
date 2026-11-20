@@ -69,3 +69,4 @@ staging-health	applied	.github/workflows/staging-health.yml	name: Staging health
 uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	-	-
 vrt-label-trigger	applied	.github/workflows/vrt-update.yml	vrt-regen:	-	-
 webkit-project	applied	frontend/playwright.config.ts	webkit-iphone13	-	-
+meh-3535-expected-tables-65	pending	.github/workflows/pr-checks.yml	MEH-3535: email_outbox	2026-11-20	committed on the MEH-3535 branch via the web editor; this row flips to applied in the same PR

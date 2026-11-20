@@ -272,6 +272,11 @@ def test_production_profile_admin_approve_of_an_ordinary_business_sends(
     )
 
     assert r.status_code == 200, r.text
+    # MEH-3535: the approval email is queued; the outbox dispatcher sends it.
+    assert production.emails == []
+    from app.services.email_outbox import dispatch_due
+
+    dispatch_due(db)
     assert _to(production.emails) == [owner.email]
     # The owner's approval template and the admin's ping.
     assert _wa_to(production.whatsapp) == sorted(["972521234567", ADMIN_WA.lstrip("+")])
@@ -699,6 +704,9 @@ SEND_NAMES = frozenset(
         "_send_email",
         "_send_notification_email",
         "_send_whatsapp",
+        # MEH-3535: queueing an email is sending it, later. Same flag rule.
+        "enqueue_email",
+        "_queue_mail",
     }
 )
 FLAG = "test_cause"
@@ -922,10 +930,10 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "p_test",
     ),
-    ("routers/admin_decisions.py", "_send_notification_email", "send_email"): (
+    ("routers/admin_decisions.py", "_send_notification_email", "enqueue_email"): (
         1,
         OWN,
-        "wrapper param",
+        "wrapper param (MEH-3535: queued, sent by the outbox)",
     ),
     ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
     # --- other routers ---
@@ -958,6 +966,27 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         NONE,
         "public contact form",
+    ),
+    # --- MEH-3535: the email outbox ---
+    ("routers/registrations.py", "register_for_event", "_queue_mail"): (
+        2,
+        CON,
+        "producer.is_test (visitor + owner emails)",
+    ),
+    ("routers/registrations.py", "register_for_experience", "_queue_mail"): (
+        2,
+        CON,
+        "host_test_cause(host) (visitor + owner emails)",
+    ),
+    ("routers/registrations.py", "_queue_mail", "enqueue_email"): (
+        1,
+        CON,
+        "wrapper param",
+    ),
+    ("services/email_outbox.py", "_handle", "send_email_result"): (
+        1,
+        NONE,
+        "a row caused by a test row is never queued (enqueue_email, MEH-2952)",
     ),
     # --- MEH-3296: the on-site order outbox (business and buyer alike) ---
     ("services/product_order_outbox.py", "_wa.send", "send_template_result"): (

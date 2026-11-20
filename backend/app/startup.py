@@ -18,6 +18,7 @@ from app.services.job_heartbeat import (
     FOLLOWUP_CRON,
     GROUP_BUY_EXPIRY_CRON,
     PRODUCT_ORDERS_INTERVAL_MINUTES,
+    EMAIL_OUTBOX_INTERVAL_MINUTES,
     RESCUE_DIGEST_INTERVAL_MINUTES,
     RETENTION_PURGE_CRON,
     WATCHDOG_INTERVAL_MINUTES,
@@ -699,6 +700,62 @@ def _run_product_order_jobs() -> None:
             db.close()
 
 
+@heartbeat("email-outbox-tick", interval_monitor_config(EMAIL_OUTBOX_INTERVAL_MINUTES))
+def _run_email_outbox_job() -> None:
+    """MEH-3535: send the queued emails that are due (services/email_outbox).
+
+    Same shape as _run_product_order_jobs: fresh session, exception swallowed
+    so the scheduler thread (or the worker loop) never dies. The service
+    commits per row, so a crash costs at most the row it was on.
+    """
+    from app.database import SessionLocal
+    from app.services.email_outbox import dispatch_due
+
+    db = SessionLocal()
+    try:
+        dispatch_due(db)
+    except Exception as exc:
+        capture_background_exception(exc, task="email_outbox")
+        log.error("[EMAIL-OUTBOX] dispatch crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+def _outbox_jobs_run_elsewhere() -> list[tuple[str, Any]]:
+    """MEH-3535: while the worker service owns the outbox ticks they are not on
+    this scheduler, so the overdue-job check would never see them. Its
+    `@heartbeat` writes the same `job_ok:<slug>` rows, so they are checked
+    here: a dead worker emails the admin like any stopped job."""
+    if not settings.outbox_external_worker:
+        return []
+    from app.routers.product_orders import product_orders_enabled
+
+    funcs: list[Any] = [_run_email_outbox_job]
+    if product_orders_enabled():
+        funcs.append(_run_product_order_jobs)
+    return [(f.heartbeat_slug, f.heartbeat_config) for f in funcs]
+
+
+def _register_outbox_jobs(scheduler: Any) -> None:
+    """MEH-3535: the two outbox ticks run here unless the separate worker
+    service owns them (OUTBOX_EXTERNAL_WORKER, app/worker.py)."""
+    if settings.outbox_external_worker:
+        log.info("[OUTBOX] OUTBOX_EXTERNAL_WORKER=true — the worker service runs them")
+        return
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    scheduler.add_job(
+        _run_email_outbox_job,
+        IntervalTrigger(minutes=EMAIL_OUTBOX_INTERVAL_MINUTES),
+        id="meh_3535_email_outbox",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
+    _register_product_order_job(scheduler)
+
+
 def _register_product_order_job(scheduler: Any) -> None:
     """MEH-3296: adds the on-site order tick, only while ordering is on, so a
     dark feature runs no job at all. Same guards as the rescue digest."""
@@ -873,8 +930,9 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
     _register_job_staleness_check(followup_scheduler)
-    # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED).
-    _register_product_order_job(followup_scheduler)
+    # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED), and
+    # MEH-3535: the email queue — both here unless the worker service owns them.
+    _register_outbox_jobs(followup_scheduler)
 
 
 def _register_job_staleness_check(scheduler: Any) -> None:
@@ -898,7 +956,7 @@ def _register_job_staleness_check(scheduler: Any) -> None:
                 (j.func.heartbeat_slug, j.func.heartbeat_config)
                 for j in scheduler.get_jobs()
                 if hasattr(j.func, "heartbeat_slug")
-            ]
+            ] + _outbox_jobs_run_elsewhere()
             check_jobs(jobs, booted_at=booted_at)
         except Exception as exc:
             capture_background_exception(exc, task="job_staleness_check")

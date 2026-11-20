@@ -45,7 +45,8 @@ from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
 )
-from app.services.email import send_email
+from app.sentry import capture_background_exception
+from app.services.email_outbox import enqueue_email  # MEH-3535
 from app.services.booking_cancellations import delist_business  # MEH-2498, MEH-3227
 from app.services.producer_approval import (
     ApprovalOverrides,
@@ -164,6 +165,8 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
     if producer_user:
         _send_notification_email(
+            db,
+            "producer_approved",
             producer_user.email,  # type: ignore[arg-type]
             # MEH-2113: the celebratory headline, in the one place it is TRUE.
             # It was rejected for the registration screen (MEH-2100 item 9)
@@ -333,6 +336,8 @@ def reject_producer(
         # lives there. Same link the changes-requested mail builds.
         dashboard_link = f"{settings.frontend_url}/producer/dashboard"
         _send_notification_email(
+            db,
+            "producer_rejected",
             producer_user.email,  # type: ignore[arg-type]
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
             _producer_rejected_body(producer.name, composed_reason, dashboard_link),  # type: ignore[arg-type]
@@ -416,6 +421,8 @@ def request_producer_changes(
     p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
     if producer_user:
         _send_notification_email(
+            db,
+            "producer_changes_requested",
             producer_user.email,  # type: ignore[arg-type]
             f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
             _producer_changes_requested_body(p_name, feedback, dashboard_link),  # type: ignore[arg-type]
@@ -509,7 +516,9 @@ def revoke_verified(
     return {"detail": "תג מאומת הוסר"}
 
 
-def _send_notification_email(
+def _send_notification_email(  # noqa: PLR0913 — +db, +kind (MEH-3535)
+    db: Session,
+    kind: str,
     to_email: str,
     subject: str,
     body: str,
@@ -525,8 +534,25 @@ def _send_notification_email(
     payload it produced before this parameter existed. Same shape, and same
     reasoning, as `reply_to` two parameters down in `send_email` (MEH-2112).
     """
-    # MEH-2952: `test_cause` — the business the mail is about is a test row.
-    send_email(to_email, subject, body, html=html, test_cause=test_cause)
+    # MEH-3535: queued, not sent here. The decision is already committed; the
+    # email is committed right after it, and the outbox dispatcher sends it
+    # with retries — a Resend error or a deploy no longer loses it. (Not in the
+    # decision's own transaction: the approval commit can roll back and retry
+    # on a slug collision, see _persist_approval, and the email carries the
+    # slug that won.)
+    # MEH-2952: `test_cause` — the business the mail is about is a test row;
+    # nothing is queued.
+    # The decision is already committed, so a failure here must not turn the
+    # 200 into a 500 (and skip the WhatsApp and IndexNow steps after it).
+    try:
+        enqueue_email(
+            db, kind, to_email, subject, body, html=html, test_cause=test_cause
+        )
+        db.commit()
+    except Exception as exc:  # noqa: BLE001 — reported, never raised
+        db.rollback()
+        capture_background_exception(exc, task="email_outbox_enqueue")
+        logger.error("[EMAIL-OUTBOX] could not queue %s", kind, exc_info=True)
 
 
 def _send_whatsapp(to: str, body: str, test_cause: bool = False) -> None:
