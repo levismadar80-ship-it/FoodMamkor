@@ -44,7 +44,7 @@ _SPEC.loader.exec_module(am)
 from app.rate_limit import get_real_client_ip, limiter  # noqa: E402
 
 APP = ROOT / "backend" / "app"
-CALLS_AI = re.compile(r"\.messages\.create\(|ai_text\.ask\(")
+CALLS_AI = re.compile(r"\.messages\.(create|stream|parse)\(|ai_text\.ask\(")
 
 # Every module that calls the model is classified here. A new one fails
 # test_every_ai_module_is_classified until someone decides which it is.
