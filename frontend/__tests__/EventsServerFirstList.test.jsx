@@ -111,6 +111,20 @@ describe("server-first list (MEH-2233)", () => {
     expect(api.get.mock.calls[0][0]).toBe("/events");
   });
 
+  it("a category picked after a seeded arrival fetches with it (the seed is used once)", async () => {
+    render(<EventsClient initialRows={seeded} />);
+    // The one row holds «all», the date chips (when:*) and the categories.
+    const chip = screen
+      .getAllByTestId("chip-row")
+      .flatMap((r) => [...r.querySelectorAll("button")])
+      .find((b) => b.dataset.key !== "all" && !b.dataset.key.startsWith("when:"));
+    expect(chip).toBeTruthy();
+    fireEvent.click(chip);
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+    expect(api.get.mock.calls[0][0]).toBe("/events");
+    expect(api.get.mock.calls[0][1].params.category).toBeTruthy();
+  });
+
   it("the other tab is fetched on a switch, even though the server read it", async () => {
     render(<EventsClient initialRows={seeded} />);
     fireEvent.click(screen.getByTestId("to-experiences"));
