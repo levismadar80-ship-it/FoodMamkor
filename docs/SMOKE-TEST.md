@@ -31,7 +31,7 @@ scripts/smoke_test_prod.sh https://foodmamkor-staging.up.railway.app
 scripts/smoke_test_prod.sh https://some-other-host.example.com
 
 # Or call the Python script directly — same result
-python scripts/smoke_test.py https://mehamakor.online
+python scripts/smoke_test.py https://mehamakor.co.il
 ```
 
 Output ends in a summary block. Example failure:
