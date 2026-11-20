@@ -6,8 +6,9 @@
  *           her products (drag handle or arrows) and sorts them into groups
  *           (MEH-3055). Closed by default — a one-line entry under the list,
  *           the way Etsy keeps «Rearrange» as a mode, not a permanent panel.
- * Touches:  GET/PUT /producers/me/product-groups, PUT /producers/me/product-order,
- *           PUT /producers/me/products/{id}/group.
+ * Touches:  GET/PUT {basePath}/product-groups, PUT {basePath}/product-order,
+ *           PUT {basePath}/products/{id}/group — basePath /producers/me (owner)
+ *           or /admin/producers/{id} (admin, MEH-3472).
  * Does NOT: create, edit or delete products (ProductsSection.jsx), and does not
  *           decide display order — lib/product-order.js does, for both the
  *           public page and this list.
@@ -47,9 +48,13 @@ function move(list, from, to) {
 }
 
 /**
- * @param {{ products: Product[], onProductsChange: (next: Product[]) => void }} props
+ * MEH-3472: `basePath` is the only difference between the owner and the
+ * admin. The owner writes /producers/me/...; the admin edit page passes
+ * /admin/producers/{id}, whose routes run the same service
+ * (backend/app/services/product_organize.py) with drafts in scope.
+ * @param {{ products: Product[], onProductsChange: (next: Product[]) => void, basePath?: string }} props
  */
-export default function ProductOrganizer({ products, onProductsChange }) {
+export default function ProductOrganizer({ products, onProductsChange, basePath = "/producers/me" }) {
   const t = useTranslations("settings.products.organize");
   const [open, setOpen] = useState(false);
   /** @type {[Group[], (g: Group[]) => void]} */
@@ -85,10 +90,10 @@ export default function ProductOrganizer({ products, onProductsChange }) {
   useEffect(() => {
     if (!open) return;
     api
-      .get("/producers/me/product-groups")
+      .get(`${basePath}/product-groups`)
       .then((r) => setGroups(Array.isArray(r.data) ? r.data : []))
       .catch(() => setGroups([]));
-  }, [open]);
+  }, [open, basePath]);
 
   /** @param {unknown} err */
   const fail = (err) =>
@@ -108,7 +113,7 @@ export default function ProductOrganizer({ products, onProductsChange }) {
     }
     inFlightRef.current = true;
     try {
-      await api.put("/producers/me/product-order", { product_ids: next.map((p) => p.id) });
+      await api.put(`${basePath}/product-order`, { product_ids: next.map((p) => p.id) });
       confirmedRef.current = next;
       const pos = new Map(next.map((p, i) => [p.id, i]));
       // Merge positions into the CURRENT list, never replace it with this
@@ -137,7 +142,7 @@ export default function ProductOrganizer({ products, onProductsChange }) {
   /** @param {{ id?: string, name: string }[]} next */
   const saveGroups = async (next) => {
     try {
-      const r = await api.put("/producers/me/product-groups", { groups: next });
+      const r = await api.put(`${basePath}/product-groups`, { groups: next });
       setGroups(r.data);
       return /** @type {Group[]} */ (r.data);
     } catch (err) {
@@ -149,7 +154,7 @@ export default function ProductOrganizer({ products, onProductsChange }) {
   /** @param {string} productId @param {string} groupId */
   const assign = async (productId, groupId) => {
     try {
-      const r = await api.put(`/producers/me/products/${productId}/group`, {
+      const r = await api.put(`${basePath}/products/${productId}/group`, {
         group_id: groupId || null,
       });
       const patch = (/** @type {Product} */ p) => (p.id === productId ? { ...p, group_id: r.data.group_id } : p);

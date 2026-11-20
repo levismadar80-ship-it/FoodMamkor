@@ -169,4 +169,24 @@ describe("ProductOrganizer", () => {
     expect(next).toHaveLength(2);
     expect(next[0].group_id).toBeNull();
   });
+
+  // MEH-3472: the admin edit page mounts the same organizer on its own routes.
+  it("basePath sends every call to the admin routes", async () => {
+    api.get.mockResolvedValue({ data: [{ id: "g1", name: "לחמים" }] });
+    api.put.mockResolvedValue({ data: { id: "p1", group_id: "g1" } });
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProductOrganizer products={prods(3)} onProductsChange={vi.fn()} basePath="/admin/producers/biz-1" />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("product-organizer").querySelector("button"));
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith("/admin/producers/biz-1/product-groups"));
+    const select = await waitFor(() => screen.getAllByRole("combobox")[1]);
+    fireEvent.change(select, { target: { value: "g1" } });
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/admin/producers/biz-1/products/p1/group", { group_id: "g1" }),
+    );
+    expect(api.get.mock.calls.every(([u]) => u.startsWith("/admin/producers/biz-1/"))).toBe(true);
+    expect(api.put.mock.calls.every(([u]) => u.startsWith("/admin/producers/biz-1/"))).toBe(true);
+  });
 });

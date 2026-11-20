@@ -17,6 +17,7 @@
 * `backend/app/services/producer_risk.py` — דירוג סיכון לפני אישור.
 * `backend/app/routers/admin_whatsapp.py` + `frontend/components/admin/WhatsappBlockedSection.jsx` — במסך `frontend/app/[locale]/admin/whatsapp-failures/`: הודעות שלא נמסרו, ומחוץ ל-production גם הודעות שהשומר חסם, עם התוכן (MEH-3402; קוד כניסה מוסתר).
 * `frontend/components/admin/AdminProductImageButton.jsx` + `frontend/components/admin/AdminProductImagesPanel.jsx` — תמונה למוצר של כל בית עסק מעמוד העריכה (MEH-3456), דרך `POST /upload/product-image/{product_id}` ב-`backend/app/routers/upload.py`.
+* `backend/app/routers/admin_product_organize.py` + `backend/app/services/product_organize.py` — קבוצות וסדר מוצרים לבית עסק מעמוד העריכה, כולל טיוטות (MEH-3472). השירות משותף עם נתיבי הבעלים ב-`backend/app/routers/product_organize.py`, והמסך הוא `frontend/components/ProductOrganizer.jsx` עם `basePath` של אדמין. בייבוא (`backend/app/services/product_import.py`) שדה `group` יוצר ומשייך קבוצה.
 * `frontend/components/admin/BlockUserConfirm.jsx` — אישור לפני חסימת משתמשת (MEH-3375): אם החסימה תסתיר בית עסק, החלון מציג את שמו וכמה הזמנות פתוחות של לקוחות יבוטלו. קריאה: `GET /admin/users/{id}/block-impact` ב-`backend/app/routers/admin_extra.py`, הספירה ב-`backend/app/services/booking_cancellations.py` (אותם מסננים כמו הביטול).
 
 **Flags.** אין. ‏`SUPER_ADMIN_EMAIL` הוא הגדרת סביבה, לא flag.
@@ -26,6 +27,7 @@
 * `tests/test_meh3306_admin_audit_log.py` — **השומר** של יומן הפעולות; `frontend/__tests__/AdminAuditLogPage.test.jsx` — המסך (0 / 1 / עמוד מלא + דפדוף).
 * `tests/test_meh3375_block_impact.py` — **השומר** של אישור החסימה: הספירה שווה למה שהחסימה מבטלת; `frontend/__tests__/BlockUserConfirm.test.jsx` — החלון (בלי עסק / 0 / 1 / רבים / קריאה שנכשלה).
 * `tests/test_admin_product_image.py` — **השומר** של תמונת המוצר מהאדמין (403 לכל מי שאינה אדמין, אותן בדיקות קובץ, יומן); `frontend/__tests__/AdminProductImage.test.jsx` — הכפתור (0 / 1 / רבים × עם תמונה / בלי).
+* `tests/test_admin_product_organize.py` — **השומר** של קבוצות וסדר מהאדמין: 401/403 לכל מי שאינה אדמין, מוצר של עסק אחר → 404, סדר שכולל טיוטות; `tests/test_admin_product_import.py` — קבוצה בייבוא ותקרת 20 הקבוצות.
 * `tests/test_meh3402_blocked_capture.py` — **השומר** של לכידת ההודעות שנחסמו.
 * `tests/test_expansion_admin_authz.py` · `tests/test_meh2900_admin_role_endpoint.py` · `tests/test_meh2890_super_admin_env.py`
 * `frontend/e2e/flows/30-admin-panel-tabs.spec.ts` · `frontend/e2e/flows/33-admin-producers-tab.spec.ts`

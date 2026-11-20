@@ -1,13 +1,14 @@
 // @ts-check
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import AdminProductImport from "@/components/admin/AdminProductImport";
+import ProductOrganizer from "@/components/ProductOrganizer";
 import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminProductImagesPanel from "@/components/admin/AdminProductImagesPanel";
@@ -34,6 +35,12 @@ export default function EditProducerPage() {
   // A 404 and an unreachable API are different facts and now render differently.
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // MEH-3472: the organizer orders the WHOLE catalog the admin is building —
+  // published products (producer.products) and drafts (reported by the
+  // import panel). `organizeEdits` holds the organizer's own updates
+  // (position / group_id) until the next re-read replaces the lists.
+  const [drafts, setDrafts] = useState(/** @type {any[]} */ ([]));
+  const [organizeEdits, setOrganizeEdits] = useState(/** @type {any[] | null} */ (null));
   const t = useTranslations("admin");
   const locale = useLocale();
 
@@ -62,6 +69,14 @@ export default function EditProducerPage() {
       })
       .finally(() => setFetching(false));
   }, [id, user, reloadKey]);
+
+  const organizeBase = useMemo(
+    () => [...(producer?.products || []), ...drafts],
+    [producer, drafts],
+  );
+  // A new list from the server (import, approve, delete) wins over local
+  // edits: the organizer then rebuilds from the fresh set.
+  useEffect(() => setOrganizeEdits(null), [organizeBase]);
 
   // MEH-3456: after drafts are approved the page re-reads the producer
   // without the skeleton, so the import panel keeps its result line and only
@@ -187,7 +202,19 @@ export default function EditProducerPage() {
       )}
       {/* MEH-2312: catalog import from the business's existing store → drafts
           the admin approves. Any status: Sandra's page is approved and live. */}
-      <AdminProductImport producerId={String(id)} onApproved={refreshProducts} />
+      <AdminProductImport producerId={String(id)} onApproved={refreshProducts} onDraftsChange={setDrafts} />
+      {/* MEH-3472: the owner's organizer, against the admin routes (same
+          service, drafts in scope). It renders nothing below 2 products —
+          the same rule as on the owner's dashboard. */}
+      {organizeBase.length >= 2 && (
+        <section className="bg-surface rounded-md border border-border p-6 my-6" data-testid="admin-product-organizer">
+          <ProductOrganizer
+            products={organizeEdits ?? organizeBase}
+            onProductsChange={setOrganizeEdits}
+            basePath={`/admin/producers/${id}`}
+          />
+        </section>
+      )}
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );

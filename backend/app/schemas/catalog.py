@@ -721,6 +721,14 @@ class ProductImportRow(BaseModel):
     price: str | bool | float | None = None
     unit: str | None = Field(None, max_length=40)
     source_image_url: str | None = Field(None, max_length=2000)
+    # MEH-3472: the source store's category; the import creates a product
+    # group of that name (matched case-insensitively) and puts the draft in it.
+    group: str | None = Field(None, max_length=60)
+
+    @field_validator("group")
+    @classmethod
+    def _blank_group_is_none(cls, v: str | None) -> str | None:
+        return (v or "").strip() or None
 
 
 class ProductImportRequest(BaseModel):
@@ -755,6 +763,10 @@ class ProductDraftOut(BaseModel):
     # Admin-only: the source store's image URL, kept for a later image import
     # (MEH-1184). Never on a public schema.
     source_image_url: str | None = None
+    # MEH-3472: the admin sorts drafts into groups and orders them before
+    # approval, so the draft list carries both.
+    group_id: str | None = None
+    position: int | None = None
 
 
 class ProductDraftApproveRequest(BaseModel):

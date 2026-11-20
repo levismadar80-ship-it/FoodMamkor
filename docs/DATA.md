@@ -1906,11 +1906,22 @@ GET    /producers/{slug}/recipes/{id}       public    — 404 if not published+a
                                                          new slug; else the plain 404 string
 
 # Admin (require_admin)
-POST   /admin/producers/{producer_id}/product-import          admin — MEH-2312: rows [{name, description, price, unit, source_image_url}] (≤100) →
+PUT    /admin/producers/{producer_id}/product-groups          admin — MEH-3472: same body and rules as the owner's PUT /producers/me/product-groups
+GET    /admin/producers/{producer_id}/product-groups          admin — MEH-3472: the business's groups [{id, name}]
+PUT    /admin/producers/{producer_id}/product-order           admin — MEH-3472: `product_ids` = every product of the business, published AND
+                                                               draft, each once (else 409). The owner's route stays published-only.
+PUT    /admin/producers/{producer_id}/products/{product_id}/group  admin — MEH-3472: {group_id|null}; a draft or published product of THAT
+                                                               business (another business's product → 404). All four share
+                                                               services/product_organize.py with the owner routes; 60/120/120 per hour.
+POST   /admin/producers/{producer_id}/product-import          admin — MEH-2312: rows [{name, description, price, unit, source_image_url, group?}] (≤100) →
+                                                               MEH-3472: `group` (≤60, blank = none) puts the draft in a product group of
+                                                               that name — matched to an existing group by strip+casefold, else created in
+                                                               first-seen order; a name the owner could not type (>40) → `invalid[]`;
+                                                               existing + new groups > 20 → 409, nothing written.
                                                                DRAFT products. Each row validated through ProductCreate (name, price 1..10000);
                                                                bad rows → `invalid[]`, an existing name (draft or published, case/space-folded)
                                                                or a repeat in the batch → `skipped_duplicates[]`. The cap counts drafts (409).
-GET    /admin/producers/{producer_id}/product-drafts          admin — the business's drafts (incl. source_image_url, admin-only)
+GET    /admin/producers/{producer_id}/product-drafts          admin — the business's drafts (incl. source_image_url, admin-only; group_id, position — MEH-3472)
 POST   /admin/producers/{producer_id}/product-drafts/approve  admin — {product_ids?} → publish those drafts, or all; filtered on producer_id
                                                                AND is_draft, so another business's ids match nothing. No "new product" alerts.
 DELETE /admin/producers/{producer_id}/product-drafts/{product_id}  admin — a draft only (a published product → 404)
