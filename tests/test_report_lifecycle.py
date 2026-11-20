@@ -46,6 +46,21 @@ class TestReportVisibility:
         assert body[0]["report_count"] == 3
         assert body[0]["auto_flagged"] is True
 
+    def test_each_group_carries_the_page_status(self, client, db):
+        """MEH-3524: the page offers «השהה עסק» only on a live page, because
+        toggle-status flips both ways."""
+        admin = make_user(db, role="admin", email="admin@example.com")
+        live = make_producer(db, name="חי")
+        hidden = make_producer(db, name="מוסתר")
+        hidden.status = "inactive"
+        db.commit()
+        _report(db, live, make_user(db, email="r1@example.com"))
+        _report(db, hidden, make_user(db, email="r2@example.com"))
+
+        body = client.get("/admin/reports", headers=auth_header(admin)).json()
+        by_id = {g["producer_id"]: g["producer_status"] for g in body}
+        assert by_id == {str(live.id): "approved", str(hidden.id): "inactive"}
+
     def test_closed_reports_excluded(self, client, db):
         """A dismissed report drops the producer off the list entirely."""
         admin = make_user(db, role="admin", email="admin@example.com")
