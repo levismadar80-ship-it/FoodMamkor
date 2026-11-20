@@ -6435,7 +6435,7 @@ export const ReadMyMenuProducersMeMenuImportReadPostResponse = /*#__PURE__*/ zod
   "name": /*#__PURE__*/ zod.string(),
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box']), readMyMenuProducersMeMenuImportReadPostResponseRowsItemPriceUnitDefault),
+  "price_unit": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack']), readMyMenuProducersMeMenuImportReadPostResponseRowsItemPriceUnitDefault),
   "section": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "uncertain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.enum(['name', 'description', 'price', 'unit'])))
 }).check(/*#__PURE__*/ zod.describe('One product as read from the menu. Nothing is saved yet.')))
@@ -7013,7 +7013,7 @@ export const GetMyProductsOrderingProducersMeProductsOrderingGetResponse = /*#__
   "in_stock": /*#__PURE__*/ zod.boolean(),
   "is_orderable": /*#__PURE__*/ zod.boolean(),
   "name": /*#__PURE__*/ zod.string(),
-  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box'])
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack'])
 }).check(/*#__PURE__*/ zod.describe('One of the owner\'s own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.')))
 })
 
@@ -7110,7 +7110,7 @@ export const PutProductOrderingProducersMeProductsProductIdOrderingPutResponse =
   "id": /*#__PURE__*/ zod.uuid(),
   "in_stock": /*#__PURE__*/ zod.boolean(),
   "is_orderable": /*#__PURE__*/ zod.boolean(),
-  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box'])
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack'])
 })
 
 
@@ -7782,7 +7782,7 @@ export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/
   "price_is_estimate": /*#__PURE__*/ zod.boolean(),
   "price_max_agorot": /*#__PURE__*/ zod.int(),
   "price_min_agorot": /*#__PURE__*/ zod.int(),
-  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box'])
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g', 'bottle', 'box', 'pack'])
 })),
   "slots": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "alcohol_ok": /*#__PURE__*/ zod.boolean(),

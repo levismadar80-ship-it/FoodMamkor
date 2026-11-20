@@ -7556,7 +7556,8 @@
     "kg": "per kg",
     "100g": "per 100 g",
     "bottle": "per bottle",
-    "box": "per box"
+    "box": "per box",
+    "pack": "per pack"
   },
   "product_price": {
     "varies": "Price varies by season"

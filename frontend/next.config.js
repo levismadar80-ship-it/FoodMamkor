@@ -130,17 +130,22 @@ const securityHeaders = [
 // enforced policy drops 'unsafe-eval' (stage 2); a nonce-based policy that
 // also drops 'unsafe-inline' is stage 3 (Google's strict-CSP rollout order).
 // Derived from the enforced value, so the two can never drift apart.
-// With no NEXT_PUBLIC_SENTRY_DSN neither header carries report-uri, so the
-// twin is inert (console only) — harmless, and the same as the enforced one.
+// MEH-3286: with no NEXT_PUBLIC_SENTRY_DSN there is no report-uri, and the twin
+// is not sent at all. A Report-Only policy with nowhere to report measures
+// nothing, and WebKit logs a console error for it on every page ("delivered in
+// report-only mode, but does not specify a 'report-to'"), which reds every
+// spec that asserts a clean console on the nightly iPhone run.
 // Sentry quota: watch security reports for the first day after release; if
 // they flood, drop the twin rather than widen the enforced policy.
 const enforcedCsp = securityHeaders.find(
   (h) => h.key === "Content-Security-Policy",
 ).value;
-securityHeaders.push({
-  key: "Content-Security-Policy-Report-Only",
-  value: enforcedCsp.replace(" 'unsafe-eval'", ""),
-});
+if (cspReportUri) {
+  securityHeaders.push({
+    key: "Content-Security-Policy-Report-Only",
+    value: enforcedCsp.replace(" 'unsafe-eval'", ""),
+  });
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
