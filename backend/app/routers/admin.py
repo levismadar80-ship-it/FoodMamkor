@@ -137,7 +137,9 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -
     # A city that stays keeps its day / minimum / fee; only new cities start
     # empty. Before, every admin save wiped the per-city details.
     kept = {
-        a.city: (a.delivery_day, a.min_order, a.delivery_fee)
+        # Keyed canonically: a row stored before MEH-2602 may carry another
+        # spelling of the same city.
+        (canonical_city(a.city) or a.city): (a.delivery_day, a.min_order, a.delivery_fee)
         for a in db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id)
     }
     db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()

@@ -1,8 +1,8 @@
 /**
- * MEH-3475 — the admin edit page now has the owner's DeliveryCard beside
- * ProducerForm. An edit save that did not touch delivery must leave the whole
- * delivery group out, or it puts the page-open cities back over what the
- * delivery panel saved. A changed group travels whole.
+ * MEH-3475 — on the admin edit page the owner's DeliveryCard (below the form)
+ * is the one writer of the delivery fields. ProducerForm renders no delivery
+ * controls there and never sends the group: a page-open copy of the cities
+ * could only put old ones back over what the panel saved.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -54,14 +54,19 @@ describe("Admin ProducerForm — delivery group only when changed (MEH-3475)", (
     expect(putBody().name).toBe("סנדרה");
   });
 
-  it("a changed delivery flag sends the whole group", async () => {
+  it("edit: no delivery controls are rendered (create keeps them)", async () => {
     mount();
     await screen.findByText(FORM.sections.basic);
-    fireEvent.click(screen.getByRole("checkbox", { name: FORM.fields.has_physical_location }));
-    save();
-    await waitFor(() => expect(api.put).toHaveBeenCalled());
-    expect(putBody().has_physical_location).toBe(false);
-    expect(putBody().delivery_area_cities).toEqual(["חיפה", "עכו"]);
-    expect(putBody().offers_delivery).toBe(true);
+    expect(screen.queryByTestId("business-type-section")).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: FORM.fields.offers_delivery })).not.toBeInTheDocument();
+  });
+
+  it("create: the delivery controls are still there", async () => {
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProducerForm />
+      </NextIntlClientProvider>,
+    );
+    expect(await screen.findByTestId("business-type-section")).toBeInTheDocument();
   });
 });

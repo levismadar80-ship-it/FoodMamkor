@@ -60,6 +60,23 @@ describe("AdminDeliveryPaymentPanel (MEH-3475)", () => {
     expect(screen.getByTestId("admin-section-payment-info")).toHaveTextContent(P.payment_info.heading);
   });
 
+  it("no cities: no bulk step and no per-city rows", () => {
+    mount([]);
+    expect(screen.queryByTestId("delivery-bulk-day")).not.toBeInTheDocument();
+    expect(screen.queryByTestId(/^delivery-min-input-/)).not.toBeInTheDocument();
+  });
+
+  it("bulk «בתיאום מראש» clears the ticked cities' day", async () => {
+    mount([area("חיפה", { delivery_day: "שלישי" }), area("עכו", { delivery_day: "שלישי" })]);
+    fireEvent.click(screen.getByTestId("delivery-bulk-city-עכו"));
+    fireEvent.change(screen.getByTestId("delivery-bulk-day-select"), { target: { value: "" } });
+    fireEvent.click(screen.getByTestId("delivery-bulk-apply"));
+    saveDelivery();
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
+    const days = Object.fromEntries(sentRows().map((r) => [r.city, r.delivery_day]));
+    expect(days).toEqual({ "חיפה": "שלישי", "עכו": null });
+  });
+
   it("one city: no bulk step", () => {
     mount([area("חיפה")]);
     expect(screen.queryByTestId("delivery-bulk-day")).not.toBeInTheDocument();

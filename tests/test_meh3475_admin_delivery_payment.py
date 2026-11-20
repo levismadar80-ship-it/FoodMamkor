@@ -7,6 +7,9 @@ Every guard test sends a schema-valid body (Regression rule 6).
 
 import uuid
 
+import pytest
+from sqlalchemy import text
+
 from app.models import DeliveryArea
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -60,12 +63,55 @@ def test_admin_saves_day_and_minimum_per_city(client, db):
 
 def test_admin_day_outside_the_whitelist_is_422_and_nothing_written(client, db):
     producer = make_producer(db, delivery_cities=["חיפה"])
+    before = _areas(db, producer)
     body = _body()
     body["delivery_areas"][0]["delivery_day"] = "יום ג"
     r = client.put(f"/admin/producers/{producer.id}", json=body, headers=auth_header(_admin(db)))
-    before = _areas(db, producer)
     assert r.status_code == 422
     assert _areas(db, producer) == before
+
+
+@pytest.mark.parametrize("bad", [-5, 99_999_999_999])
+def test_minimum_out_of_range_is_422_not_500(client, db, bad):
+    # The minimum is typeable now; the column is INTEGER, so an unbounded
+    # value would raise at flush (500) instead of a Hebrew 422.
+    producer = make_producer(db, delivery_cities=["חיפה"])
+    before = _areas(db, producer)
+    body = _body()
+    body["delivery_areas"][0]["min_order"] = bad
+    r = client.put(f"/admin/producers/{producer.id}", json=body, headers=auth_header(_admin(db)))
+    assert r.status_code == 422, r.text
+    assert "מינימום הזמנה" in r.text
+    assert _areas(db, producer) == before
+
+
+def test_city_list_save_keeps_days_of_a_legacy_spelling(client, db):
+    # A row stored before MEH-2602 in an alias spelling still keeps its day
+    # when the flat list sends the canonical name.
+    from app.data.cities import canonical_city
+
+    producer = make_producer(db)
+    alias = "קרית ביאליק"
+    canon = canonical_city(alias)
+    assert canon and canon != alias  # precondition: the alias really is one
+    # Raw SQL: the model's MEH-2602 validator would canonicalise the city, and
+    # the case under test is a row written before that validator existed.
+    db.execute(
+        text(
+            "INSERT INTO delivery_areas (id, producer_id, city, delivery_day, min_order) "
+            "VALUES (:id, :pid, :city, 'שני', 80)"
+        ),
+        {"id": uuid.uuid4(), "pid": producer.id, "city": alias},
+    )
+    db.commit()
+    assert set(_areas(db, producer)) == {alias}  # precondition: stored as the alias
+    r = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"delivery_area_cities": [canon]},
+        headers=auth_header(_admin(db)),
+    )
+    assert r.status_code == 200, r.text
+    assert _areas(db, producer) == {canon: ("שני", 80, None)}
 
 
 def test_city_list_save_keeps_existing_days(client, db):

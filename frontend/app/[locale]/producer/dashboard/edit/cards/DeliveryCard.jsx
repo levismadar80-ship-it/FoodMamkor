@@ -463,10 +463,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                         set({ days: { ...form.days, ...Object.fromEntries(picked.map((c) => [c, day])) } })
                       }
                     />
-                    <span className="block text-sm text-muted mb-0.5 mt-3">
-                      {t("area_min_label")}
-                    </span>
-                    <p className="text-xs text-fg-muted mb-2">
+                    <p className="text-xs text-fg-muted mb-2 mt-3">
                       {t("area_min_hint")}
                     </p>
                     <ul className="space-y-1.5">
@@ -476,6 +473,10 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                           className="flex flex-wrap items-center justify-between gap-2 text-sm"
                         >
                           <span className="min-w-0 flex-1 truncate">{c}</span>
+                          {/* MEH-3475: each box carries its own visible caption —
+                              two bare number boxes side by side read alike. */}
+                          <label className="flex flex-col gap-0.5 text-xs text-muted">
+                            {t("area_fee_label")}
                           <Input inline size="xs"
                             type="number"
                             inputMode="numeric"
@@ -491,6 +492,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                             placeholder={t("area_fee_placeholder")}
                             className="w-20"
                           />
+                          </label>
+                          <label className="flex flex-col gap-0.5 text-xs text-muted">
+                            {t("area_min_label")}
                           <Input inline size="xs"
                             type="number"
                             inputMode="numeric"
@@ -505,6 +509,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                             }
                             className="w-20"
                           />
+                          </label>
                           <select
                             value={form.days[c] || ""}
                             aria-label={t("day_select_aria", { city: c })}
