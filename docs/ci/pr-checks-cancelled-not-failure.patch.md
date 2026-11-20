@@ -145,7 +145,7 @@ be able to tell 'superseded' from 'passed' without opening the run."*
 
 ## 3 · Proof — failing-by-construction, both directions (MEH-1619)
 
-`scripts/ci-gate-cancelled-selftest.sh` (added alongside this doc) feeds the
+`scripts/checks/ci-gate-cancelled-selftest.sh` (added alongside this doc) feeds the
 real predicate three scenarios under both the old and the new logic:
 
 ```
@@ -165,7 +165,7 @@ real predicate three scenarios under both the old and the new logic:
   and `check_ran()`.
 - **C must stay GREEN under both** — an ordinary successful run is untouched.
 
-Run: `bash scripts/ci-gate-cancelled-selftest.sh`. Exit 0 = the predicates
+Run: `bash scripts/checks/ci-gate-cancelled-selftest.sh`. Exit 0 = the predicates
 discriminate exactly as the table says, regardless of whether the patch has
 been applied yet (Pass 1 reports live-vs-not-yet-applied by grepping
 `pr-checks.yml` for `is_cancelled`; Pass 2 exercises a local reproduction of

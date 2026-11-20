@@ -1,71 +1,71 @@
-# patch	state	target	marker	note
-adversarial-review-blocking	dead	-	-	claude-review.yml disabled until MEH-569
-adversarial-review	dead	-	-	claude-review.yml disabled until MEH-569
-check-bash-safety	unverified	-	-	
-check-semantics	unverified	-	-	
-ci-gate-skip-green	unverified	-	-	
-claude-review-status	unverified	-	-	
-cls-measure	unverified	-	-	
-deferral-and-e2e-lint	decision	frontend/eslint.config.mjs	allowWarningComments: false	lint config is CC-deny; Gate 2 needs a decision
-deploy-gate-strict-skip	applied	.github/workflows/deploy.yml	strict_ok	
-dnm-gate-regex	dead	-	-	
-e2e-auth-fixtures	unverified	-	-	
-e2e-concurrency	unverified	-	-	
-e2e-gate-strict-skip	applied	.github/workflows/e2e.yml	check_ran	
-e2e-gate	unverified	-	-	
-e2e-local-backend	unverified	-	-	
-e2e-one-backend-queue	dead	-	-	
-e2e-release-coverage	applied	.github/workflows/e2e.yml	branches: [staging, main]	
-e2e-skip-green	unverified	-	-	
-e2e-stability	unverified	-	-	
-e2e-two-shards	unverified	-	-	
-i18n-lint	unverified	-	-	
-meh-0000-deploy-sha-gate	unverified	-	-	
-meh-1511-rule23-amendment	unverified	-	-	
-meh-1516-qa-screenshots	dead	-	-	obsolete after E2E sharding
-meh-1517-staging-drill	unverified	-	-	
-meh-1603-automerge	external	-	-	repo setting allow_auto_merge, not a file
-meh-1603-merge-queue	dead	-	-	
-meh-1868-knip-ratchet	applied	.github/workflows/pr-checks.yml	npm run lint:ratchet	
-meh-1868-mypy-ratchet	applied	.github/workflows/pr-checks.yml	scripts/mypy_baseline.py	
-meh-1873-checkout-timeout	unverified	-	-	
-meh-1905-railway-healthcheck-path	unverified	-	-	
-meh-1907-cancelled-guard-f9	decision	.github/workflows/pr-checks.yml	SUPERSEDED — the paths-filter job was cancelled	
-meh-1907-workflows-only-enforcement	unverified	-	-	
-meh-1910-ci-speedup	dead	-	-	PR-A/caches judged low value; other halves landed elsewhere
-meh-1911-pytest-parallel	unverified	-	-	
-meh-1912-vitest-shard	dead	-	-	
-meh-1980-coverage-ratchet	applied	.github/workflows/pr-checks.yml	coverage-ratchet.mjs	
-meh-2052-bash-safety-sed-regex	decision	.claude/hooks/check-bash-safety.sh	sed[[:space:]]+-i.*[[:space:]]	hook: Sapir only
-meh-2062-vercel-git-deployments	unverified	-	-	
-meh-2077-branch-name-delete	unverified	-	-	
-meh-2079-expected-tables-43	unverified	-	-	
-meh-2117-stop-hook-in-repo	applied	.claude/settings.json	scripts/hooks/stop-build-and-test.sh	
-meh-2202-uptime-workflow	unverified	-	-	
-meh-2212-actions-cost	dead	-	-	case rested on private-repo billing; repo is public
-meh-2244-reconcile	unverified	-	-	
-meh-2244-stale	applied	.github/workflows/stale.yml	do-not-merge	stale.yml exists; the gap is do-not-merge exemption
-meh-2244	applied	.github/workflows/pr-checks.yml	PR_AUTHOR:	
-meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]refs/tags/	hook: Sapir only
-meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	
-meh-2749-post-deploy-checks	unverified	-	-	
-meh-2779-ci-sharding	unverified	-	-	
-meh-3151-pr-template	applied	.github/pull_request_template.md	Self-checks by the session	
-meh-3153-webkit-alert	applied	.github/workflows/e2e.yml	Alert on a red WebKit night	
-meh-3308-pin-actions-sha	applied	.github/workflows/pr-checks.yml	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	
-meh-3507-nightly-skip	applied	.github/workflows/e2e.yml	nightly_unchanged	
-meh-449-settings-hook-registration	unverified	-	-	
-meh-784-protected-path-gate	decision	.github/workflows/pr-checks.yml	protected-path-gate	
-osm-tile-probe	applied	.github/workflows/uptime.yml	TILE_URL	
-palette-selector-widen	applied	frontend/eslint.config.mjs	Literal[value=	
-placeholder-search-cron	applied	.github/workflows/placeholder-search-cron.yml	check_placeholder_search	needs VERCEL_AUTOMATION_BYPASS_SECRET checked + SHA-pinned actions
-places-health-probe	applied	.github/workflows/uptime.yml	PLACES_URL	
-post-deploy-trim	applied	.github/workflows/post-deploy-checks.yml	17 3 * * 0	
-pr-checks-cancelled-not-failure	unverified	-	-	
-repo-guards	unverified	-	-	
-settings-hooks-cleanup	unverified	-	-	
-staging-co-il	applied	.claude/hooks/check-webfetch-allowlist.sh	staging.mehamakor.co.il	
-staging-health	applied	.github/workflows/staging-health.yml	name: Staging health	
-uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	
-vrt-label-trigger	unverified	-	-	
-webkit-project	unverified	-	-	
+# patch	state	target	marker	since	note
+adversarial-review	dead	-	-	-	claude-review.yml disabled until MEH-569
+adversarial-review-blocking	dead	-	-	-	claude-review.yml disabled until MEH-569
+check-bash-safety	applied	.claude/hooks/check-bash-safety.sh	MEH-1500 C1 — write-redirection to a protected path	-	-
+check-semantics	applied	.github/workflows/e2e.yml	echo "executed=$EXECUTED" >> "$GITHUB_OUTPUT"	-	-
+ci-gate-skip-green	applied	.github/workflows/pr-checks.yml	check_ran "	-	-
+claude-review-status	dead	-	-	-	workflow.md moved past both versions of the block (13/08, then the 13/11 trim)
+cls-measure	applied	.github/workflows/cls-measure.yml	qa-meh1853-cls.mjs	-	-
+deferral-and-e2e-lint	decision	frontend/eslint.config.mjs	allowWarningComments: false	2026-11-20	lint config is CC-deny; adds warnings, so the ESLint ratchet baseline must move with it
+deploy-gate-strict-skip	applied	.github/workflows/deploy.yml	check_ran "Frontend lint	-	-
+dnm-gate-regex	dead	-	-	-	-
+e2e-auth-fixtures	applied	.github/workflows/e2e.yml	DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}	-	-
+e2e-concurrency	applied	.github/workflows/e2e.yml	|| github.run_id }}	-	mechanism 1; mechanism 2 is e2e-skip-green
+e2e-gate	applied	.github/workflows/e2e.yml	  e2e-gate:	-	the ruleset half was decided against (ADR-028)
+e2e-gate-strict-skip	applied	.github/workflows/e2e.yml	check_ran "Playwright E2E (Vercel preview)"	-	-
+e2e-local-backend	applied	.github/workflows/e2e.yml	scripts/e2e/start-local-backend.sh	-	-
+e2e-one-backend-queue	dead	-	-	-	-
+e2e-release-coverage	applied	.github/workflows/e2e.yml	branches: [staging, main]	-	applied 20/11 via the web editor
+e2e-skip-green	applied	.github/workflows/e2e.yml	needs.e2e.result == 'skipped' && needs.filter.result == 'success'	-	applied 20/11, adapted to the current if:
+e2e-stability	applied	.github/workflows/e2e.yml	cron: "30 1 * * *"	-	-
+e2e-two-shards	applied	.github/workflows/e2e.yml	e2e-staging-backend-{0}	-	-
+i18n-lint	applied	frontend/eslint.config.mjs	i18next/no-literal-string	-	-
+meh-0000-deploy-sha-gate	applied	.github/workflows/post-deploy-checks.yml	scripts/checks/wait_for_deploy.py	-	-
+meh-1511-rule23-amendment	dead	-	-	-	was applied 14/08; rule 23 was then replaced by the 22/10 amendment (MEH-2302)
+meh-1516-qa-screenshots	dead	-	-	-	obsolete after E2E sharding
+meh-1517-staging-drill	applied	.github/workflows/backup-restore-verify.yml	  staging-drill:	-	-
+meh-1603-automerge	external	-	-	-	repo setting allow_auto_merge, not a file
+meh-1603-merge-queue	dead	-	-	-	-
+meh-1868-knip-ratchet	applied	.github/workflows/pr-checks.yml	node ../scripts/checks/lint-ratchet.mjs --self-test	-	-
+meh-1868-mypy-ratchet	applied	.github/workflows/pr-checks.yml	scripts/mypy_baseline.py	-	-
+meh-1873-checkout-timeout	applied	.github/workflows/pr-checks.yml	timeout-minutes: 10	-	weak marker: the value is common in the file
+meh-1905-railway-healthcheck-path	applied	railway.json	/health/readiness	-	-
+meh-1907-cancelled-guard-f9	dead	-	-	-	wording of one error message only, no behaviour change; not applied (20/11)
+meh-1907-workflows-only-enforcement	applied	.github/workflows/pr-checks.yml	WORKFLOWS_TOUCHED: ${{ needs.changes.outputs.workflows }}	-	-
+meh-1910-ci-speedup	dead	-	-	-	PR-A/caches judged low value; other halves landed elsewhere
+meh-1911-pytest-parallel	applied	.github/workflows/pr-checks.yml	-n auto	-	-
+meh-1912-vitest-shard	dead	-	-	-	-
+meh-1980-coverage-ratchet	applied	.github/workflows/pr-checks.yml	coverage-ratchet.mjs	-	-
+meh-2052-bash-safety-sed-regex	pending	.claude/hooks/check-bash-safety.sh	sed[[:space:]]+-i.*[[:space:]]	2026-11-20	committed on its own PR (#4967) via the web editor; Sapir merges, and that PR flips this row
+meh-2062-vercel-git-deployments	applied	frontend/vercel.json	deploymentEnabled	-	-
+meh-2077-branch-name-delete	applied	.claude/hooks/check-branch-name.sh	(--delete|-d)	-	-
+meh-2079-expected-tables-43	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=	-	applied as 43; the number has moved on since
+meh-2117-stop-hook-in-repo	applied	.claude/settings.json	scripts/hooks/stop-build-and-test.sh	-	-
+meh-2202-uptime-workflow	applied	.github/workflows/uptime.yml	name: Uptime probe	-	-
+meh-2212-actions-cost	dead	-	-	-	case rested on private-repo billing; repo is public
+meh-2244	applied	.github/workflows/pr-checks.yml	PR_AUTHOR: ${{ github.event.pull_request.user.login }}	-	hunk 1 only; hunk 2 (make the rule block) is Sapir's call and has no row of its own
+meh-2244-reconcile	applied	.github/workflows/pr-reconcile.yml	scripts/oneoff/pr-reconcile.mjs	-	-
+meh-2244-stale	applied	.github/workflows/stale.yml	do-not-merge,keep-open	-	only the label exemption, on the existing stale.yml; the second bot file is not applied
+meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]refs/tags/	2026-11-20	hook: Sapir only. It loosens the push guard (a refs/tags/ token anywhere exits 0), so CC does not apply it
+meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	-	-
+meh-2749-post-deploy-checks	applied	.github/workflows/post-deploy-checks.yml	scripts/checks/live_security_headers.py	-	-
+meh-2779-ci-sharding	applied	.github/workflows/pr-checks.yml	  pytest-shard:	-	-
+meh-3151-pr-template	applied	.github/pull_request_template.md	Self-checks by the session	-	applied 20/11 via the web editor
+meh-3153-webkit-alert	applied	.github/workflows/e2e.yml	Alert on a red WebKit night	-	-
+meh-3308-pin-actions-sha	applied	.github/workflows/pr-checks.yml	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	-	-
+meh-3507-nightly-skip	applied	.github/workflows/e2e.yml	nightly_unchanged	-	-
+meh-449-settings-hook-registration	applied	.claude/settings.json	check-artifact-location.sh	-	-
+meh-784-protected-path-gate	decision	.github/workflows/pr-checks.yml	scripts/ci/protected-path-gate.sh	2026-11-20	every PR that touches a protected path would need a label from Sapir, including the ones CC commits through Chrome
+osm-tile-probe	applied	.github/workflows/uptime.yml	TILE_URL	-	-
+palette-selector-widen	applied	frontend/eslint.config.mjs	Literal[value=	-	-
+placeholder-search-cron	applied	.github/workflows/placeholder-search-cron.yml	scripts/check_placeholder_search.py	-	applied 20/11 via the web editor
+places-health-probe	applied	.github/workflows/uptime.yml	PLACES_URL	-	applied 20/11; every tick, not hourly
+post-deploy-trim	applied	.github/workflows/post-deploy-checks.yml	17 3 * * 0	-	-
+pr-checks-cancelled-not-failure	applied	.github/workflows/pr-checks.yml	is_cancelled() {	-	-
+repo-guards	applied	.github/workflows/pr-checks.yml	scripts/checks/run-all.sh	-	-
+settings-hooks-cleanup	applied	.claude/settings.json	scripts/hooks/stop-build-and-test.sh	-	hunk 2 was a deletion, so it has no marker
+staging-co-il	applied	.claude/hooks/check-webfetch-allowlist.sh	staging.mehamakor.co.il|*.mehamakor.co.il	-	-
+staging-health	applied	.github/workflows/staging-health.yml	name: Staging health	-	-
+uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	-	-
+vrt-label-trigger	applied	.github/workflows/vrt-update.yml	vrt-regen:	-	-
+webkit-project	applied	frontend/playwright.config.ts	webkit-iphone13	-	-

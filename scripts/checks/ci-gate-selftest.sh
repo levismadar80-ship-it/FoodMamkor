@@ -5,12 +5,11 @@
 # workflow sorts three scenarios correctly, and reports whether the MEH-1582 fix
 # (docs/ci/ci-gate-skip-green.patch.md) is applied yet.
 #
-# WHY IT LIVES HERE AND NOT IN scripts/checks/
-#   scripts/checks/run-all.sh auto-discovers every *executable* *.sh directly
-#   inside scripts/checks/ and runs it under the required "Repo guards" job
-#   (run-all.sh:97-113). This script reports a KNOWN-UNAPPLIED state as
-#   informational, but promoting it into that directory before Sapir applies the
-#   patch would red every PR. Move it once the patch has landed, if wanted.
+# WHY IT LIVES IN scripts/checks/ (MEH-3520, 20/11/2026)
+#   It sat in scripts/ while its patch was unapplied, because run-all.sh runs
+#   every executable *.sh in this directory under the required "Repo guards"
+#   job. The patch has landed, so it now runs there and FAILS if the fix
+#   disappears from the workflow file.
 #
 # NOTE ON FIDELITY (.claude/rules/testing.md — "exercise the real
 # implementation, never a copy"): the gate's logic lives inside a YAML `run:`
@@ -19,13 +18,14 @@
 # predicates to show they discriminate. Pass 1 is what catches drift between
 # this script and the workflow.
 #
-# Usage:  bash scripts/ci-gate-selftest.sh
-# Exit:   0 = predicates discriminate as expected (regardless of applied state)
-#         1 = the reproduction failed to discriminate -> this script is wrong
+# Usage:  bash scripts/checks/ci-gate-selftest.sh
+# Exit:   0 = the fix is in the workflow AND the predicates discriminate
+#         1 = the fix is gone from the workflow (regression), or the
+#             reproduction failed to discriminate (this script is wrong)
 
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # rtl-ok — "pr-checks.yml" trips the physical-class scan on the substring "pr-c".
 WF="$REPO_ROOT/.github/workflows/pr-checks.yml"
 # rtl-ok
@@ -42,9 +42,7 @@ if grep -q 'check_ran "Frontend build' "$WF"; then
   echo "  APPLIED   — gate uses check_ran/strict_ok; skipped required jobs FAIL."
 else
   APPLIED=0
-  echo "  NOT YET   — gate still accepts 'skipped' for enforced jobs (the MEH-1582 hole)."
-  echo "              Fix is staged in docs/ci/ci-gate-skip-green.patch.md (Sapir applies;"
-  echo "              .github/workflows/** is CC-deny, MEH-671)."
+  echo "  MISSING   — the MEH-1582 fix is not in the workflow file. It was applied; this is a regression."
 fi
 
 DRAFT_GATED=$(grep -c "github.event.pull_request.draft == false" "$WF")
@@ -128,7 +126,10 @@ fi
 
 if [ $PASS -eq 1 ]; then
   echo "  SELF-TEST PASS — the change discriminates exactly scenario A."
-  [ $APPLIED -eq 0 ] && echo "  (Gate is still UNPATCHED in this checkout — scenario A is live today.)"
+  if [ $APPLIED -eq 0 ]; then
+    echo "  REGRESSION: the MEH-1582 fix is no longer in the workflow file — the hole is open again." >&2
+    exit 1
+  fi
   exit 0
 fi
 echo "  SELF-TEST FAIL — this harness no longer models the gate; fix it before trusting it." >&2

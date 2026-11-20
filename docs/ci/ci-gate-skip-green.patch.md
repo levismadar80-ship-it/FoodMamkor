@@ -173,7 +173,7 @@ scenarios under both the old and the new predicate. A construction that only
 showed "I broke it and it went red" would prove nothing unless the *old* logic
 passes the same input — so the table reports both columns.
 
-Harness: `scripts/ci-gate-selftest.sh` (added in this PR, runnable locally, no
+Harness: `scripts/checks/ci-gate-selftest.sh` (added in this PR, runnable locally, no
 workflow edit needed).
 
 > It is deliberately **not** in `scripts/checks/`. That directory is
