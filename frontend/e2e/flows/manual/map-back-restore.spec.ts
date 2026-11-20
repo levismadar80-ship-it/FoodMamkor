@@ -55,11 +55,22 @@ async function leaveAndComeBack(page: Page) {
   const name = await selectedName(page);
   await page.getByTestId("map-selected-card").locator('a[href*="from=map"]').first().click();
   await page.waitForURL((u) => !u.pathname.endsWith("/map"), FIRST_PAINT);
+  // MEH-3469: a client-side navigation keeps `window`, so the center the map
+  // set before we left is still there after back, and waitForMap would pass
+  // before the remounted map ran. Clear it so the read below is the new map's.
+  await page.evaluate(() => {
+    delete (window as unknown as { __MAP_CENTER__?: unknown }).__MAP_CENTER__;
+  });
   await page.goBack();
   await waitForMap(page);
   const center = await page.evaluate(() => (window as unknown as { __MAP_CENTER__: [number, number] }).__MAP_CENTER__);
   return { before, name, center };
 }
+
+// MEH-3469: the config's `on-first-retry` trace records only the attempt that
+// passed. Keep the trace of a failed attempt so the next first-attempt red can
+// be read. File level: Playwright refuses `trace` inside a describe.
+test.use({ trace: "retain-on-failure" });
 
 test.describe("manual › /map back-navigation restores camera + selection (MEH-2049)", () => {
   test.beforeEach(async ({ page }, info) => {
