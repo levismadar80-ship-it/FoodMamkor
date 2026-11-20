@@ -6587,7 +6587,18 @@
     "log_label": "Conversation with the assistant",
     "input_label": "Type a question",
     "input_placeholder": "Type a question...",
-    "send_label": "Send question"
+    "send_label": "Send question",
+    "business": {
+      "page_lead": "Have a question about the products, hours or delivery?",
+      "page_button": "Ask the assistant",
+      "panel_title": "Ask about {name}",
+      "opening": "You can ask me about {name}: opening hours, delivery, products and allergens. I answer only from what is written on the business's page.",
+      "prompts": {
+        "hours": "When is the business open?",
+        "delivery": "Where do they deliver?",
+        "gluten": "Are there gluten-free products?"
+      }
+    }
   },
   "diet_pages": {
     "meta_title": "{label} — local food businesses",

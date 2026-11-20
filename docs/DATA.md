@@ -2172,6 +2172,10 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  (not the contact), site ordering, payment methods, whole-kitchen
                                  dietary scope, up to 60 non-draft products through ProductOut.
                                  Lookup failure → the block is left out, the chat still answers.
+                                 MEH-3489: optional body field producer_id (UUID) = the business
+                                 page the chat was opened from. Read only as a public business
+                                 (is_business()); a business named in the question wins; with no
+                                 name, the page. Unknown / non-public id → no block, same reply.
 ```
 
 The business facts are read through the app's own session, **not** the `mcp_reader`

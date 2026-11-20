@@ -1783,6 +1783,18 @@
             "minItems": 1,
             "title": "Messages",
             "type": "array"
+          },
+          "producer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Id"
           }
         },
         "required": [

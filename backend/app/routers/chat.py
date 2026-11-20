@@ -23,9 +23,10 @@ Design notes:
     rather than crashing the widget.
 """
 
-from typing import Any
 import json
 import logging
+from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -38,7 +39,6 @@ from app.rate_limit import limiter
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import chat_business_context, chat_db_tools, chat_intent_router
 from app.services.chat_intent_router import cached_text_block, log_cache_usage
-
 
 logger = logging.getLogger(__name__)
 
@@ -326,20 +326,24 @@ def _live_data_context(
 # ---------- one business's page (MEH-3481) ----------
 
 
-def _business_context(db: Session, api_messages: list[dict[str, Any]]) -> str | None:
+def _business_context(
+    db: Session,
+    api_messages: list[dict[str, Any]],
+    page_producer_id: UUID | None = None,
+) -> str | None:
     """The facts of the one business the visitor's latest questions name,
     fenced like the live data: business-written text is data, never an
     instruction. None when they name no one business — the flow is then
     unchanged.
 
-    By name only: the widget is not shown on a business page (MEH-1168, the
-    page has its own contact button), so there is no page to read it from.
-    The connection goes back to the pool before the model is called."""
+    By name, or (MEH-3489) the business page the chat was opened from; a
+    name in the question wins. The connection goes back to the pool before
+    the model is called."""
     if not isinstance(db, Session):
         return None
     questions = [m["content"] for m in reversed(api_messages) if m["role"] == "user"]
     try:
-        producer = chat_business_context.find(db, questions)
+        producer = chat_business_context.find(db, questions, page_producer_id)
         if producer is None:
             return None
         data = chat_business_context.facts(
@@ -430,7 +434,7 @@ def chat(
     # facts beside the live block. Read first, so the DB connection is back in
     # the pool before any model call. Never 500s the widget.
     try:
-        business = _business_context(db, api_messages)
+        business = _business_context(db, api_messages, body.producer_id)
     except Exception as e:  # noqa: BLE001 — same fail-open as the live hop
         logger.warning("chat business-context hop failed: %s", e)
         business = None
