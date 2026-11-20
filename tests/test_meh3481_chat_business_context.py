@@ -98,7 +98,7 @@ def test_next_opening_is_computed_not_guessed():
     assert ctx.next_opening(he, _at(1, 15)) == "מחר 07:00"  # Monday after closing
     assert ctx.next_opening(he, _at(4, 15)) == "מחר 06:30"  # Thursday → Friday hours
     assert ctx.next_opening(he, _at(1, 9)) is None  # open now
-    assert ctx.next_opening("Wed 10:00-12:00", _at(3, 13)) == "רביעי 10:00"  # a week on
+    assert ctx.next_opening("Wed 10:00-12:00", _at(3, 13)) == "רביעי הבא 10:00"  # a week on
     assert ctx.next_opening("א'-ה' 9:00-17:00, ו' בתיאום", _at(5, 20)) is None
     assert ctx.next_opening(None, _at(5, 20)) is None
 

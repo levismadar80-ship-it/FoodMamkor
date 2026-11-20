@@ -239,6 +239,8 @@ def next_opening(raw: str | None, now: datetime) -> str | None:
         if starts:
             o = min(starts)
             when = "היום" if ahead == 0 else ("מחר" if ahead == 1 else _DAY_NAMES_HE[day])
+            if ahead == 7:
+                when += " הבא"  # same weekday as today, a week on
             return f"{when} {o // 60:02d}:{o % 60:02d}"
     return None
 
@@ -450,7 +452,7 @@ PREAMBLE = (
     "על משלוח לעיר: delivers_to_asked_city הוא התשובה; אל תנחשי. "
     "על שעות: open_now הוא התשובה (null = השעות כתובות בצורה שאי אפשר לחשב, "
     "ציטטי את opening_hours). מתי נפתחים שוב: next_opening הוא התשובה; "
-    "אל תחשבי ימים או שעות בעצמך. "
+    "אל תחשבי ימים או שעות בעצמך, ובדקי ב-special_hours אם יש שינוי באותו יום. "
     "על אלרגנים ותזונה: אל תתני עצה רפואית ואל תבטיחי שמוצר בטוח. אמרי מה כתוב "
     "בעמוד («כתוב בעמוד ש…») והוסיפי שכדאי לוודא מול בית העסק לפני הזמנה."
 )
