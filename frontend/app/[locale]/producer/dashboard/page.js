@@ -509,8 +509,9 @@ export default function ProducerDashboardPage() {
       )}
 
       {/* MEH-3194: what came through the site this month, one line under the
-          greeting so it is seen before any card (and before any price). */}
-      {isApproved && <MonthValueLine />}
+          greeting so it is seen before any card (and before any price).
+          Not for an organizer: the copy counts «הזמנות». */}
+      {isApproved && !isOrganizer && <MonthValueLine />}
 
       {/* MEH-3108: «מה מחכה לך» — what is waiting for the owner, right
           under the greeting. Renders nothing when nothing is waiting. */}

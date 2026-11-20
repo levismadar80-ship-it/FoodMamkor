@@ -47,6 +47,18 @@ describe("MonthValueLine", () => {
     expect((await line()).textContent).toBe("החודש הגיעו דרך האתר 3 הזמנות");
   });
 
+  it("1 booking with no value (a free sign-up) drops the «בשווי» part", async () => {
+    api.get.mockResolvedValueOnce({ data: summary(1, 0) });
+    mount();
+    expect((await line()).textContent).toBe("החודש הגיעה דרך האתר הזמנה אחת");
+  });
+
+  it("holds its height while the read is in flight", () => {
+    api.get.mockReturnValueOnce(new Promise(() => {}));
+    mount();
+    expect(screen.getByTestId("month-value-line-pending")).toHaveClass("h-5");
+  });
+
   it("never shows a fee", async () => {
     api.get.mockResolvedValueOnce({ data: summary(2, 10000) });
     mount();
@@ -58,12 +70,10 @@ describe("MonthValueLine", () => {
   it("a failed or malformed read renders nothing", async () => {
     api.get.mockRejectedValueOnce(new Error("down"));
     const { container, unmount } = mount();
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
-    expect(container).toBeEmptyDOMElement();
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
     unmount();
     api.get.mockResolvedValueOnce({ data: { bookings: "many" } });
     const again = mount();
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
-    expect(again.container).toBeEmptyDOMElement();
+    await waitFor(() => expect(again.container).toBeEmptyDOMElement());
   });
 });

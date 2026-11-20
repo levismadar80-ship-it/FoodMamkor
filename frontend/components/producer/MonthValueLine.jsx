@@ -10,7 +10,7 @@
  * Touches:  GET /producers/me/billing/summary (backend/app/routers/billing.py,
  *           services/billing_summary.py — an Israel calendar month, voided rows
  *           never counted).
- * Does NOT: show a fee, a threshold or what the month would cost — never on
+ * Does NOT: show to an organizer (the copy says «הזמנות»), or show a fee, a threshold or what the month would cost — never on
  *           this line (Sapir's table). Renders nothing until the read lands,
  *           and nothing when it fails: a missing summary is not an error the
  *           owner can act on.
@@ -44,6 +44,7 @@ export function monthValueMessage(s) {
 export default function MonthValueLine() {
   const t = useTranslations("dashboard.producer.month_value");
   const [summary, setSummary] = useState(/** @type {{ bookings: number, value_agorot: number } | null} */ (null));
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -51,13 +52,18 @@ export default function MonthValueLine() {
       .get("/producers/me/billing/summary")
       .then((r) => {
         const parsed = SummarySchema.safeParse(r.data); // rule 19
-        if (live && parsed.success) setSummary(parsed.data);
+        if (!live) return;
+        if (parsed.success) setSummary(parsed.data);
+        else setFailed(true);
       })
-      .catch(() => {});
+      .catch(() => { if (live) setFailed(true); });
     return () => { live = false; };
   }, []);
 
-  if (!summary) return null;
+  if (failed) return null;
+  // While the read is in flight the line's height is held, so the cards below
+  // do not jump when it lands (a click into them could otherwise miss).
+  if (!summary) return <p className="h-5 mb-6" aria-hidden="true" data-testid="month-value-line-pending" />;
   const [key, values] = monthValueMessage(summary);
   return (
     <p className="flex items-center gap-2 text-sm text-text mb-6" data-testid="month-value-line">
