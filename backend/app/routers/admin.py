@@ -43,6 +43,7 @@ from app.routers.producer_me import (
 from app.data.cities import canonical_city  # MEH-3475
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
+from app.services import delivery_zones  # MEH-3484
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 
 # MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
@@ -145,6 +146,7 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -
             a.delivery_day,
             a.min_order,
             a.delivery_fee,
+            a.delivery_days,  # MEH-3484
         )
         for a in db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id)
     }
@@ -153,7 +155,9 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -
         city = (city or "").strip()
         if not city:
             continue
-        day, min_order, fee = kept.get(canonical_city(city) or city, (None, None, None))
+        day, min_order, fee, days = kept.get(
+            canonical_city(city) or city, (None, None, None, None)
+        )
         db.add(
             DeliveryArea(
                 producer_id=producer.id,
@@ -161,6 +165,7 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -
                 delivery_day=day,
                 min_order=min_order,
                 delivery_fee=fee,
+                delivery_days=days,
             )
         )
 
@@ -738,6 +743,9 @@ def admin_update_producer(
     # owner DeliveryCard's shape, written by the owner's own writer. Without
     # this pop the setattr loop below assigned dicts to the relationship (500).
     delivery_rows = payload.pop("delivery_areas", None)
+    # MEH-3484: same three-valued zones as the owner PUT (None = not sent).
+    zones_sent = data.delivery_zones if "delivery_zones" in payload else None
+    payload.pop("delivery_zones", None)
     # MEH-903 A: stop writing the legacy delivery_cities column — delivery_areas
     # is the single store now. Pop it out of the payload so the bulk setattr loop
     # below can't resurrect the write. Column stays declared (drop = Chunk C).
@@ -807,7 +815,10 @@ def admin_update_producer(
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
+    zone_before = delivery_zones.memberships(db, producer)  # MEH-3484
     _write_delivery_areas(db, producer, delivery_rows, delivery_area_cities)
+    if any(x is not None for x in (zones_sent, delivery_rows, delivery_area_cities)):
+        delivery_zones.sync(db, producer, zones_sent, zone_before)
 
     # MEH-2059 (MEH-1938 chunk 4b): the admin EDIT half of the dual-write.
     # Gated on the payload rather than on the resulting values, because

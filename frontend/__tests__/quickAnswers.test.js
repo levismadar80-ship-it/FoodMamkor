@@ -77,6 +77,13 @@ describe("buildDeliveryAnswer (MEH-1302)", () => {
     });
   });
 
+  it("MEH-3484: a city on two days answers both days", () => {
+    const answer = buildDeliveryAnswer({
+      delivery_areas: [{ city: "קריית ביאליק", delivery_day: "שני", delivery_days: ["שני", "חמישי"] }],
+    });
+    expect(answer.deliveryDay).toBe("שני, חמישי");
+  });
+
   it("delivery_areas without min/day → null min, null day", () => {
     const answer = buildDeliveryAnswer({ delivery_areas: [{ city: "מודיעין" }] });
     expect(answer).toMatchObject({ kind: "areas", minOrder: null, deliveryDay: null, moreCount: 0 });
