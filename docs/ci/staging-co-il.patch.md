@@ -9,7 +9,7 @@ are here as a patch for Sapir to apply.
 **Order matters:** apply this before `staging.mehamakor.online` is turned into
 a redirect. Until then both hosts serve staging, so nothing is red either way.
 
-Verified: `git apply --check` on this branch → clean. Only the host string
+Verified: `git apply --check` against this branch (base = `staging` at the time of the PR) → clean. Only the host string
 changes; no YAML structure is touched.
 
 ## 1. Workflows — `git apply`
@@ -78,9 +78,19 @@ index a1f6147..4d2b908 100644
        - name: Target
 ```
 
-## 2. `.claude/settings.json` — one line
+## 2. `.claude/settings.json` + `.claude/hooks/check-webfetch-allowlist.sh`
 
-Next to `"WebFetch(domain:staging.mehamakor.online)",` add:
+The WebFetch allowlist has two gates; the settings line alone does nothing,
+because the hook still exits 2 for a host it does not list.
+
+In `.claude/hooks/check-webfetch-allowlist.sh`, next to
+`mehamakor.online|*.mehamakor.online) exit 0 ;;` add:
+
+```sh
+  staging.mehamakor.co.il) exit 0 ;;
+```
+
+In `.claude/settings.json`, next to `"WebFetch(domain:staging.mehamakor.online)",` add:
 
 ```json
       "WebFetch(domain:staging.mehamakor.co.il)",

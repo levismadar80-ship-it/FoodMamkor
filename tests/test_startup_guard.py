@@ -23,6 +23,7 @@ from app.startup import (
     "env,url",
     [
         ("staging", "https://staging.mehamakor.online"),
+        ("staging", "https://staging.mehamakor.co.il"),  # MEH-3405
         ("production", "https://mehamakor.online"),
         ("development", "http://localhost:3000"),
     ],
@@ -65,6 +66,7 @@ def test_unrecognized_env_warns(env):
 def test_recognized_envs_never_flagged_as_unrecognized():
     for env, url in [
         ("staging", "https://staging.mehamakor.online"),
+        ("staging", "https://staging.mehamakor.co.il"),  # MEH-3405
         ("production", "https://mehamakor.online"),
         ("development", "http://localhost:3000"),
     ]:
