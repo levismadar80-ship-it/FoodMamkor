@@ -35470,7 +35470,7 @@
     },
     "/users/me/product-orders": {
       "get": {
-        "description": "The logged-in buyer's orders, newest first.",
+        "description": "The logged-in buyer's orders, newest first.\n\nMEH-3525: an order closed more than BUYER_VIEW_AFTER_CLOSE ago is left out,\nbecause its page (`_own_order`) answers 404 by then and the row would be a\ndead link.",
         "operationId": "list_own_orders_users_me_product_orders_get",
         "responses": {
           "200": {

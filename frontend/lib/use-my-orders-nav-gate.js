@@ -42,18 +42,21 @@ function writeCache(uid, on) {
   }
 }
 
-// One request per page load however many menus mount (Header + AccountSheet).
-/** @type {Promise<boolean | null> | null} */
-let inFlight = null;
+// One request per page load and person, however many menus mount (Header +
+// AccountSheet). Keyed by uid so a switch of account mid-request does not hand
+// the new person the old person's promise, or cache under the old uid.
+/** @type {Map<string, Promise<boolean | null>>} */
+const inFlight = new Map();
 /** Test seam. */
 export function resetMyOrdersNavGateRequest() {
-  inFlight = null;
+  inFlight.clear();
 }
 
 /** @param {string} uid */
 function load(uid) {
-  if (!inFlight) {
-    inFlight = api
+  let pending = inFlight.get(uid);
+  if (!pending) {
+    pending = api
       .get("/users/me/product-orders")
       .then(() => {
         writeCache(uid, true);
@@ -61,7 +64,9 @@ function load(uid) {
       })
       .catch((err) => {
         // 404 = ordering is off: a real answer. Anything else (401 mid-refresh,
-        // network) is no answer, and the link stays hidden without caching it.
+        // network) is no answer: the link stays hidden and is not cached, and
+        // this mount does not retry. Fail-closed on purpose; the next page
+        // load asks again.
         if (err?.response?.status === 404) {
           writeCache(uid, false);
           return false;
@@ -69,10 +74,11 @@ function load(uid) {
         return null;
       })
       .finally(() => {
-        inFlight = null;
+        inFlight.delete(uid);
       });
+    inFlight.set(uid, pending);
   }
-  return inFlight;
+  return pending;
 }
 
 /**
@@ -85,10 +91,9 @@ export function useMyOrdersNavGate(user) {
 
   useEffect(() => {
     let alive = true;
-    if (!uid) {
-      setOn(false);
-      return undefined;
-    }
+    // A new person starts hidden: the previous person's answer is not hers.
+    setOn(false);
+    if (!uid) return undefined;
     const cached = readCache(uid);
     if (cached !== null) {
       setOn(cached);

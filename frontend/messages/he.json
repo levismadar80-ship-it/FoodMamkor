@@ -7706,6 +7706,7 @@
   "my_orders": {
     "title": "ההזמנות שלי",
     "row": "{business} · {date} · {status}",
+    "row_no_status": "{business} · {date}",
     "empty": "עוד לא הזמנתם דרך מהמקור.",
     "empty_cta": "לבתי העסק",
     "load_error": "לא הצלחנו לטעון את ההזמנות.",

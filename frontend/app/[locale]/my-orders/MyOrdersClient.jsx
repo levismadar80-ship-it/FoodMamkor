@@ -89,11 +89,10 @@ export default function MyOrdersClient() {
           {orders.map((o) => (
             <li key={o.id}>
               <Link href={`/order/${o.id}`} className="block px-4 py-3 min-h-touch hover:bg-background" data-testid="my-orders-row">
-                {t("row", {
-                  business: o.producer_name,
-                  date: formatDate(o.created_at, locale),
-                  status: t(`status.${STATUSES.includes(o.status) ? o.status : "cancelled"}`),
-                })}
+                {/* A status this page has no word for shows no status, never a wrong one. */}
+                {STATUSES.includes(o.status)
+                  ? t("row", { business: o.producer_name, date: formatDate(o.created_at, locale), status: t(`status.${o.status}`) })
+                  : t("row_no_status", { business: o.producer_name, date: formatDate(o.created_at, locale) })}
               </Link>
             </li>
           ))}

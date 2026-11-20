@@ -54,6 +54,13 @@ describe("MyOrdersClient", () => {
     expect(row).toHaveAttribute("href", `/order/${A}`);
   });
 
+  it("a status the page has no word for shows no status, not «בוטלה»", async () => {
+    api.get.mockResolvedValueOnce({ data: { orders: [order(A, "refunded", "מאפיית השכונה", "2026-11-18T09:00:00+00:00")] } });
+    mount();
+    const row = await screen.findByTestId("my-orders-row");
+    expect(row.textContent).toBe("מאפיית השכונה · 18.11.2026");
+  });
+
   it("many orders keep the server's newest-first order", async () => {
     api.get.mockResolvedValueOnce({ data: { orders: [
       order(B, "pending", "גבינות הגליל", "2026-11-19T09:00:00+00:00"),

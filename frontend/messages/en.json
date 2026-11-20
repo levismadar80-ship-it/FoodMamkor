@@ -7710,6 +7710,7 @@
   "my_orders": {
     "title": "My orders",
     "row": "{business} · {date} · {status}",
+    "row_no_status": "{business} · {date}",
     "empty": "You haven't ordered through Mehamakor yet.",
     "empty_cta": "Browse businesses",
     "load_error": "We couldn't load your orders.",

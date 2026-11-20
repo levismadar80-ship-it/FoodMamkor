@@ -961,6 +961,37 @@ def test_the_page_stops_answering_a_month_after_the_order_closed(client, db, fla
     )
 
 
+def test_my_orders_leaves_out_an_order_whose_page_has_stopped_answering(
+    client, db, flag_on
+):
+    """MEH-3525: the list never links to an order page that would 404."""
+    shop = Shop(db)
+    buyer = make_user(db, email="history@example.com")
+    open_order = stored_order(db, shop, "pending", user_id=buyer.id)
+    recent = stored_order(
+        db,
+        shop,
+        "handed",
+        user_id=buyer.id,
+        closed_at=utc_now() - BUYER_VIEW_AFTER_CLOSE + timedelta(minutes=5),
+    )
+    stale = stored_order(
+        db,
+        shop,
+        "handed",
+        user_id=buyer.id,
+        closed_at=utc_now() - BUYER_VIEW_AFTER_CLOSE - timedelta(minutes=5),
+    )
+    res = client.get("/users/me/product-orders", headers=auth_header(buyer))
+    ids = {o["id"] for o in res.json()["orders"]}
+    assert ids == {str(open_order.id), str(recent.id)}
+    page = client.post(
+        "/product-orders/status",
+        json={"order_id": str(stale.id)},
+        headers=auth_header(buyer),
+    )
+    assert page.status_code == 404
+
 def test_mask_phone_keeps_two_digits():
     assert mask_phone(PHONE_STORED) == "••••••••••67"
     assert mask_phone("") == ""
