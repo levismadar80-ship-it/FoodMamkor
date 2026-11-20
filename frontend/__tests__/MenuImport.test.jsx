@@ -127,12 +127,19 @@ describe("MenuImport — review", () => {
   it("publish carries each row's menu heading; a row with none sends none", async () => {
     mount(0);
     await upload([row("חלה", "20.00", { section: "לחמים" }), row("מיץ", "12.00")]);
+    expect(screen.getByTestId("menu-sections-hint")).toHaveTextContent(M.sections_hint);
     api.post.mockResolvedValueOnce({ data: { created: 2, skipped_duplicates: [] } });
     fireEvent.click(screen.getByRole("button", { name: M.publish.replace("{count}", "2") }));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
     const sent = api.post.mock.calls[1][1].products;
     expect(sent[0].section).toBe("לחמים");
     expect("section" in sent[1]).toBe(false);
+  });
+
+  it("a menu with no headings: no line about groups", async () => {
+    mount(0);
+    await upload([row("מיץ", "12.00")]);
+    expect(screen.queryByTestId("menu-sections-hint")).toBeNull();
   });
 
   it("cancel closes the review and saves nothing", async () => {

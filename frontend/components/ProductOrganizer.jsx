@@ -16,7 +16,9 @@
  *           under the product list, because ordering and grouping are about
  *           THESE rows; a separate tab would split one job across two screens.
  * History:  MEH-3055 (creation); MEH-3477 (products shown inside their group,
- *           order set per group, thumbnails, width cap at 1440)
+ *           order set per group, thumbnails, width cap at 1440; mark several
+ *           → move to a group in one write, or to the top / end of the
+ *           group); MEH-3478 («הצעת קבוצות», ProductGroupSuggest.jsx)
  */
 import { useEffect, useRef, useState } from "react";
 import { Reorder, useDragControls } from "framer-motion";
@@ -28,6 +30,9 @@ import { showToast } from "@/lib/toast";
 import { orderProducts } from "@/lib/product-order";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
+import ProductGroupSuggest from "@/components/ProductGroupSuggest";
 
 /** @typedef {{ id: string, name: string, position?: number|null, group_id?: string|null, image_url?: string|null }} Product */
 /** @typedef {{ id: string, name: string }} Group */
@@ -222,6 +227,96 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
     showToast.success(t("group_deleted"));
   };
 
+  // MEH-3477: the products the owner marked (ids).
+  const [selected, setSelected] = useState(/** @type {Set<string>} */ (new Set()));
+  /** @param {string} id */
+  const toggle = (id) =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  /** @param {Record<string, string|null>} groupOf  product id → its new group */
+  const applyGroups = (groupOf) => {
+    const patch = (/** @type {Product} */ p) => (p.id in groupOf ? { ...p, group_id: groupOf[p.id] } : p);
+    return patch;
+  };
+
+  /**
+   * MEH-3477: one write for many products. `moves` is [group_id|null, ids][].
+   * @param {[string|null, string[]][]} moves @param {Group[]} [list]
+   */
+  const writeMoves = async (moves, list = groups) => {
+    await api.put(`${basePath}/product-groups/assign`, {
+      moves: moves.map(([group_id, product_ids]) => ({ group_id, product_ids })),
+    });
+    const patch = applyGroups(Object.fromEntries(moves.flatMap(([gid, ids]) => ids.map((id) => [id, gid]))));
+    reorderLocal(regroup(orderRef.current.map(patch), list));
+    confirmedRef.current = regroup(confirmedRef.current.map(patch), list);
+    onProductsChange(productsRef.current.map(patch));
+  };
+
+  /** @param {string} groupId  "" = no group */
+  const moveSelected = async (groupId) => {
+    const ids = order.filter((p) => selected.has(p.id)).map((p) => p.id);
+    try {
+      await writeMoves([[groupId || null, ids]]);
+      setSelected(new Set());
+      const name = groups.find((g) => g.id === groupId)?.name;
+      showToast.success(name && ids.length > 1 ? t("moved_toast", { count: ids.length, group: name }) : t("saved"));
+    } catch (err) {
+      fail(err);
+    }
+  };
+
+  /** MEH-3477: the marked products of each group to its top or end, in their order. @param {"top"|"end"} edge */
+  const moveSelectedToEdge = (edge) => {
+    const next = sectionsOf(orderRef.current, groups).flatMap((s) => {
+      const marked = s.items.filter((p) => selected.has(p.id));
+      const rest = s.items.filter((p) => !selected.has(p.id));
+      return edge === "top" ? [...marked, ...rest] : [...rest, ...marked];
+    });
+    reorderLocal(next);
+    saveOrder(next);
+  };
+
+  // MEH-3478: the last saved suggestion, for «ביטול».
+  const [undo, setUndo] = useState(/** @type {{ ids: string[], groups: Group[] } | null} */ (null));
+
+  /** @param {{ id: string|null, name: string, product_ids: string[] }[]} list */
+  const applySuggestion = async (list) => {
+    const before = groups;
+    const known = new Set(groups.map((g) => g.name.trim().toLowerCase()));
+    const added = list.filter((g) => !g.id && !known.has(g.name.trim().toLowerCase()));
+    const saved = added.length ? await saveGroups([...groups, ...added.map((g) => ({ name: g.name.trim() }))]) : groups;
+    if (!saved) return false;
+    const idOf = (/** @type {{ id: string|null, name: string }} */ g) =>
+      g.id || saved.find((x) => x.name.trim().toLowerCase() === g.name.trim().toLowerCase())?.id || null;
+    /** @type {[string|null, string[]][]} */
+    const moves = list.map((g) => [idOf(g), g.product_ids]);
+    try {
+      await writeMoves(moves, saved);
+      setUndo({ ids: list.flatMap((g) => g.product_ids), groups: before });
+      return true;
+    } catch (err) {
+      fail(err);
+      return false;
+    }
+  };
+
+  const undoSuggestion = async () => {
+    if (!undo) return;
+    try {
+      await writeMoves([[null, undo.ids]]);
+      await saveGroups(undo.groups);
+      setUndo(null);
+    } catch (err) {
+      fail(err);
+    }
+  };
+
   if (products.length < 2) return null;
 
   if (!open) {
@@ -250,13 +345,38 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
     >
       <GroupsEditor groups={groups} onSave={saveGroups} onDelete={deleteGroup} t={t} />
 
+      <ProductGroupSuggest
+        basePath={basePath}
+        products={sectionsOf(order, groups).find((s) => s.id === "")?.items || []}
+        onApply={applySuggestion}
+        t={t}
+      />
+      {undo && (
+        <div className="flex items-center gap-3" data-testid="group-suggestion-saved">
+          <InlineMessage tone="success">{t("suggest_saved")}</InlineMessage>
+          <Button type="button" size="sm" variant="text" onClick={undoSuggestion}>
+            {t("suggest_undo")}
+          </Button>
+        </div>
+      )}
+
       <section aria-labelledby="product-order-heading">
         <h3 id="product-order-heading" className="text-sm font-medium text-text">
           {t("order_heading")}
         </h3>
         <p className="text-xs text-fg-muted mt-1 mb-3">
-          {t(groups.length ? "order_where_grouped" : "order_where")}
+          {t(groups.length ? "order_where_sections" : "order_where")}
         </p>
+        {selected.size > 0 && (
+          <SelectionBar
+            count={selected.size}
+            groups={groups}
+            onMove={moveSelected}
+            onEdge={moveSelectedToEdge}
+            onClear={() => setSelected(new Set())}
+            t={t}
+          />
+        )}
         <div data-testid="product-order-list" className="space-y-4">
           {sectionsOf(order, groups).map((s) => (
             <section key={s.id || "none"} data-testid="product-order-section" data-group={s.id}>
@@ -281,6 +401,8 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
                     onDrop={() => saveOrder(orderRef.current)}
                     onMove={(from, to) => moveProduct(s.id, s.items, from, to)}
                     onAssign={assign}
+                    checked={selected.has(p.id)}
+                    onToggle={() => toggle(p.id)}
                     t={t}
                   />
                 ))}
@@ -309,9 +431,10 @@ export default function ProductOrganizer({ products, onProductsChange, basePath 
  *   product: Product, index: number, last: number, groups: Group[],
  *   onDrop: () => void, onMove: (from: number, to: number) => void,
  *   onAssign: (productId: string, groupId: string) => void, t: (k: string, v?: any) => string,
+ *   checked: boolean, onToggle: () => void,
  * }} props
  */
-function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t }) {
+function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, checked, onToggle, t }) {
   const controls = useDragControls();
   const selectId = `product-group-${product.id}`;
   return (
@@ -324,6 +447,16 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
       data-testid="product-order-row"
       data-name={product.name}
     >
+      {/* MEH-3477: 44px tap target around a native checkbox. */}
+      <label className="shrink-0 inline-flex items-center justify-center w-11 h-11 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          aria-label={t("select_aria", { name: product.name })}
+          className="w-4 h-4 accent-primary"
+        />
+      </label>
       <button
         type="button"
         aria-label={t("drag_aria", { name: product.name })}
@@ -400,6 +533,45 @@ function Thumb({ url }) {
       loading="lazy"
       className="shrink-0 w-10 h-10 rounded-sm object-cover"
     />
+  );
+}
+
+/**
+ * MEH-3477: what the owner can do with the products she marked — Shopify's
+ * «Move items» and Etsy's «Change section», in one bar above the list.
+ * @param {{
+ *   count: number, groups: Group[], onMove: (groupId: string) => void,
+ *   onEdge: (edge: "top"|"end") => void, onClear: () => void, t: (k: string, v?: any) => string,
+ * }} props
+ */
+function SelectionBar({ count, groups, onMove, onEdge, onClear, t }) {
+  return (
+    <div
+      data-testid="product-selection-bar"
+      className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-surface-card p-2"
+    >
+      <span className="text-sm font-medium text-text">{t("selected_count", { count })}</span>
+      {groups.length > 0 && (
+        <>
+          <label htmlFor="move-selected-group" className="sr-only">{t("move_to_group")}</label>
+          <select
+            id="move-selected-group"
+            value="__"
+            onChange={(e) => onMove(e.target.value)}
+            className="min-h-touch max-w-[12rem] truncate text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
+          >
+            <option value="__" disabled>{t("move_to_group")}</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+            <option value="">{t("product_group_none")}</option>
+          </select>
+        </>
+      )}
+      <Button type="button" size="sm" variant="ghost" onClick={() => onEdge("top")}>{t("move_top")}</Button>
+      <Button type="button" size="sm" variant="ghost" onClick={() => onEdge("end")}>{t("move_bottom")}</Button>
+      <Button type="button" size="sm" variant="text" onClick={onClear}>{t("clear_selection")}</Button>
+    </div>
   );
 }
 

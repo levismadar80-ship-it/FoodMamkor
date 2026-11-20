@@ -6169,14 +6169,30 @@
         "group_deleted": "Group deleted. Its products stay on your page.",
         "order_heading": "Product order",
         "order_where": "Drag the handle or use the arrows. The order saves right away and is how products appear on your page.",
-        "order_where_grouped": "Drag the handle or use the arrows. The order saves right away. On your page, products are shown by group, and inside each group in this order.",
         "drag_aria": "Drag {name}",
         "move_up_aria": "Move {name} up",
         "move_down_aria": "Move {name} down",
         "product_group_label": "Group of {name}",
         "product_group_none": "No group",
         "saved": "Saved",
-        "save_failed": "Saving failed. Please try again."
+        "save_failed": "Saving failed. Please try again.",
+        "order_where_sections": "Products are shown by group, as on your page. You can mark several products and move them to a group at once.",
+        "selected_count": "{count, plural, one {1 product selected} other {# products selected}}",
+        "move_to_group": "Move to group",
+        "clear_selection": "Clear selection",
+        "select_aria": "Select {name}",
+        "move_top": "To top of group",
+        "move_bottom": "To end of group",
+        "moved_toast": "{count} products moved to {group}",
+        "suggest_cta": "Suggest groups",
+        "suggest_hint": "We'll suggest a group for each product that has none yet. Nothing is saved until you approve.",
+        "suggest_loading": "Preparing a suggestion…",
+        "suggest_heading": "Our suggestion. You can rename groups and take products out before approving.",
+        "suggest_save": "Save groups",
+        "suggest_cancel": "Cancel",
+        "suggest_saved": "Groups saved",
+        "suggest_undo": "Undo",
+        "suggest_failed": "We couldn't suggest groups this time. You can create groups above."
       },
       "duplicate_name_confirm": {
         "title": "A product with this name already exists. Continue?",
@@ -6193,7 +6209,8 @@
         "no_price": "No price found. Add a price to publish.",
         "publish": "Publish {count} products",
         "failed": "We couldn't read the menu. Try a straighter, sharper photo, or add products by hand.",
-        "cap": "Up to 100 products per page. Choose which ones to publish."
+        "cap": "Up to 100 products per page. Choose which ones to publish.",
+        "sections_hint": "Menu headings will be saved as groups."
       }
     },
     "locations": {
