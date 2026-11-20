@@ -1,3 +1,7 @@
+> **✅ Status: APPLIED 20/11/2026 (MEH-3520)** — committed through the GitHub web
+> editor; the committed template was checked by sha256 against the prepared
+> file. The diff below is the record.
+
 # MEH-3151 — `.github/pull_request_template.md`: no line hands a check to a person
 
 `.github/**` cannot be written from the CC shell (security.md § permissions.deny).
