@@ -52,8 +52,15 @@ export function resetMyOrdersNavGateRequest() {
   inFlight.clear();
 }
 
-/** @param {string} uid */
+/**
+ * The session cache first (resolved, so the hook sets state only in a
+ * callback), else one shared request.
+ * @param {string} uid
+ * @returns {Promise<boolean | null>}
+ */
 function load(uid) {
+  const cached = readCache(uid);
+  if (cached !== null) return Promise.resolve(cached);
   let pending = inFlight.get(uid);
   if (!pending) {
     pending = api
@@ -86,24 +93,20 @@ function load(uid) {
  * @returns {boolean} FAIL-CLOSED: false until the server says ordering is on.
  */
 export function useMyOrdersNavGate(user) {
-  const uid = user?.id != null ? String(user.id) : null;
-  const [on, setOn] = useState(false);
+  const uid = user?.id === undefined || user?.id === null ? null : String(user.id);
+  // The answer is kept with the account it belongs to: after a switch of
+  // account the previous person's answer no longer matches, so the link is
+  // hidden until the new person's answer arrives.
+  const [answer, setAnswer] = useState(/** @type {{ uid: string, on: boolean } | null} */ (null));
 
   useEffect(() => {
-    let alive = true;
-    // A new person starts hidden: the previous person's answer is not hers.
-    setOn(false);
     if (!uid) return undefined;
-    const cached = readCache(uid);
-    if (cached !== null) {
-      setOn(cached);
-      return () => { alive = false; };
-    }
-    load(uid).then((answer) => {
-      if (alive && answer !== null) setOn(answer);
+    let alive = true;
+    load(uid).then((on) => {
+      if (alive && on !== null) setAnswer({ uid, on });
     });
     return () => { alive = false; };
   }, [uid]);
 
-  return on;
+  return Boolean(uid && answer?.uid === uid && answer.on);
 }

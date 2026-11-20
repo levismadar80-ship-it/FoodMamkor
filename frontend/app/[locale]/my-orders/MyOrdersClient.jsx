@@ -51,7 +51,6 @@ export default function MyOrdersClient() {
       return;
     }
     let live = true;
-    setFailed(false);
     api
       .get("/users/me/product-orders")
       .then((r) => {
@@ -76,7 +75,7 @@ export default function MyOrdersClient() {
       {failed ? (
         <div data-testid="my-orders-error" className="space-y-3">
           <InlineMessage>{t("load_error")}</InlineMessage>
-          <Button variant="outlined" size="sm" onClick={() => setAttempt((a) => a + 1)} data-testid="my-orders-error-retry">
+          <Button variant="outlined" size="sm" onClick={() => { setFailed(false); setAttempt((a) => a + 1); }} data-testid="my-orders-error-retry">
             {tRoot("error.retry")}
           </Button>
         </div>

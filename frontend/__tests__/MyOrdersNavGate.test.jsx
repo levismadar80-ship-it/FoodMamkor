@@ -19,7 +19,7 @@ describe("useMyOrdersNavGate", () => {
     expect(result.current).toBe(false);
     await waitFor(() => expect(result.current).toBe(true));
     const again = renderHook(() => useMyOrdersNavGate({ id: "u1" }));
-    expect(again.result.current).toBe(true);
+    await waitFor(() => expect(again.result.current).toBe(true));
     expect(api.get).toHaveBeenCalledTimes(1);
   });
 
