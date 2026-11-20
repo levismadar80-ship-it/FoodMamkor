@@ -27,6 +27,14 @@ describe("splitSiteLinks", () => {
     }
   });
 
+  it("links a path written with a trailing slash and keeps the slash as text", () => {
+    expect(splitSiteLinks("ראו /map/ עכשיו")).toEqual([
+      { type: "text", value: "ראו " },
+      { type: "link", href: "/map", key: "map" },
+      { type: "text", value: "/ עכשיו" },
+    ]);
+  });
+
   it("links a path written right after a Hebrew letter", () => {
     expect(splitSiteLinks("ב/map").map((p) => p.type)).toEqual(["text", "link"]);
   });

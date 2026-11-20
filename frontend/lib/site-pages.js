@@ -38,8 +38,10 @@ export const SITE_PAGES = Object.freeze({
 });
 
 // A site path: "/" then lowercase segments. Not preceded by a letter, digit,
-// "/" or ":" so "https://x.com/map" and "a/map" are left alone.
-const PATH_RE = /(?<![A-Za-z0-9/:.])\/[a-z][a-z0-9-]*(?:\/[a-z][a-z0-9-]*)*/g;
+// "/" or ":" so "https://x.com/map" and "a/map" are left alone. One flat
+// character class, no nested quantifier (security/detect-unsafe-regex); a
+// trailing "/" or "-" is trimmed off below and stays text.
+const PATH_RE = /(?<![A-Za-z0-9/:.])\/[a-z][a-z0-9/-]*/g;
 
 /**
  * @param {string} text
@@ -50,7 +52,8 @@ export function splitSiteLinks(text) {
   const parts = [];
   let last = 0;
   for (const match of String(text ?? "").matchAll(PATH_RE)) {
-    const href = match[0];
+    let href = match[0];
+    while (href.endsWith("/") || href.endsWith("-")) href = href.slice(0, -1);
     const key = SITE_PAGES[href];
     if (!key) continue;
     const start = match.index ?? 0;
