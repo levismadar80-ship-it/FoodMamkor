@@ -297,9 +297,9 @@ for (const vp of [
         .first();
       await expect(panel).toBeVisible();
 
-      const strip = card
-        .locator("[data-testid='badge-overflow']")
-        .locator("xpath=ancestor::div[contains(@class,'flex-wrap')][1]");
+      // MEH-3508: by id — the photo strip no longer carries `flex-wrap`.
+      const strip = card.locator("[data-testid='card-badge-strip']");
+      await expect(strip).toHaveCount(1);
       await assertHealthy("S1 card pill popover", panel, pill, [
         { name: "card-title", loc: card.locator("h3") },
         { name: "card-rating", loc: card.locator("[data-testid='card-rating']") },
