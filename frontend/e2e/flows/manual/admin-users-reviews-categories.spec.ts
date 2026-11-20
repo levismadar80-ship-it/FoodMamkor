@@ -443,6 +443,11 @@ test.describe("/admin/users — pagination", () => {
 
 // ── MT:MEH-530:44-50 — /admin/users role kebab (1023 chunk A) ──────────────
 
+// MEH-3467: keep the trace of a failed FIRST attempt (the config records only
+// the retry), so a repeat of the kebab flake can be read. File level:
+// Playwright refuses `trace` inside a describe.
+test.use({ trace: "retain-on-failure" });
+
 test.describe("/admin/users — the role kebab", () => {
   // MT:MEH-530:44 — «חסום» stays inline; promote / demote live only in the ⋮ menu.
   test("the actions cell holds an inline «חסום» and a ⋮, and no inline promote/demote", async ({ page }) => {
@@ -470,16 +475,38 @@ test.describe("/admin/users — the role kebab", () => {
     // UNLESS that runs the panel off the viewport's right edge. MEH-2587 (lib/panel-position.js
     // computeMenuInlineEnd): in the phone card layout the trigger sits mid-card, so the panel is clamped
     // to 8px (MENU_PAD_PX) inside the right edge. Expected left edge = min(trigger left, vw − 8 − width).
-    const [mb, tb] = await Promise.all([m.boundingBox(), btn.boundingBox()]);
-    const vw = await page.evaluate(() => document.documentElement.clientWidth);
+    // MEH-3467 (mobile, 20/11, passed on retry): received 41 = exactly the gap
+    // between the trigger's left edge (266 at 393px) and the clamped position
+    // (393 − 8 − 160 = 225). The panel, the trigger and the viewport were read
+    // as three separate round-trips, so one read could see a different layout
+    // from the others. Read all three in ONE page-side snapshot, and poll that
+    // snapshot for a short bound: a panel that stays off its spot (the MEH-2587
+    // bug) still reds, a read taken mid-reflow no longer does. The message
+    // carries the numbers, so a repeat says which of the three moved.
     const MENU_PAD_PX = 8;
-    const expectedLeft = Math.max(MENU_PAD_PX, Math.min(tb!.x, vw - MENU_PAD_PX - mb!.width));
-    expect(
-      Math.abs(mb!.x - expectedLeft),
-      "the panel's left edge sits at the trigger's left edge, clamped 8px inside the viewport (MEH-2587)",
-    ).toBeLessThan(3);
-    expect(mb!.x + mb!.width, "the panel stays inside the viewport's right edge (MEH-2587)").toBeLessThanOrEqual(vw - MENU_PAD_PX + 1);
-    expect(mb!.x + mb!.width, "the panel extends toward the start (right)").toBeGreaterThan(tb!.x + tb!.width + 40);
+    let geo = { mx: 0, mw: 0, tx: 0, tw: 0, vw: 0 };
+    const offBy = async () => {
+      geo = await page.evaluate(() => {
+        const a = document.querySelector('[role="menu"]')!.getBoundingClientRect();
+        const b = document.querySelector('button[aria-expanded="true"]')!.getBoundingClientRect();
+        return { mx: a.x, mw: a.width, tx: b.x, tw: b.width, vw: document.documentElement.clientWidth };
+      });
+      const expectedLeft = Math.max(MENU_PAD_PX, Math.min(geo.tx, geo.vw - MENU_PAD_PX - geo.mw));
+      return Math.abs(geo.mx - expectedLeft);
+    };
+    try {
+      await expect
+        .poll(offBy, {
+          message: "the panel's left edge sits at the trigger's left edge, clamped 8px inside the viewport (MEH-2587)",
+          timeout: 2_000,
+        })
+        .toBeLessThan(3);
+    } catch (error) {
+      throw new Error(`kebab panel off its spot; last read ${JSON.stringify(geo)}`, { cause: error });
+    }
+    const [mb, tb, vw] = [{ x: geo.mx, width: geo.mw }, { x: geo.tx, width: geo.tw }, geo.vw];
+    expect(mb.x + mb.width, "the panel stays inside the viewport's right edge (MEH-2587)").toBeLessThanOrEqual(vw - MENU_PAD_PX + 1);
+    expect(mb.x + mb.width, "the panel extends toward the start (right)").toBeGreaterThan(tb.x + tb.width + 40);
     await btn.click();
     await expect(m).toHaveCount(0);
     await expect(btn).toHaveAttribute("aria-expanded", "false");
