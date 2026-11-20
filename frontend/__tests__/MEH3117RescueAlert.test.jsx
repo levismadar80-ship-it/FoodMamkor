@@ -95,6 +95,8 @@ describe("/group-buys", () => {
     render(wrap(<GroupBuysClient />));
     const empty = await screen.findByTestId("group-buys-empty");
     expect(empty.querySelector('[data-testid="hub-alert-hint-group_buys"]').textContent).toContain(H.group_buys);
+    // MEH-3466: the icon sits in the shared green disc, same as /events.
+    expect(empty.querySelector(".bg-green-50.w-20.rounded-full")).not.toBeNull();
   });
 
   it("groups listed: no hint", async () => {
