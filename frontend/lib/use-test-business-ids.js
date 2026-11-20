@@ -22,8 +22,10 @@ const listeners = new Set();
 
 function load() {
   if (!pending) {
-    pending = api
-      .get("/admin/test-businesses")
+    // Promise.resolve first: a client that throws or returns no promise is a
+    // failed read like any other, never a crash of the table around it.
+    pending = Promise.resolve()
+      .then(() => api.get("/admin/test-businesses"))
       .then((r) => new Set((r.data?.producer_ids || []).map(String)))
       .catch(() => {
         // Unknown is not "none": a failed read must never show a hidden

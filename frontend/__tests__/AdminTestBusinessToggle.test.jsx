@@ -107,6 +107,16 @@ describe("a failed read", () => {
 });
 
 describe("TestBusinessTag", () => {
+  it("a client that returns no promise renders nothing and does not throw", async () => {
+    // AdminDraftMissing.test.jsx mocks api.get as a bare vi.fn(): undefined.
+    api.get.mockReturnValue(undefined);
+    const { Tag } = await load();
+    wrap(<Tag producerId="p-1" />);
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByTestId("admin-tag-test-business")).toBeNull();
+  });
+
   it("renders only for a listed id", async () => {
     api.get.mockResolvedValue({ data: { producer_ids: ["p-2"] } });
     const { Tag } = await load();
