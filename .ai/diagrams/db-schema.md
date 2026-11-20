@@ -78,6 +78,7 @@ erDiagram
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
         json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
+        json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above}] ≤20"
         string plan "free|premium"
         boolean grass_fed
         boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
@@ -283,6 +284,9 @@ erDiagram
         string city
         int min_order
         string delivery_day
+        string zone_name "nullable — MEH-3484, a name in producers.delivery_zones"
+        string delivery_days "nullable varchar[] — MEH-3484; NULL = read delivery_day"
+        int free_delivery_above "nullable — MEH-3484, the zone threshold; NULL = the business one"
     }
 
     producer_offers {

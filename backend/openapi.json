@@ -1922,6 +1922,28 @@
             ],
             "title": "Delivery Day"
           },
+          "delivery_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -1968,6 +1990,14 @@
             ],
             "title": "Delivery Day"
           },
+          "delivery_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Days",
+            "type": "array"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -1978,6 +2008,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
           },
           "id": {
             "format": "uuid",
@@ -1994,6 +2035,17 @@
               }
             ],
             "title": "Min Order"
+          },
+          "zone_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Name"
           }
         },
         "required": [
@@ -2094,6 +2146,146 @@
           "token"
         ],
         "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
+      "DeliveryZoneIn": {
+        "description": "MEH-3484: one named zone on PUT /producers/me (and the admin PUT).\n`cities` is membership; the services/delivery_zones.py writer stores the\nzone on producers.delivery_zones and copies days / minimum / fee /\nthreshold onto each of its cities' delivery_areas rows.",
+        "properties": {
+          "cities": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 101,
+            "title": "Cities",
+            "type": "array"
+          },
+          "delivery_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days"
+          },
+          "delivery_fee": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
+          },
+          "min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DeliveryZoneIn",
+        "type": "object"
+      },
+      "DeliveryZoneOut": {
+        "description": "MEH-3484: a zone as the owner's editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).",
+        "properties": {
+          "cities": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cities",
+            "type": "array"
+          },
+          "delivery_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Days",
+            "type": "array"
+          },
+          "delivery_fee": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
+          },
+          "min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DeliveryZoneOut",
         "type": "object"
       },
       "DraftConsentPublishIn": {
@@ -7644,6 +7836,143 @@
         "title": "OwnerInvitePublicOut",
         "type": "object"
       },
+      "PageDraft": {
+        "description": "Every field is optional: what the text does not say stays None.",
+        "properties": {
+          "category_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "title": "Category Ids",
+            "type": "array"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "delivery_cities": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 300,
+            "title": "Delivery Cities",
+            "type": "array"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "facebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facebook"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "opening_hours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Hours"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "primary_contact_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Method"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "title": "PageDraft",
+        "type": "object"
+      },
+      "PageFillIn": {
+        "properties": {
+          "text": {
+            "maxLength": 6000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PageFillIn",
+        "type": "object"
+      },
+      "PageFillOut": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/PageDraft"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "PageFillOut",
+        "type": "object"
+      },
       "PageFreshnessConfirmIn": {
         "properties": {
           "token": {
@@ -8425,6 +8754,14 @@
             "default": false,
             "title": "Delivery Nationwide",
             "type": "boolean"
+          },
+          "delivery_zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DeliveryZoneOut"
+            },
+            "title": "Delivery Zones",
+            "type": "array"
           },
           "description": {
             "anyOf": [
@@ -9548,6 +9885,21 @@
               }
             ],
             "title": "Delivery Nationwide"
+          },
+          "delivery_zones": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryZoneIn"
+                },
+                "maxItems": 21,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zones"
           },
           "description": {
             "anyOf": [
@@ -13007,6 +13359,14 @@
             "title": "Delivery Nationwide",
             "type": "boolean"
           },
+          "delivery_zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DeliveryZoneOut"
+            },
+            "title": "Delivery Zones",
+            "type": "array"
+          },
           "description": {
             "anyOf": [
               {
@@ -14723,6 +15083,21 @@
               }
             ],
             "title": "Delivery Nationwide"
+          },
+          "delivery_zones": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryZoneIn"
+                },
+                "maxItems": 21,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zones"
           },
           "description": {
             "anyOf": [
@@ -22850,6 +23225,64 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/page-fill/read": {
+      "post": {
+        "operationId": "admin_read_page_text_admin_producers__producer_id__page_fill_read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Read Page Text",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/preview-link": {
       "post": {
         "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
@@ -30489,6 +30922,52 @@
         "summary": "Put My Order Windows",
         "tags": [
           "product-orders"
+        ]
+      }
+    },
+    "/producers/me/page-fill/read": {
+      "post": {
+        "operationId": "read_my_page_text_producers_me_page_fill_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Read My Page Text",
+        "tags": [
+          "producer-management"
         ]
       }
     },

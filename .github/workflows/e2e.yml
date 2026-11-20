@@ -346,7 +346,7 @@ jobs:
 
       # MEH-1712 — CAPTURE ONLY. Dials Railway FROM THE RUNNER, which is the one
       # path nobody has measured: the CC sandbox is blocked from *.up.railway.app
-      # (MEH-360), and staging.mehamakor.online reaches the same backend only via
+      # (MEH-360), and staging.mehamakor.co.il reaches the same backend only via
       # the Vercel edge, so neither reproduces the runner's own client/DNS/TLS.
       #
       # Two probes, not one, because the open question is an ASYMMETRY: the

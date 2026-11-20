@@ -58,6 +58,7 @@ const ALLOWED = {
   "components/FilterSheet.jsx": 1, // sheet title
   "components/FridayDeliveryStrip.jsx": 1, // banner strip
   "components/LocationModal.jsx": 1, // dialog title
+  "components/PageFillPanel.jsx": 1, // card title; renders only on the edit hub and the admin edit page (MEH-3483)
   "components/LoginPromptModal.jsx": 1, // dialog title
   "components/ProfileCompletenessCard.jsx": 1, // owner card title
   "components/ReportInfoModal.jsx": 1, // dialog title

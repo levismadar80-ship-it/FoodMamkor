@@ -23,7 +23,7 @@ from typing import Any
 
 import structlog
 from sqlalchemy import and_, case, cast, ColumnElement, func, or_
-from sqlalchemy import Text
+from sqlalchemy import String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONPATH
 from sqlalchemy.orm import joinedload, Query, selectinload, Session
 
@@ -682,9 +682,16 @@ def _delivery_day_condition(
     has made no day promise, whatever the caller selected.
     """
     # REUSES: the category block below — Category.id.in_ inside an EXISTS.
-    conds = [DeliveryArea.delivery_day.in_(days)]
+    # MEH-3484: a city delivered on several days matches on any of them;
+    # delivery_day (the first day) keeps matching rows saved before the column.
+    conds: list[ColumnElement[bool]] = [
+        or_(
+            DeliveryArea.delivery_day.in_(days),
+            DeliveryArea.delivery_days.overlap(cast(days, ARRAY(String(10)))),
+        )
+    ]
     if city:
-        conds.append(_city_matches(DeliveryArea.city, city))  # type: ignore[arg-type]
+        conds.append(_city_matches(DeliveryArea.city, city))
     # MEH-2242: `offers_delivery` is conjoined here exactly as MEH-1848 did on
     # _delivery_city_condition (:305). A day row is delivery SCOPE, not a
     # delivery promise — a business that switched delivery off while its

@@ -14,6 +14,7 @@ import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminProductImagesPanel from "@/components/admin/AdminProductImagesPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import AdminDeliveryPaymentPanel from "@/components/admin/AdminDeliveryPaymentPanel";
+import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
 import DraftPreviewLinkPanel from "@/components/admin/DraftPreviewLinkPanel";
@@ -36,6 +37,7 @@ export default function EditProducerPage() {
   // A 404 and an unreachable API are different facts and now render differently.
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [fillKey, setFillKey] = useState(0); // MEH-3483: remount the forms after a page fill
   // MEH-3472: the organizer orders the WHOLE catalog the admin is building —
   // published products (producer.products) and drafts (reported by the
   // import panel). `organizeEdits` maps product id → the organizer's own
@@ -233,10 +235,16 @@ export default function EditProducerPage() {
           />
         </section>
       )}
-      <ProducerForm initial={producer} producerId={id} />
+      {/* MEH-3483: the owner's «ספרו לנו על העסק», saved through the admin PUT;
+          a save reloads the business and remounts the forms below. */}
+      <PageFillPanel profile={producer} owner={false} readUrl={`/admin/producers/${id}/page-fill/read`}
+        saveUrl={`/admin/producers/${id}`}
+        onSaved={() => api.get(`/admin/producers/${id}`).then((r) => { setProducer(r.data); setFillKey((k) => k + 1); })} />
+      <ProducerForm key={`form-${fillKey}`} initial={producer} producerId={id} />
       {/* MEH-3475: delivery day + minimum per city, order window, payment —
           the owner's own editors, saved through the admin PUT. */}
       <AdminDeliveryPaymentPanel
+        key={`delivery-${fillKey}`}
         producerId={String(id)}
         producer={producer}
       />

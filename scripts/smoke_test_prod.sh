@@ -16,7 +16,7 @@
 #
 set -euo pipefail
 
-BASE_URL="${1:-https://mehamakor.online}"
+BASE_URL="${1:-https://mehamakor.co.il}"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "MEH-259 smoke test"

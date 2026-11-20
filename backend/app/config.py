@@ -101,7 +101,7 @@ class Settings(BaseSettings):
     whatsapp_community_invite_url: str = ""
 
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
-    # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
+    # Sign up at resend.com, verify mehamakor.co.il domain, copy the API key.
     resend_api_key: str = ""
     # MEH-453: extracted from email.py module constant. Override per env via
     # EMAIL_FROM_ADDRESS in Railway.

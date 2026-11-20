@@ -278,7 +278,7 @@ container crashed before health check. We ran staging-only for
 python scripts/check_api_contract.py \
   --cross-env \
   --staging https://foodmamkor-staging.up.railway.app/ \
-  --prod https://mehamakor.online/
+  --prod https://mehamakor.co.il/
 # Any endpoint that returns 200 on staging but 404 on prod → deploy drift.
 ```
 
@@ -288,7 +288,7 @@ When did Railway last deploy to prod — and did it succeed?"
 
 **How to verify:**
 ```bash
-curl -sI https://mehamakor.online/api/health | grep -E "200|date"
+curl -sI https://mehamakor.co.il/api/health | grep -E "200|date"
 # Check the `date` header — if it's more than 30 min old after a push,
 # the deploy didn't fire. Check Railway dashboard → Deployments.
 ```

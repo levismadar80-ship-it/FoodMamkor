@@ -6,6 +6,11 @@ OAuth origin). The code half is in the same PR as this file. These files are
 not editable by Claude Code (`.github/**`, `.claude/settings.json`), so they
 are here as a patch for Sapir to apply.
 
+**Status (20/11/2026):** part 1 (workflows) is applied by PR #4931. Part 2
+(settings + hook) is applied by PR #4932: Sapir committed it herself, a little
+wider than written below (`*.mehamakor.co.il` in the hook, and
+`mehamakor.co.il` in settings too).
+
 **Order matters:** apply this before `staging.mehamakor.online` is turned into
 a redirect. Until then both hosts serve staging, so nothing is red either way.
 
