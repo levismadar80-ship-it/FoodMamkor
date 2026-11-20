@@ -110,7 +110,15 @@ jobs:
           case "$rc" in
             0) echo "the live build is this commit" ;;
             2) exit 1 ;;
-            *) echo "::warning title=Deploy not detected::the checks below may describe the previous build" ;;
+            *)
+              # 18/11 v1.5.6: Railway never deployed the merge to main and the
+              # workflow's redeploy rebuilt the OLD build. On main a timeout
+              # means production is not on the released commit: red, not a warning.
+              if [ "${{ github.ref_name }}" = "main" ]; then
+                echo "::error title=Production not on this commit::after the timeout the live build still is not ${{ github.sha }}"
+                exit 1
+              fi
+              echo "::warning title=Deploy not detected::the checks below may describe the previous build" ;;
           esac
 
       - name: Production smoke
