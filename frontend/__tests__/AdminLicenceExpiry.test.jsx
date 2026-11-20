@@ -48,12 +48,13 @@ describe("AdminLicenceExpiry", () => {
 
   it("many licences: a row each, today's one says so", async () => {
     api.get.mockResolvedValueOnce({
-      data: body([row(1, "א", 0, "2026-11-21"), row(2, "ב", 12, "2026-12-03"), row(3, "ג", 30, "2026-12-21")]),
+      data: body([row(1, "א", 0, "2026-11-21"), row(2, "ב", 2, "2026-11-23"), row(3, "ג", 12, "2026-12-03")]),
     });
     mount();
     const panel = await screen.findByTestId("admin-home-licences");
     expect(panel.querySelectorAll("li")).toHaveLength(3);
     expect(panel).toHaveTextContent("פג היום");
+    expect(panel).toHaveTextContent("נשארו יומיים");
     expect(panel).toHaveTextContent("נשארו 12 ימים");
   });
 
