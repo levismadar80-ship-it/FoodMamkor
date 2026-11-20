@@ -14,12 +14,14 @@
 **קבצים מרכזיים**
 * `backend/app/routers/rescue.py` · `backend/app/routers/rescue_pilot.py` — אילו נקודות איסוף של העסק ביישוב פיילוט, לפני הטופס (MEH-2921)
 * `frontend/components/rescue/RescueSection.jsx`
+* `frontend/components/admin/AdminRescueMetrics.jsx` — מספרי הפיילוט ב-`/admin/analytics` (`GET /admin/rescue/metrics`, MEH-3524); כשהפיילוט כבוי לא מוצג כלום.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py`
 
 **טסטים**
 * `tests/test_rescue.py` · `tests/test_rescue_pilot.py` · `tests/test_rescue_migration.py`
 * `tests/test_meh2943_rescue_idor.py` — בדיקת בעלות.
 * `tests/test_meh2679_rescue_utc_times.py` · `tests/test_meh2808_rescue_bag_window.py` — חלון האיסוף.
+* `frontend/__tests__/AdminRescueMetrics.test.jsx` — מספרי הפיילוט באדמין.
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
 
 **מזהי רישום שזה מכסה.** `rescue_bags`.

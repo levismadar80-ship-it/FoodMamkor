@@ -46,6 +46,18 @@ describe("AdminRescueMetrics", () => {
     expect(screen.getByTestId("rescue-metric-no_show_rate")).toHaveTextContent("—");
   });
 
+  it("a rate above zero that rounds to 0 reads <1%, not 0%", async () => {
+    api.get.mockResolvedValueOnce({ data: metrics({ no_show_rate: 0.004 }) });
+    mount();
+    expect(await screen.findByTestId("rescue-metric-no_show_rate")).toHaveTextContent("<1%");
+  });
+
+  it("a malformed body is a load error (rule 19)", async () => {
+    api.get.mockResolvedValueOnce({ data: metrics({ bags_offered: "forty" }) });
+    mount();
+    expect(await screen.findByTestId("admin-rescue-metrics-error")).toBeInTheDocument();
+  });
+
   it("renders nothing while the pilot is off (404)", async () => {
     api.get.mockRejectedValueOnce({ response: { status: 404 } });
     const { container } = mount();

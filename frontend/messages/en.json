@@ -1656,7 +1656,7 @@
       "analytics_link": "Stats and analytics →",
       "licences": {
         "heading": "Licences expiring soon",
-        "subtitle": "Approved businesses whose producer licence expires in the next 30 days",
+        "subtitle": "Approved businesses whose licence expires in the next 30 days",
         "days_left": "{count, plural, one {1 day left} other {# days left}} · until {date}",
         "today": "Expires today · {date}",
         "open": "Open",
@@ -2810,7 +2810,7 @@
           "bags_offered": "Bags offered",
           "bags_reserved": "Bags reserved",
           "sell_through": "Reserved share",
-          "no_show_rate": "No-shows",
+          "no_show_rate": "No-show rate",
           "buyers": "Buyers",
           "repeat_buyers": "Repeat buyers",
           "donated": "Given away free"

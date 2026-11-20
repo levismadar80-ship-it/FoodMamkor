@@ -41,7 +41,7 @@ describe("AdminLicenceExpiry", () => {
     expect(panel).toHaveTextContent(copy.heading);
     expect(panel).toHaveTextContent("מאפיית שקד");
     expect(panel).toHaveTextContent("נשאר יום אחד");
-    expect(screen.getByRole("link", { name: copy.open })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: `${copy.open} מאפיית שקד` })).toHaveAttribute(
       "href", expect.stringContaining("/admin/producers/7d1f5f3e-1c2b-4e5a-9f00-000000000001/edit"),
     );
   });

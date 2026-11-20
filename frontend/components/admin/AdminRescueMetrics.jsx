@@ -24,7 +24,10 @@ const PERCENT = 100;
 
 /** @param {number | null | undefined} fraction */
 function percent(fraction) {
-  return typeof fraction === "number" ? `${Math.round(fraction * PERCENT)}%` : "—";
+  if (typeof fraction !== "number") return "—";
+  const whole = Math.round(fraction * PERCENT);
+  // A rate above zero that rounds to 0 is not «none».
+  return whole === 0 && fraction > 0 ? "<1%" : `${whole}%`;
 }
 
 /** @param {any} m */

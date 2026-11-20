@@ -77,6 +77,7 @@ export default function AdminLicenceExpiry() {
             </div>
             <Link
               href={`/admin/producers/${row.producer_id}/edit`}
+              aria-label={`${t("open")} ${row.name}`}
               className="text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current whitespace-nowrap"
             >
               {t("open")}
