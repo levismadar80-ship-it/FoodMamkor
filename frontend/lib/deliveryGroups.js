@@ -14,6 +14,8 @@
  *           days per city: grouped by the city's whole day set).
  */
 
+import { DELIVERY_DAYS } from "./delivery-days";
+
 /**
  * Group delivery_areas into one of three display modes:
  *
@@ -86,7 +88,8 @@ export function groupDeliveryAreas(areas = []) {
 
 const DAY_LIST = new Intl.ListFormat("he", { style: "long", type: "conjunction" });
 
-const WEEK = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+// REUSES: lib/delivery-days.js DELIVERY_DAYS — the stored day values, Sunday first.
+const WEEK = DELIVERY_DAYS;
 
 /** The earliest weekday of a row, Sunday = 0; an unknown day sorts last. @param {{delivery_days: string[]}} r */
 function firstWeekday(r) {
