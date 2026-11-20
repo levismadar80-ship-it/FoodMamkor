@@ -545,11 +545,20 @@ front matter for the normative token bindings.
     category sits in the muted line under the name. No city → no place line.
   - **No photo (MEH-2440):** a typographic name plate — the business name in
     Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned.
-  - **Badges off the photo (MEH-3321, Sapir 15/11/2026):** the badge row (max 2
-    + «+N», TrustBadge, delivery-only pill) sits in the card body under the
-    name / category line, never over the photo. A card with nothing to show
-    renders no row (no empty gap). The «+N» panel and badge tooltips avoid the
-    whole card body, so they open over the photo. Replaces the MEH-643 leaf glyph + wordmark on
+  - **Badges on the photo, one line (MEH-3508, Sapir 20/11/2026):** the badge
+    row (max 2 + «+N») sits bottom-start on the photo (`bottom-3 start-3`) and
+    never wraps. TrustBadge sits in the card body under the category line
+    (`card-meta-pills`). Nothing to show →
+    no strip, no row. The «+N» panel and badge tooltips avoid the strip, so
+    they open above it, over the photo. (MEH-3321, 15/11, had moved the whole
+    row into the body; it added rows to the card and was reversed.)
+  - **Fact lines (MEH-3508):** below the category, every fact is a plain 12px
+    line with one 14px icon, in this order: delivery (truck; one fact, one
+    line — a delivery-only business reads «משלוחים בלבד» and its fee stays on
+    the business page, as MEH-2744 did for the threshold; no pill), order
+    window (clock, `primary`), then offer and favourites. No pills in the body
+    except TrustBadge.
+  - **No photo plate, history:** it replaces the MEH-643 leaf glyph + wordmark on
     `green-50`, which read as a template when most cards had no photo.
     **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in a
     top corner) in `seedColorFor(producer.id)` — the business keeps "its"

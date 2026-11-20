@@ -27,6 +27,7 @@ from app.database import get_db
 from app.limits import enforce_cap
 from app.models import Producer, ProducerLocation, User
 from app.rate_limit import limiter
+from app.services import pickup_schedule  # MEH-3512
 from app.routers.producer_me import (
     ONE_PRIMARY_REQUIRED_DETAIL,
     PRIMARY_MUST_BE_BRANCH_DETAIL,
@@ -118,6 +119,7 @@ def admin_create_location(
     enforce_cap(existing_count, "locations")  # MEH-3022
     loc = ProducerLocation(producer_id=producer_id, **data.model_dump())
     _fill_centroid_when_unpinned(db, loc)
+    pickup_schedule.settle(loc)  # MEH-3512
     if loc.is_primary and loc.kind != "branch":
         raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
     if existing_count == 0 and loc.kind == "branch":
@@ -161,6 +163,7 @@ def admin_update_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected 
     for field, value in patch.items():
         setattr(loc, field, value)
     _fill_centroid_when_unpinned(db, loc)
+    pickup_schedule.settle(loc)  # MEH-3512
     if want_primary is True:
         if loc.kind != "branch":
             raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)

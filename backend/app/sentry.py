@@ -414,7 +414,17 @@ def before_send(
     calls straight back into this hook. See ``_hook_guard`` for the measured
     cycle. The guard is entered BEFORE the try block so it is still held while
     the fail-open handler logs — that is the only moment re-entry can occur.
+
+    MEH-3515: cron check-ins pass straight through. sentry-sdk calls this hook
+    for every non-transaction event, check-ins included, and a check-in has
+    none of the signals ``_event_fingerprint`` reads — so every check-in of
+    every slug shared ONE bucket, and the burst cap let 3 through per 6 h. The
+    watchdog monitor then read «missed» while the job ran on time. Check-ins
+    are their own quota category, carry no URL or PII, and are not errors.
     """
+    # DO NOT route check-ins through the error budget — MEH-3515.
+    if event.get("type") == "check_in":
+        return event
     with _hook_guard() as first_entry:
         if not first_entry:
             # Already inside a hook on this thread: return the event UNCHANGED.

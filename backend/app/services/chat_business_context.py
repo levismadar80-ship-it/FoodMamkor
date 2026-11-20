@@ -15,7 +15,9 @@ Related:  routers/producers.py get_producer (the same "is a public business"
           rule, services/producer_listing.is_business); frontend/lib/hours.js
           parseHours (the grammar ported in _parse_hours).
 History:  MEH-3481 (creation); MEH-3489 (the business page the chat
-          was opened from: by_id, find(page_producer_id))
+          was opened from: by_id, find(page_producer_id)); MEH-3505 (all
+          products, not the first 60); MEH-3510 (zones, next delivery, groups,
+          price unit, activities — chat_business_extras)
 """
 
 from __future__ import annotations
@@ -29,15 +31,21 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.allergens import detail_if_declared
 from app.config import settings
+from app.limits import MAX_PRODUCTS as LIMITS_MAX_PRODUCTS
 from app.data.cities import CITY_ALIASES, ISRAEL_CITIES, canonical_city, city_key
 from app.models import Producer
 from app.models.product_orders import ProducerOrderSettings
 from app.schemas.catalog import ProductOut
+from app.services import chat_business_extras as extras
 from app.services.producer_listing import is_business
 from app.services.product_order_menu import takes_orders
 from app.utils.clock import israel_now, israel_today
 
-MAX_PRODUCTS = 60  # a page's worth; keeps the prompt bounded
+# MEH-3505: every product the business may hold (limits.MAX_PRODUCTS), not a
+# page's worth — the business page offers a question about any of its products
+# (lib/business-chat-prompts.js), and a product cut here would be answered
+# «not on the page». Still bounded: the per-business cap bounds it.
+MAX_PRODUCTS = LIMITS_MAX_PRODUCTS
 MIN_NAME_MATCH = 3  # a two-letter name would match half of every question
 
 # ---------- which business ----------
@@ -303,14 +311,17 @@ _TAGS = (
 )
 
 
-def _product(row: Any) -> dict[str, Any]:
+def _product(row: Any, groups: dict[str, str] | None = None) -> dict[str, Any]:
     """Through ProductOut, the page's own schema, so a field the page does not
     send can never reach the chat."""
     p = ProductOut.model_validate(row)
     item: dict[str, Any] = {"name": p.name}
     if p.price_min is not None:
         item["price"] = _price(p)
-        item["per"] = p.price_unit
+        # MEH-3510: the page's word («למארז»), not the stored code («pack»).
+        item["per"] = extras.PRICE_UNIT_HE.get(p.price_unit or "", p.price_unit)
+    if groups and p.group_id in groups:
+        item["group"] = groups[p.group_id]  # MEH-3510: the page's heading
     optional = {
         "description": (p.description or "")[:200],
         "ingredients": (p.ingredients or "")[:300],
@@ -350,7 +361,8 @@ def _availability(producer: Any) -> tuple[str | None, str | None]:
     return state, until.isoformat() if until else None
 
 
-def _delivery(producer: Any) -> dict[str, Any]:
+def _delivery(producer: Any, on_vacation: bool, now: datetime) -> dict[str, Any]:
+    window = getattr(producer, "order_window", None)
     return {
         "offers_delivery": bool(producer.offers_delivery),
         "nationwide": bool(producer.delivery_nationwide),
@@ -358,9 +370,16 @@ def _delivery(producer: Any) -> dict[str, Any]:
         "areas": [
             {
                 "city": a.city,
-                "day": a.delivery_day,
+                # MEH-3510: every day (MEH-3484), and the next date computed
+                # here — the model never counts days itself.
+                "days": extras.row_days(a) or None,
+                "next_delivery": extras.next_delivery(
+                    extras.row_days(a), window, on_vacation, now
+                ),
+                "zone": getattr(a, "zone_name", None),
                 "min_order": _money(a.min_order),
                 "fee": _money(a.delivery_fee),
+                "free_above": _money(getattr(a, "free_delivery_above", None)),
             }
             for a in producer.delivery_areas
         ],
@@ -378,6 +397,7 @@ def facts(
 ) -> dict[str, Any]:
     """Public facts only — the whitelist. Keys a page does not show stay out."""
     now = now or israel_now()
+    groups = extras.group_names(producer)
     hours = store_hours(producer)
     state, until = _availability(producer)
     is_open = open_now(hours, now)
@@ -401,13 +421,20 @@ def facts(
         "order_window": producer.order_window,
         "on_vacation_until": until,
         "taking_orders": state,
-        "delivery": _delivery(producer),
+        "delivery": _delivery(producer, state == "on_vacation", now),
         "pickup_points": [
             {
                 "kind": loc.kind,
                 "label": loc.label,
                 "city": loc.city,
                 "hours": loc.opening_hours,
+                # MEH-3512: the pickup weekdays and this point's own cutoff.
+                "pickup_days": loc.pickup_days or [],
+                "order_cutoff": (
+                    f"{loc.order_cutoff_day} {loc.order_cutoff_time}"
+                    if loc.order_cutoff_day and loc.order_cutoff_time
+                    else None
+                ),
             }
             for loc in producer.locations
             if loc.city
@@ -424,7 +451,17 @@ def facts(
             "gluten_free": producer.gluten_free_facility,
             "lactose_free": producer.lactose_free_facility,
         },
-        "products": [_product(p) for p in producer.products][:MAX_PRODUCTS],
+        "products": [_product(p, groups) for p in producer.products][:MAX_PRODUCTS],
+        # MEH-3510: events, workshops and open group buys on the page.
+        "activities": extras.activities(producer),
+        # MEH-3510: what customers wrote, as the page shows it; no names.
+        "rating": {
+            "average": round(producer.avg_rating or 0, 1),
+            "count": producer.reviews_count,
+        }
+        if getattr(producer, "reviews_count", 0)
+        else None,
+        "reviews": extras.reviews(producer),
     }
     city = asked_city(question)
     if city:
@@ -455,6 +492,12 @@ PREAMBLE = (
     "על שעות: open_now הוא התשובה (null = השעות כתובות בצורה שאי אפשר לחשב, "
     "ציטטי את opening_hours). מתי נפתחים שוב: next_opening הוא התשובה; "
     "אל תחשבי ימים או שעות בעצמך, ובדקי ב-special_hours אם יש שינוי באותו יום. "
+    "מתי המשלוח הבא לעיר: next_delivery של אותה עיר הוא התשובה (null = אין "
+    "תאריך שאפשר לחשב); אל תחשבי תאריכים בעצמך. "
+    "על סדנאות, אירועים וקבוצות רכישה: activities הוא התשובה. "
+    "מה לקוחות אומרים: reviews (מה שלקוחות כתבו, לא בית העסק; רק הביקורות "
+    "האחרונות עם טקסט, והמספר המלא ב-rating.count). ציטטי "
+    "«לקוחות כתבו ש…», אל תציגי ביקורת כעובדה ואל תמציאי ביקורת. "
     "על אלרגנים ותזונה: אל תתני עצה רפואית ואל תבטיחי שמוצר בטוח. אמרי מה כתוב "
     "בעמוד («כתוב בעמוד ש…») והוסיפי שכדאי לוודא מול בית העסק לפני הזמנה."
 )

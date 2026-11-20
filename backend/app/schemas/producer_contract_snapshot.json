@@ -222,7 +222,10 @@
       "lat",
       "lng",
       "opening_hours",
+      "order_cutoff_day",
+      "order_cutoff_time",
       "phone",
+      "pickup_days",
       "precision"
     ],
     "ProducerDetailOut.product_groups": [
@@ -293,7 +296,10 @@
       "lat",
       "lng",
       "opening_hours",
+      "order_cutoff_day",
+      "order_cutoff_time",
       "phone",
+      "pickup_days",
       "precision"
     ]
   }
