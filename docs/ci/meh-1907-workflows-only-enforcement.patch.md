@@ -209,7 +209,7 @@ Two ways to take it:
 
 ## Verification before applying — the discrimination run this needs
 
-`scripts/ci-gate-cancelled-selftest.sh` does **not** cover this. It exercises one
+`scripts/checks/ci-gate-cancelled-selftest.sh` does **not** cover this. It exercises one
 leg (`R_REPO_GUARDS`) through a local reproduction of the predicates; F-1 is about
 which **branch** is entered, which that harness does not model at all.
 

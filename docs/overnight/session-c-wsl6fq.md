@@ -63,7 +63,7 @@ nothing.
 
 `docs/ci/ci-gate-skip-green.patch.md` had already solved the same class for the
 *other* aggregator, and it is **live** (`pr-checks.yml:754`, `strict_ok`/
-`check_ran`) with a committed harness at `scripts/ci-gate-selftest.sh`. The patch
+`check_ran`) with a committed harness at `scripts/checks/ci-gate-selftest.sh`. The patch
 doc mirrors its structure rather than inventing one.
 
 ---
