@@ -113,10 +113,10 @@ describe("OrderSheet", () => {
   it("names the seller before the order: name, «מספר עוסק», and the city only when there is one", () => {
     vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
     const { unmount } = renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: "רחובות" });
-    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מספר עוסק 512345678 · רחובות");
+    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מס׳ עוסק / ת״ז 512345678 · רחובות");
     unmount();
     renderSheet({ [BREAD]: 1 }, { id: PRODUCER, name: "המאפייה של רותי", city: " " });
-    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מספר עוסק 512345678");
+    expect(screen.getByTestId("order-sheet-seller").textContent).toBe("המוכר: המאפייה של רותי · מס׳ עוסק / ת״ז 512345678");
   });
 
   it("asks for the age declaration when a line is alcohol", () => {

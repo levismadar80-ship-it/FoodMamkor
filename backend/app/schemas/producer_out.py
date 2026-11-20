@@ -22,6 +22,7 @@ from app.utils.clock import israel_today
 from app.schemas.catalog import (
     CategoryOut,
     DeliveryAreaOut,
+    DeliveryZoneOut,
     ProducerLocationOut,
     ProducerOfferOut,
     ProductGroupOut,
@@ -502,7 +503,27 @@ class GoogleRatingOut(BaseModel):
 # only see `has_producer_license: bool` — the number stays private. Used
 # by /admin/producers/* and producer_me self endpoints so admins and
 # owners can see the value they themselves submitted.
-class ProducerAdminOut(ProducerDetailOut):
+class _ZonesOut(BaseModel):
+    """MEH-3484: the business's delivery zones, for the two editors (owner
+    dashboard, admin edit). Each zone's cities come from delivery_areas
+    .zone_name — membership is stored there, once."""
+
+    delivery_zones: list[DeliveryZoneOut] = []
+
+    @field_validator("delivery_zones", mode="before")
+    @classmethod
+    def _none_is_empty(cls, v: Any) -> Any:
+        return [] if v is None else v
+
+    @model_validator(mode="after")
+    def _zone_cities(self) -> Self:
+        areas = getattr(self, "delivery_areas", None) or []
+        for zone in self.delivery_zones:
+            zone.cities = [a.city for a in areas if a.zone_name == zone.name]
+        return self
+
+
+class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # MEH-2110: the review queue's SLA surface. Both fields are admin-only —
     # deliberately NOT on ProducerDetailOut/ListOut, matching the
     # producer_license_number privacy precedent (MEH-530): when a business was
@@ -687,7 +708,7 @@ class ProducerAdminOut(ProducerDetailOut):
 # serialize back to the producer being scored. Those fields have zero
 # producer-side frontend consumers (the RiskBadge lives only in the
 # admin table, AdminProducersTable.jsx:181).
-class ProducerOwnerOut(ProducerDetailOut):
+class ProducerOwnerOut(_ZonesOut, ProducerDetailOut):
     # MEH-986 ch3b: free-text kosher re-declared — removed from public
     # ProducerListOut but the owner still sees her own value (mirrors the
     # producer_license_number/address owner-private precedent below).

@@ -16,7 +16,12 @@ import atexit
 import urllib.request
 from urllib.parse import urlsplit
 
-VERCEL_HOSTS = {"mehamakor.co.il", "www.mehamakor.co.il", "staging.mehamakor.online"}
+VERCEL_HOSTS = {
+    "mehamakor.co.il",
+    "www.mehamakor.co.il",
+    "staging.mehamakor.co.il",  # MEH-3405: the staging host since 20/11
+    "staging.mehamakor.online",
+}
 
 _count = 0
 
@@ -59,6 +64,7 @@ if __name__ == "__main__":  # self-test: python scripts/checks/vercel_count.py
     cases = [
         ("https://mehamakor.co.il/", True),
         ("https://staging.mehamakor.online/api/health", True),
+        ("https://staging.mehamakor.co.il/api/health", True),
         ("https://food-mamkor-abc.vercel.app/he", True),
         ("http://localhost:3000/", False),
         ("https://res.cloudinary.com/x.jpg", False),

@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import { pickCity } from "./_pick-city";
 
 /**
  * MEH-2923 chunk 1 — reproduce the pilot finding, NO fix.
@@ -15,6 +16,15 @@ import { test, expect } from "./_cloudinary-stub";
 
 const REGISTER_POST = "**/auth/register/producer";
 
+// MEH-3488: the 20/11 first-attempt failure froze INSIDE the click (the call
+// log stops at «performing click action» for 20 s) while the four sibling
+// tests on the other worker ran in ~3 s each, and the first attempt took 11 s
+// to reach the click (the retry: 1.3 s for the whole test). That reads as a
+// stalled page, not a lost click; it did not reproduce locally in 450 runs.
+// The trace is `on-first-retry` suite-wide, so a first-attempt failure has
+// none — keep it here, so a recurrence comes with the evidence.
+test.use({ trace: "retain-on-failure" });
+
 async function reachStory(page) {
   await page.goto("/register/producer");
   await page.getByTestId("register-preflight-start").click();
@@ -25,8 +35,7 @@ async function reachStory(page) {
   await expect(page.getByTestId("register-frame-details")).toBeVisible();
   await page.getByTestId("register-details-name").fill("משק הבדיקה");
   await page.getByTestId("register-details-phone").fill("0501234567");
-  await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
-  await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click();
+  await pickCity(page.getByTestId("register-details-city"), "תל אביב"); // MEH-3488: proves the pick landed
   await page.getByTestId("register-fulfilment-onsite").check();
   await page.getByTestId("register-details-next").click();
   await expect(page.getByTestId("register-frame-category")).toBeVisible();

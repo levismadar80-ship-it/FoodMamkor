@@ -918,11 +918,15 @@ export const listProducersAdminProducersGetResponseCategoriesItemIsSystemDefault
 export const listProducersAdminProducersGetResponseCategoriesDefault = [];
 export const listProducersAdminProducersGetResponseCoverageCtaEnabledDefault = true;
 export const listProducersAdminProducersGetResponseDeliversDefault = false;
+export const listProducersAdminProducersGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const listProducersAdminProducersGetResponseDeliveryAreasDefault = [];
 export const listProducersAdminProducersGetResponseDeliveryCitiesDefault = [];
 export const listProducersAdminProducersGetResponseDeliveryCountDefault = 0;
 export const listProducersAdminProducersGetResponseDeliveryExcludedCitiesDefault = [];
 export const listProducersAdminProducersGetResponseDeliveryNationwideDefault = false;
+export const listProducersAdminProducersGetResponseDeliveryZonesItemCitiesDefault = [];
+export const listProducersAdminProducersGetResponseDeliveryZonesItemDeliveryDaysDefault = [];
+export const listProducersAdminProducersGetResponseDeliveryZonesDefault = [];
 export const listProducersAdminProducersGetResponseDupNameDefault = false;
 export const listProducersAdminProducersGetResponseDupPhoneDefault = false;
 export const listProducersAdminProducersGetResponseFavoritesCountDefault = 0;
@@ -1017,15 +1021,26 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersAdminProducersGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseDeliveryCountDefault),
   "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseDeliveryExcludedCitiesDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseDeliveryNationwideDefault),
+  "delivery_zones": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseDeliveryZonesItemCitiesDefault),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseDeliveryZonesItemDeliveryDaysDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3484: a zone as the owner\'s editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).'))), listProducersAdminProducersGetResponseDeliveryZonesDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -1189,11 +1204,15 @@ export const adminCreateProducerAdminProducersPostResponseCategoriesItemIsSystem
 export const adminCreateProducerAdminProducersPostResponseCategoriesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseCoverageCtaEnabledDefault = true;
 export const adminCreateProducerAdminProducersPostResponseDeliversDefault = false;
+export const adminCreateProducerAdminProducersPostResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const adminCreateProducerAdminProducersPostResponseDeliveryAreasDefault = [];
 export const adminCreateProducerAdminProducersPostResponseDeliveryCitiesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseDeliveryCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseDeliveryExcludedCitiesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseDeliveryNationwideDefault = false;
+export const adminCreateProducerAdminProducersPostResponseDeliveryZonesItemCitiesDefault = [];
+export const adminCreateProducerAdminProducersPostResponseDeliveryZonesItemDeliveryDaysDefault = [];
+export const adminCreateProducerAdminProducersPostResponseDeliveryZonesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseDupNameDefault = false;
 export const adminCreateProducerAdminProducersPostResponseDupPhoneDefault = false;
 export const adminCreateProducerAdminProducersPostResponseFavoritesCountDefault = 0;
@@ -1288,15 +1307,26 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminCreateProducerAdminProducersPostResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseDeliveryCountDefault),
   "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseDeliveryExcludedCitiesDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseDeliveryNationwideDefault),
+  "delivery_zones": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseDeliveryZonesItemCitiesDefault),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseDeliveryZonesItemDeliveryDaysDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3484: a zone as the owner\'s editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).'))), adminCreateProducerAdminProducersPostResponseDeliveryZonesDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -1457,11 +1487,15 @@ export const pendingProducersAdminProducersPendingGetResponseCategoriesItemIsSys
 export const pendingProducersAdminProducersPendingGetResponseCategoriesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseCoverageCtaEnabledDefault = true;
 export const pendingProducersAdminProducersPendingGetResponseDeliversDefault = false;
+export const pendingProducersAdminProducersPendingGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseDeliveryAreasDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseDeliveryCitiesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseDeliveryCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseDeliveryExcludedCitiesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseDeliveryNationwideDefault = false;
+export const pendingProducersAdminProducersPendingGetResponseDeliveryZonesItemCitiesDefault = [];
+export const pendingProducersAdminProducersPendingGetResponseDeliveryZonesItemDeliveryDaysDefault = [];
+export const pendingProducersAdminProducersPendingGetResponseDeliveryZonesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseDupNameDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseDupPhoneDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseFavoritesCountDefault = 0;
@@ -1556,15 +1590,26 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), pendingProducersAdminProducersPendingGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseDeliveryCountDefault),
   "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseDeliveryExcludedCitiesDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseDeliveryNationwideDefault),
+  "delivery_zones": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseDeliveryZonesItemCitiesDefault),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseDeliveryZonesItemDeliveryDaysDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3484: a zone as the owner\'s editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).'))), pendingProducersAdminProducersPendingGetResponseDeliveryZonesDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -1788,11 +1833,15 @@ export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesItemIs
 export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseCoverageCtaEnabledDefault = true;
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliversDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryAreasDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryCitiesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryExcludedCitiesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryNationwideDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryZonesItemCitiesDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryZonesItemDeliveryDaysDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseDeliveryZonesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseDupNameDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseDupPhoneDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseFavoritesCountDefault = 0;
@@ -1887,15 +1936,26 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminGetProducerAdminProducersProducerIdGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseDeliveryCountDefault),
   "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseDeliveryExcludedCitiesDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseDeliveryNationwideDefault),
+  "delivery_zones": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseDeliveryZonesItemCitiesDefault),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseDeliveryZonesItemDeliveryDaysDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3484: a zone as the owner\'s editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).'))), adminGetProducerAdminProducersProducerIdGetResponseDeliveryZonesDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2056,11 +2116,15 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesIte
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCoverageCtaEnabledDefault = true;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliversDefault = false;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryAreasDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryCitiesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryExcludedCitiesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryNationwideDefault = false;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryZonesItemCitiesDefault = [];
+export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryZonesItemDeliveryDaysDefault = [];
+export const adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryZonesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDupNameDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseDupPhoneDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseFavoritesCountDefault = 0;
@@ -2155,15 +2219,26 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryCountDefault),
   "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryExcludedCitiesDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryNationwideDefault),
+  "delivery_zones": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryZonesItemCitiesDefault),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryZonesItemDeliveryDaysDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3484: a zone as the owner\'s editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).'))), adminUpdateProducerAdminProducersProducerIdPutResponseDeliveryZonesDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "draft_missing": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
@@ -2539,8 +2614,10 @@ export const AdminSuggestProductDescriptionAdminProducersProducerIdProductDescri
  */
 export const AdminListProductDraftsAdminProducersProducerIdProductDraftsGetResponseItem = /*#__PURE__*/ zod.object({
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "name": /*#__PURE__*/ zod.string(),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_unit": /*#__PURE__*/ zod.string(),
   "source_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
@@ -2568,6 +2645,77 @@ export const AdminDeleteProductDraftAdminProducersProducerIdProductDraftsProduct
 
 
 /**
+ * @summary Admin List Product Groups
+ */
+export const AdminListProductGroupsAdminProducersProducerIdProductGroupsGetResponseItem = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.string(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))
+export const AdminListProductGroupsAdminProducersProducerIdProductGroupsGetResponse = /*#__PURE__*/ zod.array(AdminListProductGroupsAdminProducersProducerIdProductGroupsGetResponseItem)
+
+
+/**
+ * @summary Admin Replace Product Groups
+ */
+export const AdminReplaceProductGroupsAdminProducersProducerIdProductGroupsPutResponseItem = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.string(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))
+export const AdminReplaceProductGroupsAdminProducersProducerIdProductGroupsPutResponse = /*#__PURE__*/ zod.array(AdminReplaceProductGroupsAdminProducersProducerIdProductGroupsPutResponseItem)
+
+
+/**
+ * @summary Admin Move Products Between Groups
+ */
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsGlutenFreeDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLactoseFreeDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLowCarbDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsNoAddedSugarDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVeganDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVegetarianDefault = false;
+export const adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseNoAllergensDefault = false;
+
+export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponse = /*#__PURE__*/ zod.array(AdminMoveProductsBetweenGroupsAdminProducersProducerIdProductGroupsAssignPutResponseItem)
+
+
+/**
+ * @summary Admin Suggest Product Groups
+ */
+export const AdminSuggestProductGroupsAdminProducersProducerIdProductGroupsSuggestPostResponse = /*#__PURE__*/ zod.object({
+  "groups": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.string(),
+  "product_ids": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+}).check(/*#__PURE__*/ zod.describe('MEH-3478: one suggested group. `id` is set when the name matches a group\nthe business already has; None = a new group. Nothing is saved.')))
+})
+
+
+/**
  * @summary Admin Import Products
  */
 export const adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault = [];
@@ -2582,6 +2730,47 @@ export const AdminImportProductsAdminProducersProducerIdProductImportPostRespons
   "skipped_duplicates": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "unknown_units": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminImportProductsAdminProducersProducerIdProductImportPostResponseUnknownUnitsDefault)
 })
+
+
+/**
+ * Every product of the business, published AND draft — the admin builds
+ * the page before approval. The exact-set 409 applies to that whole set.
+ * @summary Admin Set Product Order
+ */
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsGlutenFreeDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLactoseFreeDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLowCarbDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsNoAddedSugarDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVeganDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVegetarianDefault = false;
+export const adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseNoAllergensDefault = false;
+
+export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductOrderAdminProducersProducerIdProductOrderPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponse = /*#__PURE__*/ zod.array(AdminSetProductOrderAdminProducersProducerIdProductOrderPutResponseItem)
 
 
 /**
@@ -2626,6 +2815,44 @@ export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse
  * @summary Admin Delete Draft Product
  */
 export const AdminDeleteDraftProductAdminProducersProducerIdProductsProductIdDeleteResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * @summary Admin Set Product Group
+ */
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsGlutenFreeDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLactoseFreeDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLowCarbDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsNoAddedSugarDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVeganDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVegetarianDefault = false;
+export const adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseNoAllergensDefault = false;
+
+export const AdminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminSetProductGroupAdminProducersProducerIdProductsProductIdGroupPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
 
 
 /**
@@ -4758,6 +4985,7 @@ export const readDraftPreviewProducerPreviewTokenGetResponseCategoriesItemIsSyst
 export const readDraftPreviewProducerPreviewTokenGetResponseCategoriesDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseCoverageCtaEnabledDefault = true;
 export const readDraftPreviewProducerPreviewTokenGetResponseDeliversDefault = false;
+export const readDraftPreviewProducerPreviewTokenGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseDeliveryAreasDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseDeliveryCitiesDefault = [];
 export const readDraftPreviewProducerPreviewTokenGetResponseDeliveryCountDefault = 0;
@@ -4846,9 +5074,12 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), readDraftPreviewProducerPreviewTokenGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), readDraftPreviewProducerPreviewTokenGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), readDraftPreviewProducerPreviewTokenGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), readDraftPreviewProducerPreviewTokenGetResponseDeliveryCountDefault),
@@ -4981,6 +5212,7 @@ export const listProducersProducersGetResponseAvgRatingDefault = 0;
 export const listProducersProducersGetResponseCategoriesItemIsSystemDefault = false;
 export const listProducersProducersGetResponseCategoriesDefault = [];
 export const listProducersProducersGetResponseDeliversDefault = false;
+export const listProducersProducersGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const listProducersProducersGetResponseDeliveryAreasDefault = [];
 export const listProducersProducersGetResponseDeliveryCitiesDefault = [];
 export const listProducersProducersGetResponseDeliveryCountDefault = 0;
@@ -5054,9 +5286,12 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersProducersGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersProducersGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersProducersGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersProducersGetResponseDeliveryCountDefault),
@@ -5160,6 +5395,7 @@ export const createProducerProducersPostResponseCategoriesItemIsSystemDefault = 
 export const createProducerProducersPostResponseCategoriesDefault = [];
 export const createProducerProducersPostResponseCoverageCtaEnabledDefault = true;
 export const createProducerProducersPostResponseDeliversDefault = false;
+export const createProducerProducersPostResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const createProducerProducersPostResponseDeliveryAreasDefault = [];
 export const createProducerProducersPostResponseDeliveryCitiesDefault = [];
 export const createProducerProducersPostResponseDeliveryCountDefault = 0;
@@ -5248,9 +5484,12 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), createProducerProducersPostResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), createProducerProducersPostResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), createProducerProducersPostResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseDeliveryCountDefault),
@@ -5384,6 +5623,7 @@ export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesItemIsSyst
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseCoverageCtaEnabledDefault = true;
 export const getProducerBySlugProducersBySlugSlugGetResponseDeliversDefault = false;
+export const getProducerBySlugProducersBySlugSlugGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseDeliveryAreasDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseDeliveryCitiesDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseDeliveryCountDefault = 0;
@@ -5472,9 +5712,12 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerBySlugProducersBySlugSlugGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerBySlugProducersBySlugSlugGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerBySlugProducersBySlugSlugGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseDeliveryCountDefault),
@@ -5642,11 +5885,15 @@ export const getMyProducerProducersMeGetResponseCategoriesItemIsSystemDefault = 
 export const getMyProducerProducersMeGetResponseCategoriesDefault = [];
 export const getMyProducerProducersMeGetResponseCoverageCtaEnabledDefault = true;
 export const getMyProducerProducersMeGetResponseDeliversDefault = false;
+export const getMyProducerProducersMeGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const getMyProducerProducersMeGetResponseDeliveryAreasDefault = [];
 export const getMyProducerProducersMeGetResponseDeliveryCitiesDefault = [];
 export const getMyProducerProducersMeGetResponseDeliveryCountDefault = 0;
 export const getMyProducerProducersMeGetResponseDeliveryExcludedCitiesDefault = [];
 export const getMyProducerProducersMeGetResponseDeliveryNationwideDefault = false;
+export const getMyProducerProducersMeGetResponseDeliveryZonesItemCitiesDefault = [];
+export const getMyProducerProducersMeGetResponseDeliveryZonesItemDeliveryDaysDefault = [];
+export const getMyProducerProducersMeGetResponseDeliveryZonesDefault = [];
 export const getMyProducerProducersMeGetResponseFavoritesCountDefault = 0;
 export const getMyProducerProducersMeGetResponseGlutenFreeFacilityDefault = `unknown`;
 export const getMyProducerProducersMeGetResponseGrassFedDefault = false;
@@ -5734,15 +5981,26 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getMyProducerProducersMeGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseDeliveryCountDefault),
   "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseDeliveryExcludedCitiesDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseDeliveryNationwideDefault),
+  "delivery_zones": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseDeliveryZonesItemCitiesDefault),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseDeliveryZonesItemDeliveryDaysDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3484: a zone as the owner\'s editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).'))), getMyProducerProducersMeGetResponseDeliveryZonesDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -5878,11 +6136,15 @@ export const updateMyProducerProducersMePutResponseCategoriesItemIsSystemDefault
 export const updateMyProducerProducersMePutResponseCategoriesDefault = [];
 export const updateMyProducerProducersMePutResponseCoverageCtaEnabledDefault = true;
 export const updateMyProducerProducersMePutResponseDeliversDefault = false;
+export const updateMyProducerProducersMePutResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const updateMyProducerProducersMePutResponseDeliveryAreasDefault = [];
 export const updateMyProducerProducersMePutResponseDeliveryCitiesDefault = [];
 export const updateMyProducerProducersMePutResponseDeliveryCountDefault = 0;
 export const updateMyProducerProducersMePutResponseDeliveryExcludedCitiesDefault = [];
 export const updateMyProducerProducersMePutResponseDeliveryNationwideDefault = false;
+export const updateMyProducerProducersMePutResponseDeliveryZonesItemCitiesDefault = [];
+export const updateMyProducerProducersMePutResponseDeliveryZonesItemDeliveryDaysDefault = [];
+export const updateMyProducerProducersMePutResponseDeliveryZonesDefault = [];
 export const updateMyProducerProducersMePutResponseFavoritesCountDefault = 0;
 export const updateMyProducerProducersMePutResponseGlutenFreeFacilityDefault = `unknown`;
 export const updateMyProducerProducersMePutResponseGrassFedDefault = false;
@@ -5970,15 +6232,26 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), updateMyProducerProducersMePutResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseDeliveryCountDefault),
   "delivery_excluded_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseDeliveryExcludedCitiesDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "delivery_nationwide": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseDeliveryNationwideDefault),
+  "delivery_zones": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseDeliveryZonesItemCitiesDefault),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseDeliveryZonesItemDeliveryDaysDefault),
+  "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3484: a zone as the owner\'s editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).'))), updateMyProducerProducersMePutResponseDeliveryZonesDefault),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -6479,6 +6752,57 @@ export const ReplaceMyProductGroupsProducersMeProductGroupsPutResponseItem = /*#
   "name": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('MEH-3055: one owner-defined product group (producers.product_groups).'))
 export const ReplaceMyProductGroupsProducersMeProductGroupsPutResponse = /*#__PURE__*/ zod.array(ReplaceMyProductGroupsProducersMeProductGroupsPutResponseItem)
+
+
+/**
+ * @summary Move Products Between Groups
+ */
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsGlutenFreeDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLactoseFreeDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLowCarbDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsNoAddedSugarDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVeganDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVegetarianDefault = false;
+export const moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseNoAllergensDefault = false;
+
+export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "gluten_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "group_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsGlutenFreeDefault),
+  "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLactoseFreeDefault),
+  "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsLowCarbDefault),
+  "is_no_added_sugar": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsNoAddedSugarDefault),
+  "is_vegan": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVeganDefault),
+  "is_vegetarian": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseIsVegetarianDefault),
+  "may_contain": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "no_allergens": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), moveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseNoAllergensDefault),
+  "nuts_detail": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "position": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "storage_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+export const MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponse = /*#__PURE__*/ zod.array(MoveProductsBetweenGroupsProducersMeProductGroupsAssignPutResponseItem)
+
+
+/**
+ * @summary Suggest Product Groups
+ */
+export const SuggestProductGroupsProducersMeProductGroupsSuggestPostResponse = /*#__PURE__*/ zod.object({
+  "groups": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "name": /*#__PURE__*/ zod.string(),
+  "product_ids": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())
+}).check(/*#__PURE__*/ zod.describe('MEH-3478: one suggested group. `id` is set when the name matches a group\nthe business already has; None = a new group. Nothing is saved.')))
+})
 
 
 /**
@@ -7387,6 +7711,7 @@ export const getProducerProducersProducerIdGetResponseCategoriesItemIsSystemDefa
 export const getProducerProducersProducerIdGetResponseCategoriesDefault = [];
 export const getProducerProducersProducerIdGetResponseCoverageCtaEnabledDefault = true;
 export const getProducerProducersProducerIdGetResponseDeliversDefault = false;
+export const getProducerProducersProducerIdGetResponseDeliveryAreasItemDeliveryDaysDefault = [];
 export const getProducerProducersProducerIdGetResponseDeliveryAreasDefault = [];
 export const getProducerProducersProducerIdGetResponseDeliveryCitiesDefault = [];
 export const getProducerProducersProducerIdGetResponseDeliveryCountDefault = 0;
@@ -7475,9 +7800,12 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerProducersProducerIdGetResponseDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerProducersProducerIdGetResponseDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerProducersProducerIdGetResponseDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseDeliveryCountDefault),
@@ -8429,6 +8757,17 @@ export const SetReviewReplyReviewsReviewIdReplyPutResponse = /*#__PURE__*/ zod.o
 
 
 /**
+ * Owner of the reviewed business only; anyone else gets the same 404 as
+ * the reply route (MEH-1001), and there is no admin override (MEH-1039) —
+ * a reply is the business's own voice.
+ * @summary Suggest Review Reply
+ */
+export const SuggestReviewReplyReviewsReviewIdReplySuggestPostResponse = /*#__PURE__*/ zod.object({
+  "reply": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * @summary Smart Search
  */
 export const smartSearchSearchGetResponseCategoriesDefault = [];
@@ -8616,6 +8955,7 @@ export const getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault = 0
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesItemIsSystemDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerDeliversDefault = false;
+export const getFavoritesUsersMeFavoritesGetResponseProducerDeliveryAreasItemDeliveryDaysDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerDeliveryAreasDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerDeliveryCitiesDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerDeliveryCountDefault = 0;
@@ -8691,9 +9031,12 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "delivery_areas": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.string(),
   "delivery_day": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "delivery_days": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getFavoritesUsersMeFavoritesGetResponseProducerDeliveryAreasItemDeliveryDaysDefault),
   "delivery_fee": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
-  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+  "min_order": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "zone_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getFavoritesUsersMeFavoritesGetResponseProducerDeliveryAreasDefault),
   "delivery_cities": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getFavoritesUsersMeFavoritesGetResponseProducerDeliveryCitiesDefault),
   "delivery_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getFavoritesUsersMeFavoritesGetResponseProducerDeliveryCountDefault),

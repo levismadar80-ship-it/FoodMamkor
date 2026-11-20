@@ -23,7 +23,7 @@ never from `main`.
 | Branch | Role | Deploys to |
 |---|---|---|
 | `main` | Production | mehamakor.co.il + Railway prod env |
-| `staging` | Pre-production testing | staging.mehamakor.online + Railway staging env |
+| `staging` | Pre-production testing | staging.mehamakor.co.il + Railway staging env |
 | `feature/*` | New work | Vercel preview only for a commit whose message contains `[preview]` (MEH-2845, 08/11); every other push is cancelled by the `ignoreCommand` **but still spends one of the 100 deployments/day** — see "✅ APPLIED … / ⚠️ REVERSED" below |
 
 - **Never push directly to `main` or `staging`.** Both are PR-only.

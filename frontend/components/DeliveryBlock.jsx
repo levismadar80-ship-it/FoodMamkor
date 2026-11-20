@@ -87,6 +87,7 @@ const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 function AreaRow({ da, t, fee = null }) {
   const feeLabel =
     fee === 0 ? null : splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL }));
+  const freeAbove = splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL }));
   return (
     <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
       <span className="font-medium text-text">{da.city}</span>
@@ -105,6 +106,15 @@ function AreaRow({ da, t, fee = null }) {
             ) : (
               t("fee_free")
             )}
+          </span>
+        ) : null}
+        {/* MEH-3484: the city's zone threshold, only when it differs from the
+            business's own (which the top line already states). */}
+        {typeof da.free_delivery_above === "number" && fee !== 0 ? (
+          <span className="text-fg-muted" data-testid="area-free-above">
+            {freeAbove.before}
+            <bdi>{formatPrice(da.free_delivery_above)}</bdi>
+            {freeAbove.after}
           </span>
         ) : null}
         {da.min_order ? (
@@ -545,9 +555,25 @@ export default function DeliveryBlock({
   // variance the editorial rows are required to carry it. Fees are uniform or
   // absent for every producer that reaches compact mode today, so this cannot
   // change an existing render (MEH-1435 lock intact).
+  // MEH-3484: a row repeats a zone threshold only when it is not the
+  // business's own one, which the top line already states — and such a row
+  // keeps the editorial rows (the compact list would hide it).
+  const businessFreeAbove = producer?.free_delivery_above ?? null;
+  const ownFree = (da) =>
+    typeof da.free_delivery_above === "number" && da.free_delivery_above !== businessFreeAbove;
   const bare =
-    hasAreas && !feeVaries && areas.every((da) => !da.min_order && !da.delivery_day);
-  const grouped = hasAreas && !bare ? groupDeliveryAreas(areas) : null;
+    hasAreas &&
+    !feeVaries &&
+    areas.every((da) => !da.min_order && !da.delivery_day && !ownFree(da));
+  const grouped =
+    hasAreas && !bare
+      ? groupDeliveryAreas(
+          areas.map((da) => ({
+            ...da,
+            free_delivery_above: ownFree(da) ? da.free_delivery_above : null,
+          })),
+        )
+      : null;
   // MEH-1903: the editorial rows, flattened to ONE shape the cap can reason
   // about regardless of mode. Group mode is a list of labelled sections;
   // hoist/flat are a single unlabelled section, so they share the same walk and

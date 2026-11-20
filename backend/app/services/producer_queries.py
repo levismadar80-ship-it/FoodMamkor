@@ -445,6 +445,7 @@ def persist_registration_delivery_areas(
                 city=da.city,
                 min_order=da.min_order,
                 delivery_day=da.delivery_day,
+                delivery_days=da.delivery_days,  # MEH-3484
                 delivery_fee=da.delivery_fee,
             )
         )

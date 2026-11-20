@@ -50,6 +50,8 @@ function toDraft(r, i) {
     price_max: num(r.price_max),
     price_unit: r.price_unit ?? DEFAULT_UNIT,
     uncertain: Array.isArray(r.uncertain) ? r.uncertain : [],
+    // MEH-3478: the menu heading; the server turns it into a product group.
+    section: typeof r.section === "string" ? r.section : "",
   };
 }
 
@@ -61,6 +63,7 @@ function toPayload(r) {
     price_min: Number(r.price_min),
     price_max: r.price_max.trim() ? Number(r.price_max) : null,
     price_unit: r.price_unit,
+    ...(r.section?.trim() ? { section: r.section.trim() } : {}),
   };
 }
 
@@ -163,6 +166,10 @@ export default function MenuImport({ productCount, onPublished, hidden = false }
     return (
       <section data-testid="menu-review" className="border border-primary/30 rounded-lg p-4 mb-4 space-y-3">
         <p className="text-sm font-semibold text-text" role="status">{t("found", { count: rows.length })}</p>
+        {/* MEH-3478: a heading on the menu becomes a product group on publish. */}
+        {rows.some((r) => r.section?.trim()) && (
+          <p className="text-xs text-fg-muted" data-testid="menu-sections-hint">{t("sections_hint")}</p>
+        )}
         {overCap && <InlineMessage tone="info" size="xs" data-testid="menu-cap">{t("cap")}</InlineMessage>}
         <ul className="space-y-3">
           {rows.map((r) => (
