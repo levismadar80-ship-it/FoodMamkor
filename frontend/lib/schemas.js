@@ -186,6 +186,12 @@ export const ProducerListSchema = z.object({
     // drop a whole producer from the all-or-nothing parse.
     opening_hours: z.string().nullable().optional(),
     phone: z.string().nullable().optional(),
+    // MEH-3512: a pickup point's days and own order cutoff. The seventh
+    // instance of the strip above — caught by the QA screenshots, not by the
+    // unit tests, which render PickupSchedule with unparsed objects.
+    pickup_days: z.array(z.string()).nullable().optional(),
+    order_cutoff_day: z.string().nullable().optional(),
+    order_cutoff_time: z.string().nullable().optional(),
   })).optional().default([]),
   // MEH-1823: the single active offer, or null. Declared for the same reason
   // as locations/delivery_areas above — an undeclared key is STRIPPED by
