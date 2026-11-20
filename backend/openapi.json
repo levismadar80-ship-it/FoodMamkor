@@ -5471,6 +5471,18 @@
             "title": "Price Unit",
             "type": "string"
           },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
           "storage_info": {
             "anyOf": [
               {
