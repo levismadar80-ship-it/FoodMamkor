@@ -118,7 +118,7 @@ def method_problem(
     if method == "whatsapp" and canonical_il_msisdn(phone) is None:
         return {
             "code": "registration_whatsapp_needs_mobile",
-            "message": "כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק",
+            "message": "כדי לבחור וואטסאפ צריך מספר נייד בפרטי העסק",
         }
     if method == "phone" and not (phone or "").strip():
         return {
