@@ -107,10 +107,12 @@ def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
         issues.append("env=production but frontend_url points at staging/localhost")
     # MEH-3490: production is mehamakor.co.il (since May 2026); .online only
     # redirects there until it is released, so both still mean "production".
-    for prod_host in _PRODUCTION_HOSTS:
-        if e == "development" and prod_host in url:
-            issues.append(f"env=development but frontend_url points at {prod_host}")
-            break
+    # A substring match also catches staging.<host> (deliberate since MEH-674):
+    # a dev box must not point at a deployed frontend of either kind.
+    if e == "development":
+        host = next((h for h in _PRODUCTION_HOSTS if h in url), None)
+        if host:
+            issues.append(f"env=development but frontend_url points at {host}")
     return issues
 
 

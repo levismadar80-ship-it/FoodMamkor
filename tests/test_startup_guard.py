@@ -63,8 +63,11 @@ def test_development_pointing_at_co_il_prod_domain_warns():
     assert "mehamakor.co.il" in issues[0]
 
 
-def test_development_on_localhost_does_not_warn():
-    assert _check_frontend_url_consistency("development", "http://localhost:3000") == []
+# Pins the MEH-674 substring semantics for the co.il staging host (MEH-3405):
+# dev pointed at a deployed staging frontend warns too.
+def test_development_pointing_at_co_il_staging_warns():
+    issues = _check_frontend_url_consistency("development", "https://staging.mehamakor.co.il")
+    assert len(issues) == 1
 
 
 # MEH-674: an unrecognized ENV value (typo) matches none of the drift branches
