@@ -813,7 +813,7 @@ export default function ProducerSections({
 
       {/* MEH-3489: the way into the site chat, scoped to this business — in
           the page's question cluster, not a floating button (MEH-1168). */}
-      <BusinessChatPrompt producer={producer} />
+      <BusinessChatPrompt producer={producer} signatureProduct={signatureProduct} />
 
       {/* MEH-1875 (history — MEH-2803 below supersedes the placement): the
           weekly order schedule, immediately BEFORE the location

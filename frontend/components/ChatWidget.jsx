@@ -93,9 +93,9 @@ const SUGGESTED_PROMPT_IDS = [
 // they're registering. That copy now lives verbatim at chat.answers.*.
 const ANSWERED_PROMPT_IDS = new Set(["register", "find_nearby"]);
 
-// MEH-3489: the business-page chat's suggested questions. None is canned —
-// each goes to the model with the page's facts (routers/chat.py).
-const BUSINESS_PROMPT_IDS = ["hours", "delivery", "gluten"];
+// MEH-3505: the business-page chat's suggested questions come from the page
+// (lib/business-chat-prompts.js) with the request — none is fixed here, and
+// none is canned: each goes to the model with the page's facts.
 
 // MEH-2835: the mobile launcher is `w-12 h-12` (48px); + the 16px gap it keeps
 // above the BottomNav pill.
@@ -129,7 +129,7 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
   // MEH-3489: the business the panel is scoped to (null = the site chat).
   // The opening line is kept in a ref so the API filter below drops it by
   // reference, whichever opening is showing.
-  const [business, setBusiness] = useState(/** @type {{ id: string, name: string } | null} */ (null));
+  const [business, setBusiness] = useState(/** @type {{ id: string, name: string, prompts?: { id: string, values?: Record<string, string> }[] } | null} */ (null));
   const openingRef = useRef(openingMessage);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -506,10 +506,12 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
                 {error}
               </p>
             )}
-            {messages.length === 1 && !sending && (
+            {messages.length === 1 && !sending && (!business || (business.prompts || []).length > 0) && (
               <div className="flex flex-col gap-2 pt-1">
-                {(business ? BUSINESS_PROMPT_IDS : SUGGESTED_PROMPT_IDS).map((id) => {
-                  const label = business ? tBusiness(`prompts.${id}`) : t(`prompts.${id}`);
+                {(business
+                  ? (business.prompts || []).map((p) => ({ id: p.id, label: tBusiness(`prompts.${p.id}`, p.values) }))
+                  : SUGGESTED_PROMPT_IDS.map((id) => ({ id, label: t(`prompts.${id}`) }))
+                ).map(({ id, label }) => {
                   return (
                     <button key={id} type="button" onClick={() => sendMessage(label, business ? undefined : id)}
                       className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary"

@@ -8,7 +8,8 @@
  * Does NOT: render anything or call the API (ChatWidget.jsx does both), or
  *           decide which business the server reads (routers/chat.py:
  *           a name in the question wins, else this page).
- * History:  MEH-3489 (creation)
+ * History:  MEH-3489 (creation); MEH-3505 (the page's suggested questions
+ *           travel with the request)
  */
 
 import { useEffect } from "react";
@@ -18,20 +19,25 @@ const BUSINESS_CHAT_EVENT = "mehamakor:business-chat";
 // event has no memory). The last request is kept this long and replayed when
 // the widget subscribes.
 const REPLAY_MS = 10_000;
-/** @type {{ business: { id: string, name: string }, at: number } | null} */
+/**
+ * @typedef {{ id: string, values?: Record<string, string> }} BusinessPrompt
+ * @typedef {{ id: string, name: string, prompts: BusinessPrompt[] }} BusinessChatTarget
+ */
+/** @type {{ business: BusinessChatTarget, at: number } | null} */
 let pending = null;
 
-/** @param {{ id: string, name: string }} business */
+/** @param {{ id: string, name: string, prompts?: BusinessPrompt[] }} business */
 export function openBusinessChat(business) {
   if (typeof window === "undefined" || !business?.id) return;
-  const detail = { id: business.id, name: business.name || "" };
+  const prompts = Array.isArray(business.prompts) ? business.prompts : [];
+  const detail = { id: business.id, name: business.name || "", prompts };
   pending = { business: detail, at: Date.now() };
   window.dispatchEvent(new CustomEvent(BUSINESS_CHAT_EVENT, { detail }));
 }
 
 /**
- * Calls `onOpen({ id, name })` each time a page asks for the business chat.
- * @param {(business: { id: string, name: string }) => void} onOpen
+ * Calls `onOpen({ id, name, prompts })` each time a page asks for the business chat.
+ * @param {(business: BusinessChatTarget) => void} onOpen
  */
 export function useBusinessChatRequest(onOpen) {
   useEffect(() => {

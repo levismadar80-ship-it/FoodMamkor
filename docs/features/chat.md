@@ -10,6 +10,7 @@
 * `backend/app/routers/chat.py` — הלקוח של Anthropic נבנה תמיד עם `http_client=httpx.Client()`.
 * `backend/app/services/chat_business_context.py` — ‏MEH-3481: שאלה שמזכירה בית עסק אחד בשמו מקבלת את הנתונים הציבוריים שלו (שעות, «פתוח עכשיו» ומתי נפתחים שוב — `next_opening`, מחושב בשרת ולא בידי המודל, MEH-3504, אזורי משלוח וימים, מוצרים ואלרגנים, איך מזמינים). רשימה סגורה של שדות; טלפון, מייל, כתובת וקבוצת וואטסאפ לא נכנסים. מהדף: ‏MEH-3489 — כשהחלון נפתח מדף בית עסק, הבקשה נושאת `producer_id` (UUID), והשרת קורא אותו רק כבית עסק ציבורי (`is_business()`); שם של בית עסק בשאלה גובר על הדף. השם נבדק כמילה שלמה בשלוש השאלות האחרונות; שם שמוכל בשם ארוך יותר נותן לו קדימות, ושני שמות שונים = אין התאמה. ה-route מקבל עכשיו session של DB; הקריאה רצה לפני קריאות המודל וה-session מוחזר מיד אחריה.
 * `frontend/lib/business-chat.js` — ‏MEH-3489: הדף מבקש מהווידג'ט להיפתח לבית עסק אחד (אירוע חלון, עם שמירה של 10 שניות לבקשה שנשלחה לפני שהווידג'ט נטען).
+* `frontend/lib/business-chat-prompts.js` — ‏MEH-3505: השאלות המוצעות בחלון של בית עסק נבנות מהנתונים של העמוד (מוצר מוביל עם רכיבים או תיאור, סימון תזונתי שקיים אצל מוצר, משלוחים, שעות), עד 3. שאלה שאין לה תשובה בעמוד לא מוצגת; אין נתונים = אין שאלות מוצעות.
 * `frontend/app/[locale]/producer/[id]/components/BusinessChatPrompt.jsx` — השורה בדף; רק בדף מאושר ולא בתצוגה מקדימה.
 * `backend/app/services/chat_intent_router.py` — המסווג (שאלה על נתונים חיים או שאלה כללית). ה-system של שתי הקריאות נשלח כרשימת בלוקים: החלק הקבוע נושא `cache_control` (prompt caching, ‏MEH-3384), והנתונים החיים יושבים בבלוק נפרד אחריו, כדי ששאלה משתנה לא תבטל את ה-cache.
 
@@ -19,6 +20,7 @@
 * `tests/test_meh3004_chat_group_buys_rescue.py`
 * `tests/test_meh3481_chat_business_context.py` — שדות פרטיים לא נכנסים, משלוח לעיר, «פתוח עכשיו», שני שמות תואמים = אין התאמה.
 * `tests/test_meh3489_chat_business_page.py` — שאלה בלי שם עונה על הדף, שם אחר גובר, דף לא ציבורי לא מוסיף כלום.
+* `frontend/__tests__/businessChatPrompts.test.js` — 0 / 1 / רבות שאלות, עסק בלי משלוחים לא מקבל שאלת משלוחים.
 * `frontend/__tests__/ChatWidgetBusiness.test.jsx` — אין כפתור צף בדף, החלון נפתח לבית העסק ושולח `producer_id`, הפוקוס חוזר לכפתור.
 * `tests/test_meh3384_prompt_caching.py` — מבנה ה-system וה-cache, ושהתשובה יוצאת גם בלי מוני cache.
 * `frontend/e2e/flows/23-ai-artifact-probe.spec.ts`

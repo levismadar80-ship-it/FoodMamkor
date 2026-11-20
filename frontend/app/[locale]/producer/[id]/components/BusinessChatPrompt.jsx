@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ChatCircleDots } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
 import { openBusinessChat } from "@/lib/business-chat";
+import { businessChatPrompts } from "@/lib/business-chat-prompts";
 import { usePreviewMode } from "@/lib/preview-mode";
 
 /**
@@ -24,9 +25,12 @@ import { usePreviewMode } from "@/lib/preview-mode";
  * a not-yet-approved page mounts no chat to open, and the server adds no
  * facts for a business that is not public (routers/chat.py).
  *
- * @param {{ producer: { id: string, name?: string, status?: string } }} props
+ * MEH-3505: the panel's suggested questions come from this page's data
+ * (lib/business-chat-prompts.js), so they differ per business.
+ *
+ * @param {{ producer: any, signatureProduct?: any }} props
  */
-export default function BusinessChatPrompt({ producer }) {
+export default function BusinessChatPrompt({ producer, signatureProduct = null }) {
   const t = useTranslations("chat.business");
   const preview = usePreviewMode();
   if (!producer?.id || preview || producer.status !== "approved") return null;
@@ -44,7 +48,13 @@ export default function BusinessChatPrompt({ producer }) {
         size="sm"
         data-testid="business-chat-open"
         aria-haspopup="dialog"
-        onClick={() => openBusinessChat({ id: producer.id, name: producer.name || "" })}
+        onClick={() =>
+          openBusinessChat({
+            id: producer.id,
+            name: producer.name || "",
+            prompts: businessChatPrompts(producer, signatureProduct),
+          })
+        }
       >
         {t("page_button")}
       </Button>

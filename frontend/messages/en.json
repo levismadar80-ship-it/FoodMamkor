@@ -6605,7 +6605,11 @@
       "prompts": {
         "hours": "When is the business open?",
         "delivery": "Where do they deliver?",
-        "gluten": "Are there gluten-free products?"
+        "signature": "What goes into the {product}?",
+        "diet_gluten_free": "Which products are gluten-free?",
+        "diet_vegan": "Which products are vegan?",
+        "diet_lactose_free": "Which products are lactose-free?",
+        "diet_no_added_sugar": "Which products have no added sugar?"
       }
     }
   },

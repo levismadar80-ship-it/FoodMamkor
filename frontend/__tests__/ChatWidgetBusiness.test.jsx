@@ -23,7 +23,16 @@ import BusinessChatPrompt from "@/app/[locale]/producer/[id]/components/Business
 import { PreviewModeProvider } from "@/lib/preview-mode";
 
 const B = he.chat.business;
-const PRODUCER = { id: "11111111-2222-3333-4444-555555555555", name: "מאפיית הדגמה", status: "approved" };
+// MEH-3505: the page's data decides the questions — this one has a vegan
+// product, delivery and hours, and no featured product.
+const PRODUCER = {
+  id: "11111111-2222-3333-4444-555555555555",
+  name: "מאפיית הדגמה",
+  status: "approved",
+  delivery_nationwide: true,
+  opening_hours: "א׳-ה׳ 08:00-14:00",
+  products: [{ id: "p1", name: "חלה", is_vegan: true }],
+};
 
 function mockMatchMedia(matches) {
   window.matchMedia = vi.fn().mockImplementation((query) => ({
@@ -59,14 +68,18 @@ describe.each([["desktop", true], ["phone", false]])("business page chat (%s)", 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("opens scoped to the business: title, opening line, three business questions", () => {
+  it("opens scoped to the business: title, opening line, the questions its page can answer", () => {
     renderPage();
     fireEvent.click(screen.getByTestId("business-chat-open"));
     const dialog = screen.getByRole("dialog");
     expect(screen.queryByTestId("chat-launcher")).not.toBeInTheDocument(); // the X lives in the panel
     expect(dialog).toHaveTextContent(B.panel_title.replace("{name}", PRODUCER.name));
     expect(dialog).toHaveTextContent(B.opening.replace("{name}", PRODUCER.name));
-    for (const q of Object.values(B.prompts)) expect(screen.getByRole("button", { name: q })).toBeInTheDocument();
+    for (const q of [B.prompts.diet_vegan, B.prompts.delivery, B.prompts.hours]) {
+      expect(screen.getByRole("button", { name: q })).toBeInTheDocument();
+    }
+    // MEH-3505: no gluten-free product on this page → no gluten question.
+    expect(screen.queryByRole("button", { name: B.prompts.diet_gluten_free })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: he.chat.prompts.register })).not.toBeInTheDocument();
   });
 
@@ -103,6 +116,33 @@ describe.each([["desktop", true], ["phone", false]])("business page chat (%s)", 
     fireEvent.click(screen.getByTestId("business-chat-open"));
     rerender(withIntl(<><BusinessChatPrompt producer={PRODUCER} /><ChatWidget businessOnly /></>));
     expect(screen.getByRole("dialog")).toHaveTextContent(B.opening.replace("{name}", PRODUCER.name));
+  });
+});
+
+describe("MEH-3505: the questions differ per business", () => {
+  beforeEach(() => mockMatchMedia(false));
+  const withIntl = (ui) => <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>{ui}</NextIntlClientProvider>;
+
+  it("a page with nothing to answer from opens with no suggested questions, and typing still works", async () => {
+    const bare = { id: PRODUCER.id, name: PRODUCER.name, status: "approved" };
+    render(withIntl(<><BusinessChatPrompt producer={bare} /><ChatWidget businessOnly /></>));
+    fireEvent.click(screen.getByTestId("business-chat-open"));
+    for (const q of Object.values(B.prompts)) {
+      expect(screen.queryByRole("button", { name: q.replace("{product}", "") })).not.toBeInTheDocument();
+    }
+    fireEvent.change(screen.getByLabelText(he.chat.input_label), { target: { value: "יש חניה?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: he.chat.send_label }));
+    });
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].producer_id).toBe(PRODUCER.id);
+  });
+
+  it("the featured product is named in its question", () => {
+    const cake = { id: "p2", name: "עוגת שמרים", ingredients: "קמח, חמאה" };
+    render(withIntl(<><BusinessChatPrompt producer={{ ...PRODUCER, products: [cake] }} signatureProduct={cake} /><ChatWidget businessOnly /></>));
+    fireEvent.click(screen.getByTestId("business-chat-open"));
+    expect(screen.getByRole("button", { name: B.prompts.signature.replace("{product}", "עוגת שמרים") })).toBeInTheDocument();
   });
 });
 
