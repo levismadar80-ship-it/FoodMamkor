@@ -43,6 +43,7 @@ import MenuImport from "@/components/MenuImport";
 import ProductOrganizer from "@/components/ProductOrganizer";
 import { orderProducts } from "@/lib/product-order";
 import Input from "@/components/ui/Input";
+import ProductDescriptionSuggest from "@/components/ProductDescriptionSuggest"; // MEH-3479
 import Button from "@/components/ui/Button";
 
 // MEH-2047: the diet tags that carry a definition, in the order the chip row
@@ -720,6 +721,7 @@ export default function ProductsSection({
                     value={editForm.description || ""}
                     onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
                   />
+                  <ProductDescriptionSuggest idPrefix={`edit-product-${product.id}`} input={editForm} onUse={(d) => setEditForm((f) => ({ ...f, description: d }))} />
                 </div>
               </div>
 
@@ -970,6 +972,7 @@ export default function ProductsSection({
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder={tForm("description_placeholder")}
               />
+              <ProductDescriptionSuggest idPrefix="new-product" input={form} onUse={(d) => setForm((f) => ({ ...f, description: d }))} />
             </div>
           </div>
 
