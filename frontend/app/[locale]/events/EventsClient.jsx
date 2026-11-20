@@ -110,12 +110,16 @@ export default function EventsPage({ initialTab = "events", initialRows = undefi
   // ((whats-on)/layout.js). It is used once, for that first load only, when
   // the URL carries no filter; every later load (a tab switch, Back, a filter)
   // fetches as before. null = no server data → fetch, exactly as before.
-  const seed = useRef(Array.isArray(initialRows?.[tab]) ? { tab, rows: initialRows[tab] } : null);
-  const [rows, setRows] = useState(() => (seed.current ? seed.current.rows : []));
-  const [loading, setLoading] = useState(() => !seed.current);
+  // The value is fixed at mount (state); the ref only marks it used, in an effect.
+  const [initialSeed] = useState(() =>
+    Array.isArray(initialRows?.[tab]) ? { tab, rows: initialRows[tab] } : null,
+  );
+  const seed = useRef(initialSeed);
+  const [rows, setRows] = useState(() => (initialSeed ? initialSeed.rows : []));
+  const [loading, setLoading] = useState(() => !initialSeed);
   // Which tab `rows` belong to — lets the server rows render before the URL's
   // filters are read (MEH-3463 shows the skeleton only for another tab's rows).
-  const [rowsTab, setRowsTab] = useState(() => (seed.current ? seed.current.tab : null));
+  const [rowsTab, setRowsTab] = useState(() => (initialSeed ? initialSeed.tab : null));
   // MEH-2396: a failed load is its own state. Before, the catch did
   // setRows([]) and the page rendered the editorial "אין אירועים" empty
   // state — a false statement when the server simply did not answer.
