@@ -29,7 +29,7 @@ graph LR
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router + producer_me_analytics.router · producer_me_review.router · producer_me_locations.router<br/>/producers/me/* (one prefix, four files by area, MEH-3266)]
     App --> MenuImport[menu_import.router<br/>/producers/me/menu-import/read POST · /publish POST<br/>MEH-3430 read a menu with Claude, nothing saved; publish the reviewed rows]
-    App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-groups/assign (MEH-3477) · /suggest (MEH-3478, AI)<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
+    App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-groups/assign (MEH-3477) · /suggest (MEH-3478, AI; 10/day per business, MEH-3497)<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
     App --> ProductDescribe[product_describe.router<br/>/producers/me/product-description/suggest POST · /admin/producers/:id/product-description/suggest POST<br/>MEH-3479 Claude suggests a product description, nothing saved]
     App --> PageFill[page_fill.router<br/>/producers/me/page-fill/read POST · /admin/producers/:id/page-fill/read POST<br/>MEH-3483 Claude drafts the page fields from the owner's text, nothing saved]
     App --> ReviewReplySuggest[review_reply_suggest.router<br/>/reviews/:id/reply/suggest POST<br/>MEH-3480 Claude drafts the owner's reply to a review, nothing saved]
