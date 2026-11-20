@@ -19,6 +19,9 @@ History:  MEH-3079 (creation).
 Rules (all enforced in `send_weekly_summaries`):
   - never a zero email: a business whose deduped 7-day views are 0 is skipped
     (and NOT stamped, so it is looked at again next week);
+  - never a near-empty email (MEH-3476): below MIN_VIEWS views it is sent only
+    when the week also had a WhatsApp or contact click; otherwise skipped,
+    not stamped;
   - live businesses only (`producer_listing.is_business()`: approved, a
     business not an organizer, not a seeded test row — MEH-2952);
   - an owner with a verified email only;
@@ -89,6 +92,20 @@ CATCHUP_DELAY = timedelta(minutes=1)
 # for them. Tests set `_sleep` to a recorder instead of sleeping.
 SEND_INTERVAL_SECONDS = 0.6
 _sleep = time.sleep
+
+# MEH-3476 (Sapir 20/11): a week below this many views is not worth an email
+# on its own. A WhatsApp or contact click is a lead, so it sends anyway.
+MIN_VIEWS = 5
+
+
+def worth_sending(n: WeeklyNumbers) -> bool:
+    """True when this week's numbers earn an email (zero views never do)."""
+    if n["profile_views"] <= 0:
+        return False
+    if n["profile_views"] >= MIN_VIEWS:
+        return True
+    return n["whatsapp_clicks"] + n["contact_clicks"] > 0
+
 
 INSIGHTS_PATH = "/producer/dashboard/insights"
 UNSUBSCRIBE_PATH = "/unsubscribe/weekly"
@@ -408,6 +425,7 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
         "scanned": 0,
         "sent": 0,
         "zero_views": 0,
+        "below_threshold": 0,
         "no_owner": 0,
         "already_claimed": 0,
         "failed": 0,
@@ -430,6 +448,9 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
             numbers = weekly_numbers(db, pid, now=count_now)
             if numbers["profile_views"] <= 0:
                 counters["zero_views"] += 1
+                continue
+            if not worth_sending(numbers):
+                counters["below_threshold"] += 1
                 continue
             # Pause BEFORE claiming: a kill during the sleep leaves no claim.
             if not first_send:
