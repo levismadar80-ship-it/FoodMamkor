@@ -270,6 +270,9 @@ class ChatRequest(BaseModel):
     # Full conversation history. Client tracks the state and re-sends
     # each turn — the API is stateless. We trim server-side as a backstop.
     messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+    # MEH-3489: the business page the visitor asked from. Optional; the
+    # server reads it only as a public business (approved, not a test).
+    producer_id: UUID | None = None
 
 
 class ChatResponse(BaseModel):

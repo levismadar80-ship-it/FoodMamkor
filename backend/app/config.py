@@ -101,7 +101,7 @@ class Settings(BaseSettings):
     whatsapp_community_invite_url: str = ""
 
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
-    # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
+    # Sign up at resend.com, verify mehamakor.co.il domain, copy the API key.
     resend_api_key: str = ""
     # MEH-453: extracted from email.py module constant. Override per env via
     # EMAIL_FROM_ADDRESS in Railway.
@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
 
     # MEH-3305: admin passkeys (WebAuthn). The relying-party id is the bare
-    # domain the passkey is bound to (mehamakor.co.il / staging.mehamakor.online)
+    # domain the passkey is bound to (mehamakor.co.il / staging.mehamakor.co.il)
     # and the origin is the exact https URL the browser reports. Either empty =
     # the feature is off (local, vercel.app previews): admins sign in with
     # their password only, as today. Not secrets — they are public names.

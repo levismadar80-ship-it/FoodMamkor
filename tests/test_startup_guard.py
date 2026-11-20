@@ -23,6 +23,7 @@ from app.startup import (
     "env,url",
     [
         ("staging", "https://staging.mehamakor.online"),
+        ("staging", "https://staging.mehamakor.co.il"),  # MEH-3405
         ("production", "https://mehamakor.online"),
         ("development", "http://localhost:3000"),
     ],
@@ -54,6 +55,21 @@ def test_development_pointing_at_prod_domain_warns():
     assert "mehamakor.online" in issues[0]
 
 
+# MEH-3490: production has been mehamakor.co.il since May 2026; the guard
+# knew only the old .online host, so dev pointed at the real prod URL passed.
+def test_development_pointing_at_co_il_prod_domain_warns():
+    issues = _check_frontend_url_consistency("development", "https://mehamakor.co.il")
+    assert len(issues) == 1
+    assert "mehamakor.co.il" in issues[0]
+
+
+# Pins the MEH-674 substring semantics for the co.il staging host (MEH-3405):
+# dev pointed at a deployed staging frontend warns too.
+def test_development_pointing_at_co_il_staging_warns():
+    issues = _check_frontend_url_consistency("development", "https://staging.mehamakor.co.il")
+    assert len(issues) == 1
+
+
 # MEH-674: an unrecognized ENV value (typo) matches none of the drift branches
 # and would otherwise pass silently, disabling the guard. It must warn.
 @pytest.mark.parametrize("env", ["stage", "prod", "dev", "STAGNG", "qa"])
@@ -65,6 +81,7 @@ def test_unrecognized_env_warns(env):
 def test_recognized_envs_never_flagged_as_unrecognized():
     for env, url in [
         ("staging", "https://staging.mehamakor.online"),
+        ("staging", "https://staging.mehamakor.co.il"),  # MEH-3405
         ("production", "https://mehamakor.online"),
         ("development", "http://localhost:3000"),
     ]:

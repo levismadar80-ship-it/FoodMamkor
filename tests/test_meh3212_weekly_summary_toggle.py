@@ -153,13 +153,14 @@ class TestHeaders:
 
     def test_send_weekly_summaries_passes_the_headers(self, db, monkeypatch):
         producer, _ = _business(db)
-        db.add(
-            ProducerPageView(
-                producer_id=producer.id,
-                viewer_ip_hash="0" * 64,
-                created_at=israel_days_ago(1),
+        for i in range(wos.MIN_VIEWS):  # MEH-3476: enough views to send
+            db.add(
+                ProducerPageView(
+                    producer_id=producer.id,
+                    viewer_ip_hash=f"{i:064d}",
+                    created_at=israel_days_ago(1),
+                )
             )
-        )
         db.commit()
         calls: list[dict] = []
 

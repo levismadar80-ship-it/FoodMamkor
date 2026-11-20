@@ -52,6 +52,7 @@ case "$host" in
   npmjs.com|*.npmjs.com|npmjs.org|*.npmjs.org) exit 0 ;;
   pypi.org|*.pypi.org) exit 0 ;;
   mehamakor.online|*.mehamakor.online) exit 0 ;;
+  staging.mehamakor.co.il|*.mehamakor.co.il) exit 0 ;;
   vercel.com|*.vercel.com) exit 0 ;;
   railway.app|*.railway.app) exit 0 ;;
   developers.google.com) exit 0 ;;

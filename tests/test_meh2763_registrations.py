@@ -423,6 +423,13 @@ class TestMethodPrerequisites:
         )
         assert r.status_code == 422
         assert r.json()["detail"]["code"] == "registration_whatsapp_needs_mobile"
+        # MEH-2862: the server message is shown on screen as is
+        # (ExperienceForm, RegistrationCta), so it carries the brand spelling
+        # of he.json registration.form.whatsapp_needs_mobile, word for word.
+        assert (
+            r.json()["detail"]["message"]
+            == "כדי לבחור וואטסאפ צריך מספר נייד בפרטי העסק"
+        )
 
         mobile = _owner(db, phone=MOBILE)
         r = client.post(

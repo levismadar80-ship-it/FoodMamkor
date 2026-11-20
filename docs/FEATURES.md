@@ -7,7 +7,7 @@
 
 | Status | Meaning |
 |---|---|
-| ✅ | Shipped on `main`, live on mehamakor.online |
+| ✅ | Shipped on `main`, live on mehamakor.co.il |
 | 🚧 | In progress on `staging` or a `feature/*` branch |
 | 📋 | Planned, not started |
 | 💡 | Idea, no commitment |
@@ -239,6 +239,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop + mobile — mobile icon-only and always shown above the BottomNav (hid on scroll-down under MEH-2499 until 4/11/2026, MEH-2664)) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
 | ✅ | v1 | Auto-moderation for `/neighbor` listings (Anthropic, fail-open) | `backend/app/services/home_product_moderation.py` |
 | ✅ | v1 | Upload a menu → product rows (MEH-3430): the owner photographs her menu or uploads a PDF on the products card, Opus 5.5 reads it (`AI_MENU_MODEL`), she checks and publishes. No key → 503 and she adds by hand | `backend/app/routers/menu_import.py`, `frontend/components/MenuImport.jsx` |
+| ✅ | v1 | Fill the page from free text (MEH-3483): «ספרו לנו על העסק» at the top of the edit hub (and the admin edit page). The owner writes about her business; Claude drafts description, categories, delivery cities, hours and contact details from the text only; she ticks what to keep and it saves through the normal edit routes. No key → 503 and she fills by hand | `backend/app/routers/page_fill.py`, `frontend/components/PageFillPanel.jsx` |
 | 📋 | v2 | AI search agent — natural-language search ("בשר grass-fed בחיפה") | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate chat widget to `claude-agent-sdk` with tool use | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate moderation pipeline to agent loop with follow-up tools | [ROADMAP.md](./ROADMAP.md) |
@@ -346,7 +347,7 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 | 🚧 | v1 | GitHub branch protection rules (`main`, `staging`) | Manual UI setup — see [DEPLOYMENT.md](./DEPLOYMENT.md) §C |
 | 🚧 | v1 | «המליצו על בית עסק» — community business suggestions (`/recommend` → `outreach_leads` with `source="community"`, admin badge + «שליחת תודה») | MEH-2633. Publishes nothing: the business still registers itself and passes manual approval + the licence check. PII retention is MEH-2638 |
 | 🚧 | v1 | Real Lighthouse run against production domain | Sandbox can't run Chrome — must run from a dev machine. See [TESTING.md](./TESTING.md) |
-| 🚧 | v1 | Railway `staging` environment + Vercel `staging.mehamakor.online` domain | Manual UI setup — see [DEPLOYMENT.md](./DEPLOYMENT.md) §A + §B |
+| 🚧 | v1 | Railway `staging` environment + Vercel `staging.mehamakor.co.il` domain | Manual UI setup — see [DEPLOYMENT.md](./DEPLOYMENT.md) §A + §B |
 | 📋 | v1 | User testing (5 consumers + 3 producers per [LAUNCH_CHECKLIST.md](./archive/LAUNCH_CHECKLIST.md)) | Manual, not in scope for code |
 | 📋 | v1 | Real producer image of ספיר for `/about` | Currently a `<Leaf>` placeholder |
 | 📋 | v1 | Sentry DSN hooked up in production | Scaffolding ready, just needs the env var |

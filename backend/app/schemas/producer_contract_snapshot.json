@@ -204,9 +204,12 @@
     "ProducerDetailOut.delivery_areas": [
       "city",
       "delivery_day",
+      "delivery_days",
       "delivery_fee",
+      "free_delivery_above",
       "id",
-      "min_order"
+      "min_order",
+      "zone_name"
     ],
     "ProducerDetailOut.kashrut_certs": [
       "badge_code"
@@ -272,9 +275,12 @@
     "ProducerListOut.delivery_areas": [
       "city",
       "delivery_day",
+      "delivery_days",
       "delivery_fee",
+      "free_delivery_above",
       "id",
-      "min_order"
+      "min_order",
+      "zone_name"
     ],
     "ProducerListOut.kashrut_certs": [
       "badge_code"

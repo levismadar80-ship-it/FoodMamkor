@@ -1,5 +1,6 @@
 import type { BrowserContext, Locator, Route, TestInfo } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { layoutSettled } from "../_layout-settled";
 import he from "../../../messages/he.json";
 import en from "../../../messages/en.json";
 // The app libs below are plain JS (the app is JS + JSDoc); tsconfig.e2e has no
@@ -733,31 +734,33 @@ async function activeCategoryFixture(page: Page): Promise<{ id: string; name: st
  * consecutive samples, no fixed pause — on a settled chip it returns on the
  * third round-trip.
  *
- * ⚠️ The cause of the MT:T12:4 flake is NOT settled, and this comment says so
- * on purpose rather than shipping a tidy guess. What was MEASURED on CI run
- * 33919310192 (first attempt failed, retry passed): `aria-pressed` asserted
- * `"true"`, and the very next round-trip read `background-color:
- * rgb(255,255,255)` — the INACTIVE fill — so the chip's own state went back
- * between two reads that are supposed to describe one moment.
+ * MEH-3468 — the cause, measured. A Tailwind `transition` chip keeps a CSS
+ * transition even under `reducedMotion: "reduce"`: `globals.css` collapses its
+ * DURATION to 0.01ms, but a transition still starts, and its progress only
+ * advances when the page renders a frame. Until that frame, `getComputedStyle`
+ * returns the transition's START value, the old fill. On a loaded runner three
+ * reads can land inside one frame, so they agree on the stale colour and the
+ * "settled" check accepts it. CI run on #4895 (job 136004973994): `aria-pressed`
+ * was `"true"` and the read was `rgb(255, 255, 255)`, the inactive fill; the
+ * retry passed.
  *
- * A CSS transition race is the obvious reading and it does NOT hold up:
- * `playwright.config.ts:97` sets `reducedMotion: "reduce"` and
- * `app/globals.css:138-144` collapses every `transition-duration` to `0.01ms`
- * under that media query, so the fill is effectively instant in this
- * environment. (That is the whole reason this paragraph is a caveat instead of
- * an explanation — the first draft of this fix asserted the transition cause,
- * and the stylesheet refutes it.)
+ * Reproduced in isolation (a 0.01ms-transition button, click, three reads):
+ * 25 of 40 toggles read the pre-click colour three times in a row. The same
+ * page with no transition: 0 of 40. The earlier note here ruled the transition
+ * out because of the 0.01ms duration; the duration is not the problem, the
+ * missing frame is.
  *
- * The leading UNVERIFIED hypothesis is the mount effect landing late and
- * clobbering the click: `use-home-page.js:259-260` runs `setFilters`/`setChips`
- * from the URL in an effect, so a click that beats that effect is overwritten
- * by it. It fits the evidence and it is not proven. The fix does not rest on
- * it either way — the row now gates on the mount effect having run (the fixture
- * feed cannot land before `loadProducers`, which that same effect calls), and
- * these settled reads remove any sampling race left between the two round-trips.
+ * So each read first waits for every running animation on the element to
+ * finish (`getAnimations()` includes CSS transitions) and for one rendered
+ * frame. With that, the same probe: 0 of 40.
  */
 async function settledBackgroundColor(l: Locator): Promise<string> {
-  const read = () => l.evaluate((el) => getComputedStyle(el as HTMLElement).backgroundColor);
+  const read = () =>
+    l.evaluate(async (el) => {
+      await Promise.all(el.getAnimations().map((a) => a.finished.catch(() => undefined)));
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      return getComputedStyle(el as HTMLElement).backgroundColor;
+    });
   let stable = 0;
   let last = await read();
   for (let i = 0; i < 60; i++) {
@@ -1326,8 +1329,9 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     // Gate on the mount effect having run before touching a chip: the fixture
     // feed cannot be on screen until `loadProducers` has been called, and that
     // is the same effect that writes `setChips` from the URL. Clicking before
-    // it lands leaves the click open to being overwritten — see
-    // `settledBackgroundColor` for what was measured and what is still open.
+    // it lands leaves the click open to being overwritten. The fill reads go
+    // through `settledBackgroundColor`, which waits out the CSS transition
+    // (MEH-3468).
     await gotoFixtureFeed(page, "/", PRODUCERS);
     const chip = promotedChip(page, "has_delivery");
     await expect(chip).toHaveAttribute("aria-pressed", "false");
@@ -2623,6 +2627,12 @@ test.describe("manual › recently viewed (task 13)", () => {
     ];
     expect(b.y, "the band sits below the producer grid").toBeGreaterThan(g.y + g.height - 1);
     expect(b.y, "…and above the closing CTA").toBeLessThan(c.y);
+    // MEH-3486 (WebKit, 20/11, passed on retry): the click left the page on «/».
+    // The band sits at the foot of a page whose grid is still settling, so the
+    // card can move between mousedown and mouseup and the click is lost with no
+    // error (MEH-3449). Scroll it in and wait for it to be still first.
+    await items.first().scrollIntoViewIfNeeded();
+    await layoutSettled(items.first());
     await items.first().click();
     await expect(page).toHaveURL(new RegExp(`/${P1.slug}$|/producer/${P1.id}$`));
   });

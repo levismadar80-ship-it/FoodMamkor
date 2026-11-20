@@ -29,7 +29,10 @@ graph LR
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router + producer_me_analytics.router · producer_me_review.router · producer_me_locations.router<br/>/producers/me/* (one prefix, four files by area, MEH-3266)]
     App --> MenuImport[menu_import.router<br/>/producers/me/menu-import/read POST · /publish POST<br/>MEH-3430 read a menu with Claude, nothing saved; publish the reviewed rows]
-    App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
+    App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-groups/assign (MEH-3477) · /suggest (MEH-3478, AI; 10/day per business, MEH-3497)<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
+    App --> ProductDescribe[product_describe.router<br/>/producers/me/product-description/suggest POST · /admin/producers/:id/product-description/suggest POST<br/>MEH-3479 Claude suggests a product description, nothing saved]
+    App --> PageFill[page_fill.router<br/>/producers/me/page-fill/read POST · /admin/producers/:id/page-fill/read POST<br/>MEH-3483 Claude drafts the page fields from the owner's text, nothing saved]
+    App --> ReviewReplySuggest[review_reply_suggest.router<br/>/reviews/:id/reply/suggest POST<br/>MEH-3480 Claude drafts the owner's reply to a review, nothing saved]
     App --> Billing[billing.router<br/>/producers/me/billing/summary · /admin/billing/overview<br/>MEH-3181 read-only monthly count of bookings — nothing is charged]
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim/new-link-request (MEH-3122: lapsed link, tells the admin only) · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft; MEH-3410 alerts the admin]
     App --> DraftPreview[producer_draft_preview.router<br/>/admin/producers/:id/preview-link · /producer-preview/:token · /admin/producers/:id/publish-with-consent<br/>MEH-3377: read-only 14-day HS256 scope=producer_draft_preview for an ownerless draft;<br/>publish-with-consent = draft → approved with a recorded consent note, approval gates kept]
@@ -53,6 +56,7 @@ graph LR
     App --> Chat[chat.router<br/>/chat/*]
     App --> Admin[admin_decisions.router then admin.router<br/>/admin/producers/* (decisions first: its static /pending and /rejection-presets must match before /:producer_id, MEH-3267)]
     App --> AdminLocations[admin_producer_locations.router<br/>/admin/producers/:producer_id/locations (MEH-3333, invariants imported from producer_me_locations)]
+    App --> AdminOrganize[admin_product_organize.router<br/>/admin/producers/:producer_id/product-groups (+ /assign, /suggest) + product-order + products/:id/group (MEH-3472, same service as the owner)]
     App --> AdminImport[admin_product_import.router<br/>/admin/producers/:producer_id/product-import + product-drafts (MEH-2312, drafts → approve)]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
@@ -243,6 +247,7 @@ graph LR
     Chat[ChatWidget.jsx floating button] --> ChatQA[POST /chat/qa<br/>🌐 Anthropic Haiku<br/>fail-open if ANTHROPIC_API_KEY unset]
     ChatQA --> ChatRouter[chat_intent_router<br/>Haiku structured output: db_query | freeform]
     ChatRouter -->|db_query, 5/min per IP| ChatTools[chat_db_tools<br/>4 bounded SELECTs as mcp_reader<br/>READ ONLY · 5s timeout · fail-open]
+    ChatQA -->|names one business| ChatBiz[chat_business_context<br/>MEH-3481: whitelisted page facts<br/>no phone/email/address · fail-open]
 ```
 
 ## 6b. Rescue bags — pilot, flag-gated (MEH-2646)

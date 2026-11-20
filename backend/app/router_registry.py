@@ -10,6 +10,7 @@ from app.routers import (
     admin_outreach,
     admin_producer_locations,
     admin_product_import,
+    admin_product_organize,
     admin_recipes,
     admin_whatsapp,
     alerts,
@@ -44,7 +45,9 @@ from app.routers import (
     producer_recipes,
     billing,
     product_organize,
+    product_describe,
     menu_import,
+    page_fill,
     product_order_business,
     product_order_buyer,
     product_order_offer,
@@ -57,6 +60,7 @@ from app.routers import (
     report_info,
     reports,
     reviews,
+    review_reply_suggest,
     saved_items,
     search,
     system,
@@ -74,6 +78,13 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(producer_me_locations.router)
     app.include_router(producer_me_weekly_summary.router)  # MEH-3212
     app.include_router(menu_import.router)  # MEH-3430: /producers/me/menu-import
+    # MEH-3479: owner + admin «הצעת תיאור» (no /producers/me prefix on the router)
+    app.include_router(product_describe.router)
+    # MEH-3480: owner «הצעת תשובה» to a review (/reviews/{id}/reply/suggest),
+    # here beside its sibling AI suggestion to keep register_routers short.
+    app.include_router(review_reply_suggest.router)
+    # MEH-3483: «ספרו לנו על העסק» — owner + admin draft of the page fields
+    app.include_router(page_fill.router)
 
 
 def _include_owner_links(app: FastAPI) -> None:
@@ -102,6 +113,10 @@ def _include_admin(app: FastAPI) -> None:
     GET /admin/producers/{producer_id} (the order they had in one file)."""
     app.include_router(admin_decisions.router)
     app.include_router(admin.router)
+    # MEH-3472: admin product groups + order (drafts included); same rules
+    # as the owner's routes via services/product_organize.py. Here, not in
+    # register_routers, to keep that function under the statement limit.
+    app.include_router(admin_product_organize.router)
 
 
 def _register_flagged_features(app: FastAPI) -> None:

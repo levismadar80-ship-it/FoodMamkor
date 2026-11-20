@@ -49,6 +49,7 @@ EXEMPT: dict[str, str] = {
     "producers.instagram": "business profile, public",
     "producers.facebook": "business profile, public",
     "producers.top_product_name": "public product name",
+    "delivery_areas.zone_name": "public delivery-zone name the business shows on its page (MEH-3484)",
     "producers.owner_photo_url": "photo the business published",
     "producers.rejection_reason_code": "admin enum, no personal data",
     "producers.primary_contact_method": "enum (whatsapp/phone/…), no value",

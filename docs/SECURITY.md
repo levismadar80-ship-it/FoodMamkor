@@ -421,6 +421,7 @@ module.exports = {
 ל-Sentry דרך אותו report-uri. שלב 2 (אחרי שבוע נקי): להוריד `'unsafe-eval'` מהנאכף.
 שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. `CspReportOnly.test.js` שומר
 ששתי הכותרות זהות פרט ל-`'unsafe-eval'`.
+בלי `NEXT_PUBLIC_SENTRY_DSN` אין report-uri, ולכן הכותרת Report-Only לא נשלחת בכלל (MEH-3286): מדיניות שאין לה לאן לדווח לא מודדת כלום, ו-WebKit כותב עליה שגיאה בקונסול בכל דף.
 
 ### ✅ 8a. Analytics privacy (feature/producer-analytics, April 2026)
 

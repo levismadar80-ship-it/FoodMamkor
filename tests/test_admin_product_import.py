@@ -118,7 +118,8 @@ def test_one_row(client, db):
     draft = db.query(Product).filter(Product.producer_id == producer.id).one()
     assert draft.is_draft is True
     assert float(draft.price_min) == 25.0 and float(draft.price_max) == 25.0
-    assert draft.price_unit == "unit"
+    # MEH-3474: the fixture row is «למארז» — a pack now, no longer «ליחידה».
+    assert draft.price_unit == "pack"
     assert draft.source_image_url.startswith("https://firebasestorage.googleapis.com/")
 
 
@@ -314,3 +315,100 @@ def test_prices_and_units_from_the_review(client, db):
     }
     assert prices["שזיפים"] == 12.5
     assert prices["שמן זית"] == 1200.0
+
+
+# --- MEH-3472: a row's group ------------------------------------------------
+
+
+def _groups(db, producer):
+    db.refresh(producer)
+    return producer.product_groups or []
+
+
+def test_rows_without_group_stay_ungrouped(client, db):
+    producer = make_producer(db)
+    assert _import(client, db, producer).status_code == 200
+    assert all(p.group_id is None for p in db.query(Product).filter(Product.producer_id == producer.id))
+    assert _groups(db, producer) == []
+
+
+def test_group_creates_missing_groups_in_first_seen_order_and_assigns(client, db):
+    producer = make_producer(db)
+    rows = [
+        {"name": "אוכמניות", "price": 79, "group": "  פירות קפואים "},
+        {"name": "מיץ רימון", "price": 35, "group": "מיצים"},
+        {"name": "תות קפוא", "price": 40, "group": "פירות קפואים"},
+        {"name": "חלה", "price": 20, "group": ""},
+    ]
+    resp = _import(client, db, producer, rows=rows)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["created"] == 4
+    groups = _groups(db, producer)
+    assert [g["name"] for g in groups] == ["פירות קפואים", "מיצים"]
+    by_name = {p.name: p.group_id for p in db.query(Product).filter(Product.producer_id == producer.id)}
+    assert by_name["אוכמניות"] == by_name["תות קפוא"] == groups[0]["id"]
+    assert by_name["מיץ רימון"] == groups[1]["id"]
+    assert by_name["חלה"] is None
+
+
+def test_group_matches_an_existing_group_case_insensitively(client, db):
+    producer = make_producer(db)
+    producer.product_groups = [{"id": "g-existing", "name": "Juices"}]
+    db.commit()
+    resp = _import(client, db, producer, rows=[{"name": "Pomegranate", "price": 35, "group": " juices"}])
+    assert resp.status_code == 200, resp.text
+    assert _groups(db, producer) == [{"id": "g-existing", "name": "Juices"}]
+    (p,) = db.query(Product).filter(Product.producer_id == producer.id).all()
+    assert p.group_id == "g-existing"
+
+
+def test_too_many_groups_refuses_the_whole_batch(client, db):
+    from app.limits import MAX_PRODUCT_GROUPS, PRODUCT_GROUPS_DETAIL
+
+    producer = make_producer(db)
+    rows = [{"name": f"מוצר {i}", "price": 10, "group": f"קבוצה {i}"} for i in range(MAX_PRODUCT_GROUPS + 1)]
+    resp = _import(client, db, producer, rows=rows)
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == PRODUCT_GROUPS_DETAIL
+    assert db.query(Product).filter(Product.producer_id == producer.id).count() == 0
+    assert _groups(db, producer) == []
+
+
+def test_existing_plus_new_groups_over_the_cap_is_refused(client, db):
+    from app.limits import MAX_PRODUCT_GROUPS
+
+    producer = make_producer(db)
+    producer.product_groups = [{"id": f"g{i}", "name": f"קיימת {i}"} for i in range(MAX_PRODUCT_GROUPS)]
+    db.commit()
+    resp = _import(client, db, producer, rows=[{"name": "חדש", "price": 10, "group": "חדשה"}])
+    assert resp.status_code == 409
+    assert db.query(Product).filter(Product.producer_id == producer.id).count() == 0
+
+
+def test_a_group_name_over_40_characters_is_an_invalid_row(client, db):
+    producer = make_producer(db)
+    resp = _import(client, db, producer, rows=[{"name": "ארוך", "price": 10, "group": "א" * 45}])
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["created"] == 0
+    assert body["invalid"][0]["reason"] == "שם הקבוצה יכול להיות עד 40 תווים"
+    assert _groups(db, producer) == []
+
+
+def test_a_61_character_group_is_an_invalid_row_not_a_422(client, db):
+    # Rule-5a review: a schema cap at 60 failed the whole batch; one long
+    # category must cost only its own row.
+    producer = make_producer(db)
+    resp = _import(client, db, producer, rows=[
+        {"name": "ארוך", "price": 10, "group": "א" * 61},
+        {"name": "רגיל", "price": 10, "group": "לחמים"},
+    ])
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["created"] == 1
+    assert [r["index"] for r in body["invalid"]] == [0]
+
+
+def test_group_over_200_characters_is_422(client, db):
+    producer = make_producer(db)
+    assert _import(client, db, producer, rows=[{"name": "x", "price": 10, "group": "א" * 201}]).status_code == 422

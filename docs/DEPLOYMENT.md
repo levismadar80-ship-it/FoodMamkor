@@ -1,7 +1,7 @@
 # מהמקור — Production Deployment Guide
 
 > **Target stack:** Frontend → Vercel · Backend → Railway · Database → Railway Postgres (**stock, no PostGIS**)
-> **Domain:** production is `mehamakor.co.il` (the canonical origin since MEH-1322 — `SITE_URL` in `frontend/lib/env.client.js`, `email_from_address` in `backend/app/config.py`). `mehamakor.online` now serves staging only (`staging.mehamakor.online`). _This line read `mehamakor.online` until 2026-10-26 (MEH-2345)._
+> **Domain:** production is `mehamakor.co.il` (the canonical origin since MEH-1322 — `SITE_URL` in `frontend/lib/env.client.js`, `email_from_address` in `backend/app/config.py`). Staging is `staging.mehamakor.co.il` since 2026-11-20 (MEH-3405); `staging.mehamakor.online` stays only as a legacy alias until it redirects there. _This line read `mehamakor.online` until 2026-10-26 (MEH-2345)._
 >
 > **Distance queries** use the Haversine formula directly in SQL against
 > `producers.lat` / `producers.lng` float columns — no PostGIS extension is
@@ -20,7 +20,7 @@ checkpoint passes.
 | Branch | Role | Deploys to | Who can push |
 |---|---|---|---|
 | `main` | Production | mehamakor.co.il (Vercel) + Railway production env | Nobody directly. PR-only, from `staging`. |
-| `staging` | Non-prod testing | staging.mehamakor.online (Vercel) + Railway staging env | Nobody directly. PR-only, from `feature/*`. |
+| `staging` | Non-prod testing | staging.mehamakor.co.il (Vercel) + Railway staging env | Nobody directly. PR-only, from `feature/*`. |
 | `feature/*` | New features and fixes | None — local + a Vercel preview for a `[preview]` commit only (MEH-2845; every push spends one of the 100/day deployments) | Branch owner. **Always created from `staging`**, never from `main`. |
 
 ### The flow
@@ -29,7 +29,7 @@ checkpoint passes.
 feature/your-thing  ──PR──▶  staging  ──PR──▶  main
        │                       │                 │
        │                       ▼                 ▼
-   local + PR        staging.mehamakor.online   mehamakor.co.il
+   local + PR        staging.mehamakor.co.il   mehamakor.co.il
    evidence                 (test here)           (live)
 ```
 
@@ -45,7 +45,7 @@ feature/your-thing  ──PR──▶  staging  ──PR──▶  main
    Avoid `claude/*`, `wip/*`, personal-name prefixes — they litter the
    branch list and obscure intent.
 4. **Test on `staging` before merging to `main`.** Open the change at
-   `staging.mehamakor.online`, click through the flow you touched, then
+   `staging.mehamakor.co.il`, click through the flow you touched, then
    approve the PR to `main`.
 5. **Every `staging → main` cut gets an annotated tag on the merge commit.**
    Semver, bumped by the shape of the CHANGELOG entry: a breaking change is a
@@ -88,7 +88,7 @@ git push -u origin feature/short-description
 # 3. Open PR: feature/short-description → staging
 #    GitHub UI, or:  gh pr create --base staging
 
-# 4. After the staging PR is merged, test on staging.mehamakor.online
+# 4. After the staging PR is merged, test on staging.mehamakor.co.il
 
 # 5. When you're confident, open the promotion PR: staging → main
 #    This is the "ship to production" step.
@@ -162,9 +162,9 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `GOOGLE_PLACES_API_KEY` | **Optional (MEH-1490).** Server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: `rating`/`userRatingCount`). **Distinct from the frontend `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (address autocomplete) — this one is server-side only, never sent to the client. **Unset by default → the feature is dormant and free** (`GET /producers/{id}/google-rating` fail-quiets to 204). ⚠️ Setting a value turns on a **billed** SKU — needs explicit sign-off before adding it here. |
-   | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
-   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). **In production the backend refuses to boot when it is empty or contains `localhost`, `127.0.0.1` or `staging`** (MEH-3388; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`), so a wrong value fails the deploy instead of sending every email link to the wrong site. |
-   | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain is verified (SPF+DKIM) — `mehamakor.co.il` for production (the `email_from_address` default), `mehamakor.online` if staging sends from it. **The two domains are verified in two different Resend accounts**; a key from the wrong account fails every send with 422 (MEH-2341, 24/10). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
+   | `CORS_ORIGINS` | `https://staging.mehamakor.co.il,http://localhost:3000` |
+   | `FRONTEND_URL` | `https://staging.mehamakor.co.il` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). **In production the backend refuses to boot when it is empty or contains `localhost`, `127.0.0.1` or `staging`** (MEH-3388; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`), so a wrong value fails the deploy instead of sending every email link to the wrong site. |
+   | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain is verified (SPF+DKIM) — `mehamakor.co.il` for production (the `email_from_address` default), `mehamakor.online` while staging still sends from it (until it moves to `staging.mehamakor.co.il` in the co.il account, MEH-3405). **The two domains are verified in two different Resend accounts**; a key from the wrong account fails every send with 422 (MEH-2341, 24/10). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
    | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.co.il>` (`config.py:115`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
    | `ADMIN_EMAIL` | **Set it on staging (MEH-3402).** Outside production every email to an address that is not `ADMIN_EMAIL` / `CONTACT_EMAIL` / `SUPER_ADMIN_EMAIL` (or a `+alias` of one) is **redirected here**, subject `[STAGING → ***@domain] …`, full original recipient on the first body line. Unset on staging = those emails are not sent at all (logged at WARNING). Register test businesses as `you+biz1@…` to receive their mail directly. |
@@ -176,18 +176,18 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `WHATSAPP_API_VERSION` | `v21.0` (hardcoded fallback; override only to pin a different Graph version). |
    | `OTP_TEST_NUMBERS` | **Staging only, optional.** Comma-separated `producer.phone` values (exact match) that receive a fixed OTP instead of a WhatsApp send; also the only numbers, with `ADMIN_WHATSAPP_TO`, that any WhatsApp from staging may reach (MEH-3402 — digits compared, `0…` = `972…`), so a harness can pass the `phone_verified` gate (MEH-2231). Empty = feature OFF. Refused outright when `ENV=production`, and on a remote DB host unless `RAILWAY_ENVIRONMENT=staging` — set the values in Railway variables, never in a committed file. |
    | `OTP_TEST_CODE` | Exactly 6 digits; the fixed code handed to the numbers above. Anything else turns the feature OFF rather than half-on. Every issue is logged at WARNING with the producer id (never the phone or the code). |
-   | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
+   | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.co.il` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
 
 6. Production environment — verify the GitHub source is pinned to `main`.
    If it's pinned to anything else (e.g. `claude/setup-documentation-sQ6Sw`),
    change it to `main` now.
 
-### B. Vercel — add `staging.mehamakor.online`
+### B. Vercel — add `staging.mehamakor.co.il`
 
 Vercel auto-deploys every branch to a preview URL. The two named deploys are:
 
 - `main` → **Production** → `mehamakor.co.il`
-- `staging` → **Preview** with custom domain → `staging.mehamakor.online`
+- `staging` → **Preview** with custom domain → `staging.mehamakor.co.il`
 
 Steps:
 
@@ -196,7 +196,7 @@ Steps:
    if not.
 3. **Settings → Domains:**
    - `mehamakor.co.il` → **Production** (main) — already configured.
-   - Click **Add** → enter `staging.mehamakor.online`.
+   - Click **Add** → enter `staging.mehamakor.co.il`.
    - When prompted, choose **"Git Branch"** → `staging`.
    - Vercel will give you a CNAME record: `staging` → `cname.vercel-dns.com`.
      Add it at your DNS provider.
@@ -207,8 +207,8 @@ Steps:
    |---|---|---|
    | `BACKEND_URL` | `https://foodmamkor-production.up.railway.app` | `https://foodmamkor-staging.up.railway.app` |
    | `NEXT_PUBLIC_API_URL` | same as production `BACKEND_URL` | same as staging `BACKEND_URL` |
-   | `NEXT_PUBLIC_SITE_URL` | `https://mehamakor.co.il` | `https://staging.mehamakor.online` |
-   | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. |
+   | `NEXT_PUBLIC_SITE_URL` | `https://mehamakor.co.il` | `https://staging.mehamakor.co.il` |
+   | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. Empty also means no `Content-Security-Policy-Report-Only` header (MEH-3286), so the MEH-3304 CSP measurement runs only where a DSN is set. |
    | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Production Clarity ID | Empty (don't pollute heatmaps). |
 
    With a DSN set, `next.config.js` wraps the build with `withSentryConfig` from `@sentry/nextjs/config`, which is the v11 path. From the 11 upgrade until #4827 the old import returned `undefined`, so the wrap was skipped silently: no tunnel route, no debug stripping. With no `SENTRY_AUTH_TOKEN` set, the wrap skips source-map upload and the build continues.
@@ -465,13 +465,13 @@ for "different real IPs" is a laptop on Wi-Fi + a phone on cellular.
 ```bash
 # From laptop A (one real IP):
 for i in 1 2 3 4 5 6; do
-  curl -X POST https://staging.mehamakor.online/auth/login \
+  curl -X POST https://staging.mehamakor.co.il/auth/login \
     -d '{"email":"no@one.com","password":"x"}'
 done
 # attempt 6 → 429
 
 # From phone B (distinct real IP) same minute:
-curl -X POST https://staging.mehamakor.online/auth/login \
+curl -X POST https://staging.mehamakor.co.il/auth/login \
   -d '{"email":"no@one.com","password":"x"}'
 # → 401 (bucket isolates), not 429
 ```
@@ -559,7 +559,7 @@ a Google outage — but address search itself is still Google's.
    — «API enabled».
 4. [Credentials](https://console.cloud.google.com/apis/credentials) → the key →
    *API restrictions* must list Places API (New); *Website restrictions* on the
-   browser key must cover `mehamakor.co.il/*` and `staging.mehamakor.online/*`.
+   browser key must cover `mehamakor.co.il/*` and `staging.mehamakor.co.il/*`.
 
 **Cost control that is in place:** the key is API-restricted to Places API (New)
 only; a ₪30/month budget with alerts at 50/90/100/150% (alerts only — Google's
@@ -673,7 +673,7 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 5. assistant screenshots the preview (390 WebKit + 1280 Chromium) and reads them
 6. full self-check of workflow rule 38 (gates, reviewer, copy table)
 7. assistant merges to staging (rule 38)
-8. Vercel auto-deploys staging to staging.mehamakor.online
+8. Vercel auto-deploys staging to staging.mehamakor.co.il
 9. final smoke test on staging subdomain
 10. open PR staging → main
 11. merge to main
@@ -755,7 +755,7 @@ own thing — this workflow does **not** touch Vercel.
 merge PR → main                        merge PR → staging
    │                                       │
    ├──▶ Vercel GitHub integration          ├──▶ Vercel GitHub integration
-   │    ──▶ mehamakor.co.il                │    ──▶ staging.mehamakor.online
+   │    ──▶ mehamakor.co.il                │    ──▶ staging.mehamakor.co.il
    │    (already wired, no workflow)       │    (already wired, no workflow)
    │                                       │
    └──▶ .github/workflows/deploy.yml       └──▶ .github/workflows/deploy.yml
@@ -1092,7 +1092,7 @@ panel) is QA'd automatically instead of manually. Three moving parts:
 
 ```bash
 cd frontend
-TEST_URL=https://staging.mehamakor.online \
+TEST_URL=https://staging.mehamakor.co.il \
 DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… DEMO_ADMIN_PASSWORD=… \
 VERCEL_AUTOMATION_BYPASS_SECRET=… \
 npx playwright test e2e/flows/25-role-reachability.spec.ts
@@ -1138,7 +1138,7 @@ the chunk-3 "100%" vegan/vegetarian chips have both an `all` and a `some`
 producer to gate on.
 
 **`VERCEL_AUTOMATION_BYPASS_SECRET` is required for any `TEST_URL` staging/preview
-run.** `staging.mehamakor.online` sits behind **Vercel Deployment Protection** —
+run.** `staging.mehamakor.co.il` sits behind **Vercel Deployment Protection** —
 without this header a request 302-redirects to `vercel.com/sso-api` and never
 reaches the backend (so both the globalSetup login and the spec's page
 navigations would fail). Get it from **Vercel → Settings → Deployment Protection

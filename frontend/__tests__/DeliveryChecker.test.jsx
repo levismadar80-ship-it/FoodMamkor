@@ -222,7 +222,7 @@ describe("matchDeliveryCity — pure logic (MEH-1536)", () => {
     expect(r.status).toBe("yes");
     expect(r.city).toBe("חיפה");
     const en = matchDeliveryCity({ city: " haifa ", areas: [{ city: "Haifa" }] });
-    expect(en).toEqual({ status: "yes", city: "Haifa", day: null, minOrder: null });
+    expect(en).toEqual({ status: "yes", city: "Haifa", day: null, days: [], minOrder: null });
   });
 
   it("exclusion match is case-insensitive too, and echoes the producer spelling", () => {
@@ -232,5 +232,22 @@ describe("matchDeliveryCity — pure logic (MEH-1536)", () => {
 
   it("does no fuzzy matching — a partial city name is not a match", () => {
     expect(matchDeliveryCity({ city: "חיפ", areas: AREAS }).status).toBe("no");
+  });
+});
+
+describe("matchDeliveryCity — several days per city (MEH-3484)", () => {
+  it("names every day of the city", () => {
+    const areas = [
+      { city: "קריית ביאליק", delivery_day: "שני", delivery_days: ["שני", "חמישי"], min_order: 120 },
+    ];
+    const r = matchDeliveryCity({ city: "קריית ביאליק", areas });
+    expect(r).toMatchObject({ status: "yes", day: "שני וחמישי", minOrder: 120 });
+  });
+
+  it("a row with one day answers as before", () => {
+    const one = matchDeliveryCity({ city: "חיפה", areas: [{ city: "חיפה", delivery_day: "שלישי" }] });
+    expect(one.day).toBe("שלישי");
+    const none = matchDeliveryCity({ city: "חיפה", areas: [{ city: "חיפה", delivery_days: [] }] });
+    expect(none.day).toBeNull();
   });
 });

@@ -60,6 +60,7 @@ _ON_THE_PAGE = "self-explanatory where it appears; visitors don't ask the chat"
 NOT_FOR_CHAT: dict[str, str] = {
     "product_orders": _DASHBOARD,
     "gallery_story": _DASHBOARD,
+    "page_fill": _DASHBOARD,
     "product_details": _DASHBOARD,
     "top_product": _DASHBOARD,
     "map_precision": _DASHBOARD,

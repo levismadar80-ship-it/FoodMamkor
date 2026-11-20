@@ -17,6 +17,7 @@ import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import { hasDeliverySection } from "@/lib/quickAnswers"; // MEH-3460
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import BusinessChatPrompt from "./BusinessChatPrompt";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -809,6 +810,10 @@ export default function ProducerSections({
           section right under «משלוחים», not a block in the contact card.
           Self-gating: renders nothing when no question is left. */}
       <WhatsAppQuestionChips producer={producer} />
+
+      {/* MEH-3489: the way into the site chat, scoped to this business — in
+          the page's question cluster, not a floating button (MEH-1168). */}
+      <BusinessChatPrompt producer={producer} />
 
       {/* MEH-1875 (history — MEH-2803 below supersedes the placement): the
           weekly order schedule, immediately BEFORE the location

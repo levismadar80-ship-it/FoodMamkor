@@ -39,6 +39,7 @@ def _boot(monkeypatch, *, env, frontend_url, railway=""):
         "http://127.0.0.1:3000",
         "https://staging.mehamakor.online",
         "https://STAGING.mehamakor.online",
+        "https://staging.mehamakor.co.il",  # MEH-3405: the staging host since 20/11
     ],
 )
 def test_production_refuses_to_boot_with_a_non_production_frontend_url(monkeypatch, bad):

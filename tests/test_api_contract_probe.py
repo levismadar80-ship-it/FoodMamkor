@@ -137,6 +137,16 @@ def test_bypass_header_goes_to_staging_only(monkeypatch):
     assert "x-vercel-protection-bypass" not in sent_prod[0][2]
 
 
+def test_bypass_header_goes_to_the_co_il_staging_host(monkeypatch):
+    # MEH-3405: staging moved to staging.mehamakor.co.il, behind the same
+    # Vercel Deployment Protection — without the header every probe is a 302.
+    monkeypatch.setenv(cac.BYPASS_ENV, "s3cret")
+    _, sent = _probe_exit(
+        monkeypatch, [], lambda _m, _u: (200, []), base="https://staging.mehamakor.co.il"
+    )
+    assert sent[0][2].get("x-vercel-protection-bypass") == "s3cret"
+
+
 def test_static_audit_reads_only_mounted_routers():
     routes = {(m, p) for m, p, _, _ in cac.extract_backend_routes()}
     # router_registry.py comments out home_products (MEH-1406 kill-switch), so

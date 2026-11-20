@@ -13,7 +13,7 @@ from app.services.product_order_menu import takes_orders
 from tests.conftest import auth_header
 from tests.test_meh3218_product_orders import _owner, valid_settings_payload
 
-NEEDS_ID = "כדי לקבל הזמנות באתר צריך למלא מספר עוסק."
+NEEDS_ID = "כדי לקבל הזמנות באתר צריך למלא מספר עוסק או תעודת זהות."
 
 
 @pytest.fixture
@@ -129,3 +129,14 @@ def test_the_order_menu_carries_the_business_number(client, db, flag_on):
     res = client.get(f"/producers/{producer.id}/order-menu")
     assert res.status_code == 200, res.text
     assert res.json()["business_id_number"] == "512345678"
+
+
+def test_a_personal_id_number_turns_ordering_on(client, db, flag_on):
+    # §14ג asks for the seller's ID number or company number, not an עוסק
+    # number, so a business with no עוסק fills in its ת״ז (9 digits, may
+    # start with 0) and takes orders with it.
+    owner, _ = _owner(db)
+    res = _put(client, owner, enabled=True, business_id_number="039337423")
+    assert res.status_code == 200, res.text
+    assert res.json()["business_id_number"] == "039337423"
+    assert res.json()["enabled"] is True

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Locator, Route } from "@playwright/test";
+import { pickCity } from "../_pick-city";
 
 /**
  * Spec:     manual/admin-producer-form-licence — MEH-1249 chunk 12f
@@ -270,8 +271,7 @@ async function gotoCategoryFrame(page: Page): Promise<void> {
   await page.getByTestId("register-details-name").fill("העסק שלי");
   await page.getByTestId("register-details-phone").fill("0501234567");
   const city = page.getByTestId("register-details-city");
-  await city.getByRole("combobox").fill("תל א");
-  await city.getByRole("option").first().click();
+  await pickCity(city, "תל א", /./); // MEH-3488: the first suggestion, and proof it was picked
   await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the one required question on DETAILS
   await page.getByTestId("register-details-next").click();
   await expect(page.getByTestId("register-frame-category")).toBeVisible();

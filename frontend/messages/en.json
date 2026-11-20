@@ -1021,7 +1021,7 @@
         "total_estimate": "Total, approximately: ₪{total}",
         "payment_line": "You pay the business directly: {methods}. No payment on the site.",
         "cancel_line": "You can cancel or change until {cutoff}.",
-        "seller_line": "Seller: {name} · Business no. {number}{city, select, none {} other { · {city}}}",
+        "seller_line": "Seller: {name} · Business / ID no. {number}{city, select, none {} other { · {city}}}",
         "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
         "send": "Send the request",
         "close": "Close",
@@ -1411,7 +1411,9 @@
         "host_sent": "We've emailed you to confirm hosting.",
         "host_already_sent": "We already emailed you to confirm hosting. Check your inbox (and spam).",
         "host_limit_reached": "Several emails were already sent to this address today. Please try again tomorrow."
-      }
+      },
+      "next_delivery": "Next delivery: {date}",
+      "next_delivery_city": "Next delivery to {city}: {date}"
     },
     "friday_delivery": {
       "today": "Friday",
@@ -2097,7 +2099,8 @@
         "error_json": "The text is not valid JSON.",
         "error_shape": "Expected an array of products, or an object with rows.",
         "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
-        "load_failed": "Couldn't load the drafts. Try refreshing."
+        "load_failed": "Couldn't load the drafts. Try refreshing.",
+        "draft_group": "Group: {name}"
       }
     },
     "users": {
@@ -3736,6 +3739,16 @@
     "pagination": {
       "prev_aria": "Previous page",
       "next_aria": "Next page"
+    },
+    "reply_suggest": {
+      "cta": "Suggest a reply",
+      "hint": "We'll write a draft from the review. The reply is sent only when you send it.",
+      "loading": "Writing a draft…",
+      "preview_label": "Our draft. You can edit it before using it.",
+      "use": "Use the draft",
+      "cancel": "Cancel",
+      "failed": "We couldn't suggest a reply this time. You can write it yourself.",
+      "limit": "You've reached the number of suggestions for now. Try again later."
     }
   },
   "newsletter_unsubscribe": {
@@ -4920,6 +4933,15 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_10": {
+            "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
+            "i1": "The business page now shows when the next delivery to your city is.",
+            "i2": "On a business page you can now ask the assistant about hours, deliveries or products, and it answers from the details on the page.",
+            "i3": "Write about your business in your own words, and we'll draft the page details. You choose what to save.",
+            "i4": "Organising products: groups and headings for the menu, moving several products at once, and a suggested product description.",
+            "i5": "Reply to a review in one tap: get a suggested reply, edit it and send.",
+            "i6": "You can choose «pack» as a price unit."
+          },
           "v1_5_9": {
             "i0": "A weekly email summary of what happened on your page. You can turn it off in the «Insights» tab.",
             "i1": "In a product's ingredients list, allergens are highlighted so customers see them right away.",
@@ -5430,6 +5452,13 @@
         "area_fee_hint": "Optional — if left empty, we show the business-wide delivery fee",
         "area_fee_placeholder": "20",
         "area_fee_aria": "Delivery fee for {city}",
+        "area_min_label": "Minimum order for this area (₪)",
+        "area_min_hint": "Optional — shown next to the city in the delivery section of your page.",
+        "area_min_aria": "Minimum order for {city}",
+        "bulk_label": "Same day for several cities",
+        "bulk_hint": "Tick cities in the list, pick a day and press «Apply».",
+        "bulk_city_aria": "Select {city}",
+        "bulk_apply": "Apply to selected cities",
         "area_fee_inherits": "Inherits {fee} ₪",
         "area_fee_inherits_free": "Inherits: free delivery",
         "default_block_title_nationwide": "Nationwide delivery fee",
@@ -5444,7 +5473,20 @@
         "errors": {
           "excluded_requires_nationwide": "Excluded cities are only possible with nationwide delivery",
           "nationwide_requires_delivery": "\"Nationwide\" is ticked but \"Delivery\" is not. Tick \"Delivery\", or untick \"Nationwide\"."
-        }
+        },
+        "zones_label": "Delivery zones",
+        "zones_hint": "Group several cities into one zone with the same days, minimum and fee. A city outside every zone keeps its own settings.",
+        "zone_empty": "No zones yet. You can leave it like this and set each city on its own.",
+        "zone_add": "Add a zone",
+        "zone_name_label": "Zone name",
+        "zone_name_placeholder": "Krayot",
+        "zone_cities_label": "Cities in the zone",
+        "zone_days_label": "Delivery days",
+        "zone_days_hint": "With none picked, “by arrangement” is shown.",
+        "zone_free_above_label": "Free delivery above (₪)",
+        "zone_free_above_hint": "If empty, the business's general amount applies.",
+        "zone_remove": "Delete the zone",
+        "city_in_zone": "In zone {zone}"
       },
       "order_window": {
         "heading": "When you take orders",
@@ -5768,10 +5810,10 @@
           "saved": "Saved",
           "cap_required": "To confirm automatically, choose how many orders per slot",
           "bad_amount": "Write the amount in numbers",
-          "business_id": "Business or company number",
-          "business_id_help": "Shown to customers on the order form, as the law requires.",
-          "business_id_required": "To take orders on the site, fill in your business number.",
-          "business_id_format": "A business or company number has 9 digits.",
+          "business_id": "Business, company or ID number",
+          "business_id_help": "Shown to customers on the order form, as the law requires. No business number? You can fill in your ID number.",
+          "business_id_required": "To take orders on the site, fill in your business or ID number.",
+          "business_id_format": "The number must have 9 digits.",
           "commission": "Orders through the site carry a commission according to your plan. <link>Details in the terms</link>."
         },
         "windows": {
@@ -5868,7 +5910,7 @@
         },
         "checklist": {
           "title": "What's missing to take orders",
-          "business_id": "Business or company number",
+          "business_id": "Business, company or ID number",
           "windows": "Hand-over hours",
           "product": "At least one product open for ordering",
           "enabled": "Turn on \"Take orders on the site\"",
@@ -6168,14 +6210,30 @@
         "group_deleted": "Group deleted. Its products stay on your page.",
         "order_heading": "Product order",
         "order_where": "Drag the handle or use the arrows. The order saves right away and is how products appear on your page.",
-        "order_where_grouped": "Drag the handle or use the arrows. The order saves right away. On your page, products are shown by group, and inside each group in this order.",
         "drag_aria": "Drag {name}",
         "move_up_aria": "Move {name} up",
         "move_down_aria": "Move {name} down",
         "product_group_label": "Group of {name}",
         "product_group_none": "No group",
         "saved": "Saved",
-        "save_failed": "Saving failed. Please try again."
+        "save_failed": "Saving failed. Please try again.",
+        "order_where_sections": "Products are shown by group, as on your page. You can mark several products and move them to a group at once.",
+        "selected_count": "{count, plural, one {1 product selected} other {# products selected}}",
+        "move_to_group": "Move to group",
+        "clear_selection": "Clear selection",
+        "select_aria": "Select {name}",
+        "move_top": "To top of group",
+        "move_bottom": "To end of group",
+        "moved_toast": "{count} products moved to {group}",
+        "suggest_cta": "Suggest groups",
+        "suggest_hint": "We'll suggest a group for each product that has none yet. Nothing is saved until you approve.",
+        "suggest_loading": "Preparing a suggestion…",
+        "suggest_heading": "Our suggestion. You can rename groups and take products out before approving.",
+        "suggest_save": "Save groups",
+        "suggest_cancel": "Cancel",
+        "suggest_saved": "Groups saved",
+        "suggest_undo": "Undo",
+        "suggest_failed": "We couldn't suggest groups this time. You can create groups above."
       },
       "duplicate_name_confirm": {
         "title": "A product with this name already exists. Continue?",
@@ -6192,7 +6250,19 @@
         "no_price": "No price found. Add a price to publish.",
         "publish": "Publish {count} products",
         "failed": "We couldn't read the menu. Try a straighter, sharper photo, or add products by hand.",
-        "cap": "Up to 100 products per page. Choose which ones to publish."
+        "cap": "Up to 100 products per page. Choose which ones to publish.",
+        "sections_hint": "Menu headings will be saved as groups."
+      },
+      "describe": {
+        "cta": "Suggest a description",
+        "hint": "We'll write a suggestion from the product's name and price. Nothing is saved until you save the product.",
+        "loading": "Writing a suggestion…",
+        "preview_label": "Our suggestion. You can edit it before using it.",
+        "use": "Use this",
+        "cancel": "Cancel",
+        "no_name": "Add the product's name first.",
+        "failed": "We couldn't suggest a description this time. You can write it yourself.",
+        "limit": "You've reached the number of suggestions for now. Try again later."
       }
     },
     "locations": {
@@ -6526,7 +6596,18 @@
     "log_label": "Conversation with the assistant",
     "input_label": "Type a question",
     "input_placeholder": "Type a question...",
-    "send_label": "Send question"
+    "send_label": "Send question",
+    "business": {
+      "page_lead": "Have a question about the products, hours or delivery?",
+      "page_button": "Ask the assistant",
+      "panel_title": "Ask about {name}",
+      "opening": "You can ask me about {name}: opening hours, delivery, products and allergens. I answer only from what is written on the business's page.",
+      "prompts": {
+        "hours": "When is the business open?",
+        "delivery": "Where do they deliver?",
+        "gluten": "Are there gluten-free products?"
+      }
+    }
   },
   "diet_pages": {
     "meta_title": "{label} — local food businesses",
@@ -7172,6 +7253,9 @@
         "tile_title": "Gallery and story",
         "tile_line": "Photos, \"About\" and \"Behind the business\""
       },
+      "page_fill": {
+        "label": "Fill the page from free text: write about the business, check, approve"
+      },
       "product_details": {
         "label": "Products with price, ingredients and allergens",
         "tile_title": "Products",
@@ -7555,9 +7639,57 @@
     "kg": "per kg",
     "100g": "per 100 g",
     "bottle": "per bottle",
-    "box": "per box"
+    "box": "per box",
+    "pack": "per pack"
   },
   "product_price": {
     "varies": "Price varies by season"
+  },
+  "page_fill": {
+    "title": "Tell us about your business",
+    "intro": "Write in your own words what you make, where you deliver, when you're open and how to order. We'll draft your page from it, and nothing is saved until you approve it.",
+    "open": "Fill my page from text",
+    "label": "Your business, in your own words",
+    "placeholder": "For example: we're a small bakery in Haifa, baking sourdough bread and cakes. We deliver to Haifa and the Krayot on Mondays and Thursdays. Orders by WhatsApp.",
+    "read": "Draft my page",
+    "reading": "Reading your text…",
+    "cancel": "Cancel",
+    "back": "Back to the text",
+    "failed": "We couldn't read the text right now. You can fill in the details by hand.",
+    "save_failed": "We couldn't save. Try again.",
+    "preview_title": "Business details: what will change",
+    "empty": "We didn't find new details to fill in. Add a few more words and try again.",
+    "now": "Now: {value}",
+    "replaces": "Replaces what's there today",
+    "adds": "Added to your current categories",
+    "save": "{count, plural, one {Save the checked detail} other {Save # checked details}}",
+    "saved": "Saved to your page",
+    "delivery_exists": "Your page already has delivery cities. You can add these in the delivery card.",
+    "delivery_nationwide": "The business delivers nationwide, so these cities were not added. You can change that in the delivery card.",
+    "hours_no_location": "Opening hours need a location first. You can add them in the location card.",
+    "menu_title": "Products from your menu photos",
+    "menu_hint": "Have a menu or price list? Upload a photo, check the products and approve them separately.",
+    "fields": {
+      "description": "About the business",
+      "categories": "Categories",
+      "delivery": "Delivery cities",
+      "hours": "Opening hours",
+      "phone": "Phone",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "website": "Website",
+      "contact_email": "Email",
+      "primary_contact_method": "How to order"
+    },
+    "methods": {
+      "whatsapp": "By WhatsApp",
+      "phone": "By phone",
+      "instagram": "On Instagram",
+      "email": "By email",
+      "website": "On the website",
+      "facebook": "On Facebook",
+      "external_order": "Through an order form"
+    },
+    "blocked": "Some cards on this page have unsaved changes. Save them first, then these details."
   }
 }

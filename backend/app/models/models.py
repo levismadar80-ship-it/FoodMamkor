@@ -491,6 +491,11 @@ class Producer(Base):
     payment_info = Column(JSONB, nullable=True)
     # MEH-3055: ordered [{id, name}] product groups (b7d4e2a9c615).
     product_groups = Column(JSONB, nullable=True)
+    # MEH-3484: named delivery zones [{name, delivery_days, min_order,
+    # delivery_fee, free_delivery_above}] (f2c6a8e4b0d7). Membership lives on
+    # delivery_areas.zone_name; services/delivery_zones.py is the one writer
+    # and copies each zone's values onto its cities.
+    delivery_zones = Column(JSONB, nullable=True)
     # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
     # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
     #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,

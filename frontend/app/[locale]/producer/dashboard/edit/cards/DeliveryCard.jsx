@@ -24,6 +24,8 @@ import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import DeliveryBulkDay from "./DeliveryBulkDay";
+import DeliveryZonesEditor, { zonesFromProfile, zonesForSave, zoneOfCity } from "./DeliveryZonesEditor";
 
 // MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
 // importable across the Python/JS boundary, so kept in sync by hand — the
@@ -46,8 +48,18 @@ const MAX_DELIVERY_MONEY = 1_000_000;
 // the flat list (it has no day input — nothing to align).
 // ============================================================
 
+// MEH-3484: a city's stored days survive a save that left its select on the
+// first of them; picking another day (or none) replaces the list.
+function keepDays(stored, day) {
+  const days = stored || [];
+  if (days.length > 1 && (day || "") === days[0]) return days;
+  return day ? [day] : [];
+}
+
 // Exported for isolation tests (EditTabDeliveryCard.test.jsx).
-export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
+// MEH-3475: `saveUrl` lets the admin edit page mount this same card against
+// PUT /admin/producers/{id} (ProducerAdminUpdate ⊇ the owner's fields).
+export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl = "/producers/me" }) {
   const t = useTranslations("dashboard.producer.delivery");
   const tMap = useTranslations("map.producer_card");
   const initial = {
@@ -83,14 +95,23 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         .filter((d) => d.city)
         .map((d) => [d.city, d.delivery_fee ?? ""]),
     ),
+    // MEH-3475: per-city minimum order, editable (was carried through only).
+    // Same string-in-form / "" = not stated rule as `fees`.
+    mins: Object.fromEntries(
+      (profile?.delivery_areas ?? [])
+        .filter((d) => d.city)
+        .map((d) => [d.city, d.min_order ?? ""]),
+    ),
+    // MEH-3484: named zones (the server copies their values onto their
+    // cities), and each city's stored day list so a save that leaves a
+    // city's select alone does not drop its other days.
+    zones: zonesFromProfile(profile?.delivery_zones),
+    storedDays: Object.fromEntries(
+      (profile?.delivery_areas ?? [])
+        .filter((d) => d.city)
+        .map((d) => [d.city, d.delivery_days ?? []]),
+    ),
   };
-  // MEH-1644: min_order isn't editable here, but the structured save must not
-  // wipe values registration captured — carry them through per city.
-  const minOrders = Object.fromEntries(
-    (profile?.delivery_areas ?? [])
-      .filter((d) => d.city && d.min_order != null)
-      .map((d) => [d.city, d.min_order]),
-  );
   const [baseline, setBaseline] = useState(initial);
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -122,13 +143,19 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     // input strings, and 20 !== "20" would keep the card permanently dirty.
     form.cities.some(
       (c) => String(form.fees[c] ?? "") !== String(baseline.fees[c] ?? ""),
-    );
+    ) ||
+    form.cities.some(
+      (c) => String(form.mins[c] ?? "") !== String(baseline.mins[c] ?? ""),
+    ) ||
+    JSON.stringify(zonesForSave(form.zones, form.cities)) !==
+      JSON.stringify(zonesForSave(baseline.zones, baseline.cities));
   useEffect(() => {
     reportDirty("delivery", dirty);
     return () => reportDirty("delivery", false);
   }, [dirty, reportDirty]);
 
   const neitherType = !form.hasPhysical && !form.offersDelivery;
+  const zoneOf = zoneOfCity(form.zones);
   // MEH-2561: the tag her /map card shows, from the SAME function the card
   // uses. Delivery reads the live form (mirrors producer_queries.py:185 —
   // offers_delivery AND (an area OR nationwide)), so toggling here updates the
@@ -176,7 +203,16 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       freeAbove: form.offersDelivery ? toNullableInt(form.freeAbove) : null,
       days: form.days,
       fees: form.fees,
+      mins: form.mins,
+      zones: form.zones,
+      storedDays: form.storedDays,
     };
+    // MEH-3484: zones only exist with a city list; nationwide / pickup-only
+    // sends none (the server clears them).
+    const zones =
+      form.offersDelivery && !form.nationwide
+        ? zonesForSave(normalized.zones, cities).filter((z) => z.name || z.cities.length)
+        : [];
     // MEH-1644: structured rows replace the flat delivery_area_cities send —
     // each city carries its optional canonical day ("" → null = בתיאום מראש)
     // and preserves any registration-captured min_order (previously wiped by
@@ -187,11 +223,12 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     const rows = normalized.cities.map((c) => ({
       city: c,
       delivery_day: normalized.days[c] || null,
-      min_order: minOrders[c] ?? null,
+      delivery_days: keepDays(normalized.storedDays[c], normalized.days[c]),
+      min_order: toNullableInt(normalized.mins[c] ?? ""),
       delivery_fee: toNullableInt(normalized.fees[c] ?? ""),
     }));
     try {
-      await api.put("/producers/me", {
+      await api.put(saveUrl, {
         has_physical_location: normalized.hasPhysical,
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
@@ -199,6 +236,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
+        delivery_zones: zones,
       });
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
       onSave({
@@ -209,6 +247,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
+        delivery_zones: zones,
       });
       // MEH-1577: back to "" for the inputs — normalized carries null, and a
       // null <input value> makes React warn about an uncontrolled component.
@@ -450,13 +489,33 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                     <p className="text-xs text-fg-muted mb-2">
                       {t("area_fee_hint")}
                     </p>
+                    <DeliveryBulkDay
+                      cities={form.cities}
+                      onApply={(picked, day) =>
+                        set({ days: { ...form.days, ...Object.fromEntries(picked.map((c) => [c, day])) } })
+                      }
+                    />
+                    <p className="text-xs text-fg-muted mb-2 mt-3">
+                      {t("area_min_hint")}
+                    </p>
                     <ul className="space-y-1.5">
-                      {form.cities.map((c) => (
+                      {form.cities.map((c) => zoneOf[c] ? (
+                        // MEH-3484: a zoned city takes the zone's values, so
+                        // its own boxes would be overwritten on save.
+                        <li key={c} className="flex items-center justify-between gap-2 text-sm min-h-11" data-testid={`delivery-city-zone-${c}`}>
+                          <span className="min-w-0 flex-1 truncate">{c}</span>
+                          <span className="text-xs text-fg-muted">{t("city_in_zone", { zone: zoneOf[c] })}</span>
+                        </li>
+                      ) : (
                         <li
                           key={c}
                           className="flex flex-wrap items-center justify-between gap-2 text-sm"
                         >
                           <span className="min-w-0 flex-1 truncate">{c}</span>
+                          {/* MEH-3475: each box carries its own visible caption —
+                              two bare number boxes side by side read alike. */}
+                          <label className="flex flex-col gap-0.5 text-xs text-muted">
+                            {t("area_fee_label")}
                           <Input inline size="xs"
                             type="number"
                             inputMode="numeric"
@@ -472,6 +531,24 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                             placeholder={t("area_fee_placeholder")}
                             className="w-20"
                           />
+                          </label>
+                          <label className="flex flex-col gap-0.5 text-xs text-muted">
+                            {t("area_min_label")}
+                          <Input inline size="xs"
+                            type="number"
+                            inputMode="numeric"
+                            min="1"
+                            max={MAX_DELIVERY_MONEY}
+                            step="1"
+                            value={form.mins[c] ?? ""}
+                            aria-label={t("area_min_aria", { city: c })}
+                            data-testid={`delivery-min-input-${c}`}
+                            onChange={(e) =>
+                              set({ mins: { ...form.mins, [c]: e.target.value } })
+                            }
+                            className="w-20"
+                          />
+                          </label>
                           <select
                             value={form.days[c] || ""}
                             aria-label={t("day_select_aria", { city: c })}
@@ -503,6 +580,11 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                         </li>
                       ))}
                     </ul>
+                    <DeliveryZonesEditor
+                      zones={form.zones}
+                      cities={form.cities}
+                      onChange={(zones) => set({ zones })}
+                    />
                   </div>
                 )}
               </div>

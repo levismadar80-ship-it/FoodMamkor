@@ -78,6 +78,7 @@ erDiagram
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
         json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
+        json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above}] ≤20"
         string plan "free|premium"
         boolean grass_fed
         boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
@@ -166,7 +167,7 @@ erDiagram
         boolean no_allergens "MEH-3445: «אין במוצר אלרגנים מהרשימה», false while any code is declared"
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
-        varchar price_unit "MEH-3218: unit|kg|100g; MEH-2936: +bottle|box; default unit"
+        varchar price_unit "MEH-3218: unit|kg|100g; MEH-2936: +bottle|box; MEH-3474: +pack; default unit"
         boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
@@ -261,7 +262,7 @@ erDiagram
         string name "copied at order time"
         int unit_price_agorot "copied at order time"
         boolean price_is_estimate
-        string price_unit "unit|kg|100g|bottle|box"
+        string price_unit "unit|kg|100g|bottle|box|pack"
         int qty "1..99"
         boolean contains_alcohol
     }
@@ -283,6 +284,9 @@ erDiagram
         string city
         int min_order
         string delivery_day
+        string zone_name "nullable — MEH-3484, a name in producers.delivery_zones"
+        string delivery_days "nullable varchar[] — MEH-3484; NULL = read delivery_day"
+        int free_delivery_above "nullable — MEH-3484, the zone threshold; NULL = the business one"
     }
 
     producer_offers {

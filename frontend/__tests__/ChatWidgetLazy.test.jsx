@@ -14,8 +14,12 @@ import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 // we assert the lazy wrapper mounts and its `next/dynamic` import resolves,
 // not ChatWidget's internals (next-intl / api / browser APIs).
 vi.mock("@/components/ChatWidget", () => ({
-  default: ({ hideOnMobile }) => (
-    <div data-testid="chat-widget-stub" data-hide-on-mobile={hideOnMobile ? "true" : "false"} />
+  default: ({ hideOnMobile, businessOnly }) => (
+    <div
+      data-testid="chat-widget-stub"
+      data-hide-on-mobile={hideOnMobile ? "true" : "false"}
+      data-business-only={businessOnly ? "true" : "false"}
+    />
   ),
 }));
 
@@ -39,10 +43,19 @@ describe("ChatWidgetLazy", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("suppresses the FAB on the producer detail route (/producer/[id])", () => {
+  // MEH-3489: the business page mounts the widget in businessOnly mode — no
+  // floating button (MEH-1168 stays), the page's own button opens it.
+  it("mounts the widget without a launcher on the producer detail route (/producer/[id])", async () => {
     mockUsePathname.mockReturnValue("/producer/abc-123");
     render(<ChatWidgetLazy />);
-    expect(screen.queryByTestId("chat-widget-stub")).not.toBeInTheDocument();
+    const stub = await screen.findByTestId("chat-widget-stub");
+    expect(stub).toHaveAttribute("data-business-only", "true");
+  });
+
+  it("keeps the site widget a full launcher everywhere else", async () => {
+    mockUsePathname.mockReturnValue("/producers");
+    render(<ChatWidgetLazy />);
+    expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-business-only", "false");
   });
 
   it("keeps the FAB on the producer dashboard subtree", async () => {

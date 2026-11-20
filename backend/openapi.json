@@ -1783,6 +1783,18 @@
             "minItems": 1,
             "title": "Messages",
             "type": "array"
+          },
+          "producer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Id"
           }
         },
         "required": [
@@ -1910,6 +1922,28 @@
             ],
             "title": "Delivery Day"
           },
+          "delivery_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -1956,6 +1990,14 @@
             ],
             "title": "Delivery Day"
           },
+          "delivery_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Days",
+            "type": "array"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -1966,6 +2008,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
           },
           "id": {
             "format": "uuid",
@@ -1982,6 +2035,17 @@
               }
             ],
             "title": "Min Order"
+          },
+          "zone_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Name"
           }
         },
         "required": [
@@ -2082,6 +2146,146 @@
           "token"
         ],
         "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
+      "DeliveryZoneIn": {
+        "description": "MEH-3484: one named zone on PUT /producers/me (and the admin PUT).\n`cities` is membership; the services/delivery_zones.py writer stores the\nzone on producers.delivery_zones and copies days / minimum / fee /\nthreshold onto each of its cities' delivery_areas rows.",
+        "properties": {
+          "cities": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 101,
+            "title": "Cities",
+            "type": "array"
+          },
+          "delivery_days": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 14,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days"
+          },
+          "delivery_fee": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
+          },
+          "min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DeliveryZoneIn",
+        "type": "object"
+      },
+      "DeliveryZoneOut": {
+        "description": "MEH-3484: a zone as the owner's editor reads it back. `cities` is\nfilled from delivery_areas.zone_name (ProducerOwnerOut).",
+        "properties": {
+          "cities": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cities",
+            "type": "array"
+          },
+          "delivery_days": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Delivery Days",
+            "type": "array"
+          },
+          "delivery_fee": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Fee"
+          },
+          "free_delivery_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Delivery Above"
+          },
+          "min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DeliveryZoneOut",
         "type": "object"
       },
       "DraftConsentPublishIn": {
@@ -4873,6 +5077,107 @@
         "title": "GroupBuyStatusUpdate",
         "type": "object"
       },
+      "GroupMoveIn": {
+        "description": "MEH-3477: these products go into `group_id` (None = out of any group).",
+        "properties": {
+          "group_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "product_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "title": "GroupMoveIn",
+        "type": "object"
+      },
+      "GroupMovesIn": {
+        "description": "MEH-3477: several moves in one write — «העברה לקבוצה» for the products\nthe owner marked, and the approval (and undo) of a group suggestion.",
+        "properties": {
+          "moves": {
+            "items": {
+              "$ref": "#/components/schemas/GroupMoveIn"
+            },
+            "maxItems": 21,
+            "minItems": 1,
+            "title": "Moves",
+            "type": "array"
+          }
+        },
+        "required": [
+          "moves"
+        ],
+        "title": "GroupMovesIn",
+        "type": "object"
+      },
+      "GroupSuggestionOut": {
+        "description": "MEH-3478: one suggested group. `id` is set when the name matches a group\nthe business already has; None = a new group. Nothing is saved.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "product_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "product_ids"
+        ],
+        "title": "GroupSuggestionOut",
+        "type": "object"
+      },
+      "GroupSuggestionsOut": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupSuggestionOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "GroupSuggestionsOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -5466,10 +5771,23 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
           },
           "storage_info": {
             "anyOf": [
@@ -5593,7 +5911,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -5663,7 +5982,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -6265,7 +6585,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -7515,6 +7836,143 @@
         "title": "OwnerInvitePublicOut",
         "type": "object"
       },
+      "PageDraft": {
+        "description": "Every field is optional: what the text does not say stays None.",
+        "properties": {
+          "category_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "title": "Category Ids",
+            "type": "array"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "delivery_cities": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 300,
+            "title": "Delivery Cities",
+            "type": "array"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "facebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facebook"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "opening_hours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Hours"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "primary_contact_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Method"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "title": "PageDraft",
+        "type": "object"
+      },
+      "PageFillIn": {
+        "properties": {
+          "text": {
+            "maxLength": 6000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PageFillIn",
+        "type": "object"
+      },
+      "PageFillOut": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/PageDraft"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "PageFillOut",
+        "type": "object"
+      },
       "PageFreshnessConfirmIn": {
         "properties": {
           "token": {
@@ -8296,6 +8754,14 @@
             "default": false,
             "title": "Delivery Nationwide",
             "type": "boolean"
+          },
+          "delivery_zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DeliveryZoneOut"
+            },
+            "title": "Delivery Zones",
+            "type": "array"
           },
           "description": {
             "anyOf": [
@@ -9419,6 +9885,21 @@
               }
             ],
             "title": "Delivery Nationwide"
+          },
+          "delivery_zones": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryZoneIn"
+                },
+                "maxItems": 21,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zones"
           },
           "description": {
             "anyOf": [
@@ -12878,6 +13359,14 @@
             "title": "Delivery Nationwide",
             "type": "boolean"
           },
+          "delivery_zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DeliveryZoneOut"
+            },
+            "title": "Delivery Zones",
+            "type": "array"
+          },
           "description": {
             "anyOf": [
               {
@@ -14595,6 +15084,21 @@
             ],
             "title": "Delivery Nationwide"
           },
+          "delivery_zones": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryZoneIn"
+                },
+                "maxItems": 21,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Zones"
+          },
           "description": {
             "anyOf": [
               {
@@ -15321,7 +15825,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -15343,6 +15848,85 @@
           "name"
         ],
         "title": "ProductCreate",
+        "type": "object"
+      },
+      "ProductDescribeIn": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "price_min": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Min"
+          },
+          "price_unit": {
+            "anyOf": [
+              {
+                "maxLength": 10,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unit"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProductDescribeIn",
+        "type": "object"
+      },
+      "ProductDescribeOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "title": "ProductDescribeOut",
         "type": "object"
       },
       "ProductDraftApproveRequest": {
@@ -15393,6 +15977,17 @@
             ],
             "title": "Description"
           },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -15401,6 +15996,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
           },
           "price_min": {
             "anyOf": [
@@ -15668,6 +16274,18 @@
             ],
             "title": "Description"
           },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "name": {
             "anyOf": [
               {
@@ -15768,7 +16386,8 @@
                   "kg",
                   "100g",
                   "bottle",
-                  "box"
+                  "box",
+                  "pack"
                 ],
                 "type": "string"
               },
@@ -15812,7 +16431,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -16264,7 +16884,8 @@
               "kg",
               "100g",
               "bottle",
-              "box"
+              "box",
+              "pack"
             ],
             "title": "Price Unit",
             "type": "string"
@@ -18217,6 +18838,19 @@
           "created_at"
         ],
         "title": "ReviewOut",
+        "type": "object"
+      },
+      "ReviewReplySuggestOut": {
+        "properties": {
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "ReviewReplySuggestOut",
         "type": "object"
       },
       "ReviewReplyUpdate": {
@@ -22591,6 +23225,64 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/page-fill/read": {
+      "post": {
+        "operationId": "admin_read_page_text_admin_producers__producer_id__page_fill_read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Read Page Text",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/preview-link": {
       "post": {
         "description": "Mint a 14-day read-only link to the draft's full page. Stateless: no\nwrite, and a new link does not cancel an earlier one. Every link dies\nwhen the draft is published, claimed or deleted (the read checks the row).",
@@ -22637,6 +23329,64 @@
         "summary": "Create Preview Link",
         "tags": [
           "producer-draft-preview"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-description/suggest": {
+      "post": {
+        "operationId": "admin_suggest_product_description_admin_producers__producer_id__product_description_suggest_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductDescribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDescribeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Suggest Product Description",
+        "tags": [
+          "producer-management"
         ]
       }
     },
@@ -22802,6 +23552,228 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/product-groups": {
+      "get": {
+        "operationId": "admin_list_product_groups_admin_producers__producer_id__product_groups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response Admin List Product Groups Admin Producers  Producer Id  Product Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin List Product Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      },
+      "put": {
+        "operationId": "admin_replace_product_groups_admin_producers__producer_id__product_groups_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response Admin Replace Product Groups Admin Producers  Producer Id  Product Groups Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Replace Product Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-groups/assign": {
+      "put": {
+        "operationId": "admin_move_products_between_groups_admin_producers__producer_id__product_groups_assign_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMovesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Admin Move Products Between Groups Admin Producers  Producer Id  Product Groups Assign Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Move Products Between Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-groups/suggest": {
+      "post": {
+        "operationId": "admin_suggest_product_groups_admin_producers__producer_id__product_groups_suggest_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSuggestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Suggest Product Groups",
+        "tags": [
+          "admin-product-organize"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/product-import": {
       "post": {
         "operationId": "admin_import_products_admin_producers__producer_id__product_import_post",
@@ -22857,6 +23829,69 @@
         "summary": "Admin Import Products",
         "tags": [
           "admin-product-import"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/product-order": {
+      "put": {
+        "description": "Every product of the business, published AND draft — the admin builds\nthe page before approval. The exact-set 409 applies to that whole set.",
+        "operationId": "admin_set_product_order_admin_producers__producer_id__product_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Admin Set Product Order Admin Producers  Producer Id  Product Order Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Set Product Order",
+        "tags": [
+          "admin-product-organize"
         ]
       }
     },
@@ -22966,6 +24001,74 @@
         "summary": "Admin Delete Draft Product",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/products/{product_id}/group": {
+      "put": {
+        "operationId": "admin_set_product_group_admin_producers__producer_id__products__product_id__group_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupAssignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Set Product Group",
+        "tags": [
+          "admin-product-organize"
         ]
       }
     },
@@ -29822,6 +30925,98 @@
         ]
       }
     },
+    "/producers/me/page-fill/read": {
+      "post": {
+        "operationId": "read_my_page_text_producers_me_page_fill_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageFillIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageFillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Read My Page Text",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-description/suggest": {
+      "post": {
+        "operationId": "suggest_my_product_description_producers_me_product_description_suggest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductDescribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDescribeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Suggest My Product Description",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/product-groups": {
       "get": {
         "operationId": "list_my_product_groups_producers_me_product_groups_get",
@@ -29896,6 +31091,82 @@
           }
         ],
         "summary": "Replace My Product Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-groups/assign": {
+      "put": {
+        "operationId": "move_products_between_groups_producers_me_product_groups_assign_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMovesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Move Products Between Groups Producers Me Product Groups Assign Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Move Products Between Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-groups/suggest": {
+      "post": {
+        "operationId": "suggest_product_groups_producers_me_product_groups_suggest_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSuggestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Suggest Product Groups",
         "tags": [
           "producer-management"
         ]
@@ -33291,6 +34562,55 @@
           }
         ],
         "summary": "Set Review Reply",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/reviews/{review_id}/reply/suggest": {
+      "post": {
+        "description": "Owner of the reviewed business only; anyone else gets the same 404 as\nthe reply route (MEH-1001), and there is no admin override (MEH-1039) —\na reply is the business's own voice.",
+        "operationId": "suggest_review_reply_reviews__review_id__reply_suggest_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Review Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewReplySuggestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Suggest Review Reply",
         "tags": [
           "reviews"
         ]

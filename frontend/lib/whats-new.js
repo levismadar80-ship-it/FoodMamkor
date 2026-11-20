@@ -38,6 +38,11 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.10 (20/11): delivery zones (MEH-3484), next delivery date (MEH-3485),
+  // business-page chat (MEH-3489), free-text page draft (MEH-3483), product
+  // groups and description suggestion, AI review reply (MEH-3480), «מארז»
+  // price unit. Lines shown to Sapir 20/11 17:18Z; she approved («מאשרת»).
+  { version: "1.5.10", key: "v1_5_10", date: "2026-11-20", items: 7 },
   // 1.5.9 (20/11): weekly summary email with an owner on/off switch (MEH-3212);
   // allergens emphasised in the ingredients list (MEH-3443); shorter business
   // page FAQ, closed by default (MEH-3460). Lines approved by Sapir word for word.

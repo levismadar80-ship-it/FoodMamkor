@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "./_cloudinary-stub";
+import { pickCity } from "./_pick-city";
 
 /**
  * MEH-2241 chunk B — «free-text city forbidden» (MEH-213) is enforced at the
@@ -70,10 +71,8 @@ test.describe("MEH-2241 chunk B — the city gate refuses a typed town the picke
 
   test("B — a town from the list: the advance succeeds", async ({ page }) => {
     await reachDetails(page);
-    const city = page.getByTestId("register-details-city").getByRole("combobox");
-    await city.fill(KNOWN_TOWN);
     // pick it from the dropdown, the way a seller does — not just type it
-    await page.getByTestId("register-details-city").getByRole("option", { name: KNOWN_TOWN }).first().click();
+    await pickCity(page.getByTestId("register-details-city"), KNOWN_TOWN);
     await page.getByTestId("register-details-next").click();
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
   });
@@ -91,8 +90,7 @@ test.describe("MEH-2241 chunk B — the city gate refuses a typed town the picke
     await expect(city).toHaveAttribute("aria-invalid", "true");
     await expect(city).toBeFocused();
     // correcting it to a real town clears the block (Baymard on-change clear)
-    await city.fill(KNOWN_TOWN);
-    await page.getByTestId("register-details-city").getByRole("option", { name: KNOWN_TOWN }).first().click();
+    await pickCity(page.getByTestId("register-details-city"), KNOWN_TOWN);
     await expect(page.locator("#register-city-error")).toHaveCount(0);
     await page.getByTestId("register-details-next").click();
     await expect(page.getByTestId("register-frame-category")).toBeVisible();

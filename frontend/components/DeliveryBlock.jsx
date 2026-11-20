@@ -11,6 +11,8 @@ import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
+import NextDeliveryLine from "@/components/NextDeliveryLine";
+import { daysOfRow } from "@/lib/nextDelivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
@@ -85,6 +87,7 @@ const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 function AreaRow({ da, t, fee = null }) {
   const feeLabel =
     fee === 0 ? null : splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL }));
+  const freeAbove = splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL }));
   return (
     <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
       <span className="font-medium text-text">{da.city}</span>
@@ -103,6 +106,15 @@ function AreaRow({ da, t, fee = null }) {
             ) : (
               t("fee_free")
             )}
+          </span>
+        ) : null}
+        {/* MEH-3484: the city's zone threshold, only when it differs from the
+            business's own (which the top line already states). */}
+        {typeof da.free_delivery_above === "number" && fee !== 0 ? (
+          <span className="text-fg-muted" data-testid="area-free-above">
+            {freeAbove.before}
+            <bdi>{formatPrice(da.free_delivery_above)}</bdi>
+            {freeAbove.after}
           </span>
         ) : null}
         {da.min_order ? (
@@ -187,15 +199,19 @@ function capSections(sections, limit) {
  *   rows: object[],
  *   t: (key: string, values?: Record<string, string | number>) => string,
  *   feeOf?: (da: object) => number | null,
+ *   days?: string[] | null,
+ *   producer?: object | null,
  * }} props
  */
-function AreaGroup({ label, rows, t, feeOf = () => null }) {
+function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer = null }) {
   return (
     <div>
       {/* MEH-2592 C: the day reads as a small gold heading. MEH-3028: text
           only — the truck now leads the fee line once, instead of repeating
           on every day (Sapir, option א, 13/11). */}
       <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
+      {/* MEH-3485: the date of the next run, under its day heading. */}
+      <NextDeliveryLine days={days} producer={producer} className="-mt-1 mb-1.5" />
       <ul className={LIST_CARD}>
         {rows.map((da) => (
           <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
@@ -218,20 +234,36 @@ function CompactCities({ areas, t }) {
   const overLimit = sorted.length > CITY_PREVIEW_LIMIT;
   const visible = expanded || !overLimit ? sorted : sorted.slice(0, CITY_PREVIEW_LIMIT);
   const hiddenCount = sorted.length - CITY_PREVIEW_LIMIT;
+  // MEH-3473: every city carries its own leading «·» in a fixed 1rem slot
+  // (w-2 + gap-x-2), and the list is pulled 1rem past the inline-start edge of
+  // an overflow-hidden wrapper. The first city of EVERY visual line — not only
+  // of the list — therefore starts inside the clipped 1rem, so no line opens
+  // with «·» and none ends with one (separators only ever precede a city).
+  // DO NOT go back to `i > 0 && "·"`: flex-wrap breaks between items, so each
+  // new line opened with the separator of its first item (Sapir 19/11, 48
+  // cities). DO NOT drop the separator from the first item either — it would
+  // then start inside the clipped slot and lose its first letter.
   return (
     <div className="mb-4">
-      <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text">
-        {visible.map((da, i) => (
-          <li key={da.id ?? da.city} className="flex items-center gap-x-2">
-            {i > 0 && (
-              <span aria-hidden="true" className="text-fg-muted">
+      <div className="overflow-hidden" data-testid="delivery-cities-clip">
+        <ul
+          className="-ms-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text"
+          data-testid="delivery-cities"
+        >
+          {visible.map((da) => (
+            <li key={da.id ?? da.city} className="flex items-center gap-x-2">
+              <span
+                aria-hidden="true"
+                className="inline-block w-2 shrink-0 text-center text-fg-muted"
+                data-testid="delivery-city-sep"
+              >
                 ·
               </span>
-            )}
-            <span>{da.city}</span>
-          </li>
-        ))}
-      </ul>
+              <span>{da.city}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       {overLimit && (
         <ShowMore
           size="inline"
@@ -523,9 +555,25 @@ export default function DeliveryBlock({
   // variance the editorial rows are required to carry it. Fees are uniform or
   // absent for every producer that reaches compact mode today, so this cannot
   // change an existing render (MEH-1435 lock intact).
+  // MEH-3484: a row repeats a zone threshold only when it is not the
+  // business's own one, which the top line already states — and such a row
+  // keeps the editorial rows (the compact list would hide it).
+  const businessFreeAbove = producer?.free_delivery_above ?? null;
+  const ownFree = (da) =>
+    typeof da.free_delivery_above === "number" && da.free_delivery_above !== businessFreeAbove;
   const bare =
-    hasAreas && !feeVaries && areas.every((da) => !da.min_order && !da.delivery_day);
-  const grouped = hasAreas && !bare ? groupDeliveryAreas(areas) : null;
+    hasAreas &&
+    !feeVaries &&
+    areas.every((da) => !da.min_order && !da.delivery_day && !ownFree(da));
+  const grouped =
+    hasAreas && !bare
+      ? groupDeliveryAreas(
+          areas.map((da) => ({
+            ...da,
+            free_delivery_above: ownFree(da) ? da.free_delivery_above : null,
+          })),
+        )
+      : null;
   // MEH-1903: the editorial rows, flattened to ONE shape the cap can reason
   // about regardless of mode. Group mode is a list of labelled sections;
   // hoist/flat are a single unlabelled section, so they share the same walk and
@@ -542,6 +590,8 @@ export default function DeliveryBlock({
               key: `day:${g.day}`,
               label: t("delivery_day_group", { day: g.day }),
               rows: g.rows,
+              // MEH-3485: every row of a group shares its day set.
+              days: daysOfRow(g.rows[0]),
             })),
             ...(grouped.arranged.length > 0
               ? [{ key: "bucket:arranged", label: t("arranged_group"), rows: grouped.arranged }]
@@ -668,6 +718,12 @@ export default function DeliveryBlock({
                     })
                   : t("dispatch_days", { day: grouped.day })}
               </FactLine>
+              {/* MEH-3485: one shared day set → one next-run date. */}
+              <NextDeliveryLine
+                days={daysOfRow(grouped.rows[0])}
+                producer={producer}
+                className="-mt-1 mb-2"
+              />
               {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
               <ul className={LIST_CARD}>
                 {visibleAreaRows.map((da) => (
@@ -706,7 +762,15 @@ export default function DeliveryBlock({
                   TOTAL visible rows — a group entirely past the cap is absent
                   header and all while collapsed. One toggle for the section. */}
               {visibleSections.map((s) => (
-                <AreaGroup key={s.key} label={s.label} rows={s.rows} t={t} feeOf={feeOf} />
+                <AreaGroup
+                  key={s.key}
+                  label={s.label}
+                  rows={s.rows}
+                  t={t}
+                  feeOf={feeOf}
+                  days={s.days ?? null}
+                  producer={producer}
+                />
               ))}
               {areaToggle}
             </div>
