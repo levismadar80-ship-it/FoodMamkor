@@ -302,22 +302,25 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
   // MEH-1592: collision boundary handed to the +N Popover and the badge
-  // tooltips. MEH-3321: the strip left the photo for the card body, so the
-  // boundary is now the whole body (name, rating, strip, description): the
-  // overlay prefers ABOVE its boundary, and above the body is the photo.
+  // tooltips. Since MEH-3508 the badge strip's own popovers use
+  // badgeStripRef below; this one serves the body's TrustBadge.
   const cardBodyRef = useRef(null);
-  // MEH-3321: the MEH-2584 plate lift (stripLift) is gone — the badge strip
-  // no longer sits on the photo, so the no-photo plate has nothing to clear.
+  // MEH-3508: no plate lift (MEH-2584 stripLift stays gone) — the photo
+  // strip is one line, and the no-photo plate's pb-12/sm:pb-14 clears it.
   // MEH-2856: the badge pills + «+N» sit in this one-line group.
   const badgeLineRef = useRef(null);
+  // MEH-3508: the photo strip is again the +N popover's and the badge
+  // tooltips' collision boundary (as before MEH-3321): the overlay prefers
+  // ABOVE it, which is open photo space.
+  const badgeStripRef = useRef(null);
   const earnedBadges = badgeCount(producer);
   const shownBadges = useBadgesThatFit(badgeLineRef, earnedBadges);
   const hiddenBadges = earnedBadges - shownBadges;
-  // MEH-3321: the strip is in the body's flex column now, so an empty strip
-  // would still cost a gap. Render it only when it has something to show.
+  // MEH-3321/3508: neither strip renders empty — the body's pill row would
+  // still cost a gap in its flex column.
   const showTrust = (producer.trust_tier ?? 1) >= 4;
   const showDeliveryOnly = producer.has_physical_location === false && !!producer.offers_delivery;
-  const hasStripContent = earnedBadges > 0 || showTrust || showDeliveryOnly;
+  const hasMetaPills = showTrust || showDeliveryOnly;
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -466,9 +469,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               // name plate — the business's own name set large on the warm
               // background-alt, like a label — replacing the MEH-643 leaf glyph +
               // brand wordmark on green-50 (the same tile on 17/29 cards read as
-              // a template). Bottom-aligned. (pb once cleared the badge row on the
-              // photo; MEH-3321 moved it to the body. pb is kept as bottom
-              // breathing room, pinned by ScanSmallFixes.test.jsx.) keep-all: no mid-word
+              // a template). Bottom-aligned. (pb clears the one-line badge
+              // row on the photo — back there since MEH-3508; pinned by
+              // ScanSmallFixes.test.jsx.) keep-all: no mid-word
               // Hebrew break at 22px; overflow-wrap:anywhere is the fallback for
               // a single token wider than the tile, which keep-all can't break.
               <div
@@ -515,77 +518,16 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
         </Link>
 
         <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
-      </div>
 
-      <div ref={cardBodyRef} className="p-4 flex flex-col gap-2" data-testid="card-body">
-        {/* Eyebrow = PLACE (MEH-2440, Sapir 27/10): the city leads, in gold,
-            with the distance beside it — a directory of where food comes from
-            names the place first. The category moved to the line under the
-            name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
-        {producer.city && (
-          <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
-            <span className="truncate">
-              {producer.city}
-              {distanceLabel && (
-                <>
-                  {" · "}
-                  <span data-testid="distance-pill">{distanceLabel}</span>
-                </>
-              )}
-            </span>
-          </p>
-        )}
-
-        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
-            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
-            sm and up unchanged. */}
-        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
-          <Link href={producerHref} className="block min-w-0 focus-ring">
-            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
-            <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
-              {highlightQuery
-                ? highlightMatch(producer.name, highlightQuery)
-                : producer.name}
-            </h3>
-          </Link>
-          {hasRating && (
-            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
-            <RatingCompact
-              avg={producer.avg_rating}
-              count={producer.reviews_count}
-              className="shrink-0 justify-self-start sm:justify-self-auto"
-              data-testid="card-rating"
-            />
-          )}
-        </div>
-
-        {hasLocationText && (
-        <p
-          className="text-sm text-fg-muted truncate flex items-center gap-1.5"
-          data-testid="location-line"
-        >
-          <span className="truncate">
-            {category}
-            {/* No city → no place line above, so the distance stays here. */}
-            {!producer.city && distanceLabel && (
-              <>
-                {category ? " · " : null}
-                <span data-testid="distance-pill">{distanceLabel}</span>
-              </>
-            )}
-          </span>
-        </p>
-        )}
-
-        {/* MEH-3321 (Sapir 15/11 «שלא יתפוס את כל המסך»): the badge row moved
-            OFF the photo to the card body, under the category line, so the
-            photo shows the food. mt-0.5 + the body's gap-2 = 10px = the +N's
-            -m-2.5 pull-back, so its hit area never covers the name link above.
-            Rendered only when it has content (hasStripContent). The class went
-            from `absolute bottom-3 start-3 … max-w-[calc(100%-1.25rem)]` to
-            in-flow `max-w-full`; cap, fit and «+N» logic are unchanged. The
-            notes below about the photo describe the pre-3321 placement.
-            Badge row — was bottom-start over the image (Assembly v2), max 2.
+        {/* MEH-3508 (Sapir 20/11): the badges are back ON the photo, bottom-start,
+            where they sat before MEH-3321 — under the name they pushed the card
+            into extra rows. What MEH-3321 fixed (three pills stacked over a
+            third of the photo) does not come back: the photo strip holds ONLY
+            the one-line badge group (max 2 + «+N»), never wraps, and TrustBadge
+            and «משלוחים בלבד» stay in the card body (card-meta-pills). */}
+        {/* MEH-3321 (15/11) had moved the row to the body; MEH-3508 reverses the
+            placement and keeps its other fixes (no empty strip, one line).
+            Badge row — bottom-start over the image (Assembly v2), max 2.
             MEH-76 chunk 4 (S12 §04-B): list density — verified renders the
             icon-only seal; declared shows nothing (no placeholder). */}
         {/* MEH-1547: the z-[2] that used to sit here was REMOVED. `z-index` on
@@ -618,9 +560,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             at 390). TrustBadge and the delivery-only pill below stay OUTSIDE
             the group: as before, they drop to the next line when there is no
             room, instead of being clipped by the card's overflow-hidden. */}
-        {hasStripContent && (
+        {earnedBadges > 0 && (
         <div
-          className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-full"
+          ref={badgeStripRef}
+          className="absolute bottom-3 start-3 flex items-center max-w-[calc(100%-1.25rem)]"
           data-testid="card-badge-strip"
         >
           <div
@@ -628,7 +571,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             data-badge-line
             className="flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full"
           >
-          <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={cardBodyRef} nowrap />
+          <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={badgeStripRef} nowrap />
           {hiddenBadges > 0 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
             // MEH-1547: the +N counter becomes a Popover trigger listing the
@@ -661,7 +604,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               // out of the card's overflow-hidden. Below lg, sheetOnMobile
               // still wins — the sheet was never the colliding surface.
               overlay
-              avoidRef={cardBodyRef}
+              avoidRef={badgeStripRef}
               trigger={
                 <button
                   type="button"
@@ -749,6 +692,78 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             </Popover>
           )}
           </div>
+        </div>
+        )}
+      </div>
+
+      <div ref={cardBodyRef} className="p-4 flex flex-col gap-2" data-testid="card-body">
+        {/* Eyebrow = PLACE (MEH-2440, Sapir 27/10): the city leads, in gold,
+            with the distance beside it — a directory of where food comes from
+            names the place first. The category moved to the line under the
+            name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
+        {producer.city && (
+          <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
+            <span className="truncate">
+              {producer.city}
+              {distanceLabel && (
+                <>
+                  {" · "}
+                  <span data-testid="distance-pill">{distanceLabel}</span>
+                </>
+              )}
+            </span>
+          </p>
+        )}
+
+        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
+            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
+            sm and up unchanged. */}
+        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
+          <Link href={producerHref} className="block min-w-0 focus-ring">
+            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
+            <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
+              {highlightQuery
+                ? highlightMatch(producer.name, highlightQuery)
+                : producer.name}
+            </h3>
+          </Link>
+          {hasRating && (
+            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
+            <RatingCompact
+              avg={producer.avg_rating}
+              count={producer.reviews_count}
+              className="shrink-0 justify-self-start sm:justify-self-auto"
+              data-testid="card-rating"
+            />
+          )}
+        </div>
+
+        {hasLocationText && (
+        <p
+          className="text-sm text-fg-muted truncate flex items-center gap-1.5"
+          data-testid="location-line"
+        >
+          <span className="truncate">
+            {category}
+            {/* No city → no place line above, so the distance stays here. */}
+            {!producer.city && distanceLabel && (
+              <>
+                {category ? " · " : null}
+                <span data-testid="distance-pill">{distanceLabel}</span>
+              </>
+            )}
+          </span>
+        </p>
+        )}
+
+        {/* MEH-3508: recognition tier + «משלוחים בלבד» — business facts, not
+            BADGE_CONFIG badges — stay in the body under the category line, so
+            the photo strip is always one line. Rendered only with content. */}
+        {hasMetaPills && (
+        <div
+          className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-full"
+          data-testid="card-meta-pills"
+        >
           {/* MEH-1120 (MEH-1074 Task B): gate raised 3 → 4. Verification tiers
               (2 phone / 3 business) are owned by the BadgeRow seal above
               (verification_tier / ADR-022) — TrustBadge now only carries the

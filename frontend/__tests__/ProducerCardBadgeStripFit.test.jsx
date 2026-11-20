@@ -311,16 +311,21 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     expect(list.className).toContain("[&>*]:shrink-0");
   });
 
-  // MEH-3321 (Sapir 15/11): the badges sat on the photo and covered it. The
-  // strip now lives in the card body, after the category line, and is in the
-  // normal flow — not positioned over the image.
-  it("the badge strip is off the photo: in flow, after the business name", () => {
+  // MEH-3508 (Sapir 20/11): the badges are back on the photo, bottom-start
+  // (MEH-3321 had put them under the name, which added rows to the card).
+  // What MEH-3321 fixed must not return: the photo strip carries only the
+  // badge line — «משלוחים בלבד» stays in the body, under the name.
+  it("the badge strip is on the photo; «משלוחים בלבד» stays in the body", () => {
     room = 400;
-    render(<ProducerCard producer={threeBadges} />);
+    render(<ProducerCard producer={{ ...threeBadges, has_physical_location: false, offers_delivery: true }} />);
     const strip = screen.getByTestId("card-badge-strip");
-    expect(strip.className.split(/\s+/)).not.toContain("absolute");
-    const name = screen.getByRole("heading", { level: 3 });
-    expect(name.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(strip.className.split(/\s+/)).toEqual(expect.arrayContaining(["absolute", "bottom-3", "start-3"]));
+    const body = screen.getByTestId("card-body");
+    expect(body.contains(strip), "strip is not in the card body").toBe(false);
+    const meta = screen.getByTestId("card-meta-pills");
+    expect(body.contains(meta)).toBe(true);
+    expect(strip.contains(meta)).toBe(false);
+    expect(meta).toHaveTextContent("משלוחים בלבד");
   });
 
   it("0 badges: no strip at all, so the body has no empty gap (MEH-3321)", () => {

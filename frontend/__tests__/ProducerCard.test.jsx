@@ -854,33 +854,33 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
 
   // MEH-1508 chunk 3ב-2 (axe `target-size`, CI mobile /producers): the +N keeps
   // a 44×44 hit area (min-h/min-w 44) inside a 24px layout box by pulling it
-  // back with a negative margin. When the strip WRAPS the +N onto a second line
-  // (a long first-row badge such as «צמחוני» at 393px), that margin
-  // reaches upward into the row above; with the old 4px row gap the +N — later
-  // in DOM, so painted on top — covered ~5px of «חדש» and left it 41.5×19.3,
-  // below WCAG 2.2 2.5.8's 24×24. The row gap must be at least the +N's
-  // vertical pull-back, so a wrapped +N can touch the row above but never
-  // cover it. Read off the Tailwind spacing scale (1 unit = 4px).
-  it("+N keeps a 44px target whose pull-back cannot cover a badge on the row above", () => {
+  // back with a negative margin. That margin once reached into a wrapped row
+  // above and covered «חדש» (41.5×19.3, below WCAG 2.2 2.5.8's 24×24).
+  // MEH-3508: the strip is back on the photo and holds ONLY the no-wrap badge
+  // line, so there is no row above to cover — the strip must not wrap — and the
+  // pull-back must stay inside the photo: bottom inset ≥ pull-back.
+  // Read off the Tailwind spacing scale (1 unit = 4px).
+  it("+N keeps a 44px target whose pull-back stays on one line, inside the photo", () => {
     render(<ProducerCard producer={overflowProducer} />);
     const chip = screen.getByTestId("badge-overflow");
     const chipClasses = chip.className.split(/\s+/);
     expect(chipClasses).toContain("min-h-touch");
     expect(chipClasses).toContain("min-w-touch");
-    // MEH-3321: the strip left the photo (no longer `absolute`); find it by id.
     const strip = chip.closest('[data-testid="card-badge-strip"]');
     expect(strip, "the +N must sit in the badge strip").not.toBeNull();
     const stripClasses = strip.className.split(/\s+/);
-    expect(stripClasses, "the strip wraps, which is the case this guards").toContain("flex-wrap");
+    expect(stripClasses, "the photo strip is one line").not.toContain("flex-wrap");
+    const line = chip.closest("[data-badge-line]");
+    expect(line.className.split(/\s+/)).toContain("flex-nowrap");
     const units = (re, classes) => {
       const hit = classes.map((c) => re.exec(c)).find(Boolean);
       return hit ? Number(hit[1]) : null;
     };
     const pullBack = units(/^-m[ty]?-(\d+(?:\.\d+)?)$/, chipClasses);
     expect(pullBack, "the +N's vertical negative margin must be readable").not.toBeNull();
-    const rowGap = units(/^gap-y-(\d+(?:\.\d+)?)$/, stripClasses) ?? units(/^gap-(\d+(?:\.\d+)?)$/, stripClasses);
-    expect(rowGap, "the strip's row gap must be readable").not.toBeNull();
-    expect(rowGap).toBeGreaterThanOrEqual(pullBack);
+    const inset = units(/^bottom-(\d+(?:\.\d+)?)$/, stripClasses);
+    expect(inset, "the strip's bottom inset must be readable").not.toBeNull();
+    expect(inset).toBeGreaterThanOrEqual(pullBack);
   });
 
   it("tapping +N opens a popover listing ONLY the hidden badge labels (MEH-1547)", () => {
