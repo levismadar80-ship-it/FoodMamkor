@@ -163,21 +163,26 @@ export default function GroupBuysClient({ initialItems = null, initialCounts = n
   const tErr = useTranslations();
   // MEH-2233: the server's list is used once, for the first load only, which
   // is always status «open» with no city. Every later load fetches as before.
-  const seed = useRef(Array.isArray(initialItems) ? initialItems : null);
-  const [items, setItems] = useState(() => seed.current ?? []);
-  const [loading, setLoading] = useState(() => !seed.current);
+  // The values are fixed at mount (state); the refs only mark them used, in
+  // the effects below (a ref read during render breaks react-hooks/refs).
+  const [initialList] = useState(() => (Array.isArray(initialItems) ? initialItems : null));
+  const seed = useRef(initialList);
+  const [items, setItems] = useState(() => initialList ?? []);
+  const [loading, setLoading] = useState(() => !initialList);
   const [error, setError] = useState(false);
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
   // MEH-3128: rows per status tab for this city — a tab with 0 is not drawn.
   // null = unknown (loading or failed) → every tab, as before.
-  const countsSeed = useRef(initialCounts ? StatusCountsOut.safeParse(initialCounts) : null);
-  const [statusCounts, setStatusCounts] = useState(() =>
-    countsSeed.current?.success ? countsSeed.current.data : null,
-  );
+  const [initialParsedCounts] = useState(() => {
+    const parsed = initialCounts ? StatusCountsOut.safeParse(initialCounts) : null;
+    return parsed?.success ? parsed.data : null;
+  });
+  const countsSeed = useRef(initialParsedCounts);
+  const [statusCounts, setStatusCounts] = useState(initialParsedCounts);
   useEffect(() => {
-    const seeded = countsSeed.current?.success && !city;
+    const seeded = countsSeed.current !== null && !city;
     countsSeed.current = null; // one use only
     if (seeded) return; // MEH-2233: the server already answered this request
     let live = true;
