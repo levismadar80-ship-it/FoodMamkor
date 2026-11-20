@@ -13,7 +13,7 @@
 > month) and also fails on `{"status":"disabled"}`, which is a 200 that means
 > the key is missing. "Hourly" in the title and in §1–§2 is the original design.
 >
-> _Original status:_ ⏳ NOT APPLIED — written 28/10/2026. `.github/workflows/**` is
+> _Original status (28/10/2026):_ staged, not yet applied. `.github/workflows/**` is
 > CC-deny for the filesystem tools (`.claude/settings.json`, MEH-671); Sapir
 > pastes the block below, or CC lands it through the Contents API per the
 > tool × path note in `.claude/rules/security.md` once she says so.
