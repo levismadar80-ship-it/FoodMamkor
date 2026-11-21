@@ -19,7 +19,6 @@ const INTERNAL_PATH = /^\/(?![/\\])/;
 // MEH-3661: browsers drop tab / newline / other C0 controls while parsing a
 // URL, so "/\t/evil.com" resolves to //evil.com — a protocol-relative jump.
 // Any control character makes a candidate unsafe, wherever it sits.
-// eslint-disable-next-line no-control-regex -- matching control characters is the point
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 
 /**

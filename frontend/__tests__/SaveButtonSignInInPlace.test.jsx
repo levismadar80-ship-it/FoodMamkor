@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
-import { useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => {
@@ -24,10 +24,12 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 
-// The auth store, settable from the stubbed Google button.
+// The auth store, settable from the stubbed Google button. The user travels
+// through a context; the setter is handed out in an effect, not during render
+// (react-hooks/globals — same as PasskeySignIn.test.jsx).
 let setUserExternal = () => {};
-let currentUser = null;
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: currentUser }) }));
+const AuthCtx = createContext(null);
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: useContext(AuthCtx) }) }));
 vi.mock("@/components/GoogleAuthButton", () => ({
   default: ({ onSuccess }) => (
     <button
@@ -69,13 +71,17 @@ const RID = "11111111-1111-4111-8111-111111111111";
 
 function Harness() {
   const [user, setUser] = useState(null);
-  setUserExternal = setUser;
-  currentUser = user;
-  return <SaveButton itemType="recipe" itemId={RID} />;
+  useEffect(() => {
+    setUserExternal = setUser;
+  }, []);
+  return (
+    <AuthCtx.Provider value={user}>
+      <SaveButton itemType="recipe" itemId={RID} />
+    </AuthCtx.Provider>
+  );
 }
 
 beforeEach(() => {
-  currentUser = null;
   resetSavedCache();
   sessionStorage.clear();
   localStorage.clear();
