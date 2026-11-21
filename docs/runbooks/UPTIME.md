@@ -12,5 +12,5 @@
 | 3 | ‏Vercel → Deployments — רק אם `/` נפל וה-readiness דווקא ירוק (אז זה ה-frontend, לא ה-backend) |
 | 4 | ‏ה-issue **נסגר מעצמו** בריצה הראשונה ששני ה-probes חוזרים 200. אין מה לסגור ביד |
 
-**המנגנון:** `.github/workflows/uptime.yml` — GitHub-hosted runner, cron כל 10 דק', **שני** probes (`/` ו-`/api/health/readiness`). issue נפתח רק אחרי **שני כשלים רצופים**, כדי ששיהוק בודד לא יצלצל. בלי חשבון חיצוני, בלי כסף, בלי secret. ההתראה מגיעה דרך **Repo → Watch → Custom → Issues** — בלי ההגדרה הזו ה-issue נפתח לחדר ריק.
+**המנגנון:** `.github/workflows/uptime.yml` — GitHub-hosted runner, cron כל 30 דק'. בודק את `/`, את `/api/health/readiness`, את Google Places, אריח מפה של OSM, ומאז MEH-3555 גם את מסע המשתמש (`scripts/checks/smoke_production.py --quick`: הקטלוג, דף הבית, `/producers`, `/map`, דף בית עסק, תמונה מ-Cloudinary ותצוגת הקישור). כשה-issue נפתח בגלל המסע, השורות `[FAIL]` בלוג של הריצה אומרות איזה צעד נשבר. issue נפתח רק אחרי **שני כשלים רצופים**, כדי ששיהוק בודד לא יצלצל. בלי חשבון חיצוני, בלי כסף, בלי secret. ההתראה מגיעה דרך **Repo → Watch → Custom → Issues** — בלי ההגדרה הזו ה-issue נפתח לחדר ריק.
 
