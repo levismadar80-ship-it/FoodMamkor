@@ -306,7 +306,6 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
     city: str
 
 
-
 class AdminUpdateV1(WhatsAppTemplate):
     """MEH-3589: every other ADMIN ping — one template for all of them.
 
@@ -328,6 +327,7 @@ class AdminUpdateV1(WhatsAppTemplate):
     name: ClassVar[str] = "admin_update_v1"
     topic: str
     detail: str
+
 
 # --- MEH-3296: on-site product orders ---------------------------------------
 #

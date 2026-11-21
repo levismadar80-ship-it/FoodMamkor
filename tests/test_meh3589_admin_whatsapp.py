@@ -10,6 +10,9 @@ email did. They now go through `services/admin_whatsapp.ping_admin`
    app/ (admin_decisions._send_whatsapp was one).
    The scan is source-text by nature (it is a rule about the code); it ships
    with a synthetic self-test and a case anchored to a real repo file.
+   Its limit: it sees the number only where it is written as the first
+   argument (`x.admin_whatsapp_to`); `to = settings.admin_whatsapp_to;
+   send_text(to, …)` passes it. Run against origin/staging it found 11 sites.
 2. ping_admin itself: unset number, flattening, fail-open, test_cause.
 3. Each of the eight notifiers sends AdminUpdateV1, and its email still goes.
 """

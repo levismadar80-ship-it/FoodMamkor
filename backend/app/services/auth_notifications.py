@@ -240,9 +240,9 @@ def notify_admin_new_recipe(
 
     MEH-1000 — closes the MEH-997 journey-1b gap: the /admin/recipes
     queue was poll-only while producer registration already notified.
-    REUSES: notify_admin_new_producer below — same admin WhatsApp (ping_admin since
-    MEH-3589; free-text send_text before) + email to settings.admin_email, no
-    Meta template needed. Fire-and-forget: runs as a BackgroundTask and
+    REUSES: notify_admin_new_producer below — same admin WhatsApp (ping_admin,
+    template admin_update_v1, MEH-3589) + email to settings.admin_email.
+    Fire-and-forget: runs as a BackgroundTask and
     swallows-and-logs any failure (MEH-977 — observable, never breaks
     the submission).
     """
@@ -531,8 +531,8 @@ def notify_admin_producer_sensitive_edit(
     change `vegan_scope` the next day. This closes the observability gap
     WITHOUT touching the save: no status flip, no re-moderation, no schema.
 
-    REUSES: notify_admin_producer_resubmit above 1:1 — same admin WhatsApp (ping_admin since
-    MEH-3589; free-text send_text before) + email to settings.admin_email, per-channel
+    REUSES: notify_admin_producer_resubmit above 1:1 — same admin WhatsApp (ping_admin,
+    template admin_update_v1, MEH-3589) + email to settings.admin_email, per-channel
     try blocks (a WhatsApp raise must not skip the email), fire-and-forget as a
     BackgroundTask. Fail-open per MEH-1051/977: a Meta/Resend outage is logged,
     never surfaced to the owner who already got her 200.
@@ -576,8 +576,8 @@ def notify_admin_new_category_request(
     """Ping admin (WhatsApp + email) that a new category was requested.
 
     MEH-1063 — mirrors notify_admin_new_recipe above 1:1: same free-text
-    ping_admin (MEH-3589; free-text send_text before) + email to settings.admin_email,
-    no Meta template needed. Fire-and-forget: runs as a BackgroundTask and
+    ping_admin (template admin_update_v1, MEH-3589) + email to
+    settings.admin_email. Fire-and-forget: runs as a BackgroundTask and
     swallows-and-logs any failure (MEH-977 — observable, never breaks the
     submission). `producer_name` is None/empty for anonymous submissions.
     """
@@ -627,8 +627,8 @@ def notify_admin_new_business_suggestion(
     """Ping admin (WhatsApp + email) that a visitor suggested a business.
 
     MEH-2633 — mirrors notify_admin_new_category_request above 1:1: free-text
-    ping_admin (MEH-3589; free-text send_text before) + email to settings.admin_email,
-    no Meta template, per-channel try blocks (a WhatsApp raise must not skip
+    ping_admin (template admin_update_v1, MEH-3589) + email to
+    settings.admin_email, per-channel try blocks (a WhatsApp raise must not skip
     the email), fire-and-forget as a BackgroundTask. Fail-open per MEH-977: an
     outage is logged, never surfaced to the visitor who already got their 201.
 
@@ -742,8 +742,8 @@ def notify_admin_owner_invite_accepted(
     approved one only gained an owner.
 
     REUSES: notify_admin_producer_resubmit above 1:1 — same free-text
-    ping_admin (MEH-3589; free-text `send_text` before) plus email to
-    settings.admin_email, no Meta template, per-channel try blocks so a
+    ping_admin (template admin_update_v1, MEH-3589) plus email to
+    settings.admin_email, per-channel try blocks so a
     WhatsApp raise cannot skip the email. Fire-and-forget: runs as a
     BackgroundTask and swallows-and-logs any failure (MEH-977 — observable,
     never breaks the 200 she already got).
