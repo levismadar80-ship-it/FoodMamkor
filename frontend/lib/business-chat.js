@@ -9,7 +9,8 @@
  *           decide which business the server reads (routers/chat.py:
  *           a name in the question wins, else this page).
  * History:  MEH-3489 (creation); MEH-3505 (the page's suggested questions
- *           travel with the request)
+ *           travel with the request); MEH-3513 (the page's «ask the business»
+ *           link travels with it too)
  */
 
 import { useEffect } from "react";
@@ -21,18 +22,19 @@ const BUSINESS_CHAT_EVENT = "mehamakor:business-chat";
 const REPLAY_MS = 10_000;
 /**
  * @typedef {{ id: string, values?: Record<string, string> }} BusinessPrompt
- * @typedef {{ id: string, name: string, prompts: BusinessPrompt[], ask?: string }} BusinessChatTarget
+ * @typedef {{ id: string, name: string, prompts: BusinessPrompt[], ask?: string, handoff?: import("@/lib/business-chat-handoff").BusinessHandoff | null }} BusinessChatTarget
  */
 /** @type {{ business: BusinessChatTarget, at: number } | null} */
 let pending = null;
 
-/** @param {{ id: string, name: string, prompts?: BusinessPrompt[], ask?: string }} business */
+/** @param {{ id: string, name: string, prompts?: BusinessPrompt[], ask?: string, handoff?: import("@/lib/business-chat-handoff").BusinessHandoff | null }} business */
 export function openBusinessChat(business) {
   if (typeof window === "undefined" || !business?.id) return;
   const prompts = Array.isArray(business.prompts) ? business.prompts : [];
   // MEH-3505: a question tapped on the page is sent as the panel opens.
   const ask = typeof business.ask === "string" && business.ask.trim() ? business.ask : undefined;
-  const detail = { id: business.id, name: business.name || "", prompts, ask };
+  const handoff = business.handoff || null; // MEH-3513
+  const detail = { id: business.id, name: business.name || "", prompts, ask, handoff };
   pending = { business: detail, at: Date.now() };
   window.dispatchEvent(new CustomEvent(BUSINESS_CHAT_EVENT, { detail }));
 }
