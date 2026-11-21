@@ -27,13 +27,16 @@
  */
 import { chromium, webkit, devices } from "@playwright/test";
 import fs from "node:fs";
+import { scopeBypassToOrigin } from "./e2e/_bypass-scope.mjs";
 
 const OUT = new URL("./qa-artifacts/MEH-1832/chunk2/", import.meta.url).pathname.replace(/\/$/, "");
 const BASE = "https://staging.mehamakor.online";
-const BYPASS = {
-  "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-  "x-vercel-set-bypass-cookie": "true",
-};
+const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+  ? {
+      "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+      "x-vercel-set-bypass-cookie": "true",
+    }
+  : {};
 const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const log = [];
@@ -229,9 +232,10 @@ async function matrix(page, tag) {
   // satisfy it — the pages above have already written storage.
   const freshCtx = await page.context().browser().newContext(
     page.viewportSize()
-      ? { viewport: page.viewportSize(), extraHTTPHeaders: BYPASS }
-      : { extraHTTPHeaders: BYPASS },
+      ? { viewport: page.viewportSize() }
+      : {},
   );
+  await scopeBypassToOrigin(freshCtx, BASE, BYPASS);
   const pO = await newPage(freshCtx);
   await pO.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await pO.waitForTimeout(7000);
@@ -367,14 +371,16 @@ fs.mkdirSync(OUT, { recursive: true });
   const b = await webkit.launch();
   const d = devices["iPhone 14"];
   log.push(`engine webkit devices['iPhone 14'] viewport ${d.viewport.width}x${d.viewport.height}`);
-  const c = await b.newContext({ ...d, extraHTTPHeaders: BYPASS });
+  const c = await b.newContext({ ...d });
+  await scopeBypassToOrigin(c, BASE, BYPASS);
   try { await matrix(await newPage(c), "webkit-390"); }
   catch (e) { rec(false, "webkit-390/harness", `threw: ${String(e).split("\n")[0]}`); }
   await b.close();
 }
 {
   const b = await chromium.launch({ executablePath: CHROME, args: ["--ssl-version-max=tls1.2"] });
-  const c = await b.newContext({ viewport: { width: 1440, height: 900 }, extraHTTPHeaders: BYPASS });
+  const c = await b.newContext({ viewport: { width: 1440, height: 900 } });
+  await scopeBypassToOrigin(c, BASE, BYPASS);
   try { await matrix(await newPage(c), "chromium-1440"); }
   catch (e) { rec(false, "chromium-1440/harness", `threw: ${String(e).split("\n")[0]}`); }
   // LCP/CLS x3, chromium only — webkit does not implement the LCP entry type.

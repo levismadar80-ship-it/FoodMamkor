@@ -29,12 +29,14 @@
 import { chromium } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { scopeBypassToOrigin } from "./e2e/_bypass-scope.mjs";
 
 const BASE = process.env.QA_BASE_URL || "https://staging.mehamakor.online";
 const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
-const CONTEXT_OPTS = BYPASS
-  ? { extraHTTPHeaders: { "x-vercel-protection-bypass": BYPASS, "x-vercel-set-bypass-cookie": "true" } }
+const BYPASS_HEADERS = BYPASS
+  ? { "x-vercel-protection-bypass": BYPASS, "x-vercel-set-bypass-cookie": "true" }
   : {};
+const CONTEXT_OPTS = {};
 
 const host = (() => { try { return new URL(BASE).hostname; } catch { return ""; } })();
 const isLocal = host === "127.0.0.1" || host === "localhost";
@@ -103,6 +105,7 @@ const rows = [];
   let slug = null;
   {
     const ctx = await browser.newContext(CONTEXT_OPTS);
+    await scopeBypassToOrigin(ctx, BASE, BYPASS_HEADERS);
     const p = await ctx.newPage();
     const r = await p.goto(`${BASE}/api/producers?limit=1`, { waitUntil: "domcontentloaded" });
     try {
@@ -130,6 +133,7 @@ const rows = [];
 
   for (const vp of VIEWPORTS) {
     const ctx = await browser.newContext({ ...CONTEXT_OPTS, viewport: { width: vp.width, height: vp.height } });
+    await scopeBypassToOrigin(ctx, BASE, BYPASS_HEADERS);
     for (const [label, path] of ROUTES) {
       const page = await ctx.newPage();
       let row = { vp: vp.name, label, path, status: null, void: null, violations: null, passes: null, byImpact: {}, detail: [] };
