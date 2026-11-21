@@ -22,6 +22,7 @@ from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, GroupBuyWaitlist, User
 from app.rate_limit import limiter
 from app.routers.group_buys import _is_public
+from app.schemas.group_buys_requests import PICKUP_BEFORE_DEADLINE
 from app.schemas.schemas import (
     GroupBuyQuantityUpdate,
     GroupBuySettingsUpdate,
@@ -176,6 +177,14 @@ def leave_waitlist(
     return {"detail": "יצאת מרשימת ההמתנה"}
 
 
+def _set_pickup_window(gb: GroupBuy, data: GroupBuySettingsUpdate) -> None:
+    """MEH-3597: the window, never starting before joining closes."""
+    if data.pickup_starts_at is not None and data.pickup_starts_at < gb.deadline:
+        raise HTTPException(status_code=400, detail=PICKUP_BEFORE_DEADLINE)
+    gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]
+    gb.pickup_ends_at = data.pickup_ends_at  # type: ignore[assignment]
+
+
 @router.patch("/{group_buy_id}/settings", response_model=None)
 @limiter.limit("30/minute")  # MEH-3022
 def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
@@ -211,8 +220,7 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
             )
         gb.max_units = data.max_units  # type: ignore[assignment]
     if "pickup_starts_at" in sent:  # MEH-3597: the schema sends both or neither
-        gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]
-        gb.pickup_ends_at = data.pickup_ends_at  # type: ignore[assignment]
+        _set_pickup_window(gb, data)
     if data.joins_open is not None:
         gb.joins_closed_at = None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]
     db.flush()

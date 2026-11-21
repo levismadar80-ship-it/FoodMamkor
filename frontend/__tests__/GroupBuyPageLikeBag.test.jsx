@@ -171,6 +171,21 @@ describe("MEH-3597 — pickup time and when to pay", () => {
     expect(screen.queryByTestId("group-buy-pickup-window")).toBeNull();
   });
 
+  it("delivery only with a saved window: no pickup time row", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: null, delivery_note: "משלוח לחדרה", pickup_starts_at: "2099-01-02T07:00:00", pickup_ends_at: "2099-01-02T11:00:00" };
+    await renderPage();
+    await screen.findByTestId("group-buy-delivery-note");
+    expect(screen.queryByTestId("group-buy-pickup-window")).toBeNull();
+  });
+
+  it("deadline passed: no pay line and no cancel section", async () => {
+    fixture.gb = { deadline: "2000-01-01T00:00:00Z" };
+    await renderPage();
+    await screen.findByTestId("group-buy-fulfillment-note");
+    expect(screen.queryByTestId("group-buy-pay-line")).toBeNull();
+    expect(screen.queryByTestId("group-buy-cancel")).toBeNull();
+  });
+
   it("joinable: the pay line sits with the join button", async () => {
     await renderPage();
     const pay = await screen.findByTestId("group-buy-pay-line");

@@ -251,9 +251,10 @@ export default function GroupBuyDetailClient({ id }) {
       ? [{ key: "note", Icon: MapPin, text: gb.fulfillment_note, testId: "group-buy-fulfillment-note" }]
       : [];
   // MEH-3597: the structured pickup window leads the rows, as the bag's hours do.
-  const pickupWhen = pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
-  if (pickupWhen) whereRows.unshift({ key: "when", Icon: Clock, label: t("pickup_time_label"), text: pickupWhen, testId: "group-buy-pickup-window" });
+  // A delivery-only group shows no pickup time, even if one was saved (review, MEH-3597).
   const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
+  const pickupWhen = deliveryOnly ? null : pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  if (pickupWhen) whereRows.unshift({ key: "when", Icon: Clock, label: t("pickup_time_label"), text: pickupWhen, testId: "group-buy-pickup-window" });
   const whereMap =
     producer && typeof producer.lat === "number" && typeof producer.lng === "number" && !deliveryOnly
       ? { lat: producer.lat, lng: producer.lng, name: producer.name, locations: producer.locations, producer }

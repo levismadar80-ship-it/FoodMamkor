@@ -1298,7 +1298,7 @@
       "cancel_body_open": "You can leave at any time until the deadline.",
       "cancel_body_funded": "You can leave until the deadline. In the 24 hours before it, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
       "pickup_time_label": "Pickup time",
-      "pay_line": "Nothing to pay now. You arrange payment directly with the business once the group reaches its goal."
+      "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order."
     },
     "dashboard": {
       "status": {

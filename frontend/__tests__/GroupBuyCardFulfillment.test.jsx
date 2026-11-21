@@ -89,6 +89,11 @@ describe("the pickup time line on a list card", () => {
     expect(when.compareDocumentPosition(line("pickup")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("delivery only with a saved window: no line", async () => {
+    await renderCard({ delivery_note: "לחדרה", pickup_starts_at: "2099-01-02T07:00:00", pickup_ends_at: "2099-01-02T11:00:00" });
+    expect(line("pickup-window")).toBeNull();
+  });
+
   it("no window: no line", async () => {
     await renderCard({ pickup_note: "מהמשק" });
     expect(line("pickup-window")).toBeNull();

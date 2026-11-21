@@ -74,6 +74,68 @@ def test_owner_sets_and_clears_the_window_in_settings(client, db):
     db.refresh(gb)
     assert gb.pickup_starts_at.hour == 7 and gb.pickup_ends_at.hour == 11
     assert client.patch(f"/group-buys/{gb.id}/settings", json={"pickup_starts_at": "2099-12-05T07:00:00Z"}, headers=h).status_code == 422
-    client.patch(f"/group-buys/{gb.id}/settings", json={"pickup_starts_at": None, "pickup_ends_at": None}, headers=h)
+    cleared = client.patch(f"/group-buys/{gb.id}/settings", json={"pickup_starts_at": None, "pickup_ends_at": None}, headers=h)
+    assert cleared.status_code == 200, cleared.text
     db.refresh(gb)
     assert gb.pickup_starts_at is None and gb.pickup_ends_at is None
+
+
+# MEH-3597 review round 1.
+def test_exactly_a_week_is_accepted(client, db):
+    _, owner = _producer_user(db, email="pw5@example.com")
+    r = client.post(
+        "/group-buys",
+        json=_payload(pickup_starts_at="2099-12-01T09:00:00Z", pickup_ends_at="2099-12-08T09:00:00Z"),
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 201, r.text
+
+
+def test_pickup_before_the_deadline_is_refused_on_create(client, db):
+    _, owner = _producer_user(db, email="pw6@example.com")
+    soon = utc_now() + timedelta(days=1)
+    r = client.post(
+        "/group-buys",
+        json=_payload(pickup_starts_at=soon.isoformat(), pickup_ends_at=(soon + timedelta(hours=2)).isoformat()),
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 422
+    assert "המועד האחרון" in r.text
+
+
+def test_pickup_before_the_deadline_is_refused_in_settings(client, db):
+    producer, owner = _producer_user(db, email="pw7@example.com")
+    gb = _make_group_buy(db, producer)
+    start = gb.deadline - timedelta(hours=1)
+    r = client.patch(
+        f"/group-buys/{gb.id}/settings",
+        json={"pickup_starts_at": start.isoformat(), "pickup_ends_at": (start + timedelta(hours=3)).isoformat()},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 400
+    db.refresh(gb)
+    assert gb.pickup_starts_at is None
+
+
+def test_an_out_of_range_aware_date_is_a_422_not_a_500(client, db):
+    _, owner = _producer_user(db, email="pw8@example.com")
+    r = client.post(
+        "/group-buys",
+        json=_payload(pickup_starts_at="9999-12-31T23:00:00-10:00", pickup_ends_at="9999-12-31T23:30:00-10:00"),
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 422
+
+
+def test_a_stranger_cannot_set_the_window(client, db):
+    producer, _ = _producer_user(db, email="pw9@example.com")
+    _, other = _producer_user(db, email="pw10@example.com")
+    gb = _make_group_buy(db, producer)
+    r = client.patch(
+        f"/group-buys/{gb.id}/settings",
+        json={"pickup_starts_at": "2099-12-05T07:00:00Z", "pickup_ends_at": "2099-12-05T11:00:00Z"},
+        headers=auth_header(other),
+    )
+    assert r.status_code in (403, 404)
+    db.refresh(gb)
+    assert gb.pickup_starts_at is None

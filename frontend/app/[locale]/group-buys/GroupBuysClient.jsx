@@ -35,7 +35,9 @@ function GroupBuyCard({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
   const locale = useLocale();
-  const pickupWhen = pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale); // MEH-3597
+  // MEH-3597: no pickup time on a delivery-only group.
+  const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
+  const pickupWhen = deliveryOnly ? null : pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
   const funded = gb.status === "funded";
   const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
   // MEH-3219 B13: naive UTC, parsed as UTC.
@@ -135,9 +137,10 @@ function GroupBuyCard({ gb }) {
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
           {pickupWhen && (
-            <span className="inline-flex items-center gap-1.5 min-w-0" data-testid="group-buy-card-pickup-window">
-              <CalendarBlank size={16} aria-hidden="true" className="shrink-0" />
-              <span className="truncate">{t("pickup_when", { when: pickupWhen })}</span>
+            <span className="inline-flex items-start gap-1.5 min-w-0" data-testid="group-buy-card-pickup-window">
+              <CalendarBlank size={16} aria-hidden="true" className="shrink-0 mt-0.5" />
+              {/* wraps, not truncate: the hours are at the end of the line */}
+              <span>{t("pickup_when", { when: pickupWhen })}</span>
             </span>
           )}
           {/* MEH-2621 split (UI): one short line per answer (pickup / delivery); a group

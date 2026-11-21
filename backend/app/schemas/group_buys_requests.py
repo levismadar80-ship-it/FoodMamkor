@@ -124,6 +124,9 @@ class GroupBuyCreate(BaseModel):
     @model_validator(mode="after")
     def _pickup_window_whole(self) -> Self:
         _check_pickup_window(self.pickup_starts_at, self.pickup_ends_at)
+        # MEH-3597 review: pickup comes once joining has closed.
+        if self.pickup_starts_at is not None and self.pickup_starts_at < self.deadline:
+            raise ValueError(PICKUP_BEFORE_DEADLINE)
         return self
 
     # MEH-1626 chunk 1: description gets the same bleach every other
@@ -182,8 +185,14 @@ PICKUP_WINDOW_MAX = timedelta(days=7)
 def _naive_utc(v: datetime | None) -> datetime | None:
     """Aware → naive UTC, the one world of `deadline` (MEH-1454)."""
     if v is not None and v.tzinfo is not None:
-        v = v.astimezone(timezone.utc).replace(tzinfo=None)
+        try:
+            v = v.astimezone(timezone.utc).replace(tzinfo=None)
+        except OverflowError as exc:  # year 9999 + an offset: 422, not 500
+            raise ValueError("התאריך מחוץ לטווח") from exc
     return v
+
+
+PICKUP_BEFORE_DEADLINE = "האיסוף צריך להתחיל אחרי המועד האחרון להצטרפות"
 
 
 def _check_pickup_window(start: datetime | None, end: datetime | None) -> None:

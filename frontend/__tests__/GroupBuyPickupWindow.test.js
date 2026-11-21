@@ -35,6 +35,13 @@ describe("pickupWindowPayload", () => {
     expect(pickupWindowPayload("2099-12-04T09:00", "09:00")).toEqual({ error: "pickup_window_order" });
     expect(pickupWindowPayload("2099-12-04T09:00", "08:00")).toEqual({ error: "pickup_window_order" });
   });
+  it("summer clock: 09:00 in July is 06:00Z", () => {
+    expect(pickupWindowPayload("2099-07-03T09:00", "13:00")).toEqual({
+      pickup_starts_at: "2099-07-03T06:00:00.000Z",
+      pickup_ends_at: "2099-07-03T10:00:00.000Z",
+    });
+  });
+
   it("Israel wall clock to UTC, the end on the start's day", () => {
     expect(pickupWindowPayload("2099-12-04T09:00", "13:00")).toEqual({
       pickup_starts_at: "2099-12-04T07:00:00.000Z",
