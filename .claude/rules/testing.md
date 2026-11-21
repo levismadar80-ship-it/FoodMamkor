@@ -380,8 +380,9 @@ the tip of staging by 20/11; the old ones are in history at the commit named in
   write there; `.gitignore` keeps the images out), compress with
   `node scripts/compress-qa-screenshots.mjs qa-artifacts/MEH-XXXX/` (from
   `frontend/`; WebP q80, ≤ 1440 px), **read** them, then upload them to the
-  card's evidence folder `QA-evidence/MEH-XXXX` in the project Drive (Google
-  Drive connector, `create_file` with a file reference).
+  card's evidence folder `QA-evidence/MEH-XXXX` in the project Drive (parent
+  folder id `16cZYv36Y0EoMTCzggHXZU-d2xvPLn4MW`; Google Drive connector,
+  `create_file` with a file reference; Sapir's choice 21/11).
 - The PR body carries `Screenshots: <https link to that folder>` (or a
   `## Screenshots` section with the links). `pr-evidence-guard.sh` checks it
   for every UI PR (rule 23).
