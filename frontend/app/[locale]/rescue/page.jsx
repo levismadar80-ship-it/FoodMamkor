@@ -19,6 +19,7 @@ import { getHubCount } from "@/lib/listing-supply";
  */
 export async function generateMetadata({ params }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "rescue" });
   // MEH-3177: without its own alternates the page inherited the layout's
   // home canonical + hreflang, which tells Google /rescue is a copy of /.
   return {
