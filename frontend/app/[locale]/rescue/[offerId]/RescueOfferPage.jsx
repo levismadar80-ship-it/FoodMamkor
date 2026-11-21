@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Basket } from "@phosphor-icons/react";
+import { Basket, Clock } from "@phosphor-icons/react";
 
 import { Link } from "@/i18n/navigation";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -14,7 +14,7 @@ import ShareButton from "@/components/ShareButton";
 import RatingCompact from "@/components/ui/RatingCompact";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
-import { fetchOffer } from "@/lib/rescue";
+import { fetchOffer, israelTime } from "@/lib/rescue";
 import { producerPath } from "@/lib/producer-path";
 import useRescueReservation from "@/lib/useRescueReservation";
 
@@ -117,9 +117,17 @@ export default function RescueOfferPage({ offerId }) {
               </div>
             )}
           </div>
-          <h1 className="font-headline-display text-4xl md:text-5xl font-black text-text mb-3" data-testid="rescue-offer-title">
+          <h1 className="font-headline-display text-4xl md:text-5xl font-black text-text mb-2" data-testid="rescue-offer-title">
             {producer.name}
           </h1>
+          {/* TGTG puts the pickup window right under the name: it is the
+              first thing a buyer decides on, and on a phone the «where»
+              section starts below the fold. */}
+          <p className="flex items-center gap-1.5 text-base text-text mb-4" data-testid="rescue-offer-pickup">
+            <Clock aria-hidden="true" size={18} className="text-primary shrink-0" />
+            <b className="font-semibold">{t("offer_page.pickup_title")}</b>
+            <span className="numeric">{israelTime(offer.pickup_start)}–{israelTime(offer.pickup_end)}</span>
+          </p>
           <OwnerRow href={businessHref} name={producer.name} testId="rescue-offer-business">
             <span className="block font-semibold">{t("offer_page.business_link", { name: producer.name })}</span>
             <span className="flex items-center gap-2 text-sm text-fg-muted">
