@@ -24,6 +24,7 @@ import {
   formatPriceRange,
   getWhatsAppHref,
   normalizePhone,
+  priceLabelText,
   withReferralParams,
 } from "@/lib/utils";
 import {
@@ -353,7 +354,7 @@ export default function ProductSheet({
   // MEH-2924: no price at all = a seasonal price, said in words — never «₪».
   const freeTextPrice = numericPrice
     ? null
-    : product.price_range || t("product_price.varies");
+    : priceLabelText(product.price_range) || t("product_price.varies");
 
   // The WhatsApp channel is the producer's phone, normalised exactly as every
   // other WA surface does it (lib/utils normalizePhone → getWhatsAppHref).

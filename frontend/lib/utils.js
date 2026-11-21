@@ -174,6 +174,21 @@ export function isPriceLabel(label) {
 }
 
 /**
+ * MEH-3076: a free-text price label that is ONLY a number or a number range
+ * («380», «30-45») gets the shekel sign the canon gives a numeric price
+ * («380₪», «30₪–45₪»). Anything with words or a sign of its own («מ-30₪»,
+ * «45₪/ק״ג») is data and passes through untouched (MEH-1140).
+ * @param {string | null | undefined} label
+ * @returns {string | null | undefined}
+ */
+export function priceLabelText(label) {
+  if (typeof label !== "string") return label;
+  const m = label.trim().match(/^(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?$/);
+  if (!m) return label;
+  return formatPriceRange(m[1], m[2] ?? null);
+}
+
+/**
  * MEH-1140: min–max range in the same canon: "35₪–60₪".
  * min only → "35₪" · both equal → "35₪" · neither → null.
  */
