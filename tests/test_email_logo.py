@@ -142,13 +142,95 @@ def test_every_html_email_starts_with_the_logo(prod_site, monkeypatch, client, d
         _assert_logo_first(html, label)
 
 
-def test_logo_url_follows_frontend_url(monkeypatch):
-    monkeypatch.setattr(settings, "frontend_url", "https://staging.mehamakor.online/")
-    assert (
-        email_branding.email_logo_url()
-        == "https://staging.mehamakor.online/email-logo.png"
-    )
+@pytest.mark.parametrize(
+    "frontend_url",
+    [
+        "https://staging.mehamakor.online/",
+        "https://staging.mehamakor.co.il",
+        "http://localhost:3000",
+        "https://mehamakor.co.il",
+    ],
+)
+def test_logo_url_is_public_production_in_every_environment(monkeypatch, frontend_url):
+    """MEH-3583: the logo never follows frontend_url. Both staging hosts answer
+    302 → vercel.com/login (Deployment Protection), so a mail client's image
+    proxy got no image and Gmail showed «?». The old test here asserted the
+    opposite — that the logo follows frontend_url — and pinned the bug."""
+    monkeypatch.setattr(settings, "frontend_url", frontend_url)
+    assert email_branding.email_logo_url() == "https://mehamakor.co.il/email-logo.png"
     assert 'alt="מהמקור"' in email_logo_html()
+
+
+STAGING_FRONTEND = "https://staging.mehamakor.online"
+# The one host every mail client can fetch from: public, no auth, no redirect.
+PUBLIC_ORIGIN = "https://mehamakor.co.il"
+IMG_TAG = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+ATTR = re.compile(r'\b(src|width|height|alt)="([^"]*)"', re.IGNORECASE)
+HREF = re.compile(r'\bhref="([^"]*)"', re.IGNORECASE)
+# What Gmail, Outlook and Apple Mail all render: no SVG (Gmail/Outlook drop it),
+# no WebP (Outlook desktop), no data: URIs (Gmail strips them).
+EMAIL_IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif")
+
+
+def _email_image_problems(html: str) -> list[str]:
+    problems = []
+    imgs = IMG_TAG.findall(html)
+    if not imgs:
+        problems.append("no <img> at all")
+    for tag in imgs:
+        attrs = {k.lower(): v for k, v in ATTR.findall(tag)}
+        src = attrs.get("src", "")
+        if not src.startswith(PUBLIC_ORIGIN + "/"):
+            problems.append(f"image not on the public origin: {src!r}")
+        if not src.split("?")[0].lower().endswith(EMAIL_IMAGE_EXT):
+            problems.append(f"image is not PNG/JPEG/GIF: {src!r}")
+        for need in ("width", "height", "alt"):
+            if not attrs.get(need):
+                problems.append(f"<img> without {need}: {tag[:80]}")
+    for href in HREF.findall(html):
+        if not href.startswith(("https://", "mailto:")) and not href.startswith(
+            STAGING_FRONTEND
+        ):
+            problems.append(f"link is not absolute https: {href!r}")
+    return problems
+
+
+def test_image_guard_catches_what_it_claims():
+    """Control (testing.md): the checker on inputs whose answers are known."""
+    good = (
+        '<img src="https://mehamakor.co.il/email-logo.png" width="120" height="30" alt="x">'
+        '<a href="https://staging.mehamakor.online/x">a</a><a href="mailto:a@b.c">m</a>'
+    )
+    assert _email_image_problems(good) == []
+    for bad in (
+        # the exact staging-era URL that broke (MEH-3583)
+        '<img src="https://staging.mehamakor.online/email-logo.png" width="1" height="1" alt="x">',
+        '<img src="/email-logo.png" width="1" height="1" alt="x">',
+        '<img src="https://mehamakor.co.il/logo.svg" width="1" height="1" alt="x">',
+        '<img src="https://mehamakor.co.il/a.webp" width="1" height="1" alt="x">',
+        '<img src="https://mehamakor.co.il/a.png" width="1" alt="x">',
+        '<img src="https://mehamakor.co.il/a.png" width="1" height="1">',
+        '<img src="https://mehamakor.co.il/a.png" width="1" height="1" alt="x">'
+        '<a href="/reset">r</a>',
+    ):
+        assert _email_image_problems(bad), bad
+
+
+def test_every_html_email_images_load_when_sent_from_staging(monkeypatch, client, db):
+    """MEH-3583: render every template the way staging sends it (frontend_url =
+    a protected staging host) and require every image to be a public,
+    absolute https PNG/JPEG/GIF with width/height/alt. Before the fix every
+    template failed here: the logo src was the staging host."""
+    monkeypatch.setattr(settings, "frontend_url", STAGING_FRONTEND)
+    monkeypatch.setattr(settings, "resend_api_key", "re_test_dummy")
+    rendered = _render_all(monkeypatch, client, db)
+    assert len(rendered) == 12, sorted(rendered)
+    failures = {
+        label: problems
+        for label, html in rendered.items()
+        if (problems := _email_image_problems(html or ""))
+    }
+    assert not failures, failures
 
 
 FRONTEND_PUBLIC = Path(__file__).resolve().parents[1] / "frontend" / "public"

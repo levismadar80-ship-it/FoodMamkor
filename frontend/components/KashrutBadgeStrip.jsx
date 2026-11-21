@@ -40,6 +40,10 @@ function daysUntil(dateStr) {
  * `max-h`-capped so it fits a 375px viewport with native pinch-zoom intact.
  */
 function CertModal({ src, expiryText, onClose, t }) {
+  // MEH-3583: a photo the proxy cannot serve (404 when the stored asset is
+  // gone, 502 when Cloudinary is down) rendered the browser's broken-image
+  // «?» box. Keyed by src so opening another badge's cert retries.
+  const [failedSrc, setFailedSrc] = useState(/** @type {string | null} */ (null));
   // MEH-3096: overlay, Tab trap, Escape, scroll lock and focus return come
   // from ui/Dialog. Initial focus is the close button (data-autofocus) — once
   // per open, which is what MEH-2129's mount-only effect protected.
@@ -69,12 +73,19 @@ function CertModal({ src, expiryText, onClose, t }) {
             knife-edge overlaps on any sub-pixel rounding or future type change,
             so the margin carries the slack. At the old w-8/mt-6 the numbers
             were 44px vs 40px and the image already tucked 4px under. */}
-        <img
-          src={src}
-          alt={t("cert.image_alt")}
-          data-testid="kashrut-cert-image"
-          className="w-full max-h-[70vh] object-contain rounded mt-9"
-        />
+        {failedSrc === src ? (
+          <p data-testid="kashrut-cert-image-unavailable" className="mt-9 text-sm text-fg-muted">
+            {t("cert.image_unavailable")}
+          </p>
+        ) : (
+          <img
+            src={src}
+            alt={t("cert.image_alt")}
+            data-testid="kashrut-cert-image"
+            onError={() => setFailedSrc(src)}
+            className="w-full max-h-[70vh] object-contain rounded mt-9"
+          />
+        )}
         <div className="mt-3 space-y-1 text-sm">
           {expiryText && <p className="font-medium text-text">{expiryText}</p>}
           <p className="text-fg-muted">{t("cert.verified_by")}</p>
