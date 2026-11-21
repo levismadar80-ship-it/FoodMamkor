@@ -19,6 +19,7 @@
  * SLA targets: p95 < 2000ms, error rate < 1% per endpoint.
  *
  * Scenarios:
+ *   (the four ramps run in sequence, 1->2->4->5; /chat runs alongside #1)
  *   1. producers_list           — GET  /producers                       (ramp 1->50)
  *   2. producer_detail_slug     — GET  /producers/by-slug/{slug}        (ramp 1->50)
  *   3. chat                     — POST /chat                            (constant 10 RPS, 60s)
@@ -68,7 +69,8 @@
  *   export PRODUCER_ID=$(curl -s "$BASE_URL/producers?page_size=1" | jq -r '.[0].id // .producers[0].id')
  *   k6 run scripts/load-test.js
  *
- * Total wall-clock runtime: ~10 min (8 min ramp scenarios + 60s chat).
+ * Total wall-clock runtime: ~22 min (four 5-min ramps in sequence;
+ * /chat's 60s overlaps the first). Peak 87 VUs, under the cloud cap of 100 (MEH-3564).
  *
  * Expected result shape with slowapi rate limits active on staging:
  *   - First ~3 seconds: clean p(95) latency baseline for all endpoints
@@ -97,19 +99,32 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-// Ramping VU profile shared by 4 scenarios: 2 min ramp 1->50, 5 min
-// hold at 50, 1 min ramp-down to 0. ~8 min per scenario; scenarios
-// run in parallel so wall-clock is the same.
+// Ramping VU profile shared by 4 scenarios: 2 min ramp 1->50, 2 min
+// hold at 50, 1 min ramp-down to 0. 5 min per scenario.
+//
+// MEH-3564: the four ramps run ONE AFTER ANOTHER (startTime below), not in
+// parallel. Grafana Cloud k6's free tier allows at most 100 VUs per test;
+// four parallel 50-VU ramps planned 200 and the cloud refused the run
+// ("(400/validation_error) ... exceeds the maximum allowed for your project
+// (100 VUs)", run 44906062820, 21/11). In sequence the peak is one ramp
+// (50) plus /chat; k6 plans 87. It also measures each endpoint alone, instead
+// of four endpoints sharing one IP's slowapi budget. The hold went 5m -> 2m
+// so the whole run (~22 min) fits the workflow's 30-minute timeout.
+// Check before changing: `k6 inspect --execution-requirements
+// scripts/load-test.js` must print "maxVUs": 100 or less at the top level.
 const rampStages = [
   { duration: '2m', target: 50 },
-  { duration: '5m', target: 50 },
+  { duration: '2m', target: 50 },
   { duration: '1m', target: 0 },
 ];
+// 5 min per ramp + 30 s graceful ramp-down, then the next one starts.
+const SLOT = ['0s', '5m30s', '11m', '16m30s'];
 
 export const options = {
   scenarios: {
     producers_list: {
       executor: 'ramping-vus',
+      startTime: SLOT[0],
       startVUs: 1,
       stages: rampStages,
       exec: 'producersList',
@@ -117,6 +132,7 @@ export const options = {
     },
     producer_detail_slug: {
       executor: 'ramping-vus',
+      startTime: SLOT[1],
       startVUs: 1,
       stages: rampStages,
       exec: 'producerDetailSlug',
@@ -137,6 +153,7 @@ export const options = {
     },
     producer_detail_uuid: {
       executor: 'ramping-vus',
+      startTime: SLOT[2],
       startVUs: 1,
       stages: rampStages,
       exec: 'producerDetailUuid',
@@ -144,6 +161,7 @@ export const options = {
     },
     favorites_unauth: {
       executor: 'ramping-vus',
+      startTime: SLOT[3],
       startVUs: 1,
       stages: rampStages,
       exec: 'favoritesUnauth',

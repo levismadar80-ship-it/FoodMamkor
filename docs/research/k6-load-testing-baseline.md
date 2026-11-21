@@ -41,7 +41,7 @@ SLA targets: **p95 < 2000ms** per endpoint. **Error-rate gates RELAXED to < 95%*
 
 ## Methodology
 
-**Profile.** Four endpoints run on a `ramping-vus` executor: 1 VU at start, ramp to 50 VUs over 2 minutes, hold at 50 VUs for 5 minutes, ramp down to 0 over 1 minute (~8 minutes per scenario, in parallel). The fifth endpoint, `POST /chat`, runs on a `constant-arrival-rate` executor at 10 RPS for 60 seconds (600 calls maximum).
+**Profile.** Four endpoints run on a `ramping-vus` executor: 1 VU at start, ramp to 50 VUs over 2 minutes, hold at 50 VUs for 2 minutes, ramp down to 0 over 1 minute (5 minutes per scenario). Since 21/11 (MEH-3564) the four run one after another, not in parallel: Grafana Cloud k6's free tier allows 100 VUs per test and the parallel profile planned 200. The 5-minute hold became 2 minutes so the sequence fits the workflow's 30-minute timeout. The fifth endpoint, `POST /chat`, runs on a `constant-arrival-rate` executor at 10 RPS for 60 seconds (600 calls maximum).
 
 **Why constant-rate for `/chat`.** Every `/chat` call hits Anthropic Haiku and costs real money (~$0.001 per call). A 1->50 VU ramp would spray ~thousands of calls and blow the Anthropic budget guard. Constant 10 RPS for 60s caps the spend at <$1 and exercises the rate-limiter (`@limiter.limit("10/minute")` in `backend/app/routers/chat.py:189`) without runaway. Most attempts beyond the first ~10/minute will return HTTP 429 by design — that is the expected observation.
 
@@ -107,7 +107,7 @@ If your response shape is a bare array instead of `{producers: [...]}`, use `jq 
 k6 run scripts/load-test.js
 ```
 
-Expected wall-clock runtime: ~8 minutes (4 ramp scenarios in parallel + the 60-second `/chat` scenario nested inside them). k6 prints the per-endpoint summary table at the end; copy the `p(50)`, `p(95)`, `p(99)`, `http_req_failed`, and `iterations` lines into the table at the top of this doc.
+Expected wall-clock runtime: ~22 minutes (4 ramp scenarios in sequence, the 60-second `/chat` scenario alongside the first; peak 87 VUs by `k6 inspect --execution-requirements`). k6 prints the per-endpoint summary table at the end; copy the `p(50)`, `p(95)`, `p(99)`, `http_req_failed`, and `iterations` lines into the table at the top of this doc.
 
 **Optional: stream JSON for richer analysis.**
 
