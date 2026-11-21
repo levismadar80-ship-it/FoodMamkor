@@ -1,7 +1,7 @@
 // @ts-check
 import { getTranslations } from "next-intl/server";
 
-import GoogleProfileTool from "@/components/producer/google-profile/GoogleProfileTool";
+import GoogleProfileTool from "@/components/dashboard/google-profile/GoogleProfileTool";
 import BackLink from "@/components/ui/BackLink";
 
 /**

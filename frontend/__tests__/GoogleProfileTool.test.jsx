@@ -8,7 +8,7 @@ import he from "@/messages/he.json";
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), put: vi.fn() } }));
 
 import api from "@/lib/api";
-import GoogleProfileTool from "@/components/producer/google-profile/GoogleProfileTool";
+import GoogleProfileTool from "@/components/dashboard/google-profile/GoogleProfileTool";
 
 const t = he.google_profile;
 const ME = { id: "7e57a6f0-0000-4000-8000-000000000007", slug: "ruti", status: "approved", kind: "producer" };

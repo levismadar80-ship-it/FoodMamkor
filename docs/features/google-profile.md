@@ -6,8 +6,8 @@
 * `frontend/app/[locale]/producer/dashboard/google-profile/`
 
 **קבצים מרכזיים**
-* `frontend/components/producer/google-profile/GoogleProfileTool.jsx` — קורא את המצב ומרכיב את שלושת החלקים.
-* `frontend/components/producer/google-profile/GoogleProfileLink.jsx` · `frontend/components/producer/google-profile/GoogleProfileCheck.jsx` · `frontend/components/producer/google-profile/GoogleProfileGuide.jsx`
+* `frontend/components/dashboard/google-profile/GoogleProfileTool.jsx` — קורא את המצב ומרכיב את שלושת החלקים.
+* `frontend/components/dashboard/google-profile/GoogleProfileLink.jsx` · `frontend/components/dashboard/google-profile/GoogleProfileCheck.jsx` · `frontend/components/dashboard/google-profile/GoogleProfileGuide.jsx`
 * `backend/app/routers/producer_google_profile.py` — ארבעת ה-routes של הבעלים תחת `/producers/me/google-profile`, כל אחד מהם (חוץ מקריאת המצב) 10 בשעה.
 * `backend/app/services/google_profile.py` — הקריאות לגוגל וההשוואה: שם (זהה אחרי ניקוי, או לפחות שתי מילים שלמות של השם הקצר ברצף בתוך הארוך), טלפון (נייד או קווי), אתר (כל עמוד באתר שלה, או העמוד שלה כאן ולא של עסק אחר).
 * `backend/app/routers/google_rating.py` — הצד של האדמין ושורת הדירוג הציבורית, שקוראת את אותו place_id.
