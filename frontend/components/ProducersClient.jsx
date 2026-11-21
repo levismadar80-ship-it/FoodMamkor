@@ -7,8 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin, ArrowLeft } from "@phosphor-icons/react";
 import { producersToMapQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
-// MEH-3076: a category's shown name follows the locale (category_names.<slug>).
-import { categoryLabel } from "@/lib/category-label";
+import { categoryLabel } from "@/lib/category-label"; // MEH-3076: name follows the locale
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
@@ -131,8 +130,7 @@ export default function ProducersClient({
   ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
-  // MEH-2616: the location-error strings shared with /map's GPS button.
-  const tGeo = useTranslations("map.client.errors");
+  const tGeo = useTranslations("map.client.errors"); // MEH-2616: shared with /map's GPS button
   const tRoot = useTranslations(); // MEH-3076: category_names.<slug>
   const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
   const searchParams = useSearchParams();
@@ -1332,8 +1330,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
   const t = useTranslations("producers");
   // MEH-2827 PR 4: a search that found nothing is the moment someone knows a
   // business we don't — the footer link was the only way to /recommend.
-  const tNav = useTranslations("nav.footer");
-  const tRoot = useTranslations();
+  const tRoot = useTranslations(); // nav.footer.recommend + category_names (MEH-3076)
   // MEH-2634: ALL live categories, deliberately NOT the `visibleCategories` /
   // `categoryChips` subset the filter row uses. That subset is data-gated on
   // what the CURRENT result set loaded (`loadedCategoryIds`), and this state
@@ -1390,7 +1387,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
             data-testid="recommend-link-search"
             className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            {tNav("recommend")}
+            {tRoot("nav.footer.recommend")}
             <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
           </Link>
         </div>
