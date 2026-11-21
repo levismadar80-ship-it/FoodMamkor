@@ -140,6 +140,10 @@ class Product(Base):
     contains_alcohol = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-3618: the days the product is made — a bitmask, Sunday = 1 …
+    # Saturday = 64. NULL = every day, as before. Conversions and the order
+    # check: services/product_weekdays.py.
+    available_weekdays = Column(SmallInteger, nullable=True)
     # MEH-2312: an imported product lands as a draft. A draft is invisible to
     # every public read (producer page, search, sitemap, counts) until an
     # admin approves it. Owner-created products never set it.
@@ -189,6 +193,10 @@ class Product(Base):
         CheckConstraint(
             "price_unit IN ('unit', 'kg', '100g', 'bottle', 'box', 'pack')",
             name="products_price_unit_check",
+        ),
+        CheckConstraint(
+            "available_weekdays >= 1 AND available_weekdays <= 127",
+            name="products_available_weekdays_check",
         ),
         Index(
             "idx_products_dietary",

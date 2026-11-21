@@ -1023,7 +1023,9 @@
         "platform_line": "Mehamakor passes the request to the business. It is not the seller and not a party to the sale.",
         "send": "Send the request",
         "close": "Close",
-        "failed": "The request was not sent. Please try again."
+        "failed": "The request was not sent. Please try again.",
+        "day_conflict": "No time suits every product in the order. «{name}»: {when}.",
+        "day_conflict_remove": "Remove «{name}» from the order"
       }
     },
     "card": {
@@ -7833,6 +7835,16 @@
     "saved": "Options saved",
     "save_failed": "The options were not saved. Please try again.",
     "price_invalid": "The price must be a number from 1 to 10,000, for example 45"
+  },
+  "product_weekdays": {
+    "editor_title": "Days the product is available",
+    "editor_where": "Shown on the business page under the product's name. Site orders can only pick a time on one of these days.",
+    "every_day": "Every day",
+    "days_short": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+    "days_long": "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+    "none_picked": "Pick at least one day, or «Every day»",
+    "line_one": "Available on {day}s",
+    "line_many": "Available on {days}"
   },
   "price_unit": {
     "unit": "per unit",

@@ -12,7 +12,8 @@
  *           live in OrderSheetPhone.jsx.
  * Related:  lib/order-sheet.js (bodies + calls), components/public/OrderBar.jsx
  *           (opens it), app/[locale]/order/[id]/ (where it lands)
- * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»)
+ * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»);
+ *           MEH-3618 (slots only on days every picked product is made)
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -25,6 +26,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import OrderSheetDayConflict from "@/components/public/OrderSheetDayConflict";
 import OrderSheetPhone from "@/components/public/OrderSheetPhone";
 import { useRouter } from "@/i18n/navigation";
 import { detailToMessage } from "@/lib/errors";
@@ -41,6 +43,7 @@ import {
 } from "@/lib/order-sheet";
 import { pickedLine } from "@/lib/order-cart";
 import { splitKey } from "@/lib/product-variants";
+import { cartSlots, keysOf } from "@/lib/product-weekdays";
 
 const QUOTE_DELAY_MS = 400;
 const CONFLICT = 409;
@@ -51,10 +54,11 @@ const CONFLICT = 409;
  *   menu: import("@/lib/order-cart").OrderMenu,
  *   picks: Record<string, number>,
  *   onStale?: () => void,
+ *   onChange?: (key: string, qty: number) => void,
  *   onClose: () => void,
  * }} props
  */
-export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onClose }) {
+export default function OrderSheet({ producer, menu, picks, onStale = () => {}, onChange = () => {}, onClose }) {
   const t = useTranslations("producer.detail.order_sheet");
   const locale = useLocale();
   const router = useRouter();
@@ -85,7 +89,8 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   /** @param {Partial<typeof form>} change */
   const set = (change) => setForm((old) => ({ ...old, ...change }));
 
-  const slots = slotsFor(menu, form.fulfilment, hasAlcohol);
+  // MEH-3618: only days on which every picked product is made.
+  const { slots, limiting } = cartSlots(slotsFor(menu, form.fulfilment, hasAlcohol), picks, byId);
   const delivery = form.fulfilment === "delivery";
   const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment: form.fulfilment, city: form.city }));
   const needsCity = delivery && !form.city.trim();
@@ -120,7 +125,9 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
             {ways.map((w) => <option key={w} value={w}>{t(w)}</option>)}
           </Select>
         )}
-        {slots.length === 0 ? (
+        {limiting ? (
+          <OrderSheetDayConflict product={limiting} onRemove={() => keysOf(picks, limiting.id).forEach((k) => onChange(k, 0))} />
+        ) : slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
           <Select label={t("when")} required value={form.slot} onChange={(e) => set({ slot: e.target.value })} data-testid="order-sheet-slot">

@@ -174,6 +174,7 @@ erDiagram
         boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
+        smallint available_weekdays "MEH-3618: Sun=1..Sat=64, NULL = every day, CHECK 1..127"
     }
 
     producer_order_settings {

@@ -16,6 +16,8 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
+
+import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
 import ProductFacts from "@/components/public/ProductFacts";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -570,6 +572,7 @@ export default function ProductSheet({
             <h2 className="font-headline-md text-xl font-bold text-text">
               {product.name}
             </h2>
+            <ProductWeekdaysLine product={product} className="-mt-2 text-sm text-fg-muted" />
 
             {/* Quiet text pills. Per-PRODUCT flags, so no "100%" language and no
                 whole-business claim — MEH-1508 owns the producer-level facility
