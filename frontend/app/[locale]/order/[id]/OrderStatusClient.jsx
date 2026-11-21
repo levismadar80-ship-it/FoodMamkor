@@ -12,7 +12,7 @@
  *           the buyer's own phone or address. A missing, wrong or expired
  *           link, or ordering switched off, is the site's 404.
  * Related:  app/[locale]/order/[id]/page.js, lib/order-status.js
- * History:  MEH-3216 stage 5a (creation)
+ * History:  MEH-3216 stage 5a (creation); MEH-3620 («כתבו ביקורת» once handed)
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -131,6 +131,12 @@ export function OrderStatusView({ order, onChange, refOf }) {
         <Button variant="outlined" onClick={() => setState({ asking: true })} data-testid="order-cancel">{t("cancel")}</Button>
       )}
       {view.cancel === "too_late" && <p className="text-sm text-fg-muted">{t("too_late")}</p>}
+      {/* MEH-3620: the business's verified-review link, sent only once handed. */}
+      {order.status === "handed" && order.review_url && (
+        <Button onClick={() => window.location.assign(order.review_url)} data-testid="order-write-review">
+          {t("write_review")}
+        </Button>
+      )}
       {state.asking && (
         <CancelDialog
           busy={Boolean(state.busy)}

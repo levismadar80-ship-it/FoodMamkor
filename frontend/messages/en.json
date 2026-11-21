@@ -7808,7 +7808,8 @@
     "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
     "line": "{qty} × {name}",
     "back": "Back",
-    "failed": "That didn't work. Please try again."
+    "failed": "That didn't work. Please try again.",
+    "write_review": "Write a review"
   },
   "price_unit": {
     "unit": "per unit",

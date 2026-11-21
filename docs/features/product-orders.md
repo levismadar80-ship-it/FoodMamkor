@@ -9,7 +9,7 @@
 **Routes**
 * `frontend/app/[locale]/producer/dashboard/orders/` — לשונית «הזמנות» של בית העסק (פירוט ב-[לוח הבקרה](./producer-dashboard.md)).
 * `GET /producers/me/product-orders/customers` — «הלקוחות שלכם» (MEH-3561): שורה לכל לקוח לפי טלפון, בלי הזמנות שנדחו, שפג תוקפן או שבוטלו; הכרטיס `frontend/components/dashboard/orders/OrderCustomersCard.jsx` והקובץ `frontend/lib/order-customers.js` (ה-CSV), השירות `backend/app/services/product_order_customers.py`.
-* `frontend/app/[locale]/order/[id]/` — דף ההזמנה של הלקוחה. הקישור שבכל הודעה, הטוקן אחרי `#t=`; לא נסרק, בלי Referer.
+* `frontend/app/[locale]/order/[id]/` — דף ההזמנה של הלקוחה. הקישור שבכל הודעה, הטוקן אחרי `#t=`; לא נסרק, בלי Referer. אחרי שההזמנה נמסרה: «כתבו ביקורת» (MEH-3620) עם קישור הביקורת המאומתת, מ-`backend/app/services/review_invite.py`.
 * `frontend/app/[locale]/my-orders/` — «ההזמנות שלי» (MEH-3525): ההזמנות של הלקוחה המחוברת, מהחדשה לישנה, דרך `GET /users/me/product-orders`; כל שורה פותחת את דף ההזמנה. הקישור בתפריט החשבון (`frontend/lib/use-my-orders-nav-gate.js`) מופיע רק כשההזמנות באתר פעילות.
 
 **קבצים מרכזיים**
@@ -23,5 +23,5 @@
 * `tests/test_meh3263_order_route.py`, `tests/test_meh3262_order_windows.py`, `tests/test_meh3296_order_notifications.py`, `tests/test_meh3218_product_orders.py`, `tests/test_meh2936_product_unit.py` (bottle / box are counted, not weighed), `tests/test_meh3474_pack_unit.py` (pack, the same way), `tests/test_meh3216_business_id.py`
 * `frontend/__tests__/OrderCustomers.test.jsx` · `tests/test_meh3561_order_customers.py` — «הלקוחות שלכם» (0 / 1 / רבים, פתוח / סגור, ה-CSV והגנת הנוסחה, שעון ישראל).
 * `frontend/__tests__/OrderOnboarding.test.jsx` (הכרטיס, רשימת הצעדים ושורת העמלה)
-* `frontend/__tests__/ProductOrdersDashboard.test.jsx`, `frontend/__tests__/OrderStatusPage.test.jsx`, `frontend/__tests__/OrderCart.test.js`, `frontend/__tests__/OrderCartRows.test.jsx`, `frontend/__tests__/OrderSheet.test.jsx`
+* `frontend/__tests__/ProductOrdersDashboard.test.jsx`, `frontend/__tests__/OrderStatusPage.test.jsx`, `frontend/__tests__/OrderWriteReview.test.jsx`, `tests/test_meh3620_order_review_url.py`, `frontend/__tests__/OrderCart.test.js`, `frontend/__tests__/OrderCartRows.test.jsx`, `frontend/__tests__/OrderSheet.test.jsx`
 * `tests/test_meh3216_order_cart.py`, `tests/test_meh3216_order_quote.py`
