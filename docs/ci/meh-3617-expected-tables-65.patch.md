@@ -1,5 +1,7 @@
 # MEH-3617 — `EXPECTED_TABLES` 64 → 65
 
+> **Superseded** by [meh-3617-expected-tables-66.patch.md](./meh-3617-expected-tables-66.patch.md): MEH-3535 took 65 on staging first.
+
 The migration `c5f7a9b1d3e4` adds one table, `product_variants` (a product's
 sizes or flavours). The step **"Verify alembic schema"** in
 `.github/workflows/pr-checks.yml` counts the tables after `alembic upgrade

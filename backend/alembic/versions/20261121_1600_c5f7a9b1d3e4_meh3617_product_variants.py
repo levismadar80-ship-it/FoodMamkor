@@ -1,7 +1,7 @@
 """meh3617_product_variants
 
 Revision ID: c5f7a9b1d3e4
-Revises: b4e6a8c0d2f3
+Revises: c5e7a9b1d3f6
 Create Date: 2026-11-21 16:00:00.000000+00:00
 
 MEH-3617. Expand-only (ADR-007). Approved by Sapir 21/11 (card MEH-3617).
@@ -25,7 +25,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "c5f7a9b1d3e4"
-down_revision: Union[str, None] = "b4e6a8c0d2f3"
+down_revision: Union[str, None] = "c5e7a9b1d3f6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
