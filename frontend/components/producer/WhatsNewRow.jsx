@@ -8,7 +8,7 @@
  *           a dot while the newest release is unseen (MEH-3200, placement ג׳).
  * Does NOT: show release text (WhatsNewCard.jsx) or mark anything seen — the
  *           archive page does that when it opens.
- * History:  MEH-3200 (creation).
+ * History:  MEH-3200 (creation); MEH-3676 (logo before the title).
  */
 
 import { useTranslations } from "next-intl";
@@ -16,6 +16,10 @@ import { Link } from "@/i18n/navigation";
 import { useUnseenRelease } from "@/hooks/useWhatsNew";
 import { visibleReleases } from "@/lib/whats-new";
 import { WHATS_NEW_HREF } from "./WhatsNewCard";
+import SeedMark from "@/components/brand/SeedMark";
+
+// UI scale 16 = inline with body text (DESIGN.md Icons).
+const ROW_MARK_PX = 16;
 
 export default function WhatsNewRow() {
   const t = useTranslations("dashboard.producer.whats_new");
@@ -29,6 +33,8 @@ export default function WhatsNewRow() {
     >
       <div className="min-w-0">
         <p id="whats-new-row-title" className="font-semibold text-text text-sm flex items-center gap-2">
+          {/* MEH-3676: the logo leads the one row that speaks for מהמקור (Sapir 22/11, option ג׳). */}
+          <SeedMark size={ROW_MARK_PX} className="shrink-0" />
           {t("row_title")}
           {release && (
             <span data-testid="whats-new-dot" className="w-2 h-2 rounded-full bg-primary inline-block shrink-0">
