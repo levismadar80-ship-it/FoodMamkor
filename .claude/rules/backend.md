@@ -26,7 +26,8 @@ nearest row per business (`producer_queries.py::haversine_min_km`, MEH-1402),
 with **no fallback** to the legacy `producers.lat/lng` mirror since MEH-1938
 chunk 5a (the mirror carries `LEGACY(2026-10-15)` ahead of its drop). PostGIS is not
 installed on Railway's stock PostgreSQL — adding it would break the
-deploy. **Never add PostGIS.**
+deploy. **Never add PostGIS.** `scripts/checks/prose-rules-guard.sh` (R4) fails a geoalchemy2 import,
+a postgis `CREATE EXTENSION` or a postgis/geoalchemy dependency.
 _(Platform claim — **as of 2026-08-03, unverified**. Railway is unreachable from
 a CC session: `*.up.railway.app` egress returns `CONNECT tunnel failed, 403`
 (re-confirmed 2026-08-03), so no session can re-derive what the stock image
@@ -94,7 +95,8 @@ Railway blocks outbound SMTP (`25`/`465`/`587`) — **as of 2026-08-03,
 unverified**, same reason as the PostGIS note above: no CC session can reach
 Railway to test a port. All email goes through
 `backend/app/services/email.py` → `send_email()` → Resend HTTP API.
-Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.**
+Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.** An `import smtplib` in `backend/app` fails
+`scripts/checks/prose-rules-guard.sh` (R4).
 
 ---
 

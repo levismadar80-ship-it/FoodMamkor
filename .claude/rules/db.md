@@ -14,6 +14,8 @@ Schema authority and migration safety. Sourced from MEH-267 post-mortem
 
 **Schema changes via Alembic only.** `_migrate_columns()` removed in
 MEH-267. Guide: [docs/MIGRATIONS.md](../../docs/MIGRATIONS.md).
+`scripts/checks/prose-rules-guard.sh` (R3) fails a `.create_all(` outside `backend/app/startup.py` or a
+`_migrate_columns` function anywhere in `backend/`.
 
 _Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns`
 drift broke production login; the hotfix PR bundled a 7-call-site
