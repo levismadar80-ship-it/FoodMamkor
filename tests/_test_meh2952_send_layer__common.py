@@ -652,6 +652,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         AUTH,
         "wrapper param ← user.is_test (users_me._queue_email_change_mails)",
     ),
+    # MEH-3591: «הסיסמה בחשבון שונתה» after a change or a reset.
+    ("services/auth_emails.py", "send_password_changed_notice", "send_email"): (
+        1,
+        AUTH,
+        "wrapper param ← user.is_test (users_me.change_password, auth.reset_password)",
+    ),
     # MEH-2974: the invite itself. There is no `users` row yet — the whole
     # point of the flow — so the only is_test signal available is the
     # BUSINESS's, which is what the caller passes.
@@ -961,6 +967,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_participant_funded",
         "_send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test"),
+    # MEH-3591: the join confirmation. A test business's group is 404 to the
+    # public, so the joiner's own flag is the one that can be set here.
+    (
+        "services/group_buy_notifications.py",
+        "notify_participant_joined",
+        "_send_email",
+    ): (1, CON, "wrapper param ← user.is_test (group_buys._confirm_join)"),
     (
         "services/group_buy_notifications.py",
         "notify_participant_cancelled",
