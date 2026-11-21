@@ -57,6 +57,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Landing for an email «unsubscribe» link (POST on mount, retry, token stripped) | `EmailLinkUnsubscribe.jsx` | `EmailLinkUnsubscribe` |
 | Admin panel that mints + copies a signed 14-day link for a draft | `admin/AdminLinkPanel.jsx` | `AdminClaimLink` (+ `scripts/checks/clone-ratchet.sh` for copies) |
 | AI suggestion button + editable preview that hands text to a field (product description, review reply) | `AiTextSuggest.jsx` | — |
+| Offer page blocks, one look for a group buy and a rescue bag: pickup time under the title · «איפה ומתי» with the map · allergens · how it works (MEH-3597, MEH-3610) | `offer-detail/PickupLine.jsx` · `offer-detail/WhereSection.jsx` · `offer-detail/AllergenSection.jsx` · `offer-detail/HowSteps.jsx` | `GroupBuyBagParity` |
 
 `Link`, `Badge`, `Heading`, `Card` have no product call sites yet (only
 `app/[locale]/dev/components`, the dev-only gallery). Prefer them over new

@@ -7,7 +7,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
 import { israelToday } from "@/lib/israel-date";
-import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
+import AllergenPicker from "@/components/AllergenPicker"; // MEH-3610
 import { MyPilotLocationsProducersMeRescuePilotLocationsGetResponse as PilotLocationsOut } from "@/lib/generated/api.zod";
 import { detailToMessage, errorMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
@@ -47,9 +47,6 @@ export default function RescueTab() {
   const [unverifiedHits, setUnverifiedHits] = useState(0);
   const tShare = useTranslations("share");
   const tCopied = useTranslations("dashboard.producer.vanity_link");
-  // The allergen LABELS are the product sheet's, not a second copy: one
-  // vocabulary for the whole site (MEH-2662).
-  const tProducts = useTranslations("settings.products.form");
   const tError = useTranslations("error");
   const [orders, setOrders] = useState(null);
   const [code, setCode] = useState("");
@@ -575,32 +572,8 @@ export default function RescueTab() {
             {t("allergens_title")}
           </p>
           <p className="font-body-sm text-sm text-fg-muted mb-2">{t("allergens_help")}</p>
-          <div
-            role="group"
-            aria-labelledby="rescue-allergens-heading"
-            data-testid="rescue-allergens-group"
-            className="flex flex-wrap gap-2"
-          >
-            {ALLERGEN_CODES.map((code) => {
-              const pressed = allergens.includes(code);
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  aria-pressed={pressed}
-                  onClick={() => setAllergens((prev) => toggleAllergen(prev, code))}
-                  data-testid={`rescue-allergen-${code}`}
-                  className={`inline-flex items-center min-h-touch rounded-full border px-4 py-2 font-body-sm text-sm transition focus-ring ${
-                    pressed
-                      ? "border-primary bg-green-50 text-primary"
-                      : "border-border text-fg-muted hover:border-primary"
-                  }`}
-                >
-                  {tProducts(`allergen_${code}`)}
-                </button>
-              );
-            })}
-          </div>
+          {/* MEH-3610: the picker is shared with the group buy. */}
+          <AllergenPicker value={allergens} onChange={setAllergens} labelledBy="rescue-allergens-heading" testId="rescue-allergen" groupTestId="rescue-allergens-group" />
         </div>
 
         <Button
