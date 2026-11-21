@@ -296,7 +296,13 @@ export default function ReviewCardCanvas({ producer }) {
     // SHAREABLE: only reviews that have text. A stars-only review makes a card
     // that says nothing, and ReviewExcerpt.jsx:44 already skips them on the
     // public page for the same reason.
-    const shareable = (rows) => rows.filter((rv) => rv.body && rv.body.trim());
+    // MEH-1748: the generated ReviewOut carries `user_name`; keep only the three
+    // fields the card draws, so no later edit can hand the reviewer's name to
+    // the canvas by spreading a row.
+    const shareable = (rows) =>
+      rows
+        .filter((rv) => rv.body && rv.body.trim())
+        .map(({ id, stars, body }) => ({ id, stars, body }));
 
     // The filter runs client-side but the endpoint paginates at 10
     // (reviews.py PAGE_SIZE), so page 1 alone cannot answer "do I have a review

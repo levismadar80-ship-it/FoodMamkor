@@ -12,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import * as R from "@/lib/api-responses";
+import { contractRow, uuidFor } from "./helpers/contract-row";
 
 const ROOT = path.resolve(__dirname, "..");
 const SOURCE = fs.readFileSync(path.join(ROOT, "lib/api-responses.js"), "utf8");
@@ -108,6 +109,46 @@ describe("screen-level checks on top of the generated schemas", () => {
     expect(R.GroupBuyStatusResultSchema.safeParse({ detail: "ok", status: "won" }).success).toBe(false);
   });
 
+  it("ReviewsPageSchema rejects stars outside 1–5", () => {
+    const REVIEW = R.ReviewsPageSchema._zod.def.shape.reviews._zod.def.element;
+    const page = (stars) => ({
+      reviews: [contractRow(REVIEW, { id: uuidFor("r1"), producer_id: uuidFor("p1"), stars })],
+      total: 1,
+      page: 1,
+      pages: 1,
+    });
+    expect(R.ReviewsPageSchema.safeParse(page(5)).success).toBe(true);
+    expect(R.ReviewsPageSchema.safeParse(page(1)).success).toBe(true);
+    expect(R.ReviewsPageSchema.safeParse(page(0)).success).toBe(false);
+    expect(R.ReviewsPageSchema.safeParse(page(6)).success).toBe(false);
+  });
+
+  it("OwnerGroupBuySchema rejects a status outside the four", () => {
+    const row = (status) =>
+      contractRow(R.OwnerGroupBuySchema, { id: uuidFor("g"), producer_id: uuidFor("p"), status });
+    for (const ok of ["open", "funded", "cancelled", "fulfilled"]) {
+      expect(R.OwnerGroupBuySchema.safeParse(row(ok)).success, ok).toBe(true);
+    }
+    expect(R.OwnerGroupBuySchema.safeParse(row("deleted")).success).toBe(false);
+  });
+
+  it("SavedItemsResponseSchema keeps a bad row for the page to drop", () => {
+    const body = { recipes: [{ nonsense: 1 }], events: [], experiences: [] };
+    expect(R.SavedItemsResponseSchema.safeParse(body).success).toBe(true);
+    expect(R.SavedRecipeSchema.safeParse(body.recipes[0]).success).toBe(false);
+    expect(R.SavedItemsResponseSchema.safeParse({ recipes: [] }).success).toBe(false);
+  });
+
+  it("the invite emails accept any string the backend stored, or none", () => {
+    const pub = { producer_name: "שיקוי", requires_farmer_declaration: false, will_publish: true };
+    for (const email of ["נועה@דוגמה.ישראל", "x+y@b.co.il", null, undefined]) {
+      expect(R.OwnerInvitePublicSchema.safeParse({ ...pub, email }).success, String(email)).toBe(true);
+    }
+    expect(R.OwnerInvitePublicSchema.safeParse({ ...pub, email: 7 }).success).toBe(false);
+    const created = { invite_url: "https://x.co/i", name: "מ", sent_at: HOUR_LATER, expires_at: HOUR_LATER };
+    expect(R.OwnerInviteCreatedSchema.safeParse({ ...created, email: "נועה@דוגמה.ישראל" }).success).toBe(true);
+  });
+
   // The backend serialises naive DB columns with no offset (measured on
   // production GET /producers/{id}, 20/11); orval.config.js allows both.
   it("generated datetimes accept a value with and without a timezone", () => {
@@ -123,6 +164,8 @@ describe("the review share card never prints the reviewer", () => {
     const src = fs.readFileSync(path.join(ROOT, "components/ReviewCardCanvas.jsx"), "utf8");
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
     expect(code).not.toMatch(/user_name/);
+    // the rows it keeps are cut to the three fields it draws (MEH-1748)
+    expect(code).toMatch(/\.map\(\(\{ id, stars, body \}\) => \(\{ id, stars, body \}\)\)/);
     // control: the file is the card, and it does parse the reviews page
     expect(code).toMatch(/ReviewsPageSchema\.safeParse/);
   });

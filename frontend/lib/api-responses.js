@@ -5,7 +5,9 @@
  *           (workflow rule 19), taken from the GENERATED schemas in
  *           lib/generated/api.zod.js under the names the call sites use.
  * Does NOT: declare a single response field. Every schema here is a generated
- *           one, a `pick` of one, or a generated one with an extra `check`.
+ *           one, a `pick` of one, a generated one with an extra `check`, or one
+ *           whose existing key gets a looser check (`safeExtend`, the invite
+ *           email and the saved-items envelope — each says why).
  *           That is the point of the file: a hand-written field list is what
  *           stripped fields silently seven times (MEH-826 … MEH-1719), and
  *           `ApiResponsesNoFieldLists.test.js` fails if one comes back here.
@@ -138,10 +140,22 @@ export const ProducerAdminCreatedSchema = /* @__PURE__ */ zod.pick(AdminCreatePr
 export const ProducerClaimLinkSchema = /* @__PURE__ */ CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse.check(
   zod.refine((body) => isUrl(body.url), { message: "claim link is not a URL" }),
 );
-export const OwnerInvitePublicSchema = /* @__PURE__ */ GetOwnerInviteAuthOwnerInviteTokenGetResponse.check(
+// `email` is `zod.email()` in the generated schema, stricter than the backend's
+// own EmailStr (zod rejects e.g. a Hebrew local part that email-validator
+// accepts). The page shows it read-only, so a stricter check here would turn a
+// valid invite into the "malformed invite" page. The key is the generated one;
+// only its check is relaxed to "a string or nothing".
+const INVITE_EMAIL = { email: zod.optional(zod.nullable(zod.string())) };
+export const OwnerInvitePublicSchema = /* @__PURE__ */ zod.safeExtend(
+  GetOwnerInviteAuthOwnerInviteTokenGetResponse,
+  INVITE_EMAIL,
+).check(
   zod.refine((body) => isFilled(body.producer_name), { message: "invite has no business name" }),
 );
-export const OwnerInviteCreatedSchema = /* @__PURE__ */ CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse.check(
+export const OwnerInviteCreatedSchema = /* @__PURE__ */ zod.safeExtend(
+  CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse,
+  INVITE_EMAIL,
+).check(
   zod.refine((body) => isUrl(body.invite_url), { message: "invite link is not a URL" }),
 );
 export const DraftProductSchema = /* @__PURE__ */ zod
@@ -161,7 +175,7 @@ export const GroupBuyStatusResultSchema = UpdateGroupBuyStatusGroupBuysGroupBuyI
 // render a card with no actions. The four values come from the generated
 // status-change response, whose `status` IS the closed set — not from a list
 // written here.
-const GROUP_BUY_STATUS = GroupBuyStatusResultSchema.shape.status;
+const GROUP_BUY_STATUS = /* @__PURE__ */ (() => GroupBuyStatusResultSchema.shape.status)();
 export const OwnerGroupBuySchema = /* @__PURE__ */ ListMyGroupBuysProducersMeGroupBuysGetResponseItem.check(
   zod.refine((row) => zod.safeParse(GROUP_BUY_STATUS, row.status).success, {
     message: "unknown group-buy status",
