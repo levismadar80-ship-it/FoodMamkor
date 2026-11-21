@@ -46,6 +46,7 @@ import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "
 import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
 import RegistrationSessionSelect, { isFullSession, sessionKey } from "@/components/RegistrationSessionSelect";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-50";
@@ -71,7 +72,7 @@ function fieldsFrom(detail) {
   return [...new Set(fields.filter((f) => ["name", "phone", "email"].includes(f)))];
 }
 
-function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = [], onDone }) {
+function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = [], sellerName = null, onDone }) {
   const t = useTranslations("registration.signup");
   const tCta = useTranslations("registration.cta");
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
@@ -231,6 +232,7 @@ function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = 
       <button type="submit" disabled={sending} className={BTN} data-testid="registration-submit">
         {sending ? t("submitting") : waitlist ? t("waitlist_submit") : t("submit")}
       </button>
+      <NotAPartyLine name={sellerName} testId="registration-not-a-party" />
     </form>
   );
 }
@@ -295,6 +297,7 @@ function ActionLink({ action, label, testId, onClick }) {
  * @param {string} [props.waitlistHref] WhatsApp waitlist link when full (workshops)
  * @param {Function} [props.onWaitlistClick] counts the tap for the host (MEH-2991)
  * @param {string|null} [props.producerId] the business a WhatsApp / call tap is counted for (MEH-2991)
+ * @param {string|null} [props.producerName] the business the customer deals with, named under the sign-up button (MEH-3570)
  * @param {string} [props.waitlistLabel]
  * @param {string} [props.barNote]     the date line beside the button on the phone bar
  * @param {Array<{date: string, time: string, spots_left?: number | null}>} [props.sessions] MEH-3447: a recurring workshop's upcoming dates
@@ -356,7 +359,7 @@ export default function RegistrationCta(props) {
         : undefined;
   const showBar = action.kind !== "full" && !done && !open && inlineVisible === false;
 
-  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} sessions={props.sessions ?? []} onDone={(waited) => setDone(waited ? "waitlisted" : "registered")} />;
+  const form = <SignupForm kind={kind} itemId={itemId} waitlist={onWaitlist} sessions={props.sessions ?? []} sellerName={props.producerName ?? null} onDone={(waited) => setDone(waited ? "waitlisted" : "registered")} />;
   const question = formAction && action.questionHref && (
     <a
       href={action.questionHref}
