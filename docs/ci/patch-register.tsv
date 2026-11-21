@@ -77,4 +77,4 @@ load-test	applied	.github/workflows/load-test.yml	K6_CLOUD_STACK_ID	-	manual k6 
 meh-3617-expected-tables-65	dead	-	-	-	superseded by meh-3617-expected-tables-66 once MEH-3535 (email_outbox) took 65 on staging
 meh-3617-expected-tables-66	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
 meh-3592-expected-tables	dead	-	-	-	superseded by release-train-3-expected-tables-67 (variants and group_buy_waitlist together)
-release-train-3-expected-tables-67	pending	.github/workflows/pr-checks.yml	EXPECTED_TABLES=67	2026-11-21	variants (MEH-3617) + group_buy_waitlist (MEH-3592) on top of email_outbox; web editor on the train branch
+release-train-3-expected-tables-67	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=67	2026-11-21	committed 21/11 via the web editor (Claude in Chrome), 2cf40e0ef, sha256 matched the prepared file
