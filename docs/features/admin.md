@@ -8,7 +8,7 @@
 * `frontend/app/[locale]/admin/` ועוד שלוש-עשרה תת-לשוניות, בהן `frontend/app/[locale]/admin/producers/`, `frontend/app/[locale]/admin/recipes/`, `frontend/app/[locale]/admin/reviews/`, `frontend/app/[locale]/admin/reports/`, `frontend/app/[locale]/admin/kashrut/`, `frontend/app/[locale]/admin/outreach/`, `frontend/app/[locale]/admin/settings/`, `frontend/app/[locale]/admin/analytics/`, `frontend/app/[locale]/admin/billing/`.
 * `frontend/app/[locale]/admin/producers/new/` · `frontend/app/[locale]/admin/producers/[id]/edit/`
 * `frontend/app/[locale]/admin/audit-log/` — מסך יומן הפעולות (MEH-3306), לקריאה בלבד.
-* `frontend/app/[locale]/admin/copy/` — «טקסטים באתר» (MEH-3672), לקריאה בלבד: כל טקסט ב-`frontend/messages/he.json` לפי קבוצה, עם המסכים שקוראים אותה. הרשימה נבנית ב-`frontend/scripts/build-copy-screens.mjs` אל `frontend/lib/generated/copy-screens.json`.
+* `frontend/app/[locale]/admin/copy/` — «טקסטים באתר» (MEH-3672), לקריאה בלבד: כל טקסט ב-`frontend/messages/he.json` לפי קבוצה, עם המסכים שקוראים אותה. הרשימה נבנית ב-`frontend/scripts/build-copy-screens.mjs` אל `frontend/lib/copy-screens.json`.
 
 **קבצים מרכזיים**
 * `backend/app/routers/admin.py`

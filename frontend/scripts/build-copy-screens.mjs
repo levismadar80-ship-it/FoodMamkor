@@ -20,7 +20,7 @@
  *           of where a string renders.
  * Usage:    node scripts/build-copy-screens.mjs           # write the file
  *           node scripts/build-copy-screens.mjs --check   # exit 1 if stale
- * Output:   lib/generated/copy-screens.json. CopyScreensFresh.test.js runs
+ * Output:   lib/copy-screens.json. CopyScreensFresh.test.js runs
  *           the builder and fails when the committed file differs.
  * History:  MEH-3672 (creation, item 6 of MEH-3652).
  */
@@ -33,7 +33,7 @@ const FRONTEND = path.resolve(
   "..",
 );
 const APP = path.join(FRONTEND, "app", "[locale]");
-const OUT = path.join(FRONTEND, "lib", "generated", "copy-screens.json");
+const OUT = path.join(FRONTEND, "lib", "copy-screens.json");
 const EXT = [".js", ".jsx", ".ts", ".tsx", ".mjs"];
 const ROOT_FILES =
   /^(page|layout|template|loading|error|not-found)\.(js|jsx|ts|tsx)$/;

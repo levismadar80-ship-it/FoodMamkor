@@ -1,7 +1,7 @@
 /**
  * MEH-3672 — the screen index behind /admin/copy is built from the code.
  *
- * 1. The committed lib/generated/copy-screens.json equals a fresh build, so a
+ * 1. The committed lib/copy-screens.json equals a fresh build, so a
  *    page that starts reading a new group cannot leave the admin screen wrong.
  * 2. The detector itself, on inputs with a known answer (namespace call,
  *    options-object namespace, root `useTranslations()` + t("group.key"), a
@@ -16,7 +16,7 @@ import {
   routeOf,
 } from "../scripts/build-copy-screens.mjs";
 
-const OUT = path.join(__dirname, "..", "lib", "generated", "copy-screens.json");
+const OUT = path.join(__dirname, "..", "lib", "copy-screens.json");
 const GROUPS = new Set(["map", "admin", "seo", "common"]);
 
 describe("copy-screens.json", () => {

@@ -9,7 +9,7 @@
  * History:  MEH-3672 (creation).
  */
 import he from "@/messages/he.json";
-import index from "@/lib/generated/copy-screens.json";
+import index from "@/lib/copy-screens.json";
 import CopyScreenClient from "./CopyScreenClient";
 
 export default function AdminCopyPage() {

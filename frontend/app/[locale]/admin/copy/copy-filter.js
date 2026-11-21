@@ -5,7 +5,7 @@
  *           rows, and pick the groups and rows that match a search and a
  *           screen. No React, so the test calls it directly.
  * Does NOT: decide where a group renders — that is the generated index,
- *           lib/generated/copy-screens.json (scripts/build-copy-screens.mjs).
+ *           lib/copy-screens.json (scripts/build-copy-screens.mjs).
  * History:  MEH-3672 (creation).
  */
 
