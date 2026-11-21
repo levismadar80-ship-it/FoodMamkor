@@ -37,7 +37,7 @@
  * is_test → uvicorn on :8080 (RESCUE_BAGS_ENABLED=true) → `next build` +
  * `next start` with NEXT_PUBLIC_API_URL=http://localhost:8080. Then
  * QA_BASE_URL=http://localhost:3000 and, in the CC sandbox only,
- * QA_DIRECT_IMAGES=1 (see below) and a PLAYWRIGHT_BROWSERS_PATH whose
+ * the --direct-images flag (see below) and a PLAYWRIGHT_BROWSERS_PATH whose
  * ffmpeg-1013 points at /usr/bin/ffmpeg: the bundled 1011 build exits with
  * "Option not found" and Playwright then writes no video, silently.
  *
@@ -109,9 +109,9 @@ const BASE = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/,
 const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
 // Local stack in the CC sandbox only: `next start` cannot resolve Cloudinary
 // (its image optimizer does its own DNS lookup, which the sandbox proxy does
-// not serve), so every <Image> 500s. With QA_DIRECT_IMAGES=1 the browser
+// not serve), so every <Image> 500s. With --direct-images the browser
 // is redirected to the original Cloudinary URL. Same picture, no Next resize.
-const DIRECT_IMAGES = process.env.QA_DIRECT_IMAGES === "1";
+const DIRECT_IMAGES = process.argv.includes("--direct-images");
 // The bypass secret goes to the target origin ONLY. It used to ride on
 // `extraHTTPHeaders`, which Playwright sends to every host the page touches
 // (tile.openstreetmap.org, res.cloudinary.com, analytics), handing the
@@ -736,7 +736,7 @@ const MARKER_CSS = `
 // `addInitScript` runs on every document in the page, including the ones
 // `clip-return` navigates to mid-recording, and it is not silenced.
 // It also installs the two request routes (bypass header scoped to the target
-// origin; QA_DIRECT_IMAGES), plus a guard that fails the run if the secret is
+// origin; --direct-images), plus a guard that fails the run if the secret is
 // ever seen on a request to any other host.
 async function installOverlayStyles(page) {
   if (BYPASS) {
