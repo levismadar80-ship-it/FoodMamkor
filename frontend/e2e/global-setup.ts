@@ -41,7 +41,7 @@ import path from "node:path";
 import { loginFailureMessage, withRateLimitRetry } from "./login-retry";
 import { goldenOnly } from "./golden-selection";
 import { webkitTlsEnabled, WEBKIT_TLS_URL } from "./webkit-tls";
-// @ts-expect-error -- plain .mjs helper, shared with the QA scripts (MEH-3607)
+// Plain .mjs helper, shared with the QA scripts (MEH-3607).
 import { fetchBypassCookie } from "./_bypass-scope.mjs";
 
 type Role = {

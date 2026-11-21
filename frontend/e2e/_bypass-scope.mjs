@@ -80,7 +80,9 @@ export async function fetchBypassCookie(api, targetUrl, secret) {
     failOnStatusCode: false,
   });
   const { cookies } = await api.storageState();
-  if (!cookies.some((c) => c.name === "_vercel_jwt" && origin.endsWith(c.domain.replace(/^\./, "")))) {
+  const host = new URL(origin).hostname;
+  const forHost = (d) => host === d || host.endsWith(`.${d}`);
+  if (!cookies.some((c) => c.name === "_vercel_jwt" && forHost(c.domain.replace(/^\./, "")))) {
     throw new Error(
       `[bypass] ${origin} set no _vercel_jwt cookie (HTTP ${r.status()}). ` +
         "Check that VERCEL_AUTOMATION_BYPASS_SECRET is the current secret.",
