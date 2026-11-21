@@ -43,7 +43,7 @@ def test_a_name_or_title_with_an_emoji_is_refused(kind, value):
 
 @pytest.mark.parametrize("kind", FIELDS)
 def test_typography_and_clean_names_pass_unchanged(kind):
-    value = "גבינות ★ הכפר ✓ ™ ₪45 (בע״מ) – ‘טבעי’"
+    value = "גבינות ★ ☆ הכפר ✓ ✗ ✕ ™ ₪45 (בע״מ) – ‘טבעי’"
     assert TypeAdapter(FIELDS[kind]).validate_python(value) == value
 
 
@@ -95,3 +95,52 @@ def test_an_outreach_lead_name_drops_its_emoji_instead_of_failing():
     assert OutreachLeadCreate(name="🍞 לחם אלחנן").name == "לחם אלחנן"
     assert OutreachLeadUpdate(name="מאפייה ❤️ שלנו").name == "מאפייה שלנו"
     assert OutreachLeadCreate(name="LIVNEY'S").name == "LIVNEY'S"
+
+
+def test_an_emoji_only_lead_name_gets_the_hebrew_empty_message():
+    from app.schemas.recipes_outreach import OutreachLeadCreate
+
+    with pytest.raises(ValidationError) as exc:
+        OutreachLeadCreate(name="🍞")
+    assert "שם לא יכול להיות ריק" in str(exc.value)
+
+
+@pytest.mark.parametrize("cls_name", ["AppleAuthRequest", "ProducerOAuthSignupRequest"])
+def test_a_name_apple_sends_drops_its_emoji_instead_of_failing(cls_name):
+    # Apple sends the name once and the person cannot edit it in the flow.
+    from app.schemas import registration
+
+    field = registration.__dict__[cls_name].model_fields["name"]
+    adapter = TypeAdapter(field.annotation)
+    assert adapter.validate_python("דנה 🌸") == "דנה"
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: __import__(
+            "app.schemas.product_organize", fromlist=["x"]
+        ).ProductGroupIn(name="מבצעים 🔥"),
+        lambda: __import__("app.schemas.catalog", fromlist=["x"]).DeliveryZoneIn(
+            name="מרכז 🚚"
+        ),
+        lambda: __import__(
+            "app.schemas.experiences", fromlist=["x"]
+        ).RegistrationCreate(name="נועה 🌸", phone="0501234567", email="n@example.com"),
+        lambda: __import__(
+            "app.schemas.experiences", fromlist=["x"]
+        ).ExperienceValidateRequest(title="סדנה 🌿"),
+    ],
+    ids=["product-group", "delivery-zone", "event-sign-up-name", "live-title-check"],
+)
+def test_the_other_typed_names_refuse_emoji(build):
+    with pytest.raises(ValidationError) as exc:
+        build()
+    assert NO_EMOJI_IN_NAME_MSG in str(exc.value)
+
+
+def test_a_menu_photo_row_name_loses_its_emoji_before_review():
+    from app.services.menu_reader import to_rows
+
+    rows = to_rows([{"name": "🍕 פיצה מרגריטה", "price_min": 50}])
+    assert [r.name for r in rows] == ["פיצה מרגריטה"]

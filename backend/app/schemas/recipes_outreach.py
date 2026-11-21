@@ -23,7 +23,7 @@ from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     PhoneNumberField,
     SanitizedLabelField,
-    SanitizedLeadNameField,
+    SanitizedImportedNameField,
     SanitizedUrlField,
     _image_url_validator,
     _min_letters_validator,
@@ -234,7 +234,7 @@ LeadWebsiteField = Annotated[
 
 
 class OutreachLeadCreate(BaseModel):
-    name: SanitizedLeadNameField = Field(..., min_length=1, max_length=200)
+    name: SanitizedImportedNameField = Field(..., min_length=1, max_length=200)
     phone: PhoneNumberField | None = None
     instagram: str | None = Field(None, max_length=100)
     website: LeadWebsiteField | None = None
@@ -257,7 +257,7 @@ class OutreachLeadUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted. Status is
     enum-validated at the route layer."""
 
-    name: SanitizedLeadNameField | None = None
+    name: SanitizedImportedNameField | None = None
     phone: PhoneNumberField | None = None
     instagram: str | None = None
     website: LeadWebsiteField | None = None

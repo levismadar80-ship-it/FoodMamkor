@@ -665,6 +665,18 @@ def strip_emoji_from_name(value: str) -> str:
     return " ".join(_EMOJI_IN_NAME.sub("", value).split())
 
 
+def _strip_emoji_before(value: Any) -> Any:
+    """BeforeValidator form of strip_emoji_from_name. A name made only of
+    emoji would otherwise reach a Field(min_length=1) as "" and fail with
+    pydantic's English message, so it gets the Hebrew one here."""
+    if not isinstance(value, str):
+        return value
+    stripped = strip_emoji_from_name(value)
+    if value.strip() and not stripped:
+        raise ValueError("שם לא יכול להיות ריק")
+    return stripped
+
+
 def reject_emoji(value: str | None) -> str | None:
     """MEH-3671: 422 when a name or title carries an emoji; else unchanged."""
     if value and _EMOJI_IN_NAME.search(value):
@@ -741,11 +753,13 @@ SanitizedPersonNameField = Annotated[str, AfterValidator(_sanitized_person_name)
 # product name, so SanitizedBusinessNameField would be wrong for these.
 SanitizedLabelField = Annotated[str, AfterValidator(_sanitized_person_name)]
 SanitizedTitleField = Annotated[str, AfterValidator(_sanitized_title)]
-# MEH-3671: outreach lead names drop emoji instead of refusing them (see
-# strip_emoji_from_name). Same rule as SanitizedLabelField otherwise.
-SanitizedLeadNameField = Annotated[
+# MEH-3671: a name that arrives from outside rather than typed into our form
+# (an outreach lead pasted from the sheet; the name Apple sends once and the
+# person cannot edit) drops its emoji instead of being refused. Same rule as
+# SanitizedLabelField otherwise.
+SanitizedImportedNameField = Annotated[
     str,
-    BeforeValidator(lambda v: strip_emoji_from_name(v) if isinstance(v, str) else v),
+    BeforeValidator(_strip_emoji_before),
     AfterValidator(_sanitized_person_name),
 ]
 
