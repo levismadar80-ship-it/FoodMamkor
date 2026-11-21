@@ -32,6 +32,7 @@ must NOT touch live story-cards.
 import logging
 import re
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 from app.config import settings
 
@@ -41,6 +42,10 @@ if TYPE_CHECKING:
 log = logging.getLogger("app.upload")
 
 _UPLOAD_MARKER = "/image/upload/"
+_CLOUDINARY_HOST = "res.cloudinary.com"
+# "" = protocol-relative `//res.cloudinary.com/...`, which a browser resolves
+# against the page and the substring check used to accept.
+_CLOUDINARY_SCHEMES = ("https", "http", "")
 _VERSION_RE = re.compile(r"^v\d+$")
 # MEH-3319 — a SIGNED delivery URL carries one extra segment immediately after
 # the upload marker: `s--<signature>--`, where the signature is the base64url
@@ -94,7 +99,20 @@ def _looks_like_cloudinary_upload(url: object) -> bool:
         return False
     if "/placeholder" in url:
         return False
-    return "res.cloudinary.com" in url and _UPLOAD_MARKER in url
+    # MEH-3613: check the parsed HOST, not a substring of the whole URL —
+    # `https://evil.example/?res.cloudinary.com/image/upload/x` must not pass
+    # (CodeQL py/incomplete-url-substring-sanitization). The marker must sit
+    # in the path, where `_parse_public_id_from_upload_url` looks for it.
+    try:
+        parts = urlsplit(url)
+        host = parts.hostname
+    except ValueError:
+        return False
+    return (
+        parts.scheme in _CLOUDINARY_SCHEMES
+        and host == _CLOUDINARY_HOST
+        and _UPLOAD_MARKER in parts.path
+    )
 
 
 def _parse_public_id_from_upload_url(url: str) -> str | None:
