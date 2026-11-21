@@ -46,16 +46,17 @@ OFFER_BATCH = 10
 
 JOINS_CLOSED = "בית העסק עצר את ההצטרפות לקבוצה הזאת"
 FULL = "קבוצת הרכישה מלאה"
-LAST_CALL_REFUSED = (
-    "ב-24 השעות האחרונות אי אפשר לבטל אם הקבוצה תרד מתחת ליעד"
-)
+LAST_CALL_REFUSED = "ב-24 השעות האחרונות אי אפשר לבטל אם הקבוצה תרד מתחת ליעד"
 
 
 def counts(db: Session, gb_id: Any) -> tuple[int, int]:
     """(participants, units) under the caller's row lock — never the cached
     `gb.commits` relationship, which can be stale (MEH-773)."""
     people, units = (
-        db.query(func.count(GroupBuyCommit.id), func.coalesce(func.sum(GroupBuyCommit.quantity), 0))
+        db.query(
+            func.count(GroupBuyCommit.id),
+            func.coalesce(func.sum(GroupBuyCommit.quantity), 0),
+        )
         .filter(GroupBuyCommit.group_buy_id == gb_id)
         .one()
     )
@@ -76,7 +77,9 @@ def is_full(gb: GroupBuy, people: int, units: int) -> bool:
     return left is not None and left < 1
 
 
-def refuse_unless_room(gb: GroupBuy, people: int, units: int, add_people: int, add_units: int) -> None:
+def refuse_unless_room(
+    gb: GroupBuy, people: int, units: int, add_people: int, add_units: int
+) -> None:
     """400 when the join (or a bigger quantity) would pass either cap."""
     if gb.joins_closed_at is not None and add_people:
         raise HTTPException(status_code=400, detail=JOINS_CLOSED)
@@ -122,14 +125,20 @@ def is_waitlisted(gb: GroupBuy, user_id: Any) -> bool:
     db = object_session(gb)
     if db is None:
         return False
-    return db.query(
-        exists().where(
-            GroupBuyWaitlist.group_buy_id == gb.id, GroupBuyWaitlist.user_id == user_id
-        )
-    ).scalar() is True
+    return (
+        db.query(
+            exists().where(
+                GroupBuyWaitlist.group_buy_id == gb.id,
+                GroupBuyWaitlist.user_id == user_id,
+            )
+        ).scalar()
+        is True
+    )
 
 
-def _next_in_line(db: Session, gb_id: Any, left: int | None, skip: set[Any]) -> GroupBuyWaitlist | None:
+def _next_in_line(
+    db: Session, gb_id: Any, left: int | None, skip: set[Any]
+) -> GroupBuyWaitlist | None:
     """The first row never offered, else the oldest offered more than
     REOFFER_AFTER ago — so a place taken back (a quantity toggled down and up,
     a leave and a rejoin) cannot spend every row's only offer (MEH-3592 review)."""
@@ -144,10 +153,10 @@ def _next_in_line(db: Session, gb_id: Any, left: int | None, skip: set[Any]) -> 
         q = q.filter(GroupBuyWaitlist.id.notin_(skip))
     if left is not None:
         q = q.filter(GroupBuyWaitlist.quantity <= left)
-    return (
-        q.order_by(GroupBuyWaitlist.offered_at.asc().nullsfirst(), GroupBuyWaitlist.created_at.asc())
-        .first()
-    )
+    return q.order_by(
+        GroupBuyWaitlist.offered_at.asc().nullsfirst(),
+        GroupBuyWaitlist.created_at.asc(),
+    ).first()
 
 
 def offer_freed_place(

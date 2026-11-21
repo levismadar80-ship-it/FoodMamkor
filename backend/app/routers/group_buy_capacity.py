@@ -39,7 +39,9 @@ _DEADLINE = "המועד האחרון חלף"
 
 def _locked(db: Session, group_buy_id: UUID) -> GroupBuy:
     """The row under FOR UPDATE, like /commit (MEH-773)."""
-    gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
+    gb = (
+        db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
+    )
     if not gb:
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
     return gb
@@ -70,7 +72,11 @@ def _room_grew(before: tuple[Any, Any, bool], gb: GroupBuy) -> bool:
     unchanged save must not spend the next offer)."""
     old_people, old_units, was_closed = before
     reopened = was_closed and gb.joins_closed_at is None
-    return reopened or _cap_grew(old_people, gb.max_participants) or _cap_grew(old_units, gb.max_units)
+    return (
+        reopened
+        or _cap_grew(old_people, gb.max_participants)
+        or _cap_grew(old_units, gb.max_units)
+    )
 
 
 def _refuse_unless_running(gb: GroupBuy) -> None:
@@ -91,15 +97,23 @@ def update_commit(  # noqa: PLR0913 — FastAPI-injected args
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     # Her commit first: a stranger learns nothing about a hidden group (review).
-    if not db.query(GroupBuyCommit.id).filter(
-        GroupBuyCommit.group_buy_id == group_buy_id, GroupBuyCommit.user_id == current_user.id
-    ).first():
+    if (
+        not db.query(GroupBuyCommit.id)
+        .filter(
+            GroupBuyCommit.group_buy_id == group_buy_id,
+            GroupBuyCommit.user_id == current_user.id,
+        )
+        .first()
+    ):
         raise HTTPException(status_code=404, detail="לא נמצאה הצטרפות")
     gb = _locked(db, group_buy_id)
     _refuse_unless_running(gb)
     commit = (
         db.query(GroupBuyCommit)
-        .filter(GroupBuyCommit.group_buy_id == gb.id, GroupBuyCommit.user_id == current_user.id)
+        .filter(
+            GroupBuyCommit.group_buy_id == gb.id,
+            GroupBuyCommit.user_id == current_user.id,
+        )
         .first()
     )
     if not commit:
@@ -133,26 +147,40 @@ def join_waitlist(  # noqa: PLR0913 — FastAPI-injected args
         raise HTTPException(status_code=400, detail=capacity.JOINS_CLOSED)
     people, units = capacity.counts(db, gb.id)
     left = capacity.units_left(gb, units)
-    has_room = not capacity.is_full(gb, people, units) and (left is None or data.quantity <= left)
+    has_room = not capacity.is_full(gb, people, units) and (
+        left is None or data.quantity <= left
+    )
     if has_room:
-        raise HTTPException(status_code=409, detail="יש מקום בקבוצה, אפשר להצטרף ישירות")
+        raise HTTPException(
+            status_code=409, detail="יש מקום בקבוצה, אפשר להצטרף ישירות"
+        )
     joined = (
         db.query(GroupBuyCommit.id)
-        .filter(GroupBuyCommit.group_buy_id == gb.id, GroupBuyCommit.user_id == current_user.id)
+        .filter(
+            GroupBuyCommit.group_buy_id == gb.id,
+            GroupBuyCommit.user_id == current_user.id,
+        )
         .first()
     )
     if joined:
         raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכישה זו")
     waiting = (
         db.query(GroupBuyWaitlist.id)
-        .filter(GroupBuyWaitlist.group_buy_id == gb.id, GroupBuyWaitlist.user_id == current_user.id)
+        .filter(
+            GroupBuyWaitlist.group_buy_id == gb.id,
+            GroupBuyWaitlist.user_id == current_user.id,
+        )
         .first()
     )
     if waiting:
         raise HTTPException(status_code=400, detail="כבר נרשמת לרשימת ההמתנה")
     if capacity.waitlist_count(db, gb.id) >= capacity.WAITLIST_MAX:
         raise HTTPException(status_code=409, detail="רשימת ההמתנה מלאה")
-    db.add(GroupBuyWaitlist(group_buy_id=gb.id, user_id=current_user.id, quantity=data.quantity))
+    db.add(
+        GroupBuyWaitlist(
+            group_buy_id=gb.id, user_id=current_user.id, quantity=data.quantity
+        )
+    )
     db.commit()
     return {"detail": "נרשמת לרשימת ההמתנה"}
 
@@ -167,7 +195,10 @@ def leave_waitlist(
 ) -> dict[str, Any]:
     deleted = (
         db.query(GroupBuyWaitlist)
-        .filter(GroupBuyWaitlist.group_buy_id == group_buy_id, GroupBuyWaitlist.user_id == current_user.id)
+        .filter(
+            GroupBuyWaitlist.group_buy_id == group_buy_id,
+            GroupBuyWaitlist.user_id == current_user.id,
+        )
         .delete(synchronize_session=False)
     )
     if not deleted:
@@ -198,7 +229,10 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
             raise HTTPException(
                 status_code=400, detail=f"כבר הצטרפו {people}, אי אפשר להגביל לפחות מזה"
             )
-        if data.max_participants is not None and data.max_participants < gb.min_participants:
+        if (
+            data.max_participants is not None
+            and data.max_participants < gb.min_participants
+        ):
             raise HTTPException(
                 status_code=400,
                 detail=f"המקסימום לא יכול להיות קטן מהיעד ({gb.min_participants} משתתפים)",
@@ -207,11 +241,14 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
     if "max_units" in sent:
         if data.max_units is not None and data.max_units < units:
             raise HTTPException(
-                status_code=400, detail=f"כבר הוזמנו {units} יחידות, אי אפשר להגביל לפחות מזה"
+                status_code=400,
+                detail=f"כבר הוזמנו {units} יחידות, אי אפשר להגביל לפחות מזה",
             )
         gb.max_units = data.max_units  # type: ignore[assignment]
     if data.joins_open is not None:
-        gb.joins_closed_at = None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]
+        gb.joins_closed_at = (
+            None if data.joins_open else (gb.joins_closed_at or utc_now())
+        )  # type: ignore[assignment]
     db.flush()
     if _room_grew(before, gb):
         capacity.offer_freed_place(db, gb, background_tasks)
