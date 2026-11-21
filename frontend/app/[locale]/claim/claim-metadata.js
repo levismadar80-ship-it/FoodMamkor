@@ -4,6 +4,7 @@ import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { ogImage } from "@/lib/seo";
 import { BRAND_NAME } from "@/lib/constants";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-2324: shared by /claim and /claim/[token]. The page is a private
 // invitation, so it is never indexed and never followed. It sets no alternates
@@ -20,8 +21,6 @@ import { BRAND_NAME } from "@/lib/constants";
 // generic card of before, with no business name.
 
 const PREVIEW_TIMEOUT_MS = 3000;
-// The layout's own default cards (app/[locale]/layout.js), per locale.
-const SITE_OG_IMAGE = { he: "/og-image.jpg", en: "/og-image-en.jpg" };
 
 /** Only a Cloudinary photo becomes the card: the crawler fetches whatever
  * host is named here, and the photo of a draft is ours, never a third party's.
@@ -74,7 +73,7 @@ export async function claimMetadata(params) {
   // The named title already says «במהמקור», so it skips the brand template.
   const title = t("title_named", { name: preview.name.trim() });
   const image =
-    cloudinaryOnly(preview.image) || (locale === "en" ? SITE_OG_IMAGE.en : SITE_OG_IMAGE.he);
+    cloudinaryOnly(preview.image) || siteOgImageUrl(locale);
   return {
     ...base,
     title: { absolute: title },
