@@ -56,7 +56,7 @@ def freshness_enabled() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Copy — DRAFT, pending Sapir's word-for-word approval (workflow rule 22).
+# Copy — approved word for word by Sapir on 20/11/2026 (workflow rule 22). Signature changed to «צוות מהמקור» at her request on 21/11.
 # ---------------------------------------------------------------------------
 SUBJECT = "העמוד של {name} במהמקור: הכול עדיין נכון?"
 BODY = """\
@@ -70,8 +70,7 @@ BODY = """\
 רוצה לעדכן:
 {dashboard_url}
 
-ספיר שנפ
-מייסדת | מהמקור
+צוות מהמקור
 """
 
 
