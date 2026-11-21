@@ -13,7 +13,7 @@ import {
   SavedExperienceSchema,
   SavedItemsResponseSchema,
   SavedRecipeSchema,
-} from "@/lib/api-schemas";
+} from "@/lib/api-responses";
 import { eventWhen } from "@/lib/event-when";
 import { israelToday } from "@/lib/israel-date";
 

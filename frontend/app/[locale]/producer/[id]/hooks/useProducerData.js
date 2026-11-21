@@ -18,7 +18,7 @@ import { trackProducerView } from "@/lib/contact-tracking";
 // :35), and `whatsapp_group` + `order_window` (ContactCard.jsx:125, :252).
 //
 // That is exactly the MEH-901 class this validation exists to prevent, and
-// `lib/api-schemas.js:68-92` documents the same trap with a measurement:
+// `lib/api-schemas.js` (removed in MEH-1748) documented the same trap with a measurement:
 // `ProducerSchema.parse` on a 12-key card fixture kept 2 (MEH-1713).
 // `.loose()` is the Zod-4 spelling of `.passthrough()` — declared fields are
 // validated, undeclared ones are kept.

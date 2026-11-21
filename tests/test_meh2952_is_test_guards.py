@@ -164,9 +164,10 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     ),
     "backend/app/routers/organizers.py": (1, "adds not_test_producer()"),
     "backend/app/routers/saved_items.py": (1, "saved events; adds not_test_producer()"),
-    "backend/app/routers/rescue.py": (
-        2,
-        "public list adds not_test_producer(); :361 is the owner's publish gate",
+    "backend/app/routers/rescue.py": (1, "the owner's publish gate"),
+    "backend/app/services/rescue_reads.py": (
+        1,
+        "public list adds not_test_producer() (moved from routers/rescue.py, MEH-3541)",
     ),
     "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
     "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
