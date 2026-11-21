@@ -210,9 +210,34 @@ class TestCounts:
 
 
 class TestThePage:
-    def test_by_slug(self, client, db, pair):
-        assert client.get(f"/producers/by-slug/{CONTROL_SLUG}").status_code == 200
+    def test_by_slug_serves_the_test_row_with_noindex(self, client, db, pair):
+        # MEH-2952 chunk 3 (Sapir 11/11 ruling 2): the direct URL answers a
+        # stranger, and `noindex` is in EVERY answer — false for the control,
+        # true for the test row. `is_test` itself never leaves the API.
+        ok = client.get(f"/producers/by-slug/{CONTROL_SLUG}")
+        assert ok.status_code == 200, ok.text
+        assert ok.json()["noindex"] is False
+        hidden = client.get(f"/producers/by-slug/{TEST_SLUG}")
+        assert hidden.status_code == 200, hidden.text
+        assert hidden.json()["noindex"] is True
+        assert "is_test" not in hidden.json()
+        assert "is_test" not in ok.json()
+
+    def test_by_slug_still_hides_a_pending_test_row(self, client, db, pair):
+        # include_test keeps a test row only while it is a live business:
+        # a pending (or organizer) test row stays 404, like any pending row.
+        _, hidden = pair
+        hidden.status = "pending"
+        db.commit()
         assert client.get(f"/producers/by-slug/{TEST_SLUG}").status_code == 404
+
+    def test_by_id_carries_noindex_for_owner_and_admin(self, client, db, pair):
+        control, hidden = pair
+        assert client.get(f"/producers/{control.id}").json()["noindex"] is False
+        admin = make_user(db, role="admin", email="meh2952-admin3@example.com")
+        seen = client.get(f"/producers/{hidden.id}", headers=auth_header(admin))
+        assert seen.status_code == 200, seen.text
+        assert seen.json()["noindex"] is True
 
     def test_by_id_stranger_404_owner_and_admin_see(self, client, db, pair):
         control, hidden = pair

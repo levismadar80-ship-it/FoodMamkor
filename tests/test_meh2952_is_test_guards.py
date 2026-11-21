@@ -37,9 +37,10 @@ REVISION = "b8cb5480552f"
 # ── guard 1 · include_test allowlist ───────────────────────────────────────
 
 #: Repo-relative paths allowed to pass include_test=<anything but False>.
-#: Chunk 1: none. Chunk 3: backend/app/routers/producers.py (by-slug only).
-#: Chunk 4: the owner dashboard and admin screens.
-INCLUDE_TEST_ALLOWED: frozenset[str] = frozenset()
+#: Chunk 1: none. Chunk 3: backend/app/routers/producers.py (by-slug only:
+#: the business page's direct URL, served with noindex).
+#: Chunk 4 needed none (the admin screens read the ids, not the predicate).
+INCLUDE_TEST_ALLOWED: frozenset[str] = frozenset({"backend/app/routers/producers.py"})
 
 _PREDICATES = {"is_business", "is_business_row"}
 
