@@ -54,6 +54,8 @@ class ReservationEmail:
     # None = reserved after the free-cancel cutoff: no cancel line, no button
     # (MEH-2737, approved 6/11).
     cancel_until: str | None
+    # MEH-3593: the business's «הוראות איסוף»; None = no line.
+    pickup_note: str | None = None
 
 
 def send_reservation_email(
@@ -74,10 +76,12 @@ def send_reservation_email(
         if m.cancel_until
         else "\n"
     )
+    note_text = f"הוראות איסוף: {m.pickup_note}\n" if m.pickup_note else ""
     body = (
         f"{subject}\n\n"
         f"הקוד שלכם: {m.pickup_code}. אומרים אותו בקופה ומשלמים {price} ₪.\n"
         f"איסוף היום {m.pickup_from}–{m.pickup_until}{where}.\n"
+        f"{note_text}"
         f"{cancel_text}"
         f"צוות מהמקור 🌱"
     )
@@ -88,6 +92,8 @@ def send_reservation_email(
     e = html_escape
     subject_html = e(subject)
     address_html = f"<br>\n                📍&nbsp; {e(m.address)}" if m.address else ""
+    if m.pickup_note:
+        address_html += f"<br>\n                הוראות איסוף: {e(m.pickup_note)}"
     cancel_html = (
         f"""\
           <tr><td style="padding:14px 22px 0;text-align:right;font-size:14px;color:#5c584f;line-height:1.6;">אי אפשר להגיע? אפשר לבטל בחינם עד <b style="color:#1c1a17;">{e(m.cancel_until)}</b>, וככה הסל יגיע למישהו אחר.</td></tr>

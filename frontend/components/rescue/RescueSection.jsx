@@ -1,33 +1,20 @@
 // @ts-check
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
 
-import { useOptionalAuth } from "@/lib/auth-context";
-
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
-import {
-  cancelOrder,
-  fetchMyOrders,
-  fetchOffers,
-  israelTime,
-  cancelErrorKey,
-  rescueBagsEnabled,
-  reserveBag,
-  reserveErrorKey,
-  shekels,
-} from "@/lib/rescue";
+import { fetchOffers, israelTime, rescueBagsEnabled, shekels, worthAgorot } from "@/lib/rescue";
+import useRescueReservation from "@/lib/useRescueReservation";
+import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import Button from "@/components/ui/Button";
-import { RESCUE_SECTION_ID } from "@/lib/producer-path";
+import { RESCUE_SECTION_ID, rescueOfferPath } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
-import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
-import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
-import { isUnverifiedEmailError } from "@/lib/errors";
 
 /**
  * Module:   RescueSection
@@ -43,18 +30,9 @@ import { isUnverifiedEmailError } from "@/lib/errors";
  *           one short cancel line, allergens folded) · MEH-2737 (a cancel
  *           says it worked, or why not; past the cutoff the card says the bag
  *           can no longer be cancelled) · MEH-2738 (says when the business
- *           cancelled the bag)
+ *           cancelled the bag) · MEH-3586 (reserve/cancel state moved to
+ *           lib/useRescueReservation, shared with the bag page)
  */
-
-/** The struck-through "worth": the business's own LOW estimate, and only when
- *  it is above the price (BagRow's rule — never a made-up discount). */
-function worthAgorot(offer) {
-  const v = offer?.value_min_agorot;
-  if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
-  return v > offer.price_agorot ? v : null;
-}
-
-const UNVERIFIED_KEY = "errors.unverified";
 
 export default function RescueSection({ producer }) {
   const t = useTranslations("rescue");
@@ -62,20 +40,10 @@ export default function RescueSection({ producer }) {
   // the bag and a product never name the same allergen differently.
   const tProducts = useTranslations("settings.products.form");
   const [offer, setOffer] = useState(null);
-  const [order, setOrder] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [errorKey, setErrorKey] = useState(null);
-  // MEH-3130: a guest's tap opens the shared login prompt (title + why +
-  // «היכנסו» back to this page). It was an inline line with no way to sign in.
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [reviewed, setReviewed] = useState(false);
-  // MEH-2737: shown once the cancel went through, until the next reserve.
-  const [cancelled, setCancelled] = useState(false);
-  // MEH-2738: the business cancelled today's bag, and hers with it.
-  const [businessCancelled, setBusinessCancelled] = useState(false);
   const landedOnHash = useRef(false);
 
-  // A bag row / home bag card links here as `/{slug}#section-rescue`. This
+  // Older links (shared, or sent before MEH-3586 moved the bag row and home
+  // card to the bag page) land here as `/{slug}#section-rescue`. This
   // section mounts only after its own offer fetch, i.e. after both the
   // browser's native hash scroll and ProducerDetail's MEH-1306 re-apply have
   // run against a DOM without it. Scroll once when the bag appears.
@@ -88,72 +56,35 @@ export default function RescueSection({ producer }) {
     });
   }, [offer]);
 
+  // The public list is per-town; the business's own bag is whichever of
+  // today's rows belongs to this producer. A failed read keeps the card as it
+  // was when `keepOnError` (the re-read after a cancel).
+  // A response for a business the page no longer shows is dropped (the old
+  // effect's `alive` flag): only the latest request may set the offer.
+  const latest = useRef(0);
+  const loadOffer = useCallback(
+    (keepOnError = false) => {
+      const ticket = ++latest.current;
+      return fetchOffers({ city: producer?.city || undefined })
+        .then((rows) => {
+          if (ticket === latest.current) setOffer(rows.find((row) => row.producer?.id === producer?.id) || null);
+        })
+        .catch(() => {
+          if (!keepOnError && ticket === latest.current) setOffer(null);
+        });
+    },
+    [producer?.id, producer?.city],
+  );
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        // The public list is per-town; the business's own bag is whichever of
-        // today's rows belongs to this producer.
-        const rows = await fetchOffers({ city: producer?.city || undefined });
-        if (!alive) return;
-        setOffer(rows.find((row) => row.producer?.id === producer?.id) || null);
-      } catch {
-        if (alive) setOffer(null);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [producer?.id, producer?.city]);
+    loadOffer();
+  }, [loadOffer]);
 
-  // MEH-2680: a reload must not lose the code. Read the buyer's own order on
-  // this business's bag back from the server — matched on the producer, not
-  // the offer, because the public list drops a sold-out offer and the buyer of
-  // the last bag would otherwise lose hers. Re-read on focus so a bag the
-  // business just marked handed brings up the review without a reload.
-  // Guests are skipped: their 401 would end in the "session expired" toast.
-  const auth = useOptionalAuth();
-  const userId = auth?.user?.id;
-  useEffect(() => {
-    if (!rescueBagsEnabled() || !userId || !producer?.id) return undefined;
-    let alive = true;
-    async function restore() {
-      try {
-        const mine = await fetchMyOrders();
-        if (!alive) return;
-        // A buyer may hold two bags of one offer (the cap is per buyer per
-        // offer, summed), e.g. one already handed and a newer one reserved:
-        // the reserved one wins, because its code is what she still needs.
-        // MEH-2738: the list also carries reservations the business
-        // cancelled. A live one (reserved, then handed) always wins over
-        // them; only when none is left does the page say the business
-        // cancelled. A buyer's own cancel is never in the list.
-        const here = mine.filter((row) => row.producer_id === producer.id);
-        const live = here.filter((row) => row.status !== "cancelled");
-        const hit = live.find((row) => row.status === "reserved") || live[live.length - 1];
-        if (!hit && here.some((row) => row.cancelled_by_business)) {
-          setOrder(null);
-          setBusinessCancelled(true);
-          return;
-        }
-        if (hit) {
-          setBusinessCancelled(false);
-          setOrder(hit);
-          // Never un-review: a read that left before a just-sent review must
-          // not bring the form back.
-          setReviewed((was) => was || hit.reviewed);
-        }
-      } catch {
-        // A failed read-back leaves whatever the page already shows.
-      }
-    }
-    restore();
-    window.addEventListener("focus", restore);
-    return () => {
-      alive = false;
-      window.removeEventListener("focus", restore);
-    };
-  }, [userId, producer?.id]);
+  // MEH-3586: reserve / read-back / cancel live in one hook, shared with the
+  // bag's own page.
+  const {
+    order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed,
+    cancelled, businessCancelled, reserve, cancel,
+  } = useRescueReservation({ producerId: producer?.id, onCancelled: () => loadOffer(true) });
 
   if (!rescueBagsEnabled()) return null;
   // No bag today is the ordinary case for most businesses most days, and it
@@ -162,107 +93,11 @@ export default function RescueSection({ producer }) {
   // sold-out offer, and the buyer must still read that the cancel worked.
   if (!offer && !order && !cancelled && !businessCancelled) return null;
 
-  async function reserve() {
-    // MEH-2700: a known guest gets the sign-in line straight away. Sending the
-    // request would 401, and the refresh interceptor would then add its
-    // "session expired" toast — wrong for someone who never signed in.
-    if (auth && !auth.loading && !auth.user) {
-      setErrorKey(null);
-      setLoginOpen(true);
-      return;
-    }
-    setBusy(true);
-    setErrorKey(null);
-    setCancelled(false);
-    setBusinessCancelled(false);
-    try {
-      setOrder(await reserveBag({ offerId: offer.id }));
-    } catch (err) {
-      // MEH-3225: an unverified account gets the resend notice, not a dead end.
-      setErrorKey(isUnverifiedEmailError(err) ? UNVERIFIED_KEY : reserveErrorKey(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function showCancelled() {
-    setOrder(null);
-    setCancelled(true);
-    // The bag went back on the list: re-read it, so the card shows the
-    // right stock — and reappears if hers was the last one and the list
-    // had dropped it. A failed read keeps the card as it was.
-    fetchOffers({ city: producer?.city || undefined })
-      .then((rows) => setOffer(rows.find((row) => row.producer?.id === producer?.id) || null))
-      .catch(() => {});
-  }
-
-  async function cancel() {
-    setBusy(true);
-    setErrorKey(null);
-    try {
-      await cancelOrder(order.id);
-      showCancelled();
-    } catch (err) {
-      const key = cancelErrorKey(err, order.cancel_until);
-      // MEH-2738: a 409 before the cutoff means the order is no longer
-      // reserved — cancelled in another tab, cancelled by the business, or
-      // handed meanwhile. Ask the server which, instead of «משהו נתקע».
-      if (key === "errors.generic" && err?.response?.status === 409 && (await settleAfterConflict(order.id))) {
-        return;
-      }
-      setErrorKey(key);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  /** True when the server's own state explains the 409 and is now shown. */
-  async function settleAfterConflict(orderId) {
-    let mine;
-    try {
-      mine = await fetchMyOrders();
-    } catch {
-      return false;
-    }
-    const row = mine.find((r) => r.id === orderId);
-    if (!row) {
-      // Not in the list = the buyer's own cancel went through earlier.
-      showCancelled();
-      return true;
-    }
-    if (row.cancelled_by_business) {
-      setOrder(null);
-      setBusinessCancelled(true);
-      return true;
-    }
-    if (row.status === "handed") {
-      setOrder(row);
-      setReviewed((was) => was || row.reviewed);
-      return true;
-    }
-    return false;
-  }
-
   const price = shekels(offer?.price_agorot);
   const worth = shekels(worthAgorot(offer));
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
-  const errorLine = errorKey === UNVERIFIED_KEY ? (
-    <UnverifiedEmailNotice className="mt-3" text={t(UNVERIFIED_KEY)} />
-  ) : errorKey && (
-    <InlineMessage className="font-body-sm" data-testid="rescue-section-error">
-      {/* MEH-3226: «כתבו לנו» on the block message is a real link to /contact. */}
-      {errorKey === "errors.blocked"
-        ? t.rich(errorKey, {
-            contact: (chunks) => (
-              <Link href="/contact" className="underline" data-testid="rescue-blocked-contact">
-                {chunks}
-              </Link>
-            ),
-          })
-        : t(errorKey)}
-    </InlineMessage>
-  );
+  const errorLine = <RescueErrorLine errorKey={errorKey} />;
   const from = israelTime(offer?.pickup_start);
   const until = israelTime(offer?.pickup_end);
 
@@ -374,7 +209,7 @@ export default function RescueSection({ producer }) {
             {errorLine}
             <Button
               type="button"
-              onClick={reserve}
+              onClick={() => reserve(offer.id)}
               disabled={busy || offer.qty_left < 1}
               data-testid="rescue-reserve"
               variant="primary" size="lg" className="w-full"
@@ -411,6 +246,15 @@ export default function RescueSection({ producer }) {
               </p>
             )}
           </details>
+          {/* MEH-3586: the bag's own page — map, how pickup works, the
+              cancel rule. MEH-3585 may turn the whole card into this link. */}
+          <Link
+            href={rescueOfferPath(offer) || "/rescue"}
+            className="md:col-span-2 justify-self-start text-sm font-semibold text-primary underline min-h-touch inline-flex items-center"
+            data-testid="rescue-section-details"
+          >
+            {t("offer_page.details_link")}
+          </Link>
         </div>
       ) : null}
     </section>

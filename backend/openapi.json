@@ -12714,6 +12714,18 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "required": [
@@ -12835,6 +12847,17 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "precision": {
             "default": "exact",
@@ -12982,6 +13005,17 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "required": [
@@ -13163,6 +13197,18 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "title": "ProducerLocationUpdate",
@@ -18412,6 +18458,162 @@
         "title": "RescueOfferCreate",
         "type": "object"
       },
+      "RescueOfferDetailOut": {
+        "description": "`GET /rescue/offers/{id}` — one of today's bags for its own page.\n\n`state` is why a bag can or cannot be reserved now; the list omits every\nbag that is not `available`, the page explains it instead. `lat`/`lng`\nare the pickup point (exact precision by construction) for the map.",
+        "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer": {
+            "$ref": "#/components/schemas/RescueProducerDetail"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "qty_total": {
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "available",
+              "sold_out",
+              "cancelled",
+              "ended"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "typical_items": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Typical Items",
+            "type": "array"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "qty_left",
+          "qty_total",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "cancel_until",
+          "producer",
+          "state"
+        ],
+        "title": "RescueOfferDetailOut",
+        "type": "object"
+      },
       "RescueOfferOut": {
         "description": "One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say \"נותרו 2 מתוך 6\", and nothing here reveals who reserved.",
         "properties": {
@@ -18980,6 +19182,108 @@
           "location_ids"
         ],
         "title": "RescuePilotLocationsOut",
+        "type": "object"
+      },
+      "RescueProducerDetail": {
+        "description": "The bag page's business block (MEH-3586): the summary plus the public\nbusiness rating, so a buyer can judge who packs the bag. The same two\nnumbers the business page shows; never the bag reviews, which feed only\nthe pilot metrics (RescueReview's docstring).",
+        "properties": {
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "location_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location City"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reviews_count": {
+            "default": 0,
+            "title": "Reviews Count",
+            "type": "integer"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RescueProducerDetail",
         "type": "object"
       },
       "RescueProducerSummary": {
@@ -34680,6 +34984,50 @@
           }
         ],
         "summary": "Create Offer",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/offers/{offer_id}": {
+      "get": {
+        "description": "One of today's bags, for its own page (MEH-3586). Public — no auth.\n\nA sold-out, cancelled or closed bag still answers, with `state` saying\nwhy; another day's bag, a test or unapproved business, or a town outside\nthe pilot answers 404 — the same set the list never shows.",
+        "operationId": "get_offer_rescue_offers__offer_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOfferDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Offer",
         "tags": [
           "rescue"
         ]

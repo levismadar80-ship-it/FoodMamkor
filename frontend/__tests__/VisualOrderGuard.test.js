@@ -43,6 +43,7 @@ const ALLOWED = {
   // phones read header → card → body; at lg it is lifted into the side column
   // next to the header. Same reading order, sidebar pattern.
   "app/[locale]/events/[id]/EventDetailClient.jsx": { count: 1, why: "sidebar card, DOM order kept" },
+  "app/[locale]/rescue/[offerId]/RescueOfferPage.jsx": { count: 1, why: "sidebar card, DOM order kept (MEH-3586, the event page layout)" },
   "app/[locale]/experiences/[id]/ExperienceDetailClient.jsx": { count: 1, why: "sidebar card, DOM order kept" },
   "app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx": { count: 1, why: "sidebar card, DOM order kept" },
 };

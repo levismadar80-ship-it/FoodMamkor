@@ -612,6 +612,14 @@ export default function RescueTab() {
           {t("items_save")}
         </Button>
         {noticeAt(AT.items)}
+        {/* MEH-3593: «הוראות איסוף» belong to the pickup point, so they are
+            written with the address in the locations editor, not here. */}
+        <p className="mt-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-pickup-note-pointer">
+          {t("pickup_note_pointer")}{" "}
+          <LocaleLink href="/producer/dashboard/edit#locations" className="text-primary underline">
+            {t("pickup_note_pointer_link")}
+          </LocaleLink>
+        </p>
       </section>
 
       {/* MEH-2784: only the publish form is gated. Codes, orders and «לא הגיע»

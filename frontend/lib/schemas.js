@@ -198,6 +198,8 @@ export const ProducerListSchema = z.object({
     pickup_days: z.array(z.string()).nullable().optional(),
     order_cutoff_day: z.string().nullable().optional(),
     order_cutoff_time: z.string().nullable().optional(),
+    // MEH-3593: «הוראות איסוף» — declared so the parse does not strip it.
+    pickup_note: z.string().nullable().optional(),
   })).optional().default([]),
   // MEH-1823: the single active offer, or null. Declared for the same reason
   // as locations/delivery_areas above — an undeclared key is STRIPPED by
@@ -665,4 +667,6 @@ export const LocationInputSchema = z.object({
   pickup_days: z.array(z.string()).max(14).optional(),
   order_cutoff_day: z.string().nullable().optional(),
   order_cutoff_time: z.string().nullable().optional(),
+  // MEH-3593: the server enforces ≥ 3 letters and one line (Hebrew 422).
+  pickup_note: z.string().trim().max(200).nullable().optional(),
 });

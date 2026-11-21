@@ -63,6 +63,7 @@ EXEMPT: dict[str, str] = {
     "group_buys.fulfillment_note": "public listing text",
     "group_buys.pickup_note": "public listing text",
     "group_buys.delivery_note": "public listing text",
+    "producer_locations.pickup_note": "public listing text (pickup instructions)",
     "home_products.location_notes": "public listing text",
     "producer_reviews.body": "published review text (hidden/flagged ones are cleared by the SQL's WHERE)",
     "home_product_ratings.comment": "published rating text",
