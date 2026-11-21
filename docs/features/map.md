@@ -4,6 +4,7 @@
 
 **Routes**
 * `frontend/app/[locale]/map/` — המסך היחיד.
+* הדף נבנה מראש לכל שפה (`frontend/static-routes.expected.json`, ‏MEH-3628): הוא לא קורא נתונים בשרת, ולכן ‏`setRequestLocale` ו-`getTranslations({ locale })` ב-`frontend/app/[locale]/map/page.js`. בלי זה הדף חוזר להיות דינמי, וכל מעבר אליו מציג את מסך הטעינה המלא. מעבר מהתפריט התחתון מתחיל לטעון את הדף כבר בנגיעה (`frontend/lib/use-intent-prefetch.js`).
 
 **קבצים מרכזיים**
 * `frontend/app/[locale]/map/MapClient.jsx` — **רכיב מרכזי** (`.claude/central-components.json`). עריכה שלו מחייבת את הפרוטוקול ב-`docs/CENTRAL_COMPONENTS.md`.
