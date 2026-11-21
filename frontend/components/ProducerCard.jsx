@@ -352,7 +352,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const category = producer.categories?.[0]?.name;
 
   const userLoc = useUserLocation();
-  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
+  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק״מ'
   // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
   // MEH-1938 chunk 3: distance to the CLOSEST point, read through
