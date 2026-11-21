@@ -7,6 +7,7 @@ import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-475 PR-C4b/chunk-3: terms of use i18n. SECTIONS-array shape
 // matches accessibility + privacy. Operator section (MEH-630) preserved
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/terms", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
     // layout's generic site card).
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: buildEntityTitle(t("meta_title"), locale),
       description: t("meta_description"),
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/terms", locale),
   };

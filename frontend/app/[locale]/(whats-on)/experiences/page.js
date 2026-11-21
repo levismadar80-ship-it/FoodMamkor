@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-2984: ISR, like /group-buys — no longer `force-dynamic` (MEH-2878).
 // That flag was there because EventsClient read useSearchParams() inside a
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/experiences", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/experiences", locale),
   };
