@@ -417,6 +417,11 @@ class ProducerDetailOut(ProducerListOut):
     # older payload) keeps the CTA rather than silently losing it -- the failure
     # that matters here is the feature vanishing, not it appearing.
     coverage_cta_enabled: bool = True
+    # MEH-2952 chunk 3 (Sapir 11/11 ruling 2): in EVERY answer — false for a
+    # live business, true for a seeded test row. Read from the model property
+    # `Producer.noindex` (models.py), so every builder fills it; the column
+    # itself never leaves the API (tests/test_meh2952_is_test_guards.py).
+    noindex: bool = False
     products: list[ProductOut] = []
     # MEH-3055: ordered groups; a NULL column reads as no groups.
     product_groups: list[ProductGroupOut] = []
@@ -546,8 +551,8 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
     business_days_waiting: int = 0
     # MEH-2495: does an account own this row (EXISTS users.producer_id = id)?
-    # Derived, never stored — hydrated per response by routers/admin.py
-    # `_attach_has_owner` in ONE batched query (no N+1). It drives the drafts
+    # Derived, never stored — hydrated per response by services/admin_producer_reads.py
+    # `attach_has_owner` in ONE batched query (no N+1). It drives the drafts
     # list: «מחכה לבעלים» vs «נקלט, בהשלמה», and whether the row offers the
     # claim-link copy. Admin-only: which pages have an account behind them is
     # nobody's business but the admin's — not on ProducerDetailOut/ListOut.
@@ -646,7 +651,7 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # the note above — admin-only, never on the public or owner shapes.
     consent_screenshot_url: str | None = None
     # Derived, never stored — hydrated per response beside `has_owner` by
-    # routers/admin.py `_attach_has_owner`, in that one batched query. None
+    # services/admin_producer_reads.py `attach_has_owner`, in that one batched query. None
     # means "this route did not hydrate it", exactly as for `has_owner`: a
     # route that forgets fails CLOSED (the panel shows no owner line) rather
     # than reporting a handed-over business as ownerless.
@@ -680,7 +685,7 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     #
     # `recommended_at` NULL on a picked producer is not missing data: it means
     # "picked before the clock existed", which is what the review list reads as
-    # due now (admin.py::_recommended_review_due_clause).
+    # due now (admin_producer_reads.py::recommended_review_due_clause).
     recommended_at: datetime | None = None
     recommended_note: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"

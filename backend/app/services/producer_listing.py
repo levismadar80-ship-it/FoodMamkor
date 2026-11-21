@@ -147,7 +147,8 @@ def is_business(*, include_test: bool = False) -> ColumnElement[bool]:
     row is absent from every one of the surfaces above at once.
     ``include_test=True`` keeps test rows, and only the files allowlisted in
     ``tests/test_meh2952_is_test_guards.py`` may pass it (by-slug, the
-    business's own dashboard, admin screens; none yet in chunk 1).
+    business's own dashboard, admin screens). Since chunk 3 the one caller is
+    by-slug in ``routers/producers.py``; its answer then carries ``noindex``.
     """
     live = and_(Producer.status == "approved", Producer.kind == "producer")
     if include_test:

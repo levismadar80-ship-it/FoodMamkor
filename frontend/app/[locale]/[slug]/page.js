@@ -97,6 +97,9 @@ export async function generateMetadata(props) {
       locale: OG_LOCALE[locale],
     },
     alternates,
+    // MEH-2952 chunk 3: a seeded test business answers by-slug with
+    // `noindex: true` — its direct URL is for the golden-path run only.
+    ...(producer.noindex ? { robots: { index: false, follow: false } } : {}),
   };
 }
 
@@ -120,7 +123,8 @@ export default async function ProducerSlugPage(props) {
 
   return (
     <>
-      <ProducerJsonLd producer={producer} locale={params.locale} />
+      {/* MEH-2952 chunk 3: no structured data for a test business. */}
+      {producer.noindex ? null : <ProducerJsonLd producer={producer} locale={params.locale} />}
       {/*
         MEH-1151: `key={params.slug}` forces a full remount on slug→slug
         navigation within this same [slug] route segment. Without it, React

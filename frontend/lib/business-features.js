@@ -92,7 +92,7 @@ export const BUSINESS_FEATURES = [
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
-  { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ContactChannelsCard.jsx"] },
+  { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards/ContactChannelsCard.jsx", "frontend/components/BusinessChatAfterAnswer.jsx"] },
   { id: "wa_prefill", group: "contact", status: "live", tile: { icon: "PaperPlaneTilt" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "product_wa", group: "contact", status: "live", codeRef: ["frontend/components/public/ProductSheet.jsx"] },
   { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },

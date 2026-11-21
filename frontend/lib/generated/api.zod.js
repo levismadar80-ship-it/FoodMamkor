@@ -951,6 +951,7 @@ export const listProducersAdminProducersGetResponseLicensePendingDefault = false
 export const listProducersAdminProducersGetResponseLocationsItemIsPrimaryDefault = false;
 export const listProducersAdminProducersGetResponseLocationsItemPrecisionDefault = `exact`;
 export const listProducersAdminProducersGetResponseLocationsDefault = [];
+export const listProducersAdminProducersGetResponseNoindexDefault = false;
 export const listProducersAdminProducersGetResponseOffersDeliveryDefault = false;
 export const listProducersAdminProducersGetResponseOffersPickupDefault = false;
 export const listProducersAdminProducersGetResponseOrganicCertifiedDefault = false;
@@ -1109,6 +1110,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), listProducersAdminProducersGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1251,6 +1253,7 @@ export const adminCreateProducerAdminProducersPostResponseLicensePendingDefault 
 export const adminCreateProducerAdminProducersPostResponseLocationsItemIsPrimaryDefault = false;
 export const adminCreateProducerAdminProducersPostResponseLocationsItemPrecisionDefault = `exact`;
 export const adminCreateProducerAdminProducersPostResponseLocationsDefault = [];
+export const adminCreateProducerAdminProducersPostResponseNoindexDefault = false;
 export const adminCreateProducerAdminProducersPostResponseOffersDeliveryDefault = false;
 export const adminCreateProducerAdminProducersPostResponseOffersPickupDefault = false;
 export const adminCreateProducerAdminProducersPostResponseOrganicCertifiedDefault = false;
@@ -1409,6 +1412,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), adminCreateProducerAdminProducersPostResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1548,6 +1552,7 @@ export const pendingProducersAdminProducersPendingGetResponseLicensePendingDefau
 export const pendingProducersAdminProducersPendingGetResponseLocationsItemIsPrimaryDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseLocationsItemPrecisionDefault = `exact`;
 export const pendingProducersAdminProducersPendingGetResponseLocationsDefault = [];
+export const pendingProducersAdminProducersPendingGetResponseNoindexDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseOffersDeliveryDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseOffersPickupDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseOrganicCertifiedDefault = false;
@@ -1706,6 +1711,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), pendingProducersAdminProducersPendingGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -1908,6 +1914,7 @@ export const adminGetProducerAdminProducersProducerIdGetResponseLicensePendingDe
 export const adminGetProducerAdminProducersProducerIdGetResponseLocationsItemIsPrimaryDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseLocationsItemPrecisionDefault = `exact`;
 export const adminGetProducerAdminProducersProducerIdGetResponseLocationsDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseNoindexDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseOffersDeliveryDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseOffersPickupDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseOrganicCertifiedDefault = false;
@@ -2066,6 +2073,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), adminGetProducerAdminProducersProducerIdGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2205,6 +2213,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseLicensePendin
 export const adminUpdateProducerAdminProducersProducerIdPutResponseLocationsItemIsPrimaryDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseLocationsItemPrecisionDefault = `exact`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseLocationsDefault = [];
+export const adminUpdateProducerAdminProducersProducerIdPutResponseNoindexDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseOffersDeliveryDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseOffersPickupDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseOrganicCertifiedDefault = false;
@@ -2363,6 +2372,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), adminUpdateProducerAdminProducersProducerIdPutResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5140,6 +5150,7 @@ export const readDraftPreviewProducerPreviewTokenGetResponseLactoseFreeFacilityD
 export const readDraftPreviewProducerPreviewTokenGetResponseLocationsItemIsPrimaryDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseLocationsItemPrecisionDefault = `exact`;
 export const readDraftPreviewProducerPreviewTokenGetResponseLocationsDefault = [];
+export const readDraftPreviewProducerPreviewTokenGetResponseNoindexDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseOffersDeliveryDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseOffersPickupDefault = false;
 export const readDraftPreviewProducerPreviewTokenGetResponseOrganicCertifiedDefault = false;
@@ -5269,6 +5280,7 @@ export const ReadDraftPreviewProducerPreviewTokenGetResponse = /*#__PURE__*/ zod
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), readDraftPreviewProducerPreviewTokenGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), readDraftPreviewProducerPreviewTokenGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), readDraftPreviewProducerPreviewTokenGetResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5570,6 +5582,7 @@ export const createProducerProducersPostResponseLactoseFreeFacilityDefault = `un
 export const createProducerProducersPostResponseLocationsItemIsPrimaryDefault = false;
 export const createProducerProducersPostResponseLocationsItemPrecisionDefault = `exact`;
 export const createProducerProducersPostResponseLocationsDefault = [];
+export const createProducerProducersPostResponseNoindexDefault = false;
 export const createProducerProducersPostResponseOffersDeliveryDefault = false;
 export const createProducerProducersPostResponseOffersPickupDefault = false;
 export const createProducerProducersPostResponseOrganicCertifiedDefault = false;
@@ -5699,6 +5712,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), createProducerProducersPostResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5808,6 +5822,7 @@ export const getProducerBySlugProducersBySlugSlugGetResponseLactoseFreeFacilityD
 export const getProducerBySlugProducersBySlugSlugGetResponseLocationsItemIsPrimaryDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseLocationsItemPrecisionDefault = `exact`;
 export const getProducerBySlugProducersBySlugSlugGetResponseLocationsDefault = [];
+export const getProducerBySlugProducersBySlugSlugGetResponseNoindexDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseOffersDeliveryDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseOffersPickupDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseOrganicCertifiedDefault = false;
@@ -5937,6 +5952,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getProducerBySlugProducersBySlugSlugGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6061,6 +6077,7 @@ export const getMyProducerProducersMeGetResponseLactoseFreeFacilityDefault = `un
 export const getMyProducerProducersMeGetResponseLocationsItemIsPrimaryDefault = false;
 export const getMyProducerProducersMeGetResponseLocationsItemPrecisionDefault = `exact`;
 export const getMyProducerProducersMeGetResponseLocationsDefault = [];
+export const getMyProducerProducersMeGetResponseNoindexDefault = false;
 export const getMyProducerProducersMeGetResponseOffersDeliveryDefault = false;
 export const getMyProducerProducersMeGetResponseOffersPickupDefault = false;
 export const getMyProducerProducersMeGetResponseOrganicCertifiedDefault = false;
@@ -6208,6 +6225,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getMyProducerProducersMeGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6326,6 +6344,7 @@ export const updateMyProducerProducersMePutResponseLactoseFreeFacilityDefault = 
 export const updateMyProducerProducersMePutResponseLocationsItemIsPrimaryDefault = false;
 export const updateMyProducerProducersMePutResponseLocationsItemPrecisionDefault = `exact`;
 export const updateMyProducerProducersMePutResponseLocationsDefault = [];
+export const updateMyProducerProducersMePutResponseNoindexDefault = false;
 export const updateMyProducerProducersMePutResponseOffersDeliveryDefault = false;
 export const updateMyProducerProducersMePutResponseOffersPickupDefault = false;
 export const updateMyProducerProducersMePutResponseOrganicCertifiedDefault = false;
@@ -6473,6 +6492,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), updateMyProducerProducersMePutResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7946,6 +7966,7 @@ export const getProducerProducersProducerIdGetResponseLactoseFreeFacilityDefault
 export const getProducerProducersProducerIdGetResponseLocationsItemIsPrimaryDefault = false;
 export const getProducerProducersProducerIdGetResponseLocationsItemPrecisionDefault = `exact`;
 export const getProducerProducersProducerIdGetResponseLocationsDefault = [];
+export const getProducerProducersProducerIdGetResponseNoindexDefault = false;
 export const getProducerProducersProducerIdGetResponseOffersDeliveryDefault = false;
 export const getProducerProducersProducerIdGetResponseOffersPickupDefault = false;
 export const getProducerProducersProducerIdGetResponseOrganicCertifiedDefault = false;
@@ -8075,6 +8096,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "precision": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseLocationsItemPrecisionDefault)
 }).check(/*#__PURE__*/ zod.describe('MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /\npickup / market_stand) serialized on `ProducerListOut.locations[]`. Read\nstraight off the `ProducerLocation` ORM rows (selectinload\'d in\nproducer_listing.py — no N+1). Since MEH-1938 chunk 5a these rows are the\nONLY source of a business\'s position: `ProducerListOut.lat/lng` are\nderived from the `is_primary` row here, and the `Producer.lat/lng`\ncolumns are a legacy mirror ahead of the chunk-5b drop (the map UI\nconsumes this array). `precision` is emitted from the ORM\'s `location_precision`\ncolumn (serialization_alias) to match the epic\'s map contract shape.\nStreet `address` is intentionally NOT exposed here — MEH-829 keeps the\nexact address admin/owner-only; the map pins on lat/lng + city and\nnavigation is built from lat/lng.\n\nField set: kind, label, city, lat, lng, is_primary, precision (the epic\'s\nlocked map contract) plus `opening_hours` + `phone`. MEH-1509 (chunk-1\nbackend) added the latter two so the public business page can render real\npickup / market_stand rows — "where and when" (opening_hours) and\nclick-to-call (phone) — instead of a single generic boolean line. The\ncolumns already existed on the ORM `ProducerLocation` (models.py; revision\na9f4c2e7b1d3); this is serialization only, no migration. (Chunk 2 renders\nthem in DeliveryBlock.) Street `address` stays OFF this public shape.'))), getProducerProducersProducerIdGetResponseLocationsDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "noindex": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseNoindexDefault),
   "offers_delivery": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseOffersDeliveryDefault),
   "offers_pickup": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseOffersPickupDefault),
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
