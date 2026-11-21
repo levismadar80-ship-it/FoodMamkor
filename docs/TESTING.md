@@ -46,7 +46,7 @@ Triggers on every PR targeting `staging` or `main`. Tests run against the **Verc
 
 No extra secrets needed — only the auto-provided `GITHUB_TOKEN`.
 
-**One E2E run at a time (MEH-2398).** The steps above are older than MEH-1044: the job now builds the frontend on `localhost`, but every run still calls the **one** staging backend (`NEXT_PUBLIC_API_URL` in `e2e.yml`). Parallel runs from several PRs filled its connection pool and ended with 0 tests executed ("ZERO COVERAGE"). The Chromium job and the WebKit shadow job each sit in a job-level concurrency group (`e2e-staging-backend`, `e2e-staging-backend-webkit`, `cancel-in-progress: false`), so runs queue instead of overlapping.
+**One E2E run at a time (MEH-2398).** The steps above are older than MEH-1044: the job now builds the frontend on `localhost`, but every run still calls the **one** staging backend (`NEXT_PUBLIC_API_URL` in `e2e.yml`). Parallel runs from several PRs filled its connection pool and ended with 0 tests executed ("ZERO COVERAGE"). The Chromium job and the WebKit shadow job each sit in a job-level concurrency group (`e2e-staging-backend`, `e2e-staging-backend-webkit`, `cancel-in-progress: false`), so runs queue instead of overlapping. The blocking WebKit core job (MEH-3153) joins `e2e-staging-backend-webkit` on a push or manual run; on a PR it gets its own group, like the Chromium shards on a PR.
 
 GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older pending E2E job is cancelled by a newer one. A `cancelled` E2E on a PR therefore means "superseded in the queue", not a pass and not a failure (workflow rule 21): re-run it when the queue clears. E2E carries no merge vote, so this never blocks a merge.
 

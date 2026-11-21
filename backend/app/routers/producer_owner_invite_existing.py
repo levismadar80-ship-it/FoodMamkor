@@ -218,7 +218,7 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
     if _has_owner(db, producer.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_ALREADY_OWNED)
 
-    # MEH-3268: a hidden page that lost its photo or licence is held, not
+    # MEH-3268: a hidden page that lost its photo is held, not
     # published — the same rule as `/accept`, from the same helper.
     published, held_gaps = _accept_plan(db, producer)
     p_id, p_name, p_slug = producer.id, producer.name, producer.slug

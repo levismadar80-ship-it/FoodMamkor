@@ -16,7 +16,7 @@
  *           DashboardLayoutClient.jsx (the tab) · lib/use-orders-tab.js
  * History:  MEH-3316 (creation; stage 4 of MEH-3216) · settings start closed
  *           once set up, 18/11 · MEH-3216 gaps: the products card (its own
- *           read, GET /producers/me/products/ordering)
+ *           read, GET /producers/me/products/ordering) · MEH-3561 (customers card)
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -31,6 +31,7 @@ import OrderProductsCard from "@/components/dashboard/orders/OrderProductsCard";
 import OrderSettingsCard from "@/components/dashboard/orders/OrderSettingsCard";
 import OrderWindowsCard from "@/components/dashboard/orders/OrderWindowsCard";
 import OrdersBoard from "@/components/dashboard/orders/OrdersBoard";
+import OrderCustomersCard from "@/components/dashboard/orders/OrderCustomersCard";
 import api from "@/lib/api";
 import { ORDERS_CHANGED_EVENT, isSetUp, loadOrders, loadSettings, loadWindows } from "@/lib/product-orders";
 
@@ -114,6 +115,8 @@ export default function OrdersPage() {
           {/* MEH-3216 gaps: the products' two daily switches sit right under
               the orders — «אזל כרגע» is flipped mid-day, the settings are not. */}
           <OrderProductsCard setUp={setUp} onChange={countProducts} onError={noProducts} />
+          {/* MEH-3561: who ordered and who came back, with a CSV download. */}
+          <OrderCustomersCard />
           <OrderSettingsCard settings={data.settings} onSaved={(settings) => setData({ ...data, settings })} collapsed={setUp} />
           <OrderWindowsCard windows={data.windows} orderWindow={data.orderWindow} collapsed={setUp} onSaved={(saved) => setWindowsCount(saved.length)} />
         </>

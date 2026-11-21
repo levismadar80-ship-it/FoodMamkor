@@ -10,8 +10,8 @@ Touches:  reads a Producer and its images / products / categories / locations /
           callers own all of that.
 Does NOT: decide APPROVABILITY. That is a different question with a different
           owner: producer_me.py:_is_approvable and admin.py:_assert_approvable
-          (the MEH-799 photo gate + the MEH-971 license gate), which stay
-          exactly as they are, as defense-in-depth at approve time. In
+          (the MEH-799 photo gate; the MEH-971 license gate was removed in
+          MEH-3026), which stay as defense-in-depth at approve time. In
           particular a LICENSE is deliberately NOT checked here — MEH-971's
           license_pending path lets a business reach the queue with a NULL
           license on purpose, and gating submission on it would close a route

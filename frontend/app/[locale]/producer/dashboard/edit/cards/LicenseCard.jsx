@@ -54,8 +54,8 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
     return () => reportDirty("license", false);
   }, [dirty, reportDirty]);
 
-  // UX nudge only (lib/license-required-categories.js) — enforcement is
-  // ensure_license_for_categories server-side, regardless of this flag.
+  // UX nudge only (lib/license-required-categories.js). MEH-3026: the owner's
+  // save is never refused for a missing number; only the badge depends on it.
   const required = requiresProducerLicense(
     profile?.categories || [],
     (profile?.categories || []).map((c) => c.id),
