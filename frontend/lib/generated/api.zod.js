@@ -7826,6 +7826,7 @@ export const MyPilotLocationsProducersMeRescuePilotLocationsGetResponse = /*#__P
 export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true})
 })
@@ -7839,6 +7840,7 @@ export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE
 export const SetTypicalItemsProducersMeRescueTypicalItemsPutResponse = /*#__PURE__*/ zod.object({
   "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true})
 })
@@ -8796,6 +8798,7 @@ export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
   "price_agorot": /*#__PURE__*/ zod.int(),
   "producer": /*#__PURE__*/ zod.object({

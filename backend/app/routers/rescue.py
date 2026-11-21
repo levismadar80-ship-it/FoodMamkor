@@ -50,7 +50,7 @@ from fastapi import (
     Request,
     status,
 )
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.auth import (
     get_current_user,
@@ -440,6 +440,16 @@ def list_my_reservations(
     return my_reservations(db, user_id=current_user.id, today=israel_today())
 
 
+def _pickup_note(offer: RescueOffer, producer_id: Any) -> str | None:
+    """MEH-3593: the business's «הוראות איסוף», read on the offer's own
+    Session (still open here, before the task is queued)."""
+    db = object_session(offer)
+    if db is None:
+        return None
+    note: str | None = typical_items(db, producer_id=producer_id)["pickup_note"]
+    return note
+
+
 def _queue_reservation_email(
     background_tasks: BackgroundTasks,
     user: User,
@@ -476,6 +486,7 @@ def _queue_reservation_email(
                 if offer.cancel_until > utc_now()
                 else None
             ),
+            pickup_note=_pickup_note(offer, producer.id),
         ),
         # MEH-2952: a test business or a test buyer → dropped and logged.
         test_cause=bool(producer.is_test or user.is_test),

@@ -18482,6 +18482,17 @@
             "title": "Pickup End",
             "type": "string"
           },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
+          },
           "pickup_start": {
             "format": "date-time",
             "title": "Pickup Start",
@@ -19468,6 +19479,18 @@
             "maxItems": 12,
             "title": "Items",
             "type": "array"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "title": "RescueTypicalItemsIn",
@@ -19495,6 +19518,17 @@
             },
             "title": "Items",
             "type": "array"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "producer_id": {
             "format": "uuid",

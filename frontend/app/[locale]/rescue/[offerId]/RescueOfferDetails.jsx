@@ -3,7 +3,7 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Bread, Clock, MapPin, Warning } from "@phosphor-icons/react";
+import { Bread, Clock, Info, MapPin, Warning } from "@phosphor-icons/react";
 
 import SectionHeading from "@/components/ui/SectionHeading";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
@@ -56,6 +56,13 @@ export default function RescueOfferDetails({ offer }) {
             <li className="flex items-start gap-2">
               <MapPin aria-hidden="true" size={20} className="text-primary shrink-0 mt-0.5" />
               <span data-testid="rescue-offer-address">{address}</span>
+            </li>
+          )}
+          {/* MEH-3593: the business's «הוראות איסוף»; no line when it wrote none. */}
+          {offer.pickup_note && (
+            <li className="flex items-start gap-2">
+              <Info aria-hidden="true" size={20} className="text-primary shrink-0 mt-0.5" />
+              <span data-testid="rescue-offer-pickup-note">{t("offer_page.pickup_note", { note: offer.pickup_note })}</span>
             </li>
           )}
         </ul>

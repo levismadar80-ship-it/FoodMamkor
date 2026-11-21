@@ -29,6 +29,8 @@ import Input from "@/components/ui/Input";
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  */
 const MAX_QTY = 20;
+// MEH-3593: same bound as RESCUE_PICKUP_NOTE_MAX in backend/app/schemas/rescue.py.
+const PICKUP_NOTE_MAX = 200;
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
 // Minutes before pickup_start that free cancellation ends, and the message key.
@@ -82,6 +84,8 @@ export default function RescueTab() {
   // empty selection into null on the wire; see allergens.py for why [] must
   // never persist.
   const [allergens, setAllergens] = useState([]);
+  // MEH-3593: «הוראות איסוף» — shown on the bag page and in the buyer's email.
+  const [pickupNote, setPickupNote] = useState("");
   const [form, setForm] = useState(
     /** @type {{ qty_total: number | string, price: number | string, from: string, to: string, cancelMin: number | string }} */ ({
       qty_total: 4,
@@ -167,6 +171,7 @@ export default function RescueTab() {
       .then((r) => {
         setItems((r.data?.items || []).join(", "));
         setAllergens(r.data?.allergens || []);
+        setPickupNote(r.data?.pickup_note || "");
       })
       .catch(() => {});
   }, [load]);
@@ -224,6 +229,8 @@ export default function RescueTab() {
         // sent as "no allergens": the owner ticking nothing is not a claim
         // that the bag contains none of them.
         allergens,
+        // Empty clears it; the server stores NULL and the bag page shows no line.
+        pickup_note: pickupNote,
       });
       setNotice("items", t("items_saved"), false);
     } catch (err) {
@@ -601,6 +608,24 @@ export default function RescueTab() {
               );
             })}
           </div>
+        </div>
+
+        {/* MEH-3593: how to collect, said once for every bag (TGTG's
+            «Collection instructions»). */}
+        <div className="mt-3">
+          <label htmlFor="rescue-pickup-note" className="block font-body-sm text-sm text-text font-medium">
+            {t("pickup_note_title")}
+          </label>
+          <p className="font-body-sm text-sm text-fg-muted mb-2">{t("pickup_note_help")}</p>
+          <Input inline size="sm"
+            id="rescue-pickup-note"
+            value={pickupNote}
+            onChange={(e) => setPickupNote(e.target.value)}
+            placeholder={t("pickup_note_placeholder")}
+            maxLength={PICKUP_NOTE_MAX}
+            data-testid="rescue-pickup-note-input"
+            className="w-full"
+          />
         </div>
 
         <Button

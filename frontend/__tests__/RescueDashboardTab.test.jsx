@@ -361,6 +361,7 @@ describe("the «בדרך כלל» editor", () => {
       expect(put).toHaveBeenCalledWith("/producers/me/rescue/typical-items", {
         items: ["לחם", "חלה", "בורקס"],
         allergens: [],
+        pickup_note: "",
       }),
     );
   });
@@ -385,6 +386,20 @@ describe("the «בדרך כלל» editor", () => {
     // NOT omitted and NOT a claim of "no allergens" — the server turns [] into
     // NULL, which is "nothing declared". See backend/app/allergens.py.
     await waitFor(() => expect(put.mock.calls.at(-1)[1].allergens).toEqual([]));
+  });
+
+  it("MEH-3593: loads the stored pickup note and saves an edited one", async () => {
+    get.mockImplementation((url) =>
+      url.includes("typical-items")
+        ? Promise.resolve({ data: { items: ["לחם"], allergens: null, pickup_note: "דלת אחורית" } })
+        : Promise.resolve({ data: [] }),
+    );
+    render(<RescueTab />);
+    const note = await screen.findByTestId("rescue-pickup-note-input");
+    await waitFor(() => expect(note.value).toBe("דלת אחורית"));
+    fireEvent.change(note, { target: { value: "נכנסים מהחצר" } });
+    fireEvent.click(screen.getByTestId("rescue-items-save"));
+    await waitFor(() => expect(put.mock.calls.at(-1)[1].pickup_note).toBe("נכנסים מהחצר"));
   });
 
   it("MEH-2752: unticking clears a previous declaration", async () => {
