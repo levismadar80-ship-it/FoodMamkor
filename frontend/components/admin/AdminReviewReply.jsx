@@ -73,14 +73,20 @@ export default function AdminReviewReply({ review, onRemoved }) {
         type="button"
         onClick={() => setConfirming(true)}
         data-testid="review-remove-reply"
-        aria-label={t("reviews.remove_reply_aria", {
-          user: review.user_name || t("reviews.default_user"),
-        })}
+        // MEH-3539: the name is the visible text (axe label-content-name-mismatch:
+        // «הסירי תגובה» is not part of «הסירי את התגובה של…»); whose reply it is
+        // moves to the description.
+        aria-describedby={`reply-remove-desc-${review.id}`}
         className="mt-1 inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50 focus-visible:ring-2 focus-visible:ring-danger-400/40"
       >
-        <Trash size={14} />
+        <Trash size={14} aria-hidden="true" />
         {t("reviews.remove_reply")}
       </button>
+      <span id={`reply-remove-desc-${review.id}`} className="sr-only">
+        {t("reviews.remove_reply_aria", {
+          user: review.user_name || t("reviews.default_user"),
+        })}
+      </span>
 
       {confirming && (
         <Dialog
