@@ -137,5 +137,3 @@ class ReviewReportCreate(BaseModel):
         if self.reason == "other" and not self.details:
             raise ValueError("ספרו לנו בכמה מילים מה הבעיה")
         return self
-
-
