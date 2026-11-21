@@ -366,8 +366,9 @@ A harness pointed at staging needs both; either alone measures nothing.
 `chromium.launch({ args: ["--ssl-version-max=tls1.2"] })` — sandbox only.
 Without it: `ERR_CONNECTION_CLOSED`/`RESET`, which reads like an outage.
 
-### 2. Get past Vercel Deployment Protection with the bypass cookie (MEH-3607)
+### 2. Send the Vercel Deployment Protection headers
 
+Once, from an API request, to get the bypass cookie (MEH-3607):
 `await scopeBypassToOrigin(context, BASE, { "x-vercel-protection-bypass":
 process.env.VERCEL_AUTOMATION_BYPASS_SECRET })` from
 `frontend/e2e/_bypass-scope.mjs`, once per browser context, before the first
