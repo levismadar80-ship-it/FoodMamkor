@@ -99,6 +99,20 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
+// MEH-3564: what counts as a failed request. By default k6 counts every
+// status >= 400 in http_req_failed, so the 429s slowapi is meant to send
+// (and favorites' 401) read as failures and the error-rate gate measured the
+// rate limiter, not the server (98% "failed" on 21/11, run 44909071841, with
+// every check green). Each call now names the statuses that are a coherent
+// answer; anything else (5xx, a timeout, a 422 from a wrong payload) is a
+// failure, and the gate below is the real SLA: under 1%.
+const ok = {
+  list: http.expectedStatuses(200, 429),
+  detail: http.expectedStatuses(200, 404, 429),
+  chat: http.expectedStatuses(200, 429, 503),
+  favorites: http.expectedStatuses(401),
+};
+
 // Ramping VU profile shared by 4 scenarios: 2 min ramp 1->50, 2 min
 // hold at 50, 1 min ramp-down to 0. 5 min per scenario.
 //
@@ -176,30 +190,29 @@ export const options = {
   // 3 seconds. The first-3s latency is the real baseline signal.
   // True capacity-ceiling testing requires disabling slowapi in
   // staging for the test window (post-launch follow-up ticket).
-  // /chat and favorites_unauth have no error-rate gate (intended
-  // 429/401 respectively).
+  // MEH-3564: those 429s (and favorites' 401) are now expected statuses
+  // (`ok` above), so every endpoint carries the real error gate, < 1%.
   thresholds: {
     'http_req_duration{endpoint:producers_list}': ['p(95)<2000'],
-    'http_req_failed{endpoint:producers_list}': ['rate<0.95'],
+    'http_req_failed{endpoint:producers_list}': ['rate<0.01'],
 
     'http_req_duration{endpoint:producer_detail_slug}': ['p(95)<2000'],
-    'http_req_failed{endpoint:producer_detail_slug}': ['rate<0.95'],
+    'http_req_failed{endpoint:producer_detail_slug}': ['rate<0.01'],
 
     'http_req_duration{endpoint:chat}': ['p(95)<2000'],
-    // No error-rate gate on /chat — see comment above.
+    'http_req_failed{endpoint:chat}': ['rate<0.01'],
 
     'http_req_duration{endpoint:producer_detail_uuid}': ['p(95)<2000'],
-    'http_req_failed{endpoint:producer_detail_uuid}': ['rate<0.95'],
+    'http_req_failed{endpoint:producer_detail_uuid}': ['rate<0.01'],
 
     'http_req_duration{endpoint:favorites_unauth}': ['p(95)<2000'],
-    // No error-rate gate on favorites_unauth — every request is
-    // expected to return 401, which k6 classifies as "failed".
+    'http_req_failed{endpoint:favorites_unauth}': ['rate<0.01'],
   },
 };
 
 export function producersList() {
   group('GET /producers', () => {
-    const res = http.get(`${BASE_URL}/producers`, { headers });
+    const res = http.get(`${BASE_URL}/producers`, { headers, responseCallback: ok.list });
     // 200 (success) or 429 (slowapi rate limit at 120/min — expected
     // after ~3s of ramp at 50 VUs from one IP). Both shapes count as
     // "the server responded coherently"; only network errors or 5xx
@@ -213,7 +226,10 @@ export function producersList() {
 
 export function producerDetailSlug() {
   group('GET /producers/by-slug/{slug}', () => {
-    const res = http.get(`${BASE_URL}/producers/by-slug/${PRODUCER_SLUG}`, { headers });
+    const res = http.get(`${BASE_URL}/producers/by-slug/${PRODUCER_SLUG}`, {
+      headers,
+      responseCallback: ok.detail,
+    });
     // 200, 404 (default seed slug doesn't exist), or 429 (slowapi
     // rate-limited) are all coherent server responses. We measure
     // latency, not data shape.
@@ -226,11 +242,13 @@ export function producerDetailSlug() {
 
 export function chat() {
   group('POST /chat', () => {
+    // MEH-3564: ChatRequest is `messages: [{role, content}]`
+    // (backend/app/schemas/site.py:272). The old `{message, history}` body
+    // got 422 on all 600 calls (run 44909071841), so /chat was never measured.
     const payload = JSON.stringify({
-      message: 'How do I register as a producer?',
-      history: [],
+      messages: [{ role: 'user', content: 'How do I register as a producer?' }],
     });
-    const res = http.post(`${BASE_URL}/chat`, payload, { headers });
+    const res = http.post(`${BASE_URL}/chat`, payload, { headers, responseCallback: ok.chat });
     // 200 (success), 429 (rate-limited — expected), or 503 (fail-open
     // when ANTHROPIC_API_KEY is unset on staging) are all valid.
     check(res, {
@@ -242,7 +260,10 @@ export function chat() {
 
 export function producerDetailUuid() {
   group('GET /producers/{producer_id}', () => {
-    const res = http.get(`${BASE_URL}/producers/${PRODUCER_ID}`, { headers });
+    const res = http.get(`${BASE_URL}/producers/${PRODUCER_ID}`, {
+      headers,
+      responseCallback: ok.detail,
+    });
     // 200, 404 (default zero UUID), or 429 (slowapi rate-limited).
     check(res, {
       'status 200/404/429': (r) =>
@@ -256,7 +277,7 @@ export function favoritesUnauth() {
     const res = http.post(
       `${BASE_URL}/users/me/favorites/${PRODUCER_ID}`,
       null,
-      { headers },
+      { headers, responseCallback: ok.favorites },
     );
     // Expect 401 because we deliberately send no Authorization header
     // (spec: "no real user accounts in load test"). This measures the
