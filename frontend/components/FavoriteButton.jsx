@@ -284,6 +284,9 @@ export default function FavoriteButton({
       )}
       <LoginPromptModal
         open={showLoginModal}
+        reason="favorite"
+        // MEH-3661: signed in inside the modal — keep the intent, it saves itself.
+        onSignedIn={() => setShowLoginModal(false)}
         onClose={() => {
           // Dismissed without signing in — drop the stored intent so a later
           // unrelated login doesn't surprise-save (MEH-1334).

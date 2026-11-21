@@ -74,6 +74,19 @@ export function loginLinkFor(path, localePrefix = "") {
   return `/login?redirect=${encodeURIComponent(localePrefix + path)}`;
 }
 
+/**
+ * MEH-3661: may a signed-in reader be sent back to `path`? Internal, not the
+ * home page, not an auth screen or a token flow (NO_RETURN above). A leading
+ * "/en" is looked through, so "/en/login" is refused like "/login".
+ * @param {unknown} path
+ * @returns {boolean}
+ */
+export function isReturnablePath(path) {
+  if (typeof path !== "string" || !INTERNAL_PATH.test(path)) return false;
+  const bare = path.replace(/^\/(?:he|en)(?=\/|$|\?)/, "") || "/";
+  return !NO_RETURN.test(bare);
+}
+
 /** The «כניסה» link for the page the browser is on. Client only. */
 export function loginLinkBackHere() {
   if (typeof window === "undefined") return "/login";

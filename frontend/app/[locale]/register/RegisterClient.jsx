@@ -21,6 +21,8 @@ import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
 import EmailTypoHint from "@/components/EmailTypoHint";
+import { rememberReturnPath } from "@/lib/post-auth-return";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Module:   RegisterClient
@@ -153,6 +155,9 @@ function RegisterPageBody() {
       // `form` alone is exactly how the consent was being dropped. The
       // backend stamps users.terms_accepted_at + terms_version from this.
       await register({ ...form, terms_accepted: agreedToTerms });
+      // MEH-3661: the verification link brings her back here, not to "/".
+      rememberReturnPath(redirectTo);
+      trackEvent("consumer_signup_submitted", { method: "email", has_redirect: redirectTo !== "/" });
       setEmailSent(true);
     } catch (err) {
       const status = err.response?.status;
@@ -172,6 +177,12 @@ function RegisterPageBody() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // MEH-3661: one place for an OAuth success — measure it, then go back.
+  const oauthDone = (method) => {
+    trackEvent("consumer_signup_submitted", { method, has_redirect: redirectTo !== "/" });
+    router.push(redirectTo);
   };
 
   const set = (field) => (e) => {
@@ -341,14 +352,14 @@ function RegisterPageBody() {
               {googleConfigured && (
                 <GoogleAuthButton
                   termsAccepted
-                  onSuccess={() => router.push(redirectTo)}
+                  onSuccess={() => oauthDone("google")}
                   onError={(msg) => setOauthError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
                   termsAccepted
-                  onSuccess={() => router.push(redirectTo)}
+                  onSuccess={() => oauthDone("apple")}
                   onError={(msg) => setOauthError(msg)}
                 />
               )}

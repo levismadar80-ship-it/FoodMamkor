@@ -269,6 +269,9 @@ export default function ProducerUpdatesButton({
       </button>
       <LoginPromptModal
         open={showLoginModal}
+        reason="updates"
+        // MEH-3661: signed in inside the modal — keep the intent, it turns itself on.
+        onSignedIn={() => setShowLoginModal(false)}
         onClose={() => {
           clearPendingAction();
           setShowLoginModal(false);
