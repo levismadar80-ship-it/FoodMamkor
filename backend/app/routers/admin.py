@@ -734,6 +734,7 @@ def admin_delete_producer(
     # its destroy below needs no bypass. Same orphan class as story_card:
     # overwrite=True on upload prevents duplicates, not delete-orphans.
     old_owner_photo_url = producer.owner_photo_url
+    old_logo_url = producer.logo_url  # MEH-3611
     # MEH-2852: the page goes with the row — its URL is read before the delete.
     removed_urls = (
         indexnow.producer_urls(producer) if indexnow.is_public_owner(producer) else []
@@ -800,6 +801,11 @@ def admin_delete_producer(
         old_owner_photo_url,  # type: ignore[arg-type]
         context="admin.admin_delete_producer owner_photo",
         db=db,  # MEH-3247
+    )
+    destroy_image(
+        old_logo_url,  # type: ignore[arg-type]
+        context="admin.admin_delete_producer logo",
+        db=db,  # MEH-3611
     )
 
     return {"detail": "Producer deleted"}

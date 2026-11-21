@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { CaretLeft, Images, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import ImageWithFallback from "./ImageWithFallback";
+import BusinessLogo from "./BusinessLogo";
 import FavoriteButton from "./FavoriteButton";
 import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import ShareButton from "./ShareButton";
@@ -29,7 +30,7 @@ import { getVerifiedPopoverBody } from "./BadgeRow";
 // to match this component's existing prop style (producerId / producerName /
 // verified are all scalars). Absent → getVerifiedPopoverBody falls back to the
 // generic dateless sentence, which is still true, just less specific.
-export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited, updatesButton = null }) {
+export default function ImageGallery({ images = [], producerId = null, producerName = "", logoUrl = null, verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited, updatesButton = null }) {
   const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations("gallery");
   // MEH-3395: alt names the business («סנדרה…, תמונה 1») so search, AI answers
@@ -155,6 +156,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           >
             {/* MEH-2833: a long single word wraps inside the capped block
                 instead of running into the bloom. */}
+            <BusinessLogo url={logoUrl} size={64} />
             <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight [overflow-wrap:anywhere]">
               {producerName}
             </h1>

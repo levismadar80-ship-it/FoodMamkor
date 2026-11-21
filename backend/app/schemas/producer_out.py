@@ -177,6 +177,8 @@ class ProducerListOut(BaseModel):
     avg_rating: float = 0
     reviews_count: int = 0
     images: list[str] = []
+    # MEH-3611: the business's logo, or null (then the first letter shows).
+    logo_url: str | None = None
     categories: list[CategoryOut] = []
     # Populated by /producers when ?lat=&lng=&radius_km= are passed (geo mode)
     # or, since MEH-1829, when ?sort=distance&lat=&lng= is — where it may be

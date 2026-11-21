@@ -80,3 +80,16 @@ describe("ProducerHeader city → «הגעה ומיקום» (MEH-1694)", () => {
     expect(within(meta).queryByTestId("producer-header-city-link")).toBeNull();
   });
 });
+
+// MEH-3611: the logo sits beside the name in the header (photo profiles).
+describe("ProducerHeader logo (MEH-3611)", () => {
+  it("no logo → no logo circle", () => {
+    render(<ProducerHeader producer={base} hasImages />);
+    expect(screen.queryByTestId("business-logo")).toBeNull();
+  });
+
+  it("a logo → the circle beside the name", () => {
+    render(<ProducerHeader producer={{ ...base, logo_url: "https://cdn/logo.png" }} hasImages />);
+    expect(screen.getByTestId("business-logo").querySelector("img")).toHaveAttribute("src", "https://cdn/logo.png");
+  });
+});

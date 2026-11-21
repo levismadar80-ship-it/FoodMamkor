@@ -6,6 +6,7 @@ import { MapPin, Star, StarOfDavid } from "@phosphor-icons/react";
 
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
+import BusinessLogo from "@/components/BusinessLogo";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import OfferBadge from "@/components/OfferBadge";
@@ -357,6 +358,7 @@ export default function ProducerHeader({
           title row's inline-end for the absolutely-pinned actions row (pe-56
           until MEH-2562 added the third action, «קבלת עדכונים»). */}
       <div className="flex items-center flex-wrap gap-2 lg:pe-72">
+        {hasImages && <BusinessLogo url={producer.logo_url} size={56} />}
         {hasImages && (
           <h1 className="font-headline-lg text-4xl font-black text-text me-3">
             {producer.name}

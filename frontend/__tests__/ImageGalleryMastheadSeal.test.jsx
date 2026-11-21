@@ -122,3 +122,17 @@ describe("ImageGallery masthead verified seal → verification popover (MEH-1358
     expect(screen.queryByTestId("badge-tooltip-verified")).not.toBeInTheDocument();
   });
 });
+
+// MEH-3611: an imageless business's logo sits in the masthead, beside the h1.
+describe("ImageGallery masthead logo (MEH-3611)", () => {
+  it("no logo → no logo circle", () => {
+    render(<ImageGallery images={[]} producerName="סבון עז נעמה" />);
+    expect(screen.queryByTestId("business-logo")).toBeNull();
+  });
+
+  it("a logo → the circle in the name block", () => {
+    render(<ImageGallery images={[]} producerName="סבון עז נעמה" logoUrl="https://cdn/logo.png" />);
+    const block = screen.getByTestId("masthead-name-block");
+    expect(block.querySelector('[data-testid="business-logo"] img').getAttribute("src")).toBe("https://cdn/logo.png");
+  });
+});

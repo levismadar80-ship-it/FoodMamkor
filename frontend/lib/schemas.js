@@ -538,6 +538,8 @@ export const EventMetadataSchema = z.object({
   // MEH-2546: parity with EventOut — the list rows' owner-photo fallback.
   // (Probe only: the page renders the raw payload, never `parsed.data`.)
   owner_image_url: z.string().nullable().optional(),
+  // MEH-3611: the business logo beside its name. Declared because z.object strips.
+  logo_url: z.string().nullable().optional(),
 });
 
 // MEH-2461: read by app/[locale]/organizers/[slug]/page.js (render + metadata).

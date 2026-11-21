@@ -260,6 +260,10 @@ class Producer(Base):
     # migration: f7d2a9c4b1e8.
     owner_bio = Column(Text, nullable=True)
     owner_photo_url = Column(String(500), nullable=True)
+    # MEH-3611: the business's logo (Cloudinary URL from /upload/image, saved by
+    # PUT /producers/me). NULL = no logo; surfaces show the name's first letter.
+    # Registered in services/image_refs.py so the orphan sweep keeps it.
+    logo_url = Column(String(500), nullable=True)
     # MEH-1541: self-reported founding year → the quiet "מאז {שנה}" heritage
     # line on the public masthead (a trust signal for veteran businesses, not a
     # badge). Nullable, Expand-only (ADR-007, no backfill) — NULL = the owner

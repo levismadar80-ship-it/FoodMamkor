@@ -11,7 +11,7 @@
 **404 אמיתי (MEH-3024).** ‏`/producer/<id>` של בית עסק שלא קיים, או שעדיין לא אושר, עונה 404 אמיתי מה-middleware ולא 200 עם «לא נמצא». בעלת עסק שעוד לא אושר לא מגיעה לשם: «צפייה בדף» בתפריט החשבון ובכרטיסי העריכה שולח אותה ל-`/producer/dashboard/preview`, כמו הקישור בראש לוח הבקרה.
 
 **קבצים מרכזיים**
-* `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` — כותרת, מצב חופשה.
+* `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` — כותרת, מצב חופשה. הלוגו של העסק (MEH-3611, `frontend/components/BusinessLogo.jsx`) ליד השם; בעסק בלי תמונות הוא בכותרת הצבעונית (`frontend/components/ImageGallery.jsx`).
 * `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, קבוצת WhatsApp. גם דף המארגן מציג אותו (MEH-3459), בלי שאלות מוכנות — הן בסעיף «שאלות נפוצות» של דף העסק (MEH-3460); השומר `frontend/__tests__/ContactCardOneOwnerGuard.test.js`.
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
 * `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quickAnswers.js` — סעיף «שאלות נפוצות» (`#section-faq`) בגוף הדף, מתחת ל«משלוחים», ולא בכרטיס הקשר. כשסעיף המשלוח מוצג (`hasDeliverySection`) לא שואלים על משלוח. אין «איך מזמינים?» ואין «שאלה אחרת? צרו איתנו קשר», כי שתיהן רק חזרו על הכפתור (MEH-3460).
