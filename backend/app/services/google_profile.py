@@ -147,20 +147,33 @@ def normalize_name(name: str | None) -> str:
 
 
 def names_match(ours: str | None, theirs: str | None) -> bool:
-    """Equal after normalising, or one holds the other («המאפייה של רותי»
-    in «המאפייה של רותי - רחובות»). The shorter side needs 3+ letters, so
-    a one-letter name never matches everything."""
-    a, b = normalize_name(ours), normalize_name(theirs)
+    """Equal after normalising; or the shorter name's WHOLE WORDS, two or
+    more of them, appear in order inside the longer one («המאפייה של רותי»
+    in «המאפייה של רותי - רחובות»). One word alone («קפה», «מאפיה») never
+    matches a longer name, so a generic name cannot claim a stranger's
+    profile (fresh review of MEH-3641); the phone can still match it."""
+    a, b = normalize_name(ours).split(), normalize_name(theirs).split()
     if not a or not b:
         return False
+    if a == b:
+        return len("".join(a)) >= _MIN_NAME_OVERLAP
     short, long_ = sorted((a, b), key=len)
-    return len(short.replace(" ", "")) >= _MIN_NAME_OVERLAP and short in long_
+    if len(short) < 2:
+        return False
+    n = len(short)
+    return any(long_[i : i + n] == short for i in range(len(long_) - n + 1))
+
+
+_EXTENSION = re.compile(r"(ext\.?|x|שלוחה|,|;).*$", re.IGNORECASE)
 
 
 def national_digits(phone: str | None) -> str | None:
     """An Israeli number, mobile or landline, as its national digits with the
-    leading 0 («+972 3-123-4567» → «031234567»). None when it is not one."""
-    digits = _NON_DIGIT.sub("", phone or "")
+    leading 0 («+972 3-123-4567», «00972 3 1234567» → «031234567»); an
+    extension is dropped. None when it is not one."""
+    digits = _NON_DIGIT.sub("", _EXTENSION.sub("", phone or ""))
+    if digits.startswith("00972"):
+        digits = digits[2:]
     if digits.startswith("972"):
         digits = "0" + digits[3:]
     return digits if digits.startswith("0") and 9 <= len(digits) <= 10 else None
@@ -179,24 +192,37 @@ def is_her_profile(
     return names_match(name, details.name) or phones_match(phones, details.phone)
 
 
-def _host(url: str | None) -> str | None:
+def _split(url: str | None) -> tuple[str, str] | None:
+    """(host without www., path without the trailing /), or None."""
     if not url or not url.strip():
         return None
     raw = url.strip()
     parsed = urlparse(raw if "//" in raw else f"https://{raw}")
     host = (parsed.hostname or "").lower().removeprefix("www.")
-    return f"{host}{parsed.path.rstrip('/')}" if host else None
+    return (host, parsed.path.rstrip("/")) if host else None
 
 
-def website_verdict(ours: str | None, page_hosts: list[str], theirs: str | None) -> str:
-    """same = Google links to her own site or to her page here."""
-    google = _host(theirs)
+def website_verdict(
+    ours: str | None,
+    site_hosts: list[str],
+    page_paths: list[str],
+    theirs: str | None,
+) -> str:
+    """same = Google links to her own site (any page on its host) or to HER
+    page here (one of `page_paths` on one of `site_hosts`, with or without a
+    locale prefix). Another business's page here is «different»."""
+    google = _split(theirs)
     if google is None:
         return MISSING
-    if google == _host(ours):
+    host, path = google
+    own = _split(ours)
+    if own is not None and host == own[0]:
         return SAME
-    if any(google == h or google.startswith(h + "/") for h in page_hosts):
-        return SAME
+    if host in site_hosts:
+        bare = path.removeprefix("/en") if path.startswith("/en/") else path
+        bare = bare.removeprefix("/he") if bare.startswith("/he/") else bare
+        if any(bare == p for p in page_paths):
+            return SAME
     return DIFFERENT
 
 
@@ -206,9 +232,10 @@ def compare(
     name: str | None,
     phones: list[str | None],
     website: str | None,
-    page_hosts: list[str],
+    page: tuple[list[str], list[str]],
 ) -> dict[str, str]:
-    """A verdict per row: name, phone, website."""
+    """A verdict per row: name, phone, website. `page` = (this site's hosts,
+    her page's paths)."""
     return {
         "name": MISSING
         if not details.name
@@ -216,5 +243,5 @@ def compare(
         "phone": MISSING
         if not details.phone
         else (SAME if phones_match(phones, details.phone) else DIFFERENT),
-        "website": website_verdict(website, page_hosts, details.website),
+        "website": website_verdict(website, page[0], page[1], details.website),
     }

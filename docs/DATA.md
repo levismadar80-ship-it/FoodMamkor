@@ -1432,14 +1432,15 @@ GET    /producers/me/google-profile/candidates 👤 MEH-3641: ?q= (≤120; empty
                                                Google found none; 503 Hebrew with no key or a Google error. 10/hour.
 PUT    /producers/me/google-profile           👤 MEH-3641: body { google_place_id: str|null } (same normalisation as
                                                the admin PUT). A link is accepted only when the Google name or phone
-                                               (mobile or landline) matches the business, else 409 Hebrew; 503 when
+                                               (mobile or landline) matches the business, else 409 Hebrew; a place_id
+                                               already linked to another business → 409 Hebrew; 503 when
                                                Google cannot be asked; null unlinks with no Google call. A change on an
                                                approved business sends the admin the sensitive-edit email
                                                («הפרופיל בגוגל»). Organizer → 404. 10/hour.
 GET    /producers/me/google-profile/check     👤 MEH-3641: live Place Details → rows [{ field: name|phone|website,
                                                ours, google, verdict: same|different|missing }] + hours_ours /
-                                               hours_google (no verdict). Website «same» = her own site or a page on
-                                               this site. Nothing from Google is stored (ToS §3.2.3(b)). 404 Hebrew
+                                               hours_google (no verdict). Website «same» = any page on her own site,
+                                               or her own page here (not another business's). Nothing from Google is stored (ToS §3.2.3(b)). 404 Hebrew
                                                when not linked, 503 on no key / Google error. 10/hour.
 GET    /producers/by-slug/{slug}                  public
                                                MEH-2534: miss on a slug whose business was DELETED (ownerless

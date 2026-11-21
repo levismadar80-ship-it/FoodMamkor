@@ -182,6 +182,14 @@ describe("GoogleProfileTool", () => {
     expect(writeText.mock.calls[0][0]).toMatch(/\/ruti$/);
   });
 
+  it("when her profile cannot be read, the guide makes no claim about the link", async () => {
+    serve({ "/producers/me/google-profile": { available: false, google_place_id: null }, "/producers/me": new Error("down") });
+    renderTool();
+    await screen.findByTestId("google-profile-unavailable");
+    expect(screen.queryByText(t.link_after_approval)).toBeNull();
+    expect(screen.queryByTestId("google-profile-copy-link")).toBeNull();
+  });
+
   it("a failed load offers a retry and keeps the guide", async () => {
     serve({ "/producers/me/google-profile": new Error("down"), "/producers/me": ME });
     renderTool();

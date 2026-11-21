@@ -35,7 +35,9 @@ function pageUrlOf(profile) {
 export default function GoogleProfileTool() {
   const t = useTranslations("google_profile");
   const [status, setStatus] = useState(/** @type {{ available: boolean, google_place_id: string | null } | null} */ (null));
-  const [pageUrl, setPageUrl] = useState(/** @type {string | null} */ (null));
+  // undefined = not known (the read failed): the guide then says nothing
+  // about the link rather than «after approval» to an approved business.
+  const [pageUrl, setPageUrl] = useState(/** @type {string | null | undefined} */ (undefined));
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
@@ -49,7 +51,7 @@ export default function GoogleProfileTool() {
     api
       .get("/producers/me")
       .then(({ data }) => alive && setPageUrl(pageUrlOf(data)))
-      .catch(() => alive && setPageUrl(null));
+      .catch(() => alive && setPageUrl(undefined));
     return () => {
       alive = false;
     };

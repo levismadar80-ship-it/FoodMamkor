@@ -22,7 +22,7 @@ import { copyText } from "@/lib/clipboard";
 const GOOGLE_BUSINESS_URL = "https://business.google.com/";
 const STEPS = /** @type {const} */ (["step_1", "step_2", "step_3"]);
 
-/** @param {{ pageUrl: string | null }} props */
+/** @param {{ pageUrl?: string | null }} props  null = not approved yet; undefined = unknown */
 export default function GoogleProfileGuide({ pageUrl }) {
   const t = useTranslations("google_profile");
   const [copied, setCopied] = useState(/** @type {boolean | null} */ (null));
@@ -55,9 +55,9 @@ export default function GoogleProfileGuide({ pageUrl }) {
           >
             {t("copy_link")}
           </Button>
-        ) : (
+        ) : pageUrl === null ? (
           <p className="text-sm text-fg-muted">{t("link_after_approval")}</p>
-        )}
+        ) : null}
       </div>
       {copied === true && (
         <InlineMessage tone="success" size="sm" className="mt-2">{t("copied")}</InlineMessage>

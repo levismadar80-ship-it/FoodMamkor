@@ -49,6 +49,9 @@ NOT_HERS = (
     "בחרו את הפרופיל של העסק, או עדכנו קודם את השם או הטלפון בעמוד העסק."
 )
 NOT_LINKED = "עוד לא חיברתם פרופיל בגוגל."
+TAKEN = (
+    "הפרופיל הזה בגוגל כבר מחובר לבית עסק אחר במהמקור. אם הוא שלכם, כתבו לנו ונבדוק."
+)
 # The main site, always counted as «ours» for the website row.
 _SITE_HOSTS = ("mehamakor.co.il",)
 
@@ -66,6 +69,14 @@ def _my_producer(user: User, db: Session) -> Producer:
 
 def _phones(producer: Producer) -> list[str | None]:
     return [producer.phone, producer.secondary_phone]  # type: ignore[list-item]
+
+
+def _page_paths(producer: Producer) -> list[str]:
+    """Her page here: the slug route and the id route (lib/producer-path.js)."""
+    paths = [f"/producer/{producer.id}"]
+    if producer.slug:
+        paths.append(f"/{producer.slug}")
+    return paths
 
 
 def _page_hosts() -> list[str]:
@@ -121,11 +132,25 @@ def put_google_profile(
     producer = _my_producer(user, db)
     new_id = body.google_place_id
     if new_id is not None and new_id != producer.google_place_id:
+        name, phones = producer.name, _phones(producer)
+        # MEH-2886: no pooled connection held across the Google call; the
+        # same session reopens for the reads and the write below.
+        db.close()
         details = gp.fetch_details(new_id)
         if details is None:
             raise HTTPException(status_code=503, detail=UNAVAILABLE)
-        if not gp.is_her_profile(details, producer.name, _phones(producer)):  # type: ignore[arg-type]
+        if not gp.is_her_profile(details, name, phones):  # type: ignore[arg-type]
             raise HTTPException(status_code=409, detail=NOT_HERS)
+        producer = _my_producer(user, db)
+        # One profile, one business: otherwise a second business could show
+        # the first one's Google rating (fresh review of MEH-3641).
+        taken = (
+            db.query(Producer.id)
+            .filter(Producer.google_place_id == new_id, Producer.id != producer.id)
+            .first()
+        )
+        if taken is not None:
+            raise HTTPException(status_code=409, detail=TAKEN)
     changed = new_id != producer.google_place_id
     producer.google_place_id = new_id  # type: ignore[assignment]
     db.commit()
@@ -148,6 +173,7 @@ def check_google_profile(
         raise HTTPException(status_code=404, detail=NOT_LINKED)
     name, phones = producer.name, _phones(producer)
     website, hours = producer.website, producer.opening_hours
+    page_paths = _page_paths(producer)
     db.close()  # MEH-2886: no pooled connection held across the Google call
     details = gp.fetch_details(place_id)  # type: ignore[arg-type]
     if details is None:
@@ -157,7 +183,7 @@ def check_google_profile(
         name=name,  # type: ignore[arg-type]
         phones=phones,
         website=website,  # type: ignore[arg-type]
-        page_hosts=_page_hosts(),
+        page=(_page_hosts(), page_paths),
     )
     ours_phone = next((p for p in phones if p), None)
     rows = [

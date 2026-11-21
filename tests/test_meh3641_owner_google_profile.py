@@ -169,6 +169,39 @@ def test_a_one_letter_name_does_not_match_everything(client, db, google):
     assert client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user)).status_code == 409
 
 
+def test_a_profile_linked_to_another_business_is_refused(client, db, google):
+    google["places"][PLACE] = _place()
+    other = make_producer(db, name="עסק אחר")
+    other.google_place_id = PLACE
+    db.commit()
+    user, producer = _owner(db)
+    r = client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user))
+    assert r.status_code == 409
+    assert r.json()["detail"] == router_mod.TAKEN
+    db.refresh(producer)
+    assert producer.google_place_id is None
+
+
+def test_saving_the_same_link_again_calls_nothing_and_pings_no_one(client, db, google, monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        "app.routers.producer_me.notify_admin_producer_sensitive_edit",
+        lambda name, fields, test_cause=False: sent.append(fields),
+    )
+    user, producer = _owner(db)
+    producer.google_place_id = PLACE
+    db.commit()
+    assert client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user)).status_code == 200
+    assert google["calls"] == [] and sent == []
+
+
+def test_an_organizer_has_no_google_profile_tool(client, db, google):
+    user, producer = _owner(db)
+    producer.kind = "organizer"
+    db.commit()
+    assert client.get(BASE, headers=auth_header(user)).status_code == 404
+
+
 def test_link_when_google_is_down_is_unavailable(client, db, google):
     google["down"] = True
     user, producer = _owner(db)
@@ -221,10 +254,11 @@ def test_check_gives_a_verdict_per_row_and_hours_side_by_side(client, db, google
     google["places"][PLACE] = _place(
         name="המאפייה של רותי",
         phone="052-000-0000",
-        website="https://mehamakor.co.il/ruti",
+        website="https://mehamakor.co.il/ruti-bakery",
         hours=["יום ראשון: 08:00–14:00"],
     )
     user, producer = _owner(db)
+    producer.slug = "ruti-bakery"
     producer.google_place_id = PLACE
     producer.opening_hours = "Sun 08:00-14:00"
     db.commit()
@@ -234,7 +268,7 @@ def test_check_gives_a_verdict_per_row_and_hours_side_by_side(client, db, google
     assert {row["field"]: row["verdict"] for row in body["rows"]} == {
         "name": "same",
         "phone": "different",
-        "website": "same",  # Google links to her page here
+        "website": "same",  # Google links to her own page here
     }
     assert body["hours_ours"] == "Sun 08:00-14:00"
     assert body["hours_google"] == ["יום ראשון: 08:00–14:00"]
@@ -262,18 +296,29 @@ def test_check_stores_nothing_from_google(client, db, google):
     user, producer = _owner(db)
     producer.google_place_id = PLACE
     db.commit()
-    before = {c: getattr(producer, c) for c in ("name", "phone", "website", "opening_hours")}
+    cols = ("name", "phone", "website", "opening_hours", "google_place_id")
+    before = {c: getattr(producer, c) for c in cols}
     client.get(f"{BASE}/check", headers=auth_header(user))
     db.refresh(producer)
-    assert {c: getattr(producer, c) for c in ("name", "phone", "website", "opening_hours")} == before
+    assert {c: getattr(producer, c) for c in cols} == before
 
 
 # ── rate limits ─────────────────────────────────────────────────────────────
 
 
-def test_search_is_limited_to_ten_an_hour(client, db, google):
-    user, _ = _owner(db)
-    codes = [client.get(f"{BASE}/candidates", headers=auth_header(user)).status_code for _ in range(11)]
+@pytest.mark.parametrize("route", ["search", "check", "put"])
+def test_each_google_route_is_limited_to_ten_an_hour(client, db, google, route):
+    google["places"][PLACE] = _place()
+    user, producer = _owner(db)
+    producer.google_place_id = PLACE
+    db.commit()
+    h = auth_header(user)
+    call = {
+        "search": lambda: client.get(f"{BASE}/candidates", headers=h),
+        "check": lambda: client.get(f"{BASE}/check", headers=h),
+        "put": lambda: client.put(BASE, json={"google_place_id": PLACE}, headers=h),
+    }[route]
+    codes = [call().status_code for _ in range(11)]
     assert codes[:10] == [200] * 10 and codes[10] == 429
 
 
@@ -289,6 +334,11 @@ def test_search_is_limited_to_ten_an_hour(client, db, google):
         ("גבינות הגליל", "יין הגולן", False),
         ("", "יין הגולן", False),
         ("אב", "אבוקדו", False),
+        # one word never claims a longer name, and parts of words never match
+        ("מאפיה", "מאפיה של שכונה אחרת", False),
+        ("קפה", "קפה ג׳ו", False),
+        ("גבינות הגליל", "גבינות הגלילית", False),
+        ("קפה", "קפה", True),
     ],
 )
 def test_names_match(ours, theirs, expected):
@@ -302,6 +352,8 @@ def test_names_match(ours, theirs, expected):
         ("+972 50-123-4567", "0501234567"),
         ("08-946-1234", "089461234"),
         ("+1 415 555 0100", None),
+        ("00972 3 123 4567", "031234567"),
+        ("03-123-4567 ext. 12", "031234567"),
         ("", None),
     ],
 )
@@ -313,11 +365,15 @@ def test_national_digits(raw, expected):
     ("ours", "theirs", "expected"),
     [
         ("https://ruti.co.il/", "http://www.ruti.co.il", "same"),
-        (None, "https://mehamakor.co.il/ruti", "same"),
+        ("ruti.co.il", "https://ruti.co.il/menu", "same"),  # any page on her own site
+        (None, "https://mehamakor.co.il/ruti", "same"),  # her page here
+        (None, "https://mehamakor.co.il/he/ruti/", "same"),
+        (None, "https://mehamakor.co.il/producer/abc", "same"),
+        (None, "https://mehamakor.co.il/other-bakery", "different"),  # someone else's page here
         ("https://ruti.co.il", "https://other.co.il", "different"),
         ("https://ruti.co.il", None, "missing"),
         (None, "https://mehamakor.co.il.evil.io/ruti", "different"),
     ],
 )
 def test_website_verdict(ours, theirs, expected):
-    assert gp.website_verdict(ours, ["mehamakor.co.il"], theirs) == expected
+    assert gp.website_verdict(ours, ["mehamakor.co.il"], ["/ruti", "/producer/abc"], theirs) == expected
