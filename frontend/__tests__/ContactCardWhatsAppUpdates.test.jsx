@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// MEH-2626: the «עדכונים» bell in the contact card's channel row. It REPLACES
-// the old whatsapp_group circle (WhatsappLogo, untracked "קבוצת וואטסאפ") —
-// one home per link, never two. Gated on producer.whatsapp_group.
+// MEH-2626: the business's own WhatsApp link in the contact card's channel
+// row. Gated on producer.whatsapp_group.
+// MEH-3585: no longer a «עדכונים» bell — the page's only bell is Mehamakor's
+// updates toggle. The circle is named for what it opens: «ערוץ וואטסאפ»
+// (Megaphone) or, for a chat.whatsapp.com invite, «קבוצת וואטסאפ» (UsersThree).
 
 vi.mock("next-intl", () => ({
   useTranslations: (ns) => (key, vars) => {
@@ -13,9 +15,10 @@ vi.mock("next-intl", () => ({
       "producer.detail.contact_card.aria.instagram": "אינסטגרם",
       "producer.detail.contact_card.aria.website": "אתר",
       "producer.detail.contact_card.aria.email": "אימייל",
-      "producer.detail.contact_card.aria.whatsapp_group": "עדכונים",
-      "producer.detail.contact_card.single.whatsapp_group": "עדכונים מבית העסק בוואטסאפ",
-      "producer.detail.whatsapp_updates.full": "עדכונים מבית העסק בוואטסאפ",
+      "producer.detail.contact_card.aria.whatsapp_channel": "ערוץ וואטסאפ",
+      "producer.detail.contact_card.aria.whatsapp_group_chat": "קבוצת וואטסאפ",
+      "producer.detail.contact_card.single.whatsapp_channel": "ערוץ הוואטסאפ של בית העסק",
+      "producer.detail.contact_card.single.whatsapp_group_chat": "קבוצת הוואטסאפ של בית העסק",
       "whatsapp.question_chips.greeting_template": `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
     };
     return map[full] ?? full;
@@ -47,8 +50,10 @@ vi.mock("@phosphor-icons/react", () => {
     FacebookLogo: make("FacebookLogo"),
     Globe: make("Globe"),
     InstagramLogo: make("InstagramLogo"),
+    Megaphone: make("Megaphone"),
     Phone: make("Phone"),
     Receipt: make("Receipt"),
+    UsersThree: make("UsersThree"),
     WhatsappLogo: make("WhatsappLogo"),
   };
 });
@@ -73,7 +78,7 @@ const bell = () => screen.queryByTestId("contact-channel-whatsapp_group");
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("ContactCard — «עדכונים» bell (MEH-2626)", () => {
+describe("ContactCard — the business's WhatsApp link (MEH-2626 · MEH-3585)", () => {
   it("absent when the business has no updates link (null, empty, whitespace)", () => {
     for (const whatsapp_group of [null, "", "   "]) {
       const { unmount } = renderCard({ whatsapp_group });
@@ -82,14 +87,28 @@ describe("ContactCard — «עדכונים» bell (MEH-2626)", () => {
     }
   });
 
-  it("renders a Bell circle labelled «עדכונים» with the approved aria-label", () => {
+  it("a channel link → «ערוץ וואטסאפ» with a Megaphone, never a Bell or the WhatsApp logo", () => {
     renderCard({ whatsapp_group: LINK });
     const el = bell();
-    expect(el).toBeInTheDocument();
-    expect(el).toHaveAttribute("aria-label", "עדכונים מבית העסק בוואטסאפ");
-    expect(el).toHaveTextContent(/^עדכונים$/);
-    expect(el.querySelector('[data-icon="Bell"]')).not.toBeNull();
+    expect(el).toHaveAttribute("aria-label", "ערוץ וואטסאפ");
+    expect(el).toHaveTextContent(/^ערוץ וואטסאפ$/);
+    expect(el.querySelector('[data-icon="Megaphone"]')).not.toBeNull();
+    expect(el.querySelector('[data-icon="Bell"]')).toBeNull();
     expect(el.querySelector('[data-icon="WhatsappLogo"]')).toBeNull();
+  });
+
+  it("a chat.whatsapp.com invite → «קבוצת וואטסאפ» with UsersThree", () => {
+    renderCard({ whatsapp_group: "https://chat.whatsapp.com/AbC123" });
+    const el = bell();
+    expect(el).toHaveAttribute("aria-label", "קבוצת וואטסאפ");
+    expect(el).toHaveTextContent(/^קבוצת וואטסאפ$/);
+    expect(el.querySelector('[data-icon="UsersThree"]')).not.toBeNull();
+    expect(el.querySelector('[data-icon="Bell"]')).toBeNull();
+  });
+
+  it("a link that only mentions chat.whatsapp.com in its path stays a channel", () => {
+    renderCard({ whatsapp_group: "https://whatsapp.com/channel/chat.whatsapp.com/x" });
+    expect(bell()).toHaveTextContent(/^ערוץ וואטסאפ$/);
   });
 
   it("is styled exactly like the other channel circles", () => {
@@ -129,7 +148,7 @@ describe("ContactCard — «עדכונים» bell (MEH-2626)", () => {
       />,
     );
     const row = screen.getByTestId("contact-single-row");
-    expect(row).toHaveTextContent("עדכונים מבית העסק בוואטסאפ");
+    expect(row).toHaveTextContent("ערוץ הוואטסאפ של בית העסק");
     expect(row).toHaveAttribute("href", LINK);
     fireEvent.click(row);
     expect(trackContactClick).toHaveBeenCalledWith(7, "whatsapp_group");
