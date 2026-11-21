@@ -1041,7 +1041,7 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
         producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
       />,
     );
-    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק"ג');
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק״ג');
   });
 
   it("keeps the chip for a free-delivery offer without a threshold", () => {
