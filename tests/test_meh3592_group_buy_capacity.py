@@ -349,13 +349,3 @@ def test_cap_bounds(client, db):
     assert client.patch(f"/group-buys/{gb.id}/settings", json={"max_units": 0}, headers=h).status_code == 422
     assert client.patch(f"/group-buys/{gb.id}/settings", json={"max_participants": 1}, headers=h).status_code == 422
 
-
-def test_a_regrown_group_tells_the_business_of_the_join(client, db, mail):
-    """Funded, a leave drops it to open, a new join crosses the goal again:
-    the funded mail is latched, so the business hears of it as a late join."""
-    gb, _ = _group(db, min_participants=2, deadline=utc_now() + timedelta(days=3))
-    gb.funded_notified_at = utc_now()
-    db.commit()
-    _member(db, gb, "a@example.com")
-    assert _join(client, gb, make_user(db, email="c@example.com")).status_code == 201
-    assert ("late", "owner3592@example.com", 2, 2) in mail

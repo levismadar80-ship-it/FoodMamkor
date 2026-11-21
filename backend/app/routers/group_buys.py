@@ -386,13 +386,10 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         _notify_late_joiner(gb, current_user, background_tasks)
         capacity.tell_owner_of_late_join(db, gb, background_tasks)  # MEH-3592
     elif new_count >= gb.min_participants:
-        # MEH-3592: a group that fell back to open and re-crosses the goal is a
-        # join after the goal for the business — the funded mail is latched.
-        refunded = gb.funded_notified_at is not None
+        # MEH-3311 decided a flap back over the goal is never the business's
+        # mail; MEH-3592 keeps that (its late-join mail is for funded only).
         gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
-        if refunded:
-            capacity.tell_owner_of_late_join(db, gb, background_tasks)
 
     db.commit()
     db.refresh(commit)
