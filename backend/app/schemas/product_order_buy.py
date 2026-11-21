@@ -242,6 +242,19 @@ class BusinessOrdersOut(BaseModel):
     total: int
 
 
+class BusinessCustomerOut(BaseModel):
+    """MEH-3561: one customer of the business, grouped by phone."""
+
+    name: str
+    phone: str
+    order_count: int
+    last_order_at: datetime
+
+
+class BusinessCustomersOut(BaseModel):
+    customers: list[BusinessCustomerOut]
+
+
 class ConfirmIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

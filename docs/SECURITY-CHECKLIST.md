@@ -89,7 +89,7 @@ is_admin = getattr(viewer, "role", None) == "admin"
 if not (is_public or is_owner or is_admin):
     raise HTTPException(404)  # 404 not 403 — don't confirm existence
 ```
-File: `backend/app/routers/producers.py:403`
+File: `backend/app/services/producer_detail.py` (`producer_by_id_for_viewer`, moved from `routers/producers.py` in MEH-3559)
 
 **Question to ask yourself:**
 "If an anonymous user has this UUID, should they see it? If not —

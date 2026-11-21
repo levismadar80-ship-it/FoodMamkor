@@ -26,10 +26,10 @@ import InlineMessage from "@/components/ui/InlineMessage";
 // ============================================================
 // Edit-tab chunk A: producer-facing categories editor.
 // Mirrors ContactChannelsCard — local selection seeded from
-// profile.categories, saves category_ids via PUT /producers/me. A
-// license-required category chosen with no license number triggers a backend
-// 422 (ensure_license_for_categories, producer_me.py); the Hebrew detail is
-// surfaced inline via detailToMessage (lib/errors.js), never the generic copy.
+// profile.categories, saves category_ids via PUT /producers/me. Since MEH-3026
+// a license-required category saves without a number (no «מאומת» badge until
+// one is checked); any Hebrew 422 detail is still surfaced inline via
+// detailToMessage (lib/errors.js), never the generic copy.
 // REUSES: components/admin/ProducerForm.jsx:207-217,433-451 (GET /categories
 // checkbox grid + toggle), producer-self version.
 // ============================================================

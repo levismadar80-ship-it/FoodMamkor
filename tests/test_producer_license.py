@@ -17,6 +17,8 @@ locks that decision in as a regression guard.
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from app.models.models import Producer
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
@@ -188,10 +190,10 @@ class TestAdminProducerLicense:
         assert resp.status_code == 201, resp.text
         assert resp.json()["producer_license_number"] == "PENDING-1234"
 
-    def test_admin_patch_veggies_to_bakery_without_license_422(self, client, db):
+    def test_admin_patch_veggies_to_bakery_without_license_200(self, client, db):
         """Test 7 — start as veggies (no license required), PATCH to add
-        bakery without license → 422. Exercises the effective-state guard
-        path in routers/admin.py::admin_update_producer.
+        bakery without license → 200 since MEH-3026 (a missing licence only
+        withholds the «מאומת» badge; it never blocks a save).
         """
         admin = make_user(db, email="admin3@example.com", role="admin")
         veggies = make_category(db, name=VEGGIES, emoji="🥬")
@@ -206,14 +208,41 @@ class TestAdminProducerLicense:
         assert create.status_code == 201, create.text
         producer_id = create.json()["id"]
 
-        # PATCH to add bakery, still no license → 422.
+        # PATCH to add bakery, still no license → saved (MEH-3026).
         resp = client.put(
             f"/admin/producers/{producer_id}",
             json={"category_ids": [veggies.id, bakery.id]},
             headers=auth_header(admin),
         )
-        assert resp.status_code == 422, resp.text
-        assert resp.json()["detail"] == LICENSE_REQUIRED_HE
+        assert resp.status_code == 200, resp.text
+        assert {c["id"] for c in resp.json()["categories"]} == {veggies.id, bakery.id}
+
+    def test_admin_create_bakery_without_license_201(self, client, db):
+        """MEH-3026: the admin can create a business in a license-required
+        category without a number; it is listed without «מאומת»."""
+        admin = make_user(db, email="admin4@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        resp = client.post(
+            "/admin/producers",
+            json=self._admin_payload([bakery.id], license_number=None),
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 201, resp.text
+        row = db.get(Producer, UUID(str(resp.json()["id"])))
+        assert row is not None and row.verified_at is None
+
+    def test_admin_create_draft_bakery_without_license_201(self, client, db):
+        """MEH-3026: the as_draft path (owner-claim link) also takes no number."""
+        admin = make_user(db, email="admin5@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        payload = self._admin_payload([bakery.id], license_number=None)
+        payload["as_draft"] = True
+        resp = client.post("/admin/producers", json=payload, headers=auth_header(admin))
+        assert resp.status_code == 201, resp.text
+        row = db.get(Producer, UUID(str(resp.json()["id"])))
+        assert row is not None
+        assert row.status == "draft"
+        assert row.verified_at is None
 
 
 class TestRegisterProducerHoneyLicense:
@@ -482,8 +511,8 @@ class TestOwnerPutGrandfathersLicense:
         assert producer.description == "מאפייה ביתית עם אהבה"
         assert producer.producer_license_number is None  # still pending
 
-    def test_b_pending_producer_adds_new_licensed_category_422(self, client, db):
-        """(b) grandfather does NOT cover newly-added licensed categories."""
+    def test_b_pending_producer_adds_new_licensed_category_200(self, client, db):
+        """(b) MEH-3026: adding a licensed category without a number saves."""
         bakery = make_category(db, name=BAKERY, emoji="🍞")
         honey = make_category(db, name=HONEY, emoji="🍯")
         producer, user = self._owner(db, category=bakery)  # NULL license
@@ -492,15 +521,15 @@ class TestOwnerPutGrandfathersLicense:
             json={"category_ids": [bakery.id, honey.id]},
             headers=auth_header(user),
         )
-        assert resp.status_code == 422, resp.text
-        assert LICENSE_REQUIRED_HE in resp.text
+        assert resp.status_code == 200, resp.text
         db.refresh(producer)
-        assert {c.id for c in producer.categories} == {bakery.id}  # unchanged
+        assert {c.id for c in producer.categories} == {bakery.id, honey.id}
+        assert producer.verified_at is None
 
-    def test_c_licensed_producer_clears_license_keeping_category_422(
+    def test_c_licensed_producer_clears_license_keeping_category_200(
         self, client, db
     ):
-        """(c) 2c guard — blanking a held license with a licensed category → 422."""
+        """(c) MEH-3026: the owner may blank her number; the save goes through."""
         bakery = make_category(db, name=BAKERY, emoji="🍞")
         producer, user = self._owner(db, category=bakery, license_number="1234567")
         resp = client.put(
@@ -508,10 +537,9 @@ class TestOwnerPutGrandfathersLicense:
             json={"producer_license_number": ""},
             headers=auth_header(user),
         )
-        assert resp.status_code == 422, resp.text
-        assert LICENSE_REQUIRED_HE in resp.text
+        assert resp.status_code == 200, resp.text
         db.refresh(producer)
-        assert producer.producer_license_number == "1234567"  # not cleared
+        assert not producer.producer_license_number
 
     def test_d_pending_producer_adds_unlicensed_category_200(self, client, db):
         """(d) adding a NON-licensed category while pending stays allowed."""
@@ -561,7 +589,8 @@ class TestAdminEditGrandfather:
         assert producer.description == "תיאור חדש שהמנהלת כתבה"
         assert producer.producer_license_number is None
 
-    def test_adding_a_new_licensed_category_without_license_still_422(self, client, db):
+    def test_adding_a_new_licensed_category_without_license_200(self, client, db):
+        """MEH-3026: no licence gate on the admin PUT."""
         bakery = make_category(db, name=BAKERY, emoji="🍞")
         honey = make_category(db, name=HONEY, emoji="🍯")
         admin, producer = self._admin_and_producer(db, category=bakery)
@@ -570,12 +599,12 @@ class TestAdminEditGrandfather:
             json={"category_ids": [bakery.id, honey.id]},
             headers=auth_header(admin),
         )
-        assert resp.status_code == 422, resp.text
-        assert resp.json()["detail"] == LICENSE_REQUIRED_HE
+        assert resp.status_code == 200, resp.text
         db.refresh(producer)
-        assert {c.id for c in producer.categories} == {bakery.id}
+        assert {c.id for c in producer.categories} == {bakery.id, honey.id}
 
-    def test_blanking_a_held_license_on_licensed_category_still_422(self, client, db):
+    def test_blanking_a_held_license_on_licensed_category_200(self, client, db):
+        """MEH-3026: the admin may blank a number (e.g. one entered by mistake)."""
         bakery = make_category(db, name=BAKERY, emoji="🍞")
         admin, producer = self._admin_and_producer(db, category=bakery, license_number="1234567")
         resp = client.put(
@@ -583,6 +612,6 @@ class TestAdminEditGrandfather:
             json={"producer_license_number": "  "},
             headers=auth_header(admin),
         )
-        assert resp.status_code == 422, resp.text
+        assert resp.status_code == 200, resp.text
         db.refresh(producer)
-        assert producer.producer_license_number == "1234567"
+        assert not (producer.producer_license_number or "").strip()
