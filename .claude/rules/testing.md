@@ -100,9 +100,6 @@ operative half; a bare `.catch` is not enough. To prove something did **not**
 happen, await the unwanted event with a bound and require it times out. To
 wait for readiness, gate on that thing (`data-testid`, response, URL). The
 Cloudinary-401 cause is unestablished — don't state it as fact.
-
-### Sweep result (2026-08-09) — where this actually bites
-
 Only CI-run specs matter; don't bulk-"fix" the `qa-*.mjs` probes.
 
 ---
