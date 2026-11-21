@@ -346,7 +346,11 @@ def send_late_joiner_to_producer(  # noqa: PLR0913 — BackgroundTasks entry, pl
         return
     try:
         notify_producer_late_joiner(
-            producer_email, title, participant_count, units_total, group_buy_id,
+            producer_email,
+            title,
+            participant_count,
+            units_total,
+            group_buy_id,
             test_cause=test_cause,
         )
     except Exception:  # best-effort, like every send in this module
