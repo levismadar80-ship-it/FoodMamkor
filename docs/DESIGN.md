@@ -1130,6 +1130,16 @@ element supplying the group's accessible name (the `aria-label`/
 `aria-labelledby` target) — same "(חובה)" wording as `license_required_label`,
 audible once, never announced as "star".
 
+## Offer cards (MEH-3585, 21/11/2026)
+
+A time-limited offer on a business page (a group buy, a surprise bag) is drawn
+by one component, `frontend/components/ui/OfferCard.jsx`: optional icon tile,
+title + «where» lines, the price with the regular price struck, a gold saving
+line, a beige status band (progress in the logo seeds + a time), then any
+actions. Both offer sections lay the cards in `grid gap-3 sm:grid-cols-2`, so
+they are the same size. A new kind of offer uses this card, never its own copy
+(`OfferCardOneOwnerGuard.test.jsx`).
+
 ## In-place messages (MEH-3072)
 
 A form-level or page-level message that appears in place (a submit error,

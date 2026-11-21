@@ -12,12 +12,12 @@
 
 **קבצים מרכזיים**
 * `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` — כותרת, מצב חופשה.
-* `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, קבוצת WhatsApp. גם דף המארגן מציג אותו (MEH-3459), בלי שאלות מוכנות — הן בסעיף «שאלות נפוצות» של דף העסק (MEH-3460); השומר `frontend/__tests__/ContactCardOneOwnerGuard.test.js`.
+* `frontend/app/[locale]/producer/[id]/components/ContactCard.jsx` — ערוץ הקשר הראשי, ‏WhatsApp מוכן מראש, והקישור של בית העסק לערוץ או לקבוצת WhatsApp, שנקרא בשם שלו («ערוץ וואטסאפ» / «קבוצת וואטסאפ») ולא «עדכונים», כי הפעמון היחיד בדף הוא עדכונים ממהמקור (MEH-3585). גם דף המארגן מציג אותו (MEH-3459), בלי שאלות מוכנות — הן בסעיף «שאלות נפוצות» של דף העסק (MEH-3460); השומר `frontend/__tests__/ContactCardOneOwnerGuard.test.js`.
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
 * `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quickAnswers.js` — סעיף «שאלות נפוצות» (`#section-faq`) בגוף הדף, מתחת ל«משלוחים», ולא בכרטיס הקשר. כשסעיף המשלוח מוצג (`hasDeliverySection`) לא שואלים על משלוח. אין «איך מזמינים?» ואין «שאלה אחרת? צרו איתנו קשר», כי שתיהן רק חזרו על הכפתור (MEH-3460).
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים.
 * `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון. בגיליון כפתור שיתוף שמוביל ישר למוצר (`?product=<id>`, MEH-3622).
-* `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. כשאין רכיבים ואין אחסון, אין שורה (MEH-3450). ברשימת הרכיבים מודגשות המילים של אלרגנים שסומנו ב«מכיל» (MEH-3443).
+* `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. מוצר שבית העסק לא אמר עליו כלום על אלרגנים לא מציג שורת אלרגנים; המשפט «יש לכם רגישות למזון? שאלו את בית העסק לפני ההזמנה.» מופיע פעם אחת מעל רשימת המוצרים, רק כשיש מוצר כזה (MEH-3585). כשאין רכיבים ואין אחסון, אין שורה (MEH-3450). ברשימת הרכיבים מודגשות המילים של אלרגנים שסומנו ב«מכיל» (MEH-3443).
 * `frontend/components/ProductPrice.jsx` · `frontend/lib/product-price.js` — המחיר עם היחידה («80₪ לבקבוק», MEH-2936). המחיר ב-span של `dir="ltr"`, היחידה אחריו ומחוץ לו. התוויות ב-namespace ‏`price_unit`, שנשלח לכל דף.
 * `frontend/components/PickupSchedule.jsx` — מתחת לנקודת איסוף: ימי האיסוף, שעת סגירת ההזמנה של הנקודה, ו«האיסוף הבא» (MEH-3512, החישוב ב-`frontend/lib/nextDelivery.js`).
 * `frontend/components/DeliveryTerms.jsx` · `frontend/components/NationwideZones.jsx` · `frontend/lib/deliveryTime.js` — זמן המשלוח בימי עסקים, המינימום ושעת סגירת ההזמנות לעיר, לאזור ולעסק, והאזורים בתנאים אחרים של עסק ארצי (MEH-3511). הטסט `frontend/__tests__/DeliveryTermsMeh3511.test.jsx`.
@@ -42,6 +42,8 @@
 * `tests/test_meh3442_allergen_detail.py` — «גלוטן (כוסמין)», «אגוזים (שקדים)»: פירוט הדגן והאגוז, נשמר רק כשהאלרגן מסומן (MEH-3442).
 * `tests/test_meh3445_allergen_reminder.py` — «אין במוצר אלרגנים מהרשימה»: הצהרה מפורשת, מתבטלת כשמסומן אלרגן, ולא נספרת בתזכורת בלוח (MEH-3445).
 * `frontend/__tests__/AllergenHighlight.test.jsx` — מילים ברשימת הרכיבים שתואמות אלרגן שסומן ב«מכיל» מודגשות (`highlightAllergens` ב-`frontend/lib/allergens.js`); מילון קטן ושמרני, «עלול להכיל» לא מודגש (MEH-3443).
+* `frontend/__tests__/ProducerSectionsMeh3585.test.jsx` — סל ההפתעה אחרי «קבוצות רכישה פתוחות» (קטלוג קודם, הצעות מתוארכות אחריו), באותו מבנה כרטיס כמו קבוצת רכישה, ושורת האלרגנים האחת מעל רשימת המוצרים (0 / 1 / רבים) (MEH-3585).
+* `frontend/__tests__/OfferCardOneOwnerGuard.test.jsx` — כרטיס קבוצת רכישה וכרטיס סל הפתעה יוצאים מאותו רכיב, `frontend/components/ui/OfferCard.jsx`, באותו רוחב (MEH-3585).
 * `frontend/__tests__/ProductSheetDetailsRow.test.jsx` — השורה «פרטים על המוצר»: סגורה כברירת מחדל, האלרגנים בכותרת שלה, ובלי שורה כשאין מה לקפל (MEH-3450).
 * `tests/test_meh2936_product_unit.py` · `frontend/__tests__/ProductPriceUnit.test.jsx` — **השומר** של יחידת המחיר: רשימה אחת בשרת, בסכמות ובצד הלקוח, התווית מגיעה לדף ציבורי, ובקבוק/ארגז לא הופכים מחיר להערכה (MEH-2936).
 * `frontend/__tests__/QuestionChipsSection.test.jsx` · `frontend/__tests__/quickAnswers.test.js` — «שאלות נפוצות» כסעיף בגוף הדף, בלי שאלת משלוח כשיש סעיף משלוח, ובלי «איך מזמינים?» (MEH-3460).

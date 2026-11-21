@@ -855,6 +855,7 @@
         },
         "products": {
           "heading": "Products",
+          "allergens_note": "Food allergies? Ask the business before you order.",
           "signature_label": "Signature product",
           "show_all": "Show all {count} products",
           "show_less": "Show less",
@@ -874,7 +875,6 @@
             "allergens_heading": "Allergens",
             "contains": "Contains: {list}",
             "may_contain": "May contain: {list}",
-            "allergens_undeclared": "The business has not listed allergens. If you have a sensitivity, ask before ordering.",
             "no_allergens": "None of the listed allergens",
             "storage_heading": "Storage and shelf life",
             "declared_by_business": "As declared by the business"
@@ -942,7 +942,8 @@
           "email": "Email",
           "facebook": "Facebook",
           "external_order": "Order form",
-          "whatsapp_group": "Updates"
+          "whatsapp_channel": "WhatsApp channel",
+          "whatsapp_group_chat": "WhatsApp group"
         },
         "single": {
           "phone": "Call us",
@@ -951,7 +952,8 @@
           "email": "Send an email",
           "facebook": "Facebook",
           "external_order": "Order form",
-          "whatsapp_group": "WhatsApp updates from the business"
+          "whatsapp_channel": "The business's WhatsApp channel",
+          "whatsapp_group_chat": "The business's WhatsApp group"
         },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
@@ -6978,6 +6980,8 @@
     "section": {
       "title": "Rescue bag",
       "cta": "Reserve the bag · pay at the counter",
+      "saving": "Save {pct}%",
+      "pickup_today": "Pickup today {from}–{until}",
       "typical": "Usually: {items}",
       "allergens_title": "Allergens",
       "cancel_until": "Free cancellation until {time}",
