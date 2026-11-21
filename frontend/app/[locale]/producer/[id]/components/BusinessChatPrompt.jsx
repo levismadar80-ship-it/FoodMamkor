@@ -37,7 +37,6 @@ const CHAT_MAX_CHARS = 500;
  */
 export default function BusinessChatPrompt({ producer, signatureProduct = null }) {
   const t = useTranslations("chat.business");
-  const tChat = useTranslations("chat");
   const tWa = useTranslations("whatsapp.question_chips");
   const preview = usePreviewMode();
   const [draft, setDraft] = useState("");
@@ -125,7 +124,7 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
           type="submit"
           data-testid="business-chat-open"
           aria-haspopup="dialog"
-          aria-label={tChat("send_label")}
+          aria-label={t("page_title", { name })}
           className="grid size-11 flex-shrink-0 place-items-center rounded-full text-primary focus-visible:ring-2 focus-visible:ring-primary"
         >
           <PaperPlaneTilt size={18} weight="fill" className="rtl:-scale-x-100" aria-hidden="true" />

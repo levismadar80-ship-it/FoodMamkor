@@ -64,6 +64,11 @@ def _p(**fields):
         ),
         ({"method": "bogus", "contact_email": "a@example.com"}, "email"),
         ({"method": "whatsapp"}, None),  # no contact detail at all
+        # Reviewer finding: the page's WhatsApp link needs an Israeli mobile.
+        ({"method": "whatsapp", "phone": "03-1234567"}, "phone"),  # landline → call
+        ({"method": None, "phone": "+972 50-123-4567"}, "whatsapp"),
+        ({"method": "phone", "phone": "---", "website": "x.example.com"}, "website"),
+        ({"method": "instagram", "instagram": "@", "facebook": "fb.com/x"}, "facebook"),
     ],
 )
 def test_contact_channel_is_the_buttons_channel(fields, expected):

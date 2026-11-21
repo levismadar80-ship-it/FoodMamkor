@@ -295,8 +295,27 @@ CONTACT_CHANNELS: tuple[tuple[str, str], ...] = (
 _FIELD = dict(CONTACT_CHANNELS)
 
 
+_MOBILE = re.compile(r"972[5-9]\d{8}")
+
+
+def _text(producer: Any, channel: str) -> str:
+    return str(getattr(producer, _FIELD[channel], None) or "").strip()
+
+
 def _has(producer: Any, channel: str) -> bool:
-    return bool(str(getattr(producer, _FIELD[channel], None) or "").strip())
+    """Whether the page can build this channel's link (contactHref is not
+    null): WhatsApp needs an Israeli mobile (lib/utils.js normalizePhone), a
+    call needs a digit (telHref), Instagram a handle after any «@»."""
+    value = _text(producer, channel)
+    if channel in ("whatsapp", "phone"):
+        digits = re.sub(r"\D", "", value)
+        if channel == "phone":
+            return bool(digits)
+        local = "972" + digits[1:] if digits.startswith("0") else digits
+        return bool(_MOBILE.fullmatch(local))
+    if channel == "instagram":
+        return bool(value.lstrip("@"))
+    return bool(value)
 
 
 def contact_channel(producer: Any) -> str | None:

@@ -194,7 +194,7 @@ describe("MEH-3505: the business's questions on the page itself", () => {
       </NextIntlClientProvider>,
     );
     const section = screen.getByTestId("business-chat-prompt");
-    expect(within(section).getAllByRole("button").map((b) => b.textContent || b.getAttribute("aria-label"))).toEqual([B.prompts.delivery, he.chat.send_label]);
+    expect(within(section).getAllByRole("button").map((b) => b.textContent || b.getAttribute("aria-label"))).toEqual([B.prompts.delivery, B.page_title.replace("{name}", PRODUCER.name)]);
   });
 
   it("send on an empty field opens the panel and sends nothing", async () => {
@@ -245,6 +245,16 @@ describe("MEH-3505: the business's questions on the page itself", () => {
       producer_id: PRODUCER.id,
     });
     expect(field).toHaveValue("");
+  });
+
+  it("the card's send button sends what was typed (its name is not the panel's «שלחו שאלה»)", async () => {
+    renderPage();
+    const card = within(screen.getByTestId("business-chat-prompt"));
+    fireEvent.change(card.getByRole("textbox"), { target: { value: "יש אריזת מתנה?" } });
+    await act(async () => { fireEvent.click(card.getByRole("button", { name: B.page_title.replace("{name}", PRODUCER.name) })); });
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].messages).toEqual([{ role: "user", content: "יש אריזת מתנה?" }]);
+    expect(within(screen.getByRole("dialog")).getAllByRole("button", { name: he.chat.send_label })).toHaveLength(1);
   });
 
   it("a whitespace-only field opens the panel and sends nothing", async () => {
