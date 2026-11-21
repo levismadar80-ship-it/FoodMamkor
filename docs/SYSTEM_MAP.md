@@ -22,7 +22,7 @@ This page links to those and does not repeat their numbers.
    │  sign-in                      ▼            ├─▶ Resend      (email)
    └──────────▶ Google / Apple   Postgres       ├─▶ WhatsApp Cloud API (Meta)
                                  (Railway)      ├─▶ Cloudinary  (signed upload, delete)
-                                                └─▶ Google Places (rating)
+                                                └─▶ Google Places (rating, owner's profile tool)
                     WhatsApp ──webhook──▶ backend (delivery receipts, opt-out)
 ```
 
@@ -53,6 +53,7 @@ This page links to those and does not repeat their numbers.
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
 | Backend | Google Places | a business's Google rating | the rating line disappears |
+| Backend | Google Places | the owner's «הפרופיל שלכם בגוגל» tool (MEH-3641): search, link check, live comparison; only the place_id is stored; 10/hour per route | the tool says «לא זמין» (503); nothing else depends on it |
 | Meta | Backend | WhatsApp webhook (HMAC-checked) | delivery status stays "accepted" |
 | Grafana Cloud k6, or a GitHub runner (`.github/workflows/load-test.yml`, manual only, MEH-3564) | Staging backend | k6 load test (`scripts/load-test.js`); results kept in Grafana Cloud when `K6_CLOUD_TOKEN` is set | the run goes red; nothing else depends on it. Refuses any URL but the staging backend |
 | GitHub Actions (`.github/workflows/staging-health.yml`) | GitHub commit statuses | `Staging health` on every open PR into staging, rule 41 (`scripts/ci/staging_health.py`) | posts failure («could not read staging runs»); a PR labeled `fixes-staging-red` gets green |
