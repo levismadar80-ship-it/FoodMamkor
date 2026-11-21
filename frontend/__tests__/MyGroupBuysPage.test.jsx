@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { SWRConfig } from "swr";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import MyGroupBuysClient from "@/app/[locale]/my-group-buys/MyGroupBuysClient";
@@ -26,9 +27,12 @@ const row = (id, over = {}) => ({
 });
 const copy = he.my_group_buys;
 const mount = () => render(
-  <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
-    <MyGroupBuysClient />
-  </NextIntlClientProvider>,
+  // A fresh SWR cache per test: the read goes through lib/use-api.js.
+  <SWRConfig value={{ provider: () => new Map() }}>
+    <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+      <MyGroupBuysClient />
+    </NextIntlClientProvider>
+  </SWRConfig>,
 );
 
 describe("MyGroupBuysClient", () => {
@@ -49,7 +53,7 @@ describe("MyGroupBuysClient", () => {
     mount();
     expect(await screen.findByText(copy.empty)).toBeInTheDocument();
     expect(screen.getByText(copy.empty_cta).closest("a")).toHaveAttribute("href", expect.stringContaining("/group-buys"));
-    expect(api.get).toHaveBeenCalledWith("/users/me/group-buys");
+    expect(api.get.mock.calls[0][0]).toBe("/users/me/group-buys");
   });
 
   it("1 open group buy without a pickup time: title, business · quantity, status · deadline, opens its page", async () => {

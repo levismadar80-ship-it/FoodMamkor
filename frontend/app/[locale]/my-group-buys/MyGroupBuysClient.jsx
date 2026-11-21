@@ -10,16 +10,17 @@
  *           (group-buys/[id]), and each row opens it.
  * Related:  app/[locale]/my-orders/MyOrdersClient.jsx (the same shape),
  *           lib/nav-registry.js `myGroupBuys` (the menu link)
- * History:  MEH-3609 (creation)
+ * History:  MEH-3609 (creation; reads through lib/use-api.js, so it shares no
+ *           hand-written fetch effect with my-orders — clone-ratchet)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { UsersThree } from "@phosphor-icons/react";
 
 import { Link } from "@/i18n/navigation";
-import api from "@/lib/api";
+import { useUserApi } from "@/lib/use-api";
 import { useAuth } from "@/lib/auth-context";
 import { formatDate } from "@/lib/format-date";
 import { parseNaiveUtc } from "@/lib/dates";
@@ -73,36 +74,31 @@ function Row({ gb }) {
   );
 }
 
+/**
+ * Rule 19: parse before render; a bad body is an error, not a list.
+ * @param {unknown} body
+ */
+function parseRows(body) {
+  const parsed = ListOwnGroupBuysUsersMeGroupBuysGetResponse.safeParse(body);
+  if (!parsed.success) throw parsed.error;
+  return parsed.data.group_buys;
+}
+
 export default function MyGroupBuysClient() {
   const t = useTranslations("my_group_buys");
   const tRoot = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [rows, setRows] = useState(/** @type {any[] | null} */ (null));
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  // MEH-3536: the one client read layer; the account id is in the key.
+  const { data: rows, error, mutate } = useUserApi("/users/me/group-buys", {
+    transform: parseRows,
+    view: "my-group-buys-rows",
+  });
+  const failed = Boolean(error);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push(loginHrefBackHere());
-      return;
-    }
-    let live = true;
-    api
-      .get("/users/me/group-buys")
-      .then((r) => {
-        // Rule 19: parse before render; a bad body is an error, not a list.
-        const parsed = ListOwnGroupBuysUsersMeGroupBuysGetResponse.safeParse(r.data);
-        if (!live) return;
-        if (parsed.success) setRows(parsed.data.group_buys);
-        else setFailed(true);
-      })
-      .catch(() => {
-        if (live) setFailed(true);
-      });
-    return () => { live = false; };
-  }, [user, authLoading, router, attempt]);
+    if (!authLoading && !user) router.push(loginHrefBackHere());
+  }, [user, authLoading, router]);
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8" data-testid="my-group-buys">
@@ -110,11 +106,11 @@ export default function MyGroupBuysClient() {
       {failed ? (
         <div data-testid="my-group-buys-error" className="space-y-3">
           <InlineMessage>{t("load_error")}</InlineMessage>
-          <Button variant="outlined" size="sm" onClick={() => { setFailed(false); setAttempt((a) => a + 1); }} data-testid="my-group-buys-error-retry">
+          <Button variant="outlined" size="sm" onClick={() => mutate()} data-testid="my-group-buys-error-retry">
             {tRoot("error.retry")}
           </Button>
         </div>
-      ) : rows === null ? (
+      ) : !rows ? (
         <Skeleton />
       ) : rows.length === 0 ? (
         <EmptyState icon={UsersThree} title={t("empty")} ctaLabel={t("empty_cta")} ctaHref="/group-buys" />
