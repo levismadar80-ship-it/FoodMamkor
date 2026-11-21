@@ -47,9 +47,11 @@ export default function ProductVariantsBlock({ product, orderable = null, picks 
           const price = formatPrice(menu ? menu.price_agorot / AGOROT : priceOf(product, v));
           return (
             <li key={v.id} className="flex items-center justify-between gap-3 py-2 min-h-[52px]" data-testid="product-variant-row">
-              <span className={v.in_stock ? "text-text" : "text-fg-muted"}>
-                {v.name}
-                {price && <span className="text-accent ms-2" dir="ltr">{price}</span>}
+              {/* A gap, not a margin: the price is dir="ltr", so its inline
+                  start is the side away from the name. */}
+              <span className={`flex items-baseline gap-2 ${v.in_stock ? "text-text" : "text-fg-muted"}`}>
+                <span>{v.name}</span>
+                {price && <span className="text-accent" dir="ltr">{price}</span>}
               </span>
               {orderable && menu && onChange ? (
                 <OrderStepper

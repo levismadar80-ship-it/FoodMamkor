@@ -71,8 +71,8 @@ export function variantFor(product, variantId) {
  * with one variant, that variant's price; with two or more, the lowest of the
  * ones in stock (all of them when none is), and `from` when they differ, so
  * the page reads «מ-X ₪». A variant without a price counts at the product's.
- * Null without variants (the product's own price is shown as before) or when
- * there is no number at all (MEH-3617).
+ * Null without variants, or when none has a price of its own (the product's
+ * own price is shown as before), or when there is no number at all (MEH-3617).
  * @param {any} product
  * @returns {{ shekels: number, from: boolean } | null}
  */
@@ -81,6 +81,9 @@ export function variantPrice(product) {
   if (all.length === 0) return null;
   const inStock = all.filter((v) => v.in_stock);
   const variants = inStock.length ? inStock : all;
+  // None has a price of its own: each is sold at the product's price, range
+  // included, so the product's own price is shown as before.
+  if (variants.every((v) => typeof v.price_agorot !== "number")) return null;
   const base = product.price_min === null || product.price_min === undefined ? null : Number(product.price_min);
   const prices = /** @type {number[]} */ (variants
     .map((v) => (typeof v.price_agorot === "number" ? v.price_agorot / 100 : base))

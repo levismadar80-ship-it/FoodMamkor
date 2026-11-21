@@ -245,7 +245,10 @@ describe("cart sums and lines with variants (MEH-3617)", () => {
     // One variant: its own price, no «מ-».
     expect(variantPrice(pageProduct([pv(S, "a", 4000)]))).toEqual({ shekels: 40, from: false });
     // All the same price: no «מ-».
-    expect(variantPrice(pageProduct([pv(S, "a", null), pv(L, "b", null)]))).toEqual({ shekels: 60, from: false });
+    expect(variantPrice(pageProduct([pv(S, "a", 6000), pv(L, "b", null)]))).toEqual({ shekels: 60, from: false });
+    // None with a price of its own: the product's own price, as before.
+    expect(variantPrice(pageProduct([pv(S, "a", null), pv(L, "b", null)]))).toBeNull();
+    expect(variantPrice(pageProduct([pv(S, "a", null)]))).toBeNull();
     // A sold-out cheaper one does not set the price, unless all are sold out.
     expect(variantPrice(pageProduct([pv(S, "a", 3000, false), pv(L, "b", 5000)]))).toEqual({ shekels: 50, from: false });
     expect(variantPrice(pageProduct([pv(S, "a", 3000, false), pv(L, "b", 5000, false)]))).toEqual({ shekels: 30, from: true });
