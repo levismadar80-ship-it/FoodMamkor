@@ -23,6 +23,7 @@ vi.mock("next-intl", () => ({
       "cert.image_alt": "צילום תעודת הכשרות",
       "cert.verified_by": "אומתה על ידי מהמקור",
       "cert.original_at_business": "התעודה המקורית מוצגת בבית העסק",
+      "cert.image_unavailable": "צילום התעודה לא זמין כרגע",
     };
     return map[key] ?? key;
   },
@@ -256,5 +257,21 @@ describe("KashrutBadgeStrip certificate viewer — quiet variant", () => {
     expect(screen.getByTestId("kashrut-cert-image").getAttribute("src")).toBe(
       "/api/producers/123/kashrut-cert/badatz",
     );
+  });
+});
+
+describe("CertModal when the photo cannot load (MEH-3583)", () => {
+  it("replaces the broken image with a line of text, not the browser's «?» box", () => {
+    setup();
+    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
+    const img = screen.getByTestId("kashrut-cert-image");
+    expect(screen.queryByTestId("kashrut-cert-image-unavailable")).toBeNull();
+    fireEvent.error(img);
+    expect(screen.queryByTestId("kashrut-cert-image")).toBeNull();
+    expect(screen.getByTestId("kashrut-cert-image-unavailable").textContent).toBe(
+      "צילום התעודה לא זמין כרגע",
+    );
+    // The caption under the photo still tells the visitor who verified it.
+    expect(screen.getByText("אומתה על ידי מהמקור")).toBeTruthy();
   });
 });
