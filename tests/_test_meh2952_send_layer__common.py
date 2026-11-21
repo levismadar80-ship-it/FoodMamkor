@@ -784,11 +784,6 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "ops alert to the admin; no business or user row behind it",
     ),
-    ("services/rating_dispatcher.py", "_default_sender", "send_text"): (
-        1,
-        NONE,
-        "unwired (no caller in the app)",
-    ),
     ("services/onboarding_followup.py", "send_due_followups", "send_email"): (
         1,
         OWN,

@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-85 send sites · 82 on a single channel.
+86 send sites · 83 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -33,6 +33,7 @@
 | `services/auth_emails.py` | `send_email_changed_notice` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_owner_invite_code_email` | מייל | בית עסק / מנהלת |
 | `services/auth_emails.py` | `send_owner_invite_email` | מייל | בית עסק / מנהלת |
+| `services/auth_emails.py` | `send_password_changed_notice` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_reset_email` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_verify_email` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_welcome_email` | מייל | משתמשת (חשבון) |
@@ -70,6 +71,7 @@
 | `services/group_buy_notifications.py` | `notify_participant_cancelled_delisted` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_expired` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_funded` | מייל | לקוחה |
+| `services/group_buy_notifications.py` | `notify_participant_joined` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_producer_funded` | מייל | בעלת העסק |
 | `services/job_staleness.py` | `_alert` | מייל | בלי שורת עסק |
 | `services/onboarding_followup.py` | `send_due_followups` | מייל | בעלת העסק |
@@ -79,7 +81,6 @@
 | `services/pending_nudge.py` | `send_pending_nudges` | מייל | בעלת העסק |
 | `services/product_order_outbox.py` | `_mail.send` | מייל | בעלת העסק |
 | `services/product_order_outbox.py` | `_wa.send` | וואטסאפ | בית עסק / מנהלת |
-| `services/rating_dispatcher.py` | `_default_sender` | וואטסאפ | בלי שורת עסק |
 | `services/registration_emails.py` | `_send_lines` | מייל | לקוחה |
 | `services/registration_emails.py` | `send_owner_cancellation` | מייל | בעלת העסק |
 | `services/registration_emails.py` | `send_owner_new_registration` | מייל | בעלת העסק |
