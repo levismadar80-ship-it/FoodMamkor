@@ -20,7 +20,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2544
+import { groupBuyDiscountPct, groupBuyGoalReached, groupBuySpotsLeft } from "@/lib/group-buy-progress"; // MEH-2544 · MEH-3588
 import { GroupBuyProgressMark, SEEDS_BESIDE_TEXT } from "@/app/[locale]/producer/[id]/components/ProducerActivities"; // MEH-2827 PR 7: one mark, card + page
 import Input from "@/components/ui/Input";
 import DeliveryChecker from "@/components/DeliveryChecker";
@@ -264,7 +264,10 @@ export default function GroupBuyDetailClient({ id }) {
   };
   // MEH-3289: past the minimum the group keeps filling, so «7 מתוך 5» would read
   // as an error — the count alone is shown instead.
-  const progressLabel = gb.commits_count > gb.min_participants
+  // MEH-3588: «2 מתוך 2» read as «full»; from the goal on, the count alone.
+  const goalReached = groupBuyGoalReached(gb.commits_count, gb.min_participants);
+  const spotsLeft = groupBuySpotsLeft(gb.commits_count, gb.max_participants);
+  const progressLabel = goalReached
     ? t("progress_joined", { commits: gb.commits_count })
     : t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
@@ -272,6 +275,22 @@ export default function GroupBuyDetailClient({ id }) {
   // side by side only while the seeds fit beside the count at 375.
   const stacked = gb.min_participants > SEEDS_BESIDE_TEXT;
   const showRemaining = !expired && open && remaining > 0;
+  const showGoalReached = joinable && goalReached;
+  const showSpots = joinable && spotsLeft !== null && spotsLeft > 0;
+  const hasMax = spotsLeft !== null;
+  // MEH-3588: «how it works» stays while the group can be joined, and says the
+  // group keeps filling past the goal (Groupon / Kickstarter: the deal stays on).
+  const howLines = funded
+    ? [t("how_join"), t("how_funded_price"), hasMax ? t("how_after_goal_max", { max: gb.max_participants }) : t("how_after_goal")]
+    : [t("how_join"), t("how_unlock", { min: gb.min_participants }), hasMax ? t("how_after_goal_max", { max: gb.max_participants }) : t("how_after_goal"), t("how_no_commit")];
+  const statusLines = (
+    <>
+      {showRemaining && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
+      {showGoalReached && <p className="text-sm font-bold text-primary" data-testid="group-buy-goal-reached">{t("goal_reached")}</p>}
+      <p className="text-xs text-fg-muted">{progressLabel}</p>
+      {showSpots && <p className="text-xs font-semibold text-text" data-testid="group-buy-spots-left">{t("spots_left", { n: spotsLeft })}</p>}
+    </>
+  );
 
   const joinCard = (
     <div className="rounded-lg border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
@@ -302,8 +321,7 @@ export default function GroupBuyDetailClient({ id }) {
         {stacked ? (
           <>
             <div className="text-end mb-2">
-              {showRemaining && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
-              <p className="text-xs text-fg-muted">{progressLabel}</p>
+              {statusLines}
             </div>
             <GroupBuyProgressMark size="lg" commits={gb.commits_count} min={gb.min_participants} funded={funded || fulfilled} label={progressLabel} />
           </>
@@ -313,8 +331,7 @@ export default function GroupBuyDetailClient({ id }) {
               <GroupBuyProgressMark size="lg" commits={gb.commits_count} min={gb.min_participants} funded={funded || fulfilled} label={progressLabel} />
             </span>
             <div className="text-end shrink-0">
-              {showRemaining && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
-              <p className="text-xs text-fg-muted">{progressLabel}</p>
+              {statusLines}
             </div>
           </div>
         )}
@@ -335,7 +352,7 @@ export default function GroupBuyDetailClient({ id }) {
                 for a number nothing read and implied a callback nobody made. */}
             <Input
               type="number"
-              label={t("quantity_label")}
+              label={gb.unit ? t("quantity_label_unit", { unit: gb.unit }) : t("quantity_label")}
               min={QTY_MIN}
               max={QTY_MAX}
               value={quantity}
@@ -442,7 +459,13 @@ export default function GroupBuyDetailClient({ id }) {
                 the full-screen canvas confetti, whose colours were not ours. */}
             <SeedBurst variant="dark" />
             <p className="text-xl font-bold">{t("funded_title")}</p>
-            <p className="text-sm mt-1 opacity-90">{t("funded_subtitle", { name: gb.producer_name })}</p>
+            {/* MEH-3588: «contact the business» is for those who joined; a
+                visitor who can still join is told she can. */}
+            <p className="text-sm mt-1 opacity-90">
+              {joinable && !full && !gb.user_committed
+                ? t(hasMax ? "funded_subtitle_join_max" : "funded_subtitle_join")
+                : t("funded_subtitle", { name: gb.producer_name })}
+            </p>
           </div>
         )}
         {cancelled && !expired && (
@@ -494,11 +517,11 @@ export default function GroupBuyDetailClient({ id }) {
 
             {/* MEH-2544: how a group buy works, while it can still be joined —
                 copy approved by Sapir 29/10. */}
-            {open && (
+            {joinable && !full && (
               <section className="mt-6 rounded-lg bg-background-alt p-4" data-testid="group-buy-how">
                 <SectionHeading size="content" className="mb-3">{t("how_title")}</SectionHeading>
                 <ol className="space-y-2">
-                  {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
+                  {howLines.map((line, i) => (
                     <li key={i} className="flex gap-3 text-base text-text">
                       <span
                         aria-hidden="true"

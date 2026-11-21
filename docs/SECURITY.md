@@ -553,6 +553,26 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
   `requests`, `starlette`) → **0 vulns** (cleared via MEH-337 + transitive
   bumps; pip-audit reports `No known vulnerabilities found`).
 
+**npm `overrides` for transitive CVEs (MEH-3574, 2026-11-21):** the
+`overrides` block in `frontend/package.json` forces patched versions that
+`npm update` / `npm audit fix` could not reach (both crash on an npm 10
+arborist bug, `reading 'edgesOut'`): `vite` ^8.3.8 (bundled launch-editor
+command injection), `brace-expansion` 1.x ≥ 1.1.22 and 5.x ≥ 5.0.13 (ReDoS /
+stack exhaustion), and `zod` → the app's own zod 4 inside
+`@google/design.md` (zod 3 has no fixed release; design.md 0.4.0 still
+declares `zod ^3`). Verified: `npm run design:export` output byte-identical,
+`design:lint` 0 errors. Drop an entry once the parent package ships the fix
+on its own.
+
+**Second batch (MEH-3575, same day):** `dompurify` ^3.4.18 (the only one in
+the shipped bundle; IN_PLACE XSS advisories), `fflate@0.4` ^0.4.9,
+`postcss-selector-parser@6` ^6.1.6, `typescript-eslint` ^8.73.0, and
+`minimatch` ^11.0.9 inside `eslint-plugin-sonarjs` (`npm audit fix` proposed a
+sonarjs downgrade instead). `vitest` / `@vitest/coverage-v8` bumped to ^4.1.12
+directly. The vitest bump only resolves under npm 11 (`npx -y npm@11
+install`); the lockfile it writes installs cleanly with npm 10 `npm ci`.
+Result: `npm audit` 0 vulnerabilities.
+
 **Accepted-risk CVEs (post-baseline):**
 
 - **GHSA-w5r5-m38g-f9f9** — joserfc PBES2 unbounded `p2c` iteration DoS
@@ -966,6 +986,12 @@ The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by
 - **Per-account cap (MEH-3425):** besides the route's 10/hour per IP, 5 WRONG passwords an hour per account lock the change for that account (429), even for the right password; a right password spends nothing. Counter in `backend/app/services/email_change_guard.py`, fail-open like `resend_verify_cap.py`. The user row is locked (`SELECT … FOR UPDATE`) before the check, so parallel guesses are counted one at a time (measured: 10 parallel wrong guesses → 5×403, 5×429). An absent password spends nothing. Limits: the window is fixed, not moving (up to 10 guesses around a window edge), and the counter is in process memory, so a deploy resets it.
 - **Other devices signed out (MEH-3425):** a real change bumps `token_version`, as `/auth/logout-all-devices` does; the caller's device gets fresh refresh + fingerprint cookies and recovers via `/auth/refresh`.
 - **No password on the account (MEH-3425):** a non-OAuth account with no `password_hash` gets its own 403, which points to «שכחתי סיסמה», instead of «הסיסמה הנוכחית שגויה».
+
+## 17e. Password changed notice (MEH-3591)
+
+A successful `PATCH /users/me/password` or `POST /auth/reset-password` queues one email to the account address after the commit (`services/auth_emails.py::send_password_changed_notice`): no password, no token, no name, with links to `/forgot-password` and `/contact`. A refused request (wrong current password, bad or expired token, policy failure) raises before the task is queued. Spam is bounded by the routes themselves: a reset needs a single-use token, a change needs a session and the current password (5/hour).
+
+The group-buy join confirmation (same PR) goes only to a **verified** address: without that, join/leave in a loop on an account registered with someone else's unverified address would mail that address from our domain.
 
 ## 18. Skills supply chain (MEH-397)
 

@@ -29,7 +29,7 @@ flowchart TD
     CreateProducer --> CreateUser[Create User<br/>role=producer<br/>producer_id=new producer.id]
     CreateUser --> LinkCats[Link producer_categories + delivery_areas]
     LinkCats --> TxEnd[Commit tx]
-    TxEnd --> NotifyAdmin[Optional: Twilio WhatsApp + SMTP<br/>admin notification<br/>fail-open on missing config]
+    TxEnd --> NotifyAdmin[Optional: admin email via Resend<br/>WhatsApp only as template admin_business_pending_v1<br/>fail-open on missing config]
     NotifyAdmin --> IssueJWTp[create_access_token user.id]
     ReturnTokenP -.->|owner completes profile,<br/>then presses שליחה לבדיקה| SubmitReview[POST /producers/me/submit-for-review<br/>MEH-2100: draft-only, server-side gate<br/>image + product + category + location + phone_verified]
     SubmitReview -->|gate passes| Pending[status=pending<br/>submitted_for_review_at stamped<br/>3-business-day SLA starts HERE]
@@ -196,3 +196,9 @@ access and refresh tokens fail the `tv` check above. The device that made the
 change gets a fresh `refresh_token` + `__Secure-Fgp` cookie in the same
 response, so its next refresh succeeds. Wrong current passwords are capped at
 5/hour per account (`services/email_change_guard.py`), under a row lock.
+
+**Password changed notice (MEH-3591).** A successful `PATCH /users/me/password`
+or `POST /auth/reset-password` queues one email to the account's address after
+the commit (`services/auth_emails.py::send_password_changed_notice`): no
+password, no token, links to `/forgot-password` and `/contact`. Same shape as
+the MEH-3104 email-change notice.

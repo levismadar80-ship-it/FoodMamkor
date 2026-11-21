@@ -1250,7 +1250,7 @@
       "delivery_label": "Delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
-      "how_unlock": "Once {min} people join, the group price unlocks and you contact the business to arrange your order",
+      "how_unlock": "Once {min} participants join, the group price unlocks and you contact the business to arrange your order",
       "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
       "submitting": "Joining...",
@@ -1270,7 +1270,15 @@
       "errors": {
         "cancel_failed": "Cancellation failed"
       },
-      "toast_cancelled": "Your participation was cancelled"
+      "toast_cancelled": "Your participation was cancelled",
+      "goal_reached": "The group reached its goal",
+      "spots_left": "{n, plural, one {One spot left} other {# spots left}}",
+      "funded_subtitle_join": "You can still join at the group price, until the deadline",
+      "funded_subtitle_join_max": "You can still join at the group price, until the spots run out or the deadline",
+      "how_after_goal": "Even after the goal is reached, people can keep joining until the deadline",
+      "how_after_goal_max": "Even after the goal is reached, people can keep joining, up to {max} participants or until the deadline",
+      "how_funded_price": "The group already reached its goal: anyone who joins now gets the group price",
+      "quantity_label_unit": "Quantity ({unit})"
     },
     "dashboard": {
       "status": {
@@ -1311,7 +1319,7 @@
         "price_helper": "The group price must be lower than the regular price.",
         "min_label": "Minimum participants",
         "min_placeholder": "e.g. 5",
-        "min_tooltip": "Number of orders required to close the group. If the minimum isn't met by the deadline — no one pays and you aren't obligated to fulfill.",
+        "min_tooltip": "The number of sign-ups that unlocks the group price. If the minimum is not reached by the deadline, nobody pays and nothing has to be delivered.",
         "max_label": "Maximum participants",
         "max_placeholder": "Optional — leave empty for no limit",
         "deadline_label": "Deadline",
@@ -1329,7 +1337,8 @@
         "toast_created": "Group buy created and open for joining",
         "prefill_label": "Fill from an existing product",
         "prefill_placeholder": "Choose a product",
-        "prefill_helper": "The name and regular price fill in, and you can change them."
+        "prefill_helper": "The name and regular price fill in, and you can change them.",
+        "max_tooltip": "After the minimum is reached, people can keep joining up to this number. Leave it empty if you can supply everyone who joins."
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {
@@ -3610,7 +3619,8 @@
       "close": "Close",
       "image_alt": "Photo of the kashrut certificate",
       "verified_by": "Verified by Mehamakor",
-      "original_at_business": "The original is displayed at the business"
+      "original_at_business": "The original is displayed at the business",
+      "image_unavailable": "The certificate photo isn't available right now"
     }
   },
   "opening_hours": {
@@ -4021,6 +4031,7 @@
     "modal_title_experience": "Share this experience",
     "modal_title_recipe": "Share this recipe",
     "modal_title_organizer": "Share this organizer page",
+    "modal_title_rescue": "Share this bag",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
@@ -6957,7 +6968,7 @@
     },
     "section": {
       "title": "Rescue bag",
-      "cta": "Reserve · pay at the counter",
+      "cta": "Reserve the bag · pay at the counter",
       "typical": "Usually: {items}",
       "allergens_title": "Allergens",
       "cancel_until": "Free cancellation until {time}",
@@ -7100,6 +7111,35 @@
         "mark": "Mark «Confirm handover» in the dashboard. Nobody came by the end of the window — «Didn't show»."
       },
       "footer": "Payment at the counter, at the price on the reservation. Questions — write to us."
+    },
+    "offer_page": {
+      "eyebrow": "Surprise bag",
+      "worth_range": "Estimated value ₪{min}–{max}",
+      "worth_one": "Estimated value ₪{min}",
+      "pickup_title": "Pickup today",
+      "address_title": "Where to pick up",
+      "inside_title": "What's inside",
+      "inside_body": "It's a surprise: the bag holds what's left today, so it changes from day to day.",
+      "inside_typical": "Usually includes:",
+      "how_title": "How it works",
+      "how_1": "Reserve here. Nothing to pay now.",
+      "how_2": "Come during pickup hours and give the code you'll get at the counter.",
+      "how_3": "Pay at the counter and take your bag.",
+      "cancel_title": "Cancelling",
+      "cancel_body": "Free cancellation until {time}. After that the reservation stands.",
+      "cancel_passed": "The free-cancellation time has passed, so a reservation made now stands.",
+      "no_show": "Two missed pickups block new reservations.",
+      "business_link": "Go to {name}",
+      "state_sold_out": "This bag is sold out for today.",
+      "state_cancelled": "The business cancelled today's bag.",
+      "state_ended": "Reservations for this bag have closed for today.",
+      "other_bags": "Other bags nearby",
+      "not_found_title": "We couldn't find this bag",
+      "not_found_body": "It may have been for another day. New bags are posted daily.",
+      "loading": "Loading the bag…",
+      "bar_note": "₪{price} · pickup until {until}",
+      "details_link": "All bag details",
+      "bar_cta": "Reserve the bag"
     }
   },
   "holidays": {
@@ -7802,7 +7842,9 @@
     "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
     "line": "{qty} × {name}",
     "back": "Back",
-    "failed": "That didn't work. Please try again."
+    "failed": "That didn't work. Please try again.",
+    "calendar_pickup": "Order pickup: {business_name}",
+    "calendar_delivery": "Order delivery: {business_name}"
   },
   "price_unit": {
     "unit": "per unit",

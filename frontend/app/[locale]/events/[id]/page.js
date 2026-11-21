@@ -9,6 +9,7 @@ import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transien
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildEventJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: Event + Breadcrumb JSON-LD
 import { BRAND_NAME } from "@/lib/constants";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-476 PR 3b2: server wrapper for the originally-client /events/[id] page.
 // Client Components cannot export generateMetadata; the actual UI lives in
@@ -107,7 +108,7 @@ export async function generateMetadata(props) {
       openGraph: {
         type: "article",
         locale: OG_LOCALE[locale],
-        images: ["/og-image.png"],
+        images: [siteOgImageUrl(locale)],
       },
       alternates,
     };
@@ -116,7 +117,7 @@ export async function generateMetadata(props) {
   // MEH-3459: the same picture the card and the page cover show — the event's
   // photo, else its owner's first photo (MEH-2546), else the site image.
   const cover = event?.image_url || event?.owner_image_url;
-  const shareImage = cover ? [cover] : ["/og-image.png"];
+  const shareImage = cover ? [cover] : [siteOgImageUrl(locale)];
 
   return {
     // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.

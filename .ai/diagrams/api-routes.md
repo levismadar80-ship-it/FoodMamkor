@@ -209,7 +209,7 @@ graph TD
     ExperiencesAdmin --> ExpReject[POST /admin/experiences/{id}/reject<br/>🛡️ host notification email]
     ExperiencesAdmin --> ExpChanges[POST /admin/experiences/{id}/request-changes<br/>🛡️ host notification email]
 
-    RecipesAdmin[/admin/recipes page<br/>MEH-997 — mirrors experiences queue] --> AdminRecList[GET /admin/recipes?moderation_status=<br/>🛡️ 5-tab queue MEH-589<br/>queue entry pings admin — MEH-1000<br/>WhatsApp+email on submit/resubmit]
+    RecipesAdmin[/admin/recipes page<br/>MEH-997 — mirrors experiences queue] --> AdminRecList[GET /admin/recipes?moderation_status=<br/>🛡️ 5-tab queue MEH-589<br/>queue entry pings admin — MEH-1000<br/>email on submit/resubmit, no WhatsApp since MEH-3589]
     RecipesAdmin --> RecApprove[POST /admin/recipes/{id}/approve<br/>🛡️ publishes]
     RecipesAdmin --> RecReject[POST /admin/recipes/{id}/reject<br/>🛡️ no producer notification — notes shown in dashboard]
     RecipesAdmin --> RecChanges[POST /admin/recipes/{id}/request-changes<br/>🛡️ feedback required — notes shown in dashboard]
@@ -262,6 +262,7 @@ graph LR
     Dash --> OfferCancel[POST /rescue/offers/:id/cancel<br/>👤 owner or admin · 409 after pickup_end<br/>cancels every open reservation with it, handed stays handed<br/>after commit: one email per buyer MEH-2738 · no WhatsApp]
 
     List[/rescue list · chunk 4] --> Browse[GET /rescue/offers?city=&lat=&lng=<br/>🌐 today's active bags with stock<br/>distance is to THE pickup point, not the nearest branch<br/>+ producer summary + typical_items]
+    BagPage[/rescue/:offerId bag page · MEH-3586] --> One[GET /rescue/offers/:id<br/>🌐 one of today's bags + state available/sold_out/cancelled/ended<br/>+ pickup lat/lng + business avg_rating/reviews_count<br/>404 for another day, test/unapproved business, town outside the pilot]
 
     Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 verified email only, else 403 email_unverified MEH-3225<br/>qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
     Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
