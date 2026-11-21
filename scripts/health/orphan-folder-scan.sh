@@ -32,7 +32,11 @@
 #   (one folder per line, with the reason):
 #   - a folder used only through a computed path (a glob, a runtime string);
 #   - a folder used only by a guard in scripts/checks/ (fixtures, testdata),
-#     because guard mentions do not count (see 1).
+#     because guard mentions do not count (see 1);
+#   - a folder reached only by a relative path (../fixtures/x), which does not
+#     contain the full token, so it is listed although it is used.
+#   The opposite blind spot has no fix here: a short token (frontend/hooks →
+#   "hooks") matches unrelated lines, so such a folder is never listed.
 #
 # Usage:    orphan-folder-scan.sh [--min-age-days N] [REV]
 #           orphan-folder-scan.sh --self-test
@@ -91,6 +95,10 @@ scan() {  # $1 = rev, $2 = min age days → prints ORPHAN lines + summary
     listed+=("$d"); found=$((found + 1))
   done < <(git ls-tree -d -r --name-only "$rev" | awk -F/ 'NF<=3' | grep -vE "$EXCLUDE_RE" | LC_ALL=C sort)
 
+  if [ "$checked" -eq 0 ]; then  # a dead folder list reads as "0 orphans"; it is not
+    echo "orphan-folder-scan ERROR: 0 candidate folders at $rev — the folder listing failed; every result of this run is void" >&2
+    return 2
+  fi
   echo "orphan-folder-scan: $checked candidates checked at $(git rev-parse --short "$rev"), $found orphan(s), min age ${min_age}d"
 }
 

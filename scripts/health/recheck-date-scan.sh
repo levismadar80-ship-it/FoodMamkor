@@ -61,6 +61,8 @@ self_test() {
   t yes "3 folder(s) with a Re-check line"                             "all three fixtures were read (a dead probe reads 0)"
   out=$(scan 2025-12-31 "$REPO" 1)
   t no  "RECHECK DUE: scripts/health/testdata/recheck-past"             "01/2026 is not due on 31/12/2025 (month boundary)"
+  out=$(scan 2026-11-21 "$REPO" 0)   # the real git ls-files path, not the fixtures
+  t no  " 0 folder(s) with a Re-check line"                            "the real tree is read (scripts/health/README.md carries one)"
   if scan not-a-date "$REPO" 1 >/dev/null 2>&1; then echo "  [XX] a bad 'today' must exit 2"; status=1; else echo "  [ok] a bad 'today' exits non-zero"; fi
   return "$status"
 }

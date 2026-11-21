@@ -24,7 +24,9 @@ Give its `README.md` one line:
 Re-check: 03/2027
 ```
 
-From that month the weekly scan asks whether it is still needed. To keep it,
+The line starts at the first column, with no bold or bullet: the scan reads
+only that exact form, and `**Re-check:**` is not seen. From that month the
+weekly scan asks whether it is still needed. To keep it,
 move the date; to drop it, delete the folder (it stays in git history).
 
 ## A folder the orphan scan lists by mistake

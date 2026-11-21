@@ -33,11 +33,14 @@ bash $H/recheck-date-scan.sh --self-test >/dev/null && echo "self-test ok" || ec
 bash $H/recheck-date-scan.sh || echo "ERROR: scan failed (rc $?)"
 
 section "3. Python dead code (vulture ≥ 80%), new since the baseline"
-if v=$(uvx --quiet vulture backend/app --min-confidence 80 2>&1; true); then
-  total=$(printf '%s\n' "$v" | grep -c '% confidence)' || true)
-  [ "$total" -eq 0 ] && echo "ERROR: vulture printed no finding at all; the baseline has 2 — section 3 is void (output: ${v:0:200})"
-  printf '%s\n' "$v" | grep '% confidence)' | sed -E 's/:[0-9]+:/:/' | grep -vxF -f <(grep -v '^#' $H/vulture-baseline.txt) | sed 's/^/NEW: /'
-  echo "vulture: $total finding(s), baseline $(grep -vc '^#' $H/vulture-baseline.txt)"
+base=$(grep -v -e '^#' -e '^[[:space:]]*$' $H/vulture-baseline.txt)   # a blank line would match every finding
+if v=$(uvx --quiet vulture==2.16 backend/app --min-confidence 80 2>&1; true); then
+  found=$(printf '%s\n' "$v" | grep '% confidence)' | sed -E 's/:[0-9]+:/:/')
+  total=$(printf '%s\n' "$found" | grep -c . || true)
+  [ "$total" -eq 0 ] && echo "ERROR: vulture printed no finding at all; the baseline is not empty — section 3 is void (output: ${v:0:200})"
+  printf '%s\n' "$found" | grep . | grep -vxF -f <(printf '%s\n' "$base") | sed 's/^/NEW: /'
+  printf '%s\n' "$base" | grep -vxF -f <(printf '%s\n' "$found" | grep .) | sed 's/^/GONE (remove from the baseline): /'
+  echo "vulture: $total finding(s), baseline $(printf '%s\n' "$base" | grep -c .)"
 fi
 
 section "4. Frontend dead code (knip ratchet baseline, CI blocks any rise)"
@@ -49,4 +52,11 @@ bash scripts/checks/expiry-register-check.sh || echo "ERROR: expiry-register-che
 bash scripts/checks/legacy-expiry-check.sh >/dev/null 2>&1 && echo "legacy-expiry-check: nothing past its date" || bash scripts/checks/legacy-expiry-check.sh 2>&1 | tail -20
 
 section "6. Per-PR guards that only warn"
-bash scripts/checks/run-all.sh 2>&1 | grep -E '^\s*(WARN|FAIL)\b' || echo "run-all: no WARN or FAIL lines"
+ra=$(bash scripts/checks/run-all.sh 2>&1)
+if ! printf '%s\n' "$ra" | grep -q '^Guard summary ('; then
+  echo "ERROR: run-all.sh printed no Guard summary — section 6 is void (last lines: $(printf '%s\n' "$ra" | tail -3 | tr '\n' ' '))"
+else
+  printf '%s\n' "$ra" | grep -E '^\s*(WARN|FAIL)\b' || echo "run-all: no WARN or FAIL lines"
+  # the warning text, not only the guard names: run-all prints each block between these rules
+  printf '%s\n' "$ra" | awk '/^───── (WARN|FAIL): /{on=1} on{print} /^───── end /{on=0}' | head -60
+fi
