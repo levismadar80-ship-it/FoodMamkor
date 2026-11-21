@@ -12,6 +12,7 @@ Related:  backend/app/routers/health.py:60 (readiness) vs :138 (the alias that
           cannot fail) · frontend/app/sitemap.js:79 (producer URLs) ·
           scripts/checks/data-readiness.py (the GET-only idiom reused here)
 History:  MEH-2088 (creation, post-Release-#2 smoke for MEH-1909 / MEH-2083);
+          MEH-3555 (--quick, run by the uptime probe every 30 minutes);
           MEH-3151 (WhatsApp link-preview check, scripts/checks/link_preview.py;
           the Sentry line names the thread + connector, not Sapir)
 
@@ -20,6 +21,13 @@ Usage
     python scripts/checks/smoke_production.py                    # production
     python scripts/checks/smoke_production.py --base-url https://…
     python scripts/checks/smoke_production.py --prove-control    # see below
+    python scripts/checks/smoke_production.py --quick            # the uptime tick
+
+``--quick`` (MEH-3555) is the version the uptime probe runs every 30 minutes:
+the same control and the same journey (readiness, the catalog, home /
+producers / map / one real business page, a Cloudinary image, the WhatsApp
+link preview), without the two parts that fetch a URL per row — the full
+sitemap crawl and the fixture slugs. Those stay in the post-deploy run.
 
 Exit codes
 ----------
@@ -430,7 +438,7 @@ def detail_producers(base: str, listing: list[dict]) -> list[dict]:
 # ------------------------------------------------------------------ main
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Read-only production smoke (MEH-2088).")
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL)
     ap.add_argument("--slugs", help="comma-separated override for the fixture slugs")
@@ -442,7 +450,13 @@ def main() -> int:
              "harness. Expected result: the control goes red and the run aborts "
              "with exit 2. Proves the green in a normal run means something.",
     )
-    args = ap.parse_args()
+    ap.add_argument(
+        "--quick",
+        action="store_true",
+        help="The uptime-tick version (MEH-3555): skip the full sitemap crawl "
+             "and the fixture slugs, keep the journey. About a dozen GETs.",
+    )
+    args = ap.parse_args(argv)
     base = args.base_url.rstrip("/")
 
     print(f"\nmehamakor production smoke — MEH-2088   ·   target {base}")
@@ -470,11 +484,16 @@ def main() -> int:
         f"{len(listing)} producer(s) served by GET /api/producers",
     )
     check_pages(base, board, listing[0].get("slug") if listing else None)
-    check_sitemap(base, board)
-    check_fixture_slugs(
-        base, board,
-        [s.strip() for s in args.slugs.split(",")] if args.slugs else seed_slugs(),
-    )
+    if args.quick:
+        # Said in the output, so a quick run is never read as the full one.
+        board.add(INFO, "--quick: sitemap crawl and fixture slugs not run",
+                  "they fetch one URL per row; the post-deploy run covers them")
+    else:
+        check_sitemap(base, board)
+        check_fixture_slugs(
+            base, board,
+            [s.strip() for s in args.slugs.split(",")] if args.slugs else seed_slugs(),
+        )
     check_cloudinary_image(base, board, detail_producers(base, listing))
     # MEH-3151: replaces «send yourself the link on WhatsApp and look».
     check_link_preview(base, board, fetch, "/", "home")
@@ -485,7 +504,8 @@ def main() -> int:
         board.add(SKIP, "WhatsApp link preview — business page",
                   "the catalog returned no business, so there was no business "
                   "page to fetch. NOT a pass.")
-    check_sentry(board)
+    if not args.quick:
+        check_sentry(board)
 
     print("\n" + "─" * 76)
     print(f"{len(board.rows)} lines · {board.failed} FAIL · {board.skipped} SKIP")
