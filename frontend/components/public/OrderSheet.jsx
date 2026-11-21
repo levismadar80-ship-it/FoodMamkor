@@ -93,7 +93,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     };
     const kept = drafts.get(producer.id);
     // A kept fulfilment the menu no longer offers falls back to the first.
-    if (kept && !ways.includes(kept.fulfilment)) return { ...blank, ...kept, fulfilment: blank.fulfilment };
+    if (kept && !(/** @type {string[]} */ (ways)).includes(kept.fulfilment)) return { ...blank, ...kept, fulfilment: blank.fulfilment };
     return { ...blank, ...kept };
   });
   useEffect(() => {
