@@ -3081,21 +3081,6 @@ export const RevokeVerifiedAdminProducersProducerIdRevokeVerifiedPostResponse = 
 
 
 /**
- * @summary Get Producer Risk Score
- */
-export const GetProducerRiskScoreAdminProducersProducerIdRiskScoreGetResponse = /*#__PURE__*/ zod.object({
-  "reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
-})
-
-
-/**
- * @summary Set Ambassador
- */
-export const SetAmbassadorAdminProducersProducerIdSetAmbassadorPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * Accept base64 JPEG canvas export, upload to Cloudinary, persist URL.
  * @summary Upload Story Card
  */
@@ -6022,28 +6007,6 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "whatsapp_group": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
-
-
-/**
- * MEH-970 — per-city approved-producer counts for the /map region control.
- *
- * GROUP BY city over approved producers only. NULL / blank cities are
- * omitted so a chip never lands on an empty map (empty-region guard). Counts
- * are computed live from the DB — never hardcoded (over-claim guard MEH-519).
- * Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
- * The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
- *
- * MEH-1986: the empty-region guard now also covers availability. It existed
- * for blank city names only, so a city whose every producer was on vacation
- * still published a chip — and the catalog behind that chip returns nothing.
- * A city drops out entirely once its last non-vacation producer does.
- * @summary Producers Cities
- */
-export const ProducersCitiesProducersCitiesGetResponseItem = /*#__PURE__*/ zod.object({
-  "city": /*#__PURE__*/ zod.string(),
-  "count": /*#__PURE__*/ zod.int()
-}).check(/*#__PURE__*/ zod.describe('MEH-970 — one row of GET /producers/cities: live approved-producer\ncount for a single city, consumed by the /map region control.'))
-export const ProducersCitiesProducersCitiesGetResponse = /*#__PURE__*/ zod.array(ProducersCitiesProducersCitiesGetResponseItem)
 
 
 /**

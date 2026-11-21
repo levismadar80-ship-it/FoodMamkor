@@ -891,7 +891,6 @@ from app.schemas.admin_review import (  # noqa: E402
     ProducerReviewChecksOut as ProducerReviewChecksOut,
     RejectionPresetOut as RejectionPresetOut,
     RequestChangesIn as RequestChangesIn,
-    SetAmbassadorIn as SetAmbassadorIn,
 )
 from app.schemas.catalog import (  # noqa: E402
     CategoryOut as CategoryOut,
@@ -899,7 +898,6 @@ from app.schemas.catalog import (  # noqa: E402
     DeliveryAreaOut as DeliveryAreaOut,
     MAX_OFFER_HEADLINE as MAX_OFFER_HEADLINE,
     OFFER_TYPES as OFFER_TYPES,
-    ProducerCityOut as ProducerCityOut,
     ProducerLocationCreate as ProducerLocationCreate,
     ProducerLocationOut as ProducerLocationOut,
     ProducerLocationOwnerOut as ProducerLocationOwnerOut,
@@ -1084,7 +1082,6 @@ from app.schemas.site import (  # noqa: E402
     ProducerViewIn as ProducerViewIn,
     ProductHit as ProductHit,
     ProfileUpdate as ProfileUpdate,
-    RiskScoreResponse as RiskScoreResponse,
     SavedEventOut as SavedEventOut,
     SavedExperienceOut as SavedExperienceOut,
     SavedItemRefOut as SavedItemRefOut,

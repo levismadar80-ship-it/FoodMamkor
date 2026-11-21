@@ -66,11 +66,11 @@ def catalog_default_availability_condition() -> ColumnElement[bool]:
     disagreement, and it ships looking finished.
 
     Every reader that answers "how many businesses does the catalog show"
-    composes THIS function, so the five can no longer drift apart:
+    composes THIS function, so they can no longer drift apart
+    (``GET /producers/cities`` was a fifth until MEH-3527 deleted it — no caller):
 
       - ``build_producers_query``            (the listing + X-Total-Count)
       - ``GET /producers/count``             (routers/producers.py)
-      - ``GET /producers/cities``            (routers/producers.py)
       - ``GET /producers/random``            (routers/producers.py)
       - ``GET /stats``.producers_count       (routers/marketing.py)
 
