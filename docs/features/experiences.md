@@ -16,6 +16,7 @@
 * `frontend/components/RegistrationCta.jsx` — כפתור ההרשמה. לחיצה על וואטסאפ, התקשרות או «שאלה» נספרת לבית העסק (`trackChannelClick`, MEH-2991), כמו בדף בית העסק. קישור הרשמה חיצוני לא נספר. שומר: `frontend/__tests__/RegistrationCtaContactCount.test.jsx`. לחיצה על וואטסאפ (הכפתור, רשימת ההמתנה או «שאלה» עם נייד) נשלחת גם ל-PostHog כאירוע `item_whatsapp_click`, עם סוג הדף, הפריט, בית העסק והקישור, כדי לראות כמה הרשמות נסגרות מחוץ לאתר. שום דבר לא נחסם (MEH-3194). שומר: `frontend/__tests__/RegistrationCtaOffSiteWhatsApp.test.jsx`. בטופס ההרשמה באתר, מתחת לכפתור, שורה שמציינת מול איזה בית עסק עושים את העסקה ושמהמקור לא צד לה (`frontend/components/public/NotAPartyLine.jsx`, MEH-3570).
 * `frontend/components/RegistrationSessionSelect.jsx` — «מועד», השדה הראשון בטופס ההרשמה (MEH-3447). מועד מלא נשאר לבחירה והופך לרשימת ההמתנה של אותו מועד. רשימת הנרשמות בלוח הבקרה (`frontend/components/RegistrationsList.jsx`) מקובצת לפי מועד. שומר: `frontend/__tests__/ExperienceSessionsUi.test.jsx`.
 * `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת החוויות פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ב-`/experiences/mine` (MEH-3438). הטסט `frontend/__tests__/NewExperienceDashboardPage.test.jsx`.
+* `frontend/components/admin/AdminFeedbackModal.jsx` — חלון המשוב של האדמין («לבקש שינויים» או «לדחות», עם הערה) בדף החוויות באדמין. משותף לחוויות ולמתכונים מאז MEH-3623.
 
 **Flags.** אין.
 

@@ -1,12 +1,10 @@
 // @ts-check
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Envelope } from "@phosphor-icons/react/ssr";
-import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
-import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
-import SectionHeading from "@/components/ui/SectionHeading";
+import LegalPage from "@/components/legal/LegalPage";
+import { buildLegalPageMetadata } from "@/lib/legal-page-metadata";
 import CookieSettingsButton from "@/components/CookieSettingsButton";
-import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-475 PR-C4b/chunk-3: privacy policy i18n. SECTIONS-array shape
 // matches accessibility (chunk 2). Operator section (MEH-630) preserved
@@ -15,34 +13,7 @@ import { siteOgImageUrl } from "@/lib/og-site-image";
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates.
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  const t = await getTranslations("privacy");
-  return {
-    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
-    title: t("meta_title"),
-    description: t("meta_description"),
-    // Per-page openGraph: Next.js shallow-merges this field, so it REPLACES
-    // the layout's BASE_METADATA.openGraph — siteName/locale/images repeated
-    // here to preserve them (mirrors about/contact siblings). Reuses the
-    // cleaned meta copy (MEH-720: "פלטפורמה", no "דירקטורי").
-    openGraph: {
-      title: buildEntityTitle(t("meta_title"), locale),
-      description: t("meta_description"),
-      type: "website",
-      url: urlForLocalePath("/privacy", locale),
-      siteName: BRAND_NAME,
-      locale: OG_LOCALE[locale],
-      images: [siteOgImageUrl(locale)],
-    },
-    // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
-    // layout's generic site card).
-    twitter: {
-      card: "summary_large_image",
-      title: buildEntityTitle(t("meta_title"), locale),
-      description: t("meta_description"),
-      images: [siteOgImageUrl(locale)],
-    },
-    alternates: buildAlternates("/privacy", locale),
-  };
+  return buildLegalPageMetadata(locale, { namespace: "privacy", path: "/privacy" });
 }
 
 // MEH-653: CONTACT_EMAIL imported from lib/env.client (Vercel env var with fallback).
@@ -225,30 +196,15 @@ export default async function PrivacyPage({ params }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "privacy" });
   return (
-    <section className="min-h-screen" data-testid="privacy-page">
-      <div className="max-w-3xl mx-auto px-4 py-16">
-        <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
-          {t("heading")}
-        </h1>
-        <p className="text-fg-muted mb-12">{t("date_label")}</p>
-
-        <div className="space-y-4">
-          {SECTION_IDS.map((id) => (
-            <section
-              key={id}
-              id={id}
-              className="bg-surface rounded-lg p-7 border border-border shadow-sm"
-            >
-              <SectionHeading size="content" className="mb-3">
-                {t(`sections.${id === "third-parties" ? "third_parties" : id}.title`)}
-              </SectionHeading>
-              <div className="text-text/85 leading-relaxed">
-                {renderBody(id, t)}
-              </div>
-            </section>
-          ))}
-        </div>
-      </div>
-    </section>
+    <LegalPage
+      testId="privacy-page"
+      heading={t("heading")}
+      dateLines={[t("date_label")]}
+      sections={SECTION_IDS.map((x) => ({
+        id: x,
+        title: t(`sections.${x === "third-parties" ? "third_parties" : x}.title`),
+        body: renderBody(x, t),
+      }))}
+    />
   );
 }
