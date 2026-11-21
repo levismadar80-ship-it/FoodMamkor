@@ -109,6 +109,12 @@ Canonical exemplars, one per language style:
 
 New files mirror whichever style matches the language.
 
+**The header feeds the code index (MEH-3604).** `docs/CODE_INDEX.md` shows each
+module's `Purpose:` line (or first sentence), and `tests/test_meh3604_code_index.py`
+fails on a new module with no header at the top of the file (a tool pragma such
+as `// eslint-disable` is not a header). Before writing a helper or component,
+search the index.
+
 ---
 
 ## §15 — Sentinel markers (grep-able anchors)

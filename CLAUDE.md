@@ -46,7 +46,7 @@ Numbered workflow rules + Bug Protocol + Commit discipline + PR approval/DoD + R
 |---|---|
 | [docs/CONTEXT.md](./docs/CONTEXT.md) | **Apex SoT** — AI-agnostic project context: DNA, stack, brand summary, working model, Truth Hierarchy, environment |
 | [docs/BRAND.md](./docs/BRAND.md) | Canonical brand domain SoT — positioning, voice, anti-patterns, tagline, inspiration |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Single-page repo map — start here; lookup table + linkouts to all other docs |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Single-page repo map — start here; lookup table + linkouts to all other docs. **§5 = every inventory** (pages, API, tables, env, jobs, messages, components) + [docs/CODE_INDEX.md](./docs/CODE_INDEX.md), one line per module — search it before writing a helper or component (MEH-3604) |
 | [docs/DESIGN.md](./docs/DESIGN.md) | Colors, fonts, micro-copy, anti-patterns, hero/category/card specs |
 | [docs/DATA.md](./docs/DATA.md) | DB schema, all API endpoints, request/response shapes |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Branch strategy, Railway/Vercel/GitHub setup, dev workflow |
