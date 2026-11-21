@@ -30,7 +30,9 @@ import OwnerInviteConsents from "./OwnerInviteConsents";
  *           refused by the server, and its Hebrew reason is shown as is.
  * Related:  ./OwnerInviteClient.jsx (the new-account form, which renders this
  *           one when a user is signed in) · ./OwnerInviteConsents.jsx.
- * History:  MEH-3256 (creation).
+ * History:  MEH-3256 (creation); MEH-3675 (a fresh Google sign-in on this page
+ *           stands in for the code — the server checks it is fresh and is
+ *           this account's Google identity; a refusal falls back to the code).
  */
 
 /**
@@ -39,9 +41,18 @@ import OwnerInviteConsents from "./OwnerInviteConsents";
  *   invite: { requires_farmer_declaration?: boolean, will_publish?: boolean },
  *   accountEmail: string,
  *   onInvalid: () => void,
+ *   googleCredential?: string|null,
+ *   onGoogleExpired?: () => void,
  * }} props
  */
-export default function OwnerInviteExistingAccount({ token, invite, accountEmail, onInvalid }) {
+export default function OwnerInviteExistingAccount({
+  token,
+  invite,
+  accountEmail,
+  onInvalid,
+  googleCredential = null,
+  onGoogleExpired,
+}) {
   const t = useTranslations("owner_invite");
   const tReg = useTranslations("auth.register.producer");
   const tErr = useTranslations("error");
@@ -58,6 +69,11 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   const [submitting, setSubmitting] = useState(false);
 
   const farmerRequired = Boolean(invite?.requires_farmer_declaration);
+  // MEH-3675: she signed in with Google on this page a moment ago, so that
+  // sign-in proves the mailbox and the code step is skipped. Only the server
+  // decides whether it still counts (≤ 5 minutes, this account's Google).
+  const viaGoogle = Boolean(googleCredential);
+  const proofReady = viaGoogle || (codeSent && Boolean(code.trim()));
   // An address is a left-to-right run inside a Hebrew sentence; FSI…PDI (the
   // plain-text twin of <bdi>) keeps it from trading places with the words
   // around it.
@@ -92,15 +108,18 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
   /** @param {import("react").FormEvent} e */
   const submit = async (e) => {
     e.preventDefault();
-    if (!codeSent || !code.trim()) return setMessage(t("code_required"));
+    if (!proofReady) return setMessage(t("code_required"));
     if (!consented) return setMessage(tReg("validation.terms_required"));
-    if (farmerRequired && !farmer) return setMessage(tReg("validation.farmer_required"));
+    if (farmerRequired && !farmer)
+      return setMessage(tReg("validation.farmer_required"));
     setMessage(null);
     setSubmitting(true);
     try {
       const res = await api.post("/auth/owner-invite/accept-existing", {
         token,
-        code: code.trim(),
+        ...(viaGoogle
+          ? { google_id_token: googleCredential }
+          : { code: code.trim() }),
         terms_accepted: consented,
         declaration_accepted: consented && (!farmerRequired || farmer),
         ...(farmerRequired && { farmer_declaration_accepted: farmer }),
@@ -114,13 +133,21 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
       await refreshUser();
       router.push("/producer/dashboard");
     } catch (error) {
+      // A Google sign-in the server did not take (too old, another Google
+      // account) drops back to the code step; its reason is shown as is.
+      if (viaGoogle && error?.response?.status === 422) onGoogleExpired?.();
       fail(error, t("submit_error"));
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={submit} noValidate data-testid="owner-invite-existing-form" className="space-y-4">
+    <form
+      onSubmit={submit}
+      noValidate
+      data-testid="owner-invite-existing-form"
+      className="space-y-4"
+    >
       <p className="text-fg-muted" data-testid="owner-invite-existing-account">
         {t("existing.signed_in_as", { email: isolated })}{" "}
         {/* Signed in as the wrong account (a shared browser, an admin, an
@@ -137,37 +164,47 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
         </button>
       </p>
 
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="md"
-          onClick={sendCode}
-          disabled={sendingCode}
-          data-testid="owner-invite-existing-send-code"
-          className="w-full"
-        >
-          {sendingCode ? t("sending_code") : t(codeSent ? "existing.resend" : "send_code")}
-        </Button>
-        {codeSent && (
-          <p className="text-sm text-fg-muted mt-2" role="status" data-testid="owner-invite-existing-code-sent">
-            {t("existing.code_sent", { email: isolated })}
-          </p>
-        )}
-      </div>
+      {!viaGoogle && (
+        <div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={sendCode}
+            disabled={sendingCode}
+            data-testid="owner-invite-existing-send-code"
+            className="w-full"
+          >
+            {sendingCode
+              ? t("sending_code")
+              : t(codeSent ? "existing.resend" : "send_code")}
+          </Button>
+          {codeSent && (
+            <p
+              className="text-sm text-fg-muted mt-2"
+              role="status"
+              data-testid="owner-invite-existing-code-sent"
+            >
+              {t("existing.code_sent", { email: isolated })}
+            </p>
+          )}
+        </div>
+      )}
 
-      <Input
-        label={t("code_label")}
-        id="owner-invite-existing-code"
-        data-testid="owner-invite-existing-code"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={6}
-        dir="ltr"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        className="tracking-[0.3em]"
-      />
+      {!viaGoogle && (
+        <Input
+          label={t("code_label")}
+          id="owner-invite-existing-code"
+          data-testid="owner-invite-existing-code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          dir="ltr"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          className="tracking-[0.3em]"
+        />
+      )}
 
       <OwnerInviteConsents
         consent={consented}
@@ -177,12 +214,16 @@ export default function OwnerInviteExistingAccount({ token, invite, accountEmail
         onFarmer={setFarmer}
       />
 
-      {message && <InlineMessage data-testid="owner-invite-existing-error">{message}</InlineMessage>}
+      {message && (
+        <InlineMessage data-testid="owner-invite-existing-error">
+          {message}
+        </InlineMessage>
+      )}
 
       <Button
         type="submit"
         data-testid="owner-invite-existing-submit"
-        disabled={submitting || !codeSent || !code.trim()}
+        disabled={submitting || !proofReady}
         variant="primary"
         size="lg"
         className="w-full"

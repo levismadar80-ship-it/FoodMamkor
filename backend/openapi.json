@@ -7962,10 +7962,17 @@
       "OwnerInviteExistingAccept": {
         "properties": {
           "code": {
-            "maxLength": 12,
-            "minLength": 1,
-            "title": "Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 12,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
           },
           "declaration_accepted": {
             "title": "Declaration Accepted",
@@ -7975,6 +7982,19 @@
             "default": false,
             "title": "Farmer Declaration Accepted",
             "type": "boolean"
+          },
+          "google_id_token": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Id Token"
           },
           "terms_accepted": {
             "title": "Terms Accepted",
@@ -7989,7 +8009,6 @@
         },
         "required": [
           "token",
-          "code",
           "terms_accepted",
           "declaration_accepted"
         ],

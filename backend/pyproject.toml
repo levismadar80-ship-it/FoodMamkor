@@ -346,6 +346,7 @@ files = [
     "app/services/moderation_schemas.py",
     "app/services/newsletter_sync.py",
     "app/services/oauth_verifiers.py",
+    "app/services/owner_invite_google.py",
     "app/services/onboarding_followup.py",
     "app/services/owner_attention.py",
     "app/services/owner_detach.py",
