@@ -10,7 +10,6 @@ function runScript({ token, pathname, search }) {
   const replace = vi.fn();
   const storage = { getItem: (k) => (k === "token" ? token : null) };
   const loc = { pathname, search, replace };
-  // eslint-disable-next-line no-new-func
   new Function("localStorage", "location", GUEST_TO_LOGIN_SCRIPT)(storage, loc);
   return replace;
 }
@@ -46,7 +45,6 @@ describe("guest-to-login inline script (MEH-2233)", () => {
   it("blocked storage stays on the page (the client check decides)", () => {
     const replace = vi.fn();
     const storage = { getItem: () => { throw new Error("SecurityError"); } };
-    // eslint-disable-next-line no-new-func
     new Function("localStorage", "location", GUEST_TO_LOGIN_SCRIPT)(storage, { pathname: "/favorites", search: "", replace });
     expect(replace).not.toHaveBeenCalled();
   });
