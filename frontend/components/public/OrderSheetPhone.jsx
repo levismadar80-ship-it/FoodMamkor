@@ -66,6 +66,7 @@ export default function OrderSheetPhone({ producerId, phone, code, onChange }) {
             setSentTo(null);
           }}
           className="flex-1"
+          aria-describedby={sentTo ? undefined : "order-sheet-phone-help"}
           data-testid="order-sheet-phone"
         />
         <Button type="button" variant="outlined" disabled={!valid || busy} onClick={ask} className="shrink-0 whitespace-nowrap" data-testid="order-sheet-send-code">
@@ -73,7 +74,7 @@ export default function OrderSheetPhone({ producerId, phone, code, onChange }) {
         </Button>
       </div>
       {/* MEH-3658: the label says what the field is; this says what it is for. */}
-      {!sentTo && <p className="text-xs text-fg-muted" data-testid="order-sheet-phone-help">{t("phone_help")}</p>}
+      {!sentTo && <p id="order-sheet-phone-help" className="text-xs text-fg-muted" data-testid="order-sheet-phone-help">{t("phone_help")}</p>}
       {error && <InlineMessage tone="error">{error}</InlineMessage>}
       {sentTo && (
         <Input

@@ -122,7 +122,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         {slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
-          <SlotChoice slots={slots} value={slot} onChange={(start) => set({ slot: start })} />
+          <SlotChoice key={form.fulfilment} slots={slots} value={slot} onChange={(start) => set({ slot: start })} />
         )}
         {delivery && (
           <>

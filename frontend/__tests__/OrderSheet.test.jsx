@@ -276,4 +276,51 @@ describe("OrderSheet", () => {
     expect(screen.getByTestId("order-sheet-phone-help").textContent).toBe("נשלח אליו קוד ועדכונים על ההזמנה בוואטסאפ");
     await waitFor(() => expect(screen.getByTestId("order-sheet-send").textContent).toBe("שליחת הבקשה · בערך 56 ₪"));
   });
+  it("moves focus to the first new slot after «מועדים נוספים», and into the note when it opens", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const many = Array.from({ length: 6 }, (_, i) => slot(`2026-11-2${i}T08:00:00Z`, `2026-11-2${i}T09:00:00Z`));
+    render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER }} menu={{ ...MENU, slots: many }} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("order-sheet-more-slots"));
+    expect(document.activeElement.getAttribute("data-value")).toBe("2026-11-24T08:00:00Z");
+    fireEvent.click(screen.getByTestId("order-sheet-add-note"));
+    expect(document.activeElement).toBe(screen.getByTestId("order-sheet-note"));
+  });
+
+  it("gives the slot group one tab stop, and arrow keys pick the next slot", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    const group = screen.getByTestId("order-sheet-slot");
+    expect(group.getAttribute("aria-required")).toBe("true");
+    const radios = () => [...group.querySelectorAll("[role=radio]")];
+    expect(radios().map((b) => b.tabIndex)).toEqual([0, -1, -1]);
+    fireEvent.keyDown(radios()[0], { key: "ArrowDown" });
+    expect(radios().map((b) => b.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+    expect(document.activeElement).toBe(radios()[1]);
+    expect(radios().map((b) => b.tabIndex)).toEqual([-1, 0, -1]);
+    fireEvent.keyDown(radios()[1], { key: "ArrowUp" });
+    fireEvent.keyDown(radios()[0], { key: "ArrowUp" });
+    expect(radios()[2].getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("clears the picked slot when she switches the way", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    pick("order-sheet-slot", "2026-11-20T10:00:00Z");
+    pick("order-sheet-fulfilment", "delivery");
+    // One delivery slot: picked for her.
+    expect(screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]").getAttribute("data-value")).toBe("2026-11-21T08:00:00Z");
+    pick("order-sheet-fulfilment", "pickup");
+    expect(screen.getByTestId("order-sheet-slot").querySelector("[aria-checked=true]")).toBeNull();
+  });
+
+  it("ties the phone help line to the phone field", () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    const help = screen.getByTestId("order-sheet-phone-help");
+    expect(screen.getByTestId("order-sheet-phone").getAttribute("aria-describedby")).toBe(help.id);
+  });
 });
