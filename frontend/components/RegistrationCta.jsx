@@ -37,6 +37,7 @@ import api from "@/lib/api";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { telHref } from "@/lib/contact-method"; // MEH-3461: the one tel: builder
 import { trackChannelClick } from "@/lib/contact-tracking";
+import { trackEvent } from "@/lib/analytics";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -348,11 +349,28 @@ export default function RegistrationCta(props) {
   // MEH-2991: a WhatsApp or call tap is a contact with the business, counted
   // for it exactly as on its own page (trackChannelClick). The waitlist link
   // keeps the caller's own counter; an external sign-up link is not a contact.
+  // MEH-3194: a WhatsApp tap from an event / workshop page is a booking that
+  // may close OFF the site. Counted in PostHog per business and item, never
+  // blocked; read against the on-site bookings in the billing ledger.
+  // `placement` = which link: the main action, the waitlist, the question.
+  const trackOffSite = (placement) =>
+    trackEvent("item_whatsapp_click", {
+      surface: kind === "events" ? "event" : "experience",
+      item_id: itemId,
+      producer_id: props.producerId ?? null,
+      placement,
+    });
   const onActionClick =
     action.kind === "waitlist"
-      ? onWaitlistClick
+      ? () => {
+          onWaitlistClick?.();
+          trackOffSite("waitlist");
+        }
       : action.kind === "whatsapp" || action.kind === "phone"
-        ? () => trackChannelClick(props.producerId, action.kind)
+        ? () => {
+            trackChannelClick(props.producerId, action.kind);
+            if (action.kind === "whatsapp") trackOffSite("action");
+          }
         : undefined;
   const showBar = action.kind !== "full" && !done && !open && inlineVisible === false;
 
@@ -360,7 +378,10 @@ export default function RegistrationCta(props) {
   const question = formAction && action.questionHref && (
     <a
       href={action.questionHref}
-      onClick={() => trackChannelClick(props.producerId, action.questionExternal ? "whatsapp" : "phone")}
+      onClick={() => {
+        trackChannelClick(props.producerId, action.questionExternal ? "whatsapp" : "phone");
+        if (action.questionExternal) trackOffSite("question");
+      }}
       {...(action.questionExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className="block text-center text-sm text-primary underline underline-offset-2 min-h-touch leading-[44px]"
       data-testid="registration-question"
