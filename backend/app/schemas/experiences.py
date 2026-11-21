@@ -17,6 +17,7 @@ from app.schemas.schemas import (
     _LETTER_REGEX,
     _image_url_validator,
     _min_letters_validator,
+    reject_emoji,
     _normalize_contact_email,
     _phone_validator,
     _url_scheme_validator,
@@ -228,7 +229,7 @@ class ExperienceCreate(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str) -> str | str | None:
-        return sanitize_text(v, max_length=300)
+        return reject_emoji(sanitize_text(v, max_length=300))
 
     @field_validator("title")
     @classmethod
@@ -311,7 +312,7 @@ class ExperienceUpdate(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=300)
+        return reject_emoji(sanitize_text(v, max_length=300))
 
     @field_validator("description")
     @classmethod

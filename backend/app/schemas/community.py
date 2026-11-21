@@ -19,6 +19,7 @@ from app.schemas.schemas import (
     _image_url_list_validator,
     _image_url_validator,
     _min_letters_validator,
+    reject_emoji,
 )
 from app.schemas.producer_out import ProducerListOut
 
@@ -112,7 +113,7 @@ class HomeProductCreate(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str) -> str | str | None:
-        return sanitize_text(v, max_length=200)
+        return reject_emoji(sanitize_text(v, max_length=200))
 
     @field_validator("title")
     @classmethod
@@ -172,7 +173,7 @@ class HomeProductUpdate(BaseModel):
     @field_validator("title")
     @classmethod
     def _sanitize_title(cls, v: str | None) -> str | None:
-        return sanitize_text(v, max_length=200)
+        return reject_emoji(sanitize_text(v, max_length=200))
 
     @field_validator("description")
     @classmethod
