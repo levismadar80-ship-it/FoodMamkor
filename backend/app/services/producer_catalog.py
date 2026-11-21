@@ -1,13 +1,13 @@
 """
 Module:   producer_catalog
-Purpose:  The small public catalog reads (total count, per-city counts, one
-          random business) and the request checks of GET /producers.
+Purpose:  The small public catalog reads (total count, one random business)
+          and the request checks of GET /producers.
 Touches:  producers (read).
 Does NOT: build the listing query — services/producer_listing.py
           (build_producers_query), which routers/producers.py still calls by
           name so tests can spy on it there. Registers no routes.
 Related:  backend/app/routers/producers.py (list_producers, producers_count,
-          producers_cities, random_producer) ·
+          random_producer) ·
           backend/app/services/producer_listing.py (is_business,
           catalog_default_availability_condition, MAX_CITIES_PER_QUERY).
 History:  MEH-3559 (moved here verbatim from routers/producers.py, no
@@ -20,7 +20,6 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.data.cities import canonical_city
 from app.models import Producer
 from app.schemas.schemas import DELIVERY_DAYS, ProducerRandomOut
 from app.services.producer_listing import (
@@ -97,29 +96,6 @@ def catalog_count(db: Session) -> int:
         or 0
     )
     return count
-
-
-def catalog_city_counts(db: Session) -> list[dict[str, object]]:
-    """[{city, count}] for the /map region control, biggest first."""
-    rows = (
-        db.query(Producer.city, func.count(Producer.id).label("count"))
-        .filter(
-            is_business(),  # MEH-2459
-            catalog_default_availability_condition(),
-            Producer.city.isnot(None),
-            func.trim(Producer.city) != "",
-        )
-        .group_by(Producer.city)
-        .all()
-    )
-    # MEH-2602: rows saved before writes were canonicalised may hold an alias
-    # («בנימינה»); fold them into the canonical name so one town is one chip.
-    totals: dict[str, int] = {}
-    for city, count in rows:
-        name = canonical_city(city) or city
-        totals[name] = totals.get(name, 0) + count
-    ordered = sorted(totals.items(), key=lambda kv: (-kv[1], kv[0]))
-    return [{"city": city, "count": count} for city, count in ordered]
 
 
 def random_catalog_producer(db: Session) -> ProducerRandomOut:

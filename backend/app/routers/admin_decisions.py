@@ -21,9 +21,9 @@ from app.auth import require_admin
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
-from app.routers.admin import (
-    _attach_aging,
-    _attach_has_owner,
+from app.services.admin_producer_reads import (  # MEH-3562: moved from routers/admin.py
+    attach_aging as _attach_aging,
+    attach_has_owner as _attach_has_owner,
 )
 from app.schemas.schemas import (
     GrantVerifiedIn,

@@ -38,7 +38,6 @@ from app.schemas.schemas import (
     DeliveryWaitlistOut,
     DeliveryWaitlistHostConfirmIn,
     DeliveryWaitlistUnsubscribeIn,
-    ProducerCityOut,
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
@@ -69,7 +68,6 @@ from app.services.kashrut_cert_proxy import (  # MEH-3559
     stream_kashrut_cert,
 )
 from app.services.producer_catalog import (  # MEH-3559
-    catalog_city_counts,
     catalog_count,
     random_catalog_producer,
     validate_listing_filters,
@@ -310,27 +308,6 @@ def producers_count(request: Request, db: Session = Depends(get_db)) -> dict[str
     """
     count = catalog_count(db)  # MEH-3559
     return {"count": count}
-
-
-@router.get("/producers/cities", response_model=list[ProducerCityOut])
-@limiter.limit("60/minute")
-def producers_cities(
-    request: Request, db: Session = Depends(get_db)
-) -> list[ProducerCityOut] | list[dict[str, object]]:
-    """MEH-970 — per-city approved-producer counts for the /map region control.
-
-    GROUP BY city over approved producers only. NULL / blank cities are
-    omitted so a chip never lands on an empty map (empty-region guard). Counts
-    are computed live from the DB — never hardcoded (over-claim guard MEH-519).
-    Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
-    The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
-
-    MEH-1986: the empty-region guard now also covers availability. It existed
-    for blank city names only, so a city whose every producer was on vacation
-    still published a chip — and the catalog behind that chip returns nothing.
-    A city drops out entirely once its last non-vacation producer does.
-    """
-    return catalog_city_counts(db)  # MEH-3559
 
 
 @router.get("/producers/random", response_model=ProducerRandomOut)

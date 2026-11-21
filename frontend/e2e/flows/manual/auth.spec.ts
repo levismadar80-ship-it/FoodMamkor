@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import { PASSWORD_MIN_LENGTH } from "../../../lib/validators";
+import { settledField } from "../_settled-field";
 
 /**
  * Spec:     manual/auth
@@ -302,8 +303,9 @@ test.describe("manual › /login inline validation and submit gating", () => {
     page,
   }) => {
     await page.goto(LOGIN);
-    const email = page.getByTestId("login-email");
-    const password = page.getByTestId("login-password");
+    // MEH-3563 — fill only once React owns the fields (sibling of flows/30 C1).
+    const email = await settledField(page, "login-email");
+    const password = await settledField(page, "login-password");
     const anyLengthMessage = page.getByText(/לפחות \d+ תווים/);
 
     await email.fill("valid@example.com");
@@ -331,8 +333,9 @@ test.describe("manual › /login inline validation and submit gating", () => {
     page,
   }) => {
     await page.goto(LOGIN);
-    const password = page.getByTestId("login-password");
-    const email = page.getByTestId("login-email");
+    // MEH-3563 — interact only once React owns the fields (sibling of flows/30 C1).
+    const password = await settledField(page, "login-password");
+    const email = await settledField(page, "login-email");
     const required = page.getByText("הזינו סיסמה", { exact: true });
 
     await expect(required).toHaveCount(0); // untouched

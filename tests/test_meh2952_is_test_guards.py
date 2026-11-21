@@ -182,14 +182,21 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     ),
     "backend/app/routers/organizers.py": (1, "adds not_test_producer()"),
     "backend/app/routers/saved_items.py": (1, "saved events; adds not_test_producer()"),
-    "backend/app/routers/rescue.py": (1, "the owner's publish gate"),
+    "backend/app/services/rescue_writes.py": (
+        1,
+        "the owner's publish gate (moved from routers/rescue.py, MEH-3554)",
+    ),
     "backend/app/services/rescue_reads.py": (
         1,
         "public list adds not_test_producer() (moved from routers/rescue.py, MEH-3541)",
     ),
-    "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
+    "backend/app/routers/admin.py": (1, "admin screens and state transitions"),
+    "backend/app/services/admin_producer_reads.py": (
+        1,
+        "licence-expiry list (moved from routers/admin.py, MEH-3562)",
+    ),
     "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
-    "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
+    "backend/app/routers/admin_kashrut.py": (1, "admin screens (set-ambassador deleted, MEH-3527)"),
     "backend/app/routers/admin_extra.py": (
         1,
         "blocking the only owner hides a live business — a state transition, "
