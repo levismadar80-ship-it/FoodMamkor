@@ -476,6 +476,7 @@ export default function ProducerSections({
                 {producer.top_product_name && (
                   <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}
+                <ProductWeekdaysLine product={signatureProduct} />{/* MEH-3618 */}
                 {/* MEH-1463: description fallback from the deduped grid product. */}
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
