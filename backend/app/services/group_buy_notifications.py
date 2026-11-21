@@ -36,9 +36,11 @@ tests/test_group_buys_api.py — extend it alongside any new template here.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 from app.config import settings
 from app.services.email import send_email
+from app.utils.clock import ISRAEL_TZ
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +183,37 @@ def send_funded_notifications(  # noqa: PLR0913
 
 
 # --- Cancel (MEH-2435 chunk 4) ---
+
+
+def notify_participant_joined(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
+    participant_email: str,
+    title: str,
+    quantity: int,
+    joined: int,
+    goal: int,
+    deadline: datetime,
+    group_buy_id: str,
+    test_cause: bool = False,
+) -> None:
+    """MEH-3591: the joiner's confirmation, for a join that did not fund the group.
+
+    A join that funds it (or joins an already-funded group) gets the funded
+    email instead, so she never gets two. Counts only, no roster and no
+    contact details — see the module PRIVACY CONTRACT. `deadline` is naive
+    UTC, as stored; it is shown as the Israel date.
+    """
+    day = deadline.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
+    subject = f'מהמקור — הצטרפת לקבוצה "{title}"'
+    body = (
+        f"שלום,\n\n"
+        f'ההצטרפות שלך לקבוצה "{title}" נקלטה. הכמות שביקשת: {quantity}.\n'
+        f"עד עכשיו הצטרפו {joined} מתוך {goal} שצריך כדי שהקבוצה תצא לדרך.\n\n"
+        f"נעדכן אותך באימייל כשהקבוצה תגיע ליעד, או אם עד {day:%d.%m.%Y} היא לא תגיע אליו.\n"
+        f"אפשר לבטל את ההצטרפות מדף הקבוצה עד המועד הזה.\n\n"
+        f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(participant_email, subject, body, test_cause=test_cause)
 
 
 def notify_participant_cancelled(

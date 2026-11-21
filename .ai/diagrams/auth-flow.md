@@ -196,3 +196,9 @@ access and refresh tokens fail the `tv` check above. The device that made the
 change gets a fresh `refresh_token` + `__Secure-Fgp` cookie in the same
 response, so its next refresh succeeds. Wrong current passwords are capped at
 5/hour per account (`services/email_change_guard.py`), under a row lock.
+
+**Password changed notice (MEH-3591).** A successful `PATCH /users/me/password`
+or `POST /auth/reset-password` queues one email to the account's address after
+the commit (`services/auth_emails.py::send_password_changed_notice`): no
+password, no token, links to `/forgot-password` and `/contact`. Same shape as
+the MEH-3104 email-change notice.
