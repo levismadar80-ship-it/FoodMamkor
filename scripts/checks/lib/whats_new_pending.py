@@ -29,8 +29,8 @@ REGISTRY = "frontend/lib/business-features.js"
 PENDING = "docs/release/whats-new-pending.md"
 ID_STATUS = re.compile(r'^\s*\{\s*id:\s*"([a-z0-9_]+)".*?\bstatus:\s*"([a-z_]+)"')
 ID_LINE = re.compile(r'^\s*\{\s*id:\s*"([a-z0-9_]+)"')
-ITEM = re.compile(r"^- ([a-z0-9_]+):\s*\S", re.M)
-WAIVER = re.compile(r"^Whats-new:\s*([a-z0-9_]+)\s+none\s+[—-]+\s*\S", re.M)
+ITEM = re.compile(r"^- ([a-z0-9_]+):[ \t]*\S", re.M)
+WAIVER = re.compile(r"^Whats-new:[ \t]*([a-z0-9_]+)[ \t]+none[ \t]+[—-]+[ \t]*\S", re.M)
 
 
 def live_tools(text: str) -> set[str]:
@@ -74,6 +74,8 @@ def self_test(root: Path) -> int:
         ("new live tool, no draft → red", staging_problems(reg0, reg_add, empty, ""), 1),
         ("flipped with a draft line → green", staging_problems(reg0, reg_flip, with_bags, ""), 0),
         ("draft id without text → red", staging_problems(reg0, reg_flip, "- bags:\n", ""), 1),
+        ("empty draft followed by another line → red", staging_problems(reg0, reg_flip, "- bags:\n- other: x\n", ""), 1),
+        ("waiver with the reason on the next line → red", staging_problems(reg0, reg_flip, empty, "Whats-new: bags none —\r\n## Next"), 1),
         ("waiver with a reason → green", staging_problems(reg0, reg_flip, empty, "Whats-new: bags none — renamed only"), 0),
         ("waiver without a reason → red", staging_problems(reg0, reg_flip, empty, "Whats-new: bags none —"), 1),
         ("nothing went live → green", staging_problems(reg0, reg0, empty, ""), 0),
@@ -86,9 +88,10 @@ def self_test(root: Path) -> int:
             print(f"self-test FAIL: {name}: got {len(got)}, want {want}")
             bad = 1
     real = (root / REGISTRY).read_text(encoding="utf-8")
-    n_ids = sum(1 for l in real.splitlines() if ID_LINE.match(l))
+    n_ids = len(re.findall(r'\bid:\s*"', real))
+    n_lines = sum(1 for l in real.splitlines() if ID_LINE.match(l))
     live = live_tools(real)
-    if n_ids < 20 or not live or "gallery_story" not in live:
+    if n_ids < 20 or n_ids != n_lines or not live or "gallery_story" not in live:
         print(f"self-test FAIL: real registry: {n_ids} tools, {len(live)} read as live")
         bad = 1
     if not (root / PENDING).exists():
@@ -118,8 +121,8 @@ def main() -> int:
     else:
         base_reg = _show(base_ref, REGISTRY)
         if base_reg is None:
-            print(f"whats-new-pending-guard: {base_ref} has no {REGISTRY} — nothing to compare")
-            return 0
+            print(f"{REGISTRY}:1: whats-new-pending-guard could not read {REGISTRY} at base {base_ref} — failing closed")
+            return 1
         bad = staging_problems(base_reg, (root / REGISTRY).read_text(encoding="utf-8"), pending, body)
     for b in bad:
         print(b)

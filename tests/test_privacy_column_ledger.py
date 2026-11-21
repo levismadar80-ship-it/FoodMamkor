@@ -25,6 +25,9 @@ LEDGER = ROOT / "docs/privacy/columns.tsv"
 BASELINE = ROOT / "docs/privacy/column-baseline.txt"
 PRIVACY_PAGE = ROOT / "frontend/app/[locale]/privacy/page.js"
 NOT_PERSONAL = "not-personal"
+# The baseline only shrinks. Lower this when you classify columns out of it;
+# raising it is how a new column would be smuggled in as "pre-existing".
+BASELINE_CEILING = 771
 
 
 def _lines(path: Path) -> list[str]:
@@ -102,6 +105,14 @@ def test_the_baseline_only_shrinks():
 def test_the_real_privacy_page_lists_its_categories():
     # Anchored to the real file: a broken extraction would make every category fail.
     assert {"identity", "location", "business"} <= privacy_categories()
+
+
+def test_the_real_baseline_never_grows():
+    n = len(_lines(BASELINE))
+    assert n <= BASELINE_CEILING, (
+        f"column-baseline.txt has {n} lines, ceiling {BASELINE_CEILING}: a new column goes in "
+        f"columns.tsv, never in the baseline"
+    )
 
 
 def test_every_real_column_is_classified_or_grandfathered():

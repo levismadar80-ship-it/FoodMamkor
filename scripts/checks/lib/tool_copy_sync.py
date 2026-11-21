@@ -47,7 +47,7 @@ def code_refs(line: str) -> list[str] | None:
         else:
             i += 1
     return None
-WAIVER = re.compile(r"^Tool copy:\s*([a-z0-9_]+)\s+unchanged\s+[—-]+\s*\S", re.M)
+WAIVER = re.compile(r"^Tool copy:[ \t]*([a-z0-9_]+)[ \t]+unchanged[ \t]+[—-]+[ \t]*\S", re.M)
 
 
 def parse_registry(text: str) -> dict[str, set[str]]:
@@ -107,6 +107,7 @@ def self_test(root: Path) -> int:
         ("file added, copy changed → green", violations(reg0, reg1, he0, he1, ""), 0),
         ("file added, waiver in body → green", violations(reg0, reg1, he0, he0, "Tool copy: gallery unchanged — internal helper"), 0),
         ("waiver without a reason → red", violations(reg0, reg1, he0, he0, "Tool copy: gallery unchanged —"), 1),
+        ("waiver with the reason on the next line → red", violations(reg0, reg1, he0, he0, "Tool copy: gallery unchanged —\r\n## Next"), 1),
         ("waiver for another tool → red", violations(reg0, reg1, he0, he0, "Tool copy: hours unchanged — x"), 1),
         ("nothing added → green", violations(reg0, reg0, he0, he0, ""), 0),
         ("new tool → not this guard's", violations(reg0, reg_new, he0, he0, ""), 0),
@@ -119,10 +120,10 @@ def self_test(root: Path) -> int:
     # Anchored to the real files: the parser must read every tool line, and the
     # real copy must have an entry for the tool the incident was about.
     real = (root / REGISTRY).read_text(encoding="utf-8")
-    ids = [l for l in real.splitlines() if ID_LINE.match(l)]
+    ids = len(re.findall(r'\bid:\s*"', real))  # every id, wherever it sits on a line
     parsed = parse_registry(real)
-    if len(parsed) != len(ids) or len(parsed) < 20:
-        print(f"self-test FAIL: real registry: {len(ids)} id lines, {len(parsed)} parsed")
+    if len(parsed) != ids or len(parsed) < 20:
+        print(f"self-test FAIL: real registry: {ids} ids in the file, {len(parsed)} parsed (a multi-line entry?)")
         bad = 1
     if len(parsed.get("gallery_story", ())) < 3:
         print(f"self-test FAIL: real gallery_story codeRef parsed as {sorted(parsed.get('gallery_story', ()))}")
@@ -145,8 +146,10 @@ def main() -> int:
     base_ref, body = sys.argv[1], sys.stdin.read()
     base_reg, base_he = _git_show(base_ref, REGISTRY), _git_show(base_ref, HE)
     if base_reg is None or base_he is None:
-        print(f"tool-copy-sync-guard: {base_ref} has no {REGISTRY} or {HE} — nothing to compare")
-        return 0
+        # Fail closed: a base we cannot read (a failed fetch, no merge-base) would
+        # otherwise be a green that checked nothing.
+        print(f"{REGISTRY}:1: tool-copy-sync-guard could not read {REGISTRY} / {HE} at base {base_ref} — failing closed")
+        return 1
     head_reg = (root / REGISTRY).read_text(encoding="utf-8")
     head_he = (root / HE).read_text(encoding="utf-8")
     bad = violations(base_reg, head_reg, base_he, head_he, body)
