@@ -34,7 +34,7 @@ test.describe("Lightbox", () => {
     // order, so `.first()` alone picks the hidden grid hero on [mobile]. Which
     // business pickProducer lands on varies run to run since the PR backend
     // reseeds with fresh ids (MEH-2973). Same locator as
-    // e2e/qa-meh1931-lightbox-visibility.mjs:237.
+    // e2e/_qa-archive/qa-meh1931-lightbox-visibility.mjs:237.
     const imageBtn = page.locator('[aria-label^="הגדלו תמונה"]:visible').first();
     await expect(
       imageBtn,

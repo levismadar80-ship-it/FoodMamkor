@@ -84,6 +84,9 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         // MEH-1577: the card always sends both cost fields; null = not stated.
         delivery_fee: null,
         free_delivery_above: null,
+        delivery_min_order: null,
+        delivery_days_min: null,
+        delivery_days_max: null,
         delivery_zones: [],
       }),
     );
@@ -124,6 +127,9 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         delivery_excluded_cities: ["אילת"],
         delivery_fee: null,
         free_delivery_above: null,
+        delivery_min_order: null,
+        delivery_days_min: null,
+        delivery_days_max: null,
         delivery_zones: [],
       }),
     );
@@ -152,6 +158,9 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         expect.objectContaining({
           delivery_fee: 0, // NOT null — the whole point
           free_delivery_above: null, // untouched field stays unstated
+          delivery_min_order: null,
+          delivery_days_min: null,
+          delivery_days_max: null,
         }),
       ),
     );
@@ -217,6 +226,9 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         // MEH-1577: every save now carries the cost pair; null = not stated.
         delivery_fee: null,
         free_delivery_above: null,
+        delivery_min_order: null,
+        delivery_days_min: null,
+        delivery_days_max: null,
         delivery_zones: [],
       }),
     );
@@ -313,6 +325,9 @@ describe("MEH-1821 DeliveryCard defaults-first", () => {
     delivery_nationwide: false,
     delivery_fee: 35,
     free_delivery_above: 250,
+    delivery_min_order: null,
+    delivery_days_min: null,
+    delivery_days_max: null,
     delivery_areas: [
       { city: "חיפה", delivery_fee: null }, // inherits
       { city: "עכו", delivery_fee: 0 }, // free for this city
@@ -403,6 +418,9 @@ describe("MEH-1821 DeliveryCard defaults-first", () => {
         delivery_excluded_cities: [],
         delivery_fee: 40,
         free_delivery_above: 250,
+        delivery_min_order: null,
+        delivery_days_min: null,
+        delivery_days_max: null,
         delivery_zones: [],
       }),
     );

@@ -75,6 +75,19 @@ export function cutoffOfRow(row) {
 }
 
 /**
+ * MEH-3511: the cutoff a set of rows shares (a day group, a zone) — null when
+ * any row states none or two rows differ, so the business window applies.
+ * @param {Array<{ order_cutoff_day?: string | null, order_cutoff_time?: string | null }>} rows
+ */
+export function sharedCutoff(rows) {
+  const cuts = (rows || []).map(cutoffOfRow);
+  const first = cuts[0];
+  if (!first) return null;
+  const same = cuts.every((c) => c && c.dayIndex === first.dayIndex && c.close === first.close);
+  return same ? first : null;
+}
+
+/**
  * @param {{ days?: string[] | null, orderWindow?: object | null,
  *   cutoff?: { dayIndex: number, close: string } | null,
  *   onVacation?: boolean, now?: Date }} args — `cutoff` (MEH-3512), when

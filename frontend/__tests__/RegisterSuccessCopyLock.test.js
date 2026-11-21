@@ -4,7 +4,7 @@ import en from "@/messages/en.json";
 
 /**
  * MEH-1814 — the post-submit success copy is LOCKED (Sapir, 31/07). Nothing
- * else pins it: RegisterProducerClient.test.jsx mocks next-intl so `t()` returns
+ * else pins it: RegisterProducerClient-01/-02.test.jsx mocks next-intl so `t()` returns
  * the key path, and the Playwright spec locates by data-testid per
  * docs/E2E-LOCATORS.md. Both are deliberate — and both mean a silent edit to
  * either locale file would ship unnoticed. This file is the only assertion that

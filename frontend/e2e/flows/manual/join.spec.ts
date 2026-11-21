@@ -43,7 +43,7 @@ import { pricingCopyValues } from "../../../lib/pricing";
  *           expectation in the doc, not a bug in the page — recorded in
  *           docs/qa/conversion-progress.md.
  * Related:  frontend/__tests__/BusinessCtaLink.test.jsx (the auth-state CTA
- *           swap, vitest), frontend/__tests__/RegisterProducerClient.test.jsx:228
+ *           swap, vitest), frontend/__tests__/RegisterProducerClient-01.test.jsx:232
  *           (the pre-flight screen item 6 lands on), docs/qa/conversion-page-map.md.
  * History:  MEH-1249 chunk 2 (creation, 04/09). MEH-2799 (v2): FAQ case
  *           follows the new section; item 8 moved to vitest (the slot is gone);
@@ -287,7 +287,7 @@ test.describe("manual › /join (MEH-995)", () => {
     await gotoJoin(page);
     await scope(page).getByTestId("join-cta").click();
     await page.waitForURL(/\/register\/producer(?:[/?#]|$)/);
-    // The pre-flight screen itself is covered by RegisterProducerClient.test.jsx;
+    // The pre-flight screen itself is covered by RegisterProducerClient-01/-02.test.jsx;
     // here it is only the landing marker — proof the navigation reached the wizard.
     await expect(scope(page).getByTestId("register-preflight-start")).toBeVisible(FIRST_PAINT);
   });

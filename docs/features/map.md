@@ -19,7 +19,7 @@
 
 **טסטים**
 * `frontend/e2e/flows/05-map-navigation.spec.ts` · `frontend/e2e/flows/15-map-markers.spec.ts`
-* `frontend/e2e/flows/manual/map.spec.ts` — כולל המקרה של MEH-2776 (פקד אחד, שתי מעטפות).
+* `frontend/e2e/flows/manual/map-01.spec.ts` · `frontend/e2e/flows/manual/map-02.spec.ts` (fixtures and `tapMarker`: `frontend/e2e/flows/manual/_map-shared.ts`) — כולל המקרה של MEH-2776, ב-`frontend/e2e/flows/manual/map-02.spec.ts` (פקד אחד, שתי מעטפות).
 * `frontend/e2e/flows/manual/map-back-restore.spec.ts` · `frontend/e2e/flows/manual/map-banner-controls.spec.ts`
 * `frontend/e2e/flows/07-gps-button.spec.ts` · `frontend/e2e/flows/43-minimap-buttons-over-tiles.spec.ts`
 * `frontend/__tests__/MiniMap.test.jsx` — כולל MEH-3509 (המסך המלא מכסה את החלון הנראה).

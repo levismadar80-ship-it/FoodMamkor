@@ -642,7 +642,7 @@ test.describe("Visual parity — MEH-991", () => {
     await page.goto("/");
     // MEH-3209: scoped to #main-content. During the page-transition window a
     // second copy of the page tree exists briefly OUTSIDE the landmark (the
-    // MEH-1792 shape, home.spec.ts:199-207), and a page-wide locator then
+    // MEH-1792 shape, _home-shared.ts:201-209), and a page-wide locator then
     // resolved to two bands, one aria-busy (run 43628535416). Not `.first()`:
     // a real permanent double-mount inside the landmark must still fail.
     const main = page.locator("#main-content");

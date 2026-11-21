@@ -83,7 +83,8 @@ const areas = (n) =>
   Array.from({ length: n }, (_, i) => ({
     id: i + 1,
     city: `עיר ${String(i + 1).padStart(2, "0")}`,
-    min_order: 100,
+    // MEH-3511: distinct terms, so each town is its own row.
+    min_order: 101 + i,
     delivery_day: "שישי",
   }));
 

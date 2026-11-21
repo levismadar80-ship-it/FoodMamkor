@@ -12,7 +12,7 @@ from typing import Any
 import pytest
 
 from app.routers import producers as producers_router
-from app.routers import rescue as rescue_router
+from app.services import rescue_reads  # MEH-3541: the list moved here
 from app.utils.pii import round_coord
 from tests.test_rescue import _seed_offer, rescue_on, shop  # noqa: F401 — fixtures
 
@@ -49,13 +49,13 @@ def test_rescue_offers_measure_from_the_rounded_point(
     location = shop["location"]
     _seed_offer(db, location)
     seen: list[tuple[float, float]] = []
-    real = rescue_router._haversine_km
+    real = rescue_reads.haversine_km
 
     def spy(lat1, lng1, lat2, lng2):
         seen.append((lat1, lng1))
         return real(lat1, lng1, lat2, lng2)
 
-    monkeypatch.setattr(rescue_router, "_haversine_km", spy)
+    monkeypatch.setattr(rescue_reads, "haversine_km", spy)
     r = client.get("/rescue/offers", params={"lat": 32.085312, "lng": 34.781799})
     assert r.status_code == 200
     assert seen, "the offer was not measured — the test proves nothing"

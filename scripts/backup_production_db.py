@@ -21,11 +21,23 @@ Required env (already set in Railway production for MEH-408 Phase 2):
                         (used as filename prefix so dumps from different
                         environments cannot be confused)
 
+Optional env:
+  SENTRY_DSN            same value as the backend service. When set, every
+                        run sends a Sentry Crons check-in (in_progress, then
+                        ok or error) to the monitor `production-db-backup`.
+                        A run that never checks in is reported by Sentry as
+                        missed, so an unset DSN, a crashed container and a
+                        cron that stopped firing all alert (MEH-3533) — once
+                        the monitor has a Crons seat. A failed run also sends
+                        an error event, which the project's issue alerts pick
+                        up on any plan.
+
 Exit codes:
   0 — pg_dump succeeded AND R2 upload succeeded
   1 — pg_dump failed (output preserved in tempdir for inspection)
   2 — R2 upload failed (dump preserved)
   3 — config error (missing env var, ENV not set, etc.)
+  4 — unexpected error (traceback in the log; still reported to Sentry)
 
 Filename format:
   mehamakor_${ENV}_${UTC ISO 8601}.dump
@@ -44,11 +56,15 @@ Skeptic flags:
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import subprocess
 import sys
 import tempfile
+import urllib.parse
+import urllib.request
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -57,6 +73,7 @@ EXIT_OK = 0
 EXIT_PG_DUMP_FAILED = 1
 EXIT_UPLOAD_FAILED = 2
 EXIT_CONFIG_ERROR = 3
+EXIT_UNEXPECTED = 4
 
 # pg_dump timeout, in seconds. ~50MB DB completes in single-digit
 # seconds; 600s is generous safety margin for growth + slow networks.
@@ -82,6 +99,104 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 log = logging.getLogger("meh408.backup")
+
+
+# Sentry Crons monitor slug (created in Sentry: schedule 0 23 * * * UTC).
+CHECKIN_MONITOR_SLUG = "production-db-backup"
+CHECKIN_TIMEOUT_SEC = 10
+
+
+def checkin_url(dsn: str, status: str, slug: str = CHECKIN_MONITOR_SLUG) -> str | None:
+    """Build Sentry's HTTP check-in URL from a DSN, or None for a bad DSN.
+
+    DSN shape: https://<public_key>@<host>/<project_id>
+    URL shape: https://<host>/api/<project_id>/cron/<slug>/<public_key>/?status=<status>
+    (Sentry docs, Crons → HTTP check-ins). stdlib only: the cron image
+    installs boto3 and nothing else.
+    """
+    try:
+        parts = urllib.parse.urlsplit(dsn.strip())
+        key = parts.username
+        project_id = parts.path.strip("/").rsplit("/", 1)[-1]
+        if not (parts.scheme in ("http", "https") and parts.hostname and key and project_id.isdigit()):
+            return None
+        host = parts.hostname + (f":{parts.port}" if parts.port else "")
+    except ValueError:
+        return None
+    query = urllib.parse.urlencode({"status": status})
+    return f"{parts.scheme}://{host}/api/{project_id}/cron/{slug}/{key}/?{query}"
+
+
+def send_checkin(status: str) -> bool:
+    """Send one check-in. Never raises: a monitoring failure must not fail the backup."""
+    dsn = os.environ.get("SENTRY_DSN", "")
+    if not dsn:
+        log.warning("SENTRY_DSN not set: no check-in sent (Sentry will report the run as missed)")
+        return False
+    url = checkin_url(dsn, status)
+    if url is None:
+        log.warning("SENTRY_DSN is malformed: no check-in sent")
+        return False
+    try:
+        with urllib.request.urlopen(url, timeout=CHECKIN_TIMEOUT_SEC) as resp:
+            ok = 200 <= resp.status < 300
+    except Exception as exc:  # noqa: BLE001 — monitoring is best-effort by design
+        log.warning("Sentry check-in (%s) failed: %s", status, exc)
+        return False
+    if not ok:
+        log.warning("Sentry check-in (%s) returned HTTP %s", status, resp.status)
+    return ok
+
+
+def send_failure_event(code: int) -> bool:
+    """Report a failed run as a Sentry error event (envelope API).
+
+    Independent of the cron monitor: a monitor needs a Crons seat, an error
+    event reaches the project's existing issue alerts on any plan. Never raises.
+    """
+    dsn = os.environ.get("SENTRY_DSN", "")
+    parts = urllib.parse.urlsplit(dsn.strip()) if dsn else None
+    if not parts or checkin_url(dsn, "error") is None:
+        return False
+    key = parts.username
+    project_id = parts.path.strip("/").rsplit("/", 1)[-1]
+    host = parts.hostname + (f":{parts.port}" if parts.port else "")
+    url = f"{parts.scheme}://{host}/api/{project_id}/envelope/"
+    event_id = uuid.uuid4().hex
+    now = datetime.now(timezone.utc).isoformat()
+    event = {
+        "event_id": event_id,
+        "timestamp": now,
+        "level": "error",
+        "platform": "python",
+        "logger": "meh408.backup",
+        "environment": os.environ.get("ENV") or "unknown",
+        "message": {"formatted": f"Production DB backup FAILED (exit {code})"},
+        "fingerprint": ["production-db-backup-failed", str(code)],
+        "tags": {"job": CHECKIN_MONITOR_SLUG, "exit_code": str(code)},
+    }
+    body = "\n".join(
+        [
+            json.dumps({"event_id": event_id, "sent_at": now}),
+            json.dumps({"type": "event"}),
+            json.dumps(event),
+        ]
+    ).encode()
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": "application/x-sentry-envelope",
+            "X-Sentry-Auth": f"Sentry sentry_version=7, sentry_key={key}, sentry_client=mehamakor-backup/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=CHECKIN_TIMEOUT_SEC) as resp:
+            return 200 <= resp.status < 300
+    except Exception as exc:  # noqa: BLE001 — monitoring is best-effort by design
+        log.warning("Sentry failure event failed: %s", exc)
+        return False
 
 
 def load_config() -> dict[str, str] | None:
@@ -163,6 +278,21 @@ def upload_to_r2(local_path: Path, filename: str, cfg: dict[str, str]) -> bool:
 
 
 def main() -> int:
+    send_checkin("in_progress")
+    try:
+        code = run_backup()
+    except Exception:
+        # An unexpected raise (tempdir, stat, a non-boto error) must still
+        # report: log it, and exit with a code no handled failure uses.
+        log.exception("Backup FAILED with an unexpected error")
+        code = EXIT_UNEXPECTED
+    send_checkin("ok" if code == EXIT_OK else "error")
+    if code != EXIT_OK:
+        send_failure_event(code)
+    return code
+
+
+def run_backup() -> int:
     cfg = load_config()
     if cfg is None:
         return EXIT_CONFIG_ERROR

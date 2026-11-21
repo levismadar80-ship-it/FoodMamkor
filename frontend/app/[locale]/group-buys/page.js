@@ -4,6 +4,7 @@ import GroupBuysClient from "./GroupBuysClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
+import { serverFirstJson } from "@/lib/server-first-json";
 
 // MEH-740: static metadata → generateMetadata so og:url can be per-locale self.
 // MEH-475 Wave 6: metadata strings → seo.group_buys.* (was hardcoded HE) +
@@ -34,6 +35,15 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function GroupBuysPage() {
-  return <GroupBuysClient />;
+// MEH-2233: the first list (status «open», no city) and its tab counts are
+// read on the server, so the first HTML holds the cards. Before, the list
+// waited for the JS bundle and a client request: the LCP landed at ~6.2s on a
+// phone (staging 20/11, slow 4G + CPU x4). null = the client fetches, as before.
+export default async function GroupBuysPage() {
+  const [initialItems, initialCounts] = await Promise.all([
+    // Every row an object with an id: a malformed row must not break the server render.
+    serverFirstJson("/group-buys?status=open", (j) => Array.isArray(j) && j.every((x) => !!x && typeof x === "object" && "id" in x)),
+    serverFirstJson("/group-buys/counts", (j) => !!j && typeof j === "object" && !Array.isArray(j)),
+  ]);
+  return <GroupBuysClient initialItems={initialItems} initialCounts={initialCounts} />;
 }

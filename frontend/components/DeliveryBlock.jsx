@@ -13,7 +13,10 @@ import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
 import PickupSchedule from "@/components/PickupSchedule"; // MEH-3512
-import { daysOfRow } from "@/lib/nextDelivery";
+import DeliveryTerms from "@/components/DeliveryTerms"; // MEH-3511
+import NationwideZones from "@/components/NationwideZones"; // MEH-3511
+import AreaTermsRow, { LIST_CARD } from "@/components/AreaTermsRow"; // MEH-3511
+import { cutoffOfRow, daysOfRow, sharedCutoff } from "@/lib/nextDelivery";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
@@ -24,8 +27,6 @@ import FactLine from "@/components/ui/FactLine";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
-const LIST_CARD =
-  "divide-y divide-border rounded-lg border border-border bg-surface-card overflow-hidden";
 // MEH-2592 C: the 44px logo circles (Waze, Google Maps) on each pickup stop.
 const NAV_CIRCLE =
   "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary";
@@ -71,64 +72,6 @@ const WEEKDAY_SHORT_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
  * single primary "שליחת הודעה" CTA.
  */
 
-// One editorial area row: city ↔ minimum only (the day is hoisted/grouped, so
-// it is intentionally no longer repeated per row — MEH-1305 A).
-//
-// MEH-1772 chunk 3: `fee` is the row's EFFECTIVE per-area delivery fee, and is
-// non-null ONLY when fees actually vary across the producer's areas (see
-// feeVaries below). When they don't, every row would print the same number the
-// top line already states, so the caller passes null and this renders exactly
-// the markup it rendered before this ticket — the "uniform → byte-identical"
-// half of the acceptance criteria is enforced here, by the null, not by a
-// separate branch further up.
-//
-// `fee != null` and not `fee ?` for the same reason the producer-level line
-// uses explicit null gates (MEH-1577): 0 is a VALUE ("משלוח חינם"), and a
-// truthiness test would silently render the free case as "no fee stated".
-function AreaRow({ da, t, fee = null }) {
-  const feeLabel =
-    fee === 0 ? null : splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL }));
-  const freeAbove = splitAroundAmount(t("free_above", { amount: AMOUNT_SENTINEL }));
-  return (
-    <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
-      <span className="font-medium text-text">{da.city}</span>
-      <span className="flex items-center gap-2">
-        {fee != null ? (
-          <span className="text-fg-muted" data-testid="area-fee">
-            {/* bdi, not dir="ltr": the amount sits INSIDE a Hebrew sentence
-                here (unlike min_order below, which is its own phrase), so
-                isolating the whole span would reorder the Hebrew around it. */}
-            {feeLabel ? (
-              <>
-                {feeLabel.before}
-                <bdi>{formatPrice(fee)}</bdi>
-                {feeLabel.after}
-              </>
-            ) : (
-              t("fee_free")
-            )}
-          </span>
-        ) : null}
-        {/* MEH-3484: the city's zone threshold, only when it differs from the
-            business's own (which the top line already states). */}
-        {typeof da.free_delivery_above === "number" && fee !== 0 ? (
-          <span className="text-fg-muted" data-testid="area-free-above">
-            {freeAbove.before}
-            <bdi>{formatPrice(da.free_delivery_above)}</bdi>
-            {freeAbove.after}
-          </span>
-        ) : null}
-        {da.min_order ? (
-          <span className="text-fg-muted">
-            {/* MEH-1168 P1 (bidi): isolate the ₪ amount so RTL keeps "150₪". */}
-            {t("min_order")} <span dir="ltr">{formatPrice(da.min_order)}</span>
-          </span>
-        ) : null}
-      </span>
-    </li>
-  );
-}
-
 // MEH-1903: preview cap for the MEH-1305 editorial area rows, which rendered
 // every area unbounded in all three modes. Same progressive-disclosure idiom
 // already proven twice in this file — CompactCities (CITY_PREVIEW_LIMIT, :125)
@@ -139,6 +82,8 @@ function AreaRow({ da, t, fee = null }) {
 // row here carries min_order and (under MEH-1772 variance) a per-area fee,
 // while a compact entry is a bare middot-separated name.
 const AREA_PREVIEW_LIMIT = 6;
+// Up to this many drawn rows the list stays open even beside the checker.
+const LIST_COLLAPSE_FROM = 2;
 
 // MEH-1903: the area section's show-more/less control. Anatomy is copied from
 // CompactCities' toggle verbatim — same Phosphor carets, same aria-expanded and
@@ -178,14 +123,31 @@ function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
 // the caller contract guarantees the section's own rows are non-empty. Neither
 // alone is sufficient — a caller that passed an empty section would put an
 // empty one straight through.
-function capSections(sections, limit) {
+/**
+ * Rows that share the same terms, in first-seen order — each is ONE drawn row
+ * (AreaTermsRow). Sapir 20/11: towns with the same terms are one row.
+ * @param {any[]} rows @param {(da: any) => string} keyOf @returns {any[][]}
+ */
+function bucketRows(rows, keyOf) {
+  /** @type {Map<string, any[]>} */
+  const buckets = new Map();
+  for (const da of rows) {
+    const key = keyOf(da);
+    buckets.set(key, [...(buckets.get(key) || []), da]);
+  }
+  return [...buckets.values()];
+}
+
+/** @param {any[]} sections @param {number} limit @param {(da: any) => string} keyOf */
+function capSections(sections, limit, keyOf) {
   let budget = limit;
   const visible = [];
   for (const section of sections) {
     if (budget <= 0) break;
-    const rows = section.rows.slice(0, budget);
-    visible.push({ ...section, rows });
-    budget -= rows.length;
+    // A drawn row is a bucket of towns, never cut in half.
+    const buckets = bucketRows(section.rows, keyOf).slice(0, budget);
+    visible.push({ ...section, rows: buckets.flat() });
+    budget -= buckets.length;
   }
   return visible;
 }
@@ -202,24 +164,63 @@ function capSections(sections, limit) {
  *   feeOf?: (da: object) => number | null,
  *   days?: string[] | null,
  *   producer?: object | null,
+ *   keyOf: (da: object) => string,
  * }} props
  */
-function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer = null }) {
+function AreaGroup({ label, rows, t, feeOf = () => null, days = null, producer = null, keyOf }) {
   return (
     <div>
       {/* MEH-2592 C: the day reads as a small gold heading. MEH-3028: text
           only — the truck now leads the fee line once, instead of repeating
           on every day (Sapir, option א, 13/11). */}
-      <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
-      {/* MEH-3485: the date of the next run, under its day heading. */}
-      <NextDeliveryLine days={days} producer={producer} className="-mt-1 mb-1.5" />
-      <ul className={LIST_CARD}>
-        {rows.map((da) => (
-          <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
-        ))}
-      </ul>
+      {/* MEH-3485: the date of the next run. Sapir 20/11 («עמוס»): on the
+          heading's row, at its far end, instead of a line of its own. */}
+      <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3">
+        <p className="text-sm font-bold text-gold-deep">{label}</p>
+        {groupNext(rows, days, producer, "", "text-xs text-fg-muted")}
+      </div>
+      <AreaList rows={rows} feeOf={feeOf} days={days} producer={producer} keyOf={keyOf} />
     </div>
   );
+}
+
+/**
+ * The rows of one day set (a group, or the hoisted single day).
+ * @param {{ rows: any[], feeOf: (da: any) => number | null,
+ *   days: string[] | null, producer: any, allRows?: any[],
+ *   keyOf: (da: any) => string }} props
+ */
+function AreaList({ rows, feeOf, days, producer, allRows = rows, keyOf }) {
+  const shared = sharedCutoff(allRows);
+  return (
+    <ul className={LIST_CARD}>
+      {bucketRows(rows, keyOf).map((bucket) => (
+        <AreaTermsRow
+          key={bucket[0].id ?? bucket[0].city}
+          rows={bucket}
+          fee={feeOf(bucket[0])}
+          next={
+            !shared && cutoffOfRow(bucket[0]) ? (
+              <NextDeliveryLine days={days} producer={producer} cutoff={cutoffOfRow(bucket[0])} textClass="text-xs text-fg-muted" />
+            ) : null
+          }
+        />
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The group's «המשלוח הבא» line: the shared cutoff when the rows share one;
+ * else the business window, shown only while some row has no cutoff of its
+ * own (those rows then state their own date).
+ * @param {any[]} rows @param {string[] | null} days @param {any} producer
+ * @param {string} [className]
+ */
+function groupNext(rows, days, producer, className = "-mt-1 mb-1.5", textClass = undefined) {
+  const shared = sharedCutoff(rows);
+  if (!shared && rows.every((da) => cutoffOfRow(da))) return null;
+  return <NextDeliveryLine days={days} producer={producer} cutoff={shared} className={className} textClass={textClass} />;
 }
 
 // MEH-1435: when every area carries a city name ONLY (no min_order, no
@@ -293,17 +294,25 @@ function PickupRow({ loc, t, tMap, producer = null }) {
   return (
     <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
       <div className="min-w-0">
-        <p className="font-medium text-text">{heading}</p>
-        {/* city as a subline only when a distinct label already owns the top line */}
-        {loc.city && loc.label && <p className="text-sm text-fg-muted">{loc.city}</p>}
-        {/* MEH-2604: time ranges isolated LTR — raw «16:00–19:00» read «19:00–16:00» here. */}
-        {loc.opening_hours && (
-          <p className="text-sm text-fg-muted">
-            <HoursText text={loc.opening_hours} />
-          </p>
-        )}
-        {/* MEH-3512: pickup days + own cutoff + next pickup, from fields. */}
-        <PickupSchedule loc={loc} producer={producer} />
+        {/* Sapir 20/11 («עמוס»): the city joins the name's line, muted, only
+            when a distinct label owns it. */}
+        <p className="font-medium text-text">
+          {heading}
+          {loc.city && loc.label && (
+            <span className="font-normal text-fg-muted" data-testid="pickup-city">
+              {" · "}
+              {loc.city}
+            </span>
+          )}
+        </p>
+        {/* MEH-3512: hours, pickup days and own cutoff on one line, then the
+            next pickup. MEH-2604: the hours stay isolated LTR (HoursText). */}
+        <PickupSchedule
+          loc={loc}
+          producer={producer}
+          hours={loc.opening_hours ? <HoursText text={loc.opening_hours} /> : null}
+          hoursText={loc.opening_hours || ""}
+        />
         {/* MEH-2477: the stand's own number (LocationsEditor), tap-to-call —
             the click-to-call MEH-1509 served the field for. The number is its
             own label (as on a Google Maps place card); dir=ltr keeps
@@ -425,7 +434,7 @@ function PickupRows({ locations, t, tMap, producer = null }) {
 // Returns an array of {before, amount, after} segments rather than a string, so
 // each ₪ amount can be rendered inside <bdi> — the HTML-native bidi isolate.
 //
-// Same intent as AreaRow's `<span dir="ltr">{formatPrice(...)}</span>` above
+// Same intent as AreaTermsRow's `<span dir="ltr">{formatPrice(...)}</span>` above
 // (MEH-1168 P1: RTL otherwise reorders "35₪"), but the amount here sits INSIDE a
 // Hebrew sentence, so dir="ltr" on the whole line would reorder the Hebrew
 // around it. <bdi> isolates the number alone and leaves the sentence RTL.
@@ -496,6 +505,11 @@ export default function DeliveryBlock({
   // the TOTAL row count across modes, so a per-group state would be a different
   // feature (and is explicitly out of scope).
   const [areasExpanded, setAreasExpanded] = useState(false);
+  // Sapir 20/11 («מרגיש שיש מלא מידע»): when the checker can answer «מגיעים
+  // אליי?», the per-town list is detail on demand — summary first, the list
+  // behind one button (Shopify's pickup pattern: one summary, details in a
+  // drawer). Not a search box: every town is one tap away (MEH-1435).
+  const [listOpen, setListOpen] = useState(false);
   const hasAreas = areas.length > 0;
   // MEH-1646 (a): non-null ONLY when order_window has exactly one open day —
   // the one unambiguous "מקבלים הזמנות עד" case. Clock-free → SSR-safe.
@@ -531,15 +545,29 @@ export default function DeliveryBlock({
   const feeByKey = new Map(
     areas.map((da) => [da.id ?? da.city, da.delivery_fee ?? producerFee]),
   );
-  // null unless fees vary → AreaRow renders exactly as it did pre-ticket.
+  // null unless fees vary → AreaTermsRow renders exactly as it did pre-ticket.
   // `?? null` (not `||`) so a resolved 0 survives as "משלוח חינם".
   const feeOf = (da) => (feeVaries ? (feeByKey.get(da.id ?? da.city) ?? null) : null);
+  // Sapir 20/11: towns whose terms are identical are drawn as ONE row.
+  const keyOf = (da) =>
+    JSON.stringify([
+      feeOf(da),
+      da.min_order || null,
+      typeof da.free_delivery_above === "number" ? da.free_delivery_above : null,
+      da.delivery_days_min ?? null,
+      da.delivery_days_max ?? null,
+      da.order_cutoff_day ?? null,
+      da.order_cutoff_time ?? null,
+      da.zone_name ?? null,
+    ]);
   // MEH-1577: null when the owner stated neither value → no line renders.
   // MEH-2602: the top line reads the shared resolver, so the card and this
   // block can never state two different prices. (It also fixes the uniform
   // case: every area overriding to the same 20₪ used to print the producer's
   // 25₪ here.)
-  const topFee = resolveDeliveryFee(producerFee, areas);
+  // MEH-3511: a nationwide business's only rows are zones on other terms —
+  // the top line states «כל הארץ», so the zones never turn it into «מ-X».
+  const topFee = resolveDeliveryFee(producerFee, nationwide ? [] : areas);
   const feeSegments = buildFeeSegments(topFee.fee, producer?.free_delivery_above, t, {
     from: topFee.from,
   });
@@ -601,16 +629,23 @@ export default function DeliveryBlock({
               : []),
           ]
         : [{ key: "bucket:rows", label: null, rows: grouped.rows }];
-  const areaRowCount = areaSections.reduce((n, s) => n + s.rows.length, 0);
+  const areaRowCount = areaSections.reduce((n, s) => n + bucketRows(s.rows, keyOf).length, 0);
   const areasOverLimit = areaRowCount > AREA_PREVIEW_LIMIT;
-  const areasHiddenCount = areaRowCount - AREA_PREVIEW_LIMIT;
   // At or under the cap this is the identity, so the markup is byte-identical
   // to the pre-ticket render — the "≤6 rows changes nothing" criterion is
   // enforced here, by the pass-through, not by a separate branch below.
-  const showAllAreas = areasExpanded || !areasOverLimit;
+  const listCollapsible =
+    !!grouped &&
+    !nationwide &&
+    areaRowCount > LIST_COLLAPSE_FROM &&
+    isDeliveryCheckerUsable({ offersDelivery: !!producer?.offers_delivery, nationwide, excluded, areas });
+  const showAllAreas = areasExpanded || !areasOverLimit || listCollapsible;
   const visibleSections = showAllAreas
     ? areaSections
-    : capSections(areaSections, AREA_PREVIEW_LIMIT);
+    : capSections(areaSections, AREA_PREVIEW_LIMIT, keyOf);
+  // Towns, not drawn rows: «הצגת עוד N אזורי משלוח» counts the towns it hides.
+  const townCount = (list) => list.reduce((n, s) => n + s.rows.length, 0);
+  const areasHiddenCount = townCount(areaSections) - townCount(capSections(areaSections, AREA_PREVIEW_LIMIT, keyOf));
   // hoist/flat read the single section's rows back out. Explicitly empty in
   // group mode: `visibleSections[0]` is the first DAY GROUP there, so an
   // unguarded read would hand a group's rows to a branch that renders them
@@ -618,7 +653,7 @@ export default function DeliveryBlock({
   // cannot fire today — the guard is here so that stays true if one moves.
   const visibleAreaRows =
     grouped?.mode === "group" ? [] : (visibleSections[0]?.rows ?? []);
-  const areaToggle = areasOverLimit ? (
+  const areaToggle = areasOverLimit && !listCollapsible ? (
     <AreaToggle
       expanded={areasExpanded}
       onToggle={() => setAreasExpanded((v) => !v)}
@@ -654,7 +689,7 @@ export default function DeliveryBlock({
           "what does delivery cost", not "where do they go" (Baymard: surprise
           costs are the #1 abandonment driver). Absent from the DOM entirely
           when the owner has stated neither value. The ₪ amounts are bidi-
-          isolated for the same reason AreaRow's min_order is (MEH-1168 P1):
+          isolated for the same reason AreaTermsRow's min_order is (MEH-1168 P1):
           RTL otherwise reorders "35₪". */}
       {feeSegments && (
         <FactLine icon={Truck} className="text-sm text-text mb-4" data-testid="delivery-fee-line">
@@ -670,6 +705,15 @@ export default function DeliveryBlock({
           </span>
         </FactLine>
       )}
+      {/* MEH-3511: business-wide delivery time and order minimum. */}
+      <DeliveryTerms
+        daysMin={producer?.delivery_days_min}
+        daysMax={producer?.delivery_days_max}
+        minOrder={producer?.delivery_min_order}
+        // One «·» line, not a stack (Sapir 20/11).
+        className="-mt-2 mb-4 flex flex-wrap gap-x-1.5 text-sm text-fg-muted [&>*:not(:last-child)]:after:ms-1.5 [&>*:not(:last-child)]:after:content-['·']"
+        testid="delivery-business-terms"
+      />
 
       {nationwide ? (
         <>
@@ -694,9 +738,20 @@ export default function DeliveryBlock({
                 <WhatsAppUpdatesPill producer={producer} />
               </div>
             )}
+          {/* MEH-3511: areas on other terms («גוש דן, אקספרס»). */}
+          <NationwideZones areas={areas} producer={producer} />
         </>
       ) : bare ? (
         <CompactCities areas={areas} t={t} />
+      ) : listCollapsible && !listOpen ? (
+        <ShowMore
+          size="inline"
+          className="mb-4"
+          onClick={() => setListOpen(true)}
+          expanded={false}
+          data-testid="delivery-list-toggle"
+          label={t("show_area_list", { count: areas.length })}
+        />
       ) : hasAreas ? (
         <div className="mb-4">
           {/* MEH-1305 A — dispatch-day pivot. hoist: one shared day stated once
@@ -722,28 +777,30 @@ export default function DeliveryBlock({
                   : t("dispatch_days", { day: grouped.day })}
               </FactLine>
               {/* MEH-3485: one shared day set → one next-run date. */}
-              <NextDeliveryLine
+              {groupNext(grouped.rows, daysOfRow(grouped.rows[0]), producer, "-mt-1 mb-2")}
+              {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
+              <AreaList
+                rows={visibleAreaRows}
+                allRows={grouped.rows}
+                feeOf={feeOf}
                 days={daysOfRow(grouped.rows[0])}
                 producer={producer}
-                className="-mt-1 mb-2"
+                keyOf={keyOf}
               />
-              {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
-              <ul className={LIST_CARD}>
-                {visibleAreaRows.map((da) => (
-                  <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
-                ))}
-              </ul>
               {areaToggle}
             </>
           )}
 
           {grouped.mode === "flat" && (
             <>
-              <ul className={LIST_CARD}>
-                {visibleAreaRows.map((da) => (
-                  <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
-                ))}
-              </ul>
+              <AreaList
+                rows={visibleAreaRows}
+                allRows={grouped.rows}
+                feeOf={feeOf}
+                days={null}
+                producer={producer}
+                keyOf={keyOf}
+              />
               {areaToggle}
             </>
           )}
@@ -773,10 +830,20 @@ export default function DeliveryBlock({
                   feeOf={feeOf}
                   days={s.days ?? null}
                   producer={producer}
+                  keyOf={keyOf}
                 />
               ))}
               {areaToggle}
             </div>
+          )}
+          {listCollapsible && (
+            <ShowMore
+              size="inline"
+              onClick={() => setListOpen(false)}
+              expanded
+              data-testid="delivery-list-toggle"
+              label={t("show_less")}
+            />
           )}
         </div>
       ) : producer?.offers_delivery === false ? null : (

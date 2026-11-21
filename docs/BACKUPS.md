@@ -186,3 +186,15 @@ drill שלא תועד = drill שלא קרה. רשמי תאריך + תוצאה כ
 - [docs/MIGRATIONS.md](./MIGRATIONS.md) — Alembic, rollback, ה-CI drift gate + `EXPECTED_TABLES`
 - [MEH-265](https://linear.app/mehamakor/issue/MEH-265) — post-mortem schema/data drift (הרציונל)
 - [MEH-1263](https://linear.app/mehamakor/issue/MEH-1263) / [MEH-1349](https://linear.app/mehamakor/issue/MEH-1349) — data drift ב-staging (ה-evidence)
+
+---
+
+## ניטור הגיבוי הלילי ב-Sentry (MEH-3533)
+
+כל ריצה של `scripts/backup_production_db.py` מדווחת ל-Sentry:
+
+* **Crons check-in** למוניטור `production-db-backup` (‏`0 23 * * *` UTC, מרווח 60 דקות): ריצה שנכשלה, נתקעה או לא קרתה בכלל פותחת issue. המוניטור צריך מקום פנוי ב-Crons של Sentry; בלי מקום פנוי הוא מוצג כ«disabled» ומתעלם מה-check-ins.
+* **אירוע שגיאה** בכל ריצה שנכשלה (exit 1/2/3), שמגיע להתראות ה-issues הקיימות של הפרויקט, בכל תוכנית.
+
+תנאי: משתנה הסביבה `SENTRY_DSN` מוגדר בשירות `backup-cron` ב-Railway (אותו ערך כמו בשירות ה-backend). בלעדיו הגיבוי רץ כרגיל ושום דבר לא נשלח.
+

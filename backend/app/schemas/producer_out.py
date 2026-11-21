@@ -239,6 +239,11 @@ class ProducerListOut(BaseModel):
     # owner dashboard prefill read the same value).
     delivery_fee: int | None = None
     free_delivery_above: int | None = None
+    # MEH-3511: business-wide delivery time (business days) and order minimum.
+    # NULL = not stated → nothing renders. A zone's own values win per city.
+    delivery_days_min: int | None = None
+    delivery_days_max: int | None = None
+    delivery_min_order: int | None = None
     # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
     # market_stand). selectinload'd on both LIST branches + the DETAIL query
     # (producer_listing.py + producers.py) so from_attributes reads the loaded
@@ -374,7 +379,7 @@ class ProducerListOut(BaseModel):
         there is no such row or its pin is cleared. Inherited by
         ProducerDetailOut → ProducerAdminOut / ProducerOwnerOut, so the list,
         the business page, the admin form and the owner dashboard read ONE
-        answer. Same rule as admin_extra._primary_location_points (5a.2).
+        answer. Same rule as admin_dashboard.primary_location_points (5a.2).
 
         DO NOT fall back to the column value here "for producers without a
         row": that population is empty on every environment (7c1e2a9f4b3d,

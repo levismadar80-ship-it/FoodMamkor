@@ -22,6 +22,7 @@ import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { HUB_GROUPS, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
+import { useMyOrdersNavGate } from "@/lib/use-my-orders-nav-gate"; // MEH-3525
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
 import Avatar from "@/components/ui/Avatar";
@@ -52,6 +53,7 @@ const HEADER_MENU_ORDER = [
   "producerDashboard",
   "producerPublicPage",
   "favorites",
+  "myOrders",
   "settings",
   "admin",
 ];
@@ -686,6 +688,7 @@ const MENU_ARROW_DELTA = { ArrowDown: 1, ArrowUp: -1 };
 
 function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
+  const ordersOn = useMyOrdersNavGate(user);
 
   // MEH-1226: align with the "profile = public page, settings = config"
   // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
@@ -712,6 +715,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
       ({ item }) =>
         item.dataGate !== "producer-id-present" || Boolean(user.producer_id),
     )
+    .filter(({ item }) => item.dataGate !== "orders-on" || ordersOn)
     .map(({ item, surface }) => ({
       // MEH-3024: an unapproved business's /producer/<id> is a real 404, so
       // its owner's «צפייה בדף» goes to the dashboard preview — the same rule

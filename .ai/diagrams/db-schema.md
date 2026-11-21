@@ -78,7 +78,7 @@ erDiagram
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
         json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
-        json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above}] ≤20"
+        json delivery_zones "nullable JSONB — MEH-3484, migration f2c6a8e4b0d7; [{name, delivery_days, min_order, delivery_fee, free_delivery_above, + MEH-3511 delivery_days_min/max, order_cutoff_day/time}] ≤20; nationwide may hold zones since MEH-3511"
         string plan "free|premium"
         boolean grass_fed
         boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
@@ -122,6 +122,9 @@ erDiagram
         integer established_year "nullable — MEH-1541, self-reported founding year; app-validated 1800..current year; public 'מאז {שנה}' masthead line (NULL = absent from DOM)"
         integer delivery_fee "nullable — MEH-1577, whole shekels; 0 is a VALUE (משלוח חינם), NULL = not stated; INTEGER to match delivery_areas.min_order, app-validated >= 0, no DB CHECK"
         integer free_delivery_above "nullable — MEH-1577, whole shekels; app-validated > 0 (0 rejected — unlike delivery_fee); independent of delivery_fee, renders alone"
+        int delivery_days_min "nullable smallint — MEH-3511, business days 1..30, the business default"
+        int delivery_days_max "nullable smallint — MEH-3511, business days 1..30, >= min"
+        integer delivery_min_order "nullable — MEH-3511, business-wide minimum for delivery; a city's min_order wins"
         string referral_source "nullable — MEH-1471, VARCHAR(40); self-reported attribution English key (admin-only, ProducerAdminOut)"
         string referral_source_other "nullable — MEH-1471, VARCHAR(120); free-text 'other' answer, bleach-sanitised"
         timestamp email_pending_nudge_sent_at "nullable — MEH-1818, tz-aware; day-1 pending-nudge stamp. NULL = not yet nudged. Stamped even when nothing was missing (no email sent), which is what holds the send to exactly once"
@@ -303,6 +306,10 @@ erDiagram
         string zone_name "nullable — MEH-3484, a name in producers.delivery_zones"
         string delivery_days "nullable varchar[] — MEH-3484; NULL = read delivery_day"
         int free_delivery_above "nullable — MEH-3484, the zone threshold; NULL = the business one"
+        int delivery_days_min "nullable — MEH-3511, copied from the zone"
+        int delivery_days_max "nullable — MEH-3511, copied from the zone"
+        string order_cutoff_day "nullable — MEH-3511, the zone's own cutoff day; NULL = order_window"
+        string order_cutoff_time "nullable — MEH-3511, HH:MM, with order_cutoff_day"
     }
 
     producer_offers {

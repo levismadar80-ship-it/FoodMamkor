@@ -31,7 +31,7 @@ import path from "node:path";
 //
 // WHAT THIS DOES NOT DO
 //   It does not measure rendered geometry — that is a browser job, and it lives
-//   in frontend/e2e/qa-meh1682-tooltip-rtl.mjs, which hovers a real pin and
+//   in frontend/e2e/_qa-archive/qa-meh1682-tooltip-rtl.mjs, which hovers a real pin and
 //   asserts the tooltip's rect against the pin's. This file pins only the
 //   dependency premise plus the presence of our override.
 //

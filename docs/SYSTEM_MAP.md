@@ -79,9 +79,11 @@ This page links to those and does not repeat their numbers.
 | Product analytics | PostHog (EU), Clarity | consent-gated, no account data |
 | Errors and traces | Sentry | the backend strips tokens from event URLs before sending (`backend/app/sentry.py`) |
 | Email and WhatsApp content | Resend, Meta | Postgres keeps a send ledger (`outbound_messages`), not the bodies of emails; outside production only, a WhatsApp send the guard dropped is kept with its content (`blocked_nonprod`, /admin/whatsapp/blocked) |
-| Backups | Railway volume + the backup job | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)); a copy restored anywhere but production has its personal details replaced by `scripts/anonymize_restored_db.sql` (MEH-3406) |
+| Backups | Railway volume + the backup job (each run reports to Sentry: a Crons check-in to `production-db-backup`, and an error event on failure, MEH-3533) | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)); a copy restored anywhere but production has its personal details replaced by `scripts/anonymize_restored_db.sql` (MEH-3406) |
 | Draft of a registration form, recent searches, chosen city | browser storage | never on the server |
+| Answers to client-side reads made through `frontend/lib/use-api.js` (MEH-3536; SWR) | browser tab memory | one cache per tab, gone on reload; reads that depend on the signed-in account (`useUserApi`) are keyed by the user id, so the next account in the same tab never reads the previous one's entries. A logout does not empty it: the previous account's entries stay in memory, unread, until the tab reloads |
 | Which «הקישור שלך בכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
+| Whether the account menus show «ההזמנות שלי» (MEH-3525) | browser `sessionStorage`, `meh_my_orders_nav`: the account id, on/off, and when it was asked | 30 minutes, cleared with the tab; a cached answer for another account id is ignored |
 
 ## What gives first under load
 
@@ -105,7 +107,13 @@ inventory.
    bucket and get 429s on ordinary reads.
 4. **Server-rendered pages on Vercel.** Almost every public page renders on
    each request, about 140 ms of CPU each. Traffic raises cost linearly; there
-   is no cache to absorb a spike.
+   is no cache to absorb a spike. The exceptions are ISR pages such as `/` and
+   the `/events` + `/experiences` hub (MEH-2233): the server reads the first
+   `/events` and `/experiences` lists at most once a minute per locale, and
+   every visit in between gets the cached HTML. `/group-buys` does the same
+   with its open list and the counts (MEH-2233). Each visit still makes one
+   quiet client refresh after the page paints, so the backend load per visit
+   is unchanged; only the first paint stops waiting for it.
 5. **Anthropic credit or rate limit.** Moderation fails open and chat goes
    offline. Nobody is told unless they look at Sentry.
 6. **Sentry's monthly error quota.** Past it, new errors are dropped silently,

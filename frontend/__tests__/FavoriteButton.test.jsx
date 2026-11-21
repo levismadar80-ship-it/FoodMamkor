@@ -193,7 +193,8 @@ describe("FavoriteButton", () => {
 
   // A distinct producer id for the cache-sync cases (kept off the id=1 the
   // guest/logged-in cases above use, so the shared cache never overlaps).
-  const PID = 42;
+  // MEH-1748: a real UUID — the hearts cache parses the generated FavoriteOut.
+  const PID = "4a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d";
 
   it("does NOT fetch /users/me/favorites directly (reads via favorites-cache)", async () => {
     const api = (await import("@/lib/api")).default;
@@ -220,7 +221,7 @@ describe("FavoriteButton", () => {
     // Optimistic cache write happens before/independent of the POST resolving.
     await waitFor(() => expect(isFavorited(PID)).toBe(true));
     expect(listener).toHaveBeenCalled(); // a subscribed CardHeart would re-read + fill
-    expect(api.post).toHaveBeenCalledWith("/users/me/favorites/42");
+    expect(api.post).toHaveBeenCalledWith(`/users/me/favorites/${PID}`);
     expect(api.delete).not.toHaveBeenCalled();
     unsub();
   });
@@ -237,7 +238,7 @@ describe("FavoriteButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "הסר ממועדפים" }));
 
     await waitFor(() => expect(isFavorited(PID)).toBe(false));
-    expect(api.delete).toHaveBeenCalledWith("/users/me/favorites/42");
+    expect(api.delete).toHaveBeenCalledWith(`/users/me/favorites/${PID}`);
   });
 
   it("reverts the cache write when the POST fails", async () => {

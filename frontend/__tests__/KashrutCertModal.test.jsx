@@ -180,7 +180,7 @@ describe("CertModal initial focus is mount-only (MEH-2129)", () => {
  *
  * Added under MEH-2129 because this file carried ZERO focus or Tab assertions
  * (measured: `grep -c` returned 0 for both) — the only evidence for this
- * modal's trap lived in frontend/e2e/qa-meh2039-modal-a11y.mjs, a hand-run
+ * modal's trap lived in frontend/e2e/_qa-archive/qa-meh2039-modal-a11y.mjs, a hand-run
  * script no CI job executes. The MEH-2129 diff edits that very effect, so
  * "the trap still works" needed a gate rather than a claim. Same three
  * assertions as LocationModal.test.jsx:115-140.

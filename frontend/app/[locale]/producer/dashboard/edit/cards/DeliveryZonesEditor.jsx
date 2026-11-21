@@ -11,13 +11,18 @@
  *           Cities are picked from the card's own city list, never typed.
  * Related:  DeliveryCard.jsx (owner + admin), DeliveryBulkDay.jsx (the
  *           one-day shortcut for cities outside a zone).
- * History:  MEH-3484 (creation)
+ * History:  MEH-3484 (creation); MEH-3511 (delivery time + own order cutoff
+ *           per zone; a nationwide business gets zones too — «אזורים בתנאים
+ *           אחרים», cities picked freely since there is no city list).
  */
 import { useTranslations } from "next-intl";
 import { Trash } from "@phosphor-icons/react";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import OrderCutoffPicker from "../OrderCutoffPicker";
+import DeliveryTimeFields from "./DeliveryTimeFields";
 
 // Mirrors backend MAX_DELIVERY_MONEY / MAX_DELIVERY_ZONES (app/limits.py).
 const MAX_DELIVERY_MONEY = 1_000_000;
@@ -26,7 +31,8 @@ const ZONE_NAME_MAX = 40;
 
 /**
  * @typedef {{ key: string, name: string, cities: string[], days: string[],
- *   min: string|number, fee: string|number, free: string|number }} ZoneForm
+ *   min: string|number, fee: string|number, free: string|number,
+ *   dmin: string|number, dmax: string|number, cutDay: string, cutTime: string }} ZoneForm
  */
 
 /** @param {any[] | null | undefined} zones @returns {ZoneForm[]} */
@@ -39,6 +45,11 @@ export function zonesFromProfile(zones) {
     min: z.min_order ?? "",
     fee: z.delivery_fee ?? "",
     free: z.free_delivery_above ?? "",
+    // MEH-3511
+    dmin: z.delivery_days_min ?? "",
+    dmax: z.delivery_days_max ?? "",
+    cutDay: z.order_cutoff_day || "",
+    cutTime: z.order_cutoff_time || "",
   }));
 }
 
@@ -47,16 +58,21 @@ const toNullableInt = (v) => (v === "" || v === null || v === undefined ? null :
 
 /**
  * The body shape for PUT `delivery_zones`, cities limited to the card's list.
- * @param {ZoneForm[]} zones @param {string[]} cities
+ * `cities` null = nationwide: there is no list, a zone's cities are its own.
+ * @param {ZoneForm[]} zones @param {string[] | null} cities
  */
 export function zonesForSave(zones, cities) {
   return zones.map((z) => ({
     name: z.name.trim(),
-    cities: z.cities.filter((c) => cities.includes(c)),
+    cities: cities ? z.cities.filter((c) => cities.includes(c)) : z.cities,
     delivery_days: DELIVERY_DAYS.filter((d) => z.days.includes(d)),
     min_order: toNullableInt(z.min),
     delivery_fee: toNullableInt(z.fee),
     free_delivery_above: toNullableInt(z.free),
+    delivery_days_min: toNullableInt(z.dmin),
+    delivery_days_max: toNullableInt(z.dmax),
+    order_cutoff_day: z.cutDay || null,
+    order_cutoff_time: z.cutTime || null,
   }));
 }
 
@@ -65,10 +81,19 @@ export function zoneOfCity(zones) {
   return Object.fromEntries(zones.flatMap((z) => z.cities.map((c) => [c, z.name.trim()])));
 }
 
+/** @param {ZoneForm[]} zones @param {number} i @param {string[]} picked */
+function withCities(zones, i, picked) {
+  // A city sits in one zone: putting it here takes it out of any other.
+  return zones.map((z, j) =>
+    j === i ? { ...z, cities: picked } : { ...z, cities: z.cities.filter((c) => !picked.includes(c)) },
+  );
+}
+
 /**
- * @param {{ zones: ZoneForm[], cities: string[], onChange: (zones: ZoneForm[]) => void }} props
+ * @param {{ zones: ZoneForm[], cities: string[], nationwide?: boolean,
+ *   onChange: (zones: ZoneForm[]) => void }} props
  */
-export default function DeliveryZonesEditor({ zones, cities, onChange }) {
+export default function DeliveryZonesEditor({ zones, cities, nationwide = false, onChange }) {
   const t = useTranslations("dashboard.producer.delivery");
 
   /** @param {number} i @param {Partial<ZoneForm>} patch */
@@ -77,19 +102,13 @@ export default function DeliveryZonesEditor({ zones, cities, onChange }) {
   const add = () =>
     onChange([
       ...zones,
-      { key: `n${Date.now()}`, name: "", cities: [], days: [], min: "", fee: "", free: "" },
+      { key: `n${Date.now()}`, name: "", cities: [], days: [], min: "", fee: "", free: "", dmin: "", dmax: "", cutDay: "", cutTime: "" },
     ]);
 
   /** @param {number} i @param {string} city */
   const toggleCity = (i, city) => {
-    const has = zones[i].cities.includes(city);
-    // A city sits in one zone: ticking it here takes it out of any other.
-    onChange(
-      zones.map((z, j) => {
-        if (j === i) return { ...z, cities: has ? z.cities.filter((c) => c !== city) : [...z.cities, city] };
-        return has ? z : { ...z, cities: z.cities.filter((c) => c !== city) };
-      }),
-    );
+    const now = zones[i].cities;
+    onChange(withCities(zones, i, now.includes(city) ? now.filter((c) => c !== city) : [...now, city]));
   };
 
   /** @param {number} i @param {string} day */
@@ -100,8 +119,8 @@ export default function DeliveryZonesEditor({ zones, cities, onChange }) {
 
   return (
     <section className="mt-4 rounded-sm border border-border p-3" data-testid="delivery-zones">
-      <h4 className="text-sm font-medium">{t("zones_label")}</h4>
-      <p className="text-xs text-fg-muted mb-2">{t("zones_hint")}</p>
+      <h4 className="text-sm font-medium">{t(nationwide ? "zones_label_nationwide" : "zones_label")}</h4>
+      <p className="text-xs text-fg-muted mb-2">{t(nationwide ? "zones_hint_nationwide" : "zones_hint")}</p>
       {zones.length === 0 && (
         <p className="text-xs text-fg-muted mb-2" data-testid="delivery-zones-empty">
           {t("zone_empty")}
@@ -111,13 +130,20 @@ export default function DeliveryZonesEditor({ zones, cities, onChange }) {
         {zones.map((z, i) => (
           <li key={z.key} className="rounded-sm bg-surface-card p-3 space-y-3" data-testid={`delivery-zone-${i}`}>
             <ZoneHeader t={t} zone={z} index={i} onName={(name) => update(i, { name })} onRemove={() => onChange(zones.filter((_, j) => j !== i))} />
-            <CheckGroup
-              legend={t("zone_cities_label")}
-              items={cities}
-              checked={z.cities}
-              onToggle={(c) => toggleCity(i, c)}
-              testid={`delivery-zone-${i}-city`}
-            />
+            {nationwide ? (
+              <div data-testid={`delivery-zone-${i}-cities-free`}>
+                <span className="block text-xs text-muted mb-1">{t("zone_cities_label")}</span>
+                <CitiesAutocomplete value={z.cities} onChange={(picked) => onChange(withCities(zones, i, picked))} showRegionChips />
+              </div>
+            ) : (
+              <CheckGroup
+                legend={t("zone_cities_label")}
+                items={cities}
+                checked={z.cities}
+                onToggle={(c) => toggleCity(i, c)}
+                testid={`delivery-zone-${i}-city`}
+              />
+            )}
             <div>
               <CheckGroup
                 legend={t("zone_days_label")}
@@ -129,6 +155,22 @@ export default function DeliveryZonesEditor({ zones, cities, onChange }) {
               <p className="text-xs text-fg-muted mt-1">{t("zone_days_hint")}</p>
             </div>
             <ZoneMoney t={t} zone={z} index={i} onChange={(patch) => update(i, patch)} />
+            <DeliveryTimeFields
+              min={z.dmin}
+              max={z.dmax}
+              testid={`delivery-zone-${i}-time`}
+              onChange={(patch) => update(i, patch)}
+            />
+            <OrderCutoffPicker
+              day={z.cutDay}
+              time={z.cutTime}
+              hint={t("zone_cutoff_hint")}
+              testid={`delivery-zone-${i}-cutoff`}
+              onChange={(p) => update(i, {
+                ...(p.order_cutoff_day !== undefined ? { cutDay: p.order_cutoff_day } : {}),
+                ...(p.order_cutoff_time !== undefined ? { cutTime: p.order_cutoff_time } : {}),
+              })}
+            />
           </li>
         ))}
       </ul>

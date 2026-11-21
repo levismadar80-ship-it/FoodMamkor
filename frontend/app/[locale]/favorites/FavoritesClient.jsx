@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { loginHrefBackHere } from "@/lib/safe-redirect";
-import { FavoriteWithProducerSchema } from "@/lib/api-schemas";
+import { FavoriteWithProducerSchema } from "@/lib/api-responses";
 import {
   ensureFavoritesLoaded,
   isFavorited,

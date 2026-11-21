@@ -12,6 +12,7 @@ from app.routers import (
     admin_product_import,
     admin_product_organize,
     admin_recipes,
+    admin_test_business,
     admin_whatsapp,
     alerts,
     admin_passkey,
@@ -117,6 +118,8 @@ def _include_admin(app: FastAPI) -> None:
     # as the owner's routes via services/product_organize.py. Here, not in
     # register_routers, to keep that function under the statement limit.
     app.include_router(admin_product_organize.router)
+    # MEH-2952 chunk 4: the «עסק בדיקה» switch. Here for the same reason.
+    app.include_router(admin_test_business.router)
 
 
 def _register_flagged_features(app: FastAPI) -> None:

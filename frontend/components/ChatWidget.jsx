@@ -6,6 +6,7 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
+import ChatMessageText from "@/components/ChatMessageText";
 import { INERT_PRESENT } from "@/lib/inert-attr";
 import { COLOR } from "@/lib/color-tokens";
 import { useBusinessChatRequest } from "@/lib/business-chat";
@@ -502,7 +503,7 @@ export default function ChatWidget({ hideOnMobile = false, businessOnly = false 
                 <div className={`max-w-[85%] px-3 py-2 rounded-md text-sm leading-relaxed whitespace-pre-line ${
                   m.role === "user" ? "bg-primary text-white" : "bg-surface text-text border border-border"
                 }`}>
-                  {m.content}
+                  {m.role === "assistant" ? <ChatMessageText text={m.content} /> : m.content}
                 </div>
               </div>
             ))}

@@ -17,6 +17,7 @@ import AdminDeliveryPaymentPanel from "@/components/admin/AdminDeliveryPaymentPa
 import PageFillPanel from "@/components/PageFillPanel"; // MEH-3483
 import { showToast } from "@/lib/toast";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
+import TestBusinessToggle from "@/components/admin/TestBusinessToggle"; // MEH-2952
 import DraftPreviewLinkPanel from "@/components/admin/DraftPreviewLinkPanel";
 import PublishWithConsentPanel from "@/components/admin/PublishWithConsentPanel";
 import OwnerInvitePanel, {
@@ -142,6 +143,7 @@ export default function EditProducerPage() {
             {t("producers.edit.last_confirmed", { date: formatDate(producer.last_confirmed_at, locale) })}
           </p>
         )}
+        <TestBusinessToggle producerId={String(id)} />
       </div>
       {/* MEH-2326: the catalogue the owner receives with the claim link. Only a
           draft; once she has claimed it the server answers 409, shown verbatim. */}
