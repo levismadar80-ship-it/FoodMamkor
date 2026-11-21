@@ -25,3 +25,5 @@ reads `EXPECTED_TABLES=66`. Count from the migrations on the branch
 
 The revision `2189efe602b9` creates one table, so the schema job counts 65 on
 a staging of 64 and fails `CI gate`.
+
+Applied 21/11/2026 in b02df96e (committed in Chrome). The value matches. The comment line reads `— 64 -> 65.` where this doc had `— +1.`.
