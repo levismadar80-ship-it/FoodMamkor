@@ -116,19 +116,19 @@ delivery_waitlist.notified_at	identity	email and town of someone waiting for del
 delivery_waitlist.producer_id	identity	email and town of someone waiting for delivery to their town
 delivery_waitlist.user_id	identity	email and town of someone waiting for delivery to their town
 delivery_waitlist.wants_to_host	identity	email and town of someone waiting for delivery to their town
-email_outbox.attempts	messages	an email we send: address, content and delivery state
-email_outbox.body	messages	an email we send: address, content and delivery state
-email_outbox.created_at	messages	an email we send: address, content and delivery state
-email_outbox.html	messages	an email we send: address, content and delivery state
-email_outbox.id	messages	an email we send: address, content and delivery state
-email_outbox.kind	messages	an email we send: address, content and delivery state
-email_outbox.last_error	messages	an email we send: address, content and delivery state
-email_outbox.outcome	messages	an email we send: address, content and delivery state
-email_outbox.reply_to	messages	an email we send: address, content and delivery state
-email_outbox.send_after	messages	an email we send: address, content and delivery state
-email_outbox.sent_at	messages	an email we send: address, content and delivery state
-email_outbox.subject	messages	an email we send: address, content and delivery state
-email_outbox.to_email	messages	an email we send: address, content and delivery state
+email_outbox.attempts	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.body	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.created_at	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.html	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.id	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.kind	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.last_error	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.outcome	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.reply_to	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.send_after	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.sent_at	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.subject	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
+email_outbox.to_email	messages	an email we send; address and content are cleared once it is sent (email_outbox._clear), the row is purged after 30 days
 events.category	business	an event a business publishes
 events.city	business	an event a business publishes
 events.created_at	business	an event a business publishes
