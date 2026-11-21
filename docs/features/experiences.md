@@ -10,6 +10,7 @@
 **קבצים מרכזיים**
 * `backend/app/routers/experiences.py`
 * `backend/app/services/experience_moderation.py` — בדיקת AI, נכשלת פתוח בלי `ANTHROPIC_API_KEY`.
+* `backend/app/services/moderation_common.py` — הלקוח, קריאת התשובה והקריאה למודל המהיר, משותפים לבדיקת החוויות, המתכונים ומוצרי השכנים (MEH-3619).
 * `backend/app/services/experience_sessions.py` — מועדים של סדנה חוזרת (MEH-3441): עד 12 קדימה, ומקומות, המתנה ורישום כפול לכל מועד. סדנה חוזרת בלי מועדים נשארת מאגר מקומות אחד.
 * `frontend/components/ExperienceSessionsField.jsx` — «מועדים» בתוך «החוויה חוזרת» בטופס בעלת העסק (MEH-3447): שורה לכל מועד, הסרת מועד עם נרשמות שואלת קודם.
 * `frontend/components/RegistrationCta.jsx` — כפתור ההרשמה. לחיצה על וואטסאפ, התקשרות או «שאלה» נספרת לבית העסק (`trackChannelClick`, MEH-2991), כמו בדף בית העסק. קישור הרשמה חיצוני לא נספר. שומר: `frontend/__tests__/RegistrationCtaContactCount.test.jsx`.

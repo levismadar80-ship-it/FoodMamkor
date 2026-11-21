@@ -8790,6 +8790,49 @@ export const CreateOfferRescueOffersPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * One of today's bags, for its own page (MEH-3586). Public — no auth.
+ *
+ * A sold-out, cancelled or closed bag still answers, with `state` saying
+ * why; another day's bag, a test or unapproved business, or a town outside
+ * the pilot answers 404 — the same set the list never shows.
+ * @summary Get Offer
+ */
+export const getOfferRescueOffersOfferIdGetResponseProducerReviewsCountDefault = 0;
+
+export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer": /*#__PURE__*/ zod.object({
+  "avg_rating": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "logo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getOfferRescueOffersOfferIdGetResponseProducerReviewsCountDefault),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('The bag page\'s business block (MEH-3586): the summary plus the public\nbusiness rating, so a buyer can judge who packs the bag. The same two\nnumbers the business page shows; never the bag reviews, which feed only\nthe pilot metrics (RescueReview\'s docstring).')),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "state": /*#__PURE__*/ zod.enum(['available', 'sold_out', 'cancelled', 'ended']),
+  "typical_items": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('`GET /rescue/offers/{id}` — one of today\'s bags for its own page.\n\n`state` is why a bag can or cannot be reserved now; the list omits every\nbag that is not `available`, the page explains it instead. `lat`/`lng`\nare the pickup point (exact precision by construction) for the map.'))
+
+
+/**
  * The business pulls the whole bag offer. Every open reservation on it is
  * cancelled with it; a bag already handed over stays handed.
  *

@@ -110,17 +110,14 @@ export const ENTITIES = [
   },
   {
     key: "rescue_bag",
-    routes: [],
-    files: [],
-    uses: [],
+    // MEH-3586: the bag's own page.
+    routes: ["app/[locale]/rescue/[offerId]"],
+    files: ["app/[locale]/rescue/[offerId]"],
+    uses: ["back", "share", "owner", "cover"],
     missing: {},
     na: {
-      back: "no detail page — bags render inside the business page and /rescue",
-      share: "no detail page",
-      save: "no detail page",
-      owner: "no detail page",
-      cover: "no detail page",
-      contact: "no detail page",
+      save: "a bag lasts one day; saving the business is on its page",
+      contact: "reserving is the action; contact is on the business page the OwnerRow opens",
     },
   },
 ];
