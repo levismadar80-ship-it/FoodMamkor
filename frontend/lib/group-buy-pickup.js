@@ -26,5 +26,10 @@ export function pickupWindowText(start, end, locale) {
   const endDay = formatDate(e, locale, "long");
   const from = israelTime(s.toISOString());
   const until = israelTime(e.toISOString());
-  return startDay === endDay ? `${startDay}, ${from}–${until}` : `${startDay}, ${from} – ${endDay}, ${until}`;
+  // LTR isolate (as PageFillPanel / BadgeRow): bare «09:00–13:00» in an RTL
+  // line reorders to «13:00–09:00» around the dash (seen at 375, MEH-3597).
+  const ltr = (/** @type {string} */ x) => `\u2066${x}\u2069`;
+  return startDay === endDay
+    ? `${startDay}, ${ltr(`${from}\u2060–\u2060${until}`)}` // word joiners: the range never splits across lines
+    : `${startDay}, ${ltr(from)} – ${endDay}, ${ltr(until)}`;
 }

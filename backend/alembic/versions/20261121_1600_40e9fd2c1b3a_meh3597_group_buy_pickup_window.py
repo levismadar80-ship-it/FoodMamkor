@@ -4,7 +4,7 @@ Revision ID: 40e9fd2c1b3a
 Revises: 2189efe602b9
 Create Date: 2026-11-21 16:00:00.000000+00:00
 
-MEH-3597. Expand-only (ADR-007): two NULLable columns, no backfill, no row
+MEH-3597 (Sapir approved the migration 21/11, decision card). Expand-only (ADR-007): two NULLable columns, no backfill, no row
 rewritten. A group buy without them reads as before (the free-text pickup
 note stays the only answer).
 

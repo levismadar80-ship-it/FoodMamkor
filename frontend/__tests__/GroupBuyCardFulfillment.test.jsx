@@ -85,7 +85,7 @@ describe("the pickup time line on a list card", () => {
     await renderCard({ pickup_note: "מהמשק", pickup_starts_at: "2099-01-02T07:00:00", pickup_ends_at: "2099-01-02T11:00:00" });
     const when = line("pickup-window");
     expect(when.textContent).toMatch(/^group_buys\.card\.pickup_when:/);
-    expect(when.textContent).toContain("09:00–13:00");
+    expect(when.textContent).toContain("09:00\u2060–\u206013:00");
     expect(when.compareDocumentPosition(line("pickup")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
