@@ -98,7 +98,7 @@ left in v1" vs "what's planned for v2".
 | `/producer/dashboard/followers` | Redirect stub to the insights followers section |
 | `/producer/dashboard/reviews` | Read and reply to reviews; ask for reviews |
 | `/producer/dashboard/tools` | «כלים» tab: launcher for creation tools |
-| `/producer/dashboard/qr-card` | Printable QR card for the counter |
+| `/producer/dashboard/qr-card` | Printable QR kit: A6 counter card, A4 poster, folded table sign, sheet of 12 stickers (MEH-3557) |
 | `/producer/dashboard/events` | Manage events |
 | `/producer/dashboard/events/new` | Create an event |
 | `/producer/dashboard/events/[id]/edit` | Edit an event |
