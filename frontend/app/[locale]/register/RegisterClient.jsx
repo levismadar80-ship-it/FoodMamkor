@@ -278,8 +278,8 @@ function RegisterPageBody() {
         />
         <div className="absolute inset-x-0 bottom-0 p-6 lg:p-10">
           {/* Same locked string as /login — deliberately reads the auth.login
-              key (single owner) instead of duplicating it under auth.register. */}
-          {/* MEH-3676: same logo as /login, closing the line that ends in «מהמקור». */}
+              key (single owner) instead of duplicating it under auth.register.
+              MEH-3676: the same logo as /login closes the line that ends in «מהמקור». */}
           <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50 flex flex-wrap items-center gap-3">
             {t("auth.login.hero_overlay")}
             <SeedMark size={HERO_MARK_PX} variant="dark" className="shrink-0" />
