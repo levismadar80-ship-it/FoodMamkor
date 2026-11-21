@@ -370,14 +370,24 @@ Without it: `ERR_CONNECTION_CLOSED`/`RESET`, which reads like an outage.
 
 ### 2. Send the Vercel Deployment Protection headers
 
-`extraHTTPHeaders: { "x-vercel-protection-bypass":
-process.env.VERCEL_AUTOMATION_BYPASS_SECRET, "x-vercel-set-bypass-cookie":
-"true" }`. Control: `/he` → 200 with them, 302 → `vercel.com/sso-api` without.
-Never write the secret to a file, commit, PR body or log. `extraHTTPHeaders`
-goes to EVERY host the page loads (map tiles, Cloudinary, analytics), so a
-harness whose pages load third-party hosts scopes the headers to the target
-origin instead: a `page.route` on that origin with `route.fallback({ headers })`,
-plus explicit headers on each `request.get` (MEH-3495, `join-screenshots.mjs`).
+Once, from an API request, to get the bypass cookie (MEH-3607):
+`await scopeBypassToOrigin(context, BASE, { "x-vercel-protection-bypass":
+process.env.VERCEL_AUTOMATION_BYPASS_SECRET })` from
+`frontend/e2e/_bypass-scope.mjs`, once per browser context, before the first
+`goto`. It sends the secret once, from an API request with no redirects, and
+Vercel answers with a host-only `_vercel_jwt` cookie, so the browser never
+holds the secret. An API-only harness uses `request.newContext({ baseURL })`
+with the header, which reaches the target only. Control: `/he` → 200 with the
+cookie, 302 → `vercel.com/sso-api` without.
+
+**Never put the secret in a browser context's `extraHTTPHeaders`.** It goes to
+every host the page loads (map tiles, Cloudinary, analytics). A
+`route.fallback({ headers })` on the origin is not enough either, because the
+header follows a redirect to another origin (MEH-3607, reproduced 21/11).
+`scripts/checks/bypass-scope-guard.sh` (Repo guards) blocks the first form.
+`staging.mehamakor.online` answers 307 to `staging.mehamakor.co.il`, and the
+helper sets the cookie on the host where the redirects stop.
+Never write the secret to a file, commit, PR body or log.
 
 ### 3. Log in as a seeded demo account — a screen behind login is checked, not skipped (MEH-3140)
 

@@ -62,9 +62,10 @@ NOT_GENERATION = {
     # own rate limit and the per-business row caps (MEH-3022); the global
     # daily ceiling is MEH-3498.
     "app.services.approved_edit_moderation": "moderation on save",
-    "app.services.experience_moderation": "moderation on save",
     "app.services.home_product_moderation": "moderation on save",
-    "app.services.producer_recipe_moderation": "moderation on save",
+    # MEH-3619: the call experience_moderation and producer_recipe_moderation
+    # share (they no longer call the model themselves).
+    "app.services.moderation_common": "moderation on save (shared helper)",
     "app.services.producer_risk": "moderation on save",
     "app.routers.reviews": "moderation of a review / reply on save",
     # Visitor chat: no business to key on; per-IP 10/min + 30/hour, the

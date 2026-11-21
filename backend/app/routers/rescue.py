@@ -74,6 +74,7 @@ from app.services import capabilities  # MEH-3179 · MEH-3180
 from app.schemas.rescue import (
     RescueNoShowStateOut,
     RescueOfferCreate,
+    RescueOfferDetailOut,
     RescueOfferOut,
     RescueOfferPublicOut,
     RescueOrderCreate,
@@ -125,6 +126,7 @@ from app.services.rescue_reads import (  # MEH-3541
     business_offers_today,
     business_orders_today,
     my_reservations,
+    offer_detail,
     pilot_numbers,
     public_offers,
     typical_items,
@@ -318,6 +320,31 @@ def list_offers(
     return public_offers(
         db, today=israel_today(), pilot=pilot, city=city, lat=lat, lng=lng
     )
+
+
+@router.get(
+    "/offers/{offer_id}",
+    response_model=RescueOfferDetailOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("120/minute")
+def get_offer(
+    request: Request,
+    offer_id: UUID,
+    db: Session = Depends(get_db),
+) -> RescueOfferDetailOut | dict[str, Any]:
+    """One of today's bags, for its own page (MEH-3586). Public — no auth.
+
+    A sold-out, cancelled or closed bag still answers, with `state` saying
+    why; another day's bag, a test or unapproved business, or a town outside
+    the pilot answers 404 — the same set the list never shows.
+    """
+    row = offer_detail(
+        db, offer_id=offer_id, today=israel_today(), pilot=rescue_cities()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="הסל הזה לא נמצא")
+    return row
 
 
 @router.post(

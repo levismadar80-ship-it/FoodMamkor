@@ -30,16 +30,20 @@ see Claude's signal when reviewing the queue.
 
 from __future__ import annotations
 
-import json
-from decimal import Decimal
-from typing import Any, cast
+from typing import Any
 
 import structlog
 
-from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
+from app.config import AI_FAST_MODEL
+from app.services.moderation_common import (
+    approved,
+    make_anthropic_client,
+    parse_verdict_json,
+    run_fast_verdict,
+    safe_decimal,
+)
 from app.services.moderation_prompt import wrap_submission
-from app.services.moderation_fail_open import classify_failure, report_fail_open
-from app.services.moderation_schemas import MODERATION_VERDICT_SCHEMA
+from app.services.moderation_fail_open import report_fail_open
 
 
 logger = structlog.get_logger(__name__)
@@ -48,34 +52,18 @@ logger = structlog.get_logger(__name__)
 # pre-moderation and strictly cheaper than settings.anthropic_model (Opus).
 HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
 
-VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
+_TAG = "[experience-moderation]"
 
-# Module-level lazy-constructed client — the anthropic package may not even
-# be importable in some dev/test environments, so we defer the import.
+# Module-level lazy client, one per service so a test can swap it here.
 _client: Any = None
 
 
 def _get_client() -> Any:
+    # MEH-3619: the construction itself is moderation_common.make_anthropic_client.
     global _client
-    if _client is not None:
-        return _client
-    if not settings.anthropic_api_key:
-        logger.debug(
-            "[experience-moderation] ANTHROPIC_API_KEY not set — client unavailable"
-        )
-        return None
-    try:
-        import anthropic
-        import httpx
-
-        _client = anthropic.Anthropic(
-            api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
-        )
-        return _client
-    except Exception as e:  # pragma: no cover — defensive
-        logger.warning("anthropic client init failed: %s", e)
-        return None
+    if _client is None:
+        _client = make_anthropic_client(_TAG)
+    return _client
 
 
 def _build_prompt(payload: dict[str, Any]) -> tuple[str, str]:
@@ -139,32 +127,12 @@ REJECTED אם:
     return system, user_content
 
 
-def _parse_response_text(text: str) -> dict[str, Any]:
-    """Extract JSON from a Claude response. Tolerates whitespace, markdown
-    code fences, and accidental prose around the JSON block."""
-    text = text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else ""
-        if text.endswith("```"):
-            text = text.rsplit("```", 1)[0]
-        text = text.strip()
-    start = text.find("{")
-    end = text.rfind("}")
-    if start >= 0 and end > start:
-        text = text[start : end + 1]
-    return cast(dict[str, Any], json.loads(text))
+# MEH-3619: kept as module names; tests call them here.
+_parse_response_text = parse_verdict_json
 
 
 def _safe_decimal(value: object) -> float | None:
-    if value is None:
-        return None
-    try:
-        return float(Decimal(str(value)))
-    except Exception:
-        logger.debug(
-            "[experience-moderation] decimal conversion failed", value=repr(value)
-        )
-        return None
+    return safe_decimal(value, _TAG)
 
 
 def validate_experience(payload: dict[str, Any]) -> dict[str, Any]:
@@ -193,58 +161,12 @@ def validate_experience(payload: dict[str, Any]) -> dict[str, Any]:
     if client is None:
         logger.info("[experience-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED")
         report_fail_open("experience", "no_client")
-        return {"status": "APPROVED", "reason": None, "suggestion": None}
+        return approved()
 
-    truncated = False
-    try:
-        system, user_content = _build_prompt(normalized)
-        message = client.messages.create(
-            **ai_fast_request_kwargs(json_schema=MODERATION_VERDICT_SCHEMA),
-            # MEH-2335: reason + suggestion are free Hebrew text; 800 keeps
-            # well clear of truncation (a truncated JSON fails open).
-            max_tokens=800,
-            system=system,
-            messages=[{"role": "user", "content": user_content}],
-        )
-        # MEH-2335: Haiku 5.5 runs safety classifiers. A decline is HTTP 200
-        # with stop_reason="refusal" and no text — the content itself
-        # tripped a harm classifier, so that is a signal, not an infra
-        # blink: route it to the admin as FLAGGED instead of failing open.
-        if getattr(message, "stop_reason", None) == "refusal":
-            logger.warning("[experience-moderation] model refused → FLAGGED")
-            return {
-                "status": "FLAGGED",
-                "reason": "המודל סירב לבדוק את התוכן — נדרשת בדיקה ידנית",
-                "suggestion": None,
-            }
-        truncated = getattr(message, "stop_reason", None) == "max_tokens"
-        raw = ""
-        for block in message.content:
-            if getattr(block, "type", None) == "text":
-                raw = block.text
-                break
-        if not raw:
-            raise ValueError("empty response from Claude")
-
-        parsed = _parse_response_text(raw)
-        # MEH-2390: valid JSON that is not an object is a bad status, not a crash.
-        if not isinstance(parsed, dict):
-            parsed = {}
-        status = str(parsed.get("status", "")).upper()
-        if status not in VALID_STATUSES:
-            logger.warning(
-                "[experience-moderation] unexpected status %r → APPROVED",
-                status,
-            )
-            report_fail_open("experience", "truncated" if truncated else "bad_status")
-            return {"status": "APPROVED", "reason": None, "suggestion": None}
-
-        return {
-            "status": status,
-            "reason": parsed.get("reason"),
-            "suggestion": parsed.get("suggestion"),
-        }
-    except Exception as e:  # noqa: BLE001 — moderation must fail safe
-        logger.exception("[experience-moderation] Claude call failed: %s", e)
-        report_fail_open("experience", classify_failure(e, truncated=truncated))
-        return {"status": "APPROVED", "reason": None, "suggestion": None}
+    return run_fast_verdict(
+        client,
+        lambda: _build_prompt(normalized),
+        surface="experience",
+        tag=_TAG,
+        report=report_fail_open,
+    )
