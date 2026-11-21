@@ -6,7 +6,7 @@ Purpose:  For a draft its owner has claimed («נקלט, בהשלמה»), say wh
 Touches:  events (one COUNT … GROUP BY for organizer drafts only).
 Does NOT: decide what is required — submission_gate.submission_missing_items
           is the one definition; this only feeds it a batched event count.
-Related:  routers/admin.py list route (_attach_has_owner runs first),
+Related:  routers/admin.py list route (services/admin_producer_reads.attach_has_owner runs first),
           services/pending_nudge.py (the same list, in the reminder emails).
 History:  MEH-3409 (creation).
 """
@@ -27,7 +27,7 @@ from app.utils.clock import israel_today
 def attach_draft_missing(db: Session, producers: Sequence[Any]) -> None:
     """Set `draft_missing` on every claimed draft in `producers`.
 
-    Must run after `_attach_has_owner`: an unclaimed draft is waiting for its
+    Must run after `services/admin_producer_reads.py::attach_has_owner`: an unclaimed draft is waiting for its
     owner, not for content, so it keeps None (the row shows nothing). The
     business checks read collections the list route already eager-loads;
     organizer drafts need their upcoming events, counted here in ONE query so
