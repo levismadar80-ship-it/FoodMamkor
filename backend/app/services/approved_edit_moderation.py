@@ -33,7 +33,6 @@ from app.services.email import send_email
 from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.services.moderation_prompt import wrap_submission
 from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
-from app.services.whatsapp import send_text
 
 log = logging.getLogger(__name__)
 
@@ -265,15 +264,11 @@ def notify_admin_content_edit(
     name: str, changed: list[str], flagged: bool, test_cause: bool = False
 ) -> None:
     # REUSES: auth_notifications.notify_admin_producer_sensitive_edit — same
-    # channels, per-channel try blocks so a WhatsApp raise never skips email.
+    # channel: email only (MEH-3589).
     if test_cause:  # MEH-2952
         return _skip_test_cause("notify_admin_content_edit", None)
     message = content_edit_message(name, changed, flagged)
-    try:
-        if settings.admin_whatsapp_to:
-            send_text(settings.admin_whatsapp_to, message, test_cause=test_cause)
-    except Exception:  # noqa: BLE001
-        log.exception("[NOTIFY] content-edit WhatsApp failed for '%s'", name)
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
     try:
         if settings.admin_email:
             send_email(
