@@ -306,6 +306,9 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     ]) {
       expect(screen.queryByTestId(gone), gone).toBeNull();
     }
+    // Those testids exist nowhere now; the keys are what t() renders here, so
+    // this is the line that reddens if the copy returns under another testid.
+    expect(document.body.textContent).not.toMatch(/fields\.(areas_note|whatsapp_note|multi_hint|free_hint)/);
   });
 
   // MEH-3656: the MEH-2447 hours hint is gone with the other step-2 notes —
@@ -320,6 +323,7 @@ describe("MEH-2640 — the question is required, and the gate can actually fire"
     await fillAccountToDetails();
     for (const box of boxes) fireEvent.click(screen.getByTestId(`register-fulfilment-${box}`));
     expect(screen.queryByTestId("register-fulfilment-hours-hint")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/fields\.hours_hint/);
   });
 });
 
@@ -332,6 +336,7 @@ describe("MEH-3656 — the online-store link is not asked at signup", () => {
     fillDetailsFields();
     fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     expect(screen.queryByTestId("register-external-order")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/external_order_form/);
     const body = await advanceAndSubmit();
     expect(body.external_order_form).toBeNull();
   });

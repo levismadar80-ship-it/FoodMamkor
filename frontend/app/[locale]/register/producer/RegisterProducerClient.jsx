@@ -23,7 +23,6 @@ import {
   STEP_NAME,
   safeResumeStep,
   EMPTY_FORM,
-  storeLinkForPayload,
 } from "./registerProducerShared";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
@@ -636,8 +635,12 @@ function RegisterProducerPageBody({ routeKind }) {
         // MEH-532: description is optional on the backend (sanitize_text
         // strips/empty-string normalises); we still send what we have so the
         // story shows up on the producer page immediately after approval.
-        description: form.description,
-        short_description: form.short_description,
+        // MEH-3656: a business is not asked for these at signup any more (the
+        // story step left its path), so a value restored from an older draft
+        // must not ride along unseen — a 2-letter tagline would 422 on a
+        // field she cannot see. Organizers still fill them on STORY.
+        description: isOrganizer ? form.description : "",
+        short_description: isOrganizer ? form.short_description : "",
         phone: form.phone,
         // MEH-853: frame-01 (DETAILS) — sent on both registration + upgrade
         // paths (shared body above the !isUpgrade branch).
@@ -661,7 +664,8 @@ function RegisterProducerPageBody({ routeKind }) {
         producer_license_number: isOrganizer ? "" : form.producer_license_number,
         // MEH-2938: optional store / order-form link; empty → null (the
         // server's scheme guard treats "" the same, this keeps the body clean).
-        external_order_form: isOrganizer ? null : storeLinkForPayload(form.external_order_form),
+        // MEH-3656: the field left DETAILS; the link is added in the dashboard.
+        external_order_form: null,
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
@@ -669,9 +673,10 @@ function RegisterProducerPageBody({ routeKind }) {
         // MEH-2183 made it OPTIONAL — an unanswered dropdown sends "" and the
         // backend stores NULL. The free-text answer is sent only when "other"
         // is chosen (empty otherwise → NULL as well).
-        referral_source: form.referral_source,
+        // MEH-3656: asked on STORY, which only organizers still see.
+        referral_source: isOrganizer ? form.referral_source : "",
         referral_source_other:
-          form.referral_source === "other" ? form.referral_source_other : "",
+          isOrganizer && form.referral_source === "other" ? form.referral_source_other : "",
         primary_contact_method: "whatsapp",
         // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
         // grower declaration when an agricultural category is selected) folds
@@ -775,7 +780,7 @@ function RegisterProducerPageBody({ routeKind }) {
     }
   };
 
-  // Don't render the wizard/preflight until auth resolves. MEH-1489 broadened
+  // Don't render the wizard until auth resolves. MEH-1489 broadened
   // the old `&& step === STEP.ACCOUNT` guard to all authLoading: a token-holder's
   // step initializes to DETAILS (line 88), so that guard didn't cover them and a
   // logged-in producer/admin briefly saw the join pitch before the gate. Showing

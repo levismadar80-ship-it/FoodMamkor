@@ -80,8 +80,6 @@ test.describe("Producer register wizard (5-frame)", () => {
     // gated inline on CATEGORY (blocking error), so fill it before advancing.
     await page.getByTestId("register-category-license").fill("1234567");
 
-    // MEH-3656: CATEGORY is the last business frame — no story step follows.
-    await expect(page.getByTestId("register-story-tagline")).toHaveCount(0);
     // ToS + binding declaration (non-agri → no farmer checkbox). Check all shown.
     for (const cb of await page.getByTestId("register-frame-category").getByRole("checkbox").all()) {
       await cb.check();

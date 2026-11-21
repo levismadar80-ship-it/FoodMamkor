@@ -408,6 +408,8 @@ describe("RegisterProducerClient — no pre-flight screen (MEH-3656)", () => {
     expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
     expect(screen.queryByTestId("register-preflight")).not.toBeInTheDocument();
     expect(screen.queryByTestId("register-preflight-start")).not.toBeInTheDocument();
+    // Key-level: any pre-flight copy except the organizer door, under any testid.
+    expect(document.body.textContent).not.toMatch(/preflight\.(?!organizer_link)/);
   });
 
   it("keeps the organizer door on the account frame, as a link to the organizer route", async () => {
@@ -624,6 +626,12 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
     expect(screen.queryByTestId("register-delivery-note")).not.toBeInTheDocument();
     expect(screen.queryByTestId("register-fulfilment-whatsapp-note")).not.toBeInTheDocument();
     expect(screen.queryByTestId("register-external-order")).not.toBeInTheDocument();
+    // The testids above no longer exist anywhere, so they alone would stay green
+    // if the copy came back under a new one. The keys are what the mocked t()
+    // renders, so this is the check that can go red.
+    expect(document.body.textContent).not.toMatch(
+      /fields\.(free_hint|multi_hint|areas_note|hours_hint|whatsapp_note|external_order_form)/,
+    );
   });
 
   // MEH-2185: this case used to assert the photo-next hint was PRESENT. The copy
@@ -901,6 +909,34 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     expect(notice).toHaveTextContent(`${K}.validation.city_required`);
     // wizard order decides the landing field: producer_name precedes city
     expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
+  });
+
+  // MEH-3656 (fresh review): a business no longer sees the story fields or the
+  // store link, so values restored from an older draft must not be posted —
+  // a 2-letter tagline would 422 on a field she cannot see or fix.
+  it("does not post story fields or a store link restored from an older draft", async () => {
+    seedForeignDraft({ city: "חיפה" });
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    seedForeignDraft({
+      city: "חיפה",
+      description: "תיאור ישן",
+      short_description: "אב",
+      external_order_form: "https://shop.example.com",
+      referral_source: "other",
+      referral_source_other: "חברה",
+    });
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const body = api.post.mock.calls[0][1];
+    expect(body.description, "description").toBe("");
+    expect(body.short_description, "short_description").toBe("");
+    expect(body.external_order_form, "external_order_form").toBeNull();
+    expect(body.referral_source, "referral_source").toBe("");
+    expect(body.referral_source_other, "referral_source_other").toBe("");
   });
 
   // Adversarial review (MEH-1807): submitBounced latched true after a bounce and
