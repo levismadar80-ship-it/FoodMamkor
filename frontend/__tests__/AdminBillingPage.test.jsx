@@ -232,7 +232,9 @@ describe("AdminBillingPage (MEH-3182)", () => {
     });
     show();
     const lines = await screen.findAllByTestId("admin-billing-history-month");
-    expect(lines.map((line) => line.textContent)).toEqual([
+    // MEH-3189: a month with bookings also carries the CSV button; read the text only.
+    const button = he.admin.billing.csv.button;
+    expect(lines.map((line) => line.textContent.replace(button, ""))).toEqual([
       "אוקטובר 20263 בתי עסק היו משלמים, בסך הכול 175₪",
       "ספטמבר 2026שני בתי עסק היו משלמים, בסך הכול 90₪",
       "אוגוסט 2026בית עסק אחד היה משלם, בסך הכול 60₪",
