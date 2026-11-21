@@ -20,7 +20,7 @@
  */
 
 export const PRINT_FORMATS = /** @type {const} */ (["a6", "poster", "table", "sticker"]);
-export const STICKER_COUNT = 12;
+const STICKER_COUNT = 12;
 
 /**
  * The QR markup, drawn at the size of its box. The SVG paints its own quiet
@@ -41,7 +41,7 @@ function QrBox({ svg, className, testId }) {
 /** @typedef {{ name: string, svg: string|null, t: (key: string, values?: Record<string, string>) => string }} LayoutProps */
 
 /** A6 is 105×148mm. 50mm of code satisfies the 10:1 rule at ~500mm. @param {LayoutProps} props */
-export function A6Card({ name, svg, t }) {
+function A6Card({ name, svg, t }) {
   return (
     <article
       data-testid="print-kit-a6"
@@ -57,7 +57,7 @@ export function A6Card({ name, svg, t }) {
 }
 
 /** A4 is 210×297mm; a 110mm code scans from about a metre. @param {LayoutProps} props */
-export function A4Poster({ name, svg, t }) {
+function A4Poster({ name, svg, t }) {
   return (
     <article
       data-testid="print-kit-poster"
@@ -93,7 +93,7 @@ function TableSignHalf({ name, svg, t, flipped = false }) {
  * 180° so that, standing, both faces read the right way up.
  * @param {LayoutProps} props
  */
-export function TableSign(props) {
+function TableSign(props) {
   return (
     <article
       data-testid="print-kit-table"
@@ -113,7 +113,7 @@ export function TableSign(props) {
  * the sheet scales by percentage; on paper it is exact.
  * @param {LayoutProps} props
  */
-export function StickerSheet({ name, svg, t }) {
+function StickerSheet({ name, svg, t }) {
   const label = t("sticker_label", { name });
   return (
     <article
