@@ -164,7 +164,7 @@ const saveBtn = (page: Page, anchor: string) => body(page, anchor).getByRole("bu
 test.describe("licence card", () => {
   const field = (page: Page) => body(page, "license").getByLabel("מספר רישיון ייצור (משרד הבריאות)");
   const WARNING = "מספר רישיון ייצור הוא 7-10 ספרות";
-  const HINT = "אחת הקטגוריות שבחרתם דורשת רישיון ייצור. מילוי המספר נדרש לאישור העסק.";
+  const HINT = "אחת הקטגוריות שבחרתם דורשת רישיון ייצור. אפשר להצטרף גם בלעדיו. כשתוסיפו את המספר, נוכל לבדוק אותו ולהוסיף לעסק תג «מאומת».";
 
   // MT:MEH-1258:1 — a valid number saves, confirms, and re-seeds after a reload.
   test("a 7-10 digit number saves, confirms, and comes back after a reload", async ({ page }) => {
