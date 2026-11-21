@@ -6688,6 +6688,8 @@
       "page_title": "Ask the assistant about {name}",
       "page_ai_note": "An AI assistant that answers from this page",
       "page_other": "Write your own question…",
+      "ask_business": "Ask {name} directly",
+      "ask_business_aria": "Ask {name} directly (opens in a new tab)",
       "panel_title": "Ask about {name}",
       "opening": "You can ask me about {name}: opening hours, delivery, products and allergens. I answer only from what is written on the business's page.",
       "prompts": {
