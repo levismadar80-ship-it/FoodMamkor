@@ -21,6 +21,7 @@ describe("guest-to-login inline script (MEH-2233)", () => {
   const cases = [
     { pathname: "/favorites", search: "" },
     { pathname: "/en/favorites", search: "" },
+    { pathname: "/he/favorites", search: "" },
     { pathname: "/favorites", search: "?tab=events&x=%D7%90" },
   ];
   for (const c of cases) {
@@ -35,6 +36,11 @@ describe("guest-to-login inline script (MEH-2233)", () => {
   it("a stored token stays on the page", () => {
     const replace = runScript({ token: "abc", pathname: "/favorites", search: "" });
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("an empty token counts as none, as in auth-context.js", () => {
+    const replace = runScript({ token: "", pathname: "/favorites", search: "" });
+    expect(replace).toHaveBeenCalledTimes(1);
   });
 
   it("blocked storage stays on the page (the client check decides)", () => {
