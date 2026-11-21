@@ -42,8 +42,8 @@ describe("ProductsSection — days the product is made (MEH-3618)", () => {
     fireEvent.click(screen.getByTestId(`product-weekday-${FRI}`));
     fireEvent.click(screen.getByTestId(`product-weekday-${FRI}`)); // back to no day
     fireEvent.click(screen.getByText(P.add_submit_cta));
-    // Once beside the chips, once in the form's banner.
-    expect(screen.getAllByText(NONE).length).toBe(2);
+    // Once, beside the chips — not repeated in the form's banner.
+    expect(screen.getAllByText(NONE).length).toBe(1);
     expect(api.post).not.toHaveBeenCalled();
   });
 
@@ -84,7 +84,7 @@ describe("ProductsSection — days the product is made (MEH-3618)", () => {
     fireEvent.click(await screen.findByRole("button", { name: P.card.edit_aria_template.replace("{name}", "חלה") }));
     fireEvent.click(screen.getByTestId(`product-weekday-${FRI}`));
     fireEvent.click(screen.getByText(P.save_edit_cta));
-    expect(screen.getAllByText(NONE).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(NONE).length).toBe(1);
     expect(api.put).not.toHaveBeenCalled();
   });
 });

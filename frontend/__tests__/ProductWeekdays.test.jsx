@@ -168,6 +168,28 @@ describe("OrderSheet — days (MEH-3618)", () => {
     expect(screen.getByTestId("order-sheet-slot").value).toBe("");
   });
 
+  it("a way with no slot on the product's day is not offered; the sheet opens on the one that has", () => {
+    const menu = {
+      producer_id: PRODUCER, min_order_agorot: null, cancel_cutoff_hours: 12, lead_time_hours: 0, business_id_number: "512345678",
+      products: [product(BREAD, "חלה", bit(FRI))],
+      slots: [THU_SLOT, { ...FRI_SLOT, fulfilment: "delivery" }],
+    };
+    render(withIntl(<OrderSheet producer={{ id: PRODUCER }} menu={menu} picks={{ [BREAD]: 1 }} onChange={() => {}} onClose={() => {}} />));
+    expect(screen.queryByTestId("order-sheet-day-conflict")).toBeNull();
+    expect(screen.queryByTestId("order-sheet-fulfilment")).toBeNull(); // one way left
+    expect(slotOptions().map((o) => o.value)).toEqual([FRI_SLOT.start]);
+  });
+
+  it("removing the only product in the cart closes the sheet", () => {
+    const onChange = vi.fn();
+    const onClose = vi.fn();
+    const menu = { producer_id: PRODUCER, min_order_agorot: null, cancel_cutoff_hours: 12, lead_time_hours: 0, business_id_number: "512345678", products: [product(BREAD, "חלה", bit(SAT))], slots: SLOTS };
+    render(withIntl(<OrderSheet producer={{ id: PRODUCER }} menu={menu} picks={{ [BREAD]: 1 }} onChange={onChange} onClose={onClose} />));
+    fireEvent.click(screen.getByTestId("order-sheet-day-conflict-remove"));
+    expect(onChange).toHaveBeenCalledWith(BREAD, 0);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("no shared day: names the product, offers to remove it, and sends nothing", () => {
     const onChange = vi.fn();
     renderSheet([product(BREAD, "חלה", bit(FRI)), product(CAKE, "עוגה", bit(THU) | bit(SAT))], { [BREAD]: 2, [CAKE]: 1 }, onChange);

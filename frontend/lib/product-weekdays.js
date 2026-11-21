@@ -113,7 +113,7 @@ export function limitingProduct(slots, products) {
 }
 
 /** The pick keys of one product (a key per variant). @param {Record<string, number>} picks @param {string} productId */
-export function keysOf(picks, productId) {
+function keysOf(picks, productId) {
   return Object.keys(picks).filter((k) => splitKey(k).productId === productId);
 }
 
@@ -128,4 +128,29 @@ export function cartSlots(offered, picks, byId) {
   const ids = [...new Set(Object.keys(picks).map((k) => splitKey(k).productId))];
   const products = ids.map((id) => byId.get(id)).filter(Boolean);
   return { slots: slotsForProducts(offered, products), limiting: limitingProduct(offered, products) };
+}
+
+/**
+ * The ways (pickup / delivery) the cart can take on a day all its products
+ * are made. All of them when none can, so the sheet names the product.
+ * @template {string} W
+ * @param {W[]} ways
+ * @param {{ slotsOf: (way: W) => { start: string }[], picks: Record<string, number>, byId: Map<string, any> }} cart
+ * @returns {W[]}
+ */
+export function cartWays(ways, { slotsOf, picks, byId }) {
+  const open = ways.filter((w) => cartSlots(slotsOf(w), picks, byId).slots.length > 0);
+  return open.length > 0 ? open : ways;
+}
+
+/**
+ * Takes one product (every variant line) out of the cart; closes the sheet
+ * when that empties it, since an empty cart has no sheet to show.
+ * @param {string} productId
+ * @param {{ picks: Record<string, number>, onChange: (key: string, qty: number) => void, onClose: () => void }} cart
+ */
+export function removeFromCart(productId, { picks, onChange, onClose }) {
+  const keys = keysOf(picks, productId);
+  keys.forEach((k) => onChange(k, 0));
+  if (keys.length === Object.keys(picks).length) onClose();
 }

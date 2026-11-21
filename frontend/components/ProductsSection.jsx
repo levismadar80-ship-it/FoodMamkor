@@ -178,7 +178,6 @@ export default function ProductsSection({
   const t = useTranslations("settings.products");
   const tForm = useTranslations("settings.products.form");
   const tErr = useTranslations("settings.products.errors");
-  const tw = useTranslations("product_weekdays"); // MEH-3618
   const tPrice = useTranslations("product_price"); // MEH-2924
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -341,7 +340,7 @@ export default function ProductsSection({
       return;
     }
     setFormErrors({});
-    if (weekdaysMissing(form.available_weekdays)) return setError(tw("none_picked")); // MEH-3618
+    if (weekdaysMissing(form.available_weekdays)) return; // MEH-3618: the field already says why, beside the chips
 
     // MEH-2137 chunk 3: SOFT duplicate-name confirm. Two products may
     // legitimately share a name (מחמצת and כוסמין can both be «לחם»), which is
@@ -503,7 +502,7 @@ export default function ProductsSection({
     const minNum =
       editForm.price_min === "" || editForm.price_min === null || editForm.price_min === undefined ? null : Number(editForm.price_min);
     const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
-    if (weekdaysMissing(editForm.available_weekdays)) return setError(tw("none_picked")); // MEH-3618
+    if (weekdaysMissing(editForm.available_weekdays)) return; // MEH-3618: the field already says why, beside the chips
     setSavingEdit(true);
     setError("");
     try {
