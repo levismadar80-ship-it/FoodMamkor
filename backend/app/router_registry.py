@@ -27,6 +27,7 @@ from app.routers import (
     favorites,
     google_rating,
     group_buys,
+    group_buy_capacity,
     health,
     holiday_mode,
     marketing,
@@ -153,6 +154,8 @@ def _register_flagged_features(app: FastAPI) -> None:
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
     app.include_router(product_order_business.router)
+    # MEH-3592: quantity edit, waitlist, the business's caps / stop switch.
+    app.include_router(group_buy_capacity.router)
 
 
 def register_routers(app: FastAPI) -> None:

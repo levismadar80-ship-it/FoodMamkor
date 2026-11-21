@@ -92,21 +92,28 @@ def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
     group_buy_id: str,
     producer_id: str,
     test_cause: bool = False,
+    pickup: str = "",
 ) -> None:
     """Fired on the open->funded transition, once per participant.
 
+    MEH-3597: `pickup` = the group's pickup time and pickup / delivery notes
+    (group_buy_pickup_text.pickup_lines), so she knows when and where.
+
     Direction of contact is participant -> business, matching MEH-1650's
     wording and every other contact surface on the site. The business name is
-    not a contact detail; no number or address is carried.
+    not a contact detail; no number or address is carried. The pickup and
+    delivery notes are the business's own public text from the group page
+    (MEH-3597), not its contact record.
     """
     subject = f'מהמקור — הקבוצה "{title}" הגיעה ליעד'
     body = (
         f"שלום,\n\n"
         f'הקבוצה שהצטרפת אליה, "{title}", הגיעה ליעד.\n'
         f"לתיאום ההזמנה צרו קשר עם {producer_name}.\n\n"
+        + (f"{pickup}\n" if pickup else "")
         # MEH-2453: the business page shows its delivery areas and pickup
         # points. A link to the page, never its contact record.
-        f"לדף העסק: {_producer_url(producer_id)}\n"
+        + f"לדף העסק: {_producer_url(producer_id)}\n"
         f"לצפייה בקבוצה ובפרטי ההזמנה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
@@ -124,6 +131,7 @@ def send_funded_notifications(  # noqa: PLR0913
     producer_id: str,
     test_cause: bool = False,
     late_joiner: bool = False,
+    pickup: str = "",
 ) -> None:
     """BackgroundTasks entry point — dispatches both sides, never raises.
 
@@ -171,6 +179,7 @@ def send_funded_notifications(  # noqa: PLR0913
                 group_buy_id,
                 producer_id,
                 test_cause=test_cause,
+                pickup=pickup,
             )
         except Exception:  # noqa: BLE001 — one failure must not stop the rest
             logger.exception(
@@ -281,3 +290,128 @@ def notify_participant_expired(
         f"בברכה,\nצוות מהמקור"
     )
     _send_email(participant_email, subject, body, test_cause=test_cause)
+
+
+# --- MEH-3592: a late joiner (to the business) and a freed place (waitlist) ---
+
+
+def notify_producer_late_joiner(  # noqa: PLR0913 — plain data for a BackgroundTasks entry
+    producer_email: str,
+    title: str,
+    participant_count: int,
+    units_total: int,
+    group_buy_id: str,
+    test_cause: bool = False,
+) -> None:
+    """A join after the goal: the business plans stock, so it hears of each
+    one (Etsy / Shopify notify the seller per order). A COUNT and a unit
+    total, never a name — see the module PRIVACY CONTRACT."""
+    subject = f'מהמקור — הצטרפות חדשה לקבוצת הרכישה "{title}"'
+    body = (
+        f"שלום,\n\n"
+        f'יש הצטרפות נוספת לקבוצת הרכישה "{title}", שכבר הגיעה ליעד.\n'
+        f"מספר הצטרפויות עכשיו: {participant_count}\n"
+        f"סך הכמות שהוזמנה: {units_total}\n\n"
+        f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(producer_email, subject, body, test_cause=test_cause)
+
+
+def notify_waitlist_place(
+    email: str, title: str, group_buy_id: str, test_cause: bool = False
+) -> None:
+    """A place freed in a full group buy: the first on its waitlist is told.
+    The place is not held (the events waitlist, MEH-3314, works the same)."""
+    subject = f'מהמקור — התפנה מקום בקבוצת הרכישה "{title}"'
+    body = (
+        f"שלום,\n\n"
+        f'התפנה מקום בקבוצת הרכישה "{title}", שנרשמת לרשימת ההמתנה שלה.\n'
+        f"המקום לא שמור: הוא הולך להצטרפות הראשונה.\n\n"
+        f"להצטרפות: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(email, subject, body, test_cause=test_cause)
+
+
+def send_late_joiner_to_producer(  # noqa: PLR0913 — BackgroundTasks entry, plain data
+    producer_email: str | None,
+    title: str,
+    participant_count: int,
+    units_total: int,
+    group_buy_id: str,
+    test_cause: bool = False,
+) -> None:
+    if not producer_email:
+        return
+    try:
+        notify_producer_late_joiner(
+            producer_email,
+            title,
+            participant_count,
+            units_total,
+            group_buy_id,
+            test_cause=test_cause,
+        )
+    except Exception:  # best-effort, like every send in this module
+        logger.exception("late-joiner email to the business failed (%s)", group_buy_id)
+
+
+def send_waitlist_place(
+    email: str, title: str, group_buy_id: str, test_cause: bool = False
+) -> None:
+    try:
+        notify_waitlist_place(email, title, group_buy_id, test_cause=test_cause)
+    except Exception:  # best-effort
+        logger.exception("waitlist place email failed (%s)", group_buy_id)
+
+
+def notify_pickup_changed(  # noqa: PLR0913 — plain data for a BackgroundTasks entry
+    email: str,
+    title: str,
+    group_buy_id: str,
+    window: str,
+    notes: str,
+    first: bool = False,
+    test_cause: bool = False,
+) -> None:
+    """MEH-3597: the business set, changed or removed the pickup time of a
+    group she joined. `window` = pickup_window_he(); "" = removed."""
+    if not window:
+        news = f'בית העסק הסיר את מועד האיסוף בקבוצת הרכישה "{title}". את מועד האיסוף מתאמים ישירות מול בית העסק.\n'
+    elif first:
+        news = f'בית העסק קבע מועד איסוף לקבוצת הרכישה "{title}": {window}.\n'
+    else:
+        news = f'בית העסק שינה את מועד האיסוף בקבוצת הרכישה "{title}". המועד החדש: {window}.\n'
+    subject = f'מהמקור — מועד האיסוף בקבוצה "{title}" עודכן'
+    body = (
+        f"שלום,\n\n{news}"
+        + (f"\n{notes}" if notes else "")
+        + f"\nלדף הקבוצה: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(email, subject, body, test_cause=test_cause)
+
+
+def send_pickup_changed(  # noqa: PLR0913 — BackgroundTasks entry, plain data
+    emails: list[str],
+    title: str,
+    group_buy_id: str,
+    window: str,
+    notes: str,
+    first: bool = False,
+    test_cause: bool = False,
+) -> None:
+    for email in emails:
+        try:
+            notify_pickup_changed(
+                email,
+                title,
+                group_buy_id,
+                window,
+                notes,
+                first=first,
+                test_cause=test_cause,
+            )
+        except Exception:  # best-effort, one failure must not stop the rest
+            logger.exception("pickup-changed email failed (%s)", group_buy_id)
