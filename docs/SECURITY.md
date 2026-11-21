@@ -564,6 +564,15 @@ declares `zod ^3`). Verified: `npm run design:export` output byte-identical,
 `design:lint` 0 errors. Drop an entry once the parent package ships the fix
 on its own.
 
+**Second batch (MEH-3575, same day):** `dompurify` ^3.4.18 (the only one in
+the shipped bundle; IN_PLACE XSS advisories), `fflate@0.4` ^0.4.9,
+`postcss-selector-parser@6` ^6.1.6, `typescript-eslint` ^8.73.0, and
+`minimatch` ^11.0.9 inside `eslint-plugin-sonarjs` (`npm audit fix` proposed a
+sonarjs downgrade instead). `vitest` / `@vitest/coverage-v8` bumped to ^4.1.12
+directly. The vitest bump only resolves under npm 11 (`npx -y npm@11
+install`); the lockfile it writes installs cleanly with npm 10 `npm ci`.
+Result: `npm audit` 0 vulnerabilities.
+
 **Accepted-risk CVEs (post-baseline):**
 
 - **GHSA-w5r5-m38g-f9f9** — joserfc PBES2 unbounded `p2c` iteration DoS
