@@ -37,9 +37,7 @@
 5 backend/app/schemas/producer.py|backend/app/schemas/registration.py
 7 backend/app/services/auth_emails.py|backend/app/services/owner_detach.py
 1 backend/app/services/auth_emails.py|backend/app/services/review_reports.py
-12 backend/app/services/experience_moderation.py|backend/app/services/home_product_moderation.py
-22 backend/app/services/experience_moderation.py|backend/app/services/producer_recipe_moderation.py
-4 backend/app/services/home_product_moderation.py|backend/app/services/producer_recipe_moderation.py
+5 backend/app/services/experience_moderation.py|backend/app/services/producer_recipe_moderation.py
 1 backend/app/services/owner_detach.py|backend/app/services/review_reports.py
 8 backend/app/services/page_freshness.py|backend/app/services/weekly_owner_summary.py
 3 backend/app/services/registration_emails.py|backend/app/services/rescue_emails.py

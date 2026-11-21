@@ -134,7 +134,7 @@ refactor PR.
 `TypeError: Client.__init__() got an unexpected keyword argument 'proxies'`
 
 **Files:** `backend/app/routers/chat.py`,
-`backend/app/services/home_product_moderation.py`.
+`backend/app/services/moderation_common.py` (`make_anthropic_client`, MEH-3619).
 
 **Fix:** always
 `anthropic.Anthropic(api_key=..., http_client=httpx.Client())`.

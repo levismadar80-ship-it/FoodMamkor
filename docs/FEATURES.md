@@ -48,6 +48,7 @@ left in v1" vs "what's planned for v2".
 | `/experiences` | Community experiences / workshops hub tab |
 | `/experiences/[id]` | Experience page |
 | `/rescue` | Surprise bags (food rescue) hub tab: reserve a bag, pickup window |
+| `/rescue/[offerId]` | One surprise bag: price vs worth, pickup window, map, what is usually inside, allergens, how pickup works, cancellation, reserve (MEH-3586) |
 | `/group-buys` | Group buys hub tab: join a group, progress to target |
 | `/group-buys/[id]` | Group buy page |
 | `/organizers/[slug]` | Public page of a markets / events organizer and their events |
