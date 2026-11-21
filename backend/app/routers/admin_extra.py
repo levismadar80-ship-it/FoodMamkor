@@ -33,7 +33,6 @@ from app.schemas.schemas import (
     CategoryCreate,
     CategoryIn,
     CategoryOut,
-    RiskScoreResponse,
     StaticPageOut,
     StaticPageUpdate,
     UserAdminOut,
@@ -689,29 +688,6 @@ def set_vacation_mode(
     db: Session = Depends(get_db),
 ) -> VacationModeState:
     return write_vacation_mode(db, body)
-
-
-# --- MEH-509 PR3 — producer risk score (read-only admin view) ---------------
-# Backed by producers.risk_score + producers.risk_reasoning (PR3 migration
-# 92afa3cb76e2). Populated asynchronously by app/services/producer_risk.py
-# via BackgroundTasks after producer signup. NULL on both = "not scored yet
-# OR Anthropic call failed (fail-open)" — admin UI shows the grey "אין מידע"
-# badge in that case.
-
-
-@router.get("/producers/{producer_id}/risk-score", response_model=RiskScoreResponse)
-def get_producer_risk_score(
-    producer_id: UUID,
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-) -> RiskScoreResponse:
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
-    if producer is None:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    return RiskScoreResponse(
-        score=producer.risk_score,
-        reasoning=producer.risk_reasoning,
-    )
 
 
 @router.post("/settings/test/{service}", response_model=None)

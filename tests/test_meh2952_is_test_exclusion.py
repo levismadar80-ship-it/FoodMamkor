@@ -150,10 +150,6 @@ class TestCounts:
     def test_producers_count(self, client, db, pair):
         assert client.get("/producers/count").json()["count"] == 1
 
-    def test_producers_cities(self, client, db, pair):
-        cities = client.get("/producers/cities").json()
-        assert sum(c["count"] for c in cities) == 1
-
     def test_stats(self, client, db, pair):
         assert client.get("/stats").json()["producers_count"] == 1
 

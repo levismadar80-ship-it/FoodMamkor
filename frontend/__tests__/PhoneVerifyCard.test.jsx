@@ -73,6 +73,7 @@ const deferred = () => {
 };
 
 const sendBtn = () => screen.getByRole("button", { name: new RegExp(`^${T("send_cta")}$`) });
+const resendBtn = () => screen.getByRole("button", { name: new RegExp(`^${T("resend_cta")}$`) });
 const sendBtnAny = () => screen.getAllByRole("button")[0];
 const codeInput = () => screen.getByLabelText(T("code_label"));
 const confirmBtn = () => screen.getByRole("button", { name: T("confirm_cta") });
@@ -213,7 +214,10 @@ describe("PhoneVerifyCard — send (:42-58)", () => {
     await act(async () => {
       vi.advanceTimersByTime(1000);
     });
-    expect(btn).toHaveTextContent(T("send_cta"));
+    // MEH-3567: after a code went out, the idle label says «send again», not
+    // the first-send «שלחו קוד אימות».
+    expect(btn).toHaveTextContent(T("resend_cta"));
+    expect(btn).not.toHaveTextContent(T("send_cta"));
     expect(btn).not.toBeDisabled();
     // The code row survives the cooldown expiring — resend, not reset.
     expect(codeInput()).toBeInTheDocument();
@@ -411,7 +415,7 @@ describe("PhoneVerifyCard — the 6th digit verifies on its own (MEH-3126)", () 
     apiMock.post.mockImplementationOnce(reject(400, "wrong code"));
     await typeCode("000000");
     await typeCode("");
-    await click(sendBtn());
+    await click(resendBtn());
     await typeCode("000000");
     expect(confirmCalls()).toHaveLength(2);
   });

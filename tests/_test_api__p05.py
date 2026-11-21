@@ -1,4 +1,4 @@
-"""Part 5 of 7 of `tests/test_api.py`: TestAvailabilityState, TestProducersCount, TestProducersCities, TestCategoryRequests, TestFavoritesCount, TestSimilarProducersExclude, TestContactClickTracking, TestGetProducersMeRouteOrder, TestUploadGoogleAvatarOrNone, TestAuthEmailHtmlEscape, TestResetPasswordFlow.
+"""Part 5 of 7 of `tests/test_api.py`: TestAvailabilityState, TestProducersCount, TestCategoryRequests, TestFavoritesCount, TestSimilarProducersExclude, TestContactClickTracking, TestGetProducersMeRouteOrder, TestUploadGoogleAvatarOrNone, TestAuthEmailHtmlEscape, TestResetPasswordFlow.
 
 Moved here verbatim by the MEH-3540 mechanical split. Not collected
 directly (no `test_` prefix): `tests/test_api.py` imports these tests, so
@@ -222,40 +222,6 @@ class TestProducersCount:
         make_producer(db, status="pending")
         after = client.get("/producers/count").json()["count"]
         assert after == before  # pending not counted
-
-
-class TestProducersCities:
-    """MEH-970 — GET /producers/cities returns live per-city approved-producer
-    counts for the /map region control (GROUP BY city, approved-only, blanks
-    omitted, ordered by count desc)."""
-
-    def test_cities_endpoint_returns_list(self, client, db):
-        resp = client.get("/producers/cities")
-        assert resp.status_code == 200
-        assert isinstance(resp.json(), list)
-
-    def test_cities_groups_and_orders_by_count_desc(self, client, db):
-        make_producer(db, name="א", city="חיפה", status="approved")
-        make_producer(db, name="ב", city="חיפה", status="approved")
-        make_producer(db, name="ג", city="עכו", status="approved")
-        body = client.get("/producers/cities").json()
-        by_city = {row["city"]: row["count"] for row in body}
-        assert by_city["חיפה"] == 2
-        assert by_city["עכו"] == 1
-        order = [row["city"] for row in body]
-        assert order.index("חיפה") < order.index("עכו")  # count desc
-
-    def test_cities_excludes_pending(self, client, db):
-        make_producer(db, name="ממתינה", city="צפת", status="pending")
-        body = client.get("/producers/cities").json()
-        assert all(row["city"] != "צפת" for row in body)
-
-    def test_cities_omits_blank_city(self, client, db):
-        make_producer(db, name="ריקה", city="   ", status="approved")
-        body = client.get("/producers/cities").json()
-        # whitespace-only city is omitted; assert the invariant (no blank rows)
-        # rather than == [] so the test is robust to any seeded approved rows.
-        assert all(row["city"].strip() != "" for row in body)
 
 
 class TestCategoryRequests:
