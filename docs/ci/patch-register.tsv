@@ -70,3 +70,4 @@ uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	-	-
 vrt-label-trigger	applied	.github/workflows/vrt-update.yml	vrt-regen:	-	-
 webkit-project	applied	frontend/playwright.config.ts	webkit-iphone13	-	-
 meh-3153-webkit-core	applied	.github/workflows/e2e.yml	e2e-webkit-core:	2026-11-20	applied by Claude in Chrome in 0b55272ae (sha256 4c36ed67…, verified byte for byte)
+meh-3153-webkit-deps	pending	.github/workflows/e2e.yml	MEH-3153 webkit deps: runs on a cache hit too	2026-11-21	applied in the same session through Claude in Chrome
