@@ -18,6 +18,8 @@ from uuid import uuid4
 from _test_group_buys_api__common import _contact_details_in  # noqa: F401
 from _test_group_buys_api__common import _make_group_buy  # noqa: F401
 from _test_group_buys_api__common import _producer_user  # noqa: F401
+JOIN_SUBJECT_PREFIX = "מהמקור — הצטרפת לקבוצה"
+
 
 class TestFundedNotificationDispatch:
     """Idempotency, recipient fan-out, and the best-effort contract."""
@@ -26,6 +28,10 @@ class TestFundedNotificationDispatch:
     def _capture_sends(monkeypatch):
         sends = []
         def capture(to, subject, body, html=None, test_cause=False):
+            # MEH-3591: the join confirmation is its own email with its own
+            # tests (test_meh3591_missing_emails.py); these count funded mail.
+            if subject.startswith(JOIN_SUBJECT_PREFIX):
+                return
             sends.append({"to": to, "subject": subject, "body": body})
 
         monkeypatch.setattr("app.services.group_buy_notifications.send_email", capture)
@@ -525,9 +531,10 @@ class TestCancelNotification:
         sends = []
         monkeypatch.setattr(
             "app.services.group_buy_notifications.send_email",
-            lambda to, subject, body, html=None, test_cause=False: sends.append(
-                {"to": to, "subject": subject, "body": body}
-            ),
+            # MEH-3591: skip the join confirmation, as in the class above.
+            lambda to, subject, body, html=None, test_cause=False: None
+            if subject.startswith(JOIN_SUBJECT_PREFIX)
+            else sends.append({"to": to, "subject": subject, "body": body}),
         )
         return sends
 
