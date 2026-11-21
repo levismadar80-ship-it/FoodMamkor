@@ -251,7 +251,6 @@ function buildDraftRows(producer) {
 /** The open email row: one resend button, then «✓ נשלח!» (MEH-3660). */
 function EmailResend({ t }) {
   const { resendSent, resendSending, resendError, handleResend } = useResendVerification();
-  if (resendError) return <p className="text-sm text-error">{resendError}</p>;
   if (resendSent) {
     return (
       <p className="text-sm text-primary font-medium" data-testid="completeness-email-sent" role="status">
@@ -259,16 +258,25 @@ function EmailResend({ t }) {
       </p>
     );
   }
+  // A failed send (429, network) keeps the button: the message says why, and
+  // the owner can try again without reloading the dashboard.
   return (
-    <button
-      type="button"
-      onClick={handleResend}
-      disabled={resendSending}
-      data-testid="completeness-email-resend"
-      className={`${PRIMARY_BTN} disabled:opacity-50`}
-    >
-      {t("email_resend")}
-    </button>
+    <div className="flex flex-col items-start gap-2">
+      {resendError && (
+        <p className="text-sm text-error" role="alert" data-testid="completeness-email-error">
+          {resendError}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={handleResend}
+        disabled={resendSending}
+        data-testid="completeness-email-resend"
+        className={`${PRIMARY_BTN} disabled:opacity-50`}
+      >
+        {t("email_resend")}
+      </button>
+    </div>
   );
 }
 

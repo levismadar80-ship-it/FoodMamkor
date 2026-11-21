@@ -53,3 +53,20 @@ def test_producers_me_exposes_the_owner_email_flag(client, db):
     user.email_verified = False
     db.commit()
     assert client.get("/producers/me", headers=auth_header(user)).json()["owner_email_verified"] is False
+
+
+def test_rejected_resubmit_422_names_email_and_keeps_rejected(client, db):
+    """MEH-2210's resubmit loop reads the same gate: a rejected business whose
+    owner has not confirmed her email is told so, and is not moved to pending
+    or charged a resubmission."""
+    producer, user = make_submit_ready_producer(db)
+    producer.status = "rejected"
+    user.email_verified = False
+    db.commit()
+    before = producer.resubmission_count
+    res = client.post("/producers/me/request-review", headers=auth_header(user))
+    assert res.status_code == 422, res.text
+    assert res.json()["detail"]["params"]["missing"] == [MISSING_EMAIL_VERIFIED]
+    db.refresh(producer)
+    assert producer.status == "rejected"
+    assert producer.resubmission_count == before

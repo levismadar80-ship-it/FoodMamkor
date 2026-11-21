@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import { render, screen, within, fireEvent, waitFor } from "@testing-library/react";
 
 // MEH-3659: the card has two modes. Draft = the submit-gate checklist (only
 // what blocks «שליחה לבדיקה»). Anything else = «לשפר את העמוד» (the full
@@ -240,6 +240,19 @@ describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks sub
     fireEvent.click(screen.getByTestId("completeness-email-resend"));
     expect(post).toHaveBeenCalledWith("/auth/resend-verify");
     expect(await screen.findByTestId("completeness-email-sent")).toBeInTheDocument();
+  });
+
+  it("a failed resend shows why and keeps the button, so a second try sends again", async () => {
+    post.mockReset();
+    post.mockRejectedValueOnce({ response: { status: 500 } }).mockResolvedValueOnce({});
+    render(<ProfileCompletenessCard producer={{ ...draft, owner_email_verified: false }} />);
+    fireEvent.click(screen.getByTestId("completeness-email-resend"));
+    expect(await screen.findByTestId("completeness-email-error")).toBeInTheDocument();
+    const again = await screen.findByTestId("completeness-email-resend");
+    await waitFor(() => expect(again).not.toBeDisabled());
+    fireEvent.click(again);
+    expect(await screen.findByTestId("completeness-email-sent")).toBeInTheDocument();
+    expect(post).toHaveBeenCalledTimes(2);
   });
 
   it("email row with other rows missing → listed but closed; the first missing row is the open one", () => {

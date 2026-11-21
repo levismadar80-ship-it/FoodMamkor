@@ -18,6 +18,7 @@
 >   - 🛡️ = admin role (`require_admin`)
 >   - MEH-3137: `PUT /producers/me`, claim, owner-invite accept and `POST /producers` take `farmer_declaration_accepted`; moving into ירקות/פירות with no recorded grower line and no flag → 422 Hebrew. Details: `docs/DATA.md` → MEH-3137.
 >   - MEH-3261: owner `PUT /producers/me` and `POST`/`PUT /producers/me/products[/{id}]` of an APPROVED business run changed text through the AI check (REJECTED → 422, nothing saved) and ping the admin once per content save — no route or response shape change.
+>   - MEH-3660: `GET`/`PUT /producers/me` carry `owner_email_verified` (businesses), and the business submit gate (`POST /producers/me/submit-for-review`, `POST /producers/me/request-review`) adds `email_verified` to the 422 `missing` list when the owner has not confirmed her email. Details: `docs/DATA.md` → MEH-3660.
 >   - MEH-2852: the write routes that make a public page appear, change or disappear (business approve / edit / hide / reject / delete, owner `PUT /producers/me`, events, group buys, admin experience + recipe moderation) queue an IndexNow ping after the commit — production only, no response change. Full list: `docs/DATA.md` → "IndexNow".
 >   - MEH-2716: `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and `GET /users/me/favorites` carry computed `rescued_recently` («מצילים מזון» badge: a surprise bag handed or given away free in the last 30 days; always false while the rescue pilot is off).
 

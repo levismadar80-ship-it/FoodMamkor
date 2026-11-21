@@ -161,7 +161,10 @@ def _has_location(producer: Producer) -> bool:
 
 
 def submission_missing_items(
-    producer: Producer, *, upcoming_events: int | None = None
+    producer: Producer,
+    *,
+    upcoming_events: int | None = None,
+    email_verified: bool | None = None,
 ) -> list[str]:
     """The requirement codes this producer has NOT satisfied, in canonical
     order. An empty list means "ready to submit".
@@ -171,6 +174,9 @@ def submission_missing_items(
     satisfied — the fail-closed direction. The cost of a false "missing" is
     one confused owner; the cost of a false "ready" is an unreviewable row in
     the admin queue, which is the bug this whole ticket exists to remove.
+
+    `upcoming_events` / `email_verified` let a list caller pass facts it read
+    for many rows in one query (admin_draft_missing); None → read here.
     """
     if getattr(producer, "kind", "producer") == "organizer":
         return _organizer_missing_items(producer, upcoming_events)
@@ -210,7 +216,9 @@ def submission_missing_items(
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)
 
-    if not owner_email_verified(producer):
+    if email_verified is None:
+        email_verified = owner_email_verified(producer)
+    if not email_verified:
         missing.append(MISSING_EMAIL_VERIFIED)
 
     return missing
@@ -263,8 +271,11 @@ def attach_upcoming_events_count(producer: Producer) -> None:
 def attach_owner_email_verified(producer: Producer) -> None:
     """Set the transient `owner_email_verified` that ProducerOwnerOut
     serializes, so the client gate mirror (lib/submission-gate.js) reads the
-    same fact the server gate reads (MEH-3660)."""
-    producer.owner_email_verified = owner_email_verified(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
+    same fact the server gate reads (MEH-3660). Businesses only, like
+    attach_upcoming_events_count for organizers: the organizer gate has no
+    email row, so an organizer keeps the schema default without a query."""
+    if getattr(producer, "kind", "producer") != "organizer":
+        producer.owner_email_verified = owner_email_verified(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
 
 
 def _organizer_missing_items(
