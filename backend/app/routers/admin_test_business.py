@@ -2,7 +2,9 @@
 Module:   admin_test_business
 Purpose:  The admin's «עסק בדיקה — מוסתר מהאתר» switch: marks a business as a
           seeded test row (`producers.is_test`), which hides it from every
-          public surface and from every outbound send (MEH-2952 chunks 1–2).
+          listing (list, search, map, sitemap) and from every outbound send
+          (MEH-2952 chunks 1–2). Its own page still opens at the direct URL,
+          with noindex (chunk 3), for the golden-path run.
 Touches:  producers.is_test; IndexNow (the page URL it leaves or returns to).
 Does NOT: Expose `is_test` in any schema. The request field is `hidden`, the
           list answers ids only, and ProducerAdminOut stays free of the
