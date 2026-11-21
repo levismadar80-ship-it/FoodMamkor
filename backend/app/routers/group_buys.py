@@ -698,8 +698,14 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
     # page sends it that way); expected_status is optional for the same reason.
     allowed = {"open", "funded", "cancelled", "fulfilled"}
     if status not in allowed:
+        # MEH-1943: the allowed set goes to params, never into the message.
         raise HTTPException(
-            status_code=400, detail=f"סטטוס לא תקין. אפשרויות: {allowed}"
+            status_code=400,
+            detail={
+                "code": "invalid_group_buy_status",
+                "message": "סטטוס לא תקין",
+                "params": {"allowed": sorted(allowed)},
+            },
         )
     gb = (
         db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
