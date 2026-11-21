@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.models.catalog import ProducerLocation
 from app.models.models import Producer
 from app.models.product_orders import PRODUCT_ORDER_CODE_STATUSES, ProductOrder
+from app.services.producer_listing import is_business_row
 from app.services.product_order_actions import buyer_can_cancel, cutoff_hours
 from app.services.review_invite import review_invite_url
 from app.utils.clock import utc_now
@@ -119,8 +120,10 @@ def pickup_address(db: Session, order: ProductOrder) -> str | None:
 
 def review_url(producer: Producer | None, order: ProductOrder) -> str | None:
     """MEH-3620: the verified-review link, once the order was handed over and
-    only for a live business (the page the link opens exists only then)."""
-    if order.status != "handed" or producer is None or producer.status != "approved":
+    only for a live business (the page the link opens exists only then).
+    is_business_row(), not a bare status check: a seeded test business has no
+    public page either (MEH-2952)."""
+    if order.status != "handed" or producer is None or not is_business_row(producer):
         return None
     return review_invite_url(producer)
 
