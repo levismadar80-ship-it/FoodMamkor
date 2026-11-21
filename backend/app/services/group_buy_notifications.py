@@ -415,3 +415,26 @@ def send_pickup_changed(  # noqa: PLR0913 — BackgroundTasks entry, plain data
             )
         except Exception:  # best-effort, one failure must not stop the rest
             logger.exception("pickup-changed email failed (%s)", group_buy_id)
+
+
+def notify_pickup_reminder(  # noqa: PLR0913 — plain data from the daily job
+    email: str,
+    title: str,
+    producer_name: str,
+    group_buy_id: str,
+    pickup: str,
+    test_cause: bool = False,
+) -> None:
+    """MEH-3610: the reminder before pickup, once per group (the daily job,
+    group_buy_pickup_reminder). «תזכורת», not «מחר»: a group whose pickup is
+    later today gets the same mail, and «מחר» would be wrong there. `pickup` =
+    the time, the place and the notes (pickup_lines + place_line)."""
+    subject = f'מהמקור — תזכורת לאיסוף: "{title}"'
+    body = (
+        f"שלום,\n\n"
+        f'תזכורת: מתקרב האיסוף של קבוצת הרכישה "{title}" של {producer_name}.\n\n'
+        + (f"{pickup}\n" if pickup else "")
+        + f"לדף הקבוצה: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(email, subject, body, test_cause=test_cause)

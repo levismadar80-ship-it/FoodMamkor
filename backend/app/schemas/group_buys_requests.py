@@ -12,6 +12,8 @@ from decimal import Decimal
 from typing import Literal, Self
 from uuid import UUID
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from app.allergens import normalize_allergens
+from app.limits import MAX_TAG_LIST
 from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     SanitizedLabelField,
@@ -33,6 +35,19 @@ class GroupBuyCommitOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class GroupBuyPickupLocationOut(BaseModel):
+    """MEH-3610: the branch a group buy is picked up from, as public as the
+    business made it. An `approximate` branch gives the city only — no street
+    and no pin (MEH-829, the product_order_views.pickup_address rule)."""
+
+    id: UUID
+    label: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
 
 
 class GroupBuyOut(BaseModel):
@@ -69,6 +84,10 @@ class GroupBuyOut(BaseModel):
     # MEH-3597: the pickup window (naive UTC), or null.
     pickup_starts_at: datetime | None = None
     pickup_ends_at: datetime | None = None
+    # MEH-3610: what the business declares (null = nothing declared — the page
+    # says so in words), and the branch people pick up from.
+    allergens: list[str] | None = None
+    pickup_location: GroupBuyPickupLocationOut | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -115,6 +134,15 @@ class GroupBuyCreate(BaseModel):
     # MEH-3597: an optional pickup window. Both or neither; end after start.
     pickup_starts_at: datetime | None = None
     pickup_ends_at: datetime | None = None
+    # MEH-3610: allergens (as a rescue bag) and the pickup branch. The router
+    # checks the branch is this business's own.
+    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    pickup_location_id: UUID | None = None
+
+    @field_validator("allergens")
+    @classmethod
+    def _known_allergens_only(cls, v: list[str] | None) -> list[str] | None:
+        return _known_allergens(v)
 
     @field_validator("pickup_starts_at", "pickup_ends_at")
     @classmethod
@@ -195,6 +223,12 @@ def _naive_utc(v: datetime | None) -> datetime | None:
 PICKUP_BEFORE_DEADLINE = "האיסוף צריך להתחיל אחרי המועד האחרון להצטרפות"
 
 
+def _known_allergens(value: list[str] | None) -> list[str] | None:
+    """MEH-3610: the bag's rule (schemas/rescue.RescueTypicalItemsIn) — one
+    helper decides a valid code, an unknown one is a 422, [] becomes None."""
+    return normalize_allergens(value)
+
+
 def _check_pickup_window(start: datetime | None, end: datetime | None) -> None:
     if (start is None) != (end is None):
         raise ValueError("יש למלא גם את תחילת האיסוף וגם את סופו")
@@ -240,6 +274,15 @@ class GroupBuySettingsUpdate(BaseModel):
     # sent together, or both null to clear it.
     pickup_starts_at: datetime | None = None
     pickup_ends_at: datetime | None = None
+    # MEH-3610: change the allergens or the branch while the group runs; an
+    # explicit null clears either.
+    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    pickup_location_id: UUID | None = None
+
+    @field_validator("allergens")
+    @classmethod
+    def _known_allergens_only(cls, v: list[str] | None) -> list[str] | None:
+        return _known_allergens(v)
 
     @field_validator("pickup_starts_at", "pickup_ends_at")
     @classmethod

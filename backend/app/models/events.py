@@ -26,7 +26,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import backref, relationship
 from app.database import Base
 from app.utils.clock import utc_now
@@ -336,6 +336,19 @@ class GroupBuy(Base):
     # (GroupBuyCreate). The free-text pickup_note stays beside it.
     pickup_starts_at = Column(DateTime, nullable=True)
     pickup_ends_at = Column(DateTime, nullable=True)
+    # MEH-3610: the allergens the business declares, as a rescue bag does
+    # (MEH-2752). NULL = not declared; [] never persists. Alembic-only.
+    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
+    # MEH-3610: the branch people pick up from. SET NULL: a deleted branch
+    # leaves the free-text pickup note, never a dead reference.
+    pickup_location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producer_locations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # MEH-3610: one-way stamp of the «האיסוף מחר» email (one per group).
+    pickup_reminder_sent_at = Column(DateTime, nullable=True)
     deadline = Column(DateTime, nullable=False)
     city = Column(String(100), nullable=True)
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).
@@ -372,6 +385,7 @@ class GroupBuy(Base):
     commits = relationship(
         "GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan"
     )
+    pickup_location = relationship("ProducerLocation")  # MEH-3610
     # MEH-3592: the DB cascades (passive_deletes), like producer above.
     waitlist = relationship(
         "GroupBuyWaitlist", back_populates="group_buy", passive_deletes=True

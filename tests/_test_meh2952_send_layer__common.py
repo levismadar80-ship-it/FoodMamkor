@@ -509,8 +509,16 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test",
     ),
-    ("routers/admin_decisions.py", "reject_producer", "_send_whatsapp"): (1, BUS, "p_test"),
-    ("routers/admin_decisions.py", "request_producer_changes", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "reject_producer", "_send_whatsapp"): (
+        1,
+        BUS,
+        "p_test",
+    ),
+    (
+        "routers/admin_decisions.py",
+        "request_producer_changes",
+        "_send_notification_email",
+    ): (
         1,
         OWN,
         "p_test",
@@ -525,7 +533,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "wrapper param",
     ),
-    ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
+    ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (
+        1,
+        BUS,
+        "wrapper param",
+    ),
     # --- other routers ---
     ("routers/admin_kashrut.py", "kashrut_expiry_reminders", "send_template"): (
         1,
@@ -991,6 +1003,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_pickup_changed",
         "_send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3597)"),
+    (
+        "services/group_buy_notifications.py",
+        "notify_pickup_reminder",
+        "_send_email",
+    ): (1, CON, "wrapper param ← gb.producer.is_test (MEH-3610)"),
     (
         "services/rescue_business_emails.py",
         "send_business_reservation_email",

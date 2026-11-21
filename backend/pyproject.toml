@@ -332,6 +332,8 @@ files = [
     "app/services/group_buy_pickup_text.py",
     "app/routers/group_buy_mine.py",
     "app/schemas/group_buy_mine.py",
+    "app/services/group_buy_pickup_place.py",
+    "app/services/group_buy_pickup_reminder.py",
     "app/services/group_buy_delist.py",
     "app/services/group_buy_expiry.py",
     "app/services/group_buy_goal_flap.py",

@@ -31,6 +31,7 @@ from app.schemas.schemas import (
 from app.services import group_buy_capacity as capacity
 from app.services.group_buy_goal_flap import participant_emails
 from app.services.group_buy_notifications import send_pickup_changed
+from app.services.group_buy_pickup_place import own_location  # MEH-3610
 from app.services.group_buy_pickup_text import (
     is_delivery_only,
     note_lines,
@@ -216,6 +217,9 @@ def leave_waitlist(
 
 
 _PICKUP_FIELDS = {"pickup_starts_at", "pickup_ends_at"}
+# MEH-3610: what a participant needs to collect safely can still be fixed once
+# joining closed — the time, the branch, the allergens.
+_AFTER_CLOSE_FIELDS = _PICKUP_FIELDS | {"pickup_location_id", "allergens"}
 
 
 def _set_pickup_window(
@@ -253,6 +257,20 @@ def _set_pickup_window(
         )
 
 
+def _set_allergens_and_place(
+    db: Session, gb: GroupBuy, data: GroupBuySettingsUpdate
+) -> None:
+    """MEH-3610: allergens and the pickup branch; an explicit null clears
+    either, a field left out is unchanged."""
+    sent = data.model_fields_set
+    if "allergens" in sent:
+        gb.allergens = data.allergens  # type: ignore[assignment]
+    if "pickup_location_id" in sent:
+        gb.pickup_location_id = own_location(  # type: ignore[assignment]
+            db, gb.producer_id, data.pickup_location_id
+        )
+
+
 @router.patch("/{group_buy_id}/settings", response_model=None)
 @limiter.limit("30/minute")  # MEH-3022
 def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
@@ -269,7 +287,7 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
     # MEH-3597: the pickup time can still change once joining has closed —
     # that is when a business most needs to move it. Everything else waits
     # for a running group.
-    if not (sent <= _PICKUP_FIELDS and gb.status in ("open", "funded")):
+    if not (sent <= _AFTER_CLOSE_FIELDS and gb.status in ("open", "funded")):
         _refuse_unless_running(gb)
     before = (gb.max_participants, gb.max_units, gb.joins_closed_at is not None)
     people, units = capacity.counts(db, gb.id)
@@ -297,6 +315,7 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
         gb.max_units = data.max_units  # type: ignore[assignment]
     if "pickup_starts_at" in sent:  # MEH-3597: the schema sends both or neither
         _set_pickup_window(db, gb, data, background_tasks)
+    _set_allergens_and_place(db, gb, data)
     if data.joins_open is not None:
         gb.joins_closed_at = (
             None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]
@@ -312,4 +331,6 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
         "joins_closed": gb.joins_closed_at is not None,
         "pickup_starts_at": gb.pickup_starts_at,
         "pickup_ends_at": gb.pickup_ends_at,
+        "allergens": gb.allergens,
+        "pickup_location_id": gb.pickup_location_id,
     }
