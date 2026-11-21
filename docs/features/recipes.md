@@ -11,6 +11,7 @@
 **קבצים מרכזיים**
 * `backend/app/routers/producer_recipes.py`
 * `backend/app/services/producer_recipe_moderation.py`
+* `backend/app/services/moderation_common.py` — הלקוח והקריאה למודל, משותפים עם בדיקת החוויות (MEH-3619).
 
 **Flags.** אין.
 
