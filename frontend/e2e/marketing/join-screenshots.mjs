@@ -44,10 +44,8 @@
  * ───────────────────────────────────────────────────────────────────────────
  * THE SELECTORS WERE WRITTEN BLIND. Read this before trusting them.
  * ───────────────────────────────────────────────────────────────────────────
- * Every selector below was first written from the source, verified against
- * nothing (MEH-2794). They have since run end to end: 24/24 against the
- * local stack on 21/11 (MEH-3495). A product change can still break one, so
- * expect a run after a redesign to report misses.
+ * Written from the source, verified against nothing (MEH-2794); 24/24 ran
+ * end to end on 21/11 (MEH-3495). Expect misses after a redesign.
  *
  * That is survivable only because of how this script fails, which is the one
  * design decision worth defending here:
@@ -107,15 +105,11 @@ const run = promisify(execFile);
 // follows the code rather than the card.
 const BASE = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
-// Local stack in the CC sandbox only: `next start` cannot resolve Cloudinary
-// (its image optimizer does its own DNS lookup, which the sandbox proxy does
-// not serve), so every <Image> 500s. With --direct-images the browser
-// is redirected to the original Cloudinary URL. Same picture, no Next resize.
+// CC sandbox only: next's image optimizer cannot resolve Cloudinary there, so
+// --direct-images redirects each <Image> to its original Cloudinary URL.
 const DIRECT_IMAGES = process.argv.includes("--direct-images");
-// The bypass secret goes to the target origin ONLY. It used to ride on
-// `extraHTTPHeaders`, which Playwright sends to every host the page touches
-// (tile.openstreetmap.org, res.cloudinary.com, analytics), handing the
-// staging secret to third parties on each run (found 21/11).
+// The bypass secret goes to the target origin ONLY: `extraHTTPHeaders` sent it
+// to every host the page touched (OSM tiles, Cloudinary, analytics; 21/11).
 const BYPASS_HEADERS = BYPASS
   ? { "x-vercel-protection-bypass": BYPASS, "x-vercel-set-bypass-cookie": "true" }
   : {};
@@ -463,9 +457,7 @@ const SHOTS = [
     route: "/map",
     // The container mounts long before anything renders into it, and 20s was
     // not enough on staging; the longer wait is deliberate. Not `map-card`:
-    // at 390px the cards sit in the collapsed bottom sheet, so the first one
-    // is never visible (measured 21/11). The mobile shell is map + markers +
-    // the sheet's «N בתי עסק» handle, which is the picture this tile needs.
+    // at 390px the cards sit in the collapsed sheet and are never visible.
     selector: '[data-testid="map-mobile-shell"]',
     timeout: 45_000,
     feature_ids: ["map_precision", "multi_locations"],
@@ -474,8 +466,7 @@ const SHOTS = [
       // A tile-less map is worse than no screenshot, so this stays a hard
       // wait. The CC sandbox reaches tile.openstreetmap.org only once the
       // host is on the environment's allowlist (done 21/11).
-      // Two Leaflet containers mount (one 0×0, measured 21/11 on the local
-      // stack); the first match is the hidden one, so wait on a VISIBLE tile.
+      // Two Leaflet containers mount; the first is 0×0, so wait on a VISIBLE tile.
       await page.locator(".leaflet-tile-loaded:visible").first().waitFor({ timeout: 45_000 });
       await page.waitForTimeout(1200);
     },
@@ -639,8 +630,7 @@ const CLIPS = [
         await demo.first().waitFor({ state: "visible", timeout: 10_000 });
       }
       await page.waitForTimeout(1500);
-      // Scroll to the card, not a fixed 700px: with one funded group buy the
-      // list is short and 700px ran into the site footer (21/11).
+      // To the card, not a fixed 700px, which ran into the footer (21/11).
       const box = await demo.first().boundingBox();
       await slowScroll(page, Math.max(0, Math.min(700, Math.round((box?.y ?? 0) - 140))));
       await page.goto(`${BASE}/he/experiences`, { waitUntil: "domcontentloaded" });
@@ -735,9 +725,8 @@ const MARKER_CSS = `
 //
 // `addInitScript` runs on every document in the page, including the ones
 // `clip-return` navigates to mid-recording, and it is not silenced.
-// It also installs the two request routes (bypass header scoped to the target
-// origin; --direct-images), plus a guard that fails the run if the secret is
-// ever seen on a request to any other host.
+// Also: the two request routes, and a guard that ends the run if the bypass
+// secret is ever seen on a request to another host.
 async function installOverlayStyles(page) {
   if (BYPASS) {
     const origin = new URL(BASE).origin;
