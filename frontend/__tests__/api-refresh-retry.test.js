@@ -341,3 +341,26 @@ describe("MEH-3173 concurrent 401s end the session ONCE", () => {
     expect(expiredEvents).toBe(0);
   });
 });
+
+describe("MEH-3552 skipAuthRefresh opt-out", () => {
+  it("a probe's 401 rejects with no refresh, no logout, token kept", async () => {
+    installAdapter({ protectedScript: ["401"] });
+
+    await expect(
+      api.get("/users/me/product-orders", { skipAuthRefresh: true }),
+    ).rejects.toMatchObject({ response: { status: 401 } });
+
+    expect(refreshCalls).toHaveLength(0);
+    expect(protectedCalls).toHaveLength(1);
+    expect(expiredEvents).toBe(0);
+    expect(localStorage.getItem("token")).toBe("stale-token");
+  });
+
+  it("the same route without the option still refreshes (the person's own read)", async () => {
+    installAdapter({ protectedScript: ["401", "200"] });
+
+    await api.get("/users/me/product-orders");
+
+    expect(refreshCalls).toHaveLength(1);
+  });
+});
