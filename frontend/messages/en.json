@@ -1385,6 +1385,7 @@
       "show_all_cities": "{count, plural, one {Show 1 more city} other {Show {count} more cities}}",
       "show_all_pickup": "{count, plural, one {Show 1 more pickup point} other {Show {count} more pickup points}}",
       "show_all_areas": "{count, plural, one {Show 1 more delivery area} other {Show {count} more delivery areas}}",
+      "show_area_list": "{count, plural, one {See the delivery area} other {See all delivery areas (# towns)}}",
       "show_less": "Show less",
       "checker": {
         "label": "Do you deliver to me?",
@@ -1415,7 +1416,11 @@
       "next_delivery": "Next delivery: {date}",
       "next_delivery_city": "Next delivery to {city}: {date}",
       "pickup_days": "{count, plural, one {Pickup on {days}} other {Pickup on {days}}}",
-      "next_pickup": "Next pickup: {date}"
+      "next_pickup": "Next pickup: {date}",
+      "business_days_range": "Arrives within {min}–{max} business days",
+      "business_days_upto": "{max, plural, one {Arrives within 1 business day} other {Arrives within up to # business days}}",
+      "business_days_exact": "{days, plural, one {Arrives within 1 business day} other {Arrives within # business days}}",
+      "zones_other_terms": "Different terms in these areas:"
     },
     "friday_delivery": {
       "today": "Friday",
@@ -5526,8 +5531,8 @@
         "bulk_apply": "Apply to selected cities",
         "area_fee_inherits": "Inherits {fee} ₪",
         "area_fee_inherits_free": "Inherits: free delivery",
-        "default_block_title_nationwide": "Nationwide delivery fee",
-        "default_block_hint_nationwide": "This fee applies to all your deliveries.",
+        "default_block_title_nationwide": "Nationwide delivery terms",
+        "default_block_hint_nationwide": "This fee applies to all your deliveries, except zones on other terms set below.",
         "area_fee_free": "Free delivery",
         "default_block_title": "Default for all areas",
         "default_block_hint": "This fee applies to every delivery area. You can override it per area in the list below.",
@@ -5551,7 +5556,16 @@
         "zone_free_above_label": "Free delivery above (₪)",
         "zone_free_above_hint": "If empty, the business's general amount applies.",
         "zone_remove": "Delete the zone",
-        "city_in_zone": "In zone {zone}"
+        "city_in_zone": "In zone {zone}",
+        "business_min_label": "Minimum order for delivery (₪)",
+        "business_min_hint": "Applies to every delivery order. A city or zone with its own minimum overrides it.",
+        "time_label": "Delivery time (business days)",
+        "time_hint": "How many business days the order takes to arrive. You can fill only “up to”, e.g. up to 5.",
+        "time_from": "From",
+        "time_to": "Up to",
+        "zone_cutoff_hint": "Optional. Without a day and time, the business's order hours apply.",
+        "zones_label_nationwide": "Zones on other terms",
+        "zones_hint_nationwide": "Zones with terms other than “nationwide”, e.g. “Gush Dan, express”. In the zone's cities, its terms win."
       },
       "order_window": {
         "heading": "When you take orders",

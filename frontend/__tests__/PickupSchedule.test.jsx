@@ -9,6 +9,7 @@ import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import DeliveryBlock from "@/components/DeliveryBlock";
+import PickupSchedule from "@/components/PickupSchedule";
 import { nextDeliveryDate, cutoffOfRow } from "@/lib/nextDelivery";
 
 vi.mock("@/lib/api", () => ({
@@ -107,5 +108,34 @@ describe("PickupRow schedule lines (MEH-3512)", () => {
     expect(screen.queryByTestId("pickup-days")).toBeNull();
     expect(screen.getByTestId("pickup-cutoff")).toBeTruthy();
     expect(screen.queryByTestId("next-delivery")).toBeNull();
+  });
+});
+
+function renderSchedule(loc, props) {
+  return render(
+    <NextIntlClientProvider locale="he" messages={he} onError={() => {}} timeZone="Asia/Jerusalem">
+      <PickupSchedule loc={loc} {...props} />
+    </NextIntlClientProvider>,
+  );
+}
+
+// Sapir 20/11 («עמוס»): hours, days and cutoff share one line; days the hours
+// already name are not said twice.
+describe("PickupSchedule — one line", () => {
+  it("hours that name the pickup day: the days are not repeated", () => {
+    renderSchedule({ pickup_days: ["שלישי"], order_cutoff_day: "שני", order_cutoff_time: "15:00" }, { hours: "יום שלישי 17:00-19:00", hoursText: "יום שלישי 17:00-19:00" });
+    const line = screen.getByTestId("pickup-terms");
+    expect(line.textContent).toBe("יום שלישי 17:00-19:00מקבלים הזמנות עד יום שני 15:00");
+    expect(screen.queryByTestId("pickup-days")).toBeNull();
+  });
+
+  it("hours that do not name it: days stay, on the same line", () => {
+    renderSchedule({ pickup_days: ["חמישי"] }, { hours: "8-13", hoursText: "8-13" });
+    expect(screen.getByTestId("pickup-terms").textContent).toBe("8-13איסוף ביום חמישי");
+  });
+
+  it("hours only: one line with the hours", () => {
+    renderSchedule({}, { hours: "שישי 8-13", hoursText: "שישי 8-13" });
+    expect(screen.getByTestId("pickup-terms").textContent).toBe("שישי 8-13");
   });
 });

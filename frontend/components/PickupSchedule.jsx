@@ -12,13 +12,15 @@
  * Related:  components/NextDeliveryLine.jsx, lib/nextDelivery.js cutoffOfRow.
  * History:  MEH-3512 (creation).
  *
- * States: no days and no cutoff → renders nothing, so a point saved before
- * the fields reads exactly as it did. One day / several days → one line each
- * way. A cutoff with no days → only the cutoff line (no date to compute).
+ * States: nothing set → renders nothing, so a point saved before the fields
+ * reads as it did. Hours, days and cutoff share one «·» line (Sapir 20/11,
+ * «עמוס»); days already named by the hours are not repeated. A cutoff with no
+ * days → no next-pickup line (no date to compute).
  */
 import { useTranslations } from "next-intl";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
 import { cutoffOfRow } from "@/lib/nextDelivery";
+import { TERMS_LINE } from "@/components/AreaTermsRow";
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 // The stored day names are Hebrew in every locale (DELIVERY_DAYS), so they are
@@ -27,27 +29,47 @@ const DAY_LIST = new Intl.ListFormat("he", { type: "conjunction" });
 
 /**
  * @param {{ loc: { pickup_days?: string[] | null, order_cutoff_day?: string | null,
- *   order_cutoff_time?: string | null }, producer?: any }} props
+ *   order_cutoff_time?: string | null }, producer?: any,
+ *   hours?: import("react").ReactNode, hoursText?: string }} props
  */
-export default function PickupSchedule({ loc, producer = null }) {
+export default function PickupSchedule({ loc, producer = null, hours = null, hoursText = "" }) {
   const t = useTranslations("group_buys.delivery");
   const tWeekdays = useTranslations("opening_hours.weekdays");
   const days = (loc.pickup_days || []).filter(Boolean);
   const cutoff = cutoffOfRow(loc);
-  if (days.length === 0 && !cutoff) return null;
+  // Hours that already name every pickup day («יום שלישי 17:00-19:00») make
+  // «איסוף ביום שלישי» a repeat: the days are left out of the line.
+  const daysInHours = days.length > 0 && days.every((d) => hoursText.includes(d));
+  const showDays = days.length > 0 && !daysInHours;
+  if (!hours && !showDays && !cutoff && days.length === 0) return null;
   return (
     <>
+      {(hours || showDays || cutoff) && (
+        <p className={TERMS_LINE} data-testid="pickup-terms">
+          {hours && <span data-testid="pickup-hours">{hours}</span>}
+          {showDays && (
+            <span data-testid="pickup-days">
+              {t("pickup_days", { count: days.length, days: DAY_LIST.format(days) })}
+            </span>
+          )}
+          {cutoff && (
+            <span data-testid="pickup-cutoff">
+              {t("order_cutoff", { day: tWeekdays(WEEKDAY_KEYS[cutoff.dayIndex]), time: cutoff.close })}
+            </span>
+          )}
+        </p>
+      )}
+      {/* The one line a visitor acts on, so it carries the brand colour. */}
       {days.length > 0 && (
-        <p className="text-sm text-fg-muted" data-testid="pickup-days">
-          {t("pickup_days", { count: days.length, days: DAY_LIST.format(days) })}
-        </p>
+        <NextDeliveryLine
+          days={days}
+          producer={producer}
+          cutoff={cutoff}
+          pickup
+          className="mt-0.5"
+          textClass="text-xs font-medium text-primary"
+        />
       )}
-      {cutoff && (
-        <p className="text-sm text-fg-muted" data-testid="pickup-cutoff">
-          {t("order_cutoff", { day: tWeekdays(WEEKDAY_KEYS[cutoff.dayIndex]), time: cutoff.close })}
-        </p>
-      )}
-      {days.length > 0 && <NextDeliveryLine days={days} producer={producer} cutoff={cutoff} pickup />}
     </>
   );
 }
