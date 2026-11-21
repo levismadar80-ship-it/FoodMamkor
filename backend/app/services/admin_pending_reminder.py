@@ -46,7 +46,7 @@ def find_overdue(db: Session, *, now: datetime | None = None) -> list[WaitingBus
     """Pending, non-test businesses waiting >= REMINDER_THRESHOLD_DAYS.
 
     Oldest first. The anchor is `resubmitted_at or submitted_for_review_at or
-    created_at`, exactly as `_attach_aging` computes the admin badge, so the
+    created_at`, exactly as `admin_producer_reads.attach_aging` computes the admin badge, so the
     email and the queue never disagree about a number.
     """
     test_owner = exists().where(User.producer_id == Producer.id, User.is_test.is_(True))

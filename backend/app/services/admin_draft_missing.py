@@ -27,7 +27,7 @@ from app.utils.clock import israel_today
 def attach_draft_missing(db: Session, producers: Sequence[Any]) -> None:
     """Set `draft_missing` on every claimed draft in `producers`.
 
-    Must run after `_attach_has_owner`: an unclaimed draft is waiting for its
+    Must run after `services/admin_producer_reads.py::attach_has_owner`: an unclaimed draft is waiting for its
     owner, not for content, so it keeps None (the row shows nothing). The
     business checks read collections the list route already eager-loads;
     organizer drafts need their upcoming events, counted here in ONE query so

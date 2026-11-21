@@ -248,7 +248,7 @@ def admin_producer_or_404(db: Session, producer_id: UUID) -> Producer:
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
-            # selectinload, matching the list endpoint (:448) — a 4th collection
+            # selectinload, matching admin_producer_list above — a 4th collection
             # joinedload would widen the existing 3-way cartesian. Needed by
             # attach_badge_fields' pickup_points/offers_pickup derivation.
             selectinload(Producer.locations),
