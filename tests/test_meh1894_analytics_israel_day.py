@@ -25,7 +25,8 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from app.models.models import ProducerPageView
-from app.routers import admin_extra, producer_me_analytics
+from app.routers import producer_me_analytics
+from app.services import admin_dashboard  # MEH-3538: the dashboard math moved here
 from conftest import auth_header, make_producer, make_user
 
 ISRAEL = ZoneInfo("Asia/Jerusalem")
@@ -145,7 +146,7 @@ class TestAdminDauIsraelBoundary:
         db.commit()
         assert member.last_active_at.date() == date(2026, 7, 14)  # premise guard
 
-        monkeypatch.setattr(admin_extra, "israel_today", lambda: ANCHOR)
+        monkeypatch.setattr(admin_dashboard, "israel_today", lambda: ANCHOR)
         body = client.get("/admin/dashboard", headers=auth_header(admin)).json()
         series = {e["date"]: e["count"] for e in body["daily_active_users"]}
         assert series["2026-07-15"] >= 1
@@ -153,7 +154,7 @@ class TestAdminDauIsraelBoundary:
 
     def test_dau_series_still_has_30_entries(self, client, db, monkeypatch):
         admin = make_user(db, email="adm2@test.com", role="admin")
-        monkeypatch.setattr(admin_extra, "israel_today", lambda: ANCHOR)
+        monkeypatch.setattr(admin_dashboard, "israel_today", lambda: ANCHOR)
         body = client.get("/admin/dashboard", headers=auth_header(admin)).json()
         assert len(body["daily_active_users"]) == 30
         assert body["daily_active_users"][-1]["date"] == ANCHOR.isoformat()

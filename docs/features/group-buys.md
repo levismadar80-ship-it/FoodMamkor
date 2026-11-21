@@ -13,6 +13,7 @@
 **קבצים מרכזיים**
 * `backend/app/routers/group_buys.py` — כל המסלולים. שימו לב להערה על `selectinload`: היא שייכת למסלולי הרשימה ולא ל-`_status_tab_query`, כי מסלול ה-`/counts` חולק את אותה שאילתה ורק סופר.
 * `frontend/app/[locale]/group-buys/GroupBuysClient.jsx`
+* `frontend/app/[locale]/group-buys/page.js` — הרשימה הראשונה (סטטוס «פתוחה», בלי עיר) והמונים שלה נקראים בשרת דרך `frontend/lib/server-first-json.js` (ISR של 60 שניות), כך שה-HTML הראשון כבר מכיל את הכרטיסים. הלקוח משתמש בהם פעם אחת, וכל רשימה אחריהם נטענת כמו קודם. כשל בשרת = הלקוח טוען בעצמו (MEH-2233).
 * `frontend/components/GroupBuyProductPicker.jsx` — «מילוי ממוצר קיים» בטופס היצירה: בחירה ממלאת את שם המוצר ואת המחיר הרגיל. כשאין לעסק מוצרים, הרשימה לא מוצגת (MEH-3438). הטסט `frontend/__tests__/GroupBuyFulfillmentRequired.test.jsx`.
 
 **Flags.** אין.
@@ -22,6 +23,7 @@
 * `tests/test_meh0000_group_buys_query_count.py` — ספירת שאילתות: קבוצה אחת וארבע חייבות לעלות אותו מספר SELECT.
 * `tests/test_meh2943_group_buy_commit_scoping.py` · `tests/test_meh3128_group_buy_counts.py` · `tests/test_group_buys_cancel_on_delist.py`
 * `frontend/e2e/flows/manual/dashboard-offer-groupbuy.spec.ts`
+* `frontend/__tests__/GroupBuysServerFirstList.test.jsx` — ה-HTML מהשרת מכיל את הכרטיסים, הגעה בלי סינון לא שולחת בקשה, ועיר שמוקלדת אחר כך כן (MEH-2233).
 * `frontend/__tests__/GroupBuyNotAParty.test.jsx` — כרטיס ההצטרפות נושא את ההבהרה «לא צד לעסקה» (`frontend/components/DirectoryDisclaimer.jsx`), כי שם מתחייבים להזמנה.
 
 **מזהי רישום שזה מכסה.** `group_buys`.

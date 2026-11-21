@@ -47,7 +47,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import EnSearchNotice from "@/components/EnSearchNotice";
-import { CategoriesResponseSchema } from "@/lib/api-schemas";
+import { CategoriesResponseSchema } from "@/lib/api-responses";
 import Button from "@/components/ui/Button";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { cardImagePriority } from "@/lib/card-image-priority";

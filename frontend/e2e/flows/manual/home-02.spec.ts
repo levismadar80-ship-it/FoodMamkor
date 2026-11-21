@@ -6,7 +6,7 @@ import { test, expect, type Page } from "../_cloudinary-stub";
 import he from "../../../messages/he.json";
 import { ListCategoriesCategoriesGetResponse, ListProducersProducersGetResponse, GetStatsStatsGetResponse } from "../../../lib/generated/api.zod.js";
 import { ProducersResponseSchema } from "../../../lib/schemas.js";
-import { CategoriesResponseSchema, StatsSchema } from "../../../lib/api-schemas.js";
+import { CategoriesResponseSchema, StatsSchema } from "../../../lib/api-responses.js";
 import { CHIPS_CONFIG } from "../../../lib/producer-filters.js";
 import {
   FIRST_PAINT,

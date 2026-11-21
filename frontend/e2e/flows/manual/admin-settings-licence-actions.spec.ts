@@ -164,6 +164,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<{ items: () =
 
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-2952: the admin list and edit screen read the «עסק בדיקה» ids; unstubbed it hits the
+  // real backend, whose 401 sends this fake-auth session to /login mid-click.
+  await page.route("**/admin/test-businesses", (r) => json(r, { producer_ids: [] }));
   // MEH-3305: /admin/settings renders <PasskeySettings>, which reads the admin's own passkeys.
   await page.route((u) => /\/api\/auth\/passkey\/?$/.test(u.pathname), (r) =>
     json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
@@ -197,6 +200,13 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<{ items: () =
   // MEH-3333: the edit page also mounts the pickup-locations editor, which reads
   // this list on load. A stub, not a mock: nothing here asserts on locations.
   await page.route((u) => /\/api\/admin\/producers\/[^/]+\/locations\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-3524: the edit page mounts the alcohol panel, which reads order-settings.
+  // Unstubbed, that read reaches the backend with the fake token, 401s, the refresh
+  // fails and the app signs out mid-test: «שמרו שינויים» detaches before the click
+  // (staging run 44834035186). 404 = on-site ordering off → the panel renders nothing.
+  await page.route((u) => /\/api\/admin\/producers\/[^/]+\/order-settings\/?$/.test(u.pathname), (r) => json(r, { detail: "לא נמצא" }, 404));
+  // The home after a save lists expiring licences (MEH-3524) — same reason.
+  await page.route("**/admin/license-expiry-reminders", (r) => json(r, { window_days: 30, total: 0, rows: [] }));
   await page.route((u) => /\/api\/admin\/producers\/?$/.test(u.pathname), (r) =>
     json(r, [{ ...profile, id: 501, name: "ממתין לבדיקה", status: "pending", business_days_waiting: 1, submitted_for_review_at: "2026-09-01T08:00:00Z", created_at: "2026-08-30T08:00:00Z", images: [] }]),
   );

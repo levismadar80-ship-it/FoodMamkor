@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { uuidFor } from "./helpers/contract-row";
 import { render, screen, waitFor } from "@testing-library/react";
 
 // MEH-3254 (grill retro D7) — the units line on the owner card.
@@ -50,20 +51,25 @@ vi.mock("@/lib/toast", () => ({
 const FUTURE = "2099-01-01T09:00:00Z";
 const PAST = "2020-01-01T09:00:00Z";
 
-const groupBuy = (over = {}) => ({
-  id: "gb1",
-  producer_id: "p1",
-  title: "ארגז ירקות שבועי",
-  product_name: "ארגז ירקות",
-  status: "open",
-  price_per_unit_group: "80.00",
-  price_per_unit_regular: "100.00",
-  commits_count: 2,
-  min_participants: 5,
-  deadline: FUTURE,
-  created_at: "2026-07-01T09:00:00Z",
-  ...over,
-});
+// MEH-1748: the page parses each row with the generated GroupBuyOut, so ids
+// are real UUIDs; tests keep short names and `uuidFor` maps them.
+const groupBuy = (over = {}) => {
+  const row = {
+    id: "gb1",
+    producer_id: "p1",
+    title: "ארגז ירקות שבועי",
+    product_name: "ארגז ירקות",
+    status: "open",
+    price_per_unit_group: "80.00",
+    price_per_unit_regular: "100.00",
+    commits_count: 2,
+    min_participants: 5,
+    deadline: FUTURE,
+    created_at: "2026-07-01T09:00:00Z",
+    ...over,
+  };
+  return { ...row, id: uuidFor(row.id), producer_id: uuidFor(row.producer_id) };
+};
 
 const fixture = { groupBuys: [] };
 const getFails = { groupBuys: false };

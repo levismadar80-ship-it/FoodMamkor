@@ -111,6 +111,7 @@ export named here no longer exists.
 | Toast | `toast.js` | `showToast` |
 | Login link that returns here · safe redirect target | `safe-redirect.js` | `loginHrefBackHere`, `safeInternalRedirect` |
 | Image URL / ratio | `cloudinary.js` | `optimizeCloudinary`, `IMAGE_RATIOS` |
+| Read from the API in a client component (MEH-3536) | `use-api.js` | `useApi`, `useUserApi`, `invalidateApi` |
 | Fetch in a server component | `server-fetch.js` | `serverFetch` |
 
 ---
@@ -133,23 +134,29 @@ covers only one of them.
 producer feeds reach three surfaces and all three parse — the home grid
 (`lib/use-home-page.js:326`, `:360`, `:430`), `/map`
 (`app/[locale]/map/state/useProducersFeed.js:49`), and `/favorites`
-(`app/[locale]/favorites/FavoritesClient.jsx:140`). Import from
-`lib/schemas.js` (canonical `ProducerSchema` / `ProducersResponseSchema`) or
-from `lib/api-schemas.js`, which re-exports those and adds the non-map
-schemas. One owner — never redeclare a producer schema.
+(`app/[locale]/favorites/FavoritesClient.jsx:140`). The grid and `/map` import
+`lib/schemas.js` (canonical `ProducerSchema` / `ProducersResponseSchema`);
+every other response schema comes from `lib/api-responses.js`, which takes
+them from the GENERATED `lib/generated/api.zod.js` (MEH-1748). That file
+declares no field of its own — only generated schemas, a `pick` of one, or a
+generated one with an extra screen-level `check` —
+and `__tests__/ApiResponsesNoFieldLists.test.js` fails if a hand-written field
+list or the old `lib/api-schemas.js` comes back. A new response schema is a
+re-export from the generated file, never a `z.object`.
 
 Each caller routes failure to **its own** error state; there is no shared
 handler and none of them uses the toast snippet below. `/map` empties the
 list and toasts a localized string (`useProducersFeed.js:36-39`); `/favorites`
 parses **per row** and drops only the bad row, reserving the error state for
-a non-array payload (`FavoritesClient.jsx:130-143`).
+a non-array payload (`FavoritesClient.jsx:130-143`). Its row schema is the
+generated FavoriteOut, whose nested producer is the whole ProducerListOut, so
+nothing ProducerCard renders can be stripped (the `.loose()` of MEH-1713 is no
+longer needed and is gone).
 
-**One deliberate exception, and it is load-bearing:** `/favorites` nests its
-producer as `ProducerSchema.loose()` (`lib/api-schemas.js:92`), because
-`ProducerSchema` is badge-complete, not a `ProducerListOut` mirror — a strict
-parse there strips nine fields `ProducerCard` renders (MEH-1713). The grid
-and `/map` keep their strict, all-or-nothing parse on purpose. Do not
-"tidy" the `.loose()` away, and do not propagate it to the other two.
+**Test fixtures follow the contract.** A unit test that feeds one of these
+schemas builds its payload with `__tests__/helpers/contract-row.js`
+(`contractRow`, `uuidFor`, `favoriteRow`), so ids are UUIDs and required
+fields are present — the same shape the backend sends.
 
 **Request side — validate params before the call.** `safeParse()` before any
 `api.get` / `api.post` or Leaflet mutation. On failure:

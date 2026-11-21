@@ -9,7 +9,7 @@ Does NOT: change the wire shape — `{id, name, lat, lng}` per point is what
           frontend/app/[locale]/admin/analytics/page.js:142-151 renders, and it
           is asserted unchanged here. Does NOT touch `by_city`, which reads
           `Producer.city` (a column that stays, per the Q3 ruling).
-Related:  backend/app/routers/admin_extra.py (_primary_location_points) ·
+Related:  backend/app/services/admin_dashboard.py (primary_location_points) ·
           tests/test_api.py (the two presence-only `"map_points" in body`
           assertions this file sharpens rather than replaces).
 History:  MEH-1938 chunk 5a.2 (creation).

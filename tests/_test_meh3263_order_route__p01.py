@@ -1,4 +1,4 @@
-"""Part 1 of 2 of `tests/test_meh3263_order_route.py`: test_every_route_is_404_while_the_flag_is_off, test_the_pickup_code_index_covers_exactly_the_statuses_that_carry_a_code, test_a_code_is_sent_and_only_its_keyed_hash_is_stored, test_no_code_goes_out_for_a_business_that_does_not_take_orders, test_a_number_that_is_not_an_israeli_mobile_is_refused, test_without_whatsapp_there_is_no_code_and_so_no_order, test_the_fourth_code_to_one_phone_within_an_hour_is_refused, test_the_site_wide_ceiling_closes_the_feature_instead_of_sending, test_a_guest_sends_an_order_priced_by_the_server, test_the_request_cannot_carry_a_price, test_a_price_range_is_stored_at_its_high_end_as_an_estimate, test_a_wrong_code_is_counted_even_though_the_request_fails, test_a_code_works_once_and_only_for_its_own_phone, test_an_expired_code_is_refused, test_the_same_request_twice_is_one_order_with_one_token, test_an_idempotency_key_is_not_a_way_into_someone_elses_order, test_a_logged_in_buyer_also_proves_her_phone_and_owns_the_order, test_the_fourth_open_order_from_one_phone_is_refused, test_two_recent_no_shows_close_ordering_to_that_phone, test_a_business_with_too_many_open_orders_takes_no_more, test_a_slot_the_business_does_not_offer_is_refused, test_a_product_that_cannot_be_ordered_fails_the_whole_order, test_an_order_below_the_business_minimum_is_refused, test_alcohol_needs_a_licensed_business_a_declaration_and_a_day_slot, test_the_delivery_fee, test_a_delivery_the_business_does_not_make_is_refused, test_a_delivery_order_stores_the_city_the_fee_and_the_address, test_auto_confirm_fills_a_slot_up_to_the_cap_and_no_further, test_the_slot_cap_holds_for_orders_confirmed_by_hand_too, test_a_cancelled_order_gives_its_place_in_the_slot_back, test_the_business_may_propose_a_slot_past_her_own_cap, test_without_a_cap_a_slot_never_fills, test_an_estimated_price_is_never_confirmed_automatically, test_a_confirmed_pickup_names_the_public_address, test_an_approximate_location_gives_the_city_only, test_no_address_before_confirmation_or_for_a_delivery, test_the_status_page_carries_the_address_once_confirmed, test_the_token_opens_the_order_and_nothing_else_does, test_the_pickup_code_shows_only_while_it_can_be_used, test_the_page_stops_answering_a_month_after_the_order_closed, test_mask_phone_keeps_two_digits, test_a_buyer_cancels_freely_before_confirmation_and_until_the_cutoff_after, test_a_pending_order_is_cancelled_even_an_hour_before_the_slot, test_the_business_sees_its_own_orders_and_only_those, test_another_businesss_order_is_404_for_every_action, test_confirming_sets_the_final_total_and_a_pickup_code, test_a_fixed_price_order_is_confirmed_at_its_estimate.
+"""Part 1 of 2 of `tests/test_meh3263_order_route.py`: test_every_route_is_404_while_the_flag_is_off, test_the_pickup_code_index_covers_exactly_the_statuses_that_carry_a_code, test_a_code_is_sent_and_only_its_keyed_hash_is_stored, test_no_code_goes_out_for_a_business_that_does_not_take_orders, test_a_number_that_is_not_an_israeli_mobile_is_refused, test_without_whatsapp_there_is_no_code_and_so_no_order, test_the_fourth_code_to_one_phone_within_an_hour_is_refused, test_the_site_wide_ceiling_closes_the_feature_instead_of_sending, test_a_guest_sends_an_order_priced_by_the_server, test_the_request_cannot_carry_a_price, test_a_price_range_is_stored_at_its_high_end_as_an_estimate, test_a_wrong_code_is_counted_even_though_the_request_fails, test_a_code_works_once_and_only_for_its_own_phone, test_an_expired_code_is_refused, test_the_same_request_twice_is_one_order_with_one_token, test_an_idempotency_key_is_not_a_way_into_someone_elses_order, test_a_logged_in_buyer_also_proves_her_phone_and_owns_the_order, test_the_fourth_open_order_from_one_phone_is_refused, test_two_recent_no_shows_close_ordering_to_that_phone, test_a_business_with_too_many_open_orders_takes_no_more, test_a_slot_the_business_does_not_offer_is_refused, test_a_product_that_cannot_be_ordered_fails_the_whole_order, test_an_order_below_the_business_minimum_is_refused, test_alcohol_needs_a_licensed_business_a_declaration_and_a_day_slot, test_the_delivery_fee, test_a_delivery_the_business_does_not_make_is_refused, test_a_delivery_order_stores_the_city_the_fee_and_the_address, test_auto_confirm_fills_a_slot_up_to_the_cap_and_no_further, test_the_slot_cap_holds_for_orders_confirmed_by_hand_too, test_a_cancelled_order_gives_its_place_in_the_slot_back, test_the_business_may_propose_a_slot_past_her_own_cap, test_without_a_cap_a_slot_never_fills, test_an_estimated_price_is_never_confirmed_automatically, test_a_confirmed_pickup_names_the_public_address, test_an_approximate_location_gives_the_city_only, test_no_address_before_confirmation_or_for_a_delivery, test_the_status_page_carries_the_address_once_confirmed, test_the_token_opens_the_order_and_nothing_else_does, test_the_pickup_code_shows_only_while_it_can_be_used, test_the_page_stops_answering_a_month_after_the_order_closed, test_my_orders_leaves_out_an_order_whose_page_has_stopped_answering, test_mask_phone_keeps_two_digits, test_a_buyer_cancels_freely_before_confirmation_and_until_the_cutoff_after, test_a_pending_order_is_cancelled_even_an_hour_before_the_slot, test_the_business_sees_its_own_orders_and_only_those, test_another_businesss_order_is_404_for_every_action, test_confirming_sets_the_final_total_and_a_pickup_code, test_a_fixed_price_order_is_confirmed_at_its_estimate.
 
 Moved here verbatim by the MEH-3540 mechanical split. Not collected
 directly (no `test_` prefix): `tests/test_meh3263_order_route.py` imports these tests, so
@@ -780,6 +780,38 @@ def test_the_page_stops_answering_a_month_after_the_order_closed(client, db, fla
     assert (
         client.post("/product-orders/status", json={"token": token}).status_code == 404
     )
+
+
+def test_my_orders_leaves_out_an_order_whose_page_has_stopped_answering(
+    client, db, flag_on
+):
+    """MEH-3525: the list never links to an order page that would 404."""
+    shop = Shop(db)
+    buyer = make_user(db, email="history@example.com")
+    open_order = stored_order(db, shop, "pending", user_id=buyer.id)
+    recent = stored_order(
+        db,
+        shop,
+        "handed",
+        user_id=buyer.id,
+        closed_at=utc_now() - BUYER_VIEW_AFTER_CLOSE + timedelta(minutes=5),
+    )
+    stale = stored_order(
+        db,
+        shop,
+        "handed",
+        user_id=buyer.id,
+        closed_at=utc_now() - BUYER_VIEW_AFTER_CLOSE - timedelta(minutes=5),
+    )
+    res = client.get("/users/me/product-orders", headers=auth_header(buyer))
+    ids = {o["id"] for o in res.json()["orders"]}
+    assert ids == {str(open_order.id), str(recent.id)}
+    page = client.post(
+        "/product-orders/status",
+        json={"order_id": str(stale.id)},
+        headers=auth_header(buyer),
+    )
+    assert page.status_code == 404
 
 
 def test_mask_phone_keeps_two_digits():

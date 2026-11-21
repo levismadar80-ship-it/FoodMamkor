@@ -183,11 +183,19 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     return json(r, { detail: "unstubbed" }, 404);
   });
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-2952: the admin list and edit screen read the «עסק בדיקה» ids; unstubbed it hits the
+  // real backend, whose 401 sends this fake-auth session to /login mid-click.
+  await page.route("**/admin/test-businesses", (r) => json(r, { producer_ids: [] }));
   // MEH-3305: /admin/settings renders <PasskeySettings>, which reads the admin's own passkeys.
   await page.route((u) => /\/api\/auth\/passkey\/?$/.test(u.pathname), (r) =>
     json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
   );
   await page.route("**/users/me/favorites", (r) => json(r, []));
+  // MEH-3524: the home lists licences about to lapse; analytics, the rescue pilot (off → 404).
+  await page.route("**/admin/license-expiry-reminders", (r) => json(r, { window_days: 30, total: 0, rows: [] }));
+  await page.route("**/admin/rescue/metrics**", (r) => json(r, { detail: "לא נמצא" }, 404));
+  // MEH-3525: the account menu asks whether on-site ordering is on.
+  await page.route("**/users/me/product-orders", (r) => json(r, []));
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
   await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
