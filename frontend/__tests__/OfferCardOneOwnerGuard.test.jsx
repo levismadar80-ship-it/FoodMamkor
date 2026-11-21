@@ -58,6 +58,8 @@ function shape(card) {
     band: band?.className,
     seeds: Boolean(band?.querySelector("[data-testid='gb-progress-seeds']")),
     h3: card.querySelector("h3")?.className,
+    // Neither card draws a generic icon tile (Sapir 21/11, MEH-2659).
+    noIconTile: !card.querySelector("span.w-11.h-11"),
   };
 }
 

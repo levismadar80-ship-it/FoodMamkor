@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Basket, Clock, MapPin } from "@phosphor-icons/react";
+import { Clock, MapPin } from "@phosphor-icons/react";
 
 import { useOptionalAuth } from "@/lib/auth-context";
 
@@ -336,7 +336,9 @@ export default function RescueSection({ producer }) {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <OfferCard
             testId="rescue-section-card"
-            icon={<Basket size={24} weight="regular" />}
+            // No icon tile (Sapir 21/11: the basket looked unprofessional).
+            // Like the group-buy card: the business's photo is already the
+            // page's own hero, and a generic icon adds nothing (MEH-2659).
             // No typical items → no card title: «סל הפתעה» is already the
             // section heading right above (MEH-3585 review).
             title={offer.typical_items?.length > 0 ? t("section.typical", { items: offer.typical_items.join(", ") }) : null}
