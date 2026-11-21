@@ -19,7 +19,6 @@ import { getHubCount } from "@/lib/listing-supply";
  */
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "rescue" });
   // MEH-3177: without its own alternates the page inherited the layout's
   // home canonical + hreflang, which tells Google /rescue is a copy of /.
   return {
@@ -39,16 +38,19 @@ export default async function RescuePage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
   if (!rescueBagsEnabled()) notFound();
-  const t = await getTranslations({ locale, namespace: "rescue" });
 
   // MEH-3013: the hub's shared head (photo hero + tab row) — the same frame
   // as /events, /experiences and /group-buys. Copy is the page's own H1 and
   // lead (Sapir 11/11) plus the hub strip's existing eyebrow (home.whats_on.eyebrow — «קרוב לבית» /
   // "Close to home"; events.list.eyebrow_events says "EVENTS" in en); no new strings.
-  const tHome = await getTranslations({ locale, namespace: "home.whats_on" });
   // MEH-3076: the group-buys tab's supply, so the tab row is decided on the
-  // server (a lone «סלי הפתעה» tab is not drawn). Cached like the sitemap's.
-  const groupBuysCount = await getHubCount("groupBuys");
+  // server (a lone «סלי הפתעה» tab is not drawn). Cached like the sitemap's,
+  // and read in parallel with the copy so a slow count adds no serial wait.
+  const [t, tHome, groupBuysCount] = await Promise.all([
+    getTranslations({ locale, namespace: "rescue" }),
+    getTranslations({ locale, namespace: "home.whats_on" }),
+    getHubCount("groupBuys"),
+  ]);
 
   return (
     // A div, not <main>: the layout already owns the main landmark.
