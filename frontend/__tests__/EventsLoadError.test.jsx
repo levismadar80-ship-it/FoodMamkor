@@ -151,6 +151,9 @@ describe("/events — a failed load is an error, not a zero (MEH-2396)", () => {
       if (calls === 1) return new Promise((_, reject) => { rejectFirst = reject; });
       return Promise.resolve({ data: [row(1)] });
     };
+    // MEH-3626: a loading list draws only the picked chips (not every chip,
+    // then drop the empty ones), so arrive with one picked to have a chip to tap.
+    window.history.replaceState(null, "", `/events?category=${encodeURIComponent("קטיף")}`);
     render(<EventsClient initialTab="events" />);
     await waitFor(() => expect(calls).toBe(1));
     // change a filter while the first request is still in flight (the skeleton
