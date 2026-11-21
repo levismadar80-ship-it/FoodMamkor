@@ -27,3 +27,18 @@ The revision `2189efe602b9` creates one table, so the schema job counts 65 on
 a staging of 64 and fails `CI gate`.
 
 Applied 21/11/2026 in b02df96e (committed in Chrome). The value matches. The comment line reads `— 64 -> 65.` where this doc had `— +1.`.
+
+## Round 2 (21/11, after MEH-3535 landed first): 65 -> 66
+
+MEH-3535 (#4996) reached staging first with `EXPECTED_TABLES=65` for
+`email_outbox`. The staging merge into this branch took staging's
+`pr-checks.yml` byte for byte (no new content written), and revision
+`2189efe602b9` now sits on `c5e7a9b1d3f6`. The branch counts 66 tables, so
+`CI gate` stays red until this change lands on the PR branch, through Chrome:
+
+```diff
+           # MEH-3535: email_outbox (the durable email queue) — 64 -> 65.
++          # MEH-3592: group_buy_waitlist (a full group buy's waitlist) — 65 -> 66.
+-          EXPECTED_TABLES=65
++          EXPECTED_TABLES=66
+```
