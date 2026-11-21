@@ -2,11 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { env } from "@/lib/env";
+import { OAuthTermsLine, OrDivider } from "@/components/OAuthTermsLine";
 
 /**
  * Module:   LoginPromptGoogle
@@ -23,36 +22,19 @@ import { env } from "@/lib/env";
  * @param {{ onSuccess: () => void }} props
  */
 export default function LoginPromptGoogle({ onSuccess }) {
-  const t = useTranslations();
   const [error, setError] = useState("");
   if (!env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) return null;
 
   return (
     <div className="grid gap-2.5 mb-4" data-testid="login-prompt-google">
       <GoogleAuthButton termsAccepted onSuccess={onSuccess} onError={(msg) => setError(msg)} />
-      <p data-testid="login-prompt-oauth-terms" className="text-xs leading-relaxed text-fg-muted">
-        {t.rich("auth.login.oauth_terms_google", {
-          tos: (chunks) => (
-            <Link href="/terms" target="_blank" className="text-primary underline">
-              {chunks}
-            </Link>
-          ),
-          privacy: (chunks) => (
-            <Link href="/privacy" target="_blank" className="text-primary underline">
-              {chunks}
-            </Link>
-          ),
-        })}
-      </p>
+      <OAuthTermsLine
+        termsKey="oauth_terms_google"
+        testId="login-prompt-oauth-terms"
+        className="text-xs leading-relaxed text-fg-muted"
+      />
       {error && <InlineMessage data-testid="login-prompt-oauth-error">{error}</InlineMessage>}
-      <div className="relative my-1" aria-hidden="true">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="px-3 bg-surface text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
-        </div>
-      </div>
+      <OrDivider className="my-1" labelClassName="bg-surface" />
     </div>
   );
 }

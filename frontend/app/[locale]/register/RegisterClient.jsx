@@ -22,6 +22,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
 import EmailTypoHint from "@/components/EmailTypoHint";
 import { rememberReturnPath } from "@/lib/post-auth-return";
+import { OAuthTermsLine, OrDivider } from "@/components/OAuthTermsLine";
 import { trackEvent } from "@/lib/analytics";
 
 /**
@@ -363,37 +364,18 @@ function RegisterPageBody() {
                   onError={(msg) => setOauthError(msg)}
                 />
               )}
-              <p
-                data-testid="register-oauth-terms"
+              <OAuthTermsLine
+                termsKey={oauthTermsKey(googleConfigured, appleConfigured)}
+                testId="register-oauth-terms"
                 className="text-sm leading-relaxed text-fg-muted text-start"
-              >
-                {t.rich(`auth.login.${oauthTermsKey(googleConfigured, appleConfigured)}`, {
-                  tos: (chunks) => (
-                    <Link href="/terms" target="_blank" className="text-primary underline">
-                      {chunks}
-                    </Link>
-                  ),
-                  privacy: (chunks) => (
-                    <Link href="/privacy" target="_blank" className="text-primary underline">
-                      {chunks}
-                    </Link>
-                  ),
-                })}
-              </p>
+              />
               {oauthError && (
                 <InlineMessage data-testid="register-oauth-error">
                   {oauthError}
                 </InlineMessage>
               )}
             </div>
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-background text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
-              </div>
-            </div>
+            <OrDivider className="my-5" labelClassName="bg-background" />
           </>
         )}
 
