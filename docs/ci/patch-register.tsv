@@ -6,7 +6,7 @@ check-semantics	applied	.github/workflows/e2e.yml	echo "executed=$EXECUTED" >> "
 ci-gate-skip-green	applied	.github/workflows/pr-checks.yml	check_ran "	-	-
 claude-review-status	dead	-	-	-	workflow.md moved past both versions of the block (13/08, then the 13/11 trim)
 cls-measure	applied	.github/workflows/cls-measure.yml	qa-meh1853-cls.mjs	-	-
-deferral-and-e2e-lint	decision	frontend/eslint.config.mjs	allowWarningComments: false	2026-11-20	lint config is CC-deny; adds warnings, so the ESLint ratchet baseline must move with it
+deferral-and-e2e-lint	dead	-	-	-	declined 20/11 (Sapir delegated the call): both gates are warn-only, and warn-only lint is what MEH-3160 measured as unread (17,440 warnings). eslint-ratchet gates app/components/lib only, so nothing would block. If the class matters it goes in as a ratcheted guard on a new card
 deploy-gate-strict-skip	applied	.github/workflows/deploy.yml	check_ran "Frontend lint	-	-
 dnm-gate-regex	dead	-	-	-	-
 e2e-auth-fixtures	applied	.github/workflows/e2e.yml	DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}	-	-
@@ -36,7 +36,7 @@ meh-1910-ci-speedup	dead	-	-	-	PR-A/caches judged low value; other halves landed
 meh-1911-pytest-parallel	applied	.github/workflows/pr-checks.yml	-n auto	-	-
 meh-1912-vitest-shard	dead	-	-	-	-
 meh-1980-coverage-ratchet	applied	.github/workflows/pr-checks.yml	coverage-ratchet.mjs	-	-
-meh-2052-bash-safety-sed-regex	pending	.claude/hooks/check-bash-safety.sh	sed[[:space:]]+-i.*[[:space:]]	2026-11-20	committed on its own PR (#4967) via the web editor; Sapir merges, and that PR flips this row
+meh-2052-bash-safety-sed-regex	applied	.claude/hooks/check-bash-safety.sh	sed[[:space:]]+-i.*[[:space:]]	2026-11-20	committed on its own PR (#4967) via the web editor; Sapir merges, and that PR flips this row
 meh-2062-vercel-git-deployments	applied	frontend/vercel.json	deploymentEnabled	-	-
 meh-2077-branch-name-delete	applied	.claude/hooks/check-branch-name.sh	(--delete|-d)	-	-
 meh-2079-expected-tables-43	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=	-	applied as 43; the number has moved on since
@@ -46,7 +46,7 @@ meh-2212-actions-cost	dead	-	-	-	case rested on private-repo billing; repo is pu
 meh-2244	applied	.github/workflows/pr-checks.yml	PR_AUTHOR: ${{ github.event.pull_request.user.login }}	-	hunk 1 only; hunk 2 (make the rule block) is Sapir's call and has no row of its own
 meh-2244-reconcile	applied	.github/workflows/pr-reconcile.yml	scripts/oneoff/pr-reconcile.mjs	-	-
 meh-2244-stale	applied	.github/workflows/stale.yml	do-not-merge,keep-open	-	only the label exemption, on the existing stale.yml; the second bot file is not applied
-meh-2285-tag-push-hook	decision	.claude/hooks/check-branch-name.sh	[[:space:]]refs/tags/	2026-11-20	hook: Sapir only. It loosens the push guard (a refs/tags/ token anywhere exits 0), so CC does not apply it
+meh-2285-tag-push-hook	dead	-	-	-	declined 20/11 (Sapir delegated the call): hunk 1 exits 0 when a refs/tags/ token or --tags appears anywhere in the push, so `git push origin <bad-branch> --tags` would skip the branch check. Tag pushes stay a human step (docs/DEPLOYMENT.md)
 meh-2346-session-start-handoff	applied	.claude/hooks/session-start.sh	awk '/^## /{n++} n==1'	-	-
 meh-2749-post-deploy-checks	applied	.github/workflows/post-deploy-checks.yml	scripts/checks/live_security_headers.py	-	-
 meh-2779-ci-sharding	applied	.github/workflows/pr-checks.yml	  pytest-shard:	-	-
@@ -55,7 +55,7 @@ meh-3153-webkit-alert	applied	.github/workflows/e2e.yml	Alert on a red WebKit ni
 meh-3308-pin-actions-sha	applied	.github/workflows/pr-checks.yml	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	-	-
 meh-3507-nightly-skip	applied	.github/workflows/e2e.yml	nightly_unchanged	-	-
 meh-449-settings-hook-registration	applied	.claude/settings.json	check-artifact-location.sh	-	-
-meh-784-protected-path-gate	decision	.github/workflows/pr-checks.yml	scripts/ci/protected-path-gate.sh	2026-11-20	every PR that touches a protected path would need a label from Sapir, including the ones CC commits through Chrome
+meh-784-protected-path-gate	dead	-	-	-	declined 20/11 (Sapir delegated the call): needs a label from Sapir on every PR that touches a workflow, lockfile, package.json or alembic revision, and CC can add the label itself, so it records and does not prevent. The PR and its diff are already the record; alembic waits for her OK (rule 38)
 osm-tile-probe	applied	.github/workflows/uptime.yml	TILE_URL	-	-
 palette-selector-widen	applied	frontend/eslint.config.mjs	Literal[value=	-	-
 placeholder-search-cron	applied	.github/workflows/placeholder-search-cron.yml	scripts/check_placeholder_search.py	-	applied 20/11 via the web editor
