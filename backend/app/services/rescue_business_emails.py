@@ -43,7 +43,7 @@ def _qty_line(qty: int) -> str:
 def send_business_reservation_email(
     to: str, m: BusinessReservation, test_cause: bool = False
 ) -> None:
-    """MEH-3313 — one plain-text email per owner login."""
+    """MEH-3313 — one email per owner login (text body; send_email adds the branded HTML part, MEH-3587)."""
     name = " ".join(m.producer_name.split())
     subject = f"נשמר סל הפתעה ב{name}"
     body = (
