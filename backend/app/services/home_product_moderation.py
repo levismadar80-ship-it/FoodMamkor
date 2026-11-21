@@ -19,61 +19,38 @@ Design notes:
 
 from __future__ import annotations
 
-import json
-from decimal import Decimal
-from typing import Any, cast
+from typing import Any
 
 import structlog
 
 from app.config import settings
+from app.services.moderation_common import (
+    approved,
+    first_text,
+    make_anthropic_client,
+    parse_verdict_json,
+    safe_decimal,
+    verdict_from_text,
+)
 
 
 logger = structlog.get_logger(__name__)
 
+_TAG = "[moderation]"
+
 # Module-level client — lazy constructed on first call to avoid import-time
 # crashes when anthropic isn't installed (e.g. during tests or migrations).
+# One per service so a test can swap it here.
 _client: Any = None
 
 
-VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
-
-
 def _get_client() -> Any:
+    # MEH-3465: the construction (with the locked http_client=httpx.Client())
+    # is moderation_common.make_anthropic_client.
     global _client
-    if _client is not None:
-        return _client
-    if not settings.anthropic_api_key:
-        logger.debug("[moderation] ANTHROPIC_API_KEY not set — client unavailable")
-        return None
-    try:
-        # Imports kept lazy so missing packages can't crash module load
-        # (the rest of the backend stays up even if anthropic is broken).
-        import anthropic
-        import httpx
-
-        # Construct an explicit httpx.Client() and pass it via the
-        # Anthropic SDK's `http_client` kwarg. This bypasses the SDK's
-        # internal call to `httpx.Client(proxies=...)`, which is broken
-        # against httpx 0.28+ — that release dropped the `proxies=` kwarg
-        # in favor of `proxy=` (singular), and the anthropic 0.39 SDK
-        # didn't update its internal call. Symptom of the unfixed code:
-        #     TypeError: Client.__init__() got an unexpected keyword
-        #                argument 'proxies'
-        # Caught by PR #29's debug instrumentation in chat.py, fixed in
-        # PR #32 (chat) and this PR (moderation). The explicit
-        # `httpx.Client()` works against any httpx version because we're
-        # constructing it ourselves with no kwargs, so we don't have to
-        # chase the SDK-vs-transitive-dep version dance. SAME PATTERN
-        # MUST be used anywhere else this codebase constructs an
-        # Anthropic client — see CLAUDE.md "Key locked decisions".
-        _client = anthropic.Anthropic(
-            api_key=settings.anthropic_api_key,
-            http_client=httpx.Client(),
-        )
-        return _client
-    except Exception as e:  # pragma: no cover — defensive
-        logger.warning("anthropic client init failed: %s", e)
-        return None
+    if _client is None:
+        _client = make_anthropic_client(_TAG)
+    return _client
 
 
 def _build_prompt(listing: dict[str, Any]) -> str:
@@ -118,32 +95,12 @@ REJECTED אם:
 }}"""
 
 
-def _parse_response_text(text: str) -> dict[str, Any]:
-    """Extract JSON from a model response. Tolerates surrounding whitespace
-    or accidental prose by grabbing the first balanced {...} block."""
-    text = text.strip()
-    # Strip markdown code fences if present
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else ""
-        if text.endswith("```"):
-            text = text.rsplit("```", 1)[0]
-        text = text.strip()
-    # Best-effort: find first { and last }
-    start = text.find("{")
-    end = text.rfind("}")
-    if start >= 0 and end > start:
-        text = text[start : end + 1]
-    return cast(dict[str, Any], json.loads(text))
+# MEH-3465: kept as module names; tests call them here.
+_parse_response_text = parse_verdict_json
 
 
 def _safe_decimal(value: object) -> float | None:
-    if value is None:
-        return None
-    try:
-        return float(Decimal(str(value)))
-    except Exception:
-        logger.debug("[moderation] decimal conversion failed", value=repr(value))
-        return None
+    return safe_decimal(value, _TAG)
 
 
 def validate_home_product(listing: dict[str, Any]) -> dict[str, Any]:
@@ -166,11 +123,7 @@ def validate_home_product(listing: dict[str, Any]) -> dict[str, Any]:
     client = _get_client()
     if client is None:
         logger.info("[moderation] ANTHROPIC_API_KEY not set; auto-APPROVED")
-        return {
-            "status": "APPROVED",
-            "reason": None,
-            "suggestion": None,
-        }
+        return approved()
 
     try:
         message = client.messages.create(
@@ -178,27 +131,11 @@ def validate_home_product(listing: dict[str, Any]) -> dict[str, Any]:
             max_tokens=300,
             messages=[{"role": "user", "content": _build_prompt(payload)}],
         )
-        # Content is a list of blocks; first block is text for this prompt
-        raw = ""
-        for block in message.content:
-            if getattr(block, "type", None) == "text":
-                raw = block.text
-                break
-        if not raw:
-            raise ValueError("empty response from claude")
-
-        parsed = _parse_response_text(raw)
-        status = parsed.get("status", "").upper()
-        if status not in VALID_STATUSES:
-            logger.warning("[moderation] unexpected status %r → APPROVED", status)
-            return {"status": "APPROVED", "reason": None, "suggestion": None}
-
-        return {
-            "status": status,
-            "reason": parsed.get("reason"),
-            "suggestion": parsed.get("suggestion"),
-        }
-    except Exception as e:
+        verdict = verdict_from_text(first_text(message))
+        if verdict is None:
+            logger.warning("[moderation] unexpected status → APPROVED")
+            return approved()
+        return verdict
+    except Exception as e:  # noqa: BLE001 — fail open, don't block users on infra failures
         logger.exception("[moderation] Claude call failed: %s", e)
-        # Fail open — don't block users on infra failures
-        return {"status": "APPROVED", "reason": None, "suggestion": None}
+        return approved()
