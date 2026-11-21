@@ -1653,7 +1653,15 @@
         "heading": "Other queues",
         "all_clear": "Nothing waiting in the other queues"
       },
-      "analytics_link": "Stats and analytics →"
+      "analytics_link": "Stats and analytics →",
+      "licences": {
+        "heading": "Licences expiring soon",
+        "subtitle": "Approved businesses whose licence expires in the next 30 days",
+        "days_left": "{count, plural, one {1 day left} other {# days left}} · until {date}",
+        "today": "Expires today · {date}",
+        "open": "Open",
+        "error": "Could not load the expiring licences"
+      }
     },
     "producers": {
       "list": {
@@ -2792,7 +2800,22 @@
       "top_cities": "Top cities",
       "top_producers_favorites": "Businesses with the most favorites",
       "geographic": "Geographic distribution",
-      "map_count": "{count} businesses with map location"
+      "map_count": "{count} businesses with map location",
+      "rescue": {
+        "heading": "Rescue bags — pilot",
+        "subtitle": "Last {days} days",
+        "error": "Could not load the rescue-bag numbers",
+        "tiles": {
+          "offers": "Offers published",
+          "bags_offered": "Bags offered",
+          "bags_reserved": "Bags reserved",
+          "sell_through": "Reserved share",
+          "no_show_rate": "No-show rate",
+          "buyers": "Buyers",
+          "repeat_buyers": "Repeat buyers",
+          "donated": "Given away free"
+        }
+      }
     },
     "help": {
       "intro": "Short answers to “how do I…”, in menu order.",

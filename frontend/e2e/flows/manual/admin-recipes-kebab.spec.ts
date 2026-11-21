@@ -158,6 +158,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, ADMIN));
   await page.route("**/users/me/favorites", (r) => json(r, []));
+  // MEH-3524: the home lists licences about to lapse. Unstubbed, the read 401s on the fake token,
+  // the refresh fails, and the app logs the admin out before the nav click lands.
+  await page.route("**/admin/license-expiry-reminders", (r) => json(r, { window_days: 30, total: 0, rows: [] }));
   await page.route("**/admin/dashboard", (r) =>
     json(r, { stats: { total_producers: rows.length, pending_producers: rows.filter((x) => x.status === "pending").length, total_users: 3, total_group_buys: 0, pending_moderation_count: pendingModeration, recipes_awaiting_review: recipesAwaitingReview(), pending_kashrut_requests: 0 }, recent_activity: [], monthly_producers: [] }),
   );

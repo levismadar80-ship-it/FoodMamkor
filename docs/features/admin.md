@@ -24,6 +24,8 @@
 * `frontend/components/admin/AdminVerifiedPanel.jsx` — מתן והסרה של התג «מאומת» מעמוד העריכה (MEH-3524), אחרי בחירת המסמך שנבדק: `POST /admin/producers/{id}/grant-verified` ו-`revoke-verified` ב-`backend/app/routers/admin_decisions.py`. עד אז לא הייתה לנתיבים קריאה מהאתר. למארגנים הפאנל מציג הערה בלבד.
 * `frontend/components/admin/AdminAlcoholPanel.jsx` — הסימון «לעסק יש רישיון למכירת אלכוהול» מעמוד העריכה (MEH-3524): קריאה ב-`GET /admin/producers/{producer_id}/order-settings`, כתיבה ב-`PUT …/order-settings/alcohol`, ב-`backend/app/routers/product_orders.py`. כשההזמנות באתר כבויות הפאנל לא מוצג.
 * `frontend/app/[locale]/admin/reports/page.js` — «השהה עסק» סוגר את הדיווחים הפתוחים כ«טופל» (`POST /admin/reports/{id}/resolve`, MEH-3524), רק כשהדף באמת הוסתר.
+* `frontend/components/admin/AdminLicenceExpiry.jsx` — «רישיונות שפגים בקרוב» בעמוד הבית של האדמין (`GET /admin/license-expiry-reminders`, MEH-3524). כשאין — לא מוצג כלום.
+* `frontend/components/admin/AdminRescueMetrics.jsx` — מספרי פיילוט סלי ההצלה ב-`/admin/analytics` (MEH-3524).
 * `frontend/components/admin/BlockUserConfirm.jsx` — אישור לפני חסימת משתמשת (MEH-3375): אם החסימה תסתיר בית עסק, החלון מציג את שמו וכמה הזמנות פתוחות של לקוחות יבוטלו. קריאה: `GET /admin/users/{id}/block-impact` ב-`backend/app/routers/admin_extra.py`, הספירה ב-`backend/app/services/booking_cancellations.py` (אותם מסננים כמו הביטול).
 
 **Flags.** אין. ‏`SUPER_ADMIN_EMAIL` הוא הגדרת סביבה, לא flag.
@@ -36,7 +38,7 @@
 * `tests/test_admin_product_organize.py` — **השומר** של קבוצות וסדר מהאדמין: 401/403 לכל מי שאינה אדמין, מוצר של עסק אחר → 404, סדר שכולל טיוטות; `tests/test_admin_product_import.py` — קבוצה בייבוא ותקרת 20 הקבוצות.
 * `tests/test_meh3475_admin_delivery_payment.py` — **השומר** של משלוח ותשלום מהאדמין (שורות, 422 על יום לא חוקי, שמירת ימים ברשימת ערים, 403/401); `frontend/__tests__/AdminDeliveryPaymentPanel.test.jsx` — המסך (עיר אחת / רבות × בלי סימון / עם).
 * `tests/test_meh3483_page_fill.py` — הנתיב של האדמין: 404 לעסק שלא קיים, 403 לבעלת עסק.
-* `frontend/__tests__/AdminVerifiedPanel.test.jsx` · `frontend/__tests__/AdminAlcoholPanel.test.jsx` · `frontend/__tests__/AdminReportsPage.test.jsx` — התג, האלכוהול וסגירת הדיווחים בהשהיה (MEH-3524); הנתיב החדש נבדק ב-`tests/test_meh3218_product_orders.py`.
+* `frontend/__tests__/AdminVerifiedPanel.test.jsx` · `frontend/__tests__/AdminAlcoholPanel.test.jsx` · `frontend/__tests__/AdminReportsPage.test.jsx` · `frontend/__tests__/AdminLicenceExpiry.test.jsx` · `frontend/__tests__/AdminRescueMetrics.test.jsx` — התג, האלכוהול, סגירת הדיווחים בהשהיה, הרישיונות שפגים ומספרי ההצלה (MEH-3524); הנתיב החדש נבדק ב-`tests/test_meh3218_product_orders.py`.
 * `tests/test_meh3402_blocked_capture.py` — **השומר** של לכידת ההודעות שנחסמו.
 * `tests/test_expansion_admin_authz.py` · `tests/test_meh2900_admin_role_endpoint.py` · `tests/test_meh2890_super_admin_env.py`
 * `frontend/e2e/flows/30-admin-panel-tabs.spec.ts` · `frontend/e2e/flows/33-admin-producers-tab.spec.ts`
