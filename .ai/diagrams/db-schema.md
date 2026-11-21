@@ -258,6 +258,22 @@ erDiagram
         timestamp created_at
     }
 
+    email_outbox {
+        uuid id PK
+        string kind "producer_approved, visitor_confirmation, ... (MEH-3535)"
+        string to_email "nullable; cleared when finished"
+        string subject "nullable; cleared when finished"
+        text body "nullable; cleared when finished"
+        text html "nullable; cleared when finished"
+        string reply_to "nullable; cleared when finished"
+        string outcome "pending sent failed skipped"
+        timestamp send_after "due time; moved by a retry"
+        int attempts "max 5, backoff 2 min doubling"
+        string last_error "short code, never message text"
+        timestamp sent_at
+        timestamp created_at "deleted after 30 days"
+    }
+
     product_order_items {
         uuid id PK
         uuid order_id FK "CASCADE"

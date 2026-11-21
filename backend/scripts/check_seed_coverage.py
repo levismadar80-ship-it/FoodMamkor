@@ -332,6 +332,7 @@ EXEMPT_TABLES = {
     "product_order_phone_codes": "MEH-3263 on-site ordering — one-time phone codes, ten minutes each, runtime only",
     "product_variants": "MEH-3617 sizes or flavours — optional per product, set by an owner at runtime; a demo product with none reads as before",
     "product_order_notifications": "MEH-3296 on-site ordering — messages an order owes, written at runtime only",
+    "email_outbox": "MEH-3535 durable email queue — an email the site owes, written at runtime only; a seed row would be sent to a real address by the dispatcher",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",
     # `cities` is EMPTY after a full local seed — measured, not assumed. It is
     # owned by backend/scripts/seed_cities.py, not by seed_data.py, so it is

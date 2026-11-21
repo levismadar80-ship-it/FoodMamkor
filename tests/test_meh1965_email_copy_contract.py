@@ -160,21 +160,21 @@ _CORPUS = [
     # no-slug body — the one a producer without a minted slug receives —
     # unasserted while the file list said "approved is covered".
     ("producer-approved", admin, lambda: admin._send_notification_email(
-        "her@example.com", "subject-not-asserted",
+        _NoDb(), "corpus", "her@example.com", "subject-not-asserted",
         admin._producer_approved_body("חוות הבר", "havat-habar"),
         html=admin._producer_approved_html("חוות הבר", "havat-habar"))),
     ("producer-approved-no-slug", admin, lambda: admin._send_notification_email(
-        "her@example.com", "subject-not-asserted",
+        _NoDb(), "corpus", "her@example.com", "subject-not-asserted",
         admin._producer_approved_body("חוות הבר", None),
         html=admin._producer_approved_html("חוות הבר", None))),
     ("producer-rejected-with-reason", admin, lambda: admin._send_notification_email(
-        "her@example.com", "subject-not-asserted",
+        _NoDb(), "corpus", "her@example.com", "subject-not-asserted",
         admin._producer_rejected_body("מאפיית הדגן", "חסר רישיון עסק"))),
     ("producer-rejected-no-reason", admin, lambda: admin._send_notification_email(
-        "her@example.com", "subject-not-asserted",
+        _NoDb(), "corpus", "her@example.com", "subject-not-asserted",
         admin._producer_rejected_body("מאפיית הדגן", ""))),
     ("producer-changes-requested", admin, lambda: admin._send_notification_email(
-        "her@example.com", "subject-not-asserted",
+        _NoDb(), "corpus", "her@example.com", "subject-not-asserted",
         admin._producer_changes_requested_body(
             "משק הזית", "נא להוסיף תמונה של הרישיון",
             f"{settings.frontend_url}/producer/dashboard"))),
@@ -238,6 +238,14 @@ _EXPECT_HTML = {
 }
 
 
+class _NoDb:
+    """MEH-3535: `_send_notification_email` commits after queueing; the corpus
+    renders bodies only, so there is nothing to commit."""
+
+    def commit(self):
+        pass
+
+
 @pytest.fixture
 def rendered(monkeypatch):
     """Render every sender in the corpus, returning {label: (subject, text, html)}.
@@ -254,7 +262,15 @@ def rendered(monkeypatch):
         def _capture(to, subject, body, html=None, test_cause=False, _c=captured):
             _c["subject"], _c["text"], _c["html"] = subject, body, html
 
-        monkeypatch.setattr(module, "send_email", _capture)
+        def _capture_queued(db, kind, to, subject, body, html=None, test_cause=False, _c=captured):
+            _c["subject"], _c["text"], _c["html"] = subject, body, html
+
+        # MEH-3535: the admin -> producer emails are queued (email_outbox), not
+        # sent, so the corpus captures them at the queue call instead.
+        if hasattr(module, "enqueue_email"):
+            monkeypatch.setattr(module, "enqueue_email", _capture_queued)
+        else:
+            monkeypatch.setattr(module, "send_email", _capture)
         call()
         assert captured, f"{label}: sender did not call send_email at all"
         out[label] = (captured["subject"], captured["text"], captured["html"])

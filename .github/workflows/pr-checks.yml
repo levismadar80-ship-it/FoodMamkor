@@ -488,7 +488,7 @@ jobs:
           # admin_passkeys, admin_recovery_codes (MEH-3305, #4782) +
           # producer_order_windows, product_order_notifications,
           # product_order_phone_codes (MEH-3296, #4640) — 58 -> 64.
-          # MEH-3617: product_variants (a product's sizes or flavours) — 64 -> 65.
+          # MEH-3535: email_outbox (the durable email queue) — 64 -> 65.
           EXPECTED_TABLES=65
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
