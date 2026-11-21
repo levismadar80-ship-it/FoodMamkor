@@ -138,7 +138,7 @@ def list_business_customers(
             status_code=status.HTTP_404_NOT_FOUND, detail=NO_BUSINESS_DETAIL
         )
     response.headers["Cache-Control"] = "no-store"
-    return {"customers": list_customers(db, user.producer_id)}
+    return {"customers": list_customers(db, user.producer_id)}  # type: ignore[arg-type]
 
 
 def _actor(user: User) -> Actor:
