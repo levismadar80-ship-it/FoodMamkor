@@ -27,6 +27,8 @@ REAL = "https://res.cloudinary.com/mehamakor/image/upload/v1/mehamakor/abc123.jp
         "https://res.cloudinary.com@evil.example/x/image/upload/mehamakor/abc123.jpg",
         "https://evil.example/x/image/upload/mehamakor/abc123.jpg#res.cloudinary.com",
         "javascript://res.cloudinary.com/x/image/upload/mehamakor/abc123.jpg",
+        "https://evil.example\\@res.cloudinary.com/c/image/upload/mehamakor/abc.jpg",
+        "https://res.cloudinary.com/c/image/up\tload/v1/mehamakor/u/ab/x.jpg",
     ],
 )
 def test_spoofed_cloudinary_host_is_not_parsed(url):

@@ -103,6 +103,10 @@ def _looks_like_cloudinary_upload(url: object) -> bool:
     # `https://evil.example/?res.cloudinary.com/image/upload/x` must not pass
     # (CodeQL py/incomplete-url-substring-sanitization). The marker must sit
     # in the path, where `_parse_public_id_from_upload_url` looks for it.
+    # urlsplit drops tab/newline and browsers read `\` as `/`; the parser
+    # below works on the raw string, so reject both up front (MEH-3613 review).
+    if "\\" in url or any(ch in url for ch in "\t\r\n"):
+        return False
     try:
         parts = urlsplit(url)
         host = parts.hostname
@@ -112,6 +116,7 @@ def _looks_like_cloudinary_upload(url: object) -> bool:
         parts.scheme in _CLOUDINARY_SCHEMES
         and host == _CLOUDINARY_HOST
         and _UPLOAD_MARKER in parts.path
+        and _UPLOAD_MARKER in url
     )
 
 
