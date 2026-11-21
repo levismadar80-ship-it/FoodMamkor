@@ -36,7 +36,27 @@ import { SITEMAP_STATIC_PAGES } from "@/lib/sitemap-static";
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
   const base = locale === routing.defaultLocale ? SITE_URL : `${SITE_URL}/${locale}`;
-  return `${base}${path}`;
+  return `${base}${encodePath(path)}`;
+}
+
+// MEH-3638: a sitemap <loc> must be URL-escaped (sitemaps.org; Google reads
+// raw UTF-8 as an invalid URL). Organizer slugs are Hebrew, and a path may
+// arrive already encoded — decode first so "%D7%A4" is not escaped twice.
+function encodePath(path) {
+  try {
+    return encodeURI(decodeURI(path));
+  } catch {
+    return encodeURI(path);
+  }
+}
+
+// MEH-3638: a page whose main content is user-written Hebrew (a business,
+// recipe, event, organizer, experience, group buy) is listed once, in Hebrew,
+// with no hreflang pair. Its /en twin translates only the chrome, carries
+// `noindex` (lib/i18n-seo.js buildUntranslatedEntityMeta), and does not belong
+// in the sitemap until real translated content exists (MEH-3637).
+function sourceLanguageEntry(path, meta) {
+  return [{ url: urlForLocale(path, routing.defaultLocale), ...meta }];
 }
 
 // Expands one logical path into one sitemap entry per locale. Every entry
@@ -133,6 +153,11 @@ async function mapWithConcurrency(items, { limit, task }) {
 }
 
 export default async function sitemap() {
+  // MEH-3638: no <lastmod>. Every entry used to carry the build time, so all
+  // pages claimed the same change date and Google ignores a lastmod it finds
+  // inaccurate. The public API exposes no real modification date yet; an
+  // omitted lastmod is honest, a fake one trains Google to distrust the field.
+  // `now` is still the clock for isGroupBuyLive below.
   const now = new Date();
 
   // MEH-3265: the fixed list lives in lib/sitemap-static.js so the
@@ -150,7 +175,7 @@ export default async function sitemap() {
     }
   }
   const staticPages = staticDefs.flatMap(({ path, priority, changeFrequency }) =>
-    localizeEntry(path, { lastModified: now, priority, changeFrequency }),
+    localizeEntry(path, { priority, changeFrequency }),
   );
 
   // Producer pages — prefer slug URLs (SEO-friendly) when available.
@@ -165,8 +190,7 @@ export default async function sitemap() {
     if (producers !== null) {
       producerPages = producers.flatMap((p) => {
         const path = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-        return localizeEntry(path, {
-          lastModified: now,
+        return sourceLanguageEntry(path, {
           priority: 0.9,
           changeFrequency: "weekly",
         });
@@ -183,7 +207,6 @@ export default async function sitemap() {
         const path = `/producers?page=${p}`;
         producerIndexPages.push(
           ...localizeEntry(path, {
-            lastModified: now,
             priority: 0.8,
             changeFrequency: "daily",
           }),
@@ -213,8 +236,7 @@ export default async function sitemap() {
       });
       recipePages = slugged.flatMap((p, i) =>
         (recipeLists[i] || []).flatMap((recipe) =>
-          localizeEntry(`/${p.slug}/recipes/${recipe.id}`, {
-            lastModified: now,
+          sourceLanguageEntry(`/${p.slug}/recipes/${recipe.id}`, {
             priority: 0.6,
             changeFrequency: "monthly",
           }),
@@ -245,7 +267,6 @@ export default async function sitemap() {
     dietPages = BACKED_DIET_PAGES.flatMap((p, i) =>
       counts[i] >= DIET_PAGE_MIN
         ? localizeEntry(dietPagePath(p.slug), {
-            lastModified: now,
             priority: 0.8,
             changeFrequency: "weekly",
           })
@@ -326,7 +347,6 @@ export default async function sitemap() {
       regionPages = cells.flatMap((cell, i) =>
         totals[i] >= REGION_PAGE_MIN
           ? localizeEntry(regionPagePath(cell.category.slug, cell.regionKey), {
-              lastModified: now,
               priority: 0.7,
               changeFrequency: "weekly",
             })
@@ -344,8 +364,7 @@ export default async function sitemap() {
     if (res.ok) {
       const events = await res.json();
       eventPages = events.flatMap((e) =>
-        localizeEntry(`/events/${e.id}`, {
-          lastModified: now,
+        sourceLanguageEntry(`/events/${e.id}`, {
           priority: 0.7,
           changeFrequency: "weekly",
         }),
@@ -363,8 +382,7 @@ export default async function sitemap() {
     if (res.ok) {
       const organizers = await res.json();
       organizerPages = organizers.flatMap((o) =>
-        localizeEntry(`/organizers/${o.slug}`, {
-          lastModified: now,
+        sourceLanguageEntry(`/organizers/${o.slug}`, {
           priority: 0.6,
           changeFrequency: "weekly",
         }),
@@ -386,8 +404,7 @@ export default async function sitemap() {
       experiencePages = (Array.isArray(experiences) ? experiences : [])
         .filter((x) => x?.id)
         .flatMap((x) =>
-          localizeEntry(`/experiences/${x.id}`, {
-            lastModified: now,
+          sourceLanguageEntry(`/experiences/${x.id}`, {
             priority: 0.7,
             changeFrequency: "weekly",
           }),
@@ -409,8 +426,7 @@ export default async function sitemap() {
       groupBuyPages = (Array.isArray(groupBuys) ? groupBuys : [])
         .filter((g) => g?.id && isGroupBuyLive(g, now))
         .flatMap((g) =>
-          localizeEntry(`/group-buys/${g.id}`, {
-            lastModified: now,
+          sourceLanguageEntry(`/group-buys/${g.id}`, {
             priority: 0.6,
             changeFrequency: "daily",
           }),
