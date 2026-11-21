@@ -303,6 +303,21 @@ export const NAV_ITEMS = Object.freeze([
       "still reaches saving through the heart, which opens LoginPromptModal.",
   },
   {
+    id: "myOrders",
+    kind: "link",
+    href: "/my-orders",
+    surfaces: {
+      headerMenu: { labelKey: "my_orders.title", audience: "auth" },
+      accountSheet: { labelKey: "my_orders.title", audience: "auth" },
+    },
+    /** MEH-3525: only while on-site ordering is on (lib/use-my-orders-nav-gate.js). */
+    dataGate: "orders-on",
+    note:
+      "Signed-in only, like `favorites`. Shown while the server's on-site " +
+      "ordering answers (PRODUCT_ORDERS_ENABLED); Wolt, Etsy and Airbnb keep " +
+      "the buyer's order history in the account menu the same way.",
+  },
+  {
     id: "settings",
     kind: "link",
     href: "/settings",
