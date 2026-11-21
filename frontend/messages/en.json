@@ -7843,6 +7843,7 @@
     "line": "{qty} × {name}",
     "back": "Back",
     "failed": "That didn't work. Please try again.",
+    "write_review": "Write a review",
     "calendar_pickup": "Order pickup: {business_name}",
     "calendar_delivery": "Order delivery: {business_name}"
   },

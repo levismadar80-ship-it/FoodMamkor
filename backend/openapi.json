@@ -1435,6 +1435,17 @@
               }
             ]
           },
+          "review_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Url"
+          },
           "slot_end": {
             "format": "date-time",
             "title": "Slot End",
@@ -6595,6 +6606,17 @@
                 "type": "null"
               }
             ]
+          },
+          "review_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Url"
           },
           "slot_end": {
             "format": "date-time",
