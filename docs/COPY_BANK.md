@@ -302,15 +302,15 @@
 ### /register/producer — Licensing declaration (continuous commitment)
 | Field | Value |
 |---|---|
-| **Current (he)** | `אני מצהיר/ה שהעסק פועל כדין, ושאם נדרשים לפעילותו רישיון או היתר — הם קיימים ובתוקף. אני מתחייב/ת שההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור, ולעדכן את מהמקור אם משהו ישתנה.` |
-| **en** | `I declare that the business operates lawfully, and that if a license or permit is required for its activity — they exist and are valid. I undertake that this declaration will remain true for as long as the business appears on Mehamakor, and to update Mehamakor if anything changes.` — **en pending Sapir review** |
-| **Previous (he)** | `, ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.` (v1 launch text, appended to the ToS checkbox) |
+| **Current (he)** | `הצהרה: אנחנו אחראים לבדוק אילו רישיונות והיתרים נדרשים לפעילות העסק ולעמוד בדרישות החוק. ידוע לנו שמהמקור לא בודקת רישיונות, חוץ מבתי עסק עם תג «מאומת». הפרטים שמסרנו נכונים, ואם משהו ישתנה, נעדכן את מהמקור.` |
+| **en** | `Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor does not check licences, except for businesses with the “verified” badge. The details we gave are true, and if anything changes, we will update Mehamakor.` |
+| **Previous (he)** | v2: `אני מצהיר/ה שהעסק פועל כדין, ושאם נדרשים לפעילותו רישיון או היתר — הם קיימים ובתוקף. אני מתחייב/ת שההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור, ולעדכן את מהמקור אם משהו ישתנה.` · v1: `, ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.` |
 | **i18n key** | `auth.register.producer.terms.declaration` (he+en) |
 | **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (own checkbox, `declarationConfirmed`) |
-| **Audit version** | `DECLARATION_VERSION = "2026-06-v2"` (`backend/app/constants.py`) — v1 = old launch text, v2 = this continuous-commitment wording |
-| **Status** | 🟡 **v2 — pending lawyer** (Brief Q1.1–Q1.5 draft; Sapir-locked wording, lawyer opinion outstanding) |
+| **Audit version** | `DECLARATION_VERSION = "2026-11-v3"` (`backend/app/constants.py`) — v1 launch text, v2 continuous commitment, v3 = this responsibility wording (MEH-3026) |
+| **Status** | 🟡 **v3 — pending lawyer.** Sapir 21/11 (MEH-3026): businesses may join without a licence, so v2's «הם קיימים ובתוקף» could not be signed honestly. Open question for the lawyer: the food law's «מכירה» includes advertising/display. |
 | **Why** | ADR-022 gate 2 / Brief Q1.3 — continuous commitment (not point-in-time) + Q1.4 audit trail. Own first-person checkbox per ADR-014 voice + stronger evidentiary value. |
-| **MEH** | MEH-759 Chunk C (source ADR-022) |
+| **MEH** | MEH-759 Chunk C (source ADR-022); MEH-3026 (v3) |
 
 ### /register/producer — Grower declaration (conditional: ירקות / פירות)
 | Field | Value |

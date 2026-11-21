@@ -59,7 +59,15 @@ export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/
   "start_billing_businesses": /*#__PURE__*/ zod.int(),
   "start_billing_months": /*#__PURE__*/ zod.int(),
   "threshold_agorot": /*#__PURE__*/ zod.int(),
-  "would_pay_total_agorot": /*#__PURE__*/ zod.int()
+  "would_pay_total_agorot": /*#__PURE__*/ zod.int(),
+  "year": /*#__PURE__*/ zod.object({
+  "alert_percent": /*#__PURE__*/ zod.int(),
+  "ceiling_agorot": /*#__PURE__*/ zod.int(),
+  "ceiling_year": /*#__PURE__*/ zod.int(),
+  "income_agorot": /*#__PURE__*/ zod.int(),
+  "percent": /*#__PURE__*/ zod.int(),
+  "year": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('MEH-3189: income from January to the month, against the exempt-dealer ceiling.'))
 })
 
 
@@ -7158,6 +7166,20 @@ export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__
   "status": /*#__PURE__*/ zod.string()
 })),
   "total": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * MEH-3561: «הלקוחות שלכם» — one row per customer who ordered.
+ * @summary List Business Customers
+ */
+export const ListBusinessCustomersProducersMeProductOrdersCustomersGetResponse = /*#__PURE__*/ zod.object({
+  "customers": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "last_order_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "name": /*#__PURE__*/ zod.string(),
+  "order_count": /*#__PURE__*/ zod.int(),
+  "phone": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3561: one customer of the business, grouped by phone.')))
 })
 
 

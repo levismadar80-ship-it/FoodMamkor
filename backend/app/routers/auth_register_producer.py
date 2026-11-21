@@ -60,6 +60,7 @@ from app.services.producer_queries import (
 )
 from app.services.password_policy import validate_password
 from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
+from app.services.outreach_lead_registration import mark_lead_registered  # MEH-3026
 from app.database import get_db
 from app.models import Category, Producer, ProducerCategory, User
 from app.services.farmer_declaration import farmer_declaration_stamp
@@ -379,6 +380,7 @@ async def register_producer(
         if data.terms_accepted:
             user.terms_accepted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
             user.terms_version = TERMS_VERSION  # type: ignore[assignment]
+        mark_lead_registered(db, data.prefill_token)  # MEH-3026 F11
         db.commit()
         db.refresh(user)
         # MEH-3258: she now owns a business — her reviews on it and on
@@ -594,6 +596,7 @@ async def register_producer(
             email_verify_expires=verify_expires,
         )
         db.add(user)
+        mark_lead_registered(db, data.prefill_token)  # MEH-3026 F11
         db.commit()
         db.refresh(user)
 
