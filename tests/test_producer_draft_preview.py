@@ -273,25 +273,12 @@ def _licence_category_draft(db):
     return _draft(db, category=cat)
 
 
-def test_publish_refused_without_a_licence_number_in_a_licence_category(client, db):
+def test_publish_without_a_licence_number_goes_live_without_the_badge(client, db):
+    """Sapir, 17/11 + MEH-3026 (21/11): it goes live with no override, without
+    the «מאומת» badge."""
     admin = make_user(db, role="admin")
     p = _licence_category_draft(db)
     r = client.post(_publish(p.id), json=CONSENT, headers=auth_header(admin))
-    assert r.status_code == 422
-    db.expire_all()
-    assert db.query(Producer).filter(Producer.id == p.id).one().status == "draft"
-
-
-def test_publish_without_a_licence_number_passes_with_the_explicit_override(client, db):
-    """Sapir, 17/11: it goes live, without the «מאומת» badge."""
-    admin = make_user(db, role="admin")
-    p = _licence_category_draft(db)
-    r = client.post(
-        _publish(p.id),
-        params={"allow_without_license": "true"},
-        json=CONSENT,
-        headers=auth_header(admin),
-    )
     assert r.status_code == 200, r.text
     db.expire_all()
     row = db.query(Producer).filter(Producer.id == p.id).one()
