@@ -296,7 +296,6 @@ SEND_NAMES = frozenset(
         "send_email_result",
         "_send_email",
         "_send_notification_email",
-        "_send_whatsapp",
     }
 )
 FLAG = "test_cause"
@@ -499,25 +498,18 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "producer.is_test or owner.is_test (p_test)",
     ),
-    ("routers/admin_decisions.py", "approve_producer", "_send_whatsapp"): (
-        1,
-        BUS,
-        "p_test — admin ping about the business",
-    ),
     ("routers/admin_decisions.py", "reject_producer", "_send_notification_email"): (
         1,
         OWN,
         "p_test",
     ),
-    ("routers/admin_decisions.py", "reject_producer", "_send_whatsapp"): (1, BUS, "p_test"),
-    ("routers/admin_decisions.py", "request_producer_changes", "_send_notification_email"): (
+    (
+        "routers/admin_decisions.py",
+        "request_producer_changes",
+        "_send_notification_email",
+    ): (
         1,
         OWN,
-        "p_test",
-    ),
-    ("routers/admin_decisions.py", "request_producer_changes", "_send_whatsapp"): (
-        1,
-        BUS,
         "p_test",
     ),
     ("routers/admin_decisions.py", "_send_notification_email", "send_email"): (
@@ -525,7 +517,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "wrapper param",
     ),
-    ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
+    # MEH-3589: no admin WhatsApp echo of her own decisions (email only).
     # --- other routers ---
     ("routers/admin_kashrut.py", "kashrut_expiry_reminders", "send_template"): (
         1,
@@ -672,11 +664,6 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     (
         "services/auth_notifications.py",
         "notify_admin_owner_invite_accepted",
-        "send_text",
-    ): (1, BUS, "wrapper param ← producer.is_test"),
-    (
-        "services/auth_notifications.py",
-        "notify_admin_owner_invite_accepted",
         "send_email",
     ): (1, BUS, "same"),
     ("services/auth_notifications.py", "notify_producer_registered", "send_template"): (
@@ -694,22 +681,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_producer_changes_requested",
         "send_template",
     ): (1, OWN, "wrapper param ← p_test"),
-    ("services/auth_notifications.py", "notify_admin_new_recipe", "send_text"): (
-        1,
-        BUS,
-        "wrapper param ← user.is_test or producer.is_test",
-    ),
     ("services/auth_notifications.py", "notify_admin_new_recipe", "send_email"): (
         1,
         BUS,
         "same",
     ),
     # MEH-3122: the owner of a draft asked for a new claim link.
-    (
-        "services/auth_notifications.py",
-        "notify_admin_claim_link_requested",
-        "send_text",
-    ): (1, BUS, "wrapper param ← producer.is_test"),
     (
         "services/auth_notifications.py",
         "notify_admin_claim_link_requested",
@@ -742,39 +719,19 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     (
         "services/auth_notifications.py",
         "notify_admin_producer_sensitive_edit",
-        "send_text",
-    ): (1, BUS, "wrapper param ← producer.is_test"),
-    (
-        "services/auth_notifications.py",
-        "notify_admin_producer_sensitive_edit",
         "send_email",
     ): (1, BUS, "same"),
     (
         "services/auth_notifications.py",
         "notify_admin_new_category_request",
-        "send_text",
-    ): (1, BUS, "wrapper param ← caller user.is_test or its producer.is_test"),
-    (
-        "services/auth_notifications.py",
-        "notify_admin_new_category_request",
         "send_email",
     ): (1, BUS, "same"),
-    (
-        "services/auth_notifications.py",
-        "notify_admin_new_business_suggestion",
-        "send_text",
-    ): (1, NONE, "a visitor's suggestion — no business row yet"),
     (
         "services/auth_notifications.py",
         "notify_admin_new_business_suggestion",
         "send_email",
     ): (1, NONE, "same"),
-    # MEH-3410: an owner claimed a draft — admin WhatsApp + email.
-    ("services/auth_notifications.py", "notify_admin_draft_claimed", "send_text"): (
-        1,
-        BUS,
-        "wrapper param ← producer.is_test or user.is_test",
-    ),
+    # MEH-3410: an owner claimed a draft — admin email (MEH-3589: no WhatsApp).
     ("services/auth_notifications.py", "notify_admin_draft_claimed", "send_email"): (
         1,
         BUS,
@@ -831,11 +788,6 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p.is_test or user.is_test",
     ),
-    (
-        "services/approved_edit_moderation.py",
-        "notify_admin_content_edit",
-        "send_text",
-    ): (1, OWN, "wrapper param ← _test_cause(producer, user) (MEH-3261)"),
     (
         "services/approved_edit_moderation.py",
         "notify_admin_content_edit",
