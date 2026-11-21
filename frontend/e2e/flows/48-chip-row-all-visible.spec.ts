@@ -187,25 +187,33 @@ test.describe("MEH-3153 — «הכל» is visible right after load", () => {
     expectAllInside(g);
   });
 
-  test("/events: with every chip lit, «הכל» is in view", async ({ page }) => {
-    const cats = ["שוק", "קטיף", "טעימות"];
-    // One row per day for a week, cycling the categories → every date shortcut
-    // (today / tomorrow / weekend) and every category chip has a result.
-    const rows = Array.from({ length: 7 }, (_, i) => ({
-      id: `meh3153-${i}`,
-      title: `אירוע ${i + 1}`,
-      event_date: isoDaysFromToday(i),
-      event_time: "10:00",
-      category: cats[i % cats.length],
-      producer_name: "עסק לדוגמה",
-      city: "תל אביב",
-      is_active: true,
-    }));
-    await page.route(/\/api\/events(?:\?|$)/, (route) => json(route, rows));
-    await page.goto("/events");
-    const g = await settledGeometry(page, true);
-    test.info().annotations.push({ type: "overflow", description: String(g.overflow) });
-    expectAllInside(g);
+  // The overflow precondition needs a phone-width row: in the 1440px
+  // `desktop` project every /events chip fits and the poll is red by design
+  // (CI shard 1/4 on 9670cb7). The bug is a phone bug, so this proof runs at
+  // 390×844 in every project.
+  test.describe("phone width", () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    test("/events: with every chip lit, «הכל» is in view", async ({ page }) => {
+      const cats = ["שוק", "קטיף", "טעימות"];
+      // One row per day for a week, cycling the categories → every date shortcut
+      // (today / tomorrow / weekend) and every category chip has a result.
+      const rows = Array.from({ length: 7 }, (_, i) => ({
+        id: `meh3153-${i}`,
+        title: `אירוע ${i + 1}`,
+        event_date: isoDaysFromToday(i),
+        event_time: "10:00",
+        category: cats[i % cats.length],
+        producer_name: "עסק לדוגמה",
+        city: "תל אביב",
+        is_active: true,
+      }));
+      await page.route(/\/api\/events(?:\?|$)/, (route) => json(route, rows));
+      await page.goto("/events");
+      const g = await settledGeometry(page, true);
+      test.info().annotations.push({ type: "overflow", description: String(g.overflow) });
+      expectAllInside(g);
+    });
   });
 
   test("/favorites: with saved items of every type, «הכל» is in view", async ({ page }) => {
