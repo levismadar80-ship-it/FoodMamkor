@@ -20,7 +20,10 @@ buttons all do this.
 ### 2. Images: `alt` always present
 Meaningful images: `alt={descriptive}`. Decorative images: `alt=""`
 (explicit empty — never omit the attribute). Avatar-in-button → `alt=""`
-because the button carries the name.
+because the button carries the name. An initial *letter* in such a button is
+still text to axe (`label-content-name-mismatch` counts `aria-hidden` text
+nodes too), so it uses `<Avatar decorative>`, which draws the letter by CSS
+(MEH-3539).
 
 ### 3. No `onClick` on non-interactive elements
 Use `<button>` / `<a>`. If you must put a handler on a `div`/`span`, it needs
