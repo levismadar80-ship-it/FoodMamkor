@@ -37,6 +37,8 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  ShareNetwork: () => null, // MEH-3621: ProductSheet's share button
+  Check: () => null, // MEH-3621: ProductSheet's share button
   Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: (props) => <span data-testid="leaf-icon" data-weight={props.weight} className={props.className} />,
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,

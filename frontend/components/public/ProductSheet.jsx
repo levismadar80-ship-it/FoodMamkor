@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import ProductFacts from "@/components/public/ProductFacts";
+import ShareButton from "@/components/ShareButton";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
@@ -159,6 +160,14 @@ const METHOD_CTA = {
 const OVERLAY_CONTROL_CLS =
   "flex h-11 w-11 items-center justify-center rounded-full bg-surface/90 text-text " +
   "transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-primary/40";
+
+/** MEH-3621: this page's address with `?product=<id>` — the route, the slug
+ *  and the locale prefix stay whatever the visitor is on. */
+export function productShareUrl(productId) {
+  if (typeof window === "undefined") return undefined;
+  const { origin, pathname } = window.location;
+  return `${origin}${pathname}?product=${encodeURIComponent(productId)}`;
+}
 
 export default function ProductSheet({
   product,
@@ -437,6 +446,18 @@ export default function ProductSheet({
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
+        {/* MEH-3621: share THIS product — the page's own URL + `?product=<id>`,
+            which the page already opens on arrival (PR #3972). Wolt and Etsy
+            give every item its own link; a post about one cake should open
+            the cake. Mirrors the close button: start corner, same height. */}
+        <div className="absolute top-2 start-2 z-10" data-testid="product-sheet-share">
+          <ShareButton
+            variant="overlay"
+            subject="product"
+            url={productShareUrl(product.id)}
+            title={product.name}
+          />
+        </div>
 
         {/* Scroll body. The description is the reason this sheet exists, so it
             is the thing allowed to grow — the CTA lives in the footer below,
