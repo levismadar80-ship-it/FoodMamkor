@@ -15,28 +15,15 @@
  */
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import GuideArticle from "@/components/GuideArticle";
-import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildGuideMetadata } from "@/lib/guide-metadata";
 
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  const t = await getTranslations("guides.product_photography");
-  const title = t("title");
-  const description = t("preview");
-  return {
-    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
-    title,
-    description,
-    openGraph: {
-      title: buildEntityTitle(title, locale),
-      description,
-      type: "article",
-      siteName: BRAND_NAME,
-      locale: OG_LOCALE[locale],
-    },
-    alternates: buildAlternates("/about/for-businesses/guides/product-photography", locale),
-  };
+  return buildGuideMetadata(locale, {
+    namespace: "guides.product_photography",
+    path: "/about/for-businesses/guides/product-photography",
+  });
 }
 
 const BLOCKS_STRUCTURE = [

@@ -35,6 +35,7 @@ import { israelToday } from "./israel-date";
 import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -712,7 +713,7 @@ export function buildProducerMetadata(producer, locale = "he") {
       // HOT-017 (MEH-782) omitted it expecting the layout's og:image to be
       // inherited; it is not — a page-level `openGraph` replaces the layout's,
       // so imageless business pages shared with no preview image at all.
-      images: [{ url: img || "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: img || siteOgImageUrl(locale), width: 1200, height: 630 }],
       type: "website",
       locale: "he_IL",
       siteName: BRAND_NAME,
@@ -724,7 +725,7 @@ export function buildProducerMetadata(producer, locale = "he") {
       card: "summary_large_image",
       title: producer.name,
       description,
-      images: [img || "/og-image.png"],
+      images: [img || siteOgImageUrl(locale)],
     },
   };
 }
