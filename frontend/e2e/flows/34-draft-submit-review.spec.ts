@@ -404,12 +404,12 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     await expect(draftActions(page)).toHaveAttribute("data-state-ready", "true");
     await page.getByTestId("draft-submit-cta").click();
 
-    // The server's answer wins: its sentence is shown, the client's "ready" is
-    // discarded (the actions read not-ready and the CTA is disabled again),
-    // and the status has NOT moved.
+    // The server's answer wins: its sentence is shown and the status has NOT
+    // moved. MEH-3659 review: the card footer shows no list, so the button is
+    // NOT left dead — it stays tappable for a retry once the owner fixes what
+    // the toast named.
     await expect(page.getByText(SERVER_422_MESSAGE, { exact: true })).toBeVisible();
-    await expect(draftActions(page)).toHaveAttribute("data-state-ready", "false");
-    await expect(page.getByTestId("draft-submit-cta")).toBeDisabled();
+    await expect(page.getByTestId("draft-submit-cta")).toBeEnabled();
     await expect(reviewBanner(page)).toHaveCount(0);
     // MEH-2883 by design: a business has no draft list any more, so the
     // server's codes are not rendered as rows — the card's rows still read
