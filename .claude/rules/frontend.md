@@ -212,6 +212,6 @@ other caller.
 - Cover the new behaviour with an automated test; only a real-device-only
   check goes to [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md)
   (workflow rule 10, MEH-2796).
-- Before merging a PR that changes visible UI, capture and read the 375 +
-  1440 screenshots (workflow rule 23, Regression rule 4). There is no human
+- Before merging a PR that changes visible UI, capture and read the phone +
+  desktop screenshots (sizes: workflow rule 38; rule 23). There is no human
   mobile pass.

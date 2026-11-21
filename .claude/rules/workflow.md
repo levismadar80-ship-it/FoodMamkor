@@ -336,7 +336,7 @@ PR type (this table is its one home):
 | PR type | Check |
 |---|---|
 | docs-only / infra-only | Read the diff |
-| UI change | 375/1440 evidence (rule 23) |
+| UI change | phone + desktop evidence (rule 23) |
 | Backend change | Affected endpoint |
 | Hotfix | Only the broken thing |
 
@@ -347,7 +347,8 @@ Docs-only commits still branch + PR (regression rule 7).
 ## Risk-tiered review frequency
 
 Unsure of the tier → work it as the higher tier and say so in the PR; never
-silently downgrade.
+silently downgrade. Outside the queue the higher tier means HIGH-RISK's
+chunk-by-chunk `go`.
 Tiers: [ADR-016](../../docs/decisions/ADR-016-risk-tier-nomenclature.md).
 
 ### HIGH-RISK — chunk-by-chunk review required
@@ -528,7 +529,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     every UI change that changes a pattern. **Exempt:** a bug fix that restores
     intended behaviour, copy-only, internal work — say so in one line.
     - **New page** (a new `page.*` under `frontend/app/[locale]/`, admin and
-      `dev/` excluded) → full review: (1) 375 + 1440 screenshots; (2) the
+      `dev/` excluded) → full review: (1) phone + desktop screenshots; (2) the
       closest big sites (Airbnb · Wolt · Etsy · Yelp · Google Maps ·
       Eventbrite, or whichever fits), with sources; (3) each gap with a real
       rendered mock, the px it moves, what it costs; (4) a recommendation per
@@ -549,7 +550,9 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
     «go merge» on staging merges).** The self-check, all five before the merge:
     (1) `CI gate` + `Deploy gate` green on the head; (2) one `[preview]` commit,
-    then screenshots of the Vercel preview (390×844 WebKit + 1280 Chromium, with
+    then screenshots of the Vercel preview (phone 390×844 WebKit + desktop 1280
+    Chromium; 375 / 1440 are equally accepted — this is the one home of the
+    screenshot sizes; with
     the protection-bypass headers of testing.md) — if no preview arrives
     (quota, cancelled, unreachable), from CC's own local production build, and
     the PR says so; (3) every reviewer / CI-bot comment newer than the last push
@@ -562,7 +565,7 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     [RELEASE_CHECKLIST](../../docs/RELEASE_CHECKLIST.md); an Alembic revision
     waits for her OK; a `do-not-merge` label, a card or batch that says Sapir
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
-    ADR-016 amendment). This adds to rule 23 (375/1440 linked from the PR, not committed) and
+    ADR-016 amendment). This adds to rule 23 (phone + desktop screenshots linked from the PR, not committed) and
     replaces none of it. `scripts/checks/pr-evidence-guard.sh` checks the
     evidence of rules 5a, 22, 23, 38, 40 + the security-review and Fable-reviewer lines is in the PR (blocking).
 39. **A red E2E gate blocks a merge to staging unless all three hold, and the
