@@ -1,8 +1,8 @@
 """meh3624_review_request_kind
 
-Revision ID: c5f7a9b1d3e4
-Revises: b4e6a8c0d2f3
-Create Date: 2026-11-21 17:00:00.000000+00:00
+Revision ID: e0436e1e20e3
+Revises: d6a8c0e2f4b5
+Create Date: 2026-11-21 19:00:00.000000+00:00
 
 MEH-3624: an order owes the buyer one more message, the «איך היה?» email a
 day after the hand-over. The kind CHECK on product_order_notifications gains
@@ -29,8 +29,8 @@ from typing import Sequence, Union
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "c5f7a9b1d3e4"
-down_revision: Union[str, None] = "b4e6a8c0d2f3"
+revision: str = "e0436e1e20e3"
+down_revision: Union[str, None] = "d6a8c0e2f4b5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
