@@ -13,6 +13,7 @@
 
 **קבצים מרכזיים**
 * `backend/app/routers/rescue.py` · `backend/app/routers/rescue_pilot.py` — אילו נקודות איסוף של העסק ביישוב פיילוט, לפני הטופס (MEH-2921)
+* `backend/app/services/rescue_reads.py` — מה שמסכי הסלים קוראים: רשימת הסלים של היום, השריונים של הקונה, ההזמנות והסלים של בית העסק היום, «בדרך כלל», ומספרי הפיילוט לאדמין. ה-handlers ב-`backend/app/routers/rescue.py` קוראים את השעון ואת ערי הפיילוט ומעבירים אותם (MEH-3541).
 * `frontend/components/rescue/RescueSection.jsx`
 * `frontend/components/admin/AdminRescueMetrics.jsx` — מספרי הפיילוט ב-`/admin/analytics` (`GET /admin/rescue/metrics`, MEH-3524); כשהפיילוט כבוי לא מוצג כלום.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py`
