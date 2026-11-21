@@ -487,7 +487,9 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
  * @summary Admin List Group Buys
  */
 export const adminListGroupBuysAdminGroupBuysGetResponseCommitsCountDefault = 0;
+export const adminListGroupBuysAdminGroupBuysGetResponseJoinsClosedDefault = false;
 export const adminListGroupBuysAdminGroupBuysGetResponseUserCommittedDefault = false;
+export const adminListGroupBuysAdminGroupBuysGetResponseUserWaitlistedDefault = false;
 
 export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -498,7 +500,9 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
@@ -510,6 +514,7 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "user_commit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -518,7 +523,8 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "quantity": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid()
 }),/*#__PURE__*/ zod.null()])),
-  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseUserCommittedDefault)
+  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseUserCommittedDefault),
+  "user_waitlisted": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminListGroupBuysAdminGroupBuysGetResponseUserWaitlistedDefault)
 }).check(/*#__PURE__*/ zod.describe('Full detail — includes whether the current user has committed.'))
 export const AdminListGroupBuysAdminGroupBuysGetResponse = /*#__PURE__*/ zod.array(AdminListGroupBuysAdminGroupBuysGetResponseItem)
 
@@ -4751,6 +4757,7 @@ export const RegisterForExperienceExperiencesExperienceIdRegistrationsPostRespon
  * @summary List Group Buys
  */
 export const listGroupBuysGroupBuysGetResponseCommitsCountDefault = 0;
+export const listGroupBuysGroupBuysGetResponseJoinsClosedDefault = false;
 
 export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4761,7 +4768,9 @@ export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listGroupBuysGroupBuysGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
@@ -4773,6 +4782,7 @@ export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })
 export const ListGroupBuysGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListGroupBuysGroupBuysGetResponseItem)
@@ -4800,7 +4810,9 @@ export const CountGroupBuysByStatusGroupBuysCountsGetResponse = /*#__PURE__*/ zo
  * @summary Get Group Buy
  */
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseCommitsCountDefault = 0;
+export const getGroupBuyGroupBuysGroupBuyIdGetResponseJoinsClosedDefault = false;
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseUserCommittedDefault = false;
+export const getGroupBuyGroupBuysGroupBuyIdGetResponseUserWaitlistedDefault = false;
 
 export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4811,7 +4823,9 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
@@ -4823,6 +4837,7 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "user_commit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
@@ -4831,7 +4846,8 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "quantity": /*#__PURE__*/ zod.int(),
   "user_id": /*#__PURE__*/ zod.uuid()
 }),/*#__PURE__*/ zod.null()])),
-  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseUserCommittedDefault)
+  "user_committed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseUserCommittedDefault),
+  "user_waitlisted": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getGroupBuyGroupBuysGroupBuyIdGetResponseUserWaitlistedDefault)
 }).check(/*#__PURE__*/ zod.describe('Full detail — includes whether the current user has committed.'))
 
 
@@ -4842,9 +4858,21 @@ export const CancelCommitGroupBuysGroupBuyIdCommitDeleteResponse = /*#__PURE__*/
 
 
 /**
+ * @summary Update Commit
+ */
+export const UpdateCommitGroupBuysGroupBuyIdCommitPatchResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary Commit To Group Buy
  */
 export const CommitToGroupBuyGroupBuysGroupBuyIdCommitPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Update Group Buy Settings
+ */
+export const UpdateGroupBuySettingsGroupBuysGroupBuyIdSettingsPatchResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -4854,6 +4882,18 @@ export const UpdateGroupBuyStatusGroupBuysGroupBuyIdStatusPatchResponse = /*#__P
   "detail": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.enum(['open', 'funded', 'cancelled', 'fulfilled'])
 })
+
+
+/**
+ * @summary Leave Waitlist
+ */
+export const LeaveWaitlistGroupBuysGroupBuyIdWaitlistDeleteResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Join Waitlist
+ */
+export const JoinWaitlistGroupBuysGroupBuyIdWaitlistPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -6664,6 +6704,7 @@ export const DashboardProducersMeDashboardGetResponse = /*#__PURE__*/ zod.unknow
  * @summary List My Group Buys
  */
 export const listMyGroupBuysProducersMeGroupBuysGetResponseCommitsCountDefault = 0;
+export const listMyGroupBuysProducersMeGroupBuysGetResponseJoinsClosedDefault = false;
 
 export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6674,7 +6715,9 @@ export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ 
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
+  "joins_closed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyGroupBuysProducersMeGroupBuysGetResponseJoinsClosedDefault),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "max_units": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
   "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
@@ -6686,6 +6729,7 @@ export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ 
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })
 export const ListMyGroupBuysProducersMeGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListMyGroupBuysProducersMeGroupBuysGetResponseItem)

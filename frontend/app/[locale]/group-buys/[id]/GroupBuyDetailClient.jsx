@@ -34,6 +34,10 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
+// MEH-3592: the join card's member / waitlist / line-total parts.
+import GroupBuyMemberPanel from "@/components/group-buy/GroupBuyMemberPanel";
+import GroupBuyWaitlistPanel from "@/components/group-buy/GroupBuyWaitlistPanel";
+import GroupBuyLineTotal from "@/components/group-buy/GroupBuyLineTotal";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -239,7 +243,10 @@ export default function GroupBuyDetailClient({ id }) {
   // MEH-3289: a funded group still takes joiners until it is full or the
   // deadline passes (group_buys.py commit route); leaving stays open the same way.
   const joinable = (open || funded) && !expired;
-  const full = typeof gb.max_participants === "number" && gb.commits_count >= gb.max_participants;
+  // MEH-3592: full = no room for one more person with one unit (either cap).
+  const full = (typeof gb.max_participants === "number" && gb.commits_count >= gb.max_participants) || gb.units_left === 0;
+  const joinsClosed = Boolean(gb.joins_closed);
+  const qtyMax = typeof gb.units_left === "number" ? Math.min(QTY_MAX, gb.units_left) : QTY_MAX;
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const heroSrc = gb.producer_image_url
     ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
@@ -343,7 +350,7 @@ export default function GroupBuyDetailClient({ id }) {
 
       <div className="mt-5">
         {/* Commit form */}
-        {joinable && !full && !gb.user_committed && (
+        {joinable && !full && !joinsClosed && !gb.user_committed && (
           <form onSubmit={handleCommit} className="space-y-4">
             {/* MEH-1145 Wave E2: number field → ui/Input; the clamp-on-blur and
                 the ltr end-anchored digits (a text-align via className, not a
@@ -354,7 +361,7 @@ export default function GroupBuyDetailClient({ id }) {
               type="number"
               label={gb.unit ? t("quantity_label_unit", { unit: gb.unit }) : t("quantity_label")}
               min={QTY_MIN}
-              max={QTY_MAX}
+              max={qtyMax}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
@@ -367,6 +374,7 @@ export default function GroupBuyDetailClient({ id }) {
               className="text-right"
               dir="ltr"
             />
+            <GroupBuyLineTotal gb={gb} quantity={quantity} />
             {error && <InlineMessage>{error}</InlineMessage>}
             <Button
               type="submit"
@@ -380,23 +388,9 @@ export default function GroupBuyDetailClient({ id }) {
           </form>
         )}
 
-        {/* Already committed */}
+        {/* Already committed — MEH-3592: quantity edit + the last-day leave rule. */}
         {gb.user_committed && (
-          <div className="space-y-3">
-            <div className="rounded-md bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
-              {t("committed_confirm")}
-              {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
-            </div>
-            {joinable && (
-              <button
-                onClick={handleCancel}
-                disabled={cancelling}
-                className="w-full text-sm text-fg-muted hover:text-error transition text-center"
-              >
-                {cancelling ? t("cancelling") : t("cancel_cta")}
-              </button>
-            )}
-          </div>
+          <GroupBuyMemberPanel gb={gb} joinable={joinable} full={full} cancelling={cancelling} onCancel={handleCancel} onChanged={load} />
         )}
 
         {/* MEH-3287: the daily job cancels a group that missed its minimum by the
@@ -406,10 +400,14 @@ export default function GroupBuyDetailClient({ id }) {
             {t("deadline_passed")}
           </div>
         )}
-        {joinable && full && !gb.user_committed && (
-          <div className="rounded-md bg-border px-4 py-3 text-fg-muted text-sm text-center" data-testid="group-buy-full">
-            {t("full")}
+        {/* MEH-3592: the business stopped joins — said plainly, no waitlist. */}
+        {joinable && joinsClosed && !gb.user_committed && (
+          <div className="rounded-md bg-border px-4 py-3 text-fg-muted text-sm text-center" data-testid="group-buy-joins-closed">
+            {t("joins_closed")}
           </div>
+        )}
+        {joinable && full && !joinsClosed && !gb.user_committed && (
+          <GroupBuyWaitlistPanel gb={gb} user={user} onChanged={load} />
         )}
       </div>
       <div className="mt-5 pt-5 border-t border-border">
@@ -462,9 +460,12 @@ export default function GroupBuyDetailClient({ id }) {
             {/* MEH-3588: «contact the business» is for those who joined; a
                 visitor who can still join is told she can. */}
             <p className="text-sm mt-1 opacity-90">
-              {joinable && !full && !gb.user_committed
-                ? t(hasMax ? "funded_subtitle_join_max" : "funded_subtitle_join")
-                : t("funded_subtitle", { name: gb.producer_name })}
+              {/* MEH-3592: a visitor who can no longer join is not sent to the business. */}
+              {gb.user_committed
+                ? t("funded_subtitle", { name: gb.producer_name })
+                : joinable && !full && !joinsClosed
+                  ? t(hasMax ? "funded_subtitle_join_max" : "funded_subtitle_join")
+                  : t("funded_subtitle_closed")}
             </p>
           </div>
         )}

@@ -1280,6 +1280,7 @@ from app.models.events import (  # noqa: E402
     Experience as Experience,
     GroupBuy as GroupBuy,
     GroupBuyCommit as GroupBuyCommit,
+    GroupBuyWaitlist as GroupBuyWaitlist,
     REGISTRATION_METHODS as REGISTRATION_METHODS,
     Registration as Registration,
 )
