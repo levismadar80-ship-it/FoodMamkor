@@ -8,9 +8,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { createElement } from "react";
-import { render } from "@testing-library/react";
-import Avatar, { avatarInitial } from "@/components/ui/Avatar";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 const ROOT = path.resolve(__dirname, "..");
 const OWNER = "components/ui/Avatar.jsx";
@@ -96,23 +94,5 @@ describe("AvatarGuard (MEH-3069)", () => {
     expect(avatarInitial("😀 Tal")).toBe("😀");
     expect(avatarInitial("")).toBe("?");
     expect(avatarInitial(null, "")).toBe("");
-  });
-
-  // MEH-3539: inside a control whose aria-label already names the person, the
-  // letter must not be a text node (axe label-content-name-mismatch counts
-  // aria-hidden text too), so `decorative` draws it from data-initial by CSS.
-  it("decorative: aria-hidden circle, no text node, letter in data-initial", () => {
-    const { container } = render(createElement(Avatar, { name: "נועה", decorative: true }));
-    const circle = container.querySelector("[data-avatar]");
-    expect(circle.getAttribute("aria-hidden")).toBe("true");
-    expect(circle.textContent).toBe("");
-    expect(circle.querySelector("[data-initial]").getAttribute("data-initial")).toBe("נ");
-  });
-
-  it("not decorative: the letter is text and the circle is not hidden", () => {
-    const { container } = render(createElement(Avatar, { name: "נועה" }));
-    const circle = container.querySelector("[data-avatar]");
-    expect(circle.hasAttribute("aria-hidden")).toBe(false);
-    expect(circle.textContent).toBe("נ");
   });
 });

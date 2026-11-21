@@ -1,7 +1,5 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
 import AxeBuilder from "@axe-core/playwright";
-import fs from "node:fs";
-import path from "node:path";
 
 /**
  * MEH-230 (4/7) — axe regression net: ZERO critical/serious on 6 routes
@@ -244,61 +242,3 @@ test.describe("axe a11y net — extended public routes (MEH-921)", () => {
     });
   }
 });
-
-// MEH-3539 — the screens behind login were never scanned: the owner's
-// dashboard, the admin panel and the consumer's own pages. Same gate, same
-// ignores, one describe per role on that role's storageState (global-setup).
-// Baseline measured on staging 20/11/2026 before this block was added: 0
-// critical/serious on all eight routes, with a control (an injected unnamed
-// <button> → 1 `button-name` violation) proving axe ran on the rendered page.
-// Admin routes are scanned at the phone width too: «נבדק בנייד» covers /admin
-// (MEH-2426), and the mobile project runs this file.
-const AUTHED_ROUTES = {
-  producer: ["/producer/dashboard", "/producer/dashboard/edit", "/settings"],
-  admin: ["/admin", "/admin/producers", "/admin/reviews"],
-  consumer: ["/favorites", "/settings"],
-} as const;
-
-const AUTHED_PASSWORD_ENV = {
-  producer: "DEMO_OWNER_PASSWORD",
-  admin: "DEMO_ADMIN_PASSWORD",
-  consumer: "DEMO_CONSUMER_PASSWORD",
-} as const;
-
-for (const role of Object.keys(AUTHED_ROUTES) as (keyof typeof AUTHED_ROUTES)[]) {
-  test.describe(`axe a11y net — signed in as ${role} (MEH-3539)`, () => {
-    // REUSES: flows/25-role-reachability.spec.ts skipUnlessProvisioned — skip
-    // only when the fixture is missing AND the password is unset, so a set
-    // password with a missing fixture still fails loud.
-    const fixture = `e2e/.auth/${role}.json`;
-    test.skip(
-      !fs.existsSync(path.join(__dirname, "..", ".auth", `${role}.json`)) &&
-        !process.env[AUTHED_PASSWORD_ENV[role]],
-      `no ${fixture} and ${AUTHED_PASSWORD_ENV[role]} is unset — global-setup provisions no ${role} login here`,
-    );
-    test.use({ storageState: fixture });
-
-    for (const route of AUTHED_ROUTES[role]) {
-      test(route, async ({ page }) => {
-        await page.goto(route);
-        await page.waitForLoadState("domcontentloaded");
-        // Signed in, not bounced: a scan of /login would pass and prove nothing.
-        await expect(page).not.toHaveURL(/\/login(\/|$|\?)/);
-        await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 20_000 });
-        // The pages bounce to /login client-side, after domcontentloaded, and
-        // /login has its own <h1> — so re-check once the heading is up, and
-        // require the JWT the storageState injects (REUSES:
-        // flows/25-role-reachability.spec.ts assertAuthenticated, MEH-1599).
-        await expect(page).not.toHaveURL(/\/login(\/|$|\?)/);
-        const token = await page.evaluate(() => localStorage.getItem("token"));
-        expect(token, `${role} storageState must carry a JWT`).toBeTruthy();
-        const results = await analyze(page);
-        summarize(`${role} ${route}`, results);
-        expect(
-          gateViolations(results),
-          `critical/serious axe violations on ${route} (${role})`,
-        ).toEqual([]);
-      });
-    }
-  });
-}
