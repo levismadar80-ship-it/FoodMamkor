@@ -21,17 +21,21 @@ sites (16 direct + 4 via experience_notifications._send_email). None of
 them inspected the return value before this change and none does now —
 verified by AST walk, not grep. Making a caller REACT to a failure is a
 separate product decision (MEH-1613 §7), deliberately not taken here.
+
+MEH-3587: a send with no `html` is no longer text-only. _deliver builds the
+branded HTML part from the text (services/email_layout.py); the text part
+goes out unchanged. A caller that passes its own html keeps it.
 """
 
 from __future__ import annotations
 
+import logging
 from html import escape
 from typing import Any
 
-import logging
-
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.email_layout import text_to_html
 from app.services.outbound_guard import (
     REDIRECT_BODY_PREFIX,
     route_email,
@@ -176,6 +180,15 @@ def _route_outside_production(
     return route.to, route.subject, route.reply_to, note + body, html
 
 
+def _branded_html(to: str, subject: str, body: str) -> str | None:
+    """text_to_html, fail-open: a converter bug must never cost the email."""
+    try:
+        return text_to_html(subject, body)
+    except Exception as exc:  # noqa: BLE001 — send_email never raises
+        _report(exc, to=to, subject=subject, stage="text-to-html")
+        return None
+
+
 def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     to: str,
     subject: str,
@@ -185,7 +198,9 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     test_cause: bool = False,
     headers: dict[str, str] | None = None,
 ) -> None:
-    """Send a plain-text (+ optional HTML) email via Resend. Always fail-open.
+    """Send a plain-text + HTML email via Resend. Always fail-open.
+
+    MEH-3587: `html` defaults to the branded frame built from `body`.
 
     MEH-2112: `reply_to` is OPTIONAL and defaults to None, so all 20 existing
     call sites keep their exact current behaviour — nothing is added to the
@@ -296,6 +311,12 @@ def _deliver(  # noqa: PLR0913 — +headers (MEH-3212)
     if _is_reserved_domain(to):
         logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
         return "skipped"
+
+    # MEH-3587: every email goes out in the one branded frame. A caller that
+    # wrote only text gets it built from the text (links become buttons);
+    # the text part itself is sent unchanged. DO NOT make this opt-in per
+    # caller — 49 of 73 call sites were text-only when this landed.
+    html = html or _branded_html(to, subject, body)
 
     # MEH-3402: outside production a real person never receives mail.
     # DO NOT move this below the Resend call or make it opt-in per caller.

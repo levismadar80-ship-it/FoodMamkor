@@ -9,6 +9,7 @@ import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 import { buildGroupBuyJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Product + Offer JSON-LD
 
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was no metadata at all.
@@ -107,7 +108,7 @@ export async function generateMetadata(props) {
       openGraph: {
         type: "article",
         locale: OG_LOCALE[locale],
-        images: ["/og-image.png"],
+        images: [siteOgImageUrl(locale)],
       },
       alternates,
     };
@@ -126,7 +127,7 @@ export async function generateMetadata(props) {
       images: [
         groupBuy?.producer_image_url
           ? optimizeCloudinary(groupBuy.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
-          : "/og-image.png",
+          : siteOgImageUrl(locale),
       ],
     },
     alternates,

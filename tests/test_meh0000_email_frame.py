@@ -100,7 +100,9 @@ def test_the_scan_found_the_templates_at_all() -> None:
     """
     assert len(FILES) >= 6, f"only {len(FILES)} file(s) with an HTML document: {FILES}"
     names = {path.name for path in FILES}
-    for expected in ("auth_emails.py", "registration_emails.py", "rescue_emails.py"):
+    # MEH-3587 moved the shared frame from registration_emails._shell into
+    # email_layout.frame, so the scan finds it there.
+    for expected in ("auth_emails.py", "email_layout.py", "rescue_emails.py"):
         assert expected in names, f"{expected} not found by the scan; names={sorted(names)}"
     assert len(_palette()) > 20, "the palette parsed to almost nothing"
 
