@@ -953,10 +953,15 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      # MEH-3153 webkit deps: runs on a cache hit too. The cache holds the
+      # browser in ~/.cache/ms-playwright, not the apt libraries it links
+      # (libevent-2.1-7 & co.), and every runner starts without them. Gated on
+      # a miss, a cache hit launched MiniBrowser with no libevent and every
+      # test failed in 2 ms (run 44841099730). On a hit `install` finds the
+      # browser present and only the apt step does work.
       - name: Install Playwright (WebKit only)
         run: npx playwright install --with-deps webkit
         working-directory: frontend
-        if: steps.playwright-cache-webkit.outputs.cache-hit != 'true'
 
       - name: Build frontend
         run: npm run build
@@ -1154,10 +1159,15 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      # MEH-3153 webkit deps: runs on a cache hit too. The cache holds the
+      # browser in ~/.cache/ms-playwright, not the apt libraries it links
+      # (libevent-2.1-7 & co.), and every runner starts without them. Gated on
+      # a miss, a cache hit launched MiniBrowser with no libevent and every
+      # test failed in 2 ms (run 44841099730). On a hit `install` finds the
+      # browser present and only the apt step does work.
       - name: Install Playwright (WebKit only)
         run: npx playwright install --with-deps webkit
         working-directory: frontend
-        if: steps.playwright-cache-webkit.outputs.cache-hit != 'true'
 
       - name: Build frontend
         run: npm run build
