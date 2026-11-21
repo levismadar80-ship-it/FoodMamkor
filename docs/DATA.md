@@ -2354,12 +2354,13 @@ from the code in [release/action-map.md](./release/action-map.md).
 ```
 POST   /auth/refresh             public (the HttpOnly `refresh_token` cookie is the credential), 30/min.
                                  No body. 200 → Token (new access token) and a rotated refresh cookie,
-                                 sliding 14 days. 401 cookie absent / undecodable / user not found /
-                                 token_version changed; 403 blocked user. (MEH-326)
+                                 sliding 14 days, plus a new fingerprint cookie. 401 cookie absent /
+                                 undecodable / user not found / token_version changed / password changed
+                                 since the token was issued; 403 blocked user. (MEH-326)
 
 POST   /auth/logout              public, 30/min. No body. 204, clears the refresh cookie. No auth on
                                  purpose: a holder of an expired access token must still be able to
-                                 log out. (MEH-326)
+                                 log out. Also clears the fingerprint cookie. (MEH-326)
 
 POST   /auth/logout-all-devices  any logged-in user, 5/hour. No body. Increments token_version, so every
                                  other session gets 401 on its next request. 200 → Token for this session.
@@ -2377,6 +2378,7 @@ POST   /auth/resend-verify       any logged-in user. 3/hour per IP, plus 3/hour 
 POST   /upload/avatar            any logged-in user, 10/hour. multipart `file`. Same size cap and
                                  magic-byte check as /upload/image; 400 px square, `avatars/` folder.
                                  Saves `users.avatar_url` itself, so no PATCH /users/me is needed.
+                                 200 {"url": ...}.
 
 POST   /producers/me/bio/generate   business, 5/hour per IP and 20/day per business.
                                  Body {sells (1-200), area?, special?, instagram?}. 200 {"bio": "<Hebrew,
@@ -2394,11 +2396,15 @@ GET    /users/me/favorites/{producer_id}/alerts   any logged-in user. 200 → Al
 PUT    /users/me/favorites/{producer_id}/alerts   any logged-in user, 60/min. Body AlertPrefsIn: the
                                  six notify_* flags (default true), whatsapp_opt_in (default false),
                                  push_subscription? (object). 200 → AlertPrefsOut.
+                                 400 «יש לשמור את בית העסק במועדפים תחילה» when the business is not in the
+                                 caller's favorites; 422 «יש להזין מספר טלפון כדי להפעיל עדכונים בוואטסאפ»
+                                 when whatsapp_opt_in is true and the user has no phone.
 
 POST   /category-requests        public (a token is optional), 5/hour. Body {requested_name (1-100,
                                  3+ letters), examples? (≤300)}. A `producer_id` in the body is ignored:
                                  the business is taken from the caller's token, or left empty (MEH-386).
-                                 201 → CategoryRequestOut. Pings the admin.
+                                 201 → CategoryRequestOut. Pings the admin. A token that is sent but
+                                 invalid gets 401; it is not treated as anonymous.
 
 GET    /admin/category-requests  admin, 120/min. 200 → requests grouped by name (case-insensitive),
                                  most-requested first: [{requested_name, count, examples[], requests[
@@ -2417,31 +2423,40 @@ PATCH  /admin/outreach/{lead_id} admin. Body OutreachLeadUpdate (any of name, ph
 DELETE /admin/outreach/{lead_id} admin. 204; 404 «ליד לא נמצא».
 
 POST   /admin/outreach/{lead_id}/prefill-token   admin. Creates or rotates the lead's prefill token.
-                                 200 → OutreachLeadOut including `prefill_token`.
+                                 The token lives 30 days. 200 → OutreachLeadOut including `prefill_token`
+                                 and `prefill_token_expires_at`; 404 «ליד לא נמצא».
 
 GET    /register/producer/prefill/{token}   public (the token is the credential), 30/hour. 200 →
                                  {name, phone?, instagram?, website?, city?, category?}; the lead's
-                                 notes and status are never returned. 404 for an unknown or expired
-                                 token. (MEH-1724)
+                                 notes and status are never returned. 404 «אסימון לא נמצא» unknown token;
+                                 404 «תוקף האסימון פג» expired. (MEH-1724)
 
 GET    /admin/producers/{producer_id}/google-place-candidates?q=   admin, 30/min. Up to 3 Google Place
                                  candidates, searched by the business's name + city, or by `q` (≤120)
-                                 when the admin typed one (MEH-2602). 204 when there is no server key,
+                                 when the admin typed one (MEH-2602). 200 {"candidates": [...]}.
+                                 204 when there is no server key,
                                  no result, or Google errors; 404 unknown business. Display only: the
                                  admin picks one in the business form, nothing is saved here.
 
 POST   /admin/producers/{producer_id}/story-card   admin. Body {image_data: base64 JPEG data URI}.
                                  Uploads to Cloudinary and saves the URL on the business.
-                                 400 «נתוני תמונה לא תקינים»; 404 «בית עסק לא נמצא».
+                                 200 {url, saved: true}. With no Cloudinary configured: {url: placeholder,
+                                 saved: false} and nothing is saved. 400 «נתוני תמונה לא תקינים»;
+                                 404 «בית עסק לא נמצא»; 500 «העלאת התמונה נכשלה».
 
 POST   /admin/seed-cities        admin. No body. Fetches Israeli localities from data.gov.il and
-                                 upserts them into `cities`. Safe to run again.
+                                 inserts the ones `cities` does not have yet (an existing city is not
+                                 changed). Safe to run again. 200 {"seeded": <rows inserted>}.
+                                 502 «לא הצלחנו להביא את רשימת היישובים מ-data.gov.il», and 502 when the
+                                 records arrive without a locality-name column.
 
 POST   /admin/kashrut/expiry-reminders?dry_run=   admin, 10/hour. `dry_run` defaults to true: the rows
                                  are returned and nothing is sent. With dry_run=false sends the WhatsApp
                                  reminder to approved businesses with an active badge, a phone, and a
-                                 certificate that expires within 30 days. 200 → {dry_run, window_days,
-                                 total, sent_count, failed_count, rows[]}. (MEH-1673)
+                                 certificate that expires between now and 30 days from now (one that
+                                 already expired is not selected; test businesses never are).
+                                 200 → {dry_run, window_days, total, sent_count, failed_count, rows[]}.
+                                 (MEH-1673)
 
 GET    /push-vapid-key           public. 200 {"public_key": "<VAPID key, or empty>"} for the browser's
                                  push subscription.
