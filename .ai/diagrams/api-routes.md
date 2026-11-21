@@ -262,6 +262,7 @@ graph LR
     Dash --> OfferCancel[POST /rescue/offers/:id/cancel<br/>👤 owner or admin · 409 after pickup_end<br/>cancels every open reservation with it, handed stays handed<br/>after commit: one email per buyer MEH-2738 · no WhatsApp]
 
     List[/rescue list · chunk 4] --> Browse[GET /rescue/offers?city=&lat=&lng=<br/>🌐 today's active bags with stock<br/>distance is to THE pickup point, not the nearest branch<br/>+ producer summary + typical_items]
+    BagPage[/rescue/:offerId bag page · MEH-3586] --> One[GET /rescue/offers/:id<br/>🌐 one of today's bags + state available/sold_out/cancelled/ended<br/>+ pickup lat/lng + business avg_rating/reviews_count<br/>404 for another day, test/unapproved business, town outside the pilot]
 
     Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 verified email only, else 403 email_unverified MEH-3225<br/>qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
     Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
