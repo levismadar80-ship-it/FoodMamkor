@@ -7135,7 +7135,8 @@
       "loading": "Loading the bag…",
       "bar_note": "₪{price} · pickup until {until}",
       "details_link": "All bag details",
-      "bar_cta": "Reserve the bag"
+      "bar_cta": "Reserve the bag",
+      "calendar_title": "Surprise bag pickup: {business_name}"
     }
   },
   "holidays": {

@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
+import AddToCalendarButton from "@/components/ui/AddToCalendarButton";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
@@ -29,6 +30,8 @@ const STATE_KEY = {
  * Does NOT: hold reservation state (lib/useRescueReservation.js) or invent a
  *           discount: the worth is the business's own low estimate, shown
  *           only when it is above the price (worthAgorot).
+ *           A reserved bag also gets «הוספה ליומן» for the pickup window
+ *           (the shared AddToCalendarButton, MEH-3616).
  * History:  MEH-3586 (creation)
  *
  * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/useRescueReservation").default> }} props
@@ -47,6 +50,20 @@ export default function RescueOfferAction({ offer, reservation }) {
     return (
       <div className="space-y-4" data-testid="rescue-offer-reserved">
         <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+        {order.status === "reserved" && offer.pickup_start && offer.pickup_end && (
+          <AddToCalendarButton
+            testId="rescue-offer-add-to-calendar"
+            slot={{
+              uid: `bag-${order.id}`,
+              start: offer.pickup_start,
+              end: offer.pickup_end,
+              title: t("offer_page.calendar_title", { business_name: offer.producer?.name ?? "" }),
+              location: [offer.producer?.location_address, offer.producer?.location_city].filter(Boolean).join(", ") || null,
+              // The bag page is public, but the pickup code is not: no URL,
+              // so the calendar entry never carries anything secret.
+            }}
+          />
+        )}
         <RescueErrorLine errorKey={errorKey} />
         {/* The review only once the business marked it handed (409 before). */}
         {order.status === "handed" && !reviewed && <RescueReview orderId={order.id} onDone={() => setReviewed(true)} />}
