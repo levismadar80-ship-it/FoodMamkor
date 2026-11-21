@@ -11,7 +11,7 @@ import { test, expect, type Page } from "../_cloudinary-stub";
  *                every Hebrew glyph, so «היכרות אישית» rendered in a system
  *                serif (Liberation Serif here; whatever the phone has there).
  *             2. Headings never end on a one-word line (`text-wrap: balance`).
- *           The letter-spacing half lives in home.spec.ts (trust band) because
+ *           The letter-spacing half lives in home-03.spec.ts (trust band) because
  *           it needs that file's API mocks.
  * Touches:  static SSG routes only. No API writes.
  * Fonts:    measured with CDP `CSS.getPlatformFontsForNode` — the faces the

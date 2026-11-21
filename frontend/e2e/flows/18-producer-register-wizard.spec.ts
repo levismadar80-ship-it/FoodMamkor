@@ -12,7 +12,7 @@ import { pickCity } from "./_pick-city";
  * // MEH-360: this spec RUNS on the Vercel preview deploy (in CI / by Sapir),
  * not in the CC sandbox — envoy denies the preview + *.up.railway.app there.
  *
- * Complements the vitest layer (__tests__/RegisterProducerClient.test.jsx),
+ * Complements the vitest layer (__tests__/RegisterProducerClient-01/-02.test.jsx),
  * which pins nav + submit-body shape + char-count with mocks. This spec drives
  * the REAL rendered 5-frame wizard (MEH-847 nav · MEH-853 city/address ·
  * MEH-860 tagline) from ACCOUNT → CONFIRM and asserts the non-upgrade success

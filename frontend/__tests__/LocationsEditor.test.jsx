@@ -55,7 +55,7 @@ vi.mock("next-intl", () => ({
 // suggestion (onSelect with a full payload). The real component's debounce and
 // provider handling are its own concern; what is under test here is what
 // LocationsEditor does with the contract at AddressSearch.jsx:39.
-// REUSES: __tests__/RegisterProducerClient.test.jsx:99-124 — same stub shape.
+// REUSES: __tests__/RegisterProducerClient-01.test.jsx:103-128 — same stub shape.
 vi.mock("@/components/AddressSearch", () => ({
   default: ({ value, onChange, onSelect, inputTestId, id, placeholder }) => (
     <div>

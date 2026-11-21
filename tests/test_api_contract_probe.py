@@ -187,3 +187,18 @@ def test_app_routing_404_body_is_the_one_the_probe_keys_on(client):
     r = client.get("/no-such-route-meh-2411")
     assert r.status_code == 404
     assert r.json() == {"detail": cac.ROUTING_404_DETAIL}
+
+
+def test_reads_through_the_shared_data_layer_are_frontend_calls():
+    """MEH-3536: useApi("/x") / useUserApi("/x") are GET callers. Anchored to a
+    real repo file: the dashboard reviews page reads /reviews only that way."""
+    calls = {(m, p, f) for m, p, f, _line in cac.extract_frontend_calls()}
+    page = "frontend/app/[locale]/producer/dashboard/reviews/page.js"
+    assert ("GET", "/reviews", page) in calls
+    assert ("GET", "/producers/me", page) in calls
+    # A path that is not a literal starting with "/" is not a call.
+    assert not cac.USE_API_CALL_RE.search("useApi(path)")
+    assert cac.USE_API_CALL_RE.search('useUserApi(\n  "/a")').group("path") == "/a"
+    assert cac.USE_API_CALL_RE.search('useApi("/a", { params })').group("path") == "/a"
+    # A concatenated path is not a call to its first piece.
+    assert not cac.USE_API_CALL_RE.search('useApi("/x/" + id)')

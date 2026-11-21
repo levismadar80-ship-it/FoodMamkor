@@ -111,6 +111,7 @@ export named here no longer exists.
 | Toast | `toast.js` | `showToast` |
 | Login link that returns here · safe redirect target | `safe-redirect.js` | `loginHrefBackHere`, `safeInternalRedirect` |
 | Image URL / ratio | `cloudinary.js` | `optimizeCloudinary`, `IMAGE_RATIOS` |
+| Read from the API in a client component (MEH-3536) | `use-api.js` | `useApi`, `useUserApi`, `invalidateApi` |
 | Fetch in a server component | `server-fetch.js` | `serverFetch` |
 
 ---
@@ -305,7 +306,7 @@ only; the desktop chip stayed until MEH-2769.
   detail, rescue card), build both from one function and change both together.
 - A fix that touches one copy only says why in the PR, and asks Sapir when the
   reason is not a locked decision.
-- `/map` is guarded by the MEH-2776 case in `map.spec.ts`: it fails when a
+- `/map` is guarded by the MEH-2776 case in `map-02.spec.ts`: it fails when a
   control sits in a different container per shell, or exists in one shell
   without a reason in `SHELL_ONLY`. Add a reason there; don't loosen it.
   Blind spot: the phone's region wrappers (`SHELL_WRAPPERS`) count as the

@@ -2117,6 +2117,9 @@
         "load_failed": "Couldn't load the drafts. Try refreshing.",
         "draft_group": "Group: {name}"
       },
+      "test_business": {
+        "label": "Test business — hidden from the site"
+      },
       "verified": {
         "title": "Verified badge",
         "intro": "The badge shows on the business page after you have checked a document: a business license, a license exemption or a cosmetics registration.",
