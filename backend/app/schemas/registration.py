@@ -243,6 +243,10 @@ class ProducerRegister(BaseModel):
     delivery_cities: list[str] = Field(
         default_factory=list, max_length=MAX_DELIVERY_CITIES
     )
+    # MEH-3026 (F11): the outreach prefill token from `?prefill=` — when it
+    # names a live lead, that lead is marked «registered». Optional; an
+    # unknown or expired token changes nothing.
+    prefill_token: str | None = Field(default=None, max_length=128)
 
     # MEH-1623 shipped producer_name's bleach→floor pair as two inline
     # @field_validators here; MEH-1626 chunk 1 moved that exact logic into

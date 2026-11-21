@@ -342,12 +342,12 @@
           "phone_label": "WhatsApp phone",
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
           "external_order_form_label": "Your online shop or order form (link)",
-          "license_required_label": "Producer license number (required)",
+          "license_required_label": "Producer license number (Ministry of Health)",
           "license_required_hint": "{count, plural, one {The category {names} requires a production licence from the Ministry of Health} other {The categories {names} require a production licence from the Ministry of Health}}",
           "license_names_last": "{rest} and {last}",
-          "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it in your dashboard. Your business goes live once we have the number.",
+          "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it in your dashboard. Once you add the number, we can check it and give your business the “verified” badge.",
           "license_pending_optin_label": "I don't have a license number yet",
-          "license_pending_optin_hint": "You can complete registration now. Your business will be approved and go live only after we receive your license number.",
+          "license_pending_optin_hint": "You can complete registration now. Once you add the number, we can check it and give your business the “verified” badge.",
           "license_optional_label": "Producer license number",
           "referral_source": {
             "label": "Where did you hear about us?",
@@ -393,7 +393,7 @@
           "declaration_required": "Please confirm the declaration before joining",
           "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits",
-          "license_required": "A producer license number is required for this category",
+          "license_required": "Enter the licence number, or tick “I don't have a license number yet”",
           "cross_step_notice": "Some details are missing — we took you to the field",
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
@@ -402,7 +402,7 @@
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
-          "declaration": "I declare that the business operates lawfully, and that if a license or permit is required for its activity — they exist and are valid. I undertake that this declaration will remain true for as long as the business appears on Mehamakor, and to update Mehamakor if anything changes.",
+          "declaration": "Declaration: we are responsible for checking which licences and permits the business needs and for meeting the law's requirements. We know that Mehamakor does not check licences, except for businesses with the “verified” badge. The details we gave are true, and if anything changes, we will update Mehamakor.",
           "farmer_declaration": "The produce I will offer through Mehamakor is produce that I grew on my own plot only."
         },
         "actions": {
@@ -666,9 +666,9 @@
     },
     "recommend": {
       "title": "Know a business that belongs here?",
-      "description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence.",
+      "description": "Tell us about it. We check every recommendation, reach out to the business, and list it only after we have checked the details.",
       "og_title": "Know a business that belongs here?",
-      "og_description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence."
+      "og_description": "Tell us about it. We check every recommendation, reach out to the business, and list it only after we have checked the details."
     },
     "forgot_password": {
       "title": "Reset your password",
@@ -1710,7 +1710,7 @@
           "grass_fed": "Grass-fed",
           "reservist_owned": "Reservist-owned business",
           "license_pending": "License pending",
-          "license_pending_title": "In a license-required category with no license number — verify before approving.",
+          "license_pending_title": "In a license-required category with no license number. You can approve; the business goes live without the “verified” badge.",
           "organizer": "Organizer",
           "organizer_title": "Markets and events organizer — not a business: no license, no products, never verified.",
           "dedup": "Duplicate?",
@@ -1721,7 +1721,6 @@
         },
         "actions": {
           "approve_short": "✓ Approve",
-          "approve_without_license": "Approve without license",
           "request_changes": "Request completion",
           "edit": "Edit",
           "view": "View",
@@ -1880,7 +1879,7 @@
           "recommended_at": "Picked on",
           "recommended_at_never": "Picked before there was a clock — review due now",
           "license_label": "Producer license number",
-          "license_required_suffix": " (required)",
+          "license_required_suffix": " (recommended)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
           "license_format_warning": "Producer license number is 7-10 digits",
           "license_registry_link": "Check the Ministry of Health registry",
@@ -1975,7 +1974,6 @@
         "note_label": "Record of consent",
         "note_placeholder": "For example: confirmed on WhatsApp, 17.11",
         "consent": "I hold explicit written approval from the business",
-        "without_license": "Publish without a licence number (without the “verified” badge)",
         "submit": "Publish the page",
         "publishing": "Publishing…",
         "published": "The page is live",
@@ -2781,6 +2779,13 @@
       "month_title": "This month: {month}",
       "month_over_label": "Businesses that got paid bookings of <amount></amount> or more this month",
       "month_would_label": "What they would pay the site this month, if billing were on",
+      "year_title": "Income this year against the exempt-dealer ceiling",
+      "year_income_launch": "Since the start of {year} the site would have brought in <amount></amount> in fees, had billing been on.",
+      "year_income_on": "Since the start of {year} the site brought in <amount></amount> in fees.",
+      "year_ceiling": "The exempt-dealer ceiling for {ceilingYear} is <amount></amount>. That is {percent}% of it.",
+      "year_alert": "You have reached {percent}% of the ceiling.",
+      "year_stale": "The ceiling amount is for {ceilingYear}. It needs updating for {year}.",
+      "year_note": "Only fees from the site are counted here. Other business income counts toward the ceiling but is not shown here.",
       "rows_title": "Businesses with bookings this month",
       "empty": "No business has had a booking through the site this month yet.",
       "load_error": "We could not load the billing data. Try refreshing the page.",
@@ -2792,7 +2797,25 @@
       "history_lead": "What would have happened each month if billing had been on. None of it was charged.",
       "history_line": "{over, plural, one {# business would have paid} other {# businesses would have paid}}, <amount></amount> in total",
       "history_nobody": "No business reached <amount></amount>",
-      "history_none": "No bookings through the site"
+      "history_none": "No bookings through the site",
+      "csv": {
+        "button": "Export month as CSV",
+        "error": "The export failed. You can try again.",
+        "headers": [
+          "Month",
+          "Business",
+          "ID",
+          "Bookings",
+          "Bookings value (₪)",
+          "Reached the amount",
+          "Fee by price list (₪)",
+          "Billing state"
+        ],
+        "yes": "Yes",
+        "no": "No",
+        "phase_on": "Billing is on",
+        "phase_off": "Billing is off, nothing charged"
+      }
     },
     "analytics": {
       "title": "Analytics",
@@ -2846,7 +2869,7 @@
             "Open the pre-approval checklist on the business row and tick what you checked. Ticks are saved and never block approval.",
             "Check the business's Google profile from the checklist.",
             "Click “✓ Approve”. The business goes live at once.",
-            "Missing a photo or a required licence number? Approval fails and a completion request opens with the missing item."
+            "Missing a photo? Approval fails and a completion request opens. Missing a licence number? The business is approved and goes live without the “verified” badge."
           ]
         },
         "request_changes": {
@@ -2863,14 +2886,6 @@
             "Open the ⋮ menu on the business row and choose “Reject”.",
             "Choose a reason. “Other” requires details.",
             "“Reject and send email”. The business will not appear on the site. If only a detail is missing, prefer a completion request."
-          ]
-        },
-        "approve_without_license": {
-          "q": "How do I approve a business without a licence number?",
-          "steps": [
-            "Only possible when the business shows the “Licence pending” tag.",
-            "In the ⋮ menu choose “Approve without licence”.",
-            "The business goes live without a licence badge."
           ]
         },
         "row_tags": {
@@ -3429,7 +3444,7 @@
         },
         "safety": {
           "title": "Safety",
-          "body": "Clean preparation areas, proper storage, and compliance with the regulations relevant to the category. Some categories require a producer license in Israel, and we'll ask for it. No compromises here."
+          "body": "Clean preparation areas, proper storage, and compliance with the regulations relevant to the category. Some categories require a producer license in Israel, and we'll ask for it. A business that showed us a licence, which we checked, gets the \"verified\" badge."
         }
       },
       "verification": {
@@ -4342,7 +4357,7 @@
       },
       "license": {
         "q": "Why do you require a licence — and what if I'm still in the process?",
-        "a": "The licence is what protects customers' trust in every business on the site — including yours. If you're in the process of getting a licence, tell us: we'll keep your details and publish the business the moment it comes through. And later you can strengthen that trust further: a \"verified\" badge after we have checked the licence or exemption ourselves, and a kashrut badge if you have a certificate."
+        "a": "The licence is what protects customers' trust in every business on the site — including yours. If your licence is still in progress, you can join right now. The business appears without the \"verified\" badge, and when the licence arrives we'll check it and add the badge. And later you can strengthen that trust further: a \"verified\" badge after we have checked the licence or exemption ourselves, and a kashrut badge if you have a certificate."
       },
       "time": {
         "q": "How much time and effort does this take from me?",
@@ -4572,7 +4587,7 @@
       "licensing": {
         "title": "2. Seller responsibility for licensing",
         "intro": "Every seller listed on the platform bears <b>sole responsibility</b> for holding all licenses, approvals, and permits required by law, including (but not limited to): the Business Licensing Law (1968), public-health (food) regulations, Ministry of Health directives, and relevant kashrut and labeling provisions.",
-        "outro": "On registering as a business, the seller declares that she holds all required licenses for the products she sells and that she will keep them valid throughout her use of the platform. Mehamakor inspects a licensing document or exemption approval that the seller presents to it, at the time of presentation only (see section 5). It <b>does not verify the document against the authorities, does not supervise sellers on an ongoing basis, does not confirm that the licence is valid at any given moment, and is not a party to the transaction</b>. Compliance responsibility lies solely with the seller."
+        "outro": "On registering as a business, the seller declares that she is responsible for finding out which licenses, approvals and permits her business needs, and for meeting the law throughout her use of the platform. A business can be listed without presenting a licensing document; it then shows no \"Verified\" badge, and Mehamakor has not checked its documents. Mehamakor inspects a licensing document or exemption approval that the seller presents to it, at the time of presentation only (see section 5). It <b>does not verify the document against the authorities, does not supervise sellers on an ongoing basis, does not confirm that the licence is valid at any given moment, and is not a party to the transaction</b>. Compliance responsibility lies solely with the seller."
       },
       "age": {
         "title": "3. Minimum age",
@@ -5359,6 +5374,7 @@
         "kashrut_none": "No kosher badge yet",
         "chip_required": "Required",
         "chip_optional": "Optional",
+        "chip_recommended": "Recommended",
         "hub_title": "Edit business",
         "hub_back": "Back to all sections",
         "hub_group_profile": "Your business",
@@ -5448,8 +5464,8 @@
       "license": {
         "heading": "Producer license",
         "field_label": "Producer license number (Ministry of Health)",
-        "required_hint": "One of your selected categories requires a producer license. Filling in the number is required for approval.",
-        "where": "We keep this number on file only — it is never shown on your page. It is needed to approve businesses in categories that require a license.",
+        "required_hint": "One of your selected categories requires a producer license. You can join without it. Once you add the number, we can check it and give your business the “verified” badge.",
+        "where": "We keep this number on file only — it is never shown on your page. It is what lets us give your business the “verified” badge.",
         "summary_empty": "Not set",
         "save_cta": "Save",
         "saving": "Saving…",
@@ -6000,6 +6016,22 @@
           "product": "At least one product open for ordering",
           "enabled": "Turn on \"Take orders on the site\"",
           "done": "All set. Customers can order from your page."
+        },
+        "customers": {
+          "title": "Your customers",
+          "row": "{name} · {count, plural, one {1 order} other {# orders}} · last on {date}",
+          "repeat": "Returning customer",
+          "empty": "When orders come in, you'll see here who ordered and who came back.",
+          "download": "Download (CSV)",
+          "note": "Only customers who ordered from you through the site appear here. Use their details only to handle their orders.",
+          "show_more": "{count, plural, one {1 more customer} other {# more customers}}",
+          "show_less": "Less",
+          "csv": {
+            "name": "Name",
+            "phone": "Phone",
+            "orders": "Orders",
+            "last": "Last order"
+          }
         }
       },
       "weekly_summary": {
@@ -6530,7 +6562,7 @@
       "intro": "We don't hide the criteria. Here, by category, is the document that earns the \"Verified\" badge — and when \"Declared\" is exactly the right path.",
       "path_or": "or",
       "groupA_title": "Categories where the law requires a license",
-      "groupA_desc": "Here the law requires a license — so here there's <b>always</b> a production licence from the Ministry of Health that was submitted and reviewed. Without a valid license, the business simply doesn't go live.",
+      "groupA_desc": "Here the law requires a production licence from the Ministry of Health. A business that showed us a valid licence, which we checked, gets the \"verified\" badge. A business that hasn't shown one yet appears without the badge.",
       "groupA_doc": "A valid official license.",
       "honey_doc": "Three licenses together — beekeeper, marketing, and business. One alone isn't enough.",
       "groupB_title": "Categories legally exempt from licensing",

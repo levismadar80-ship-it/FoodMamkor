@@ -88,7 +88,7 @@ describe("licence hint names the category (MEH-2928)", () => {
     renderStep([2]);
     const body = document.body.textContent ?? "";
     expect(body).not.toContain("אחרי האישור");
-    expect(body).toContain("העסק יעלה לאתר אחרי שנקבל את המספר");
+    expect(body).toContain("כשתוסיפו את המספר, נוכל לבדוק אותו ולהוסיף לעסק תג «מאומת»");
   });
 });
 

@@ -31,7 +31,6 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
   const t = useTranslations("admin.producers.consent_publish");
   const [note, setNote] = useState("");
   const [consent, setConsent] = useState(false);
-  const [withoutLicense, setWithoutLicense] = useState(false);
   // Optional proof: a screenshot of the written consent. Uploaded on pick, so
   // the publish request carries a URL and stays a small JSON body.
   const [shotUrl, setShotUrl] = useState(null);
@@ -77,8 +76,6 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
           consent_note: note.trim(),
           ...(shotUrl ? { consent_screenshot_url: shotUrl } : {}),
         },
-        // Sent only when ticked, so the server's default (guard on) holds.
-        withoutLicense ? { params: { allow_without_license: true } } : undefined,
       );
       onPublished?.();
     } catch (err) {
@@ -153,16 +150,6 @@ export default function PublishWithConsentPanel({ producerId, onPublished }) {
             className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
           />
           <span className="leading-relaxed text-text">{t("consent")}</span>
-        </label>
-        <label className="flex items-start gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            data-testid="consent-publish-without-license"
-            checked={withoutLicense}
-            onChange={(e) => setWithoutLicense(e.target.checked)}
-            className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
-          />
-          <span className="leading-relaxed text-text">{t("without_license")}</span>
         </label>
 
         {error && (

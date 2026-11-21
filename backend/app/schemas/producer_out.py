@@ -691,8 +691,8 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
-    # so an override-approved producer (chunk-4 allow_without_license) still
-    # shows it. Mirrors _compute_verification_tier's predicate over the
+    # so a producer approved without a license (MEH-3026) still shows it.
+    # Mirrors _compute_verification_tier's predicate over the
     # already-loaded categories (categories.requires_license, MEH-3255)
     # — no DB round-trip, no N+1. Admin-only: lives on ProducerAdminOut, never
     # the public ProducerListOut/DetailOut.

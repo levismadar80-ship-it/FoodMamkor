@@ -57,6 +57,17 @@ license number, **one business at a time**, via «אשרי בלי רישיון»
   lacking one. Whether that wording should change is a counsel question (Q1–Q5 above).
 
 
+## Amendment 21/11/2026 — a missing license no longer blocks approval (MEH-3026)
+Sapir's ruling, 21/11: "I still want to bring businesses on; this must not be a
+blocker — at most, no verified badge." The case-by-case form above is replaced by the
+form it was chosen over: the approve gate no longer refuses a license-required
+business with no license number (`services/producer_approval.py`), and logs it.
+- The badge rule is unchanged: such a business gets no «מאומת» (`verified_at` is
+  only set by the document check) and no «מוצהר».
+- **Still unchanged, and not part of this ruling:** the registration-time and
+  category-edit 422s (registration passes through «עדיין אין לי מספר רישיון»), and
+  the owner-invite gate (`services/invite_gate.py`).
+
 ## Amendment 06/11/2026 — no badge-absence line on the business page (MEH-2710)
 Sapir's ruling, 06/11: the «ללא תג מאומת · מה זה אומר?» line on a declared
 business's page is removed (PR #4032). A tier-2 business page now says nothing about
@@ -73,3 +84,15 @@ License, Airbnb, Thumbtack).
   brief's 06/11 addendum. It flags that /about/process says a badge is absent
   because the category is exempt, which is not true for a business approved through
   the MEH-2299 override.
+
+## Amendment 21/11/2026 — a licence number never blocks a save (MEH-3026)
+
+Sapir, 21/11: businesses join and stay listed without a licence number; the only
+consequence is no «מאומת» badge. Following the approve change (same card), the
+other writes that still refused a business without a number are opened too:
+adding a license-required category (`PUT /producers/me`, admin `PUT
+/admin/producers/{id}`), blanking a held number, admin create, and the owner
+invite (send and accept, `services/invite_gate.py`). `enforce_license_gate_on_update`
+(MEH-999 / MEH-2707) is deleted. Registration keeps its `license_pending`
+opt-in and public `POST /producers` keeps its guard; both are self-serve forms
+whose wording is handled in the copy PR of the same card.

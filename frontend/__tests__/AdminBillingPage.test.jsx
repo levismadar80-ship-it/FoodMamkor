@@ -46,6 +46,15 @@ const overview = (rows, extra = {}) => ({
   start_billing_months: 2,
   would_pay_total_agorot: rows.reduce((sum, r) => sum + r.would_pay_agorot, 0),
   phase: "launch",
+  // MEH-3189: the year-vs-ceiling block (BillingYearCard.test.jsx covers it).
+  year: {
+    year: 2026,
+    income_agorot: 0,
+    ceiling_agorot: 12283300,
+    ceiling_year: 2026,
+    percent: 0,
+    alert_percent: 0,
+  },
   history: [
     {
       month: "2026-11",
@@ -232,13 +241,18 @@ describe("AdminBillingPage (MEH-3182)", () => {
     });
     show();
     const lines = await screen.findAllByTestId("admin-billing-history-month");
-    expect(lines.map((line) => line.textContent)).toEqual([
+    // MEH-3189: a month with bookings also carries the CSV button; read the text only.
+    const button = he.admin.billing.csv.button;
+    expect(lines.map((line) => line.textContent.replace(button, ""))).toEqual([
       "אוקטובר 20263 בתי עסק היו משלמים, בסך הכול 175₪",
       "ספטמבר 2026שני בתי עסק היו משלמים, בסך הכול 90₪",
       "אוגוסט 2026בית עסק אחד היה משלם, בסך הכול 60₪",
       "יולי 2026אף בית עסק לא הגיע ל-1,000₪",
       "יוני 2026לא היו הזמנות דרך האתר",
     ]);
+    // MEH-3189: a month that had bookings can be exported; June (none) cannot.
+    const hasCsv = lines.map((line) => line.querySelector("[data-testid^='admin-billing-csv-']") !== null);
+    expect(hasCsv).toEqual([true, true, true, true, false]);
   });
 
   it("a failed fetch shows an error, never a screen of zeros", async () => {
