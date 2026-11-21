@@ -1,6 +1,7 @@
-> **⏳ Status: PENDING — as-of 21/11/2026.** The YAML below is ready to paste as
-> `.github/workflows/load-test.yml`. Register row: `load-test` in
-> `docs/ci/patch-register.tsv`.
+> **✅ Status: APPLIED — as-of 21/11/2026.** `.github/workflows/load-test.yml`
+> was committed through Claude in Chrome on this branch (commit `420fc19e0`); its
+> sha256 `2e07249e…d4a312` matches the YAML below byte for byte. Register row:
+> `load-test` in `docs/ci/patch-register.tsv`.
 
 # 🔧 Staged patch: a manual k6 load test, run from GitHub (MEH-3564)
 
