@@ -184,10 +184,21 @@ export function isPriceLabel(label) {
  */
 export function priceLabelText(label) {
   if (typeof label !== "string") return label;
-  const m = label.trim().match(/^(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?$/);
-  if (!m) return label;
-  return formatPriceRange(m[1], m[2] ?? null);
+  // Split first, then test each side with a flat pattern: one regex for the
+  // whole range nests quantifiers (security/detect-unsafe-regex).
+  const parts = label.split(/[-–]/).map((part) => part.trim());
+  if (parts.length > 2 || !parts.every((part) => PLAIN_NUMBER.test(part))) return label;
+  return formatPriceRange(parts[0], parts[1] ?? null);
 }
+
+const DIGITS = /^\d+$/;
+/** «380» or «12.5» — digits, at most one decimal point. */
+const PLAIN_NUMBER = {
+  test: (part) => {
+    const [whole, fraction, ...rest] = part.split(".");
+    return rest.length === 0 && DIGITS.test(whole) && (fraction === undefined || DIGITS.test(fraction));
+  },
+};
 
 /**
  * MEH-1140: min–max range in the same canon: "35₪–60₪".
