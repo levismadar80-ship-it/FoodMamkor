@@ -88,7 +88,8 @@ The **tagline** is specced for: footer brand line, `/about` narrative. **Not the
 ### Emoji LOCK v2 (MEH-657, surface-scoped)
 
 - ❌ UI / ICU / brand-guidance / editorial surfaces → 0 emojis
-- ✅ WhatsApp outbound + share strings + email body → emojis allowed (warmth + Meta template cost)
+- ❌ Email subject + body, and every server-sent notification → 0 emojis (Sapir 22/11, MEH-3668). `scripts/checks/no-emoji-backend-guard.sh` blocks a new one in `backend/app`; the existing ones are frozen in its baseline until they are removed.
+- ✅ WhatsApp outbound + share strings → emojis still allowed (warmth + Meta template cost), until Sapir rules on them (MEH-3668)
 
 ## 4 · Voice (full rules in ADR-014, refined by ADR-024, reader address set by ADR-037)
 
