@@ -646,7 +646,7 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     # the note above — admin-only, never on the public or owner shapes.
     consent_screenshot_url: str | None = None
     # Derived, never stored — hydrated per response beside `has_owner` by
-    # routers/admin.py `_attach_has_owner`, in that one batched query. None
+    # services/admin_producer_reads.py `attach_has_owner`, in that one batched query. None
     # means "this route did not hydrate it", exactly as for `has_owner`: a
     # route that forgets fails CLOSED (the panel shows no owner line) rather
     # than reporting a handed-over business as ownerless.
@@ -680,7 +680,7 @@ class ProducerAdminOut(_ZonesOut, ProducerDetailOut):
     #
     # `recommended_at` NULL on a picked producer is not missing data: it means
     # "picked before the clock existed", which is what the review list reads as
-    # due now (admin.py::_recommended_review_due_clause).
+    # due now (admin_producer_reads.py::recommended_review_due_clause).
     recommended_at: datetime | None = None
     recommended_note: str | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"

@@ -8,7 +8,7 @@ Touches:  reads producers + users; sends one email via
 Does NOT: decide aging (that is app.utils.clock.business_days_waiting, the same
           function the admin queue badge uses); hold the scheduler (that is
           app.startup); WhatsApp (no reminder template — email only).
-Related:  backend/app/routers/admin.py:_attach_aging (same anchor COALESCE),
+Related:  backend/app/services/admin_producer_reads.py:attach_aging (same anchor COALESCE),
           backend/app/services/pending_nudge.py (the owner-side sibling).
 History:  MEH-3147 (creation, 14/11/2026 — copy approved by Sapir that day).
 """

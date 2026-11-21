@@ -6,7 +6,7 @@ Purpose:  For a draft its owner has claimed («נקלט, בהשלמה»), say wh
 Touches:  events (one COUNT … GROUP BY for organizer drafts only).
 Does NOT: decide what is required — submission_gate.submission_missing_items
           is the one definition; this only feeds it a batched event count.
-Related:  routers/admin.py list route (_attach_has_owner runs first),
+Related:  routers/admin.py list route (services/admin_producer_reads.attach_has_owner runs first),
           services/pending_nudge.py (the same list, in the reminder emails).
 History:  MEH-3409 (creation).
 """
