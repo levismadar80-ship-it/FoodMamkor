@@ -2210,6 +2210,12 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  page the chat was opened from. Read only as a public business
                                  (is_business()); a business named in the question wins; with no
                                  name, the page. Unknown / non-public id → no block, same reply.
+                                 MEH-3584: no path to the business page in the facts;
+                                 on_its_page (true only when producer_id is that business),
+                                 and how_to_order.contact_by is the channel the page's contact
+                                 button resolves to (chat_business_extras.contact_channel, the
+                                 port of lib/contact-method.js getResolvedMethod) — a name, never
+                                 the number or link.
 ```
 
 The business facts are read through the app's own session, **not** the `mcp_reader`
