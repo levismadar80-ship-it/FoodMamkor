@@ -125,7 +125,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 1. המפה שלנו, בעמוד /map — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').
 2. דף הבית — חפשו לפי קטגוריה או עיר.
 
-בכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר
+בכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר.
 
 **עוד נושאים שגולשים שואלים**
 - **כמה זמן לוקח האישור של העסק?** — אחרי שבית עסק ממלא את טופס ההרשמה, הצוות שלנו בודק את הפרטים ובדרך כלל מאשר את העסק שלו עד 3 ימי עסקים. מרגע האישור העסק מופיע באתר וגולשים יכולים למצוא אותו במפה ובחיפוש.
@@ -486,13 +486,14 @@ def chat(
 
     # Pull the first text block out of the response.content list.
     reply = next((b.text for b in response.content if b.type == "text"), "")
-    if not reply:
-        # Empty response is not expected but handle it gracefully.
-        reply = "לא הצלחתי להבין את השאלה — אפשר לנסות לנסח אותה מחדש?"
 
     # MEH-31/32: strip any leftover markdown so the UI (which doesn't
     # parse it) doesn't render literal asterisks / underscores.
     # MEH-3668: no emoji on the site (Sapir 22/11). The prompt asks; this enforces.
     reply = ai_text.strip_emoji(_strip_markdown(reply))
+    if not reply:
+        # Empty response (or one made only of emoji) is not expected but
+        # handle it gracefully. Checked after stripping, so it can't be "".
+        reply = "לא הצלחתי להבין את השאלה — אפשר לנסות לנסח אותה מחדש?"
 
     return ChatResponse(reply=reply)

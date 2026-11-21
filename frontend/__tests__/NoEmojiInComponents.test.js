@@ -51,7 +51,6 @@ const ALLOWLIST = {
   // documented intent — ★ is typography — holds on every ICU version.
   "\u2605": "★ — black star, the plain typographic rating mark (admin reviews star filter); was outside Extended_Pictographic before Unicode 16.",
   "\u2606": "☆ — white star, the empty half of the same typographic rating mark; listed with ★ so the pair behaves the same on every ICU version.",
-  "\u{1F449}": "👉 — pointer in outbound WhatsApp/story share-message copy (ShareButton, StoryCardCanvas caption); message text sent to WhatsApp, not rendered UI chrome — changing it is a copy decision.",
 };
 const ALLOWED = new Set(Object.keys(ALLOWLIST));
 

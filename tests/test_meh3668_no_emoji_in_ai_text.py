@@ -31,6 +31,9 @@ from app.services import ai_text
         ("מעולה 👍🏽", "מעולה"),  # skin-tone modifier rides along
         ("משפחה 👨‍👩‍👧 שלמה", "משפחה שלמה"),  # ZWJ sequence
         ("שורה 🌱\nשורה שנייה", "שורה\nשורה שנייה"),
+        ("שלב 1️⃣ הרשמה", "שלב 1 הרשמה"),  # keycap: FE0F and U+20E3 both go
+        ("▶️ צפו בסרטון", "צפו בסרטון"),
+        ("דגל 🏴󠁧󠁢󠁳󠁣󠁴󠁿 סקוטי", "דגל סקוטי"),  # tag-sequence flag
     ],
     ids=[
         "trailing",
@@ -40,6 +43,9 @@ from app.services import ai_text
         "skin-tone",
         "zwj",
         "newline",
+        "keycap",
+        "play-button",
+        "subdivision-flag",
     ],
 )
 def test_strip_emoji_removes_the_emoji_and_closes_the_gap(raw, want):
@@ -49,6 +55,11 @@ def test_strip_emoji_removes_the_emoji_and_closes_the_gap(raw, want):
 def test_strip_emoji_keeps_the_typographic_marks():
     # MEH-1681: ✓ ✗ ✕ ★ ☆ are typography on the site, not emoji.
     text = "★ 4.8 ✓ מאומת ✗ ✕ ☆"
+    assert ai_text.strip_emoji(text) == text
+
+
+def test_strip_emoji_keeps_trademark_sign():
+    text = "שמן זית Olivia™ 500 מ״ל ₪45 → ←"
     assert ai_text.strip_emoji(text) == text
 
 
@@ -90,6 +101,14 @@ def test_chat_reply_reaches_the_visitor_without_emoji(monkeypatch):
     handler = inspect.unwrap(chat.chat)
     body = ChatRequest(messages=[{"role": "user", "content": "היי"}])
     assert handler(_request(), body).reply == "בטח אפשר לחפש לפי עיר"
+
+
+def test_chat_reply_made_only_of_emoji_falls_back_to_the_retry_line(monkeypatch):
+    monkeypatch.setattr(chat, "_get_client", lambda: _client("😊🌿"))
+    monkeypatch.setattr(chat, "_live_data_context", lambda *a, **k: None)
+    handler = inspect.unwrap(chat.chat)
+    body = ChatRequest(messages=[{"role": "user", "content": "היי"}])
+    assert handler(_request(), body).reply.startswith("לא הצלחתי להבין")
 
 
 def test_chat_prompt_asks_for_no_emoji():

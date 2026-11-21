@@ -35,7 +35,11 @@ _SPACES = re.compile(r"\s+")
 # typography there too (MEH-1681) and stay.
 _EMOJI = re.compile(
     "[\U0001f000-\U0001faff\u2600-\u2604\u2607-\u2712\u2714\u2716"
-    "\u2718-\u27bf\u2b00-\u2bff\u231a-\u23ff\ufe0f\u200d]"
+    "\u2718-\u27bf\u2b00-\u2bff\u231a-\u23ff\ufe0f\u200d"
+    # Keycap tail, ‼ ⁉ ℹ ↩ ↪ ▪ ▫ ▶ ◀ ◻-◾ 〰 〽 ㊗ ㊙ and subdivision-flag tags.
+    # ™ (U+2122) is left alone: it is ordinary typography in a product name.
+    "\u20e3\u203c\u2049\u2139\u21a9\u21aa\u25aa\u25ab\u25b6\u25c0"
+    "\u25fb-\u25fe\u3030\u303d\u3297\u3299\U000e0020-\U000e007f]"
 )
 _GAP = re.compile(r"[ \t]{2,}")
 _SPACE_BEFORE_MARK = re.compile(r"[ \t]+([.,!?:;])")
