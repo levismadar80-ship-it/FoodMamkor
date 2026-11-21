@@ -30,7 +30,7 @@ const ARIA_LABEL_KEY = {
   experience: "modal_title_experience", // MEH-2549
   recipe: "modal_title_recipe", // MEH-2558
   organizer: "modal_title_organizer", // MEH-3018
-  product: "modal_title_product", // MEH-3621
+  product: "modal_title_product", // MEH-3622
 };
 
 /** @param {{ url?: string, title?: string, description?: string, city?: string, category?: string, variant?: "default"|"quiet"|"overlay"|"outline", subject?: "business"|"event"|"experience"|"recipe"|"organizer"|"product" }} props */

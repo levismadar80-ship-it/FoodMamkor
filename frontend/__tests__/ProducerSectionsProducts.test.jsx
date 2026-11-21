@@ -37,8 +37,8 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
-  ShareNetwork: () => null, // MEH-3621: ProductSheet's share button
-  Check: () => null, // MEH-3621: ProductSheet's share button
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: (props) => <span data-testid="leaf-icon" data-weight={props.weight} className={props.className} />,
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,
@@ -102,6 +102,7 @@ vi.mock("@/components/ReportButton", () => ({ default: () => null }));
 vi.mock("@/components/ReviewsSection", () => ({ default: () => null }));
 
 import ProducerSections from "@/app/[locale]/producer/[id]/components/ProducerSections";
+import { productShareUrl } from "@/components/public/ProductSheet";
 import { seedColorFor } from "@/lib/brand-seeds";
 
 const baseProps = {
@@ -801,6 +802,16 @@ describe("MEH-2654 — ?product=<id> opens that product's sheet on arrival", () 
     withSearch("");
     render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
     expect(screen.queryByTestId("product-sheet")).toBeNull();
+  });
+
+  // MEH-3622: the link the sheet's share button builds is the link this page
+  // opens — a rename of the param on either side breaks this round trip.
+  it.each(["/ruti", "/en/ruti"])("the share link built on %s opens that product", (path) => {
+    window.history.replaceState(null, "", `${path}?utm_source=x`);
+    const shared = new URL(productShareUrl(22));
+    window.history.replaceState(null, "", `${shared.pathname}${shared.search}`);
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "גבינה");
   });
 });
 

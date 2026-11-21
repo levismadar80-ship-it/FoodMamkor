@@ -27,8 +27,8 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
-  ShareNetwork: () => null, // MEH-3621: ProductSheet's share button
-  Check: () => null, // MEH-3621: ProductSheet's share button
+  ShareNetwork: () => null, // MEH-3622: ProductSheet's share button
+  Check: () => null, // MEH-3622: ProductSheet's share button
   WhatsappLogo: () => <span />,
   X: () => <span />,
   Phone: () => <span />,
