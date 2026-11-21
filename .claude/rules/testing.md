@@ -112,8 +112,9 @@ Cloudinary-401 cause is unestablished — don't state it as fact.
 
 Only CI-run specs matter. `parity.spec.ts` is converted;
 `e2e/screenshots.spec.ts` (not run by CI) is ticketed; don't bulk-"fix" the
-`qa-*.mjs` probe scripts (archived in `frontend/e2e/_qa-archive/` since
-MEH-3531; the two in live use stay in `frontend/e2e/`).
+`qa-*.mjs` probe scripts (archived in `frontend/e2e/_qa-archive/` by MEH-3531,
+deleted by MEH-3614 — restore from git, [media-archive.md](../../docs/media-archive.md);
+the two in live use stay in `frontend/e2e/`).
 
 ---
 
@@ -424,7 +425,7 @@ the tip of staging by 20/11; the old ones are in history at the commit named in
   `## Screenshots` section with the links). `pr-evidence-guard.sh` checks it
   for every UI PR (rule 23).
 - `scripts/checks/heavy-media-guard.sh` fails any image or video tracked
-  outside `frontend/public/`, `frontend/e2e/visual/`, `design-reference/`,
+  outside `frontend/public/`, `frontend/e2e/visual/`,
   `logo/` and `docs/research/screenshots/2026-05/`. A new folder that the
   product or a test really reads goes into its `ALLOW_RE`, with the reason.
 - Text evidence (`.md`, `.json`, `.log`) still goes in `qa-artifacts/MEH-XXXX/`.

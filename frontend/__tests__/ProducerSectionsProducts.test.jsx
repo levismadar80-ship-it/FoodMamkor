@@ -463,7 +463,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     // in this .jsx file would be the one hit — a reference to a key that no
     // longer exists anywhere in the contract. The test still sends the real
     // stale key to the component; it just does not spell it. The gate does not
-    // scan *.mjs, which is why e2e/_qa-archive/qa-meh1855-price-signature.mjs keeps the
+    // scan *.mjs, which is why qa-meh1855-price-signature.mjs [deleted probe, docs/media-archive.md] keeps the
     // literal in its ALIAS_ONLY fixture — a stale payload, not a contract key.
     const STALE_ALIAS_KEY = ["starting", "price", "label"].join("_");
 
