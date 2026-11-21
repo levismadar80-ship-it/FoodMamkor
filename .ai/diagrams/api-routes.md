@@ -78,13 +78,12 @@ graph TD
     Home --> GCategories[GET /categories<br/>🌐 list all]
     Home --> GStats[GET /stats<br/>🌐 producers_count, categories_count]
     Home --> GCities[GET /cities<br/>🌐 deduped sorted list]
-    Home --> GProducerCities[GET /producers/cities<br/>🌐 MEH-970: per-city approved counts<br/>GROUP BY city, NULL/blank omitted]
     Home --> GProducerRandom[GET /producers/random<br/>🌐 MEH-1288: random approved producer<br/>ORDER BY random LIMIT 1, 404 if empty<br/>homepage הפתיעו אותי button]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b<br/>404 for an organizer MEH-2465]
     GGoogleRating -.needs.-> PGooglePlaceId[PUT /admin/producers/{id}/google-place-id<br/>🔒 admin · MEH-2582 one-field write from the approval row<br/>skips licence/delivery gates on purpose, 30/min]
-    ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug<br/>410 if the business was deleted · MEH-2534<br/>404 + slug_moved for a renamed business → middleware 301 · MEH-3336]
+    ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug<br/>410 if the business was deleted · MEH-2534<br/>404 + slug_moved for a renamed business → middleware 301 · MEH-3336<br/>live test business → 200 + noindex · MEH-2952]
     GSlug --> GRecipe[GET /producers/{slug}/recipes/{recipe_id}<br/>🌐 published + approved only, 120/min<br/>404 + slug_moved for a renamed business, only when the recipe is live at the new slug → middleware 301 · MEH-3342]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
     GProducer --> Waitlist[POST /producers/{id}/delivery-waitlist<br/>🌐 rate-limited 10/min · MEH-2618<br/>{email, city, wants_to_host?} → delivery_waitlist row<br/>MEH-2673: wants_to_host → confirmation email; after POST /delivery-waitlist/host-confirm the owner sees the email in /producers/me/analytics pickup_hosts<br/>201 added · 200 exists · 404 non-live<br/>JWT optional: sets user_id, fills empty users.city]
@@ -224,7 +223,6 @@ graph TD
     Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
     AdminWhatsapp[/admin/whatsapp-failures page] --> AdminWaFailed[GET /admin/whatsapp/failed<br/>🛡️ MEH-771 Chunk C undelivered outbound<br/>status IN failed,window_expired, or accepted &gt;1 day<br/>with no receipt (stuck, MEH-2122 E) · last 7d<br/>list-only, no resend/retry]
     AdminWhatsapp --> AdminWaBlocked[GET /admin/whatsapp/blocked<br/>🛡️ MEH-3402 staging-only capture<br/>status = blocked_nonprod, with content · last 7d · max 200]
-    AdminProducers[/admin/producers page] --> AdminRiskScore[GET /admin/producers/&#123;id&#125;/risk-score<br/>🛡️ MEH-509 PR3 Anthropic Haiku risk score<br/>NULL when not scored / fail-open]
 ```
 
 ## 6. Marketing + misc (anonymous, rate-limited)

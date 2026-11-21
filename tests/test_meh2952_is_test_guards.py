@@ -37,9 +37,10 @@ REVISION = "b8cb5480552f"
 # ── guard 1 · include_test allowlist ───────────────────────────────────────
 
 #: Repo-relative paths allowed to pass include_test=<anything but False>.
-#: Chunk 1: none. Chunk 3: backend/app/routers/producers.py (by-slug only).
-#: Chunk 4: the owner dashboard and admin screens.
-INCLUDE_TEST_ALLOWED: frozenset[str] = frozenset()
+#: Chunk 1: none. Chunk 3: backend/app/routers/producers.py (by-slug only:
+#: the business page's direct URL, served with noindex).
+#: Chunk 4 needed none (the admin screens read the ids, not the predicate).
+INCLUDE_TEST_ALLOWED: frozenset[str] = frozenset({"backend/app/routers/producers.py"})
 
 _PREDICATES = {"is_business", "is_business_row"}
 
@@ -135,6 +136,21 @@ class TestIncludeTestAllowlist:
         assert "backend/app/routers/producers.py" in callers
         assert len(callers) >= 15, callers
 
+    def test_producers_router_keeps_test_rows_in_by_slug_only(self):
+        """The allowlist is per file; inside producers.py the one call must
+        stay in get_producer_by_slug, so count / cities / random cannot pick
+        it up unseen (MEH-2952 chunk 3 review)."""
+        path = BACKEND / "app/routers/producers.py"
+        source = path.read_text("utf-8")
+        lines = include_test_calls(source)
+        fn = next(
+            n
+            for n in ast.walk(ast.parse(source))
+            if isinstance(n, ast.FunctionDef) and n.name == "get_producer_by_slug"
+        )
+        assert len(lines) == 1, lines
+        assert fn.lineno <= lines[0] <= fn.end_lineno, (lines, fn.lineno)
+
     def test_only_allowlisted_files_keep_test_rows(self):
         offenders = {}
         for path in _py_files(BACKEND / "app", BACKEND / "scripts"):
@@ -164,14 +180,21 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     ),
     "backend/app/routers/organizers.py": (1, "adds not_test_producer()"),
     "backend/app/routers/saved_items.py": (1, "saved events; adds not_test_producer()"),
-    "backend/app/routers/rescue.py": (1, "the owner's publish gate"),
+    "backend/app/services/rescue_writes.py": (
+        1,
+        "the owner's publish gate (moved from routers/rescue.py, MEH-3554)",
+    ),
     "backend/app/services/rescue_reads.py": (
         1,
         "public list adds not_test_producer() (moved from routers/rescue.py, MEH-3541)",
     ),
-    "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
+    "backend/app/routers/admin.py": (1, "admin screens and state transitions"),
+    "backend/app/services/admin_producer_reads.py": (
+        1,
+        "licence-expiry list (moved from routers/admin.py, MEH-3562)",
+    ),
     "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
-    "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
+    "backend/app/routers/admin_kashrut.py": (1, "admin screens (set-ambassador deleted, MEH-3527)"),
     "backend/app/routers/admin_extra.py": (
         1,
         "blocking the only owner hides a live business — a state transition, "

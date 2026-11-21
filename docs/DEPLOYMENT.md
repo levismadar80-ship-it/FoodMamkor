@@ -653,8 +653,8 @@ Moved to [docs/RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) on 2026-11-07 (MEH-
 > **14/11/2026 (MEH-3151): nobody tests by hand.** Sapir's decision: «לא עושים
 > בדיקות ידניות יותר». Everything below that once said "the user tests on a
 > phone" is done by the thread: screenshots of the preview at 390×844 WebKit +
-> 1280 Chromium that the thread reads itself (workflow rule 38), 375/1440 in
-> `qa-artifacts/` (rule 23), and the release-time rows in
+> 1280 Chromium that the thread reads itself (workflow rule 38), 375/1440 linked from
+> the PR, never committed (rule 23, MEH-3534), and the release-time rows in
 > [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) § ד׳.
 
 A feature branch gets a Vercel preview only for a `[preview]` commit (rule 9).

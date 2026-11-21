@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { PaperPlaneTilt, Sparkle } from "@phosphor-icons/react";
 import { openBusinessChat } from "@/lib/business-chat";
 import { businessChatPrompts } from "@/lib/business-chat-prompts";
+import { businessChatHandoff } from "@/lib/business-chat-handoff";
 import { usePreviewMode } from "@/lib/preview-mode";
 
 /**
@@ -32,12 +33,19 @@ import { usePreviewMode } from "@/lib/preview-mode";
  */
 export default function BusinessChatPrompt({ producer, signatureProduct = null }) {
   const t = useTranslations("chat.business");
+  const tWa = useTranslations("whatsapp.question_chips");
   const preview = usePreviewMode();
   if (!producer?.id || preview || producer.status !== "approved") return null;
   const name = producer.name || "";
   const prompts = businessChatPrompts(producer, signatureProduct);
   /** @param {string} [ask] a question to send as the panel opens */
-  const open = (ask) => openBusinessChat({ id: producer.id, name, prompts, ask });
+  // MEH-3513: «ask the business» under each answer — the same greeting and
+  // source line as the page's WhatsApp question chips.
+  const handoff = businessChatHandoff(producer, {
+    greeting: (q) => tWa("greeting_template", { name, q }),
+    sourceLine: tWa("source_line"),
+  });
+  const open = (ask) => openBusinessChat({ id: producer.id, name, prompts, ask, handoff });
   return (
     <section
       data-testid="business-chat-prompt"

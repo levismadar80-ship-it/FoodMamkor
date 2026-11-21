@@ -597,10 +597,8 @@
       "aria_label": "Pagination",
       "per_page_label": "Per page",
       "per_page_aria": "Items per page",
-      "prev_aria": "Previous page",
       "prev": "← Previous",
       "page_aria": "Page {page}",
-      "next_aria": "Next page",
       "next": "Next →"
     },
     "breadcrumb": {
@@ -5003,6 +5001,13 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_11": {
+            "i0": "Deliveries: say how many business days a delivery takes, set one minimum order for all deliveries, and set an order cutoff for each zone.",
+            "i1": "A business that ships nationwide can add zones on other terms, for example express delivery to Gush Dan.",
+            "i2": "Each pickup point can have its own pickup days and order cutoff, and customers see when the next pickup is.",
+            "i3": "The assistant on your business page suggests questions based on what your page says, and also answers about delivery zones, the next delivery, group buys and workshops.",
+            "i4": "The dashboard home shows how many orders reached you through the site this month."
+          },
           "v1_5_10": {
             "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
             "i1": "The business page now shows when the next delivery to your city is.",
@@ -6688,6 +6693,8 @@
       "page_title": "Ask the assistant about {name}",
       "page_ai_note": "An AI assistant that answers from this page",
       "page_other": "Write your own question…",
+      "ask_business": "Ask {name} directly",
+      "ask_business_aria": "Ask {name} directly (opens in a new tab)",
       "panel_title": "Ask about {name}",
       "opening": "You can ask me about {name}: opening hours, delivery, products and allergens. I answer only from what is written on the business's page.",
       "prompts": {
@@ -6862,8 +6869,22 @@
   },
   "qr_card": {
     "cta": "Scan to see our page on Mehamakor",
-    "print_hint": "The card is A6. When printing, choose 100%, not fit to page.",
-    "back": "Back to dashboard"
+    "back": "Back to dashboard",
+    "formats": {
+      "label": "What to print",
+      "a6": "A6 card",
+      "poster": "A4 poster",
+      "table": "Table sign",
+      "sticker": "Packaging sticker"
+    },
+    "hints": {
+      "a6": "The card is A6. When printing, choose 100%, not fit to page.",
+      "poster": "The poster is A4. When printing, choose 100%, not fit to page.",
+      "table": "Print, fold along the middle line and stand it on the table.",
+      "sticker": "12 round stickers on an A4 sheet. When printing, choose 100%."
+    },
+    "poster_line": "Orders, opening hours and directions",
+    "sticker_label": "{name} on Mehamakor"
   },
   "rescue": {
     "page": {
@@ -7709,6 +7730,7 @@
     "description": "Tap «Send verification code» and we will send a 6-digit code to the business number's WhatsApp. Verification is one of the steps before sending for review.",
     "code_sent": "We sent a code to the business number's WhatsApp.",
     "send_cta": "Send verification code",
+    "resend_cta": "Didn't get a code? Send again",
     "sending": "Sending...",
     "resend_in": "You can resend a code in {seconds}s",
     "code_label": "Verification code",

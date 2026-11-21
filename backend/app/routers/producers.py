@@ -23,7 +23,6 @@ from app.auth import (
     get_current_user_optional,
     require_verified_email,
 )
-from app.data.cities import canonical_city
 from app.database import get_db
 from app.models import (
     Category,
@@ -45,7 +44,6 @@ from app.schemas.schemas import (
     DeliveryWaitlistHostConfirmIn,
     DeliveryWaitlistUnsubscribeIn,
     KashrutCertRef,
-    ProducerCityOut,
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
@@ -351,45 +349,6 @@ def producers_count(request: Request, db: Session = Depends(get_db)) -> dict[str
     return {"count": count}
 
 
-@router.get("/producers/cities", response_model=list[ProducerCityOut])
-@limiter.limit("60/minute")
-def producers_cities(
-    request: Request, db: Session = Depends(get_db)
-) -> list[ProducerCityOut] | list[dict[str, object]]:
-    """MEH-970 — per-city approved-producer counts for the /map region control.
-
-    GROUP BY city over approved producers only. NULL / blank cities are
-    omitted so a chip never lands on an empty map (empty-region guard). Counts
-    are computed live from the DB — never hardcoded (over-claim guard MEH-519).
-    Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
-    The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
-
-    MEH-1986: the empty-region guard now also covers availability. It existed
-    for blank city names only, so a city whose every producer was on vacation
-    still published a chip — and the catalog behind that chip returns nothing.
-    A city drops out entirely once its last non-vacation producer does.
-    """
-    rows = (
-        db.query(Producer.city, func.count(Producer.id).label("count"))
-        .filter(
-            is_business(),  # MEH-2459
-            catalog_default_availability_condition(),
-            Producer.city.isnot(None),
-            func.trim(Producer.city) != "",
-        )
-        .group_by(Producer.city)
-        .all()
-    )
-    # MEH-2602: rows saved before writes were canonicalised may hold an alias
-    # («בנימינה»); fold them into the canonical name so one town is one chip.
-    totals: dict[str, int] = {}
-    for city, count in rows:
-        name = canonical_city(city) or city
-        totals[name] = totals.get(name, 0) + count
-    ordered = sorted(totals.items(), key=lambda kv: (-kv[1], kv[0]))
-    return [{"city": city, "count": count} for city, count in ordered]
-
-
 @router.get("/producers/random", response_model=ProducerRandomOut)
 @limiter.limit("60/minute")
 def random_producer(
@@ -445,7 +404,9 @@ def get_producer_by_slug(
             # or the property fires one query per producer on every list page.
             selectinload(Producer.offers),
         )
-        .filter(Producer.slug == slug, is_business())  # MEH-2459
+        # MEH-2459 · MEH-2952 chunk 3: a seeded test row is served here — its
+        # direct URL is the golden-path run's — and the answer says noindex.
+        .filter(Producer.slug == slug, is_business(include_test=True))
         .first()
     )
     if not producer:
@@ -525,8 +486,8 @@ def get_producer(
     # MEH-2459 — an organizer is never a public business either: same
     # owner/admin carve-out, same 404 for everyone else (its public face is
     # /organizers/{slug}, chunk 3).
-    # MEH-2952: and a seeded test row (is_test) — same carve-out; its page
-    # reopens with noindex in chunk 3.
+    # MEH-2952: and a seeded test row (is_test) — same carve-out. Its public
+    # face is by-slug (chunk 3, noindex); this UUID route stays closed.
     if not is_business_row(producer):
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == producer.id

@@ -60,6 +60,9 @@ const DETAIL_ONLY = [
   // MEH-3216 stage 5b: detail-only — whether the page offers «הוספה»; set by
   // the two detail routes, never on a list row.
   "takes_site_orders",
+  // MEH-2952 chunk 3: detail-only — the page's robots / JSON-LD switch, on
+  // ProducerDetailOut (a model property, no column), never on a list row.
+  "noindex",
 ];
 
 const listKeys = () => Object.keys(ProducerListSchema.shape);

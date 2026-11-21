@@ -66,11 +66,11 @@ def catalog_default_availability_condition() -> ColumnElement[bool]:
     disagreement, and it ships looking finished.
 
     Every reader that answers "how many businesses does the catalog show"
-    composes THIS function, so the five can no longer drift apart:
+    composes THIS function, so they can no longer drift apart
+    (``GET /producers/cities`` was a fifth until MEH-3527 deleted it — no caller):
 
       - ``build_producers_query``            (the listing + X-Total-Count)
       - ``GET /producers/count``             (routers/producers.py)
-      - ``GET /producers/cities``            (routers/producers.py)
       - ``GET /producers/random``            (routers/producers.py)
       - ``GET /stats``.producers_count       (routers/marketing.py)
 
@@ -147,7 +147,8 @@ def is_business(*, include_test: bool = False) -> ColumnElement[bool]:
     row is absent from every one of the surfaces above at once.
     ``include_test=True`` keeps test rows, and only the files allowlisted in
     ``tests/test_meh2952_is_test_guards.py`` may pass it (by-slug, the
-    business's own dashboard, admin screens; none yet in chunk 1).
+    business's own dashboard, admin screens). Since chunk 3 the one caller is
+    by-slug in ``routers/producers.py``; its answer then carries ``noindex``.
     """
     live = and_(Producer.status == "approved", Producer.kind == "producer")
     if include_test:
