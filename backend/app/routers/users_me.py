@@ -76,11 +76,15 @@ def _change_email(
     # to matching by email, so an OAuth account parked on someone else's
     # address would catch that person's first sign-in.
     if user.google_id or user.apple_id:
-        raise HTTPException(status_code=400, detail="אי אפשר לשנות את כתובת המייל בחשבון הזה.")
+        raise HTTPException(
+            status_code=400, detail="אי אפשר לשנות את כתובת המייל בחשבון הזה."
+        )
     # MEH-3104: the protected owner account is matched by exact email
     # (services/account_guards.is_super_admin); moving it would drop the protection.
     if is_super_admin(user):
-        raise HTTPException(status_code=400, detail="אי אפשר לשנות את כתובת המייל בחשבון הזה.")
+        raise HTTPException(
+            status_code=400, detail="אי אפשר לשנות את כתובת המייל בחשבון הזה."
+        )
     # MEH-3104: a session alone is not enough to move the account. Without
     # this, a stolen session could change the address, ask for a password
     # reset there and take the account. MEH-3425: wrong passwords are capped
