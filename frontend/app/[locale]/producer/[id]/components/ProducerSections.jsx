@@ -37,9 +37,11 @@ import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
-import OrderStepper from "@/components/public/OrderStepper";
+import RowOrderControl from "@/components/public/RowOrderControl";  // MEH-3617
+import { variantNamesLine, variantsOf } from "@/lib/product-variants";  // MEH-3617
+import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
 import { shekelsText } from "@/lib/product-orders";
-import { unitPriceAgorot } from "@/lib/order-cart";
+import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
 import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
 import ReportButton from "@/components/ReportButton";
@@ -474,6 +476,7 @@ export default function ProducerSections({
                 {producer.top_product_name && (
                   <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}
+                <ProductWeekdaysLine product={signatureProduct} />{/* MEH-3618 */}
                 {/* MEH-1463: description fallback from the deduped grid product. */}
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
@@ -588,6 +591,7 @@ export default function ProducerSections({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-text">{product.name}</p>
+                      <ProductWeekdaysLine product={product} />{/* MEH-3618 */}
                       {/* MEH-1901: the row clamp goes from one line to two. One
                           line was too little to judge whether the sheet is worth
                           opening; the full text now lives in the sheet either
@@ -595,6 +599,10 @@ export default function ProducerSections({
                           the ticket's verification greps the repo for it.) */}
                       {product.description && (
                         <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{product.description}</p>
+                      )}
+                      {/* MEH-3617: the sizes or flavours, by name. */}
+                      {variantsOf(product).length > 0 && (
+                        <p className="text-xs text-fg-muted mt-0.5" data-testid="product-variant-names">{variantNamesLine(product)}</p>
                       )}
                       {/* Same price cell/position for every card. MEH-1168 P1:
                           the ₪-suffixed numeric amount is bidi-isolated so RTL
@@ -610,9 +618,9 @@ export default function ProducerSections({
                           carry them. Each row now names its own flags — icon +
                           the same label as the sheet (MEH-2584 icon+word). */}
                       <ProductDietPills product={product} t={t} />
-                      {orderable?.price_is_estimate && (
+                      {orderable && typeof rowEstimateAgorot(orderable) === "number" && (
                         <p className="text-xs text-fg-muted mt-1" data-testid="order-estimate">
-                          {t("producer.detail.order_cart.estimate", { price: shekelsText(unitPriceAgorot(orderable)) })}
+                          {t("producer.detail.order_cart.estimate", { price: shekelsText(rowEstimateAgorot(orderable)) })}
                         </p>
                       )}
                       {orderable?.contains_alcohol && (
@@ -634,10 +642,11 @@ export default function ProducerSections({
                   <div key={product.id} className={`${desktopOnly ? "hidden md:block" : "block"} relative`}>
                     {row}
                     <div className="absolute end-0 top-1/2 -translate-y-1/2">
-                      <OrderStepper
-                        product={orderable}
-                        qty={orderCart.picks[orderable.id] ?? 0}
+                      <RowOrderControl
+                        orderable={orderable}
+                        picks={orderCart.picks}
                         onChange={orderCart.change}
+                        onChoose={() => openSheetFor(product)}
                       />
                     </div>
                   </div>
@@ -700,6 +709,11 @@ export default function ProducerSections({
               onPrev={goPrevProduct}
               onNext={goNextProduct}
               onClose={closeSheet}
+              order={orderCart?.menu ? {
+                orderable: orderCart.byId.get(String(openProduct.id)) ?? null,
+                picks: orderCart.picks,
+                onChange: orderCart.change,
+              } : null}
             />
           )}
         </section>

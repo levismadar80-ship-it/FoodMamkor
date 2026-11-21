@@ -17,6 +17,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StrictInt,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -29,10 +30,12 @@ from app.limits import (  # MEH-3484
     cap_list,
 )
 from app.schemas.product_order_offer import PriceUnit  # MEH-2936
+from app.schemas.product_variants import ProductVariantOut  # MEH-3617
 from app.data.cities import canonical_city  # MEH-3484
 from app.allergens import detail_if_declared, drop_contained, normalize_allergens
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
+from app.utils.weekdays import weekdays_mask  # MEH-3618
 from app.schemas import order_cutoff  # MEH-3512
 from app.schemas import delivery_time  # MEH-3511
 from app.schemas.schemas import (
@@ -832,11 +835,19 @@ class ProductCreate(BaseModel):
     gluten_detail: AllergenDetailField | None = None  # MEH-3442
     nuts_detail: AllergenDetailField | None = None  # MEH-3442
     no_allergens: bool = False  # MEH-3445: «אין במוצר אלרגנים מהרשימה»
+    # MEH-3618: the days the product is made, Sunday = 1 … Saturday = 64.
+    # NULL (and 127, every day) = every day.
+    available_weekdays: StrictInt | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
+
+    @field_validator("available_weekdays")
+    @classmethod
+    def _validate_weekdays(cls, v: int | None) -> int | None:
+        return weekdays_mask(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -910,11 +921,18 @@ class ProductUpdate(BaseModel):
     # MEH-3445: exclude_unset → unsent stays put; null means false (the
     # column is NOT NULL). The router clears it while a code is stored.
     no_allergens: bool | None = None
+    # MEH-3618: exclude_unset → unsent stays put; null = every day again.
+    available_weekdays: StrictInt | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
     def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
+
+    @field_validator("available_weekdays")
+    @classmethod
+    def _validate_weekdays(cls, v: int | None) -> int | None:
+        return weekdays_mask(v)
 
     @field_validator("no_allergens")
     @classmethod
@@ -974,8 +992,12 @@ class ProductOut(BaseModel):
     gluten_detail: str | None = None  # MEH-3442
     nuts_detail: str | None = None  # MEH-3442
     no_allergens: bool = False  # MEH-3445
+    # MEH-3618: Sunday = 1 … Saturday = 64; NULL = every day.
+    available_weekdays: int | None = None
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
+    # MEH-3617: sizes or flavours, in the owner's order. Empty = none.
+    variants: list[ProductVariantOut] = []
 
     model_config = {"from_attributes": True}
 

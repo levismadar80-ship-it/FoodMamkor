@@ -16,10 +16,13 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
+
+import ProductWeekdaysLine from "@/components/public/ProductWeekdaysLine"; // MEH-3618
 import ProductFacts from "@/components/public/ProductFacts";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
+import ProductVariantsBlock from "@/components/public/ProductVariantsBlock";  // MEH-3617
 import {
   formatPriceRange,
   getWhatsAppHref,
@@ -171,6 +174,10 @@ export default function ProductSheet({
   total = 1,
   onPrev,
   onNext,
+  // MEH-3617: the order cart's view of this product (menu row, picks, change)
+  // when the business takes orders; null otherwise. Only read by the variants
+  // block — a product with two or more variants is added from here.
+  order = null,
 }) {
   const t = useTranslations();
   // MEH-1524: the source line is defined once, under whatsapp.question_chips,
@@ -565,6 +572,7 @@ export default function ProductSheet({
             <h2 className="font-headline-md text-xl font-bold text-text">
               {product.name}
             </h2>
+            <ProductWeekdaysLine product={product} className="-mt-2 text-sm text-fg-muted" />
 
             {/* Quiet text pills. Per-PRODUCT flags, so no "100%" language and no
                 whole-business claim — MEH-1508 owns the producer-level facility
@@ -621,6 +629,12 @@ export default function ProductSheet({
                 {freeTextPrice}
               </p>
             )}
+            <ProductVariantsBlock
+              product={product}
+              orderable={order?.orderable ?? null}
+              picks={order?.picks}
+              onChange={order?.onChange}
+            />
           </div>
         </div>
 

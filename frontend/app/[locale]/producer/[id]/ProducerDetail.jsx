@@ -333,6 +333,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           menu={orderCart.menu}
           picks={orderCart.picks}
           onStale={orderCart.reload}
+          onChange={orderCart.change}
           onClose={() => setOrderSheetOpen(false)}
         />
       )}
