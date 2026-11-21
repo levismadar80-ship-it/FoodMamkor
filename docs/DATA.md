@@ -553,6 +553,8 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
   list); the subscriber figure is recomputed per booking with the current list.
   One list exists today; a month that spans a price change will need both
   figures taken from the row's list.
+  Read by the dashboard home's monthly line (`MonthValueLine.jsx`, MEH-3194),
+  which shows `bookings` and `value_agorot` only, never a fee.
 - 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
   businesses excluded) with a counted booking that month, highest value first:
   `{month, threshold_agorot, businesses_over_threshold, businesses_over_two_months,
@@ -993,7 +995,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > `PATCH /admin/group-buys/{id}/status`, which since MEH-2866 has no override:
 > the same table (`ADMIN_TRANSITIONS = OWNER_TRANSITIONS`), the same row lock,
 > an optional `expected_status` (409 on mismatch), and the same cancel email to
-> every participant except the admin herself. A status outside the four → 400. The check and the write run under a row lock
+> every participant except the admin herself. A status outside the four → 400 `{code:"invalid_group_buy_status", params:{allowed}}` (MEH-1943). The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
 > **MEH-2489 — `expected_status` (optional).** Same body plus
@@ -1490,6 +1492,8 @@ POST   /producers/me/availability-state            producer  — MEH-291 enum wr
                                                               body: { state: "accepting_orders"|"on_vacation", vacation_until?: ISO date }
                                                               any other value → 400 (available_today / full_this_week removed, MEH-2782)
                                                               {code:"invalid_availability_state", params:{allowed:[...]}}. Both are the only values (MEH-2782).
+                                                              a refused transition → 400 {code:"invalid_availability_transition",
+                                                              params:{from, to}} (MEH-1943; unreachable while every state may move to both)
                                                               vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
                                                               the ONLY availability write endpoint — the legacy POST /availability and
                                                               /availability-status are deleted (MEH-2758). PUT /admin/producers/{id} refuses
