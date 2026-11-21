@@ -17,6 +17,8 @@ locks that decision in as a regression guard.
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from app.models.models import Producer
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
@@ -226,7 +228,21 @@ class TestAdminProducerLicense:
             headers=auth_header(admin),
         )
         assert resp.status_code == 201, resp.text
-        assert resp.json().get("verification_tier") != "verified"
+        row = db.get(Producer, UUID(str(resp.json()["id"])))
+        assert row is not None and row.verified_at is None
+
+    def test_admin_create_draft_bakery_without_license_201(self, client, db):
+        """MEH-3026: the as_draft path (owner-claim link) also takes no number."""
+        admin = make_user(db, email="admin5@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        payload = self._admin_payload([bakery.id], license_number=None)
+        payload["as_draft"] = True
+        resp = client.post("/admin/producers", json=payload, headers=auth_header(admin))
+        assert resp.status_code == 201, resp.text
+        row = db.get(Producer, UUID(str(resp.json()["id"])))
+        assert row is not None
+        assert row.status == "draft"
+        assert row.verified_at is None
 
 
 class TestRegisterProducerHoneyLicense:
