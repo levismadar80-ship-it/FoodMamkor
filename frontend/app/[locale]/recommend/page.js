@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import RecommendClient from "./RecommendClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-2633 chunk B: server-wrapper pattern (contact/page.js precedent) — a
 // client component cannot export metadata, so the wrapper supplies SEO while
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/recommend", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/recommend", locale),
     // MEH-2633 (Sapir 04/11): `noindex, follow` and OUT of the sitemap. It is

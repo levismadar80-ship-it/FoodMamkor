@@ -511,9 +511,16 @@ describe("buildProducerMetadata", () => {
   it("falls back to the site og-image when producer has no images and no slug", () => {
     const meta = buildProducerMetadata({ ...fullProducer, slug: null, images: [] });
     expect(meta.openGraph.images).toEqual([
-      { url: "/og-image.png", width: 1200, height: 630 },
+      { url: "/og-image.jpg", width: 1200, height: 630 },
     ]);
-    expect(meta.twitter.images).toEqual(["/og-image.png"]);
+    expect(meta.twitter.images).toEqual(["/og-image.jpg"]);
+  });
+  // MEH-3590: the light JPEG (the 1.26 MB PNG is dropped by WhatsApp), and the
+  // English art on /en.
+  it("falls back to the English site image on en", () => {
+    const meta = buildProducerMetadata({ ...fullProducer, slug: null, images: [] }, "en");
+    expect(meta.openGraph.images[0].url).toBe("/og-image-en.jpg");
+    expect(meta.twitter.images).toEqual(["/og-image-en.jpg"]);
   });
 });
 
