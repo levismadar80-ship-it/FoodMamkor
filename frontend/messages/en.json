@@ -6406,7 +6406,7 @@
         "label_label": "Label",
         "label_hint": "The name customers see next to the point",
         "pickup_note_label": "Pickup instructions",
-        "pickup_note_hint": "Whoever collects here sees this, for example on the bag page and in the email after reserving. You can leave it empty.",
+        "pickup_note_hint": "Shown to anyone collecting here, for example on the bag page and in the email after reserving. Not shown for an approximate point. You can leave it empty.",
         "pickup_note_placeholder": "For example: come in through the back door and say the code at the counter",
         "label_placeholder": "e.g. The stall at Hanamal Market",
         "city_label": "City",

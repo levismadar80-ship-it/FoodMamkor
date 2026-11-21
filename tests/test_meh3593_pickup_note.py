@@ -142,3 +142,45 @@ def test_the_typical_items_editor_no_longer_carries_a_note(client, db, rescue_on
     )
     assert res.status_code == 200, res.text
     assert "pickup_note" not in res.json()
+
+
+def _second_point(db, shop, **over):
+    from app.models import ProducerLocation
+
+    loc = ProducerLocation(
+        producer_id=shop["producer"].id,
+        kind="pickup",
+        is_primary=False,
+        city="חיפה",
+        label="נקודה בכרמל",
+        address="מוריה 20",
+        lat=32.78,
+        lng=34.98,
+        location_precision=over.get("location_precision", "exact"),
+        pickup_note=over.get("pickup_note"),
+    )
+    db.add(loc)
+    db.commit()
+    return loc
+
+
+def test_each_bag_reads_its_own_points_note(client, db, rescue_on, shop):
+    # The case the old business-wide note could not tell apart.
+    _put(client, shop, {"pickup_note": NOTE})
+    other = _second_point(db, shop, pickup_note="מהחצר האחורית")
+    here = _seed_offer(db, shop["location"])
+    there = _seed_offer(db, other)
+    assert client.get(f"/rescue/offers/{here.id}").json()["pickup_note"] == NOTE
+    assert client.get(f"/rescue/offers/{there.id}").json()["pickup_note"] == "מהחצר האחורית"
+
+
+def test_the_public_business_payload_carries_the_note_but_not_for_an_approximate_point(
+    client, db, rescue_on, shop
+):
+    # MEH-829: an approximate point hides its street, so its note (which may
+    # name it) is withheld too.
+    _put(client, shop, {"pickup_note": NOTE})
+    _second_point(db, shop, location_precision="approximate", pickup_note="הרצל 5 דלת אחורית")
+    body = client.get(f"/producers/{shop['producer'].id}").json()
+    notes = sorted((loc["precision"], loc.get("pickup_note")) for loc in body["locations"])
+    assert notes == [("approximate", None), ("exact", NOTE)]

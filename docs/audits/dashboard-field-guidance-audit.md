@@ -81,6 +81,7 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | `address` | `LocationsEditor` | ✓ | ✓ `place_hint_exact` / `place_hint_approximate` — names that משוער hides the full address (MEH-1579) | ✓ `address_placeholder` | ✓ the same precision-aware hint + `intro` | ok |
 | `phone` | `LocationsEditor` | ✓ | — | ✓ `phone_placeholder` | ✓ `intro` | ok |
 | `lat` / `lng` | `LocationsEditor` | ✓ | ✓ `coords_hint` — optional escape hatch, behind the collapsed `coords_summary` disclosure | — (numeric escape hatch) | ✓ `intro` | ok |
+| `pickup_note` | `LocationsEditor` | ✓ `pickup_note_label` «הוראות איסוף» | ✓ `pickup_note_hint` — public, withheld for an approximate point | ✓ `pickup_note_placeholder` | ✓ `pickup_note_hint` — bag page + reservation email (MEH-3593) | ok |
 | `hours` | `LocationsEditor` | ✓ `hours_label` | — still free text, while `HoursCard` next door is a structured editor (unchanged by MEH-1563) | ✓ `hours_placeholder` | ✓ `intro` | ok |
 | `producer_license` | `LicenseCard` | ✓ `field_label` | ~ `required_hint` when a category demands it | — (regulated number, no example) | ✓ `where` (MEH-1597) — kept on file only, never shown publicly | ok |
 | `is_vegan` / `is_vegetarian` / gluten facility | `DietaryScopeCard` | ✓ (questions) | ✓ `helper` + `scope_helper` (MEH-1597) | — (radio) | ✓ `scope_helper` — the search filters they drive | ok |
@@ -258,7 +259,7 @@ surface; **"לא ידוע"** means no renderer was found, not that none exists.
 | 52 | `delivery_days_min` | `producers.delivery_days_min` | other | `DeliveryTimeFields.jsx` «מ-» (MEH-3511) | `DeliveryTerms.jsx` «מגיע תוך {min}–{max} ימי עסקים» | `delivery_days_max`, the zone's own pair | L | label «זמן משלוח (ימי עסקים)», hint gives the example «עד 5»; 1..30 and from ≤ to, Hebrew 422 | ✓ |
 | 53 | `delivery_days_max` | `producers.delivery_days_max` | other | `DeliveryTimeFields.jsx` «עד» (MEH-3511) | `DeliveryTerms.jsx` | `delivery_days_min` | L | «עד» alone is valid and reads «מגיע תוך עד X ימי עסקים» | ✓ |
 
-**Row count: 53** — rows 51–53 (the MEH-3511 delivery terms) added on 20/11; row 48 (`payment_info`) added by MEH-3035 on 13/11; row 45 (`special_hours`) added by MEH-2264 on 05/09; rows 1–44 are the MEH-1539 freeze. _This line used to read "`len(_PRODUCER_WRITABLE_FIELDS)` = 44"; that stopped being true as fields were closed (MEH-1851/1856/1938 batches) and the ratchet measured 34 writable on 05/09. The writable count is derived at run time by `scripts/checks/dashboard-field-guidance-ratchet.sh` and is not restated here._
+**Row count: 54** — row 54 (`pickup_note`, MEH-3593) added on 21/11; rows 51–53 (the MEH-3511 delivery terms) added on 20/11; row 48 (`payment_info`) added by MEH-3035 on 13/11; row 45 (`special_hours`) added by MEH-2264 on 05/09; rows 1–44 are the MEH-1539 freeze. _This line used to read "`len(_PRODUCER_WRITABLE_FIELDS)` = 44"; that stopped being true as fields were closed (MEH-1851/1856/1938 batches) and the ratchet measured 34 writable on 05/09. The writable count is derived at run time by `scripts/checks/dashboard-field-guidance-ratchet.sh` and is not restated here._
 
 ### Adjunct fields — related, deliberately NOT counted above
 

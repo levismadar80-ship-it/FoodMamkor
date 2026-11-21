@@ -249,7 +249,8 @@ def offer_detail(
     out["lng"] = location.lng if exact else None
     out["producer"]["avg_rating"] = producer.avg_rating or None
     out["producer"]["reviews_count"] = producer.reviews_count or 0
-    out["pickup_note"] = location.pickup_note  # MEH-3593: the point's own
+    # MEH-3593: the point's own; withheld with the pin on an approximate point.
+    out["pickup_note"] = location.pickup_note if exact else None
     out["producer"]["short_description"] = (
         producer.short_description or ""
     ).strip() or None

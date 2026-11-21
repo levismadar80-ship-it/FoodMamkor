@@ -416,7 +416,9 @@ class ProducerLocationOut(BaseModel):
     pickup_days: list[str] | None = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
-    # MEH-3593: «הוראות איסוף» for this point; None = none written.
+    # MEH-3593: «הוראות איסוף» for this point; None = none written. Withheld
+    # for an approximate point (below): the note may name the street the
+    # point hides (MEH-829).
     pickup_note: str | None = None
     # Field name matches the ORM attribute (from_attributes reads it directly);
     # serialization_alias emits the epic's contract key `precision` on the wire
@@ -429,6 +431,14 @@ class ProducerLocationOut(BaseModel):
     @classmethod
     def _none_days(cls, v: Any) -> Any:
         return v or None
+
+    @model_validator(mode="after")
+    def _hide_note_of_approximate_point(self) -> Self:
+        # MEH-3593 review: «הרצל 5, דלת אחורית» would publish the address an
+        # approximate point withholds.
+        if self.location_precision != "exact":
+            self.pickup_note = None
+        return self
 
 
 # MEH-1421 (MEH-1388 chunk 4a): shared enums — same value sets as the ORM CHECK
