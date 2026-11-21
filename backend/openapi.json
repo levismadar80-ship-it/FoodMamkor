@@ -22995,16 +22995,6 @@
           },
           {
             "in": "query",
-            "name": "allow_without_license",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Allow Without License",
-              "type": "boolean"
-            }
-          },
-          {
-            "in": "query",
             "name": "allow_unverified_phone",
             "required": false,
             "schema": {
@@ -24674,16 +24664,6 @@
               "format": "uuid",
               "title": "Producer Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "allow_without_license",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Allow Without License",
-              "type": "boolean"
             }
           }
         ],

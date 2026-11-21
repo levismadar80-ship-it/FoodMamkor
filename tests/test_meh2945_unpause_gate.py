@@ -44,7 +44,9 @@ def test_unpause_with_unverified_phone_is_blocked(client, db):
     assert producer.status == "inactive"
 
 
-def test_unpause_with_licence_cleared_is_blocked(client, db):
+def test_unpause_with_licence_cleared_is_not_blocked(client, db):
+    # MEH-3026: a missing licence no longer blocks approval, so it no longer
+    # blocks un-pausing either (same _assert_approvable); no «מאומת» badge.
     cat = make_category(db, name=LICENSE_REQUIRED_CATEGORIES[0])
     producer = make_producer(
         db, status="inactive", images=[IMG], phone_verified=True, category=cat
@@ -52,9 +54,10 @@ def test_unpause_with_licence_cleared_is_blocked(client, db):
     producer.producer_license_number = None
     db.commit()
     resp = _toggle(client, producer.id, _admin(db))
-    assert resp.status_code == 422, resp.text
+    assert resp.status_code == 200, resp.text
     db.refresh(producer)
-    assert producer.status == "inactive"
+    assert producer.status == "approved"
+    assert producer.verified_at is None
 
 
 def test_unpause_passing_the_gates_still_works(client, db):

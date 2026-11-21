@@ -62,10 +62,7 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.farmer_declaration import apply_farmer_declaration_on_update
-from app.services.license_validation import (
-    categories_require_license,
-    enforce_license_gate_on_update,
-)
+from app.services.license_validation import enforce_license_gate_on_update
 
 log = logging.getLogger(__name__)
 
@@ -266,11 +263,9 @@ def _sync_active_offer(
 # reimplemented — ≥1 image (MEH-799) AND license present when the categories
 # require one (MEH-971). Keep in sync with admin.py:approve_producer.
 def _is_approvable(db: Session, producer: Producer) -> bool:
-    if not producer.images:
-        return False
-    category_ids = [c.id for c in producer.categories]
-    license_missing = not (producer.producer_license_number or "").strip()
-    return not (categories_require_license(db, category_ids) and license_missing)
+    # MEH-3026: the photo is the only approve gate this mirrors now — a missing
+    # licence no longer blocks approval (services/producer_approval.py).
+    return bool(producer.images)
 
 
 def _pending_and_approvable(db: Session, producer: Producer) -> bool:

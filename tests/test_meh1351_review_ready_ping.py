@@ -96,9 +96,11 @@ def test_no_fire_when_not_pending(client, db):
     ping.assert_not_called()
 
 
-def test_license_required_category_gates_the_ping(client, db):
-    """With a license-required category, an image alone is not approvable —
-    the ping waits for the license and then fires exactly once."""
+def test_license_required_category_does_not_hold_the_ping(client, db):
+    """MEH-3026: a missing licence no longer blocks approval, so with a
+    license-required category the first image alone makes the business
+    approvable and the ping fires once; adding the licence later does not
+    re-fire it."""
     honey = make_category(db, name="דבש", emoji="🍯")  # license-required by name
     user, _ = _pending_producer_user(db, category=honey)
 
@@ -111,7 +113,7 @@ def test_license_required_category_gates_the_ping(client, db):
             headers=auth_header(user),
         )
         assert r1.status_code == 200
-        ping.assert_not_called()
+        ping.assert_called_once()
 
         r2 = client.put(
             "/producers/me",
