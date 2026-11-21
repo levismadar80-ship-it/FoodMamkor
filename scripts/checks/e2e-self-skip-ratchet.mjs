@@ -54,9 +54,12 @@
  *   node scripts/checks/e2e-self-skip-ratchet.mjs --update-baseline  # refuses a higher total
  *   node scripts/checks/e2e-self-skip-ratchet.mjs --update-baseline --allow-increase
  *   node scripts/checks/e2e-self-skip-ratchet.mjs --self-test
+ *   node scripts/checks/e2e-self-skip-ratchet.mjs --self-test --no-eslint   # pure cases only
  *
  * Runs inside `npm run lint:ratchet` (frontend lint job); not a .sh, because
- * the Repo guards job has no node_modules.
+ * the Repo guards job has no node_modules. What that job CAN hold without
+ * ESLint (the pure self-test, and the baseline not rising) is in
+ * e2e-self-skip-guard.sh, which runs on every PR.
  */
 
 import { execFileSync } from "node:child_process";
@@ -215,6 +218,12 @@ function selfTest() {
   if (bad) fail(`${bad} of ${ran} self-test case(s) failed.`);
   console.log(`e2e-self-skip-ratchet self-test PASS — ${ran} case(s).`);
   // The anchored case: the real ESLint, the real plugin, real spec files.
+  // --no-eslint is for the Repo guards job, which has no node_modules; it
+  // says the control did not run instead of printing an OK it did not earn.
+  if (process.argv.includes("--no-eslint")) {
+    console.log("e2e-self-skip-ratchet control NOT RUN (--no-eslint): the cases above are pure; ESLint itself was not exercised.");
+    return;
+  }
   control(parseBaseline(readFileSync(BASELINE_PATH, "utf8")));
 }
 
