@@ -218,7 +218,9 @@ def notify_participant_joined(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
         )
         _send_email(participant_email, subject, body, test_cause=test_cause)
     except Exception:
-        logger.exception("[GROUP_BUY] join confirmation failed group_buy_id=%s", group_buy_id)
+        logger.exception(
+            "[GROUP_BUY] join confirmation failed group_buy_id=%s", group_buy_id
+        )
 
 
 def notify_participant_cancelled(
