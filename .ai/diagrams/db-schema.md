@@ -249,7 +249,7 @@ erDiagram
     product_order_notifications {
         uuid id PK
         uuid order_id FK "CASCADE (MEH-3296)"
-        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before"
+        string kind "new_order business_reminder confirmed change_proposed closed buyer_cancelled day_before review_request"
         string channel "whatsapp email"
         string outcome "pending sent failed skipped"
         timestamp send_after "due time; moved to the end of Shabbat/chag for an observant business"
