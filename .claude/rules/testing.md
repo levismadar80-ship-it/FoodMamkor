@@ -54,6 +54,9 @@ mismatches, 0 orphans.
   cannot move takes `// eslint-disable-next-line <rule> -- <reason>`; the
   reason is required. It does not see an alias (`const t = test`), a
   `try/catch` around an `expect`, or a loop that runs zero times.
+  `scripts/checks/e2e-self-skip-guard.sh` (Repo guards, every PR) runs the
+  ratchet's self-test and fails a baseline total that rises, unless the
+  branch also changes the ratchet or its lint config (then it warns).
 - A green VRT is not evidence the frame is unchanged (2% tolerance swallows
   copy changes; a pass writes no PNG) — read the rendered text. Tolerance is
   MEH-1765's call only.
