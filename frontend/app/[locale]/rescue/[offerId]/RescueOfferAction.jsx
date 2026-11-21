@@ -12,6 +12,7 @@ import { StickyRegistrationBar, useInView } from "@/components/RegistrationOverl
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 import { israelTime, shekels, worthAgorot } from "@/lib/rescue";
 
 const STATE_KEY = {
@@ -29,7 +30,7 @@ const STATE_KEY = {
  * Does NOT: hold reservation state (lib/useRescueReservation.js) or invent a
  *           discount: the worth is the business's own low estimate, shown
  *           only when it is above the price (worthAgorot).
- * History:  MEH-3586 (creation)
+ * History:  MEH-3586 (creation) · MEH-3570 (not-a-party line under the button)
  *
  * @param {{ offer: any, reservation: ReturnType<typeof import("@/lib/useRescueReservation").default> }} props
  */
@@ -85,6 +86,7 @@ export default function RescueOfferAction({ offer, reservation }) {
         <>
           <RescueErrorLine errorKey={errorKey} />
           <div ref={buttonRef}>{button(t("section.cta"), "rescue-reserve")}</div>
+          <NotAPartyLine name={offer.producer?.name} testId="rescue-not-a-party" />
           <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
             {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
           </p>

@@ -22,7 +22,7 @@
 
 **Run shape:** 35,515 iterations over 8m30s, 94 interrupted iterations, 69.6 req/s sustained throughput, 200 max VUs at peak (k6's `preAllocatedVUs` total across the 5 scenarios), 11 MB data received total.
 
-SLA targets: **p95 < 2000ms** per endpoint. **Error-rate gates RELAXED to < 95%** on `/producers/*` because slowapi rate-limits dominate the steady-state response shape — see Methodology § "Rate-limit-aware measurement strategy". `/chat` and `favorites_unauth` have no error-rate gate (intended 429 / 401 respectively).
+SLA targets: **p95 < 2000ms** and **real errors < 1%** per endpoint. _(Until 21/11 the error gates were relaxed to < 95% and `/chat` / `favorites_unauth` had none; the May table above was measured under that script. Since MEH-3564 a 429 or favorites' 401 is an expected status, so every endpoint has the < 1% gate — see Methodology § "Thresholds".)_
 
 **Critical signal:** the **First-3s p95** column. That is the unrate-limited latency baseline — what real users see in normal traffic. The overall p95 includes the rate-limited tail and is not a fair launch-night proxy.
 
@@ -41,11 +41,11 @@ SLA targets: **p95 < 2000ms** per endpoint. **Error-rate gates RELAXED to < 95%*
 
 ## Methodology
 
-**Profile.** Four endpoints run on a `ramping-vus` executor: 1 VU at start, ramp to 50 VUs over 2 minutes, hold at 50 VUs for 5 minutes, ramp down to 0 over 1 minute (~8 minutes per scenario, in parallel). The fifth endpoint, `POST /chat`, runs on a `constant-arrival-rate` executor at 10 RPS for 60 seconds (600 calls maximum).
+**Profile.** Four endpoints run on a `ramping-vus` executor: 1 VU at start, ramp to 50 VUs over 2 minutes, hold at 50 VUs for 2 minutes, ramp down to 0 over 1 minute (5 minutes per scenario). Since 21/11 (MEH-3564) the four run one after another, not in parallel: Grafana Cloud k6's free tier allows 100 VUs per test and the parallel profile planned 200. The 5-minute hold became 2 minutes so the sequence fits the workflow's 30-minute timeout. The fifth endpoint, `POST /chat`, runs on a `constant-arrival-rate` executor at 10 RPS for 60 seconds (600 calls maximum).
 
 **Why constant-rate for `/chat`.** Every `/chat` call hits Anthropic Haiku and costs real money (~$0.001 per call). A 1->50 VU ramp would spray ~thousands of calls and blow the Anthropic budget guard. Constant 10 RPS for 60s caps the spend at <$1 and exercises the rate-limiter (`@limiter.limit("10/minute")` in `backend/app/routers/chat.py:189`) without runaway. Most attempts beyond the first ~10/minute will return HTTP 429 by design — that is the expected observation.
 
-**Thresholds.** Per-endpoint p95 latency gate at 2000ms. Per-endpoint failure-rate gate **relaxed to < 95%** on the three `/producers/*` endpoints (see "Rate-limit-aware measurement strategy" below). `/chat` skips the failure-rate gate because 429 is the intended shape; `favorites_unauth` skips it because every request is expected to return 401 (k6 classifies that as "failed"). All endpoints keep the p95 latency gate — rate-limit rejection, auth rejection, and successful response should all be fast.
+**Thresholds (MEH-3564, 21/11).** Per endpoint: p95 latency < 2000ms and `http_req_failed` < 1%. Each request names its expected statuses with `http.expectedStatuses` (k6's documented way): 200 and 429 everywhere, 401 for favorites, 404 on the business pages only when no real producer is passed. Anything else — a 5xx, a timeout, a 422 — is a failure. Expected is not invisible: the `rate_limited` counter must be > 0 on the four rate-limited endpoints (the limiter fired) and the `served` counter (200s) must be > 0 on the same four (the server still answered). This is the pattern Grafana's threshold docs and Zuplo's k6 rate-limit example use. Before 21/11 the gates were `< 95%` on `/producers/*` and absent on `/chat` and favorites, which read the limiter's 429s as errors (98% "failed" on run 44909071841 with every check green). The same run showed `/chat` answering 422 to every call: the body was `{message, history}`, the schema wants `messages: [{role, content}]` (`backend/app/schemas/site.py`). So `/chat` was never measured before 21/11.
 
 **Rate-limit-aware measurement strategy.** The Railway backend enforces slowapi rate limits per IP — `GET /producers` is capped at 120/min (see `backend/app/routers/producers.py` rate_limit decorators). A 50-VU k6 ramp from a single laptop IP generates ~3000 req/min on each producer endpoint, so after the first ~3 seconds of the ramp ~95% of responses become HTTP 429. This is the same per-IP limit a normal user hits, just from a single client.
 
@@ -107,7 +107,7 @@ If your response shape is a bare array instead of `{producers: [...]}`, use `jq 
 k6 run scripts/load-test.js
 ```
 
-Expected wall-clock runtime: ~8 minutes (4 ramp scenarios in parallel + the 60-second `/chat` scenario nested inside them). k6 prints the per-endpoint summary table at the end; copy the `p(50)`, `p(95)`, `p(99)`, `http_req_failed`, and `iterations` lines into the table at the top of this doc.
+Expected wall-clock runtime: ~22 minutes (4 ramp scenarios in sequence, the 60-second `/chat` scenario alongside the first; peak 87 VUs by `k6 inspect --execution-requirements`). k6 prints the per-endpoint summary table at the end; copy the `p(50)`, `p(95)`, `p(99)`, `http_req_failed`, and `iterations` lines into the table at the top of this doc.
 
 **Optional: stream JSON for richer analysis.**
 

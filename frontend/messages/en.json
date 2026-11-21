@@ -4111,6 +4111,10 @@
     "disclaimer": {
       "body": "lists businesses — it is not the seller and not a party to the sale. You buy directly from the business, which is responsible for its products, its licensing, and its prices.",
       "terms_link": "Full details — Terms of Use"
+    },
+    "not_a_party": {
+      "named": "You deal directly with {name}. Mehamakor is not the seller and not a party to the transaction.",
+      "unnamed": "You deal directly with the business. Mehamakor is not the seller and not a party to the transaction."
     }
   },
   "location": {

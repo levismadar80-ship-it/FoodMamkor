@@ -56,7 +56,7 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
 // made it taller, which pushed the H1 from ~16% up the band to ~50% — into a
 // far thinner part of the same gradient. Measured worst case (scrim composited
 // over a blown-white photo highlight, the case globals.css:72 names) via
-// e2e/_qa-archive/qa-meh1690-contrast.mjs:
+// qa-meh1690-contrast.mjs [deleted probe, docs/media-archive.md]:
 //
 //   H1 top line, before → 10.37:1 @375 · 8.41:1 @1440
 //   H1 top line, after  →  3.36:1 @375 · 3.54:1 @1440   ← under the 4.5:1 floor
