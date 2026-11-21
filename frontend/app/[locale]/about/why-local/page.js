@@ -20,6 +20,7 @@ import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-2597: the mid-article photo sits under this (0-based) section.
 const PHOTO_AFTER_SECTION = 1;
@@ -45,13 +46,13 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/about/why-local", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     twitter: {
       card: "summary_large_image",
       title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/about/why-local", locale),
   };

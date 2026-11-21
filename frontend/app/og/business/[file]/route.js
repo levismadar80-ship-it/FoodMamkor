@@ -23,7 +23,8 @@ import { serverFetch } from "@/lib/server-fetch";
 import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 import { OG_SIZE, producerCard, markSrc } from "@/lib/og-producer-card";
 
-const FALLBACK = "/og-image.png";
+// MEH-3590: the JPEG — the 1.26 MB PNG is too heavy for WhatsApp (MEH-2827).
+const FALLBACK = "/og-image.jpg";
 const FALLBACK_CACHE = "public, max-age=300, s-maxage=300";
 
 /** 302 to the site image, briefly cached so a crawler retry does not hammer the backend. */
