@@ -555,4 +555,12 @@ describe("RegistrationCta — not a party", () => {
     fireEvent.click(screen.getByTestId("registration-open"));
     expect(screen.getByTestId("registration-not-a-party").textContent).toBe(he.directory.not_a_party.unnamed);
   });
+
+  it("names the business when the page passes it", () => {
+    cta({ method: "site_form", producerName: "מאפיית שקד" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(screen.getByTestId("registration-not-a-party").textContent).toBe(
+      "את העסקה עושים ישירות מול מאפיית שקד. מהמקור לא המוכרת ולא צד לעסקה.",
+    );
+  });
 });
