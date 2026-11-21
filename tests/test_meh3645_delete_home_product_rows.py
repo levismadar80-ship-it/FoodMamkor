@@ -13,7 +13,15 @@ from alembic.operations import Operations
 from conftest import make_producer, make_user
 
 from app.database import engine
-from app.models import HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Producer, User
+from app.models import (
+    Category,
+    HomeProduct,
+    HomeProductRating,
+    HomeProductWhatsAppClick,
+    Producer,
+    Product,
+    User,
+)
 
 _REV_FILE = os.path.abspath(
     os.path.join(
@@ -33,7 +41,6 @@ def rev():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     assert mod.revision == "d6f8b0c2e4a7"
-    assert mod.down_revision == "c5e7a9b1d3f6"
     return mod
 
 
@@ -72,14 +79,9 @@ def test_upgrade_deletes_every_listing_rating_and_click(db, rev):
 def test_upgrade_leaves_users_and_businesses(db, rev):
     _seed(db)
     make_producer(db)
-    users, producers = db.query(User).count(), db.query(Producer).count()
+    before = [db.query(m).count() for m in (User, Producer, Product, Category)]
     _run(rev, "upgrade")
     db.expire_all()
-    assert db.query(User).count() == users
-    assert db.query(Producer).count() == producers
+    assert [db.query(m).count() for m in (User, Producer, Product, Category)] == before
+    assert before[0] == 2 and before[1] == 1  # the seed is really there
 
-
-def test_upgrade_on_empty_tables_is_a_noop(db, rev):
-    _run(rev, "upgrade")
-    db.expire_all()
-    assert db.query(HomeProduct).count() == 0

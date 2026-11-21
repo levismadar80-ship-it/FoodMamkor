@@ -15,7 +15,9 @@ No table, column or constraint changes; the code that reads these tables stays.
 Children first, so the result does not depend on ON DELETE CASCADE.
 
 Downgrade does nothing: deleted rows cannot be restored. The listing images in
-Cloudinary become orphans for scripts/cleanup_cloudinary_orphans.
+Cloudinary become orphans; backend/scripts/cleanup_cloudinary_orphans.py is
+dry-run by default and unscheduled, so they leave Cloudinary only when it runs
+with --apply against production (a production action, release thread).
 
 # DO NOT turn this into a DROP TABLE — the models and ~20 call sites still
 #        reference these tables; removing the feature is its own change.
