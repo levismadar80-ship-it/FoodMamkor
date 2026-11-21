@@ -162,5 +162,7 @@ describe("one owner for a struck price", () => {
       for (const l of lines) offenders.push(`${rel}:${l}`);
     }
     expect(offenders, "use <StruckPrice> from components/ui/StruckPrice.jsx").toEqual([]);
-  });
+    // It parses every source file: ~2 s alone, past the 5 s default on a CI
+    // shard that runs ts-check beside it (timed out on #5126). Same bound as DateFormatGuard.
+  }, 60_000);
 });
