@@ -23,7 +23,10 @@ vi.mock("@/lib/contact-tracking", () => ({
 
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 
-const base = { id: 9, name: "משק", city: "בנימינה", phone: "0501234567", primary_contact_method: "whatsapp" };
+// MEH-3666: a lone in-page answer starts open, so `base` carries a second one
+// (nationwide delivery) and these cells keep testing a closed payment chip.
+const solo = { id: 9, name: "משק", city: "בנימינה", phone: "0501234567", primary_contact_method: "whatsapp" };
+const base = { ...solo, delivery_nationwide: true };
 
 const paymentToggle = () =>
   screen.queryAllByTestId("quick-answer-toggle").find((b) => b.textContent.includes("payment_q"));
@@ -48,6 +51,12 @@ describe("«איך משלמים?» chip (MEH-3035)", () => {
     render(<WhatsAppQuestionChips producer={{ ...base, payment_info: { methods: ["bit"], timing: null, note: null } }} />);
     expect(paymentToggle()).toBeTruthy();
     expect(screen.queryByTestId("payment-answer")).toBeNull();
+  });
+
+  it("the page's only in-page answer: open without a tap (MEH-3666)", () => {
+    render(<WhatsAppQuestionChips producer={{ ...solo, payment_info: { methods: ["bit"], timing: null, note: null } }} />);
+    expect(paymentToggle()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("payment-answer")).toBeInTheDocument();
   });
 
   it("methods only: one line, in the approved order, no timing or note line", () => {

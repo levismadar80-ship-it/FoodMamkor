@@ -111,7 +111,7 @@ const QUESTION_PILL =
 
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
 function Disclosure({ question, children, defaultOpen = false }) {
-  // MEH-3666: the only question on the page starts open (see the caller).
+  // MEH-3666: the page's only in-page answer starts open (see the caller).
   const [open, setOpen] = useState(defaultOpen);
   return (
     // MEH-2592 C: an open question takes the whole row so its answer has room.
@@ -345,12 +345,13 @@ export default function WhatsAppQuestionChips({ producer }) {
   // Nothing to show at all → no block (MEH-3460: no escalation row either).
   if (items.length === 0) return null;
 
-  // MEH-3666 (Sapir 21/11): one answer-first question is shown open. A single
-  // closed pill under its own heading is a tap that reveals the whole section.
-  // Two or more stay closed (MEH-3460). A lone WhatsApp question has no answer
-  // here to open, so it stays a link.
-  if (items.length === 1 && items[0].type === Disclosure) {
-    items[0] = cloneElement(items[0], { defaultOpen: true });
+  // MEH-3666 (Sapir 21/11): when the section holds exactly one in-page answer,
+  // it is shown open; a closed pill would hide the page's only answer behind a
+  // tap. WhatsApp questions beside it stay links. Two or more answers stay
+  // closed (MEH-3460). Read once on mount (useState), like any disclosure.
+  const answerAt = items.flatMap((item, i) => (item.type === Disclosure ? [i] : []));
+  if (answerAt.length === 1) {
+    items[answerAt[0]] = cloneElement(items[answerAt[0]], { defaultOpen: true });
   }
 
   return <QuestionList items={items} t={t} />;

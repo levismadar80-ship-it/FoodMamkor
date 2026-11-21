@@ -74,6 +74,14 @@ describe("«שאלות נפוצות» is its own page section (Sapir 20/11)", ()
     expect(screen.getByTestId("quick-answer-content")).toBeInTheDocument();
   });
 
+  it("one answer-first question beside WhatsApp questions: the answer is open", () => {
+    render(<WhatsAppQuestionChips producer={{ ...producer, offers_delivery: true, custom_questions: ["ש1"] }} />);
+    const toggles = screen.getAllByTestId("quick-answer-toggle");
+    expect(toggles).toHaveLength(1);
+    expect(screen.getAllByTestId("question-link").length).toBeGreaterThan(0);
+    expect(toggles[0]).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("two answer-first questions: both stay closed until tapped", () => {
     render(<WhatsAppQuestionChips producer={producer} />);
     const toggles = screen.getAllByTestId("quick-answer-toggle");
