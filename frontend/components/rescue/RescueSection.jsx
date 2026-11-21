@@ -25,7 +25,7 @@ import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
 import OfferCard from "@/components/ui/OfferCard";
-import { GroupBuyProgressMark } from "@/app/[locale]/producer/[id]/components/ProducerActivities";
+import { GroupBuyProgressMark } from "@/components/ui/SeedProgressMark";
 import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
@@ -367,7 +367,8 @@ export default function RescueSection({ producer }) {
                 <GroupBuyProgressMark
                   commits={offer.qty_left}
                   min={offer.qty_total || offer.qty_left}
-                  label={t("row.left", { count: offer.qty_left })}
+                  // Decorative: «נשארו 4 סלים» sits right beside it (MEH-3585 review).
+                  label={null}
                 />
                 <span className="text-xs font-bold text-text" data-testid="rescue-section-stock">
                   {t("row.left", { count: offer.qty_left })}

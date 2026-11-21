@@ -16,6 +16,13 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@/lib/auth-context", () => ({ useOptionalAuth: () => null, useAuth: () => ({ user: null }) }));
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+// Record every card the real OfferCard draws, so a hand-copied card with the
+// same classes still fails: its test id never reaches this list.
+const drawn = [];
+vi.mock("@/components/ui/OfferCard", async (orig) => {
+  const Real = (await orig()).default;
+  return { default: (props) => { drawn.push(props.testId); return <Real {...props} />; } };
+});
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a) } }));
 vi.mock("@/lib/rescue", async (orig) => ({
@@ -43,7 +50,8 @@ const GB = {
 function shape(card) {
   const band = card.querySelector(".bg-background-alt");
   return {
-    shell: card.className.replace(/ hover:\S+| transition| focus-ring/g, ""),
+    // The link variant adds exactly these three hover/focus classes.
+    shell: card.className.replace(/ hover:border-primary transition focus-ring$/, ""),
     price: card.querySelector(".text-2xl")?.className,
     struck: card.querySelector("s")?.className,
     saving: card.querySelector(".text-gold-deep")?.className,
@@ -66,6 +74,8 @@ describe("OfferCard is the one owner of the offer card (MEH-3585)", () => {
     const bag = shape(await screen.findByTestId("rescue-section-card"));
     for (const k of Object.keys(gb)) expect(gb[k], k).toBeTruthy();
     expect(bag).toEqual(gb);
+    expect(drawn).toContain("producer-group-buy-row");
+    expect(drawn).toContain("rescue-section-card");
   });
 
   it("both sit in the same half-width grid", async () => {

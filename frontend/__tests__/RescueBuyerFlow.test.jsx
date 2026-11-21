@@ -478,7 +478,9 @@ describe("the business-page section — reserve and confirm", () => {
     let seeds = screen.getByTestId("gb-progress-seeds");
     expect(seeds.querySelectorAll("svg")).toHaveLength(4);
     expect(seeds.querySelectorAll("svg[data-filled='true']")).toHaveLength(1);
-    expect(seeds.getAttribute("aria-label")).toBe("נשאר סל אחד");
+    // Decorative: the words sit beside it, so a screen reader hears them once.
+    expect(seeds.getAttribute("aria-hidden")).toBe("true");
+    expect(seeds.getAttribute("role")).toBeNull();
     unmount();
     fetchOffers.mockResolvedValue([offer({ qty_left: 4, qty_total: 4 })]);
     render(<RescueSection producer={PRODUCER} />);
