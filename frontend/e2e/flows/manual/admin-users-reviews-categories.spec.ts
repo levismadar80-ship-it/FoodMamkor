@@ -464,7 +464,7 @@ test.describe("/admin/users — the role kebab", () => {
   });
 
   // MT:MEH-530:45 — opens toward the start; second click / outside click / Escape close it; Escape restores focus.
-  test("the menu opens toward the start and closes on a second click, an outside click, and Escape", async ({ page }) => {
+  test("the menu opens toward the start and closes on a second click, an outside click, and Escape", async ({ page }, testInfo) => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "משתמשת 4");
@@ -484,15 +484,26 @@ test.describe("/admin/users — the role kebab", () => {
     // bug) still reds, a read taken mid-reflow no longer does. The message
     // carries the numbers, so a repeat says which of the three moved.
     const MENU_PAD_PX = 8;
-    let geo = { mx: 0, mw: 0, tx: 0, tw: 0, vw: 0 };
+    // The snapshot is taken from the row's own trigger (`btn`), and it requires
+    // exactly one open menu: a second menu or a missing one reads as "off by
+    // Infinity", never as a zero that passes. Polls that were off before the
+    // first good one are counted and written to an annotation, so a product
+    // race (the panel painted unclamped for a few frames) stays visible.
+    let geo: { mx: number; mw: number; tx: number; tw: number; vw: number; menus: number } = {
+      mx: 0, mw: 0, tx: 0, tw: 0, vw: 0, menus: -1,
+    };
+    let badReads = 0;
     const offBy = async () => {
-      geo = await page.evaluate(() => {
-        const a = document.querySelector('[role="menu"]')!.getBoundingClientRect();
-        const b = document.querySelector('button[aria-expanded="true"]')!.getBoundingClientRect();
-        return { mx: a.x, mw: a.width, tx: b.x, tw: b.width, vw: document.documentElement.clientWidth };
+      geo = await btn.evaluate((b) => {
+        const menus = document.querySelectorAll('[role="menu"]');
+        const t = b.getBoundingClientRect();
+        const a = menus.length === 1 ? menus[0].getBoundingClientRect() : { x: NaN, width: NaN };
+        return { mx: a.x, mw: a.width, tx: t.x, tw: t.width, vw: document.documentElement.clientWidth, menus: menus.length };
       });
       const expectedLeft = Math.max(MENU_PAD_PX, Math.min(geo.tx, geo.vw - MENU_PAD_PX - geo.mw));
-      return Math.abs(geo.mx - expectedLeft);
+      const off = geo.menus === 1 ? Math.abs(geo.mx - expectedLeft) : Number.POSITIVE_INFINITY;
+      if (!(off < 3)) badReads += 1;
+      return off;
     };
     try {
       await expect
@@ -502,7 +513,12 @@ test.describe("/admin/users — the role kebab", () => {
         })
         .toBeLessThan(3);
     } catch (error) {
-      throw new Error(`kebab panel off its spot; last read ${JSON.stringify(geo)}`, { cause: error });
+      throw new Error(`${(error as Error).message}\nkebab panel off its spot after ${badReads} reads; last read ${JSON.stringify(geo)}`, {
+        cause: error,
+      });
+    }
+    if (badReads > 0) {
+      testInfo.annotations.push({ type: "MEH-3467", description: `panel was off its spot for ${badReads} read(s) before settling` });
     }
     const [mb, tb, vw] = [{ x: geo.mx, width: geo.mw }, { x: geo.tx, width: geo.tw }, geo.vw];
     expect(mb.x + mb.width, "the panel stays inside the viewport's right edge (MEH-2587)").toBeLessThanOrEqual(vw - MENU_PAD_PX + 1);

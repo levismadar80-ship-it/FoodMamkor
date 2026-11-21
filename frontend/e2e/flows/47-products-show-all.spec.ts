@@ -130,8 +130,13 @@ test.describe("MEH-3021 — long product list collapses", () => {
       els.map((e) => {
         const el = e as HTMLElement;
         const wrap = el.parentElement;
+        let hiddenBy = "";
+        for (let n: HTMLElement | null = el; n && !hiddenBy; n = n.parentElement) {
+          if (getComputedStyle(n).display === "none") hiddenBy = `${n.tagName.toLowerCase()}.${n.className.split(" ").slice(0, 2).join(".")}`;
+        }
         return {
           shown: el.offsetParent !== null,
+          hiddenBy,
           name: (el.textContent || "").trim().slice(0, 16),
           cls: el.className.split(" ").slice(0, 2).join(" "),
           wrap: (wrap?.className || "").split(" ").slice(0, 2).join(" "),
@@ -139,7 +144,7 @@ test.describe("MEH-3021 — long product list collapses", () => {
       }),
     );
     const visible = seen.filter((r) => r.shown).length;
-    expect(visible, `visible rows on ${info.project.name}: ${JSON.stringify(seen)}`).toBe(isMobile ? MOBILE_ROWS : DESKTOP_ROWS);
+    expect(visible, `visible rows on ${info.project.name} at ${page.viewportSize()?.width}px: ${JSON.stringify(seen)}`).toBe(isMobile ? MOBILE_ROWS : DESKTOP_ROWS);
 
     const label = (await toggle.textContent())?.trim() ?? "";
     const m = label.match(/\d+/);
