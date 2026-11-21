@@ -295,7 +295,7 @@ async function pickCategory(page: Page, name: string): Promise<void> {
 }
 
 const licenceField = (page: Page) => page.getByTestId("register-category-license");
-/** The licence <input> by its <label> («מספר רישיון ייצור», with «(חובה)» appended when required) — register's optional field and the admin form's alike. */
+/** The licence <input> by its <label> («מספר רישיון ייצור», with «(מומלץ)» appended when a category needs one) — register's optional field and the admin form's alike. */
 const licenceInput = (page: Page) => page.getByLabel(/^מספר רישיון ייצור/);
 const optionalToggle = (page: Page) => page.getByRole("button", { name: "יש לי רישיון ייצור (אם רלוונטי) ↓" });
 const nextBtn = (page: Page) => page.getByTestId("register-category-next");
@@ -312,7 +312,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
 
   // MT:MEH-530:1 — a licence-required category → the field appears at once, with the Ministry hint.
   // MEH-2640 (#3960): the register label is «מספר רישיון ייצור (משרד הבריאות)» on both paths and lost
-  // its «(חובה)» suffix — on the register side, "required" is now the hint line, not the label.
+  // its «(מומלץ)» suffix — on the register side, "required" is now the hint line, not the label.
   test("«לחמים ואפייה» reveals «מספר רישיון ייצור (משרד הבריאות)» with the Ministry-of-Health hint", async ({ page }) => {
     await stubPublic(page);
     await gotoCategoryFrame(page);
@@ -484,16 +484,16 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     expect(stub.unstubbed, "an /api/* read reached the 404 catch-all — a stub is missing").toEqual([]);
   });
 
-  // MT:MEH-530:7 — «בשר» → the field inline with «(חובה)»; an empty save is a 422 the toast shows; a filled one posts the number.
-  test("«בשר» reveals the required licence field; the 422 for an empty one reaches the toast", async ({ page }) => {
+  // MT:MEH-530:7 — «בשר» → the field inline with «(מומלץ)»; MEH-3026: an empty one saves (no «מאומת» badge until a number is checked).
+  test("«בשר» reveals the recommended licence field; an empty one still saves", async ({ page }) => {
     const writes: Rec[] = [];
-    await stubAdmin(page, { writes, postStatus: 422 });
+    await stubAdmin(page, { writes, postStatus: 201 });
     await openNewProducer(page);
     await expect(page.getByRole("button", { name: "יש לי רישיון ייצור ↓" })).toBeVisible();
     await setChecked(page.getByRole("checkbox", { name: "בשר" }), true);
     const field = licenceInput(page);
     await expect(field).toBeVisible();
-    await expect(page.getByText("מספר רישיון ייצור (חובה)")).toBeVisible();
+    await expect(page.getByText("מספר רישיון ייצור (מומלץ)")).toBeVisible();
     await expect(page.getByText("ייצור מזון בקטגוריה זו דורש רישיון ייצור ממשרד הבריאות")).toBeVisible();
     await expect(page.getByRole("button", { name: "יש לי רישיון ייצור ↓" })).toHaveCount(0);
     await page.getByLabel("שם העסק").fill("קצביית הכפר");
@@ -502,8 +502,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     expect(writes[0].url).toBe("/admin/producers");
     expect((writes[0].body as { producer_license_number: string; category_ids: number[] }).producer_license_number).toBe("");
     expect((writes[0].body as { category_ids: number[] }).category_ids).toEqual([3]);
-    await expect(page.getByRole("status").getByText(LICENCE_422)).toBeVisible();
-    await expect(page, "a 422 keeps the admin on the form").toHaveURL(/\/admin\/producers\/new/);
+    await expect(page).toHaveURL(/\/admin(\?|$)/);
   });
 
   test("a filled licence on «דגים»-class categories posts the number and lands on the queue", async ({ page }) => {
@@ -530,7 +529,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     await expect(licenceInput(page)).toHaveValue("1234567");
     await expect(page.getByRole("button", { name: "יש לי רישיון ייצור ↓" })).toHaveCount(0);
     // «לחמים ואפייה» is licence-required, so the label carries the suffix too.
-    await expect(page.getByText("מספר רישיון ייצור (חובה)")).toBeVisible();
+    await expect(page.getByText("מספר רישיון ייצור (מומלץ)")).toBeVisible();
     await expect(page.getByRole("button", { name: "שמרו שינויים" })).toBeEnabled();
   });
 });
