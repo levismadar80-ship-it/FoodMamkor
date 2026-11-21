@@ -1539,6 +1539,46 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
   migration in `app/main.py` drops it automatically; a single restart
   cleans it up.
 
+### 2a. Outbox worker (MEH-3535) — one-time setup, per environment
+
+A second service from the same image that sends the queued emails
+(`email_outbox`) and runs the on-site order tick, so a web deploy or crash no
+longer drops them and the web service can later run more than one replica.
+Staging first, production after a day of clean staging logs.
+
+1. Railway → the environment → **+ New** → **GitHub Repo** → `FoodMamkor`,
+   same branch as the backend service (`staging` / `main`).
+2. Service name: `outbox-worker`.
+3. **Settings → Config-as-code → Railway config file**: `railway.worker.json`.
+   It builds the same `Dockerfile` and starts `python -u -m app.worker` — no
+   migrations (the backend's boot runs them) and no port.
+4. **Settings → Networking**: no public domain.
+5. **Variables**: all of the backend service's own variables (reference each
+   one, `${{FoodMamkor.NAME}}`, so a rotated key reaches both). The worker
+   loads the same `app.config`, so a production boot without `SECRET_KEY`
+   stops it exactly as it stops the web; email needs `RESEND_API_KEY` +
+   `EMAIL_FROM_ADDRESS`, the order tick the `WHATSAPP_*` ones and
+   `PRODUCT_ORDERS_ENABLED`. Not `PORT`, and not `OUTBOX_EXTERNAL_WORKER`.
+   **A worker without `RESEND_API_KEY` refuses to start** (log
+   `worker_refused_no_resend_key`, exit 1, so Railway shows it crash-looping):
+   a keyless dispatcher would leave every row to someone else, unseen. A web
+   process without the key leaves each row untouched and stops its batch, so
+   a dispatcher that has the key takes it at once. **Outside production also
+   set `ADMIN_EMAIL`** (the same reference): there every non-staff recipient is
+   redirected to it (MEH-3402), and without it the row is closed as `skipped`.
+6. Deploy. **Logs** should show `worker_started`, then `worker_tick` every
+   30 s (`ran: ["email_outbox"]`). A redeploy's SIGTERM ends the email batch
+   after the row in flight (one Resend call, at most 10 s); the order tick, if
+   running, finishes its own batch first.
+7. Only then, on the **backend** service: `OUTBOX_EXTERNAL_WORKER=true` and
+   redeploy. Its log says `[OUTBOX] OUTBOX_EXTERNAL_WORKER=true — the worker
+   service runs them`. Until this step both run the queue, which is safe
+   (`SKIP LOCKED`), just redundant.
+
+**Rollback:** remove `OUTBOX_EXTERNAL_WORKER` from the backend (the web
+scheduler takes the queue back on its next boot), then stop the worker.
+Never the other order: a moment with neither leaves emails waiting, not lost.
+
 ---
 
 ## 3. Vercel — Frontend (Next.js)

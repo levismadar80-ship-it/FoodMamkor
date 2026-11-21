@@ -23,6 +23,7 @@
 **טסטים**
 * `tests/test_meh3372_login_per_email_limit.py` · `tests/test_auth.py` · `tests/test_expansion_auth_jwt.py` · `tests/test_auth_email_notify.py`
 * `tests/test_meh3104_email_change_hardening.py` · `tests/test_meh3425_email_change_followup.py`
+* `tests/test_meh3591_missing_emails.py` — המייל «הסיסמה בחשבון שונתה» אחרי שינוי ואחרי איפוס (MEH-3591).
 * `tests/test_meh3305_admin_passkeys_routes.py` · `tests/test_meh3305_admin_passkeys_schema.py` · `frontend/__tests__/PasskeySignIn.test.jsx` · `frontend/__tests__/PasskeySettings.test.jsx`
 * `tests/test_producer_oauth.py` · `tests/test_oauth_verify_4xx.py` · `tests/test_meh2080_oauth_terms_consent.py`
 * `frontend/e2e/flows/30-login-journey-c.spec.ts` · `frontend/e2e/flows/manual/auth.spec.ts` · `frontend/e2e/flows/11-password-policy.spec.ts`

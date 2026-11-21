@@ -296,6 +296,9 @@ SEND_NAMES = frozenset(
         "send_email_result",
         "_send_email",
         "_send_notification_email",
+        # MEH-3535: queueing an email is sending it, later. Same flag rule.
+        "enqueue_email",
+        "_queue_mail",
     }
 )
 FLAG = "test_cause"
@@ -493,10 +496,15 @@ BUS, OWN, CON, AUTH, NONE = "business", "owner", "consumer", "auth", "none"
 # (file, enclosing function, callee) → (count, group, where test_cause comes from)
 PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     # --- admin.py: business moderation (owner mail + admin WhatsApp ping) ---
-    ("routers/admin_decisions.py", "approve_producer", "_send_notification_email"): (
+    # MEH-3535: queued inside _persist_approval's before_commit.
+    (
+        "routers/admin_decisions.py",
+        "_queue_approved_email",
+        "_send_notification_email",
+    ): (
         1,
         OWN,
-        "producer.is_test or owner.is_test (p_test)",
+        "producer.is_test or owner.is_test (test_cause)",
     ),
     ("routers/admin_decisions.py", "reject_producer", "_send_notification_email"): (
         1,
@@ -512,10 +520,10 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test",
     ),
-    ("routers/admin_decisions.py", "_send_notification_email", "send_email"): (
+    ("routers/admin_decisions.py", "_send_notification_email", "enqueue_email"): (
         1,
         OWN,
-        "wrapper param",
+        "wrapper param (MEH-3535: queued, sent by the outbox)",
     ),
     # MEH-3589: no admin WhatsApp echo of her own decisions (email only).
     # --- other routers ---
@@ -548,6 +556,27 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         NONE,
         "public contact form",
+    ),
+    # --- MEH-3535: the email outbox ---
+    ("routers/registrations.py", "register_for_event", "_queue_mail"): (
+        2,
+        CON,
+        "producer.is_test (visitor + owner emails)",
+    ),
+    ("routers/registrations.py", "register_for_experience", "_queue_mail"): (
+        2,
+        CON,
+        "host_test_cause(host) (visitor + owner emails)",
+    ),
+    ("routers/registrations.py", "_queue_mail", "enqueue_email"): (
+        1,
+        CON,
+        "wrapper param",
+    ),
+    ("services/email_outbox.py", "_handle", "send_email_result"): (
+        1,
+        NONE,
+        "a row caused by a test row is never queued (enqueue_email, MEH-2952)",
     ),
     # --- MEH-3296: the on-site order outbox (business and buyer alike) ---
     ("services/product_order_outbox.py", "_wa.send", "send_template_result"): (
@@ -643,6 +672,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         AUTH,
         "wrapper param ← user.is_test (users_me._queue_email_change_mails)",
+    ),
+    # MEH-3591: «הסיסמה בחשבון שונתה» after a change or a reset.
+    ("services/auth_emails.py", "send_password_changed_notice", "send_email"): (
+        1,
+        AUTH,
+        "wrapper param ← user.is_test (users_me.change_password, auth.reset_password)",
     ),
     # MEH-2974: the invite itself. There is no `users` row yet — the whole
     # point of the flow — so the only is_test signal available is the
@@ -913,6 +948,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_participant_funded",
         "_send_email",
     ): (1, CON, "wrapper param ← gb.producer.is_test"),
+    # MEH-3591: the join confirmation. A test business's group is 404 to the
+    # public, so the joiner's own flag is the one that can be set here.
+    (
+        "services/group_buy_notifications.py",
+        "notify_participant_joined",
+        "_send_email",
+    ): (1, CON, "wrapper param ← user.is_test (group_buys._confirm_join)"),
     (
         "services/group_buy_notifications.py",
         "notify_participant_cancelled",
