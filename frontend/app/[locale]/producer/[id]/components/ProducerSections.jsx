@@ -529,7 +529,8 @@ export default function ProducerSections({
                   : null;
                 // MEH-1305 F: numeric prices go through the canonical
                 // formatPriceRange (MEH-1140) and are bidi-isolated; a free-text
-                // price_range is DATA (MEH-1140 — never reformatted) and renders
+                // price_range is DATA (MEH-1140 — never reformatted, except a
+                // bare number or range, MEH-3076 priceLabelText) and renders
                 // in the natural direction, since forcing dir="ltr" corrupts a
                 // Hebrew-bearing label like "מ-30₪" / "30₪ לחבילה".
                 const numericPrice =

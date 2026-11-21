@@ -344,7 +344,8 @@ export default function ProductSheet({
   const dietKeys = productDietKeys(product);
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
-  // free-text price_range is DATA (MEH-1140 — never reformatted) and renders
+  // free-text price_range is DATA (MEH-1140 — never reformatted, except a
+  // bare number or range, MEH-3076 priceLabelText) and renders
   // in the natural direction, since forcing dir="ltr" corrupts a
   // Hebrew-bearing label like "מ-30₪" / "30₪ לחבילה".
   const numericPrice =

@@ -149,7 +149,8 @@ export function normalizePhone(phone) {
  * dir="ltr" wrapping stays at the call site where the surface already does it
  * (the ₪ is a bidi European Terminator, so "35₪" holds together either way).
  * Free-text DB labels (producers.price_range / products.price_range) are DATA, not
- * formatting — never routed through here.
+ * formatting — never routed through here, except a label that is only a number
+ * or a number range, which priceLabelText() hands over (MEH-3076).
  *
  * @param {number|string|null|undefined} amount
  * @param {{ from?: boolean, unit?: string|null }} [opts]
