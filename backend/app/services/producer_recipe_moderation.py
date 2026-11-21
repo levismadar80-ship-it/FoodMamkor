@@ -5,11 +5,11 @@ Purpose:  Claude Haiku pre-check on producer-submitted recipes before they
 Touches:  Anthropic API (Haiku); no DB writes (callers persist the verdict).
 Does NOT: enforce ownership or rate-limit — that lives in the router.
 Related:  app/services/experience_moderation.py (sibling pattern);
-          app/services/moderation_common.py (shared client + call, MEH-3465);
+          app/services/moderation_common.py (shared client + call, MEH-3619);
           app/routers/producer_recipes.py (caller).
-History:  MEH-589 (creation); MEH-3465 (client, parser and call moved to moderation_common).
+History:  MEH-589 (creation); MEH-3619 (client, parser and call moved to moderation_common).
 
-REUSES: experience_moderation.py + moderation_common.py (MEH-3465) — same APPROVED / FLAGGED /
+REUSES: experience_moderation.py + moderation_common.py (MEH-3619) — same APPROVED / FLAGGED /
 REJECTED enum, same fail-open semantics, same JSON-only prompt
 contract. Differs only in the prompt's red/green flags (recipes
 vs workshops) and in the normalized payload keys.
@@ -53,7 +53,7 @@ _client: Any = None
 
 
 def _get_client() -> Any:
-    # MEH-3465: the construction itself is moderation_common.make_anthropic_client.
+    # MEH-3619: the construction itself is moderation_common.make_anthropic_client.
     global _client
     if _client is None:
         _client = make_anthropic_client(_TAG)
@@ -112,7 +112,7 @@ REJECTED אם:
     return system, user_content
 
 
-# MEH-3465: kept as a module name; tests call it here.
+# MEH-3619: kept as a module name; tests call it here.
 _parse_response_text = parse_verdict_json
 
 

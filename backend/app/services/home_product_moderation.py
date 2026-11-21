@@ -45,7 +45,7 @@ _client: Any = None
 
 
 def _get_client() -> Any:
-    # MEH-3465: the construction (with the locked http_client=httpx.Client())
+    # MEH-3619: the construction (with the locked http_client=httpx.Client())
     # is moderation_common.make_anthropic_client.
     global _client
     if _client is None:
@@ -95,7 +95,7 @@ REJECTED אם:
 }}"""
 
 
-# MEH-3465: kept as module names; tests call them here.
+# MEH-3619: kept as module names; tests call them here.
 _parse_response_text = parse_verdict_json
 
 
@@ -131,9 +131,8 @@ def validate_home_product(listing: dict[str, Any]) -> dict[str, Any]:
             max_tokens=300,
             messages=[{"role": "user", "content": _build_prompt(payload)}],
         )
-        verdict = verdict_from_text(first_text(message))
+        verdict = verdict_from_text(first_text(message), _TAG)
         if verdict is None:
-            logger.warning("[moderation] unexpected status → APPROVED")
             return approved()
         return verdict
     except Exception as e:  # noqa: BLE001 — fail open, don't block users on infra failures

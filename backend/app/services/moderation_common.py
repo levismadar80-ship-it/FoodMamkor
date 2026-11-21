@@ -14,7 +14,7 @@ Related:  services/experience_moderation.py, services/producer_recipe_moderation
           services/home_product_moderation.py (callers);
           services/moderation_fail_open.py (classify_failure);
           tests/test_moderation_common.py.
-History:  MEH-3465 (creation: three copies of the same client, parser and
+History:  MEH-3619 (creation: three copies of the same client, parser and
           call flow, 22+12+4 lines in scripts/checks/clone-baseline.txt).
 """
 
@@ -95,18 +95,23 @@ def first_text(message: Any) -> str:
     """The first text block of a reply; raises when there is none."""
     for block in message.content:
         if getattr(block, "type", None) == "text":
+            # The first text block decides, as before: an empty one is an empty
+            # reply ("error"), not a JSON parse failure ("unparseable").
+            if not block.text:
+                break
             return cast(str, block.text)
     raise ValueError("empty response from Claude")
 
 
-def verdict_from_text(raw: str) -> dict[str, Any] | None:
-    """The verdict in a reply, or None when its status is not one of ours."""
+def verdict_from_text(raw: str, tag: str) -> dict[str, Any] | None:
+    """The verdict in a reply, or None (logged) when its status is not one of ours."""
     parsed = parse_verdict_json(raw)
     # MEH-2390: valid JSON that is not an object is a bad status, not a crash.
     if not isinstance(parsed, dict):
         parsed = {}
     status = str(parsed.get("status", "")).upper()
     if status not in VALID_STATUSES:
+        logger.warning(f"{tag} unexpected status %r → APPROVED", status)
         return None
     return {
         "status": status,
@@ -144,9 +149,8 @@ def run_fast_verdict(
             logger.warning(f"{tag} model refused → FLAGGED")
             return {"status": "FLAGGED", "reason": REFUSAL_REASON, "suggestion": None}
         truncated = getattr(message, "stop_reason", None) == "max_tokens"
-        verdict = verdict_from_text(first_text(message))
+        verdict = verdict_from_text(first_text(message), tag)
         if verdict is None:
-            logger.warning(f"{tag} unexpected status → APPROVED")
             report(surface, "truncated" if truncated else "bad_status")
             return approved()
         return verdict

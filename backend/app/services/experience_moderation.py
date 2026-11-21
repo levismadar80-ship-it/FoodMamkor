@@ -59,7 +59,7 @@ _client: Any = None
 
 
 def _get_client() -> Any:
-    # MEH-3465: the construction itself is moderation_common.make_anthropic_client.
+    # MEH-3619: the construction itself is moderation_common.make_anthropic_client.
     global _client
     if _client is None:
         _client = make_anthropic_client(_TAG)
@@ -127,7 +127,7 @@ REJECTED אם:
     return system, user_content
 
 
-# MEH-3465: kept as module names; tests call them here.
+# MEH-3619: kept as module names; tests call them here.
 _parse_response_text = parse_verdict_json
 
 

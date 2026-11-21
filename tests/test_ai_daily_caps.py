@@ -63,7 +63,7 @@ NOT_GENERATION = {
     # daily ceiling is MEH-3498.
     "app.services.approved_edit_moderation": "moderation on save",
     "app.services.home_product_moderation": "moderation on save",
-    # MEH-3465: the call experience_moderation and producer_recipe_moderation
+    # MEH-3619: the call experience_moderation and producer_recipe_moderation
     # share (they no longer call the model themselves).
     "app.services.moderation_common": "moderation on save (shared helper)",
     "app.services.producer_risk": "moderation on save",

@@ -64,10 +64,10 @@ anthropic.Anthropic(
 )
 ```
 
-Call sites (enumerated 2026-08-03, MEH-1861; three moderation copies became one helper 21/11, MEH-3465; `tests/test_anthropic_http_client.py` holds the full set):
+Call sites (enumerated 2026-08-03, MEH-1861; three moderation copies became one helper 21/11, MEH-3619; `tests/test_anthropic_http_client.py` holds the full set):
 `routers/chat.py:173`, `routers/reviews.py:60`,
 `services/moderation_common.py` (`make_anthropic_client`, shared by the
-home-product, experience and recipe moderation services since MEH-3465),
+home-product, experience and recipe moderation services since MEH-3619),
 `services/bio_generator.py:39`.
 All comply. Don't "clean up" the
 kwarg — AI features silently break (the error is caught by the fail-open

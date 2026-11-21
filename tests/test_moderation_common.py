@@ -1,4 +1,4 @@
-"""moderation_common — the shared client, parser and fast-model call (MEH-3465).
+"""moderation_common — the shared client, parser and fast-model call (MEH-3619).
 
 The three moderation services used to carry their own copies; these tests pin
 the shared behaviour once, and check each service still reaches it.
@@ -59,11 +59,11 @@ def test_safe_decimal() -> None:
 
 
 def test_verdict_from_text() -> None:
-    assert mc.verdict_from_text('{"status":"flagged","reason":"r"}') == {
+    assert mc.verdict_from_text('{"status":"flagged","reason":"r"}', "[t]") == {
         "status": "FLAGGED", "reason": "r", "suggestion": None,
     }
-    assert mc.verdict_from_text('{"status":"WAT"}') is None
-    assert mc.verdict_from_text("[1, 2]") is None  # MEH-2390: not an object
+    assert mc.verdict_from_text('{"status":"WAT"}', "[t]") is None
+    assert mc.verdict_from_text("[1, 2]", "[t]") is None  # MEH-2390: not an object
 
 
 def test_run_returns_the_model_verdict_and_sends_the_prompt() -> None:
@@ -83,6 +83,7 @@ def test_run_returns_the_model_verdict_and_sends_the_prompt() -> None:
         (_Msg("max_tokens", [_Block('{"status":"HUH"}')]), None, "truncated"),
         (_Msg("end_turn", [_Block("not json")]), None, "unparseable"),
         (_Msg("end_turn", []), None, "error"),
+        (_Msg("end_turn", [_Block("")]), None, "error"),
         (None, RuntimeError("boom"), "error"),
     ],
 )
@@ -137,3 +138,33 @@ def test_each_service_reaches_the_shared_parser(monkeypatch, modname, fn) -> Non
     monkeypatch.setattr(mod, "_get_client", lambda: client)
     assert getattr(mod, fn)({"title": "t", "description": "d"})["status"] == "REJECTED"
     assert mod._parse_response_text is mc.parse_verdict_json
+
+
+@pytest.mark.parametrize(
+    ("modname", "fn", "surface"),
+    [
+        ("app.services.experience_moderation", "validate_experience", "experience"),
+        ("app.services.producer_recipe_moderation", "validate_producer_recipe", "recipe"),
+    ],
+)
+def test_fast_services_report_their_own_surface(monkeypatch, modname, fn, surface) -> None:
+    import importlib
+
+    mod = importlib.import_module(modname)
+    seen: list[tuple[str, str]] = []
+    monkeypatch.setattr(mod, "_get_client", lambda: _Client(exc=RuntimeError("x")))
+    monkeypatch.setattr(mod, "report_fail_open", lambda s, r: seen.append((s, r)))
+    assert getattr(mod, fn)({"title": "t"})["status"] == "APPROVED"
+    assert seen == [(surface, "error")]
+
+
+def test_home_product_keeps_its_own_call_shape(monkeypatch) -> None:
+    from app.services import home_product_moderation as mod
+
+    client = _Client(_Msg("end_turn", [_Block('{"status":"APPROVED"}')]))
+    monkeypatch.setattr(mod, "_get_client", lambda: client)
+    mod.validate_home_product({"title": "t", "price": "5"})
+    call = client.calls[0]
+    assert call["model"] == mod.settings.anthropic_model
+    assert call["max_tokens"] == 300
+    assert "system" not in call
