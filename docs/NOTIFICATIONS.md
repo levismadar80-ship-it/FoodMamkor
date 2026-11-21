@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-88 send sites · 85 on a single channel.
+93 send sites · 90 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -68,12 +68,17 @@
 | `services/experience_notifications.py` | `notify_host_changes_requested` | מייל | בעלת העסק |
 | `services/experience_notifications.py` | `notify_host_rejected` | מייל | בעלת העסק |
 | `services/group_buy_goal_flap.py` | `send_below_goal_emails` | מייל | לקוחה |
+| `services/group_buy_notifications.py` | `notify_allergens_changed` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_cancelled` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_cancelled_delisted` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_expired` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_funded` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_participant_joined` | מייל | לקוחה |
+| `services/group_buy_notifications.py` | `notify_pickup_changed` | מייל | לקוחה |
+| `services/group_buy_notifications.py` | `notify_pickup_reminder` | מייל | לקוחה |
 | `services/group_buy_notifications.py` | `notify_producer_funded` | מייל | בעלת העסק |
+| `services/group_buy_notifications.py` | `notify_producer_late_joiner` | מייל | בעלת העסק |
+| `services/group_buy_notifications.py` | `notify_waitlist_place` | מייל | לקוחה |
 | `services/job_staleness.py` | `_alert` | מייל | בלי שורת עסק |
 | `services/onboarding_followup.py` | `send_due_followups` | מייל | בעלת העסק |
 | `services/owner_detach.py` | `send_owner_detached_email` | מייל | בעלת העסק |
