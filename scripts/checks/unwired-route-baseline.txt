@@ -47,7 +47,6 @@ GET	/health/liveness	health
 GET	/health/readiness	health
 #
 # --- real gaps: built on the server, no screen yet. Each has its card.
-GET	/producers/me/billing/summary	pending-ui	MEH-3194
 POST	/producers/me/availability-confirm	pending-ui	MEH-2697
 GET	/admin/producers/{_}/risk-score	admin-no-ui	MEH-3524
 GET	/admin/license-expiry-reminders	admin-no-ui	MEH-3524

@@ -40,9 +40,28 @@ class AvailabilityValidationError(ValueError):
     a `kind` so the router can map it to the right HTTP status (400 for an
     invalid value, 422 for a semantic/return-date violation)."""
 
-    def __init__(self, message: str, *, kind: str) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        kind: str,
+        code: str | None = None,
+        params: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(message)
         self.kind = kind
+        self.code = code
+        self.params = params
+
+    def detail(self) -> str | dict[str, object]:
+        """The HTTP `detail` for this error.
+
+        MEH-1943: an error that carries a `code` answers `{code, message,
+        params}`; one that does not keeps its plain Hebrew sentence.
+        """
+        if self.code is None:
+            return str(self)
+        return {"code": self.code, "message": str(self), "params": self.params or {}}
 
 
 def validate_transition(current_state: str | None, new_state: str) -> None:
@@ -63,9 +82,13 @@ def validate_transition(current_state: str | None, new_state: str) -> None:
         # drift) — treat as no constraint rather than locking them out.
         return
     if new_state not in ALLOWED_TRANSITIONS[current_state]:
+        # MEH-1943: the two states are internal enum values — they go to
+        # params, never into the sentence the business owner reads.
         raise AvailabilityValidationError(
-            f"מעבר לא חוקי מ-{current_state} ל-{new_state}",
+            "אי אפשר לעבור למצב הזה עכשיו",
             kind="value",
+            code="invalid_availability_transition",
+            params={"from": current_state, "to": new_state},
         )
 
 
