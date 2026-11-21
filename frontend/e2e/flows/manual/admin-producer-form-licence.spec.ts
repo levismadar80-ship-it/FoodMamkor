@@ -100,7 +100,7 @@ const CATEGORIES = [
 ];
 const CITIES = ["תל אביב-יפו", "תל מונד", "תל שבע", "חיפה", "ירושלים"];
 const LICENCE_422 = "מספר רישיון ייצור חובה לקטגוריה זו"; // services/license_validation.py:27 (MEH-2670: renamed to match the UI)
-const LICENCE_REQUIRED_HE = "מספר רישיון ייצור חובה לקטגוריה זו"; // he.json license_required — the CLIENT gate on CATEGORY (MEH-2640 renamed יצרן → ייצור; MEH-2670 aligned the server string)
+const LICENCE_REQUIRED_HE = "כתבו את מספר הרישיון, או סמנו «עדיין אין לי מספר רישיון»"; // he.json license_required — the CLIENT gate on CATEGORY (MEH-2640 renamed יצרן → ייצור; MEH-2670 aligned the server string)
 
 type Row = Record<string, unknown> & { id: number; name: string; status: string };
 function row(over: Partial<Row> = {}): Row {
@@ -312,7 +312,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
 
   // MT:MEH-530:1 — a licence-required category → the field appears at once, with the Ministry hint.
   // MEH-2640 (#3960): the register label is «מספר רישיון ייצור (משרד הבריאות)» on both paths and lost
-  // its «(מומלץ)» suffix — on the register side, "required" is now the hint line, not the label.
+  // its «(חובה)» suffix — on the register side, "required" is now the hint line, not the label.
   test("«לחמים ואפייה» reveals «מספר רישיון ייצור (משרד הבריאות)» with the Ministry-of-Health hint", async ({ page }) => {
     await stubPublic(page);
     await gotoCategoryFrame(page);
@@ -328,7 +328,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
   });
 
   // MT:MEH-530:2 — empty licence on a required category: blocked with the red error. D1: client gate, no request.
-  test("an empty licence on «לחמים ואפייה» blocks «הבא» with «מספר רישיון ייצור חובה לקטגוריה זו»", async ({ page }) => {
+  test("an empty licence on «לחמים ואפייה» stops at «הבא» and asks for the number or the «עדיין אין לי מספר רישיון» tick", async ({ page }) => {
     const stub = await stubPublic(page);
     await gotoCategoryFrame(page);
     await pickCategory(page, "לחמים ואפייה");

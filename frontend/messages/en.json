@@ -342,7 +342,7 @@
           "phone_label": "WhatsApp phone",
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
           "external_order_form_label": "Your online shop or order form (link)",
-          "license_required_label": "Producer license number (required)",
+          "license_required_label": "Producer license number (Ministry of Health)",
           "license_required_hint": "{count, plural, one {The category {names} requires a production licence from the Ministry of Health} other {The categories {names} require a production licence from the Ministry of Health}}",
           "license_names_last": "{rest} and {last}",
           "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it in your dashboard. Once you add the number, we can check it and give your business the “verified” badge.",
@@ -393,7 +393,7 @@
           "declaration_required": "Please confirm the declaration before joining",
           "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits",
-          "license_required": "A producer license number is required for this category",
+          "license_required": "Enter the licence number, or tick “I don't have a license number yet”",
           "cross_step_notice": "Some details are missing — we took you to the field",
           "cross_step_summary": "A few details are missing — we took you to the first one:"
         },
@@ -668,9 +668,9 @@
     },
     "recommend": {
       "title": "Know a business that belongs here?",
-      "description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence.",
+      "description": "Tell us about it. We check every recommendation, reach out to the business, and list it only after we have checked the details.",
       "og_title": "Know a business that belongs here?",
-      "og_description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence."
+      "og_description": "Tell us about it. We check every recommendation, reach out to the business, and list it only after we have checked the details."
     },
     "forgot_password": {
       "title": "Reset your password",
