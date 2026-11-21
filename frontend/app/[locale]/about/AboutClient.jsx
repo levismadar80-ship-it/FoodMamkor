@@ -585,7 +585,7 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tBadges("h1")} as="h2" />
           <p className="font-body-md text-fg-muted text-base leading-relaxed">{tBadges("intro")}</p>
-          <ul data-testid="about-badge-faces" aria-hidden="true" className="mt-4 flex flex-wrap items-center gap-2">
+          <ul data-testid="about-badge-faces" className="mt-4 flex flex-wrap items-center gap-2">
             {SHOW_VERIFICATION && (
               <li>
                 <VerifiedChip label={tTier("verified_label")} />
