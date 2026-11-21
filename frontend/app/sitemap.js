@@ -42,6 +42,8 @@ function urlForLocale(path, locale) {
 // MEH-3638: a sitemap <loc> must be URL-escaped (sitemaps.org; Google reads
 // raw UTF-8 as an invalid URL). Organizer slugs are Hebrew, and a path may
 // arrive already encoded — decode first so "%D7%A4" is not escaped twice.
+// decodeURI leaves an escaped reserved character (%3F, %2F) as is, so one
+// would be escaped twice; no slug can carry one (lib/slug.js SLUG_SHAPE).
 function encodePath(path) {
   try {
     return encodeURI(decodeURI(path));
