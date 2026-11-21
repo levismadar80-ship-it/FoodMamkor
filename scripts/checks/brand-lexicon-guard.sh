@@ -436,14 +436,19 @@ PYF
   # Cases 15-19 (MEH-3655). Each one is green on the guard after the change
   # and red on the guard before it: run `--self-test` on the parent of this
   # commit to see 14/19.
-  # Cases 20-23 (MEH-3665). Anchored to he.json `guides.business_story.body.b34`
-  # («פרטים טכניים (36 שעות תסיסה) → אמינות») and `producer.detail.back_label`.
+  # Cases 20-23 (MEH-3665). Case 20 is the text of he.json
+  # `guides.business_story.body.b34` as it read before MEH-3665 turned its arrow
+  # to «←» («פרטים טכניים (36 שעות תסיסה) → אמינות»); case 21 is the shape of
+  # `producer.detail.back_label`. The English arrow sits in its own file, so
+  # case 22 can fail on its own and is not implied by case 21's count.
   cat > "$tmp/frontend/components/Arrow.jsx" <<'AR'
 export const A = () => <li>פרטים טכניים (36 שעות תסיסה) → אמינות</li>;
 export const B = () => <a>→ חזרה</a>;
-export const C = () => <a>Next →</a>;
 export const D = () => <p>שלחו לנו אימייל</p>;
 AR
+  cat > "$tmp/frontend/components/EnArrow.jsx" <<'EN'
+export const C = () => <a>Next →</a>;
+EN
   cat > "$tmp/frontend/components/Slash.jsx" <<'SL'
 export const A = () => <input placeholder="ספר/י מה הבעיה" />;
 export const B = () => <label>שם איש/אשת הקשר</label>;
@@ -534,7 +539,7 @@ PY2
   [ "$(printf '%s\n' "$got" | grep -cF $'Arrow.jsx\tforward-arrow')" -eq 1 ] \
     && { pass=$((pass+1)); echo "  ok 21  a leading «→ חזרה» is a back arrow, not a hit"; } \
     || echo "  FAIL 21  «→ חזרה» was flagged, or the count is off"
-  _hasnt $'Arrow.jsx\tforward-arrow\tt →' \
+  _hasnt $'frontend/components/EnArrow.jsx\tforward-arrow' \
     && { pass=$((pass+1)); echo "  ok 22  an English «Next →» (LTR) is not a hit"; } \
     || echo "  FAIL 22  an English «Next →» was flagged"
   _has $'frontend/components/Arrow.jsx\temail-term\tאימייל' \

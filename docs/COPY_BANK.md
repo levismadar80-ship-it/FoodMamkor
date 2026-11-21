@@ -406,7 +406,7 @@
 ### Newsletter input placeholder
 | Field | Value |
 |---|---|
-| **Current** | `האימייל שלך, בבקשה` |
+| **Current** | `המייל שלך, בבקשה` |
 | **i18n key** | `nav.footer.newsletter_placeholder` |
 | **Status** | ✅ |
 
