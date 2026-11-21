@@ -665,4 +665,6 @@ export const LocationInputSchema = z.object({
   pickup_days: z.array(z.string()).max(14).optional(),
   order_cutoff_day: z.string().nullable().optional(),
   order_cutoff_time: z.string().nullable().optional(),
+  // MEH-3593: the server enforces ≥ 3 letters and one line (Hebrew 422).
+  pickup_note: z.string().trim().max(200).nullable().optional(),
 });

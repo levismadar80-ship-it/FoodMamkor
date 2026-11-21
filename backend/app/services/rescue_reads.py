@@ -249,7 +249,7 @@ def offer_detail(
     out["lng"] = location.lng if exact else None
     out["producer"]["avg_rating"] = producer.avg_rating or None
     out["producer"]["reviews_count"] = producer.reviews_count or 0
-    out["pickup_note"] = row.pickup_note if row else None  # MEH-3593
+    out["pickup_note"] = location.pickup_note  # MEH-3593: the point's own
     out["producer"]["short_description"] = (producer.short_description or "").strip() or None
     return out
 
@@ -513,6 +513,5 @@ def typical_items(db: Session, *, producer_id: Any) -> dict[str, Any]:
         "producer_id": producer_id,
         "items": list(row.items or []) if row else [],
         "allergens": row.allergens if row else None,
-        "pickup_note": row.pickup_note if row else None,  # MEH-3593
         "updated_at": row.updated_at if row else utc_now(),
     }

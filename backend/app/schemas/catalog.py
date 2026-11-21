@@ -416,6 +416,8 @@ class ProducerLocationOut(BaseModel):
     pickup_days: list[str] | None = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; None = none written.
+    pickup_note: str | None = None
     # Field name matches the ORM attribute (from_attributes reads it directly);
     # serialization_alias emits the epic's contract key `precision` on the wire
     # (FastAPI dumps response models with by_alias=True).
@@ -447,6 +449,19 @@ def _optional_label_letters(value: str | None) -> str | None:
     return _min_letters_validator(value)
 
 
+# MEH-3593: «הוראות איסוף» stays a short note under the address, not a page.
+PICKUP_NOTE_MAX = 200
+
+
+def _pickup_note(value: str | None) -> str | None:
+    # MEH-3593: empty or whitespace = cleared (NULL). One line: a newline in a
+    # plain-text email could fake a second «הקוד שלכם» line, so every run of
+    # whitespace becomes one space. MEH-555: shown to buyers → ≥ 3 letters.
+    if value is None or not value.strip():
+        return None
+    return _min_letters_validator(" ".join(value.split()))
+
+
 class ProducerLocationCreate(BaseModel):
     """MEH-1421 (MEH-1388 chunk 4a): owner-supplied physical presence point —
     the write side of ProducerLocationOut (schemas.py:414). `kind`/`precision`
@@ -475,11 +490,18 @@ class ProducerLocationCreate(BaseModel):
     pickup_days: DeliveryDaysField = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; "" clears it.
+    pickup_note: str | None = Field(None, max_length=PICKUP_NOTE_MAX)
 
     @field_validator("label")
     @classmethod
     def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
+
+    @field_validator("pickup_note")
+    @classmethod
+    def _validate_pickup_note(cls, v: str | None) -> str | None:
+        return _pickup_note(v)
 
     @field_validator("pickup_days")
     @classmethod
@@ -527,11 +549,18 @@ class ProducerLocationUpdate(BaseModel):
     pickup_days: DeliveryDaysField = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; "" clears it.
+    pickup_note: str | None = Field(None, max_length=PICKUP_NOTE_MAX)
 
     @field_validator("label")
     @classmethod
     def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
+
+    @field_validator("pickup_note")
+    @classmethod
+    def _validate_pickup_note(cls, v: str | None) -> str | None:
+        return _pickup_note(v)
 
     @field_validator("pickup_days")
     @classmethod
@@ -604,6 +633,8 @@ class ProducerLocationOwnerOut(BaseModel):
     pickup_days: list[str] | None = None
     order_cutoff_day: str | None = None
     order_cutoff_time: str | None = None
+    # MEH-3593: «הוראות איסוף» for this point; None = none written.
+    pickup_note: str | None = None
 
     model_config = {"from_attributes": True}
 

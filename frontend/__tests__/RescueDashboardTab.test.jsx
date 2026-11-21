@@ -361,7 +361,6 @@ describe("the «בדרך כלל» editor", () => {
       expect(put).toHaveBeenCalledWith("/producers/me/rescue/typical-items", {
         items: ["לחם", "חלה", "בורקס"],
         allergens: [],
-        pickup_note: "",
       }),
     );
   });
@@ -386,30 +385,6 @@ describe("the «בדרך כלל» editor", () => {
     // NOT omitted and NOT a claim of "no allergens" — the server turns [] into
     // NULL, which is "nothing declared". See backend/app/allergens.py.
     await waitFor(() => expect(put.mock.calls.at(-1)[1].allergens).toEqual([]));
-  });
-
-  it("MEH-3593: loads the stored pickup note and saves an edited one", async () => {
-    get.mockImplementation((url) =>
-      url.includes("typical-items")
-        ? Promise.resolve({ data: { items: ["לחם"], allergens: null, pickup_note: "דלת אחורית" } })
-        : Promise.resolve({ data: [] }),
-    );
-    render(<RescueTab />);
-    const note = await screen.findByTestId("rescue-pickup-note-input");
-    await waitFor(() => expect(note.value).toBe("דלת אחורית"));
-    fireEvent.change(note, { target: { value: "נכנסים מהחצר" } });
-    fireEvent.click(screen.getByTestId("rescue-items-save"));
-    await waitFor(() => expect(put.mock.calls.at(-1)[1].pickup_note).toBe("נכנסים מהחצר"));
-  });
-
-  it("MEH-3593: a failed read does not send an empty note over the stored one", async () => {
-    get.mockImplementation((url) =>
-      url.includes("typical-items") ? Promise.reject(new Error("down")) : Promise.resolve({ data: [] }),
-    );
-    render(<RescueTab />);
-    fireEvent.click(await screen.findByTestId("rescue-items-save"));
-    await waitFor(() => expect(put).toHaveBeenCalled());
-    expect(put.mock.calls.at(-1)[1]).not.toHaveProperty("pickup_note");
   });
 
   it("MEH-2752: unticking clears a previous declaration", async () => {
@@ -931,5 +906,17 @@ describe("cancelling today's bag", () => {
     fireEvent.click(screen.getByTestId("rescue-offer-cancel-yes"));
     const box = await screen.findByTestId("rescue-offer-cancel-box");
     await waitFor(() => expect(box.textContent).toContain("זמן האיסוף חלף"));
+  });
+});
+
+// MEH-3593: the note moved to the pickup point; the rescue tab points there.
+describe("pickup instructions pointer (MEH-3593)", () => {
+  it("links to the locations editor and sends no note with the items", async () => {
+    render(<RescueTab />);
+    const pointer = await screen.findByTestId("rescue-pickup-note-pointer");
+    expect(pointer).toBeTruthy();
+    fireEvent.click(await screen.findByTestId("rescue-items-save"));
+    await waitFor(() => expect(put).toHaveBeenCalled());
+    expect(put.mock.calls.at(-1)[1]).not.toHaveProperty("pickup_note");
   });
 });

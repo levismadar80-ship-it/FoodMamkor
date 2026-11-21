@@ -323,11 +323,6 @@ class RescueTypicalItems(Base):
     # ones above are grandfathered in backend/mypy-baseline.txt; a NEW one is
     # annotated rather than added to the baseline.
     allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
-    # MEH-3593: «הוראות איסוף» — how to collect («נכנסים מהכניסה האחורית»).
-    # Said once like the items above, shown on every bag's page. NULL = none
-    # written; the schema strips and stores "" as NULL, so the page never
-    # renders an empty line.
-    pickup_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

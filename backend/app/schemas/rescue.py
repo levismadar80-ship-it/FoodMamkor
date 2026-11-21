@@ -30,10 +30,6 @@ from app.models.models import (
     RESCUE_MAX_QTY_PER_OFFER,
     RESCUE_MAX_QTY_PER_ORDER,
 )
-from app.schemas.schemas import _min_letters_validator
-
-# MEH-3593: «הוראות איסוף» stays a short note under the address, not a page.
-RESCUE_PICKUP_NOTE_MAX = 200
 
 # The wire-level status vocabularies. Spelled as Literals rather than built
 # from the model tuples because Pydantic needs them at class-definition time,
@@ -206,21 +202,6 @@ class RescueTypicalItemsIn(BaseModel):
         except ValueError as exc:
             raise ValueError(str(exc)) from exc
 
-    # MEH-3593: «הוראות איסוף». Left out of the body = unchanged (the service
-    # reads model_fields_set), so an older client that sends only items and
-    # allergens cannot wipe it. Empty or whitespace = cleared, stored as NULL.
-    pickup_note: str | None = Field(None, max_length=RESCUE_PICKUP_NOTE_MAX)
-
-    @field_validator("pickup_note")
-    @classmethod
-    def _note_has_letters(cls, value: str | None) -> str | None:
-        # MEH-555: a note shown to buyers needs at least 3 letters.
-        if value is None or not value.strip():
-            return None
-        # One line: a newline in the plain-text email could fake a second
-        # «הקוד שלכם» line, so every run of whitespace becomes one space.
-        return _min_letters_validator(" ".join(value.split()))
-
 
 class RescueTypicalItemsOut(BaseModel):
     producer_id: UUID
@@ -228,7 +209,6 @@ class RescueTypicalItemsOut(BaseModel):
     # None means the business declared nothing. The UI must say that in words
     # rather than render an empty list, which would read as "no allergens".
     allergens: list[str] | None = None
-    pickup_note: str | None = None
     updated_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
@@ -311,7 +291,8 @@ class RescueOfferDetailOut(RescueOfferPublicOut):
     producer: RescueProducerDetail
     lat: float | None = None
     lng: float | None = None
-    # MEH-3593: the business's «הוראות איסוף»; None = it wrote none.
+    # MEH-3593: «הוראות איסוף» of the bag's pickup point
+    # (producer_locations.pickup_note); None = none written.
     pickup_note: str | None = None
 
 

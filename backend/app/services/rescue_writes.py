@@ -596,19 +596,14 @@ def save_typical_items(
     # Already normalised by the schema validator: None / [] -> None, unknown
     # code -> 422 before we get here. Assigning it straight through keeps ONE
     # owner for what a valid declaration is (app/allergens.py).
-    # MEH-3593: a body without pickup_note leaves the stored note alone.
-    note_sent = "pickup_note" in body.model_fields_set
     if row:
         row.items = cleaned  # type: ignore[assignment]
         row.allergens = body.allergens  # type: ignore[assignment]
-        if note_sent:
-            row.pickup_note = body.pickup_note  # type: ignore[assignment]
     else:
         row = RescueTypicalItems(
             producer_id=producer_id,
             items=cleaned,
             allergens=body.allergens,
-            pickup_note=body.pickup_note,
         )
         db.add(row)
     db.commit()
@@ -619,6 +614,5 @@ def save_typical_items(
         # Straight from the row, never `or []`: NULL has to survive the
         # response or the caller cannot tell "not declared" from "none".
         "allergens": row.allergens,
-        "pickup_note": row.pickup_note,  # MEH-3593
         "updated_at": row.updated_at,
     }
