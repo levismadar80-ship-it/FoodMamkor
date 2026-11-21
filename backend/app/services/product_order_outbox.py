@@ -15,7 +15,8 @@ Does NOT: change an order's status (product_order_state / product_order_sweeper)
 Related:  app/services/product_order_state.py (calls on_status on every move),
           app/services/product_order_sweeper.py (expiry),
           app/startup.py (the two scheduler jobs)
-History:  MEH-3296 (creation; stage 3 of MEH-3216)
+History:  MEH-3296 (creation; stage 3 of MEH-3216); MEH-3624 (the «איך היה?»
+          email a day after the hand-over)
 
 Delivery is at least once: a row is locked (SKIP LOCKED), sent, marked and
 committed one at a time, so a crash between the send and the commit sends
@@ -33,6 +34,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.models.engagement import ProducerReview
 from app.models.models import Producer, User
 from app.models.product_orders import (
     ProducerOrderSettings,
@@ -42,6 +44,7 @@ from app.models.product_orders import (
 from app.services import email as email_service
 from app.services import whatsapp
 from app.services import whatsapp_templates as wt
+from app.services.review_invite import review_invite_url
 from app.services.product_order_clock import active_deadline, rest_end_if_inside
 from app.utils.clock import ISRAEL_TZ, utc_now
 from app.utils.phone import canonical_il_msisdn
@@ -65,6 +68,9 @@ RETRY_BASE = timedelta(minutes=5)
 # is dropped, not sent: "your order was confirmed" a day later misleads.
 STALE_AFTER = timedelta(hours=6)
 BATCH = 20
+# MEH-3624: a day after the hand-over the buyer has eaten it; sooner reads as
+# pressure, later and she has forgotten. Wolt and Too Good To Go ask the same day.
+REVIEW_REQUEST_AFTER = timedelta(hours=24)
 
 _WA_PARAM_MAX_LEN = 200
 _DAYS = ("שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון")
@@ -74,6 +80,13 @@ NEW_ORDER_SUBJECT = "הזמנה חדשה מחכה לאישור"
 WAITING_SUBJECT = "הזמנה מחכה לתשובה"
 NEW_ORDER_AUTO_SUBJECT = "הזמנה חדשה התקבלה ואושרה"
 BUYER_CANCELLED_SUBJECT = "הזמנה בוטלה"
+# MEH-3624: a service message about one order — no offer, no other business.
+REVIEW_REQUEST_SUBJECT = "איך היה אצל {business_name}?"
+REVIEW_REQUEST_BODY = (
+    "תודה שהזמנתם מ{business_name} דרך מהמקור. "
+    "ביקורת קצרה עוזרת לאחרים לבחור, ולעסק לדעת מה עבד. "
+    "לכתיבת ביקורת: {link}"
+)
 
 _BUSINESS_KINDS = ("new_order", "business_reminder", "buyer_cancelled")
 
@@ -124,6 +137,10 @@ def on_status(  # noqa: PLR0913 — the move, as product_order_state sees it
             and slot_start - now >= DAY_BEFORE_MIN_NOTICE
         ):
             _owe(db, order, "day_before", ("whatsapp",), slot_start - DAY_BEFORE)
+    elif to_status == "handed" and order.user_id is not None:
+        # MEH-3624: only a buyer with an account has an email; a guest sees
+        # «כתבו ביקורת» on her order page instead (MEH-3620).
+        _owe(db, order, "review_request", ("email",), now + REVIEW_REQUEST_AFTER)
     elif to_status == "change_proposed":
         _owe(db, order, "change_proposed", ("whatsapp",), now)
     elif to_status == "cancelled" and actor_kind == "customer":
@@ -303,6 +320,36 @@ def _buyer_template(
     return wt.ProductOrderClosedV1(business_name=name, link=link)
 
 
+def _review_request(
+    db: Session,
+    order: ProductOrder,
+    producer: Producer,
+    buyer: User | None,
+    test: bool,
+) -> _Message | str:
+    """MEH-3624: the «איך היה?» email, or why there is none."""
+    if str(order.status) != "handed" or producer.status != "approved":
+        return "not_live"  # the review page opens only for a live business
+    if buyer is None or not buyer.email:
+        return "no_address"
+    reviewed = (
+        db.query(ProducerReview.id)
+        .filter(
+            ProducerReview.producer_id == producer.id,
+            ProducerReview.user_id == buyer.id,
+        )
+        .first()
+    )
+    if reviewed is not None:
+        return "already_reviewed"
+    name = wa_param(str(producer.name))
+    subject = REVIEW_REQUEST_SUBJECT.format(business_name=name)
+    body = REVIEW_REQUEST_BODY.format(
+        business_name=name, link=review_invite_url(producer)
+    )
+    return _Message(_mail(str(buyer.email), subject, body, test))
+
+
 def _compose(
     db: Session,
     row: ProductOrderNotification,
@@ -322,6 +369,8 @@ def _compose(
         or (owner is not None and owner.is_test)
         or (buyer is not None and buyer.is_test)
     )
+    if row.kind == "review_request":
+        return _review_request(db, order, producer, buyer, test)
     if row.kind in _BUSINESS_KINDS:
         template, subject, body = _business_text(str(row.kind), order, now)
         if row.channel == "email":
