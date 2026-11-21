@@ -31,7 +31,7 @@ must NOT touch live story-cards.
 
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 from app.config import settings
@@ -313,3 +313,16 @@ def destroy_removed_images(
         removed = {u for u in removed if extract_public_id(u) not in still}
     for url in removed:
         destroy_image(url, context=context)
+
+
+def destroy_replaced(
+    old: Any, new: Any, *, context: str, db: "Session | None" = None
+) -> None:
+    """MEH-3611: free a single-URL field's previous image once it changed.
+
+    Call after the commit (MEH-375 order). No-op when there was no old URL or
+    it is unchanged; destroy_image itself keeps a URL another registered
+    column still references (MEH-3247).
+    """
+    if old and old != new:
+        destroy_image(str(old), context=context, db=db)

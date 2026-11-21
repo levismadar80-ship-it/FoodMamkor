@@ -183,6 +183,7 @@ def _public_row(
             "slug": producer.slug,
             "city": producer.city,
             "image_url": (producer.images or [None])[0],
+            "logo_url": producer.logo_url,  # MEH-3611
             "location_city": location.city,
             "location_address": location.address,
         },
