@@ -2,7 +2,7 @@
 Module:   test_meh2151_approval_email_wire_payload
 Purpose:  Assert the producer-approval email at the ONE boundary no other test
           reaches — the outbound Resend payload — so the em-dash
-          in the locked copy are proven to survive the wire, and the MEH-331
+          in the locked copy is proven to survive the wire, and the MEH-331
           `Content-Transfer-Encoding: base64` header is proven to still ride
           along with the HTML part.
 Touches:  Nothing. `resend.Emails.send` is monkeypatched; no network, no DB.
