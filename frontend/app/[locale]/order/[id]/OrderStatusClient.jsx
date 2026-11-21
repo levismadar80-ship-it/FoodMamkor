@@ -12,13 +12,14 @@
  *           the buyer's own phone or address. A missing, wrong or expired
  *           link, or ordering switched off, is the site's 404.
  * Related:  app/[locale]/order/[id]/page.js, lib/order-status.js
- * History:  MEH-3216 stage 5a (creation)
+ * History:  MEH-3216 stage 5a (creation); MEH-3616 («הוספה ליומן»)
  */
 
 import { useEffect, useRef, useState } from "react";
 import { notFound } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
+import AddToCalendarButton from "@/components/ui/AddToCalendarButton";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -114,6 +115,19 @@ export function OrderStatusView({ order, onChange, refOf }) {
       {view.waiting && deadline && <p className="text-fg-muted">{t("waiting", { deadline })}</p>}
       {view.when && (
         <WhenLine start={order.slot_start} end={order.slot_end} kind={view.when} address={order.pickup_address} />
+      )}
+      {view.when && order.slot_start && order.slot_end && (
+        <AddToCalendarButton
+          testId="order-add-to-calendar"
+          slot={{
+            uid: `order-${order.id}`,
+            start: order.slot_start,
+            end: order.slot_end,
+            title: t(view.when === "when_pickup" ? "calendar_pickup" : "calendar_delivery", { business_name: order.producer_name }),
+            location: view.when === "when_pickup" ? order.pickup_address : null,
+            url: typeof window === "undefined" ? undefined : window.location.href.split("#")[0],
+          }}
+        />
       )}
       {view.code && (
         <div className="rounded-lg border border-border bg-surface p-4 text-center" data-testid="order-code">
