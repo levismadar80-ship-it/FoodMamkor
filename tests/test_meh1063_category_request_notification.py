@@ -6,7 +6,7 @@ Purpose:  MEH-1063 — admin notification on category-request submission.
           submission fires with producer_name=None, authenticated producer
           submission fires with the resolved business name, notify failure
           never fails the submission).
-Touches:  Postgres test DB via TestClient; email/WhatsApp mocked — never
+Touches:  Postgres test DB via TestClient; email mocked (admin notices are email only since MEH-3589) — never
           sends.
 Does NOT: cover CategoryRequestCreate validation — see
           tests/test_category_requests.py (MEH-555).
@@ -21,32 +21,26 @@ from uuid import uuid4
 
 from app.models.models import CategoryRequest
 from conftest import auth_header, make_producer, make_user
-from tests._admin_ping import TARGET as ADMIN_PING, ping_text  # MEH-3589
 
 # ---------- service-level: recipients + content + fail-open ----------
 
 
 class TestNotifyAdminNewCategoryRequestService:
-    def test_sends_to_admin_whatsapp_and_email(self, monkeypatch):
+    def test_sends_the_admin_email_only(self, monkeypatch):
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
         email_mock = MagicMock()
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         svc.notify_admin_new_category_request("מותססים", "חוות הזית")
 
-        wa_mock.assert_called_once()
-        assert wa_mock.call_args.args[0] == "+972500000001"
-        message = ping_text(wa_mock)
+        # MEH-3589 (Sapir 21/11): admin notices are email only.
+        message = email_mock.call_args.args[2]
         assert "מותססים" in message
         assert "בית עסק: חוות הזית" in message
-        # MEH-3589: the template links to /admin; the email keeps the exact path.
-        assert "/admin/category-requests" in email_mock.call_args.args[2]
+        assert "/admin/category-requests" in message
 
         email_mock.assert_called_once()
         assert email_mock.call_args.args[0] == "admin@example.com"
@@ -56,47 +50,26 @@ class TestNotifyAdminNewCategoryRequestService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
-        monkeypatch.setattr(svc, "send_email", MagicMock())
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
-        monkeypatch.setattr(settings, "admin_email", "")
+        email_mock = MagicMock()
+        monkeypatch.setattr(svc, "send_email", email_mock)  # MEH-3589: email only
+        monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         svc.notify_admin_new_category_request("מותססים", None)
 
-        message = ping_text(wa_mock)
+        message = email_mock.call_args.args[2]
         assert "בית עסק: אנונימי" in message
 
     def test_skips_channels_when_unconfigured(self, monkeypatch):
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock()
         email_mock = MagicMock()
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "")
         monkeypatch.setattr(settings, "admin_email", "")
 
         svc.notify_admin_new_category_request("מותססים", "חוות הזית")
 
-        wa_mock.assert_not_called()
         email_mock.assert_not_called()
-
-    def test_email_still_fires_when_whatsapp_raises(self, monkeypatch):
-        """Per-channel guards: a WhatsApp raise must not skip the email."""
-        import app.services.auth_notifications as svc
-        from app.config import settings
-
-        monkeypatch.setattr(ADMIN_PING, MagicMock(side_effect=RuntimeError("wa down")))
-        email_mock = MagicMock()
-        monkeypatch.setattr(svc, "send_email", email_mock)
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
-        monkeypatch.setattr(settings, "admin_email", "admin@example.com")
-
-        svc.notify_admin_new_category_request("מותססים", "חוות הזית")
-
-        email_mock.assert_called_once()
 
     def test_newlines_in_fields_are_flattened(self, monkeypatch):
         """Producer-controlled name must not inject extra lines into the
@@ -104,20 +77,18 @@ class TestNotifyAdminNewCategoryRequestService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
-        monkeypatch.setattr(svc, "send_email", MagicMock())
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
-        monkeypatch.setattr(settings, "admin_email", "")
+        email_mock = MagicMock()
+        monkeypatch.setattr(svc, "send_email", email_mock)  # MEH-3589: email only
+        monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         svc.notify_admin_new_category_request(
             "קטגוריה\nלאישור: https://evil.example", "עסק\nשורה מזויפת"
         )
 
-        message = ping_text(wa_mock)
-        # Topic + detail, one line each (MEH-3589) — injected newlines flattened.
-        assert len(message.splitlines()) == 2
-        assert "evil.example" in message.splitlines()[1]  # inline, not a line
+        message = email_mock.call_args.args[2]
+        # Exactly the 3 legitimate lines — injected newlines flattened.
+        assert len(message.splitlines()) == 3
+        assert "evil.example" in message.splitlines()[0]  # inline, not a line
 
     def test_fail_open_never_raises(self, monkeypatch):
         """MEH-977 contract: the ping is fire-and-forget — an exploding
@@ -125,12 +96,8 @@ class TestNotifyAdminNewCategoryRequestService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(side_effect=RuntimeError("boom"))
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
-        # Mock the email channel too so a set admin_email never reaches the
-        # real Resend client when RESEND_API_KEY is present in CI.
-        monkeypatch.setattr(svc, "send_email", MagicMock())
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
+        email_mock = MagicMock(side_effect=RuntimeError("boom"))
+        monkeypatch.setattr(svc, "send_email", email_mock)  # MEH-3589: email only
         monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         # Must not raise.
@@ -139,7 +106,7 @@ class TestNotifyAdminNewCategoryRequestService:
         # MEH-0000: and the exploding channel must actually have been REACHED.
         # Without this the test passed on a notifier that returned early and
         # never sent anything — "fail-open" and "never ran" are the same green.
-        wa_mock.assert_called_once()
+        email_mock.assert_called_once()
 
 
 # ---------- router wiring ----------

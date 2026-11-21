@@ -292,7 +292,9 @@ def test_group_own_auth_account_deletion_reads_the_flag_before_the_row_goes(
     user.is_test = is_test
     db.commit()
 
-    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
+    r = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user)
+    )
 
     assert r.status_code == 200, r.text
     assert _to(transport.emails) == ([] if is_test else ["leaving@sample.co.il"])
@@ -529,9 +531,8 @@ def queues_send_by_value_ok(bt, producer):
 
 
 def test_inventory_classifier_anchored_to_a_real_repo_file():
-    """Run against real files on disk: the approval site (routers/admin_decisions.py)
-    and the admin-ping wrapper (services/admin_whatsapp.py) must be found, flagged
-    with a non-constant value."""
+    """Run against routers/admin_decisions.py as it is on disk: the approval site and the
+    owner-mail wrapper must be found, flagged with a non-constant value."""
     rel = "routers/admin_decisions.py"
     src = (APP_DIR / rel).read_text(encoding="utf-8")
     sites = collect_sites(src, rel)
@@ -540,11 +541,8 @@ def test_inventory_classifier_anchored_to_a_real_repo_file():
     assert {s.callee for s in approve} == {"_send_notification_email"}
     for s in approve:
         assert s.flag is not None and not isinstance(s.flag, ast.Constant), s
-    # The admin-ping wrapper now lives in services/admin_whatsapp.py.
-    helper_rel = "services/admin_whatsapp.py"
-    helper = collect_sites((APP_DIR / helper_rel).read_text(encoding="utf-8"), helper_rel)
-    inner = [s for s in helper if s.func == "ping_admin"]
-    assert len(inner) == 1 and inner[0].callee == "send_template"
+    inner = [s for s in sites if s.func == "_send_notification_email"]
+    assert len(inner) == 1 and inner[0].callee == "send_email"
     assert isinstance(inner[0].flag, ast.Name) and inner[0].flag.id == FLAG
     # And the wrapper check sees approve's forwarded notify call as held.
     assert wrapper_violations({rel: src}) == []

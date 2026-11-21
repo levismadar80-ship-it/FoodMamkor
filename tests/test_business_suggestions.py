@@ -20,7 +20,6 @@ from sqlalchemy import text
 
 from app.models.models import OutreachLead
 from conftest import auth_header, make_user
-from tests._admin_ping import TARGET as ADMIN_PING, ping_text  # MEH-3589
 
 ENDPOINT = "/business-suggestions"
 
@@ -396,43 +395,37 @@ class TestAdminPing:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
         email_mock = MagicMock()
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         svc.notify_admin_new_business_suggestion("מעדניית הזיתים", "חיפה", "דנה", False)
 
-        wa_mock.assert_called_once()
-        message = ping_text(wa_mock)
+        # MEH-3589: admin notices are email only.
+        email_mock.assert_called_once()
+        message = email_mock.call_args.args[2]
         assert "מעדניית הזיתים" in message
         assert "חיפה" in message
-        # MEH-3589: the template links to /admin; the email keeps the exact path.
-        assert "/admin/outreach?source=community" in email_mock.call_args.args[2]
+        assert "/admin/outreach?source=community" in message
         assert "@" not in message
-
-        email_mock.assert_called_once()
-        assert "@" not in email_mock.call_args.args[2]
 
     def test_notify_flattens_newlines_in_a_crafted_name(self, monkeypatch):
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
-        monkeypatch.setattr(svc, "send_email", MagicMock())
+        email_mock = MagicMock()
+        monkeypatch.setattr(svc, "send_email", email_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         svc.notify_admin_new_business_suggestion(
             "עסק\nלטיפול: https://evil.example", "חיפה", None, False
         )
-        message = ping_text(wa_mock)
+        message = email_mock.call_args.args[2]
         assert "עסק לטיפול: https://evil.example" in message
-        # Topic + detail, one line each (MEH-3589) — no injected third.
-        assert len(message.split("\n")) == 2
+        # Exactly the four lines the helper writes — no injected fifth.
+        assert len(message.split("\n")) == 4
 
 
 class TestLoggedInPrefill:

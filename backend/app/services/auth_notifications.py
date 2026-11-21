@@ -30,7 +30,6 @@ from typing import TypeVar
 from uuid import UUID
 
 from app.config import settings
-from app.services.admin_whatsapp import ping_admin
 from app.services.email import send_email
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import (
@@ -236,13 +235,12 @@ def notify_producer_changes_requested(
 def notify_admin_new_recipe(
     producer_name: str, recipe_title: str, test_cause: bool = False
 ) -> None:
-    """Ping admin (WhatsApp + email) that a recipe awaits moderation.
+    """Email the admin that a recipe awaits moderation.
 
     MEH-1000 — closes the MEH-997 journey-1b gap: the /admin/recipes
     queue was poll-only while producer registration already notified.
-    REUSES: notify_admin_new_producer below — same admin WhatsApp (ping_admin,
-    template admin_update_v1, MEH-3589) + email to settings.admin_email.
-    Fire-and-forget: runs as a BackgroundTask and
+    REUSES: notify_admin_new_producer below — same email to settings.admin_email
+    (email only since MEH-3589). Fire-and-forget: runs as a BackgroundTask and
     swallows-and-logs any failure (MEH-977 — observable, never breaks
     the submission).
     """
@@ -259,14 +257,7 @@ def notify_admin_new_recipe(
         f"בית עסק: {safe_name}\n"
         f"לאישור: {settings.frontend_url}/admin/recipes"
     )
-    # Per-channel guards (not one shared try) — a WhatsApp raise must not
-    # skip the email, matching notify_admin_new_producer's independence.
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin(
-        "מתכון חדש לאישור",
-        f"{safe_title} · בית עסק: {safe_name}",
-        test_cause=test_cause,
-    )
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
 
     try:
         if settings.admin_email:
@@ -291,8 +282,8 @@ def notify_admin_claim_link_requested(
     the new link from the admin panel as before — nothing is sent to the
     owner from here, and no link is created.
 
-    REUSES: notify_admin_producer_resubmit below — same WhatsApp + email pair,
-    per-channel guards, fire-and-forget.
+    REUSES: notify_admin_producer_resubmit below — same admin email
+    (email only since MEH-3589), fire-and-forget.
     """
     if test_cause:
         _skip_test_cause("notify_admin_claim_link_requested", None)
@@ -305,12 +296,7 @@ def notify_admin_claim_link_requested(
         f"\nעיר: {safe_city}"
         f"\nלשליחת קישור חדש: {settings.frontend_url}/admin/producers"
     )
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin(
-        "בקשה לקישור חדש לדרישת בעלות",
-        f"{safe_name}, {safe_city}",
-        test_cause=test_cause,
-    )
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
     try:
         if settings.admin_email:
             send_email(settings.admin_email, subject, message, test_cause=test_cause)
@@ -326,12 +312,12 @@ def notify_admin_draft_claimed(
     test_cause: bool = False,
 ) -> None:
     """MEH-3410: the owner of a draft the admin prepared took it over through
-    the claim link. Tell the admin at once, by WhatsApp and email, so she can
+    the claim link. Tell the admin at once, by email (MEH-3589), so she can
     follow up while the owner is still on the page — until now the first
     signal was the submit, days later or never.
 
-    REUSES: notify_admin_claim_link_requested above — same WhatsApp + email
-    pair, per-channel guards, fire-and-forget. Copy approved by Sapir (MEH-3410).
+    REUSES: notify_admin_claim_link_requested above — same admin email,
+    fire-and-forget. Copy approved by Sapir (MEH-3410).
     """
     if test_cause:
         _skip_test_cause("notify_admin_draft_claimed", None)
@@ -349,10 +335,7 @@ def notify_admin_draft_claimed(
         f"\nעיר: {safe_city}"
         f"\nלאדמין: {settings.frontend_url}/admin/producers"
     )
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin(
-        "טיוטה נקלטה", f"{safe_name} · {safe_owner}, {safe_city}", test_cause=test_cause
-    )
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
     try:
         if settings.admin_email:
             send_email(settings.admin_email, subject, message, test_cause=test_cause)
@@ -522,7 +505,7 @@ def notify_admin_producer_sensitive_edit(
     changed_fields: list[str],
     test_cause: bool = False,
 ) -> None:
-    """Ping admin (WhatsApp + email) that an APPROVED producer edited a field
+    """Email the admin that an APPROVED producer edited a field
     that carries identity or trust.
 
     MEH-2073 — notification only. The manual-approval promise is made once, at
@@ -531,9 +514,8 @@ def notify_admin_producer_sensitive_edit(
     change `vegan_scope` the next day. This closes the observability gap
     WITHOUT touching the save: no status flip, no re-moderation, no schema.
 
-    REUSES: notify_admin_producer_resubmit above 1:1 — same admin WhatsApp (ping_admin,
-    template admin_update_v1, MEH-3589) + email to settings.admin_email, per-channel
-    try blocks (a WhatsApp raise must not skip the email), fire-and-forget as a
+    REUSES: notify_admin_producer_resubmit above 1:1 — same email to settings.admin_email
+    (email only since MEH-3589), fire-and-forget as a
     BackgroundTask. Fail-open per MEH-1051/977: a Meta/Resend outage is logged,
     never surfaced to the owner who already got her 200.
 
@@ -549,10 +531,7 @@ def notify_admin_producer_sensitive_edit(
     )
     message = f"🔎 עסק מאושר עדכן פרטים רגישים: {safe_name} — {fields}"
 
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin(
-        "עסק מאושר עדכן פרטים רגישים", f"{safe_name}: {fields}", test_cause=test_cause
-    )
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
 
     try:
         if settings.admin_email:
@@ -573,11 +552,11 @@ def notify_admin_new_category_request(
     producer_name: str | None,
     test_cause: bool = False,
 ) -> None:
-    """Ping admin (WhatsApp + email) that a new category was requested.
+    """Email the admin that a new category was requested.
 
-    MEH-1063 — mirrors notify_admin_new_recipe above 1:1: same free-text
-    ping_admin (template admin_update_v1, MEH-3589) + email to
-    settings.admin_email. Fire-and-forget: runs as a BackgroundTask and
+    MEH-1063 — mirrors notify_admin_new_recipe above 1:1: same email to
+    settings.admin_email (email only since MEH-3589). Fire-and-forget: runs as
+    a BackgroundTask and
     swallows-and-logs any failure (MEH-977 — observable, never breaks the
     submission). `producer_name` is None/empty for anonymous submissions.
     """
@@ -594,14 +573,7 @@ def notify_admin_new_category_request(
         f"בית עסק: {safe_business}\n"
         f"לאישור: {settings.frontend_url}/admin/category-requests"
     )
-    # Per-channel guards (not one shared try) — a WhatsApp raise must not
-    # skip the email, matching notify_admin_new_recipe's independence.
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin(
-        "בקשת קטגוריה חדשה",
-        f"{safe_requested} · בית עסק: {safe_business}",
-        test_cause=test_cause,
-    )
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
 
     try:
         if settings.admin_email:
@@ -624,12 +596,11 @@ def notify_admin_new_business_suggestion(
     suggester_name: str | None,
     is_additional: bool = False,
 ) -> None:
-    """Ping admin (WhatsApp + email) that a visitor suggested a business.
+    """Email the admin that a visitor suggested a business.
 
-    MEH-2633 — mirrors notify_admin_new_category_request above 1:1: free-text
-    ping_admin (template admin_update_v1, MEH-3589) + email to
-    settings.admin_email, per-channel try blocks (a WhatsApp raise must not skip
-    the email), fire-and-forget as a BackgroundTask. Fail-open per MEH-977: an
+    MEH-2633 — mirrors notify_admin_new_category_request above 1:1: email to
+    settings.admin_email (email only since MEH-3589), fire-and-forget as a
+    BackgroundTask. Fail-open per MEH-977: an
     outage is logged, never surfaced to the visitor who already got their 201.
 
     `is_additional` is True when the suggestion landed on a lead that already
@@ -659,12 +630,7 @@ def notify_admin_new_business_suggestion(
         f"ממליצים: {safe_suggester}\n"
         f"לטיפול: {settings.frontend_url}/admin/outreach?source=community"
     )
-    # Per-channel guards (not one shared try) — a WhatsApp raise must not skip
-    # the email, matching notify_admin_new_category_request's independence.
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin(
-        headline, f"{safe_business} · עיר: {safe_city} · ממליצים: {safe_suggester}"
-    )
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
 
     try:
         if settings.admin_email:
@@ -731,7 +697,7 @@ def notify_admin_owner_invite_accepted(
     test_cause: bool = False,
     missing: list[str] | None = None,
 ) -> None:
-    """Ping admin (WhatsApp + email) that an owner accepted the invite an
+    """Email the admin that an owner accepted the invite an
     admin sent her — she set a password, signed the terms and the licensing
     declaration, and the page is now hers.
 
@@ -741,10 +707,8 @@ def notify_admin_owner_invite_accepted(
     public can see: a hidden business went live at that moment, an already
     approved one only gained an owner.
 
-    REUSES: notify_admin_producer_resubmit above 1:1 — same free-text
-    ping_admin (template admin_update_v1, MEH-3589) plus email to
-    settings.admin_email, per-channel try blocks so a
-    WhatsApp raise cannot skip the email. Fire-and-forget: runs as a
+    REUSES: notify_admin_producer_resubmit above 1:1 — same email to
+    settings.admin_email (email only since MEH-3589). Fire-and-forget: runs as a
     BackgroundTask and swallows-and-logs any failure (MEH-977 — observable,
     never breaks the 200 she already got).
 
@@ -775,8 +739,7 @@ def notify_admin_owner_invite_accepted(
         f"בעלת העסק: {safe_email}\n"
         f"לצפייה: {settings.frontend_url}/admin/producers"
     )
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin("בעלת עסק אישרה את ההזמנה", headline, test_cause=test_cause)
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
 
     try:
         if settings.admin_email:

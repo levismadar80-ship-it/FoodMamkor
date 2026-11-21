@@ -28,7 +28,6 @@ from typing import Any
 from fastapi import BackgroundTasks, HTTPException
 
 from app.config import ai_fast_request_kwargs, settings
-from app.services.admin_whatsapp import ping_admin
 from app.services.auth_notifications import _sanitize_wa_param, _skip_test_cause
 from app.services.email import send_email
 from app.services.moderation_fail_open import classify_failure, report_fail_open
@@ -265,17 +264,11 @@ def notify_admin_content_edit(
     name: str, changed: list[str], flagged: bool, test_cause: bool = False
 ) -> None:
     # REUSES: auth_notifications.notify_admin_producer_sensitive_edit — same
-    # channels, per-channel try blocks so a WhatsApp raise never skips email.
+    # channel: email only (MEH-3589).
     if test_cause:  # MEH-2952
         return _skip_test_cause("notify_admin_content_edit", None)
     message = content_edit_message(name, changed, flagged)
-    # MEH-3589: the approved admin template, never free text (24h window).
-    ping_admin(
-        "עסק מאושר עדכן תוכן" + (" (סומן ע״י AI)" if flagged else ""),
-        f"{_sanitize_wa_param(name)}: "
-        + " · ".join(CONTENT_FIELD_LABELS.get(f, f) for f in changed),
-        test_cause=test_cause,
-    )
+    # MEH-3589 (Sapir 21/11): admin notices are email only — no WhatsApp.
     try:
         if settings.admin_email:
             send_email(
