@@ -73,6 +73,8 @@ function A4Poster({ name, svg, t }) {
   );
 }
 
+const TABLE_NAME = "font-headline-md text-2xl print:text-3xl font-black mb-5 break-words";
+
 /** @param {LayoutProps & { flipped?: boolean }} props */
 function TableSignHalf({ name, svg, t, flipped = false }) {
   return (
@@ -80,7 +82,12 @@ function TableSignHalf({ name, svg, t, flipped = false }) {
       data-testid={flipped ? "print-kit-table-top" : "print-kit-table-bottom"}
       className={`flex flex-col items-center justify-center text-center px-6 min-h-[148.5mm] print:min-h-0 print:flex-1 ${flipped ? "rotate-180" : ""}`}
     >
-      <h2 className="font-headline-md text-2xl print:text-3xl font-black mb-5 break-words">{name}</h2>
+      {/* One page heading: the readable half carries it, the upside-down copy is the same name again. */}
+      {flipped ? (
+        <p aria-hidden="true" className={TABLE_NAME}>{name}</p>
+      ) : (
+        <h1 className={TABLE_NAME}>{name}</h1>
+      )}
       <QrBox svg={svg} className="w-[min(60mm,55vw)] h-[min(60mm,55vw)] print:w-[60mm] print:h-[60mm]" />
       <p className="font-body-sm text-sm mt-3" dir="ltr">mehamakor.co.il</p>
       <p className="font-body-md text-lg leading-snug mt-5">{t("cta")}</p>
@@ -127,7 +134,7 @@ function StickerSheet({ name, svg, t }) {
             className="w-full max-w-[64mm] print:w-[64mm] aspect-square rounded-full border border-border flex flex-col items-center justify-center text-center overflow-hidden"
           >
             <QrBox svg={svg} className="w-1/2 aspect-square" />
-            <p className="font-body-sm text-[9px] print:text-[8pt] font-bold leading-tight mt-1 px-[12%] break-words line-clamp-2">
+            <p className="font-body-sm text-2xs print:text-[8pt] font-bold leading-tight mt-1 px-[12%] break-words line-clamp-2">
               {label}
             </p>
           </div>
