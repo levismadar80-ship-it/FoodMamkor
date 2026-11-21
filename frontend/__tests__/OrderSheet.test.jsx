@@ -224,4 +224,57 @@ describe("OrderSheet", () => {
     renderSheet(undefined, { id: "7e57a6f0-0000-4000-8000-000000000008", payment_info: { methods: ["cash"] } });
     expect(screen.getByTestId("order-sheet-name").value).toBe("");
   });
+  it("never keeps the code, the slot or the age box", async () => {
+    vi.mocked(api.post).mockImplementation(async (url) => (url === "/product-orders/phone-code" ? { data: {} } : { data: QUOTE }));
+    const first = renderSheet({ [WINE]: 1 });
+    fireEvent.change(screen.getByTestId("order-sheet-slot"), { target: { value: "2026-11-20T08:00:00Z" } });
+    fireEvent.click(screen.getByTestId("order-sheet-age"));
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    fireEvent.click(screen.getByTestId("order-sheet-send-code"));
+    fireEvent.change(await screen.findByTestId("order-sheet-code"), { target: { value: "123456" } });
+    first.unmount();
+    renderSheet({ [WINE]: 1 });
+    expect(screen.getByTestId("order-sheet-phone").value).toBe("0501234567");
+    expect(screen.getByTestId("order-sheet-slot").value).toBe("");
+    expect(screen.getByTestId("order-sheet-age").checked).toBe(false);
+    expect(screen.queryByTestId("order-sheet-code")?.value ?? "").toBe("");
+  });
+
+  it("forgets the draft once the request was sent", async () => {
+    vi.mocked(api.post).mockImplementation(async (url) => {
+      if (url === "/product-orders/quote") return { data: QUOTE };
+      if (url === "/product-orders/phone-code") return { data: {} };
+      return { data: { id: ORDER, status_token: TOKEN } };
+    });
+    const first = renderSheet();
+    fireEvent.change(screen.getByTestId("order-sheet-slot"), { target: { value: "2026-11-20T08:00:00Z" } });
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    fireEvent.click(screen.getByTestId("order-sheet-send-code"));
+    fireEvent.change(await screen.findByTestId("order-sheet-code"), { target: { value: "123456" } });
+    fireEvent.submit(screen.getByTestId("order-sheet"));
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    first.unmount();
+    renderSheet();
+    expect(screen.getByTestId("order-sheet-name").value).toBe("");
+  });
+
+  it("falls back to an offered way when the kept one is no longer offered", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const first = renderSheet();
+    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    first.unmount();
+    const pickupOnly = { ...MENU, slots: MENU.slots.filter((s) => s.fulfilment === "pickup") };
+    render(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER, payment_info: { methods: ["cash"] } }} menu={pickupOnly} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    // One way left: no picker, and no delivery fields from the kept «משלוח».
+    expect(screen.queryByTestId("order-sheet-fulfilment")).toBeNull();
+    expect(screen.queryByTestId("order-sheet-city")).toBeNull();
+    await waitFor(() => expect(api.post).toHaveBeenLastCalledWith("/product-orders/quote", expect.objectContaining({ fulfilment: "pickup" })));
+    expect(screen.getByTestId("order-sheet-name").value).toBe("דנה לוי");
+  });
 });

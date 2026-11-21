@@ -89,3 +89,22 @@ def test_hasser_from_another_number_does_not_stop_this_one(db, graph):
     db.add(InboundMessage(from_phone="972549998877", body="הסר"))
     db.commit()
     assert whatsapp.send_template(PHONE, ProducerApprovedV1(producer_name="משק")) is True
+
+
+@pytest.mark.parametrize(
+    ("outcome", "expected"),
+    [
+        (whatsapp.OUTCOME_OPTED_OUT, "opted_out"),  # a skip, never a retry
+        ("network_error", "failed"),  # control: the same path retries a 0-status failure
+    ],
+)
+def test_order_outbox_records_opted_out_as_a_skip(monkeypatch, outcome, expected):
+    from app.services import product_order_outbox
+
+    monkeypatch.setattr(
+        whatsapp,
+        "send_template_result",
+        lambda *_a, **_k: whatsapp.WhatsAppSendResult(outcome=outcome, ok=False),
+    )
+    send = product_order_outbox._wa(PHONE, ProducerApprovedV1(producer_name="משק"), False)
+    assert send() == expected
