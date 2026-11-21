@@ -696,6 +696,61 @@ export default function ProducerDashboardPage() {
         />
       )}
 
+      {/* MEH-3076 (Sapir 21/11, «מספרים למעלה»): the numbers come right after
+          «מה מחכה לך» and the status banners, before the holiday hint, the
+          status switch, rescue bags and «הלינק שלי» — an owner opens the
+          dashboard to see what came in, and on a phone these sat a screen down. */}
+      {/* MEH-964 1B: locked top-line 4-KPI strip (conversion line gone, MEH-2430).
+          Deep analytics (windowed cards + charts) live in the insights tab
+          (dashboard/insights); these KPIs render only here (FLAG-1 — never
+          duplicated in insights/).
+          MEH-964 1D: when there's no activity yet (data-state-active=false),
+          a warm zero-state replaces the 2×2 wall-of-zeros so a brand-new owner
+          sees an invitation, not four zeros. hasActivity per the 1A definition
+          (views||whatsapp, rating excluded). */}
+      {!analytics ? (
+        analyticsError ? (
+          // MEH-1261 F2: a failed analytics fetch used to leave the loading
+          // line up forever — surface it + retry instead.
+          <SectionFetchError
+            message={t("section_errors.analytics")}
+            retryLabel={t("section_errors.retry_cta")}
+            onRetry={() => setAnalyticsAttempt((n) => n + 1)}
+            testid="dashboard-analytics-error"
+          />
+        ) : (
+          <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+        )
+      ) : hasActivity ? (
+        <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
+      ) : !isApproved ? null : (
+        // MEH-3079: not while pending — its «שתפו» contradicted the
+        // share-locked line of «הלינק שלי» (new-business walkthrough 18/11;
+        // that card sits below the numbers since MEH-3076).
+        // MEH-2884 (placement audit item 5): ONE empty state for the numbers
+        // — the activity pulse's own empty card is gone — and it carries the
+        // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
+        // only once there is a public page to share (approved + slug).
+        // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
+        // title-less copy — two identical anonymous cards on a fresh
+        // dashboard. Each now carries its own visible title + purpose-
+        // specific copy.
+        <div
+          data-testid="overview-zero-state"
+          className="bg-surface border border-border rounded-lg p-6 mb-8"
+        >
+          <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
+          <div className="flex items-center gap-3">
+            <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+            <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
+          </div>
+          {/* Same gate as «הלינק שלי» (slug + complete + approved): with the
+              profile incomplete that slot shows «share locked», and a «שתפו»
+              here would contradict it (MEH-2884 review). */}
+          {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
+        </div>
+      )}
+
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday.
           MEH-2460: its CTA is the catalog — not for an organizer. */}
       {!isOrganizer && (() => {
@@ -858,8 +913,8 @@ export default function ProducerDashboardPage() {
 
 
       {/* MEH-288: profile-completeness card — surfaces the existing
-          producerCompleteness() heuristic to the owner, above the analytics
-          stats. Guarded on `profile` (the full /producers/me record carries
+          producerCompleteness() heuristic to the owner (below the analytics
+          stats since MEH-3076). Guarded on `profile` (the full /producers/me record carries
           the fields the heuristic reads). MEH-1134: this slot served the
           approved+complete state; MEH-1397 removes it — once the business is
           approved AND complete the collapsed "העמוד מלא ✓" card is noise with
@@ -867,56 +922,6 @@ export default function ProducerDashboardPage() {
           21/07). The card now mounts ONLY in the completenessFirst slot above
           (pending OR incomplete), where the green collapse still gives value
           ("סיימת הכל, מחכים לאישור" while complete-but-pending). */}
-
-      {/* MEH-964 1B: locked top-line 4-KPI strip (conversion line gone, MEH-2430).
-          Deep analytics (windowed cards + charts) live in the insights tab
-          (dashboard/insights); these KPIs render only here (FLAG-1 — never
-          duplicated in insights/).
-          MEH-964 1D: when there's no activity yet (data-state-active=false),
-          a warm zero-state replaces the 2×2 wall-of-zeros so a brand-new owner
-          sees an invitation, not four zeros. hasActivity per the 1A definition
-          (views||whatsapp, rating excluded). */}
-      {!analytics ? (
-        analyticsError ? (
-          // MEH-1261 F2: a failed analytics fetch used to leave the loading
-          // line up forever — surface it + retry instead.
-          <SectionFetchError
-            message={t("section_errors.analytics")}
-            retryLabel={t("section_errors.retry_cta")}
-            onRetry={() => setAnalyticsAttempt((n) => n + 1)}
-            testid="dashboard-analytics-error"
-          />
-        ) : (
-          <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
-        )
-      ) : hasActivity ? (
-        <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
-      ) : !isApproved ? null : (
-        // MEH-3079: not while pending — its «שתפו» contradicted the
-        // share-locked line just above (new-business walkthrough 18/11).
-        // MEH-2884 (placement audit item 5): ONE empty state for the numbers
-        // — the activity pulse's own empty card is gone — and it carries the
-        // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
-        // only once there is a public page to share (approved + slug).
-        // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
-        // title-less copy — two identical anonymous cards on a fresh
-        // dashboard. Each now carries its own visible title + purpose-
-        // specific copy.
-        <div
-          data-testid="overview-zero-state"
-          className="bg-surface border border-border rounded-lg p-6 mb-8"
-        >
-          <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
-          <div className="flex items-center gap-3">
-            <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
-            <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
-          </div>
-          {/* Same gate as «הלינק שלי» (slug + complete + approved): with the
-              profile incomplete that slot shows «share locked», and a «שתפו»
-              here would contradict it (MEH-2884 review). */}
-          {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
-        </div>
-      )}
 
       {/* MEH-2884 (audit item 5): the separate «פעילות אחרונה» card is gone —
           it showed the same 7-day views/WhatsApp numbers as the strip above,
