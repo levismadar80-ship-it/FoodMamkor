@@ -84,6 +84,7 @@
 
 import http from 'k6/http';
 import { check, group } from 'k6';
+import { Counter } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'https://foodmamkor-staging.up.railway.app';
 const VERCEL_BYPASS_TOKEN = __ENV.VERCEL_BYPASS_TOKEN || '';
@@ -112,6 +113,14 @@ const ok = {
   chat: http.expectedStatuses(200, 429, 503),
   favorites: http.expectedStatuses(401),
 };
+// Expected is not invisible: every 429 is counted here, per endpoint, and
+// the thresholds require that the limiter actually fired. A run where slowapi
+// never answered 429 at 50 VUs means the limit is gone, not that all is well.
+// (Same pattern as Zuplo's k6 rate-limit example: expected, counted, asserted.)
+const rateLimited = new Counter('rate_limited');
+function countLimit(res) {
+  if (res.status === 429) rateLimited.add(1);
+}
 
 // Ramping VU profile shared by 4 scenarios: 2 min ramp 1->50, 2 min
 // hold at 50, 1 min ramp-down to 0. 5 min per scenario.
@@ -207,12 +216,19 @@ export const options = {
 
     'http_req_duration{endpoint:favorites_unauth}': ['p(95)<2000'],
     'http_req_failed{endpoint:favorites_unauth}': ['rate<0.01'],
+
+    // The limiter fired (see `rateLimited` above).
+    'rate_limited{endpoint:producers_list}': ['count>0'],
+    'rate_limited{endpoint:producer_detail_slug}': ['count>0'],
+    'rate_limited{endpoint:producer_detail_uuid}': ['count>0'],
+    'rate_limited{endpoint:chat}': ['count>0'],
   },
 };
 
 export function producersList() {
   group('GET /producers', () => {
     const res = http.get(`${BASE_URL}/producers`, { headers, responseCallback: ok.list });
+    countLimit(res);
     // 200 (success) or 429 (slowapi rate limit at 120/min — expected
     // after ~3s of ramp at 50 VUs from one IP). Both shapes count as
     // "the server responded coherently"; only network errors or 5xx
@@ -230,6 +246,7 @@ export function producerDetailSlug() {
       headers,
       responseCallback: ok.detail,
     });
+    countLimit(res);
     // 200, 404 (default seed slug doesn't exist), or 429 (slowapi
     // rate-limited) are all coherent server responses. We measure
     // latency, not data shape.
@@ -249,6 +266,7 @@ export function chat() {
       messages: [{ role: 'user', content: 'How do I register as a producer?' }],
     });
     const res = http.post(`${BASE_URL}/chat`, payload, { headers, responseCallback: ok.chat });
+    countLimit(res);
     // 200 (success), 429 (rate-limited — expected), or 503 (fail-open
     // when ANTHROPIC_API_KEY is unset on staging) are all valid.
     check(res, {
@@ -264,6 +282,7 @@ export function producerDetailUuid() {
       headers,
       responseCallback: ok.detail,
     });
+    countLimit(res);
     // 200, 404 (default zero UUID), or 429 (slowapi rate-limited).
     check(res, {
       'status 200/404/429': (r) =>
