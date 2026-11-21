@@ -46,7 +46,9 @@ from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
-from app.routers.producers import _servable_kashrut_certs
+from app.services.kashrut_cert_proxy import (  # MEH-3559: moved from routers/producers.py
+    servable_kashrut_certs as _servable_kashrut_certs,
+)
 from app.schemas.registration import (
     DraftConsentPublishIn,
     DraftConsentPublishOut,

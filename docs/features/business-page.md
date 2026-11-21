@@ -25,6 +25,7 @@
 * `frontend/lib/hours.js` — פענוח שעות ומצב «פתוח עכשיו».
 * `frontend/lib/contact-method.js` — הבעלים היחיד של «מה הכפתור הראשי ולאן הוא מוביל».
 * `backend/app/routers/producers.py` — הפרט; `backend/app/services/producer_listing.py` — הרשימה.
+* `backend/app/services/producer_detail.py` — הטעינה של דף העסק (לפי slug או id, כולל 410 לעסק שנמחק) והתשובה שלו; `backend/app/services/producer_catalog.py` — הספירה, הערים והעסק האקראי בקטלוג, ובדיקות הפרמטרים של הרשימה; `backend/app/services/kashrut_cert_proxy.py` — אילו תעודות כשרות מוצגות, והפרוקסי שמזרים אותן. ה-routes נשארים ב-`backend/app/routers/producers.py` (MEH-3559).
 
 **Flags.** אין. שקית הצלה בתוך הדף תלויה ב-`NEXT_PUBLIC_RESCUE_BAGS_ENABLED` — ראו [שקיות הצלה](./rescue-bags.md).
 

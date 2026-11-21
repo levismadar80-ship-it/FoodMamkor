@@ -349,7 +349,8 @@ def test_every_converted_reader_composes_the_helper():
     """
     expected = {
         "services/producer_listing.py": 2,  # q + count_q
-        "routers/producers.py": 3,  # /count, /cities, /random
+        # MEH-3559: the three handlers moved from routers/producers.py.
+        "services/producer_catalog.py": 3,  # /count, /cities, /random
         "routers/marketing.py": 1,  # /stats
     }
 

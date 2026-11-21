@@ -180,9 +180,10 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     "backend/app/routers/producer_me.py": (1, "the owner's own dashboard"),
     "backend/app/routers/producer_me_review.py": (1, "the owner's own dashboard"),
     "backend/app/routers/group_buys.py": (1, "the owner opening a group buy"),
-    "backend/app/routers/producers.py": (
+    "backend/app/services/kashrut_cert_proxy.py": (
         1,
-        "kashrut certs: a resource of the page itself, reopened in chunk 3",
+        "kashrut certs: a resource of the page itself, reopened in chunk 3 "
+        "(moved from routers/producers.py, MEH-3559)",
     ),
     "backend/app/routers/reviews.py": (
         1,
