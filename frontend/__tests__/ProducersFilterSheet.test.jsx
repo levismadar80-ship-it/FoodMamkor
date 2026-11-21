@@ -406,7 +406,7 @@ describe("MEH-2598 — «הצגה במפה» carries the active filters", () => 
 // the service / city / day chips — and that row stays under the header while
 // the list scrolls. «הצגה במפה» carries the category groups and the city.
 describe("MEH-3075 — one sticky filter row on the phone, and a map link that keeps the filters", () => {
-  const DAIRY = { id: 7, name: "חלב וגבינות", slug: null };
+  const DAIRY = { id: 7, name: "חלב וגבינות", slug: null, requires_license: false };
   const withDairy = (n) => items(n).map((p) => ({ ...p, categories: [DAIRY] }));
   const serveCategories = async () => {
     const { default: api } = await import("@/lib/api");

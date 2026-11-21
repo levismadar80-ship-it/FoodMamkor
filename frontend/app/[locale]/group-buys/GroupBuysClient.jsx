@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { ShoppingCart, Clock, MapPin, Truck } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -123,7 +123,10 @@ function GroupBuyCard({ gb }) {
         </div>
 
         <div className="mt-auto pt-2 flex flex-col gap-1 text-sm text-fg-muted">
-          <span className="inline-flex items-center gap-1.5">
+          {/* MEH-2233: this card is in the ISR HTML too, which can be older
+              than the moment it hydrates, so the day count may differ by one.
+              The quiet refresh after mount brings the list itself up to date. */}
+          <span className="inline-flex items-center gap-1.5" suppressHydrationWarning>
             <Clock size={16} aria-hidden="true" className="shrink-0" />
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
@@ -149,22 +152,42 @@ function GroupBuyCard({ gb }) {
   );
 }
 
-export default function GroupBuysClient() {
+/**
+ * @param {{ initialItems?: any[] | null, initialCounts?: object | null }} props
+ *   MEH-2233: the server's first list (status «open», no city) and its counts;
+ *   null or absent = the client fetches, as before.
+ */
+export default function GroupBuysClient({ initialItems = null, initialCounts = null }) {
   const t = useTranslations("group_buys.list");
   const tHub = useTranslations("events.list");
   // home.whats_on.eyebrow: «קרוב לבית» / "Close to home" — the tab-neutral
   // eyebrow (events.list.eyebrow_events reads "EVENTS" in en).
   const tWhatsOn = useTranslations("home.whats_on");
   const tErr = useTranslations();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // MEH-2233: the server's list is the first paint, for the first load only,
+  // which is always status «open» with no city. It is then refreshed quietly
+  // (no skeleton): the HTML can be up to a minute old, and a Back from a group
+  // page replays the router's cached copy, whose counts may be out of date.
+  // Every later load fetches as before. The values are fixed at mount (state);
+  // the ref only marks the seed used, in the effect below (a ref read during
+  // render breaks react-hooks/refs).
+  const [initialList] = useState(() => (Array.isArray(initialItems) ? initialItems : null));
+  const seed = useRef(initialList);
+  const [items, setItems] = useState(() => initialList ?? []);
+  const [loading, setLoading] = useState(() => !initialList);
   const [error, setError] = useState(false);
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
   // MEH-3128: rows per status tab for this city — a tab with 0 is not drawn.
   // null = unknown (loading or failed) → every tab, as before.
-  const [statusCounts, setStatusCounts] = useState(null);
+  const [initialParsedCounts] = useState(() => {
+    const parsed = initialCounts ? StatusCountsOut.safeParse(initialCounts) : null;
+    return parsed?.success ? parsed.data : null;
+  });
+  // MEH-2233: the server's counts draw the first tabs; the effect still asks
+  // for fresh ones, which replace them without a flicker.
+  const [statusCounts, setStatusCounts] = useState(initialParsedCounts);
   useEffect(() => {
     let live = true;
     // The last city's counts stand in while this one loads (no flicker per
@@ -184,12 +207,15 @@ export default function GroupBuysClient() {
   }, [city]);
 
   useEffect(() => {
-    load();
+    const first = seed.current;
+    seed.current = null; // one use only
+    // MEH-2233: seeded → refresh without the skeleton and keep the seed on failure.
+    load({ quiet: Boolean(first && !city && statusFilter === "open") });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, statusFilter]);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true);
     setError(false);
     try {
       const params = { status: statusFilter };
@@ -197,6 +223,7 @@ export default function GroupBuysClient() {
       const r = await api.get("/group-buys", { params });
       setItems(r.data);
     } catch {
+      if (quiet) return; // the server's list stays on screen
       // MEH-863 F12: surface the failure (error state + retry) instead of
       // swallowing it into the empty state (MEH-325 silent-except pattern).
       setError(true);
@@ -270,7 +297,7 @@ export default function GroupBuysClient() {
           <div className="text-center py-20">
             <p className="text-fg-muted mb-4">{tErr("error.generic")}</p>
             <Button
-              onClick={load}
+              onClick={() => load()}
               variant="primary" size="lg"
             >
               {tErr("errors.boundary.retry")}

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { favoriteRow } from "./helpers/contract-row";
+import { GetFavoritesUsersMeFavoritesGetResponseItem as FAV } from "@/lib/generated/api.zod";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 
 // MEH-996 audit finding (family 4 — silent failure paths, MEH-977 class):
@@ -82,7 +84,7 @@ describe("failed data fetches surface an error, not a misleading state (MEH-996 
   it("FavoritesClient: retry button refetches and clears the error on success", async () => {
     api.get
       .mockRejectedValueOnce(new Error("network down"))
-      .mockResolvedValueOnce({ data: [{ producer_id: "p1", producer: { id: "p1", name: "טסט" } }] });
+      .mockResolvedValueOnce({ data: [favoriteRow(FAV, "p1", { name: "טסט" })] });
 
     render(<FavoritesClient />);
 

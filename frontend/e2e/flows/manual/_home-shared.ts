@@ -15,7 +15,7 @@ import { ListCategoriesCategoriesGetResponse, ListProducersProducersGetResponse,
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { ProducersResponseSchema } from "../../../lib/schemas.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
-import { CategoriesResponseSchema, StatsSchema } from "../../../lib/api-schemas.js";
+import { CategoriesResponseSchema, StatsSchema } from "../../../lib/api-responses.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { FILTER_AXES, homeParamFor } from "../../../lib/filter-taxonomy.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
@@ -138,7 +138,7 @@ export const CHAT_LAUNCHER_NAME = new RegExp(
  *      (`ListProducersProducersGetResponse` / `ListCategoriesCategoriesGetResponse`
  *      / `GetStatsStatsGetResponse`) AND against the app-side schemas the page
  *      itself validates with (`ProducersResponseSchema` / `CategoriesResponseSchema`
- *      / `StatsSchema`, lib/schemas.js + lib/api-schemas.js), so a response-model
+ *      / `StatsSchema`, lib/schemas.js + lib/api-responses.js), so a response-model
  *      change reds THIS spec instead of drifting silently.
  *   3. ARGUED, not mechanical — flagged here and in the PR body. The unmocked
  *      alternative needs a shared catalog state no seed provides: a city whose

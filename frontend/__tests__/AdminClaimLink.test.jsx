@@ -58,9 +58,13 @@ beforeEach(() => {
   api.get.mockResolvedValue({ data: [] }); // GET /categories
 });
 
+// MEH-1748: the create response is parsed with the generated ProducerAdminOut,
+// whose id is a UUID.
+const NEW_DRAFT = "7e1d2c3b-4a5f-4e6d-8c7b-6a5f4e3d2c1b";
+
 describe("ProducerForm — as_draft (MEH-2325)", () => {
   it("ticked: posts as_draft:true and lands on the draft's edit page", async () => {
-    api.post.mockResolvedValue({ data: { id: "new-7" } });
+    api.post.mockResolvedValue({ data: { id: NEW_DRAFT } });
     wrap(<ProducerForm />);
 
     fireEvent.click(await screen.findByTestId("as-draft-checkbox"));
@@ -70,7 +74,7 @@ describe("ProducerForm — as_draft (MEH-2325)", () => {
     const [url, payload] = api.post.mock.calls[0];
     expect(url).toBe("/admin/producers");
     expect(payload.as_draft).toBe(true);
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/producers/new-7/edit"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/admin/producers/${NEW_DRAFT}/edit`));
     expect(push).toHaveBeenCalledTimes(1);
   });
 

@@ -143,8 +143,8 @@ vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 // group, «דבש» (id 18, slug honey) → the pantry group; the ids on the wire are
 // unchanged, so every URL/fetch assertion below is the pre-MEH-2783 one.
 const CATEGORIES = [
-  { id: 1, name: "בשר", slug: "meat", emoji: null },
-  { id: 18, name: "דבש", slug: "honey", emoji: null },
+  { id: 1, name: "בשר", slug: "meat", emoji: null, requires_license: false },
+  { id: 18, name: "דבש", slug: "honey", emoji: null, requires_license: false },
 ];
 const MEAT = "map_category_chips.meat";
 const PANTRY = "map_category_chips.pantry";
