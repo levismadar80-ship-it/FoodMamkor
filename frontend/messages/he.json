@@ -7926,5 +7926,20 @@
       "expired": "לא נענתה בזמן",
       "no_show": "לא נאספה"
     }
+  },
+  "my_group_buys": {
+    "title": "הקבוצות שלי",
+    "empty": "עוד לא הצטרפתם לקבוצת רכישה.",
+    "empty_cta": "לקבוצות הרכישה",
+    "load_error": "לא הצלחנו לטעון את הקבוצות.",
+    "quantity_unit": "{count} {unit}",
+    "quantity": "כמות: {count}",
+    "deadline": "ההצטרפות נסגרת ב-{date}",
+    "status": {
+      "open": "פתוחה להצטרפות",
+      "funded": "הגיעה ליעד",
+      "fulfilled": "הושלמה",
+      "cancelled": "בוטלה"
+    }
   }
 }

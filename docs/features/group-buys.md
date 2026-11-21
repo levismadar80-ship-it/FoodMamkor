@@ -7,6 +7,7 @@
 **Routes**
 * `frontend/app/[locale]/group-buys/` — הרשימה הציבורית.
 * `frontend/app/[locale]/group-buys/[id]/` — קבוצה אחת.
+* `frontend/app/[locale]/my-group-buys/` — «הקבוצות שלי»: הקבוצות שהמשתמשת המחוברת הצטרפה אליהן, הפעילות קודם, דרך `GET /users/me/group-buys` (`backend/app/routers/group_buy_mine.py`). קישור בתפריט החשבון (MEH-3609).
 * `frontend/app/[locale]/producer/dashboard/group-buys/` — הניהול של בית העסק.
 * `frontend/app/[locale]/admin/group-buys/` — המסך של הניהול.
 
@@ -24,6 +25,7 @@
 **טסטים**
 * `tests/test_group_buys_api.py` — ה-API.
 * `tests/test_meh0000_group_buys_query_count.py` — ספירת שאילתות: קבוצה אחת וארבע חייבות לעלות אותו מספר SELECT.
+* `tests/test_meh3609_my_group_buys.py` · `frontend/__tests__/MyGroupBuysPage.test.jsx` — «הקבוצות שלי» (MEH-3609).
 * `tests/test_meh3592_group_buy_capacity.py` — תקרות, עצירה, עריכת כמות, 24 השעות, רשימת המתנה, מייל לבית העסק.
 * `tests/test_meh2943_group_buy_commit_scoping.py` · `tests/test_meh3128_group_buy_counts.py` · `tests/test_group_buys_cancel_on_delist.py`
 * `frontend/e2e/flows/manual/dashboard-offer-groupbuy.spec.ts`

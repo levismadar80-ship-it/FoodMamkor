@@ -1,0 +1,120 @@
+// @ts-check
+"use client";
+
+/**
+ * Module:   MyGroupBuysClient
+ * Purpose:  «הקבוצות שלי»: the group buys the signed-in person joined, so she
+ *           can get back to one without the email link. Running ones first.
+ * Touches:  GET /users/me/group-buys (routers/group_buy_mine.py).
+ * Does NOT: join, leave or change a quantity — the group's own page does
+ *           (group-buys/[id]), and each row opens it.
+ * Related:  app/[locale]/my-orders/MyOrdersClient.jsx (the same shape),
+ *           lib/nav-registry.js `myGroupBuys` (the menu link)
+ * History:  MEH-3609 (creation)
+ */
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { UsersThree } from "@phosphor-icons/react";
+
+import { Link } from "@/i18n/navigation";
+import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { formatDate } from "@/lib/format-date";
+import { parseNaiveUtc } from "@/lib/dates";
+import { pickupWindowText } from "@/lib/group-buy-pickup";
+import { loginHrefBackHere } from "@/lib/safe-redirect";
+import { ListOwnGroupBuysUsersMeGroupBuysGetResponse } from "@/lib/generated/api.zod";
+import EmptyState from "@/components/ui/EmptyState";
+import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
+import { SkeletonList } from "@/components/Skeleton";
+
+const Skeleton = /** @type {any} */ (SkeletonList);
+const STATUSES = ["open", "funded", "fulfilled", "cancelled"];
+
+/** @param {{ gb: any }} props */
+function Row({ gb }) {
+  const t = useTranslations("my_group_buys");
+  const tCard = useTranslations("group_buys.card");
+  const locale = useLocale();
+  const when = pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  const qty = gb.unit
+    ? t("quantity_unit", { count: gb.quantity, unit: gb.unit })
+    : t("quantity", { count: gb.quantity });
+  return (
+    <li>
+      <Link href={`/group-buys/${gb.id}`} className="block px-4 py-3 min-h-touch hover:bg-background" data-testid="my-group-buys-row">
+        <span className="block font-semibold text-text">{gb.title}</span>
+        <span className="block text-sm text-fg-muted">
+          {[gb.producer_name, qty].filter(Boolean).join(" · ")}
+        </span>
+        <span className="block text-sm text-fg-muted" data-testid="my-group-buys-row-state">
+          {/* A status this page has no word for shows no status, never a wrong one. */}
+          {[
+            STATUSES.includes(gb.status) ? t(`status.${gb.status}`) : null,
+            when ? tCard("pickup_when", { when }) : null,
+            !when && gb.status === "open"
+              ? t("deadline", { date: formatDate(parseNaiveUtc(gb.deadline), locale) })
+              : null,
+          ].filter(Boolean).join(" · ")}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+export default function MyGroupBuysClient() {
+  const t = useTranslations("my_group_buys");
+  const tRoot = useTranslations();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [rows, setRows] = useState(/** @type {any[] | null} */ (null));
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push(loginHrefBackHere());
+      return;
+    }
+    let live = true;
+    api
+      .get("/users/me/group-buys")
+      .then((r) => {
+        // Rule 19: parse before render; a bad body is an error, not a list.
+        const parsed = ListOwnGroupBuysUsersMeGroupBuysGetResponse.safeParse(r.data);
+        if (!live) return;
+        if (parsed.success) setRows(parsed.data.group_buys);
+        else setFailed(true);
+      })
+      .catch(() => {
+        if (live) setFailed(true);
+      });
+    return () => { live = false; };
+  }, [user, authLoading, router, attempt]);
+
+  return (
+    <main className="max-w-2xl mx-auto px-4 py-8" data-testid="my-group-buys">
+      <h1 className="text-2xl font-bold text-text mb-6">{t("title")}</h1>
+      {failed ? (
+        <div data-testid="my-group-buys-error" className="space-y-3">
+          <InlineMessage>{t("load_error")}</InlineMessage>
+          <Button variant="outlined" size="sm" onClick={() => { setFailed(false); setAttempt((a) => a + 1); }} data-testid="my-group-buys-error-retry">
+            {tRoot("error.retry")}
+          </Button>
+        </div>
+      ) : rows === null ? (
+        <Skeleton />
+      ) : rows.length === 0 ? (
+        <EmptyState icon={UsersThree} title={t("empty")} ctaLabel={t("empty_cta")} ctaHref="/group-buys" />
+      ) : (
+        <ul className="divide-y divide-border bg-surface border border-border rounded-md" data-testid="my-group-buys-list">
+          {rows.map((gb) => <Row key={gb.id} gb={gb} />)}
+        </ul>
+      )}
+    </main>
+  );
+}

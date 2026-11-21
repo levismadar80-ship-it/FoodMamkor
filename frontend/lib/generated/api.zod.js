@@ -9487,6 +9487,27 @@ export const UpsertAlertPrefsUsersMeFavoritesProducerIdAlertsPutResponse = /*#__
 
 
 /**
+ * The caller's group buys: running ones by nearest deadline, then the
+ * rest, newest deadline first.
+ * @summary List Own Group Buys
+ */
+export const ListOwnGroupBuysUsersMeGroupBuysGetResponse = /*#__PURE__*/ zod.object({
+  "group_buys": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "deadline": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "joined_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "pickup_ends_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "pickup_starts_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "quantity": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string(),
+  "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('A group buy the caller joined, and her own quantity in it.')))
+})
+
+
+/**
  * Change the current user's password.
  *
  * Rejects OAuth-only accounts (no existing password_hash) with a

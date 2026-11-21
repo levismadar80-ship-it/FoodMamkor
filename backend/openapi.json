@@ -6410,6 +6410,110 @@
         "title": "MenuRow",
         "type": "object"
       },
+      "MyGroupBuyOut": {
+        "description": "A group buy the caller joined, and her own quantity in it.",
+        "properties": {
+          "deadline": {
+            "format": "date-time",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
+          },
+          "producer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Name"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "quantity",
+          "deadline",
+          "joined_at"
+        ],
+        "title": "MyGroupBuyOut",
+        "type": "object"
+      },
+      "MyGroupBuysOut": {
+        "properties": {
+          "group_buys": {
+            "items": {
+              "$ref": "#/components/schemas/MyGroupBuyOut"
+            },
+            "title": "Group Buys",
+            "type": "array"
+          }
+        },
+        "required": [
+          "group_buys"
+        ],
+        "title": "MyGroupBuysOut",
+        "type": "object"
+      },
       "MyProductOrderingOut": {
         "description": "One of the owner's own products, as the orders tab lists it: enough\nto tell the products apart and to know a price is set.",
         "properties": {
@@ -36324,6 +36428,33 @@
         "summary": "Upsert Alert Prefs",
         "tags": [
           "alerts"
+        ]
+      }
+    },
+    "/users/me/group-buys": {
+      "get": {
+        "description": "The caller's group buys: running ones by nearest deadline, then the\nrest, newest deadline first.",
+        "operationId": "list_own_group_buys_users_me_group_buys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGroupBuysOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Own Group Buys",
+        "tags": [
+          "group-buys"
         ]
       }
     },
