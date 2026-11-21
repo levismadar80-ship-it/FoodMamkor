@@ -22,9 +22,17 @@ Delivery is at least once: a row is locked (SKIP LOCKED), sent, marked and
 committed one at a time, so a crash between the send and the commit sends
 that one email again on the next tick. Two dispatchers (the web scheduler and
 the worker during a switch-over) never take the same row.
+
+MEH-3535 review (Fable, 21/11): an unexpected error on a row is a retry like a
+Resend failure, never final at once; a dispatcher without the Resend key
+leaves the row untouched and stops, so a dispatcher that has the key takes it
+at once; a Resend failure ends the batch, so an outage costs one 10 s timeout
+per tick, not 25; `should_stop` lets the worker end between rows.
 """
 
 import logging
+import threading
+from collections.abc import Callable
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -42,11 +50,15 @@ RETRY_BASE = timedelta(minutes=2)
 # unlike an order update, «your business is live» is still true and useful.
 STALE_AFTER = timedelta(days=2)
 BATCH = 25
+# Set by the worker's SIGTERM handler (app/worker.py): the batch ends between
+# rows instead of after up to 25 sends.
+STOP = threading.Event()
 
 # REUSES: app/services/email.py `send_email_result` outcomes. "failed" is worth
 # another try. "unconfigured" (no RESEND_API_KEY in this process) is not the
-# email's fault: the row waits, burning no attempt, so a dispatcher started
-# without the key never eats the queue. Every other answer is final.
+# email's fault: the row is left exactly as it was (rolled back, no attempt,
+# no new send_after) and the batch stops, so a dispatcher started without the
+# key never eats or delays the queue. Every other answer is final.
 _RETRY = "failed"
 _WAIT = "unconfigured"
 
@@ -96,16 +108,17 @@ def _finish(row: EmailOutbox, outcome: str, now: datetime) -> None:
         row.outcome, row.sent_at, row.last_error = "sent", now, None  # type: ignore[assignment]
         _clear(row)
         return
-    if outcome == _WAIT:
-        row.last_error = _WAIT  # type: ignore[assignment]
-        row.send_after = now + RETRY_BASE  # type: ignore[assignment]
-        return
     if outcome != _RETRY:
         row.outcome, row.last_error = "skipped", outcome[:20]  # type: ignore[assignment]
         _clear(row)
         return
+    _retry_later(row, "provider", now)
+
+
+def _retry_later(row: EmailOutbox, code: str, now: datetime) -> None:
+    """One attempt spent: back off, or close the row after MAX_ATTEMPTS."""
     row.attempts = int(row.attempts) + 1  # type: ignore[assignment]
-    row.last_error = "provider"  # type: ignore[assignment]
+    row.last_error = code  # type: ignore[assignment]
     if int(row.attempts) >= MAX_ATTEMPTS:
         row.outcome = "failed"  # type: ignore[assignment]
         _clear(row)
@@ -113,10 +126,12 @@ def _finish(row: EmailOutbox, outcome: str, now: datetime) -> None:
         row.send_after = now + RETRY_BASE * (2 ** (int(row.attempts) - 1))
 
 
-def _handle(row: EmailOutbox, now: datetime) -> None:
+def _handle(row: EmailOutbox, now: datetime) -> str:
+    """Send one row and mark it. Returns the outcome; on "unconfigured" the
+    row is NOT touched (the caller rolls back)."""
     if row.created_at < now - STALE_AFTER:
         _finish(row, "stale", now)
-        return
+        return "stale"
     outcome = email_service.send_email_result(
         str(row.to_email),
         str(row.subject or ""),
@@ -124,43 +139,72 @@ def _handle(row: EmailOutbox, now: datetime) -> None:
         html=str(row.html) if row.html else None,
         reply_to=str(row.reply_to) if row.reply_to else None,
     )
-    _finish(row, outcome, now)
+    if outcome != _WAIT:
+        _finish(row, outcome, now)
+    return outcome
 
 
-def dispatch_due(db: Session, now: datetime | None = None, limit: int = BATCH) -> int:
+def _claim(db: Session, now: datetime) -> EmailOutbox | None:
+    return (
+        db.query(EmailOutbox)
+        .filter(EmailOutbox.outcome == "pending", EmailOutbox.send_after <= now)
+        .order_by(EmailOutbox.send_after)
+        .with_for_update(skip_locked=True)
+        .first()
+    )
+
+
+def _after_crash(db: Session, row_id: object, now: datetime) -> None:
+    """An unexpected error on a row (a DB blip at the commit, a bug) is a
+    retry, never final at once: the send may not have happened. Only while
+    still pending — after the rollback another dispatcher may have taken and
+    sent it, and "sent" must not move."""
+    db.rollback()
+    log.exception("[EMAIL-OUTBOX] row failed (id=%s)", row_id)
+    row = (
+        db.query(EmailOutbox)
+        .filter_by(id=row_id, outcome="pending")
+        .with_for_update()
+        .first()
+    )
+    if row is not None:
+        _retry_later(row, "error", now)
+    db.commit()
+
+
+def dispatch_due(
+    db: Session,
+    now: datetime | None = None,
+    limit: int = BATCH,
+    should_stop: Callable[[], bool] | None = None,
+) -> int:
     """Send up to `limit` due emails, one short transaction each. Returns how
-    many rows were handled (sent, retried later, or closed)."""
-    now = now or utc_now()
+    many rows were handled (sent, retried later, or closed). A row left for a
+    dispatcher with the Resend key is not counted."""
     handled = 0
-    while handled < limit:
-        row = (
-            db.query(EmailOutbox)
-            .filter(EmailOutbox.outcome == "pending", EmailOutbox.send_after <= now)
-            .order_by(EmailOutbox.send_after)
-            .with_for_update(skip_locked=True)
-            .first()
-        )
+    while handled < limit and not (should_stop and should_stop()):
+        row_now = now or utc_now()
+        row = _claim(db, row_now)
         if row is None:
             break
         row_id = row.id
         try:
-            _handle(row, now)
+            outcome = _handle(row, row_now)
+            if outcome == _WAIT:
+                db.rollback()
+                log.error(
+                    "[EMAIL-OUTBOX] no RESEND_API_KEY in this process — rows left for another dispatcher"
+                )
+                break
             db.commit()
         except Exception:  # noqa: BLE001 — one bad row must not stop the batch
-            db.rollback()
-            log.exception("[EMAIL-OUTBOX] row failed (id=%s)", row_id)
-            # Only while still pending: after the rollback another dispatcher
-            # may have taken and sent the row, and "sent" must not become
-            # "failed".
-            failed = (
-                db.query(EmailOutbox)
-                .filter_by(id=row_id, outcome="pending")
-                .with_for_update()
-                .first()
-            )
-            if failed is not None:
-                failed.outcome, failed.last_error = "failed", "error"  # type: ignore[assignment]
-                _clear(failed)
-            db.commit()
+            # A crash is about this row (or a DB blip the next claim will
+            # also hit): the batch goes on.
+            _after_crash(db, row_id, row_now)
+            outcome = "error"
         handled += 1
+        if outcome == _RETRY:
+            # Resend (or the DB) is failing: the rest of the batch would wait
+            # 10 s each for the same answer. The next tick tries again.
+            break
     return handled

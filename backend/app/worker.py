@@ -52,13 +52,28 @@ def run_once(tick: int) -> list[str]:
 
 def main(stop: threading.Event | None = None, max_ticks: int | None = None) -> int:
     """Loop until SIGTERM / SIGINT (Railway sends SIGTERM on a redeploy).
-    The wait is interruptible, so a stop ends the process within a second,
-    never in the middle of a row: each job commits row by row."""
-    stop = stop or threading.Event()
+    The wait is interruptible, and a stop also ends the email batch between
+    rows (email_outbox.STOP), so the process exits after the row in flight
+    (at most one Resend call, 10 s). The order tick is not interrupted: it
+    finishes its own batch first. Each job commits row by row.
 
-    def _stop(signum: int, _frame: FrameType | None) -> None:
-        log.info("worker_stopping", signal=signum)
+    MEH-3535 review: refuses to start without RESEND_API_KEY. A keyless
+    worker would leave every row to the web process after the switch-over
+    and nobody would see it; a crash-looping service on Railway is seen."""
+    from app.config import settings
+    from app.services import email_outbox
+
+    if not settings.resend_api_key:
+        log.error("worker_refused_no_resend_key")
+        return 1
+    stop = stop or threading.Event()
+    email_outbox.STOP.clear()
+
+    def _stop(_signum: int, _frame: FrameType | None) -> None:
+        # Only set events here: logging inside a signal handler is not
+        # re-entrancy safe. "worker_stopped" below says it happened.
         stop.set()
+        email_outbox.STOP.set()
 
     if threading.current_thread() is threading.main_thread():
         signal.signal(signal.SIGTERM, _stop)
@@ -75,6 +90,7 @@ def main(stop: threading.Event | None = None, max_ticks: int | None = None) -> i
             break
         stop.wait(TICK_SECONDS)
     log.info("worker_stopped", ticks=tick)
+    email_outbox.STOP.clear()
     return 0
 
 

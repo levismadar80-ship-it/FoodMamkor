@@ -1,7 +1,7 @@
 """meh3535_email_outbox
 
 Revision ID: c5e7a9b1d3f6
-Revises: a3d5f7b9c1e2
+Revises: b4e6a8c0d2f3
 Create Date: 2026-11-20 23:00:00.000000+00:00
 
 MEH-3535. Additive only (ADR-007 expand): one new table, email_outbox — an
@@ -24,7 +24,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "c5e7a9b1d3f6"
-down_revision: Union[str, None] = "a3d5f7b9c1e2"
+down_revision: Union[str, None] = "b4e6a8c0d2f3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

@@ -9,7 +9,7 @@
 
 **קבצים מרכזיים**
 * `backend/app/services/email.py` — ‏`send_email()`. נכשל פתוח בלי `RESEND_API_KEY`.
-* `backend/app/services/email_outbox.py` — תור המיילים העמיד (MEH-3535): ‏`enqueue_email()` כותב את המייל לטבלה `email_outbox` באותה טרנזקציה של מה שגרם לו, ו-`dispatch_due()` שולח עם ניסיונות חוזרים. כרגע עוברים בו מיילי ההחלטה על בית עסק (אושר / נדחה / חסר פרט) ומיילי ההרשמה לאירוע ולסדנה.
+* `backend/app/services/email_outbox.py` — תור המיילים העמיד (MEH-3535): ‏`enqueue_email()` כותב את המייל לטבלה `email_outbox` באותה טרנזקציה של מה שגרם לו (במיילי האישור: דרך `before_commit` של `_persist_approval`), ו-`dispatch_due()` שולח עם ניסיונות חוזרים. כרגע עוברים בו מיילי ההחלטה על בית עסק (אושר / נדחה / חסר פרט) ומיילי ההרשמה לאירוע ולסדנה.
 * `backend/app/worker.py` — שירות ה-worker הנפרד ב-Railway (`railway.worker.json`) שמריץ את התור ואת טיק ההזמנות, אחרי `OUTBOX_EXTERNAL_WORKER=true` בשירות האתר.
 * `frontend/components/EmailLinkUnsubscribe.jsx` — דף הנחיתה האחד של כל קישור «הסרה» במייל (ניוזלטר, רשימת המתנה, סיכום שבועי): שולח את הטוקן ב-POST בטעינה, «נסו שוב» על 429/5xx/רשת, והטוקן יורד מכתובת הדף (MEH-3464).
 * `backend/app/services/registration_emails.py` — המסגרת המשותפת (`_shell`) של כל מייל HTML, ו-`_button`.

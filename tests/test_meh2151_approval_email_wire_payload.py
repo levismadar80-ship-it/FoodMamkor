@@ -71,7 +71,9 @@ def wire(monkeypatch):
     """
     resend = pytest.importorskip("resend", reason="resend client not installed")
     captured: list[dict] = []
-    monkeypatch.setattr(resend.Emails, "send", staticmethod(lambda params: captured.append(params)))
+    monkeypatch.setattr(
+        resend.Emails, "send", staticmethod(lambda params: captured.append(params))
+    )
     monkeypatch.setattr(email_module.settings, "resend_api_key", "test-key-not-real")
     return captured
 
@@ -92,6 +94,7 @@ def _send_approval(slug="teva-pure"):
             admin_module._producer_approved_body("טעם הבית", slug),
             html=admin_module._producer_approved_html("טעם הבית", slug),
         )
+        db.commit()  # the wrapper queues in the caller's transaction
         dispatch_due(db)
     finally:
         db.close()
@@ -121,7 +124,9 @@ def test_both_parts_reach_the_transport_not_just_the_builder(wire):
 
 @pytest.mark.parametrize("part", ["text", "html"])
 @pytest.mark.parametrize("char, label", [(EM_DASH, "em-dash"), (PIPE, "pipe")])
-def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(wire, part, char, label):
+def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(
+    wire, part, char, label
+):
     """The character is present, and the string it sits in can actually be encoded.
 
     WHAT THIS DELIBERATELY NO LONGER DOES, AND WHY (CI reviewer, #3180)
@@ -147,7 +152,9 @@ def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(wire, part,
     _send_approval()
     value = wire[0][part]
     assert char in value, f"{label} absent from the {part} part at the transport"
-    assert isinstance(value, str), f"{part} part reached the transport as {type(value).__name__}"
+    assert isinstance(value, str), (
+        f"{part} part reached the transport as {type(value).__name__}"
+    )
     value.encode("utf-8")  # raises UnicodeEncodeError on a lone surrogate
 
 
@@ -199,6 +206,7 @@ def test_a_text_only_send_carries_no_html_and_no_cte_header(wire):
         admin_module._send_notification_email(
             db, "producer_changes_requested", "owner@sample.co.il", "נושא", "גוף"
         )
+        db.commit()  # the wrapper queues in the caller's transaction
         dispatch_due(db)
     finally:
         db.close()

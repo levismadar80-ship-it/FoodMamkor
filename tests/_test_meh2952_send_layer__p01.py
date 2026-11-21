@@ -296,7 +296,9 @@ def test_group_own_auth_account_deletion_reads_the_flag_before_the_row_goes(
     user.is_test = is_test
     db.commit()
 
-    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
+    r = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user)
+    )
 
     assert r.status_code == 200, r.text
     assert _to(transport.emails) == ([] if is_test else ["leaving@sample.co.il"])
@@ -538,8 +540,14 @@ def test_inventory_classifier_anchored_to_a_real_repo_file():
     rel = "routers/admin_decisions.py"
     src = (APP_DIR / rel).read_text(encoding="utf-8")
     sites = collect_sites(src, rel)
-    approve = [s for s in sites if s.func == "approve_producer"]
-    assert {s.callee for s in approve} == {"_send_notification_email", "_send_whatsapp"}
+    # MEH-3535: the approval email is queued from _queue_approved_email.
+    approve = [
+        s for s in sites if s.func in ("approve_producer", "_queue_approved_email")
+    ]
+    assert {(s.func, s.callee) for s in approve} == {
+        ("_queue_approved_email", "_send_notification_email"),
+        ("approve_producer", "_send_whatsapp"),
+    }
     for s in approve:
         assert s.flag is not None and not isinstance(s.flag, ast.Constant), s
     inner = [s for s in sites if s.func == "_send_whatsapp"]

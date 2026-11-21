@@ -497,10 +497,15 @@ BUS, OWN, CON, AUTH, NONE = "business", "owner", "consumer", "auth", "none"
 # (file, enclosing function, callee) → (count, group, where test_cause comes from)
 PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     # --- admin.py: business moderation (owner mail + admin WhatsApp ping) ---
-    ("routers/admin_decisions.py", "approve_producer", "_send_notification_email"): (
+    # MEH-3535: queued inside _persist_approval's before_commit.
+    (
+        "routers/admin_decisions.py",
+        "_queue_approved_email",
+        "_send_notification_email",
+    ): (
         1,
         OWN,
-        "producer.is_test or owner.is_test (p_test)",
+        "producer.is_test or owner.is_test (test_cause)",
     ),
     ("routers/admin_decisions.py", "approve_producer", "_send_whatsapp"): (
         1,
@@ -512,8 +517,16 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test",
     ),
-    ("routers/admin_decisions.py", "reject_producer", "_send_whatsapp"): (1, BUS, "p_test"),
-    ("routers/admin_decisions.py", "request_producer_changes", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "reject_producer", "_send_whatsapp"): (
+        1,
+        BUS,
+        "p_test",
+    ),
+    (
+        "routers/admin_decisions.py",
+        "request_producer_changes",
+        "_send_notification_email",
+    ): (
         1,
         OWN,
         "p_test",
@@ -528,7 +541,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "wrapper param (MEH-3535: queued, sent by the outbox)",
     ),
-    ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
+    ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (
+        1,
+        BUS,
+        "wrapper param",
+    ),
     # --- other routers ---
     ("routers/admin_kashrut.py", "kashrut_expiry_reminders", "send_template"): (
         1,

@@ -10,6 +10,7 @@ Split out of routers/admin.py (MEH-3267); the code is moved verbatim.
 
 import logging
 import re
+from collections.abc import Callable
 from typing import NamedTuple
 from uuid import UUID
 
@@ -342,14 +343,20 @@ def _is_slug_collision(exc: IntegrityError) -> bool:
     return SLUG_UNIQUE_CONSTRAINT in str(orig or exc)
 
 
-def _persist_approval(
+def _persist_approval(  # noqa: PLR0913 — +before_commit (MEH-3535)
     db: Session,
     producer_id: UUID,
     producer: Producer,
     overrides: ApprovalOverrides,
     admin_id: UUID,
+    before_commit: Callable[[Producer], None] | None = None,
 ) -> Producer:
     """Mint the slug and commit, retrying once on a unique-slug collision.
+
+    MEH-3535: `before_commit` runs right before each commit, after the slug is
+    minted, so whatever it adds (the approval email's outbox row) lands in the
+    same commit — and is added again on the retry, since the rollback dropped
+    it.
 
     `producers.slug` is UNIQUE (`models/models.py:112`) and `_ensure_unique_slug`
     is SELECT-then-return with no lock, so two admins approving two same-named
@@ -374,6 +381,8 @@ def _persist_approval(
     Only a `producers_slug_key` violation is retried — see `_is_slug_collision`.
     """
     _mint_slug_if_absent(db, producer)
+    if before_commit:
+        before_commit(producer)
     try:
         db.commit()
         return producer
@@ -392,5 +401,7 @@ def _persist_approval(
     _assert_approvable(db, producer, overrides, admin_id)
     _apply_approval_state(producer)
     _mint_slug_if_absent(db, producer)
+    if before_commit:
+        before_commit(producer)
     db.commit()
     return producer

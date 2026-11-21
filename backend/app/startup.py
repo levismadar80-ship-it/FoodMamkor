@@ -709,11 +709,11 @@ def _run_email_outbox_job() -> None:
     commits per row, so a crash costs at most the row it was on.
     """
     from app.database import SessionLocal
-    from app.services.email_outbox import dispatch_due
+    from app.services.email_outbox import STOP, dispatch_due
 
     db = SessionLocal()
     try:
-        dispatch_due(db)
+        dispatch_due(db, should_stop=STOP.is_set)
     except Exception as exc:
         capture_background_exception(exc, task="email_outbox")
         log.error("[EMAIL-OUTBOX] dispatch crashed", exc_info=True)

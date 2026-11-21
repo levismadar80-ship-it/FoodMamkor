@@ -1558,11 +1558,17 @@ Staging first, production after a day of clean staging logs.
    stops it exactly as it stops the web; email needs `RESEND_API_KEY` +
    `EMAIL_FROM_ADDRESS`, the order tick the `WHATSAPP_*` ones and
    `PRODUCT_ORDERS_ENABLED`. Not `PORT`, and not `OUTBOX_EXTERNAL_WORKER`.
-   A worker missing `RESEND_API_KEY` loses nothing: each row answers
-   `unconfigured` and waits (no attempt spent) until a dispatcher with the key
-   takes it.
+   **A worker without `RESEND_API_KEY` refuses to start** (log
+   `worker_refused_no_resend_key`, exit 1, so Railway shows it crash-looping):
+   a keyless dispatcher would leave every row to someone else, unseen. A web
+   process without the key leaves each row untouched and stops its batch, so
+   a dispatcher that has the key takes it at once. **Outside production also
+   set `ADMIN_EMAIL`** (the same reference): there every non-staff recipient is
+   redirected to it (MEH-3402), and without it the row is closed as `skipped`.
 6. Deploy. **Logs** should show `worker_started`, then `worker_tick` every
-   30 s (`ran: ["email_outbox"]`).
+   30 s (`ran: ["email_outbox"]`). A redeploy's SIGTERM ends the email batch
+   after the row in flight (one Resend call, at most 10 s); the order tick, if
+   running, finishes its own batch first.
 7. Only then, on the **backend** service: `OUTBOX_EXTERNAL_WORKER=true` and
    redeploy. Its log says `[OUTBOX] OUTBOX_EXTERNAL_WORKER=true — the worker
    service runs them`. Until this step both run the queue, which is safe

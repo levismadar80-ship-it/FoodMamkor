@@ -26,6 +26,7 @@ Rules:
 
 from __future__ import annotations
 
+import logging
 from datetime import date, time
 from collections.abc import Callable
 from typing import Any
@@ -63,11 +64,13 @@ from app.services.registration_emails import (
     send_waitlist_offer,
 )
 from app.services.email_outbox import enqueue_email  # MEH-3535
+from app.sentry import capture_background_exception  # MEH-3535
 from app.services import registration_waitlist as waitlist  # MEH-3314
 from app.services.registrations import registered_counts
 from app.services import experience_sessions as sessions_svc  # MEH-3441
 from app.utils.clock import israel_now, israel_today, utc_now
 
+_log = logging.getLogger(__name__)
 router = APIRouter(tags=["registrations"])
 
 _CLOSED = {"code": "registration_closed", "message": "ההרשמה סגורה"}
@@ -290,11 +293,20 @@ _COMPOSERS: dict[str, Callable[[Any], Mail]] = {
 def _queue_mail(
     db: Session, kind: str, to: str, m: Any, test_cause: bool = False
 ) -> None:
-    """Queue one sign-up email in the caller's transaction (no commit)."""
-    mail = _COMPOSERS[kind](m)
-    enqueue_email(
-        db, kind, to, mail.subject, mail.body, html=mail.html, test_cause=test_cause
-    )
+    """Queue one sign-up email in the caller's transaction (no commit).
+
+    MEH-3535 review: a sign-up never fails because of its email. A composer
+    or queue error is reported and the sign-up is kept, as before the queue
+    (a BackgroundTask that failed after the 201). The row is added last, so
+    an error leaves nothing half-added in the session."""
+    try:
+        mail = _COMPOSERS[kind](m)
+        enqueue_email(
+            db, kind, to, mail.subject, mail.body, html=mail.html, test_cause=test_cause
+        )
+    except Exception as exc:  # noqa: BLE001 — reported, never raised
+        capture_background_exception(exc, task="email_outbox_enqueue")
+        _log.error("[EMAIL-OUTBOX] could not queue %s", kind, exc_info=True)
 
 
 def _left(cap: int | None, occupied: int) -> int | None:

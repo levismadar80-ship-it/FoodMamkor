@@ -145,7 +145,17 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     _apply_approval_state(producer)
     # MEH-1817: slug mint + commit, extracted so this handler stays under the
     # C901 ceiling. See _persist_approval for why the commit is retried.
-    producer = _persist_approval(db, producer_id, producer, overrides, user.id)  # type: ignore[arg-type]
+    # MEH-3535: the welcome email is queued in the approval's own commit (and
+    # re-queued on the slug-collision retry, with the slug that won), so a
+    # crash between the decision and the email cannot lose it.
+    producer = _persist_approval(
+        db,
+        producer_id,
+        producer,
+        overrides,
+        user.id,  # type: ignore[arg-type]
+        before_commit=lambda p: _queue_approved_email(db, p),
+    )
     # MEH-3258: a consumer who upgraded at registration (auth.py upgrade path)
     # may have reviewed competitors. The public list already drops those per
     # read; this brings the stored rating in line once the business goes live.
@@ -163,26 +173,7 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     # MEH-2952: approving a test business (or one owned by a test account)
     # sends nothing — owner email, owner WhatsApp and the admin ping alike.
     p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
-    if producer_user:
-        _send_notification_email(
-            db,
-            "producer_approved",
-            producer_user.email,  # type: ignore[arg-type]
-            # MEH-2113: the celebratory headline, in the one place it is TRUE.
-            # It was rejected for the registration screen (MEH-2100 item 9)
-            # precisely because onboarding was not complete there; at approval
-            # it is — the business is live on the site. Sapir-approved copy,
-            # verbatim (16/08) and untouched by MEH-2151 — that ticket restructures
-            # the BODY (CTA links, HTML part), never this subject line.
-            "ברוכים הבאים למהמקור",
-            # MEH-2151: p_slug is captured above (MEH-1817 mints it during this
-            # very approval), so both parts can carry the /p/{slug} link. A
-            # producer with no slug still gets a well-formed mail — both
-            # builders drop their view-page block whole.
-            _producer_approved_body(p_name, p_slug),  # type: ignore[arg-type]
-            html=_producer_approved_html(p_name, p_slug),  # type: ignore[arg-type]
-            test_cause=p_test,
-        )
+    # MEH-3535: the owner's email was queued inside _persist_approval.
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
     # producer. Fail-open at the service layer — any failure here must
@@ -321,12 +312,10 @@ def reject_producer(
     # with approve_producer's clearing.
     producer.requested_changes = None  # type: ignore[assignment]
     producer.changes_requested_at = None  # type: ignore[assignment]
-    db.commit()
-    if was_live:  # MEH-2852: the live page just went away.
-        indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
 
-    # MEH-226: email fires post-commit only — a Resend failure must not roll
-    # back a decision the admin already made.
+    # MEH-226 / MEH-3535: the email is queued in the decision's own commit
+    # (below); the send happens later, so a Resend failure cannot roll back a
+    # decision the admin already made.
     reason_text = _rejection_reason_suffix(composed_reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     # MEH-2952: a test business / test owner → nothing sent.
@@ -348,6 +337,10 @@ def reject_producer(
             ),
             test_cause=p_test,
         )
+
+    db.commit()
+    if was_live:  # MEH-2852: the live page just went away.
+        indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
 
     # Notify admin via WhatsApp
     if settings.admin_whatsapp_to:
@@ -409,7 +402,6 @@ def request_producer_changes(
     # tz-aware (MEH-762 D1, mirrors grant_verified) — the column is TIMESTAMPTZ.
     producer.changes_requested_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     # status intentionally unchanged — stays "pending".
-    db.commit()
 
     p_name = producer.name
     # Env-aware link (mirrors auth_emails.py:159) — staging emails must point
@@ -428,6 +420,9 @@ def request_producer_changes(
             _producer_changes_requested_body(p_name, feedback, dashboard_link),  # type: ignore[arg-type]
             test_cause=p_test,
         )
+
+    # MEH-3535: the email above is queued in this same commit.
+    db.commit()
 
     # MEH-1051: WhatsApp mirror of the email above (producer_changes_requested_v1,
     # Meta-approved). Post-commit + fail-open — a Meta outage or missing phone
@@ -516,6 +511,35 @@ def revoke_verified(
     return {"detail": "תג מאומת הוסר"}
 
 
+def _queue_approved_email(db: Session, producer: Producer) -> None:
+    """MEH-3535: queue the welcome email in the approval's transaction (called
+    by _persist_approval right before each commit). MEH-2952: a test business
+    or a test owner queues nothing."""
+    producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    if not producer_user:
+        return
+    test_cause = bool(producer.is_test or producer_user.is_test)
+    _send_notification_email(
+        db,
+        "producer_approved",
+        producer_user.email,  # type: ignore[arg-type]
+        # MEH-2113: the celebratory headline, in the one place it is TRUE.
+        # It was rejected for the registration screen (MEH-2100 item 9)
+        # precisely because onboarding was not complete there; at approval
+        # it is — the business is live on the site. Sapir-approved copy,
+        # verbatim (16/08) and untouched by MEH-2151 — that ticket restructures
+        # the BODY (CTA links, HTML part), never this subject line.
+        "ברוכים הבאים למהמקור",
+        # MEH-2151: producer.slug was minted just before this call (MEH-1817,
+        # _mint_slug_if_absent), so both parts can carry the /p/{slug} link. A
+        # producer with no slug still gets a well-formed mail — both
+        # builders drop their view-page block whole.
+        _producer_approved_body(producer.name, producer.slug),  # type: ignore[arg-type]
+        html=_producer_approved_html(producer.name, producer.slug),  # type: ignore[arg-type]
+        test_cause=test_cause,
+    )
+
+
 def _send_notification_email(  # noqa: PLR0913 — +db, +kind (MEH-3535)
     db: Session,
     kind: str,
@@ -534,23 +558,20 @@ def _send_notification_email(  # noqa: PLR0913 — +db, +kind (MEH-3535)
     payload it produced before this parameter existed. Same shape, and same
     reasoning, as `reply_to` two parameters down in `send_email` (MEH-2112).
     """
-    # MEH-3535: queued, not sent here. The decision is already committed; the
-    # email is committed right after it, and the outbox dispatcher sends it
-    # with retries — a Resend error or a deploy no longer loses it. (Not in the
-    # decision's own transaction: the approval commit can roll back and retry
-    # on a slug collision, see _persist_approval, and the email carries the
-    # slug that won.)
+    # MEH-3535: queued, not sent here, and NOT committed here: the caller
+    # calls this before the decision's own commit, so the decision and its
+    # email land together or not at all; the outbox dispatcher sends it with
+    # retries. (Approve: via _persist_approval's before_commit, which re-queues
+    # on the slug-collision retry, so the email carries the slug that won.)
     # MEH-2952: `test_cause` — the business the mail is about is a test row;
     # nothing is queued.
-    # The decision is already committed, so a failure here must not turn the
-    # 200 into a 500 (and skip the WhatsApp and IndexNow steps after it).
+    # Composing or queueing must not turn the decision into a 500: an error
+    # here is reported and the decision commits without the email.
     try:
         enqueue_email(
             db, kind, to_email, subject, body, html=html, test_cause=test_cause
         )
-        db.commit()
     except Exception as exc:  # noqa: BLE001 — reported, never raised
-        db.rollback()
         capture_background_exception(exc, task="email_outbox_enqueue")
         logger.error("[EMAIL-OUTBOX] could not queue %s", kind, exc_info=True)
 
