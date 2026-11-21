@@ -1,1 +1,12 @@
 # lines path — files over 1500 lines when the guard was born (13/11/2026). Lower a number when the file shrinks; remove the line when it drops under 1500. Never raise one.
+2552 backend/scripts/seed_demo_business.py
+1920 frontend/__tests__/RegisterProducerClient.test.jsx
+2910 frontend/e2e/flows/manual/home.spec.ts
+1984 frontend/e2e/flows/manual/map.spec.ts
+2847 scripts/release/action_map.py
+5419 tests/test_api.py
+1524 tests/test_experiences.py
+1621 tests/test_group_buys_api.py
+1608 tests/test_meh2952_send_layer.py
+1592 tests/test_meh3263_order_route.py
+2524 tests/test_producer_owner_invite.py
