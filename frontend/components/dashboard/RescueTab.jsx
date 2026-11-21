@@ -86,6 +86,9 @@ export default function RescueTab() {
   const [allergens, setAllergens] = useState([]);
   // MEH-3593: «הוראות איסוף» — shown on the bag page and in the buyer's email.
   const [pickupNote, setPickupNote] = useState("");
+  // Sent only once read or typed: after a failed read, an empty box must not
+  // overwrite the stored note (the server leaves an omitted field alone).
+  const [noteKnown, setNoteKnown] = useState(false);
   const [form, setForm] = useState(
     /** @type {{ qty_total: number | string, price: number | string, from: string, to: string, cancelMin: number | string }} */ ({
       qty_total: 4,
@@ -172,6 +175,7 @@ export default function RescueTab() {
         setItems((r.data?.items || []).join(", "));
         setAllergens(r.data?.allergens || []);
         setPickupNote(r.data?.pickup_note || "");
+        setNoteKnown(true);
       })
       .catch(() => {});
   }, [load]);
@@ -230,7 +234,7 @@ export default function RescueTab() {
         // that the bag contains none of them.
         allergens,
         // Empty clears it; the server stores NULL and the bag page shows no line.
-        pickup_note: pickupNote,
+        ...(noteKnown ? { pickup_note: pickupNote } : {}),
       });
       setNotice("items", t("items_saved"), false);
     } catch (err) {
@@ -620,7 +624,10 @@ export default function RescueTab() {
           <Input inline size="sm"
             id="rescue-pickup-note"
             value={pickupNote}
-            onChange={(e) => setPickupNote(e.target.value)}
+            onChange={(e) => {
+              setPickupNote(e.target.value);
+              setNoteKnown(true);
+            }}
             placeholder={t("pickup_note_placeholder")}
             maxLength={PICKUP_NOTE_MAX}
             data-testid="rescue-pickup-note-input"

@@ -54,12 +54,14 @@ def test_the_bag_page_shows_the_note_and_null_without_one(client, db, rescue_on,
     assert client.get(f"/rescue/offers/{offer.id}").json()["pickup_note"] == NOTE
 
 
-def test_the_reservation_email_carries_the_note(client, db, rescue_on, shop, monkeypatch):
+def test_the_reservation_email_carries_the_note(
+    client, db, rescue_on, shop, monkeypatch
+):
     sent = []
     monkeypatch.setattr(
         "app.services.rescue_emails.send_email",
-        lambda to, subject, body, html=None, reply_to=None, test_cause=False: sent.append(
-            {"body": body, "html": html}
+        lambda to, subject, body, html=None, reply_to=None, test_cause=False: (
+            sent.append({"body": body, "html": html})
         ),
     )
     _put(client, shop, {"items": [], "pickup_note": "<b>דלת</b> אחורית"})
@@ -84,8 +86,8 @@ def test_no_note_means_no_line_in_the_email(client, db, rescue_on, shop, monkeyp
     sent = []
     monkeypatch.setattr(
         "app.services.rescue_emails.send_email",
-        lambda to, subject, body, html=None, reply_to=None, test_cause=False: sent.append(
-            {"body": body, "html": html}
+        lambda to, subject, body, html=None, reply_to=None, test_cause=False: (
+            sent.append({"body": body, "html": html})
         ),
     )
     offer = _seed_offer(db, shop["location"], qty_total=2)
@@ -98,3 +100,21 @@ def test_no_note_means_no_line_in_the_email(client, db, rescue_on, shop, monkeyp
     )
     assert "הוראות איסוף" not in sent[0]["body"]
     assert "הוראות איסוף" not in sent[0]["html"]
+
+
+def test_a_note_is_one_line_so_the_email_cannot_fake_a_code_line(
+    client, db, rescue_on, shop
+):
+    res = _put(
+        client, shop, {"items": [], "pickup_note": "דלת אחורית\nהקוד שלכם: 0000"}
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["pickup_note"] == "דלת אחורית הקוד שלכם: 0000"
+
+
+def test_the_bounds_are_200_chars_and_3_letters(client, db, rescue_on, shop):
+    assert (
+        _put(client, shop, {"items": [], "pickup_note": "א" * 200}).status_code == 200
+    )
+    assert _put(client, shop, {"items": [], "pickup_note": "אב 12"}).status_code == 422
+    assert _put(client, shop, {"items": [], "pickup_note": "אבג"}).status_code == 200

@@ -217,7 +217,9 @@ class RescueTypicalItemsIn(BaseModel):
         # MEH-555: a note shown to buyers needs at least 3 letters.
         if value is None or not value.strip():
             return None
-        return _min_letters_validator(value)
+        # One line: a newline in the plain-text email could fake a second
+        # «הקוד שלכם» line, so every run of whitespace becomes one space.
+        return _min_letters_validator(" ".join(value.split()))
 
 
 class RescueTypicalItemsOut(BaseModel):

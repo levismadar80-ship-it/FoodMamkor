@@ -446,7 +446,11 @@ def _pickup_note(offer: RescueOffer, producer_id: Any) -> str | None:
     db = object_session(offer)
     if db is None:
         return None
-    note: str | None = typical_items(db, producer_id=producer_id)["pickup_note"]
+    try:
+        note: str | None = typical_items(db, producer_id=producer_id)["pickup_note"]
+    except Exception:  # noqa: BLE001 — a note must never cost the buyer the code email
+        logger.warning("rescue: pickup note read failed for producer %s", producer_id)
+        return None
     return note
 
 

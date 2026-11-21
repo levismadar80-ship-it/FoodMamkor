@@ -402,6 +402,16 @@ describe("the «בדרך כלל» editor", () => {
     await waitFor(() => expect(put.mock.calls.at(-1)[1].pickup_note).toBe("נכנסים מהחצר"));
   });
 
+  it("MEH-3593: a failed read does not send an empty note over the stored one", async () => {
+    get.mockImplementation((url) =>
+      url.includes("typical-items") ? Promise.reject(new Error("down")) : Promise.resolve({ data: [] }),
+    );
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-items-save"));
+    await waitFor(() => expect(put).toHaveBeenCalled());
+    expect(put.mock.calls.at(-1)[1]).not.toHaveProperty("pickup_note");
+  });
+
   it("MEH-2752: unticking clears a previous declaration", async () => {
     get.mockImplementation((url) =>
       url.includes("typical-items")
