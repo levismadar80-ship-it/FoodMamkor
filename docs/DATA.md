@@ -1844,14 +1844,6 @@ POST   /admin/producers/{id}/reject            admin — terminal → status=rej
                                                (NULL for a free-text-only body); approve clears both columns.
 POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); pending-only (409 if status != pending, MEH-769 precedent; MEH-2124 dropped the second status); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
 
-# Home products moderation
-GET    /admin/home-products/flagged            admin
-POST   /admin/home-products/{id}/approve       admin — clears FLAGGED
-POST   /admin/home-products/{id}/remove        admin — deactivates + email
-GET    /admin/home-products/hidden             admin
-POST   /admin/home-products/{id}/restore       admin
-DELETE /admin/home-products/{id}               admin
-
 # Users
 GET    /admin/users                            admin — search · rows carry rescue_active_no_shows + rescue_blocked (MEH-3226)
 PUT    /admin/users/{id}/role                  admin. role=consumer **or role=admin** on an account with a linked business (producer_id set) → 409 (MEH-3376): an owner is never an admin, and is not demoted while the business is linked; detach the owner first.
