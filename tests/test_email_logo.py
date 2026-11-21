@@ -3,7 +3,8 @@
 Two layers:
 1. Render: all 12 HTML templates are built (the report_info one through its
    real route) and each must carry the <img> with alt «מהמקור» and an
-   absolute https URL to /email-logo.png (frontend_url set to production),
+   absolute https URL to the public origin's /email-logo.png in every
+   environment (MEH-3583),
    above its first heading or paragraph.
 2. Scan: every module under backend/app that contains an HTML document
    (`<html`, any case, any attributes) must make one real email_logo_html()
@@ -188,9 +189,7 @@ def _email_image_problems(html: str) -> list[str]:
             if not attrs.get(need):
                 problems.append(f"<img> without {need}: {tag[:80]}")
     for href in HREF.findall(html):
-        if not href.startswith(("https://", "mailto:")) and not href.startswith(
-            STAGING_FRONTEND
-        ):
+        if not href.startswith(("https://", "mailto:")):
             problems.append(f"link is not absolute https: {href!r}")
     return problems
 

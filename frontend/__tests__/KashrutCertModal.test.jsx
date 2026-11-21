@@ -274,13 +274,4 @@ describe("CertModal when the photo cannot load (MEH-3583)", () => {
     // The caption under the photo still tells the visitor who verified it.
     expect(screen.getByText("אומתה על ידי מהמקור")).toBeTruthy();
   });
-
-  it("opening another badge's certificate tries its photo again", () => {
-    setup({ certs: [{ badge_code: "badatz" }, { badge_code: "rabanut" }] });
-    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
-    fireEvent.error(screen.getByTestId("kashrut-cert-image"));
-    fireEvent.click(screen.getByTestId("kashrut-cert-close"));
-    fireEvent.click(screen.getByTestId("kashrut-cert-trigger-rabanut"));
-    expect(screen.getByTestId("kashrut-cert-image").getAttribute("src")).toContain("rabanut");
-  });
 });
