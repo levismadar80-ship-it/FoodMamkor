@@ -11,6 +11,7 @@
 * `frontend/lib/env.client.js` — ‏`SITE_URL`. ‏`resolveSiteUrl()` מפיל את הבנייה כש-`VERCEL_ENV=production` וה-host נראה כמו staging.
 * `frontend/lib/sitemap-static.js` — הדפים הסטטיים ב-sitemap, ובהם `/producers`.
 * `frontend/lib/seo.js` — ה-structured data.
+* `frontend/lib/seo.js` · ‏`producerOgImage` — תמונת השיתוף של דף בית עסק: התמונה של העסק עם הלוגו של מהמקור בפינה, שכבת Cloudinary מעל החיתוך. השכבה היא `mehamakor/brand/og-badge` בענן שלנו, והמקור שלה `frontend/public/og-badge.png` — אם השכבה נמחקת, מעלים אותו מחדש באותו id (MEH-3673).
 * `frontend/lib/og-site-image.js` — ‏`siteOgImageUrl(locale)`: תמונת השיתוף של האתר (JPEG קל, אנגלית ב-/en). דף שכותב `openGraph` משלו מאבד את התמונה של ה-layout, ולכן נותן אותה בעצמו, מכאן (MEH-3590).
 * `frontend/lib/guide-metadata.js` — ‏`buildGuideMetadata`: ה-metadata של שלושת המדריכים לבתי עסק, במקום שלושה עותקים (MEH-3590).
 * `frontend/components/StoryCardCanvas.jsx` · `frontend/components/ReviewCardCanvas.jsx` — כרטיסי שיתוף.

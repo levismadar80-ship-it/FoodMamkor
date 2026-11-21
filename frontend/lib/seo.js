@@ -167,6 +167,32 @@ export function ogImage(url) {
 }
 
 /**
+ * MEH-3673: the מהמקור pill drawn on a business's own share photo, so every
+ * WhatsApp / social share of a business page carries our mark. A Cloudinary
+ * overlay layer, not a rendered card: the photo stays a Cloudinary JPEG/WebP
+ * under WhatsApp's 300KB (a next/og photo card was ~690KB PNG, MEH-3329).
+ * The layer is the same pill as the imageless card (lib/og-producer-card.js
+ * brandPill), rendered at 2x into public/og-badge.png and uploaded to our
+ * cloud as `mehamakor/brand/og-badge` — if that asset is ever deleted, every
+ * badged preview breaks; re-upload public/og-badge.png under the same id.
+ * A layer only exists in our own cloud, so a photo in any other cloud (or
+ * off Cloudinary) gets the plain ogImage crop instead.
+ */
+const OG_BADGE_CLOUD = "dfzpscjks";
+// 380x136 PNG at 2x, 6px (1x) shadow margin on each side → the pill sits
+// 48px from the right and 40px from the top, as on the imageless card.
+const OG_BADGE_LAYER =
+  "l_mehamakor:brand:og-badge/c_scale,w_190/fl_layer_apply,g_north_east,x_42,y_34";
+
+/** @param {string | null | undefined} url */
+export function producerOgImage(url) {
+  const img = ogImage(url);
+  if (!img || img === url) return img;
+  if (new URL(img).pathname.split("/")[1] !== OG_BADGE_CLOUD) return img;
+  return img.replace("/upload/w_1200,h_630,c_fill,f_auto,q_auto/", `/upload/w_1200,h_630,c_fill/${OG_BADGE_LAYER}/f_auto,q_auto/`);
+}
+
+/**
  * MEH-3329: the branded link-preview card of a business page, or null when it
  * has no slug (the route is keyed by slug). `v` = updated_at in epoch seconds,
  * so an edited page gets a new URL and Facebook/WhatsApp caches cannot keep
@@ -699,8 +725,8 @@ export function buildProducerMetadata(producer, locale = "he") {
   const pageUrl = buildPageUrl(producer);
   // MEH-3329: its own photo first; a business with no photo gets its branded
   // card (name, type · city, brand pill — app/og/business/[file]/route.js)
-  // instead of the generic site image.
-  const img = ogImage(producer.images?.[0]) || producerOgCardUrl(producer);
+  // instead of the generic site image. MEH-3673: the photo carries our pill.
+  const img = producerOgImage(producer.images?.[0]) || producerOgCardUrl(producer);
 
   return {
     title: buildTitle(producer, locale),

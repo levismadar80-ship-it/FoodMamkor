@@ -7,6 +7,7 @@ import {
   buildProducerMetadata,
   ogImage,
   producerOgCardUrl,
+  producerOgImage,
   serializeJsonLd,
   SITE_URL,
 } from "@/lib/seo";
@@ -739,5 +740,31 @@ describe("MEH-3329 producer og:image is the branded card when there is no photo"
     const a = producerOgCardUrl({ slug: "x", updated_at: "2026-11-15T10:00:00Z" });
     const b = producerOgCardUrl({ slug: "x", updated_at: "2026-11-16T10:00:00Z" });
     expect(a).not.toBe(b);
+  });
+});
+
+// MEH-3673 — the מהמקור pill on a business's own share photo.
+describe("MEH-3673 producerOgImage puts our pill on the business photo", () => {
+  const OURS = "https://res.cloudinary.com/dfzpscjks/image/upload/v1794853002/mehamakor/a2c16ff0.jpg";
+  it("a photo in our cloud → 1200x630 crop, badge layer at the top right, then f_auto,q_auto", () => {
+    expect(producerOgImage(OURS)).toBe(
+      "https://res.cloudinary.com/dfzpscjks/image/upload/w_1200,h_630,c_fill/" +
+        "l_mehamakor:brand:og-badge/c_scale,w_190/fl_layer_apply,g_north_east,x_42,y_34/" +
+        "f_auto,q_auto/v1794853002/mehamakor/a2c16ff0.jpg",
+    );
+  });
+  it("another cloud has no badge layer → the plain crop, never a broken layer", () => {
+    const other = "https://res.cloudinary.com/demo/image/upload/v1/photo.jpg";
+    expect(producerOgImage(other)).toBe(ogImage(other));
+  });
+  it("off Cloudinary → untouched; nothing → null", () => {
+    expect(producerOgImage("https://example.com/p.jpg")).toBe("https://example.com/p.jpg");
+    expect(producerOgImage(null)).toBe(null);
+  });
+  it("the business page advertises the badged photo in og:image and twitter:image", () => {
+    const meta = buildProducerMetadata({ ...fullProducer, images: [OURS] });
+    expect(meta.openGraph.images[0].url).toBe(producerOgImage(OURS));
+    expect(meta.openGraph.images[0].url).toContain("l_mehamakor:brand:og-badge");
+    expect(meta.twitter.images).toEqual([producerOgImage(OURS)]);
   });
 });
