@@ -50,12 +50,22 @@ ROUTE_FILE = re.compile(
     r"opengraph-image|twitter-image|sitemap|robots|manifest|icon|apple-icon)\.(js|jsx|ts|tsx)$"
 )
 SKIP_DIRS = {"__tests__", "__pycache__", "node_modules"}
-JS_PRAGMA = re.compile(r"^\s*(['\"]use (client|server)['\"];?|// @ts-(check|nocheck))\s*$")
+# Tool pragmas are not a header: skipped, so a file whose only top comment is
+# one of these counts as headerless (reviewer finding, MEH-3604).
+JS_PRAGMA = re.compile(
+    r"^\s*(['\"]use (client|server)['\"];?|//\s*@ts-(check|nocheck)|"
+    r"//\s*(eslint|prettier|istanbul|c8|vitest)\b.*|/\*\s*(eslint|prettier|istanbul|c8)\b.*\*/)\s*$"
+)
 
 
 def _clean(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip().replace("|", "\\|").replace("`", "'")
-    return text if len(text) <= MAX else text[: MAX - 1].rstrip() + "…"
+    if len(text) <= MAX:
+        return text
+    cut = text[: MAX - 1]
+    stop = max(cut.rfind(". "), cut.rfind("; "))
+    cut = cut[: stop + 1] if stop > MAX // 2 else cut[: cut.rfind(" ")]
+    return cut.rstrip() + " …"
 
 
 def _summary(lines: list[str]) -> str:

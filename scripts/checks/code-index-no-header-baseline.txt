@@ -243,3 +243,4 @@ frontend/lib/use-focus-return.js
 frontend/lib/use-test-business-ids.js
 frontend/lib/use-user-city.js
 frontend/lib/use-visual-viewport-box.js
+frontend/lib/use-home-page.js

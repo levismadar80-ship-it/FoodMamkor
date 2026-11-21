@@ -70,8 +70,17 @@ def test_every_path_in_the_inventory_table_exists():
     )
 
 
+FOLDERS_PARA = "**Where each code folder is listed.**"
+
+
+def _folders_paragraph() -> str:
+    sec = _section()
+    assert FOLDERS_PARA in sec, f"§5 lost its «{FOLDERS_PARA}» paragraph"
+    return sec[sec.index(FOLDERS_PARA) :]
+
+
 def test_every_code_folder_is_named_in_the_inventory_section():
-    named = _named_paths(_section())
+    named = _named_paths(_folders_paragraph())
     unnamed = sorted(d for d in _tracked_folders() if d not in named)
     assert not unnamed, (
         "A tracked folder is not named in docs/ARCHITECTURE.md §5 «Where each code "
@@ -80,8 +89,13 @@ def test_every_code_folder_is_named_in_the_inventory_section():
     )
 
 
-def test_every_model_table_is_in_data_md():
+def _schema_section() -> str:
     data = DATA.read_text(encoding="utf-8")
+    return data[data.index("## DB Schema") : data.index("## API Endpoints")]
+
+
+def test_every_model_table_is_in_data_md():
+    data = _schema_section()
     missing = sorted(t for t in _model_tables() if not re.search(rf"\b{t}\b", data))
     assert not missing, (
         "These tables are declared in backend/app/models/ but not described in "

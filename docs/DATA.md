@@ -955,6 +955,23 @@ product_order_notifications (id uuid PK, order_id FK→product_orders CASCADE,
 
 ---
 
+### Admin, messaging, outreach — tables that had no schema line (added MEH-3604, 21/11/2026, from the models)
+
+Generated once from `Base.metadata`; the model file is the authority. Read it for types and indexes.
+
+```sql
+admin_audit_log                (id PK, actor_id, action, target_type nullable, target_id nullable, details nullable, ip nullable, created_at)  -- models/admin_ops.py
+admin_checklist_items          (id PK, position, label, hint nullable, active, updated_at)  -- models/admin_ops.py
+admin_passkeys                 (id PK, user_id FK→users CASCADE, credential_id, public_key, sign_count, aaguid nullable, backup_eligible, backup_state, transports nullable, name nullable, created_at, last_used_at nullable)  -- models/admin_passkeys.py
+admin_recovery_codes           (id PK, user_id FK→users CASCADE, code_hash, used_at nullable, created_at)  -- models/admin_passkeys.py
+group_buy_commits              (id PK, group_buy_id FK→group_buys CASCADE, user_id FK→users CASCADE, quantity, phone nullable, created_at)  -- models/events.py
+inbound_messages               (id PK, from_phone, body, received_at, meta_message_id nullable, bot_replied, bot_replied_at nullable, bot_template_sent nullable, human_replied)  -- models/admin_ops.py
+outbound_messages              (id PK, to_phone, kind, meta_message_id nullable, status, error_code nullable, error_message nullable, created_at, updated_at nullable)  -- models/admin_ops.py
+outreach_leads                 (id PK, name, phone nullable, instagram nullable, website nullable, city nullable, category nullable, notes nullable, source nullable, status nullable, prefill_token nullable, prefill_token_expires_at nullable, suggested_by_name nullable, suggested_by_email nullable, suggester_wants_update, suggestion_reason nullable, suggester_thanked_at nullable, created_at nullable, updated_at nullable)  -- models/admin_ops.py
+producer_name_change_requests  (id PK, producer_id FK→producers CASCADE, current_name, requested_name, reason nullable, status, admin_notes nullable, created_at, reviewed_at nullable)  -- models/admin_ops.py
+producer_review_checks         (id PK, producer_id FK→producers CASCADE, item_id FK→admin_checklist_items RESTRICT, label_snapshot, checked_by FK→users SET NULL nullable, checked_at)  -- models/admin_ops.py
+```
+
 ## API Endpoints
 
 All endpoints served from `backend/app/main.py`. Auth via JWT in the
