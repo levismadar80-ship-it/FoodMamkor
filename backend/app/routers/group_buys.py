@@ -304,8 +304,11 @@ def _maybe_notify_funded(
 
 def _pickup_text(gb: GroupBuy) -> str:
     return pickup_lines(
-        gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note
-    )  # type: ignore[arg-type]
+        gb.pickup_starts_at,  # type: ignore[arg-type]
+        gb.pickup_ends_at,  # type: ignore[arg-type]
+        gb.pickup_note,  # type: ignore[arg-type]
+        gb.delivery_note,  # type: ignore[arg-type]
+    )
 
 
 def _notify_late_joiner(
