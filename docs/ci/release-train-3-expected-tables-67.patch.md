@@ -33,7 +33,8 @@ Nothing else in the file changes.
 
 ## How to check it
 
-- `git diff origin/staging -- .github/` on the train shows exactly the three
-  lines above.
+- `git diff origin/feature/meh-3606-release-train-2 -- .github/` on the train
+  shows exactly the three lines above (against staging, train 2's own
+  `.github` changes show too).
 - sha256 of the whole file after the change:
   `706529a0b9c3caf38f880c84cc5d8653a98e8f963e9d490c634ea926c6c38d6c`.

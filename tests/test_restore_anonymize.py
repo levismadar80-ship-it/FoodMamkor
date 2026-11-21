@@ -57,6 +57,8 @@ EXEMPT: dict[str, str] = {
     "producer_locations.label": "public pickup point label",
     "products.name": "public product name",
     "product_order_items.name": "product name snapshot",
+    "product_order_items.variant_name": "product variant name snapshot (MEH-3617)",
+    "product_variants.name": "public listing text (a product's size or flavour, MEH-3617)",
     "categories.name": "category",
     "cities.name_he": "city",
     "group_buys.product_name": "public listing",

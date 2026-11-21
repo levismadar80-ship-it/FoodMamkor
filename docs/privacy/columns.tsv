@@ -203,6 +203,13 @@ group_buy_commits.id	orders	a user joining a group buy
 group_buy_commits.phone	orders	a user joining a group buy
 group_buy_commits.quantity	orders	a user joining a group buy
 group_buy_commits.user_id	orders	a user joining a group buy
+group_buy_waitlist.created_at	orders	a user on a full group buy's waitlist
+group_buy_waitlist.group_buy_id	orders	a user on a full group buy's waitlist
+group_buy_waitlist.id	orders	a user on a full group buy's waitlist
+group_buy_waitlist.offered_at	orders	a user on a full group buy's waitlist
+group_buy_waitlist.quantity	orders	a user on a full group buy's waitlist
+group_buy_waitlist.user_id	orders	a user on a full group buy's waitlist
+group_buys.allergens	business	a group buy a business publishes
 group_buys.below_goal_notified_at	business	a group buy a business publishes
 group_buys.city	business	a group buy a business publishes
 group_buys.created_at	business	a group buy a business publishes
@@ -212,9 +219,15 @@ group_buys.description	business	a group buy a business publishes
 group_buys.fulfillment_note	business	a group buy a business publishes
 group_buys.funded_notified_at	business	a group buy a business publishes
 group_buys.id	business	a group buy a business publishes
+group_buys.joins_closed_at	business	a group buy a business publishes
 group_buys.max_participants	business	a group buy a business publishes
+group_buys.max_units	business	a group buy a business publishes
 group_buys.min_participants	business	a group buy a business publishes
+group_buys.pickup_ends_at	business	a group buy a business publishes
+group_buys.pickup_location_id	business	a group buy a business publishes
 group_buys.pickup_note	business	a group buy a business publishes
+group_buys.pickup_reminder_sent_at	business	a group buy a business publishes
+group_buys.pickup_starts_at	business	a group buy a business publishes
 group_buys.price_per_unit_group	business	a group buy a business publishes
 group_buys.price_per_unit_regular	business	a group buy a business publishes
 group_buys.producer_id	business	a group buy a business publishes
@@ -352,6 +365,7 @@ producer_locations.order_cutoff_day	business	a business's branch or pickup point
 producer_locations.order_cutoff_time	business	a business's branch or pickup point
 producer_locations.phone	business	a business's branch or pickup point
 producer_locations.pickup_days	business	a business's branch or pickup point
+producer_locations.pickup_note	business	a business's branch or pickup point
 producer_locations.producer_id	business	a business's branch or pickup point
 producer_locations.updated_at	business	a business's branch or pickup point
 producer_name_change_requests.admin_notes	business	a business's request to change its name
@@ -503,6 +517,7 @@ producers.last_confirmed_at	business	a business page
 producers.lat	business	a business page
 producers.license_expires_at	business	a business page
 producers.lng	business	a business page
+producers.logo_url	business	a business page
 producers.name	business	a business page
 producers.offers_delivery	business	a business page
 producers.opening_hours	business	a business page
@@ -580,6 +595,8 @@ product_order_items.price_unit	orders	a line in an order
 product_order_items.product_id	orders	a line in an order
 product_order_items.qty	orders	a line in an order
 product_order_items.unit_price_agorot	orders	a line in an order
+product_order_items.variant_id	orders	a line in an order
+product_order_items.variant_name	orders	a line in an order
 product_order_notifications.attempts	orders	a notification about an order
 product_order_notifications.channel	orders	a notification about an order
 product_order_notifications.created_at	orders	a notification about an order
@@ -627,6 +644,12 @@ product_orders.status	orders	an order from a business
 product_orders.status_token_hash	orders	an order from a business
 product_orders.updated_at	orders	an order from a business
 product_orders.user_id	orders	an order from a business
+product_variants.id	business	a product a business lists
+product_variants.in_stock	business	a product a business lists
+product_variants.name	business	a product a business lists
+product_variants.position	business	a product a business lists
+product_variants.price_agorot	business	a product a business lists
+product_variants.product_id	business	a product a business lists
 products.allergens	business	a product a business lists
 products.contains_alcohol	business	a product a business lists
 products.description	business	a product a business lists
