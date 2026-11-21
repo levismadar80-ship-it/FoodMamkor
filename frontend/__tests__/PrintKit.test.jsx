@@ -91,7 +91,13 @@ describe("print kit", () => {
     pick("poster");
     const poster = screen.getByTestId("print-kit-poster");
     expect(poster.textContent).toContain(he.qr_card.poster_line);
-    expect(document.querySelector("style")?.textContent).toContain("size: A4");
+    const printRule = () =>
+      [...document.querySelectorAll("style")].map((el) => el.textContent).find((t) => t.includes("@media print")) ?? "";
+    expect(printRule()).toContain("size: A4");
+    // A6 keeps the browser's own page setup: no A4 rule once it is picked again.
+    pick("a6");
+    expect(printRule()).not.toContain("size: A4");
+    expect(printRule()).toContain("padding-bottom: 0");
   });
 
   it("no printed layout holds a link (print CSS would print its href)", async () => {

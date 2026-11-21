@@ -64,7 +64,7 @@ export function A4Poster({ name, svg, t }) {
       className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none print:h-[297mm] print:overflow-hidden mx-auto bg-surface text-text px-6 print:px-[15mm] py-10 flex flex-col items-center justify-center text-center"
       style={{ minHeight: "297mm" }}
     >
-      <h1 className="font-headline-md text-4xl print:text-6xl font-black mb-8 break-words">{name}</h1>
+      <h1 className="font-headline-md text-4xl print:text-5xl font-black mb-8 break-words line-clamp-3">{name}</h1>
       <QrBox svg={svg} className="w-[min(110mm,75vw)] h-[min(110mm,75vw)] print:w-[110mm] print:h-[110mm]" />
       <p className="font-body-sm text-base mt-4" dir="ltr">mehamakor.co.il</p>
       <p className="font-headline-md text-2xl print:text-4xl font-bold leading-snug mt-10">{t("cta")}</p>
@@ -78,8 +78,7 @@ function TableSignHalf({ name, svg, t, flipped = false }) {
   return (
     <div
       data-testid={flipped ? "print-kit-table-top" : "print-kit-table-bottom"}
-      className={`flex flex-col items-center justify-center text-center px-6 ${flipped ? "rotate-180" : ""}`}
-      style={{ minHeight: "148.5mm" }}
+      className={`flex flex-col items-center justify-center text-center px-6 min-h-[148.5mm] print:min-h-0 print:flex-1 ${flipped ? "rotate-180" : ""}`}
     >
       <h2 className="font-headline-md text-2xl print:text-3xl font-black mb-5 break-words">{name}</h2>
       <QrBox svg={svg} className="w-[min(60mm,55vw)] h-[min(60mm,55vw)] print:w-[60mm] print:h-[60mm]" />
@@ -98,7 +97,7 @@ export function TableSign(props) {
   return (
     <article
       data-testid="print-kit-table"
-      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none print:h-[297mm] print:overflow-hidden mx-auto bg-surface text-text"
+      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none print:h-[297mm] print:overflow-hidden print:flex print:flex-col mx-auto bg-surface text-text"
     >
       <TableSignHalf {...props} flipped />
       {/* The fold line: dashed, so it guides the fold and reads as one. */}
@@ -128,7 +127,7 @@ export function StickerSheet({ name, svg, t }) {
             className="w-full max-w-[64mm] print:w-[64mm] aspect-square rounded-full border border-border flex flex-col items-center justify-center text-center overflow-hidden"
           >
             <QrBox svg={svg} className="w-1/2 aspect-square" />
-            <p className="font-body-sm text-[9px] print:text-[8pt] font-bold leading-tight mt-1 px-[12%] break-words">
+            <p className="font-body-sm text-[9px] print:text-[8pt] font-bold leading-tight mt-1 px-[12%] break-words line-clamp-2">
               {label}
             </p>
           </div>
