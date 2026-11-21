@@ -527,12 +527,30 @@ describe("the business-page section — reserve and confirm", () => {
     expect(screen.queryByTestId("rescue-section-allergens-declared")).toBeNull();
   });
 
-  it("gives the pickup time and the address each its own icon row", async () => {
+  // MEH-3585: the group-buy card's anatomy — the pickup window sits in the
+  // beige status band beside what is left; the address under the title.
+  it("puts the pickup window in the status band with the stock, and the address under the title", async () => {
     render(<RescueSection producer={PRODUCER} />);
     const pickup = await screen.findByTestId("rescue-section-pickup");
     expect(pickup.textContent).toMatch(/^איסוף \d{2}:\d{2}–\d{2}:\d{2}$/);
-    expect(pickup.closest("li").querySelector("svg")).not.toBeNull();
-    expect(screen.getByTestId("rescue-section-address").closest("li").querySelector("svg")).not.toBeNull();
+    expect(pickup.querySelector("svg")).not.toBeNull();
+    expect(pickup.parentElement).toBe(screen.getByTestId("rescue-section-stock").parentElement);
+    const title = screen.getByTestId("rescue-section-typical");
+    expect(title.tagName).toBe("H3");
+    expect(title.parentElement.contains(screen.getByTestId("rescue-section-address"))).toBe(true);
+    expect(screen.getByTestId("rescue-section-address").querySelector("svg")).not.toBeNull();
+  });
+
+  it("a gold saving line off the business's own low estimate; none when the worth is not above the price", async () => {
+    fetchOffers.mockResolvedValue([offer({ value_min_agorot: 4500 })]);
+    const { unmount } = render(<RescueSection producer={PRODUCER} />);
+    expect((await screen.findByTestId("rescue-section-saving")).textContent).toBe("חיסכון של 67%");
+    unmount();
+
+    fetchOffers.mockResolvedValue([offer({ value_min_agorot: 1000 })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(screen.queryByTestId("rescue-section-saving")).toBeNull();
   });
 
   it("shows the full address and the typical contents", async () => {

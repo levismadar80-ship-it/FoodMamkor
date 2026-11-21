@@ -25,9 +25,7 @@ describe("business chat card placement", () => {
   });
   it("comes after the products section and before recipes", () => {
     const chat = at("<BusinessChatPrompt");
-    // MEH-3585: the products anchor id moved to a wrapper (bag + catalogue); the
-    // catalogue section keeps this testid.
-    expect(chat).toBeGreaterThan(at('data-testid="section-products-catalogue"'));
+    expect(chat).toBeGreaterThan(at('id="section-products"'));
     expect(chat).toBeLessThan(at('id="recipes"'));
   });
   it("comes before reviews and the delivery block", () => {

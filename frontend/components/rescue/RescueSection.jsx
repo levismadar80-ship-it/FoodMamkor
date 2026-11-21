@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
+import { Basket, Clock, MapPin } from "@phosphor-icons/react";
 
 import { useOptionalAuth } from "@/lib/auth-context";
 
@@ -38,12 +38,13 @@ import { isUnverifiedEmailError } from "@/lib/errors";
  *           checkout page and no provider (03/11 pilot ruling). Reserve →
  *           confirmation, in place.
  * Related:  app/[locale]/producer/[id]/components/ProducerSections.jsx (slot,
- *           before section-products), lib/rescue.js
+ *           after the activities, beside the group buys — MEH-3585), lib/rescue.js
  * History:  MEH-2648 (creation) · MEH-2713 (icon-row card: price up top,
  *           one short cancel line, allergens folded) · MEH-2737 (a cancel
  *           says it worked, or why not; past the cutoff the card says the bag
  *           can no longer be cancelled) · MEH-2738 (says when the business
- *           cancelled the bag)
+ *           cancelled the bag) · MEH-3585 (the group-buy card's anatomy:
+ *           title + where, price + saving, beige status band)
  */
 
 /** The struck-through "worth": the business's own LOW estimate, and only when
@@ -245,6 +246,10 @@ export default function RescueSection({ producer }) {
 
   const price = shekels(offer?.price_agorot);
   const worth = shekels(worthAgorot(offer));
+  // MEH-3585: the gold saving line, as on the group-buy card. Only off the
+  // business's own LOW estimate (worthAgorot), so never a made-up discount.
+  const worthA = worthAgorot(offer);
+  const savingPct = worthA ? Math.round((1 - offer.price_agorot / worthA) * 100) : 0;
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = errorKey === UNVERIFIED_KEY ? (
@@ -322,55 +327,74 @@ export default function RescueSection({ producer }) {
           )}
         </div>
       ) : offer ? (
+        // MEH-3585: one anatomy with the group-buy card under «קבוצות רכישה
+        // פתוחות» (ProducerActivities GroupBuyRow): title + where, the price
+        // with the struck worth and a gold saving line, then the beige status
+        // band (what is left · when). Sapir 21/11: the two offer cards read as
+        // two designs for one idea. The reserve button stays on the card — it
+        // is the only place a bag is reserved.
         <div
-          className="mt-3 border border-border bg-surface-card rounded-md p-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:gap-x-5 md:items-center"
+          className="mt-3 border border-border bg-surface-card rounded-lg p-4 grid gap-3"
           data-testid="rescue-section-card"
         >
-          {/* Start column: what, when, where. On md+ the price/CTA column sits
-              at the end side; below md everything stacks in source order, with
-              the price on the top row next to the stock tag. */}
-          <div className="grid gap-3 min-w-0">
-            <div className="flex items-center gap-2.5">
-              <span aria-hidden="true" className="w-11 h-11 rounded-md bg-green-50 text-primary grid place-items-center shrink-0">
-                <Basket size={24} weight="regular" />
-              </span>
-              {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}
-              <span className="text-xs font-bold text-gold-deep bg-gold-deep/10 rounded-full px-2.5 py-0.5 whitespace-nowrap" data-testid="rescue-section-stock">
-                {t("row.left_short", { count: offer.qty_left })}
-              </span>
-              <PriceBlock className="ms-auto text-end md:hidden" price={price} worth={worth} t={t} testIds />
-            </div>
-            <ul className="grid gap-2 font-body-sm text-base text-text">
-              {from && until && (
-                <li className="flex items-start gap-2">
-                  <Clock aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
-                  <span data-testid="rescue-section-pickup">{t("row.pickup", { from, until })}</span>
-                </li>
-              )}
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className="w-11 h-11 rounded-lg bg-green-50 text-primary grid place-items-center shrink-0">
+              <Basket size={24} weight="regular" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2" data-testid="rescue-section-typical">
+                {offer.typical_items?.length > 0
+                  ? t("section.typical", { items: offer.typical_items.join(", ") })
+                  : t("section.title")}
+              </h3>
               {/* Full address: a live bag is the MEH-829 carve-out, and the point
                   is exact-precision or the backend refuses the offer. */}
               {offer.producer?.location_address && (
-                <li className="flex items-start gap-2">
-                  <MapPin aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
-                  <span data-testid="rescue-section-address">
+                <p className="mt-0.5 flex items-start gap-1.5 text-sm text-fg-muted" data-testid="rescue-section-address">
+                  <MapPin aria-hidden="true" size={16} className="shrink-0 mt-0.5" />
+                  <span>
                     {offer.producer.location_address}
                     {offer.producer.location_city ? `, ${offer.producer.location_city}` : ""}
                   </span>
-                </li>
+                </p>
               )}
-              {offer.typical_items?.length > 0 && (
-                <li className="flex items-start gap-2">
-                  <Bread aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
-                  <span className="text-fg-muted" data-testid="rescue-section-typical">
-                    {t("section.typical", { items: offer.typical_items.join(", ") })}
-                  </span>
-                </li>
-              )}
-            </ul>
+            </div>
           </div>
 
-          <div className="grid gap-2 md:text-center">
-            <PriceBlock className="hidden md:block" price={price} worth={worth} t={t} />
+          {price !== null && (
+            <div>
+              <p className="flex items-baseline gap-2">
+                <b dir="ltr" className="font-headline-md text-2xl font-black text-primary leading-none numeric" data-testid="rescue-section-price">
+                  {t("row.price", { price })}
+                </b>
+                {worth !== null && (
+                  // aria-hidden: read aloud as a second bare price it says nothing useful.
+                  <s dir="ltr" aria-hidden="true" className="text-sm text-fg-muted numeric" data-testid="rescue-section-worth">
+                    {t("row.price", { price: worth })}
+                  </s>
+                )}
+              </p>
+              {savingPct > 0 && (
+                <p className="mt-1 text-xs font-semibold text-gold-deep" data-testid="rescue-section-saving">
+                  {t("section.saving", { pct: savingPct })}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-background-alt px-2.5 py-2">
+            <span className="text-xs font-bold text-text" data-testid="rescue-section-stock">
+              {t("row.left_short", { count: offer.qty_left })}
+            </span>
+            {from && until && (
+              <span className="flex items-center gap-1 text-xs text-fg-muted" data-testid="rescue-section-pickup">
+                <Clock aria-hidden="true" size={14} className="shrink-0" />
+                {t("row.pickup", { from, until })}
+              </span>
+            )}
+          </div>
+
+          <div className="grid gap-2 md:max-w-xs">
             {errorLine}
             <Button
               type="button"
@@ -391,7 +415,7 @@ export default function RescueSection({ producer }) {
           </div>
 
           <details
-            className="md:col-span-2 border-t border-border pt-2.5 font-body-sm text-sm text-fg-muted"
+            className="border-t border-border pt-2.5 font-body-sm text-sm text-fg-muted"
             data-testid="rescue-section-allergens"
           >
             <summary className="cursor-pointer text-text font-medium">{t("section.allergens_title")}</summary>
@@ -414,24 +438,5 @@ export default function RescueSection({ producer }) {
         </div>
       ) : null}
     </section>
-  );
-}
-
-/** Price, with the struck worth under it when there is one. Rendered twice —
- *  top row below md, end column on md+ — so only one copy carries test ids. */
-function PriceBlock({ price, worth, t, className = "", testIds = false }) {
-  if (price === null) return null;
-  return (
-    <span className={`leading-tight ${className}`}>
-      <b dir="ltr" className="block font-headline-display font-black text-3xl text-primary numeric" data-testid={testIds ? "rescue-section-price" : undefined}>
-        {t("row.price", { price })}
-      </b>
-      {worth !== null && (
-        // aria-hidden: read aloud as a second bare price it says nothing useful.
-        <s dir="ltr" aria-hidden="true" className="block text-sm text-fg-muted numeric" data-testid={testIds ? "rescue-section-worth" : undefined}>
-          {t("row.price", { price: worth })}
-        </s>
-      )}
-    </span>
   );
 }

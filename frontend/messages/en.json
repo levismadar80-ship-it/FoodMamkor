@@ -6924,6 +6924,7 @@
     "section": {
       "title": "Rescue bag",
       "cta": "Reserve · pay at the counter",
+      "saving": "Save {pct}%",
       "typical": "Usually: {items}",
       "allergens_title": "Allergens",
       "cancel_until": "Free cancellation until {time}",

@@ -2,9 +2,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-3585 (Sapir 21/11): two things on the business page.
-// 1. The rescue bag sits inside the «מוצרים» anchor, so the tab lands on it and
-//    stays lit over it — and with no catalogue there is no anchor (the tab's
-//    gate cannot see a bag).
+// 1. The rescue bag moved from above «מוצרים» to right after the activities
+//    (which end with the group buys): catalogue first, dated offers after.
 // 2. «שאלו על אלרגנים» is said once above the product list, only while at
 //    least one product has no allergen answer (0 / 1 / many undeclared).
 // The vi.mock header is repeated from ProducerSectionsProducts.test.jsx.
@@ -34,7 +33,9 @@ vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => new Promise(() => {})) },
 }));
 // MEH-2659: ProducerActivities (events + group buys) has its own test file.
-vi.mock("@/app/[locale]/producer/[id]/components/ProducerActivities", () => ({ default: () => null }));
+vi.mock("@/app/[locale]/producer/[id]/components/ProducerActivities", () => ({
+  default: () => <section data-testid="activities-stub" />,
+}));
 
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
   ...(await importOriginal()), // keep real IMAGE_RATIOS
@@ -125,16 +126,18 @@ const NOTE = "products-allergens-note";
 const bread = (extra = {}) => ({ id: 1, name: "לחם", image_url: null, ...extra });
 const cake = (extra = {}) => ({ id: 2, name: "עוגה", image_url: null, ...extra });
 
-describe("MEH-3585 — the rescue bag belongs to the «מוצרים» anchor", () => {
-  it("with a catalogue: the bag comes first inside #section-products", () => {
+describe("MEH-3585 — the rescue bag sits after the catalogue, beside the group buys", () => {
+  const follows = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it("with a catalogue: products → activities (group buys) → bag, and the bag is not in the products anchor", () => {
     const { container } = render(<ProducerSections {...baseProps} producer={producerWith([bread()])} />);
-    const anchor = container.querySelector("#section-products");
+    const products = container.querySelector("#section-products");
+    const activities = screen.getByTestId("activities-stub");
     const bag = screen.getByTestId("rescue-section-stub");
-    const catalogue = screen.getByTestId("section-products-catalogue");
-    expect(anchor.contains(bag)).toBe(true);
-    expect(anchor.contains(catalogue)).toBe(true);
-    expect(bag.compareDocumentPosition(catalogue) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(container.querySelectorAll("#section-products")).toHaveLength(1);
+    expect(products.contains(bag)).toBe(false);
+    expect(follows(products, activities)).toBe(true);
+    expect(follows(activities, bag)).toBe(true);
+    expect(activities.nextElementSibling).toBe(bag);
   });
 
   it("no catalogue: the bag still renders, and there is no products anchor", () => {

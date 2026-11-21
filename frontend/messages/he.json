@@ -6920,6 +6920,7 @@
     "section": {
       "title": "סל הפתעה",
       "cta": "לשריין · משלמים בקופה",
+      "saving": "חיסכון של {pct}%",
       "typical": "בדרך כלל: {items}",
       "allergens_title": "אלרגנים",
       "cancel_until": "ביטול חינם עד {time}",
