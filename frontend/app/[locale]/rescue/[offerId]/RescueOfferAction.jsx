@@ -14,6 +14,7 @@ import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
 import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 import { israelTime, shekels, worthAgorot } from "@/lib/rescue";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 const STATE_KEY = {
   sold_out: "offer_page.state_sold_out",
@@ -125,9 +126,9 @@ function PriceRow({ offer, price, t }) {
           {t("row.price", { price })}
         </b>
         {low !== null && high === null && (
-          <s dir="ltr" aria-hidden="true" className="block text-sm text-fg-muted numeric" data-testid="rescue-offer-worth">
+          <StruckPrice className="block text-sm numeric" testId="rescue-offer-worth">
             {t("row.price", { price: shekels(low) })}
-          </s>
+          </StruckPrice>
         )}
         {low !== null && (
           <span className={high === null ? "sr-only" : "block text-sm text-fg-muted"} data-testid="rescue-offer-worth-text">

@@ -61,6 +61,7 @@ import { formatEventDate } from "@/lib/format-date";
 import { israelNowParts } from "@/lib/orderWindow";
 import { formatPrice } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
@@ -529,9 +530,7 @@ function WhatsOnCard({ entry, labels }) {
             {price && (
               <span data-testid="whats-on-price" className="flex items-baseline gap-1.5">
                 {entry.priceWas && entry.priceWas > entry.price ? (
-                  <span dir="ltr" className="text-xs text-fg-muted line-through numeric">
-                    {formatPrice(entry.priceWas)}
-                  </span>
+                  <StruckPrice decorative={false} className="text-xs numeric">{formatPrice(entry.priceWas)}</StruckPrice>
                 ) : null}
                 <span dir={entry.price ? "ltr" : undefined} className={`${PRICE_BASE} text-text`}>
                   {price}

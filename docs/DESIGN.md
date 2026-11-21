@@ -1064,6 +1064,15 @@ aloud and it cannot flip per locale. `BackLinkGuard.test.js` reds a `<Link>`/`<a
 whose text is a `back*` key, and a back label with a typed arrow. A link dressed
 as a button that goes home is an action (ActionShapeGuard), not a back link.
 
+## Struck prices (MEH-3465, 21/11/2026)
+
+An old or regular price shown crossed out beside the paid one is
+`components/ui/StruckPrice` — an `<s>`, `dir="ltr"`, `text-fg-muted`; the caller
+passes only size and font. It is hidden from screen readers by default (two bare
+prices read aloud say nothing). `decorative={false}` where the struck price is
+the information: it has its own visible label, or nothing else on the card says
+what it was. `StruckPriceOneOwnerGuard.test.jsx` reds a price struck by hand.
+
 ## Dates (MEH-3070, 13/11/2026)
 
 A date on screen is printed by `formatDate(value, locale, style)` or

@@ -34,6 +34,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -309,9 +310,10 @@ export default function GroupBuyDetailClient({ id }) {
         <div className="rounded-lg border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
           <p className="text-xs font-medium text-fg-muted">{tForm("price_regular_label")}</p>
           <p className="mt-0.5">
-            <span dir="ltr" className="text-2xl text-fg-muted line-through leading-none">
+            {/* Not decorative: the box's own label («מחיר רגיל») names it. */}
+            <StruckPrice decorative={false} className="text-2xl leading-none">
               {formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
-            </span>
+            </StruckPrice>
           </p>
         </div>
       </div>
