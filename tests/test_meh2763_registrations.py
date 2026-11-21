@@ -30,6 +30,9 @@ LANDLINE = "03-6123456"
 @pytest.fixture
 def sent(monkeypatch):
     """Every email the router queued, as (kind, to, payload)."""
+    from _queued_mail import route_queued_mail_to_senders  # MEH-3535
+
+    route_queued_mail_to_senders(monkeypatch)
     calls = []
     import app.routers.registrations as r
 
