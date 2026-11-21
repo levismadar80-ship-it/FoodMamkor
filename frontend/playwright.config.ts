@@ -168,6 +168,7 @@ export default defineConfig({
     // https://vercel.com/docs/vercel-toolbar/managing-toolbar).
     // MEH-1727: gated on the target — see isLocalTarget above. Empty object on
     // localhost so cross-origin font preflights carry no unlisted header.
+    // guard-ok: manual staging runs only; CI targets localhost, where this is {} (MEH-3629 moves it to the bypass cookie)
     extraHTTPHeaders: isLocalTarget
       ? {}
       : {
