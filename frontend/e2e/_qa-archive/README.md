@@ -10,6 +10,11 @@ directory (workflow rule 42). Two probes still in live use stay in
 `frontend/e2e/`: `qa-meh1853-cls.mjs` (cls-measure.yml) and
 `qa-meh1619-visual-noop.mjs` (.claude/rules/frontend.md).
 
+**Before running one against staging, port it to `scopeBypassToOrigin()` from
+`frontend/e2e/_bypass-scope.mjs`.** Most of them put the Vercel bypass secret in
+`extraHTTPHeaders`, which sends it to every host the page loads (MEH-3607).
+`scripts/checks/bypass-scope-guard.sh` does not scan this folder.
+
 Run any of them from `frontend/`: `node e2e/_qa-archive/<file>.mjs`. Paths in
 their headers were updated on the move; findings inside them are as of the
 card they were written for, not today.

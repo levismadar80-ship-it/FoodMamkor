@@ -1160,8 +1160,11 @@ without this header a request 302-redirects to `vercel.com/sso-api` and never
 reaches the backend (so both the globalSetup login and the spec's page
 navigations would fail). Get it from **Vercel → Settings → Deployment Protection
 → Protection Bypass for Automation** (it's the `VERCEL_AUTOMATION_BYPASS_SECRET`
-system env var). `globalSetup` sends it on the login request and
-`playwright.config.ts` sends it on browser navigations (`x-vercel-protection-bypass`);
+system env var). `globalSetup` sends it once, with no redirects, to get Vercel's host-only
+`_vercel_jwt` bypass cookie. It writes the cookie to `e2e/.auth/bypass.json`, the
+default `storageState` in `playwright.config.ts`, and into each role's state, so
+the browser never sends the secret (MEH-3629). It used to sit in
+`extraHTTPHeaders`, which reaches every host a page loads (MEH-3607).
 globalSetup **throws** on a remote target when it's unset. **Rotating** the secret
 (regenerate in that same Vercel setting) requires a **redeploy** before the new
 value takes effect. Never commit or log the value.
