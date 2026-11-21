@@ -7804,7 +7804,9 @@
     "too_late": "את ההזמנה הזאת כבר אי אפשר לבטל באתר. אפשר לפנות לבית העסק.",
     "line": "{qty} × {name}",
     "back": "חזרה",
-    "failed": "הפעולה לא הצליחה. נסו שוב."
+    "failed": "הפעולה לא הצליחה. נסו שוב.",
+    "calendar_pickup": "איסוף הזמנה: {business_name}",
+    "calendar_delivery": "משלוח הזמנה: {business_name}"
   },
   "price_unit": {
     "unit": "ליחידה",
