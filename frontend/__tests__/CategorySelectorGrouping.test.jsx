@@ -83,6 +83,12 @@ describe("CategorySelector — a DB rename no longer breaks the grid (MEH-2139)"
   // Same 18 rows, but every display name replaced with something no hardcoded
   // list could ever contain. Slugs untouched — that is the whole point.
   const RENAMED = CATS.map((c) => ({ ...c, name: `שם חדש ${c.id}` }));
+  // MEH-3076: a row with a known slug now SHOWS its name from
+  // messages.category_names.<slug>, so the chip is found by that label. The
+  // DB name still feeds nothing positional — grouping and popularity read the
+  // slug, which is what these cases prove. (System rows cannot be renamed at
+  // all: backend/app/routers/admin_extra.py raises 422 on a rename.)
+  const shown = (slug) => he.category_names[slug];
 
   it("CONTROL: the unrenamed fixture groups food before home-care", () => {
     // Anchors the assertion below: if grouping were broken for some unrelated
@@ -108,8 +114,7 @@ describe("CategorySelector — a DB rename no longer breaks the grid (MEH-2139)"
 
     const home = screen.getByText(S.group_home);
     // slug "cosmetics" — whatever it is now called.
-    const renamedCosmetics = RENAMED.find((c) => c.slug === "cosmetics");
-    expect(PRECEDES(home, screen.getByText(renamedCosmetics.name))).toBe(true);
+    expect(PRECEDES(home, screen.getByText(shown("cosmetics")))).toBe(true);
   });
 
   it("a renamed POPULAR category is still popular — the chip does not vanish", () => {
@@ -120,7 +125,6 @@ describe("CategorySelector — a DB rename no longer breaks the grid (MEH-2139)"
     );
     // Collapsed state renders the popular-6 ONLY. Under name matching all six
     // would be missing here and the grid would be empty.
-    const meat = RENAMED.find((c) => c.slug === "meat");
-    expect(screen.getByText(meat.name)).toBeInTheDocument();
+    expect(screen.getByText(shown("meat"))).toBeInTheDocument();
   });
 });

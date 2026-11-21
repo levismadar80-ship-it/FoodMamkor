@@ -4,6 +4,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+// MEH-3076: the category name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { Clock, HeartStraight, Truck } from "@phosphor-icons/react";
@@ -349,7 +351,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
-  const category = producer.categories?.[0]?.name;
+  const firstCategory = producer.categories?.[0];
+  const category = firstCategory?.name ? categoryLabel(t, firstCategory) : undefined;
 
   const userLoc = useUserLocation();
   // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'

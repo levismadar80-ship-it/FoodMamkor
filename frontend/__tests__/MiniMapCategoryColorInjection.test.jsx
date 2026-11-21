@@ -24,7 +24,7 @@
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { CATEGORY_STYLES, DEFAULT_CATEGORY_STYLE } from "@/lib/category-registry";
+import { CATEGORY_GROUP_STYLES, CATEGORY_STYLES, DEFAULT_CATEGORY_STYLE } from "@/lib/category-registry";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
@@ -144,16 +144,16 @@ describe("MEH-2004 — a hostile category colour injects no attribute into the M
 
   // The validator's real risk is rejecting a colour it should have passed: a
   // single-colour control cannot see that, and would stay green while eight of
-  // the nine pins silently fell back to the primary token. Mirrors
-  // category-registry.js CATEGORY_STYLES + DEFAULT_CATEGORY_STYLE.
+  // the nine pins silently fell back to the primary token.
+  // MEH-3076: DERIVED from the registry's six group colours (+ their glyph
+  // tints and the default), so a palette change cannot leave this list stale.
+  // "#C8821E" is added by hand: the uppercase form the regex must accept.
   const REAL_PALETTE = [
-    "#c04040", // בשר · דגים
-    "#2e6853", // ירקות, פירות ומשקים · DEFAULT_CATEGORY_STYLE
-    "#4a90d9", // חלב וגבינות
-    "#896714", // לחמים ואפייה
-    "#e8a020", // שמנים
-    "#C8821E", // דבש — uppercase hex, which the validator must accept verbatim
-    "#9b59b6", // טיפוח וסבונים
+    ...new Set([
+      ...Object.values(CATEGORY_GROUP_STYLES).flatMap((s) => [s.color, s.textColor].filter(Boolean)),
+      DEFAULT_CATEGORY_STYLE.color,
+      "#C8821E",
+    ]),
   ];
   // Note the one row that does not discriminate: "#2e6853" is also the
   // fallback, so it would pass even against a validator that rejected
