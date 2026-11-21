@@ -504,10 +504,10 @@
       "sr_label": "Search businesses and cities",
       "submit": "Search",
       "placeholders": {
-        "q1": "Sourdough bread",
-        "q2": "Breads and baking",
-        "q3": "Zichron Yaakov",
-        "q4": "Ma'afiyat HaMachmetzet"
+        "q1": "Try in Hebrew: לחם מחמצת",
+        "q2": "Try in Hebrew: לחמים ואפייה",
+        "q3": "Try in Hebrew: זכרון יעקב",
+        "q4": "Try in Hebrew: מאפיית המחמצת"
       }
     },
     "trust": {
@@ -523,7 +523,19 @@
       "eyebrow": "Categories",
       "heading": "Browse by category",
       "subheading": "Straight from the producer — no middlemen",
-      "aria": "Show category: {name}"
+      "aria": "Show category: {name}",
+      "names": {
+        "veg": "Vegetables",
+        "bread": "Bread & Baking",
+        "meat": "Meat",
+        "dairy": "Dairy & Cheese",
+        "oil": "Oils",
+        "care": "Natural Soaps",
+        "fish": "Fish",
+        "fruit": "Fruit",
+        "drinks": "Wine, Beer & Drinks",
+        "cream": "Natural Cosmetics"
+      }
     },
     "producers": {
       "heading": "Local businesses",
