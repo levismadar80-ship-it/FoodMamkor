@@ -5,8 +5,8 @@
  * Nothing is blocked: the link still opens, the business still counts it.
  * A call, an external link and the on-site form send no such event.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import RegistrationCta from "@/components/RegistrationCta";
@@ -79,5 +79,26 @@ describe("MEH-3194 — off-site WhatsApp taps reach PostHog", () => {
     cta({ method: "external_url", url: "https://example.com/t" });
     fireEvent.click(screen.getByTestId("registration-external"));
     expect(trackEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("MEH-3194 — the sticky phone bar's WhatsApp tap counts too", () => {
+  // REUSES: frontend/__tests__/RegistrationCta.test.jsx «MEH-3043 — sticky phone bar»
+  let fire;
+  beforeEach(() => {
+    window.IntersectionObserver = class {
+      constructor(cb) { fire = (isIntersecting) => act(() => cb([{ isIntersecting }])); }
+      observe() {}
+      disconnect() {}
+    };
+  });
+  afterEach(() => { delete window.IntersectionObserver; });
+
+  it("bar action → one event, placement action", () => {
+    cta({ method: "whatsapp", phone: "050-1234567" });
+    fire(false);
+    fireEvent.click(screen.getByTestId("registration-bar-action"));
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("item_whatsapp_click", expect.objectContaining({ placement: "action" }));
   });
 });
