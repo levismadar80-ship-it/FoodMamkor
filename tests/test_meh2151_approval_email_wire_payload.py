@@ -171,19 +171,19 @@ def test_the_meh331_base64_header_rides_with_the_html_part(wire):
     assert wire[0].get("headers", {}).get("Content-Transfer-Encoding") == "base64"
 
 
-def test_a_text_only_send_carries_no_html_and_no_cte_header(wire):
-    """The other half of the MEH-2151 byte-identical claim, measured.
-
-    `_send_notification_email`'s docstring states that omitting `html` leaves
-    the three pre-existing callers' payloads exactly as they were. That is a
-    claim about the payload, so it is checked against the payload.
-    """
+def test_a_text_only_send_carries_the_layout_html_and_the_cte_header(wire):
+    """MEH-3587 changed the contract this test held (MEH-2151: a text-only
+    send went out with no html). Every send now carries the one branded frame,
+    built from the text, so it also carries the base64 CTE header that keeps
+    the frame's links unsplit (MEH-331). The text part is unchanged."""
     admin_module._send_notification_email(
         "owner@sample.co.il", "נושא", "גוף"
     )
     assert len(wire) == 1
-    assert "html" not in wire[0]
-    assert "headers" not in wire[0]
+    assert wire[0]["text"] == "גוף"
+    assert '<html dir="rtl" lang="he">' in wire[0]["html"]
+    assert ">גוף</p>" in wire[0]["html"]
+    assert wire[0]["headers"].get("Content-Transfer-Encoding") == "base64"
 
 
 def test_the_view_page_url_reaches_the_transport_unsplit(wire):

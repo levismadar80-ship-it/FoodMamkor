@@ -3,7 +3,7 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Bread, Clock, Info, MapPin, Warning } from "@phosphor-icons/react";
+import { Bread, Info, MapPin, Warning } from "@phosphor-icons/react";
 
 import SectionHeading from "@/components/ui/SectionHeading";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
@@ -19,7 +19,8 @@ const HOW_STEPS = ["how_1", "how_2", "how_3"];
 /**
  * Module:   RescueOfferDetails
  * Purpose:  What a buyer reads before reserving (MEH-3586), in the order Too
- *           Good To Go puts it: when and where to pick up (with a map and
+ *           Good To Go puts it: where to pick up (the window sits under the
+ *           title, RescueOfferPage) (with a map and
  *           Waze / Google), what is usually inside, allergens, how pickup
  *           works, and the cancellation rule.
  * Does NOT: show the price or the button (RescueOfferAction), or the bag
@@ -32,8 +33,6 @@ export default function RescueOfferDetails({ offer }) {
   const t = useTranslations("rescue");
   const tProducts = useTranslations("settings.products.form");
   const p = offer.producer;
-  const from = israelTime(offer.pickup_start);
-  const until = israelTime(offer.pickup_end);
   const cancelUntil = israelTime(offer.cancel_until);
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
   const address = [p.location_address, p.location_city].filter(Boolean).join(", ");
@@ -42,16 +41,15 @@ export default function RescueOfferDetails({ offer }) {
   const items = (offer.typical_items || []).filter(Boolean);
 
   return (
-    <div className="mt-8 grid gap-8" data-testid="rescue-offer-details">
+    // One white card, sections split by hairlines (Airbnb / Wolt item page):
+    // on the beige page loose headings read as a long unstructured list.
+    <div
+      className="mt-6 bg-surface border border-border rounded-lg divide-y divide-border [&>section]:p-5"
+      data-testid="rescue-offer-details"
+    >
       <section aria-labelledby="rescue-where">
         <SectionHeading size="content" id="rescue-where" className="mb-3">{t("offer_page.address_title")}</SectionHeading>
         <ul className="grid gap-2 text-base text-text mb-3">
-          <li className="flex items-start gap-2">
-            <Clock aria-hidden="true" size={20} className="text-primary shrink-0 mt-0.5" />
-            <span data-testid="rescue-offer-pickup">
-              <b className="font-semibold">{t("offer_page.pickup_title")}</b> {from}–{until}
-            </span>
-          </li>
           {address && (
             <li className="flex items-start gap-2">
               <MapPin aria-hidden="true" size={20} className="text-primary shrink-0 mt-0.5" />
