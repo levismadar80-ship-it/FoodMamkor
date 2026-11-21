@@ -237,6 +237,18 @@ describe("submitting", () => {
     expect(claimCall()).toBeUndefined();
   });
 
+  it("opens the full declaration on demand without ticking the box", async () => {
+    claimOk();
+    wrap(<ClaimClient />);
+    await screen.findByTestId("claim-form");
+    const text = screen.getByTestId("claim-declaration-text");
+    expect(text).not.toBeVisible();
+    fireEvent.click(screen.getByTestId("claim-declaration-toggle"));
+    expect(text).toBeVisible();
+    expect(text).toHaveTextContent(R.terms.declaration);
+    expect(screen.getByTestId("claim-consent")).not.toBeChecked();
+  });
+
   it("posts the token and both boxes, refreshes the user, lands on the dashboard", async () => {
     claimOk();
     wrap(<ClaimClient />);

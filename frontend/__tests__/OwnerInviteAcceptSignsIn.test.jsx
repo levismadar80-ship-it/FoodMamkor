@@ -282,6 +282,15 @@ describe("owner invite — one step at a time", () => {
     expect(screen.getByTestId("owner-invite-submit")).toBeTruthy();
   });
 
+  it("Enter on the first step sends the code instead of an error", async () => {
+    await open();
+    fireEvent.submit(screen.getByTestId("owner-invite-form"));
+    await screen.findByTestId("owner-invite-code");
+    const sends = api.post.mock.calls.filter(([url]) => url === "/auth/owner-invite/email-code");
+    expect(sends).toHaveLength(1);
+    expect(screen.queryByTestId("owner-invite-error")).toBeNull();
+  });
+
   it("one box sends both the terms and the declaration", async () => {
     await fillAndSubmit();
     const accept = api.post.mock.calls.find(([url]) => url === "/auth/owner-invite/accept");

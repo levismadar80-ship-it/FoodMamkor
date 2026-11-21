@@ -232,6 +232,9 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    // MEH-3662: on the first step the form has no submit button, so Enter in
+    // the address field lands here. Treat it as «שליחת קוד אימות».
+    if (!codeIsLive) return sendCode();
     setSubmitError(null);
     if (!trimmedEmail) return setValidation(t("email_required"));
     if (!codeIsLive) return setValidation(t("code_required"));
@@ -374,14 +377,14 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
       {/* Without a client id GoogleAuthButton renders nothing, and «או»
           would sit under an empty space. */}
       {env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-      <div className="mb-4" data-testid="owner-invite-google">
-        <GoogleAuthButton onError={(msg) => setSubmitError(msg)} />
-        <div className="flex items-center gap-3 my-4 text-sm text-fg-muted">
-          <span className="flex-1 border-t border-border" />
-          <span>{tOauth("or")}</span>
-          <span className="flex-1 border-t border-border" />
+        <div className="mb-4" data-testid="owner-invite-google">
+          <GoogleAuthButton onError={(msg) => setSubmitError(msg)} />
+          <div className="flex items-center gap-3 my-4 text-sm text-fg-muted">
+            <span className="flex-1 border-t border-border" />
+            <span>{tOauth("or")}</span>
+            <span className="flex-1 border-t border-border" />
+          </div>
         </div>
-      </div>
       )}
       <form onSubmit={submit} noValidate data-testid="owner-invite-form" className="space-y-4">
         <div>
@@ -430,46 +433,46 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         </div>
 
         {codeIsLive && (
-        <div>
-          <Input
-            label={t("code_label")}
-            id="owner-invite-code"
-            data-testid="owner-invite-code"
-            // `inputMode` + `autoComplete` so a phone offers the digit pad and
-            // the OS one-time-code suggestion, the same affordances the phone
-            // OTP field in the dashboard relies on.
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            dir="ltr"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="tracking-[0.3em]"
-          />
-        </div>
+          <div>
+            <Input
+              label={t("code_label")}
+              id="owner-invite-code"
+              data-testid="owner-invite-code"
+              // `inputMode` + `autoComplete` so a phone offers the digit pad and
+              // the OS one-time-code suggestion, the same affordances the phone
+              // OTP field in the dashboard relies on.
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              dir="ltr"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="tracking-[0.3em]"
+            />
+          </div>
         )}
 
         {codeComplete && (
-        <>
-        <PasswordInput
-          name="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder={t("password_placeholder")}
-          ariaLabel={t("password_label")}
-          testId="owner-invite-password"
-        />
+          <>
+          <PasswordInput
+            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t("password_placeholder")}
+            ariaLabel={t("password_label")}
+            testId="owner-invite-password"
+          />
 
-        <OwnerInviteConsents
-          terms={agreedToTerms}
-          onTerms={setAgreedToTerms}
-          declaration={declarationConfirmed}
-          onDeclaration={setDeclarationConfirmed}
-          farmerRequired={farmerRequired}
-          farmer={farmerConfirmed}
-          onFarmer={setFarmerConfirmed}
-        />
-        </>
+          <OwnerInviteConsents
+            terms={agreedToTerms}
+            onTerms={setAgreedToTerms}
+            declaration={declarationConfirmed}
+            onDeclaration={setDeclarationConfirmed}
+            farmerRequired={farmerRequired}
+            farmer={farmerConfirmed}
+            onFarmer={setFarmerConfirmed}
+          />
+          </>
         )}
 
         {(validation || submitError) && (
@@ -479,16 +482,16 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         )}
 
         {codeComplete && (
-        <Button
-          type="submit"
-          data-testid="owner-invite-submit"
-          disabled={submitting || !password || !code.trim() || !codeIsLive}
-          variant="primary"
-          size="lg"
-          className="w-full"
-        >
-          {submitting ? t("submitting") : submitLabel}
-        </Button>
+          <Button
+            type="submit"
+            data-testid="owner-invite-submit"
+            disabled={submitting || !password || !code.trim() || !codeIsLive}
+            variant="primary"
+            size="lg"
+            className="w-full"
+          >
+            {submitting ? t("submitting") : submitLabel}
+          </Button>
         )}
       </form>
       </>
