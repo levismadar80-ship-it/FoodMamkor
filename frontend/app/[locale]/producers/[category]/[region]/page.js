@@ -33,6 +33,7 @@ import {
 } from "@/lib/region-pages";
 import BackLink from "@/components/ui/BackLink";
 import { cardImagePriority } from "@/lib/card-image-priority";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 const PER_PAGE = 24;
 
@@ -187,9 +188,9 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath(path, locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
-    twitter: { card: "summary_large_image", title: socialTitle, description, images: ["/og-image.png"] },
+    twitter: { card: "summary_large_image", title: socialTitle, description, images: [siteOgImageUrl(locale)] },
     alternates: buildAlternates(path, locale),
   };
 }

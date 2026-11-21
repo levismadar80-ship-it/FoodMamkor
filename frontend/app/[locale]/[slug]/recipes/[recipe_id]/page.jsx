@@ -24,8 +24,9 @@ import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-import { buildRecipeBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
+import { buildRecipeBreadcrumbJsonLd, ogImage, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
 import { BRAND_NAME } from "@/lib/constants";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 import { decodeSlugParam } from "@/lib/slug"; // MEH-2534
 
 // MEH-1754: `null` means ONE thing — this entity does not exist. Every other
@@ -106,7 +107,7 @@ export async function generateMetadata(props) {
       // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
       title: t("meta_title_not_found"),
       robots: { index: false, follow: false },
-      openGraph: { locale: OG_LOCALE[locale] },
+      openGraph: { locale: OG_LOCALE[locale], images: [siteOgImageUrl(locale)] },
       alternates,
     };
   }
@@ -128,7 +129,7 @@ export async function generateMetadata(props) {
       siteName: BRAND_NAME,
       // MEH-2590: site image when the recipe has none — an omitted key is not
       // inherited from the layout, so the share preview had no image.
-      images: recipe.image_url ? [recipe.image_url] : ["/og-image.png"],
+      images: recipe.image_url ? [ogImage(recipe.image_url)] : [siteOgImageUrl(locale)],
       type: "article",
       locale: OG_LOCALE[locale],
     },
@@ -138,7 +139,7 @@ export async function generateMetadata(props) {
       card: "summary_large_image",
       title: buildEntityTitle(`${recipe.title} | ${producer.name}`, locale),
       description: truncate(recipe.description, 160),
-      images: recipe.image_url ? [recipe.image_url] : ["/og-image.png"],
+      images: recipe.image_url ? [ogImage(recipe.image_url)] : [siteOgImageUrl(locale)],
     },
     alternates,
   };
