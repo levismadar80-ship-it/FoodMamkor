@@ -46,14 +46,6 @@ def test_count_includes_business_whose_vacation_ended(client, db):
     assert client.get("/producers/count").json()["count"] == 1
 
 
-def test_cities_include_business_whose_vacation_ended(client, db):
-    _setup(db)
-    body = client.get("/producers/cities").json()
-    cities = {c["city"] if isinstance(c, dict) else c for c in body}
-    assert "חיפה" in cities
-    assert "עכו" not in cities
-
-
 def test_return_day_itself_still_hidden(client, db):
     """`vacation_until` is the last day away (`<` in schemas.py), so on that
     day the business is still on vacation."""

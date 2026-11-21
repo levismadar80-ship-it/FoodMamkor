@@ -289,8 +289,8 @@ def render(
             f"**{subject} בקטלוג**: "
             + ", ".join(f"`{s}`" for s in hidden)
             + ". זה default-hide של `on_vacation` (MEH-291 Phase 3) — התנהגות מכוונת "
-            "בקטלוג, אבל `/producers/count` ו-`/producers/cities` אינם מחילים אותה, "
-            "ולכן הם סופרים עסק שאי אפשר להגיע אליו דרך הקטלוג."
+            "בקטלוג, אבל `/producers/count` אינו מחיל אותה, "
+            "ולכן הוא סופר עסק שאי אפשר להגיע אליו דרך הקטלוג."
         )
         L.append("")
     if count_total != len(rows):

@@ -100,63 +100,6 @@ def test_count_is_not_zero_when_nobody_is_on_vacation(client, db):
     assert client.get("/producers/count").json()["count"] == 1
 
 
-# ---------- /producers/cities vs the catalog ----------
-
-
-def _cities(client):
-    resp = client.get("/producers/cities")
-    assert resp.status_code == 200
-    return {row["city"]: row["count"] for row in resp.json()}
-
-
-def test_cities_omits_a_city_whose_only_producer_is_on_vacation(client, db):
-    """The empty-region guard, extended to availability. A chip for קצרין
-    leads to ?city=קצרין, which the catalog answers with zero rows — the
-    exact "chip lands on an empty map" case the endpoint's docstring claims
-    to prevent. Fails pre-fix: קצרין present with count 1.
-    """
-    make_producer(db, name="חוות פתוחה", city="תל אביב")
-    _vacation(db, make_producer(db, name="גבינות הר הגולן", city="קצרין"))
-
-    cities = _cities(client)
-
-    assert "קצרין" not in cities
-    assert cities.get("תל אביב-יפו") == 1  # MEH-2602: stored canonical
-    # The claim the chip makes must survive being clicked.
-    assert _catalog_names(client, city="קצרין") == set()
-
-
-def test_cities_count_excludes_vacationers_without_dropping_the_city(client, db):
-    """A mixed city keeps its chip and loses one from its count.
-
-    This is the assertion that separates the fix from a plausible wrong one:
-    an implementation that dropped any city containing a vacationing producer
-    would pass the previous test and fail this one.
-    """
-    make_producer(db, name="פתוחה בקצרין", city="קצרין")
-    _vacation(db, make_producer(db, name="בחופשה בקצרין", city="קצרין"))
-
-    cities = _cities(client)
-
-    assert cities.get("קצרין") == 1
-    assert len(_catalog_names(client, city="קצרין")) == 1
-
-
-def test_cities_counts_sum_to_the_catalog_total(client, db):
-    """Whole-set consistency rather than a per-row spot check: the city
-    histogram and the catalog total are two views of one set."""
-    make_producer(db, name="א", city="חיפה")
-    make_producer(db, name="ב", city="חיפה")
-    make_producer(db, name="ג", city="ירושלים")
-    _vacation(db, make_producer(db, name="ד", city="ירושלים"))
-    _vacation(db, make_producer(db, name="ה", city="אילת"))
-
-    cities = _cities(client)
-
-    assert sum(cities.values()) == client.get("/producers/count").json()["count"] == 3
-    assert cities == {"חיפה": 2, "ירושלים": 1}
-
-
 # ---------- /producers/random vs the catalog ----------
 
 

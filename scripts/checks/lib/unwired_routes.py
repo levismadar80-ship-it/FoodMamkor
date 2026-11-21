@@ -30,6 +30,9 @@ PATH is as the scanner prints it ({_} for a path parameter). REASON is one of:
                   path's literal segments (bar the generic ones), so the reason cannot rot.
     webhook       called by an outside service, never by the site.
     health        called by the platform or monitoring.
+    ops-manual    DETAIL = the doc that tells an operator how to call it by hand
+                  (MEH-3527: POST /admin/seed-cities). The guard checks that the
+                  doc exists and spells the full path, so the reason cannot rot.
     pending-ui    DETAIL = MEH-<N>: the card that builds its screen.
     admin-no-ui   DETAIL = MEH-<N>: an admin tool with no screen yet.
     unused        DETAIL = MEH-<N>: the card that deletes or documents it.
@@ -51,7 +54,7 @@ GUARD = "scripts/checks/unwired-route-guard.sh"
 
 NO_DETAIL = {"webhook", "health"}
 NEEDS_CARD = {"pending-ui", "admin-no-ui", "unused"}
-REASONS = NO_DETAIL | NEEDS_CARD | {"scanner-miss"}
+REASONS = NO_DETAIL | NEEDS_CARD | {"scanner-miss", "ops-manual"}
 CARD_RE = re.compile(r"^MEH-[0-9]+$")
 
 
@@ -106,6 +109,8 @@ def parse_baseline(text: str) -> tuple[dict[tuple[str, str], tuple[str, str, int
             errors.append(f"{where}: reason «{reason}» needs a MEH-<N> card, got «{detail}»")
         elif reason == "scanner-miss" and not detail:
             errors.append(f"{where}: scanner-miss needs the frontend file that calls it")
+        elif reason == "ops-manual" and not detail:
+            errors.append(f"{where}: ops-manual needs the doc that tells the operator to call it")
         if (method, path) in rows:
             errors.append(f"{where}: duplicate of line {rows[(method, path)][2]}")
         rows[(method, path)] = (reason, detail, n)
@@ -136,6 +141,16 @@ def check_scanner_miss(path: str, detail: str, where: str) -> str | None:
     return None
 
 
+def check_ops_manual(path: str, detail: str, where: str) -> str | None:
+    target = REPO / detail
+    if not target.is_file():
+        return f"{where}: ops-manual doc {detail} does not exist"
+    # The doc must name the exact path: an operator copies it from there.
+    if path not in target.read_text(encoding="utf-8", errors="replace"):
+        return f"{where}: {detail} does not name {path} — where does an operator learn to call it?"
+    return None
+
+
 def evaluate(found: dict[tuple[str, str], tuple[str, int]], text: str) -> list[str]:
     rows, errors = parse_baseline(text)
     for key, (file, line) in sorted(found.items()):
@@ -156,6 +171,10 @@ def evaluate(found: dict[tuple[str, str], tuple[str, int]], text: str) -> list[s
             continue
         if reason == "scanner-miss":
             err = check_scanner_miss(key[1], detail, where)
+            if err:
+                errors.append(err)
+        elif reason == "ops-manual":
+            err = check_ops_manual(key[1], detail, where)
             if err:
                 errors.append(err)
     return errors
@@ -185,6 +204,16 @@ def self_test() -> int:
          {("GET", "/producers/cities"): ("r.py", 1)},
          "GET\t/producers/cities\tscanner-miss\tfrontend/app/sitemap.js\n", 1),
         ("strip_comments keeps code, drops prose", None, None, None),
+        # Real repo file: DEPLOYMENT.md tells the operator to POST /admin/seed-cities.
+        ("ops-manual, doc names the path → clean",
+         {("POST", "/admin/seed-cities"): ("r.py", 1)},
+         "POST\t/admin/seed-cities\tops-manual\tdocs/DEPLOYMENT.md\n", 0),
+        ("ops-manual, doc does not name it → red",
+         {("POST", "/admin/seed-cities"): ("r.py", 1)},
+         "POST\t/admin/seed-cities\tops-manual\tdocs/BRAND.md\n", 1),
+        ("ops-manual without a doc → red",
+         {("POST", "/admin/seed-cities"): ("r.py", 1)},
+         "POST\t/admin/seed-cities\tops-manual\n", 1),
         ("scanner-miss, missing file → red",
          {("GET", "/producers/me/weekly-summary"): ("r.py", 1)},
          "GET\t/producers/me/weekly-summary\tscanner-miss\tfrontend/nope.jsx\n", 1),
