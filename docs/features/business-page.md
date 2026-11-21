@@ -16,7 +16,7 @@
 * `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` — הפס הדביק בנייד.
 * `frontend/components/WhatsAppQuestionChips.jsx` · `frontend/lib/quickAnswers.js` — סעיף «שאלות נפוצות» (`#section-faq`) בגוף הדף, מתחת ל«משלוחים», ולא בכרטיס הקשר. כשסעיף המשלוח מוצג (`hasDeliverySection`) לא שואלים על משלוח. אין «איך מזמינים?» ואין «שאלה אחרת? צרו איתנו קשר», כי שתיהן רק חזרו על הכפתור (MEH-3460).
 * `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — המוצר המוביל, שאלות ותשובות, עסקים דומים.
-* `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון.
+* `frontend/components/ProductsSection.jsx` · `frontend/components/public/ProductSheet.jsx` — המוצרים והגיליון. בגיליון כפתור שיתוף שמוביל ישר למוצר (`?product=<id>`, MEH-3622).
 * `frontend/components/public/ProductFacts.jsx` — מה בית העסק הצהיר על המוצר. רכיבים ואחסון בשורה סגורה «פרטים על המוצר»; שורת האלרגנים גלויה תמיד מתחת לכותרת שלה. כשאין רכיבים ואין אחסון, אין שורה (MEH-3450). ברשימת הרכיבים מודגשות המילים של אלרגנים שסומנו ב«מכיל» (MEH-3443).
 * `frontend/components/ProductPrice.jsx` · `frontend/lib/product-price.js` — המחיר עם היחידה («80₪ לבקבוק», MEH-2936). המחיר ב-span של `dir="ltr"`, היחידה אחריו ומחוץ לו. התוויות ב-namespace ‏`price_unit`, שנשלח לכל דף.
 * `frontend/components/PickupSchedule.jsx` — מתחת לנקודת איסוף: ימי האיסוף, שעת סגירת ההזמנה של הנקודה, ו«האיסוף הבא» (MEH-3512, החישוב ב-`frontend/lib/nextDelivery.js`).
@@ -36,6 +36,7 @@
 * `frontend/e2e/flows/47-products-show-all.spec.ts` — רשימת מוצרים ארוכה וקיפול. רץ על בית העסק של ה-seed (`ruach-hasadeh`), לא על הראשון בפיד (MEH-3435).
 * `tests/test_meh3385_producer_detail_product_order.py` — סדר המוצרים בדף העסק (לפי `position`, בלי מקום בסוף), טיוטות לא מופיעות, ואין מכפלה בין אוספים (MEH-3385).
 * `tests/test_meh2602_producer_page_lists.py` · `tests/test_producer_contract_snapshot.py`
+* `frontend/__tests__/ProductSheetShare.test.jsx` — קישור השיתוף של מוצר אחד (MEH-3622).
 * `tests/test_meh3439_product_may_contain.py` · `frontend/__tests__/ProductSheetAllergens.test.jsx` — רכיבים, «מכיל», «עלול להכיל» ושורת «לא ציין» בגיליון המוצר (MEH-2662, MEH-3439).
 * `tests/test_meh3444_product_storage.py` · `frontend/__tests__/ProductSheetAllergens.test.jsx` · `frontend/__tests__/ProductsSectionAllergens.test.jsx` — «אחסון ותוקף» בגיליון המוצר ובטופס בית העסק, כולל בדיקת ה-AI בעריכה של עסק מאושר (MEH-3444).
 * `tests/test_meh3442_allergen_detail.py` — «גלוטן (כוסמין)», «אגוזים (שקדים)»: פירוט הדגן והאגוז, נשמר רק כשהאלרגן מסומן (MEH-3442).
