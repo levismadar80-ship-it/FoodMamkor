@@ -6587,7 +6587,6 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  *   - share_visits (MEH-3331): visits through a link the owner shared, same shape
  *   - follower_count + new_followers_this_week
  *   - average_rating + total_reviews (from the producers.avg_rating aggregate)
- *   - home_products_count (active only, scoped to the owning user)
  *   - views_by_day: 30-entry zero-filled daily series for the line chart
  *   - top_cities: top 5 cities the views come from (NULL excluded)
  *   - pickup_hosts: [{email, city}] waitlist visitors who offered to host a

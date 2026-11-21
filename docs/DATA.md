@@ -1565,7 +1565,7 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               new_followers_this_week (MEH-1364: counted from
                                                               favorites, the canonical interest record — decision A);
                                                               average_rating + total_reviews;
-                                                              home_products_count; views_by_day (30-entry zero-filled
+                                                              views_by_day (30-entry zero-filled
                                                               series); top_cities (top 5, excludes NULL city);
                                                               coverage_requests (MEH-1676: [{city, count}], top 5,
                                                               last 30 days, from producer_whatsapp_clicks rows whose
@@ -1633,26 +1633,9 @@ POST   /favorites/{producer_id}    auth
 DELETE /favorites/{producer_id}    auth — MEH-3222: also deletes her FavoriteAlert row for that business (alerts need a favorite); re-favoriting starts with alerts off
 ```
 
-### Home products — מהמטבח של השכן (`app/routers/home_products.py`)
+### Home products — removed
 
-> **Not served.** The router is unmounted since MEH-1406 (brand LOCK kill-switch,
-> `router_registry.py` comments out its `include_router`) — every route below
-> answers FastAPI's `404 {"detail":"Not Found"}`. Kept for the decommission card
-> MEH-796. The static contract audit ignores unmounted routers (MEH-2411), so a
-> frontend call to any of these is reported as an orphan.
-
-```
-GET    /home-products                     public — filter: city
-GET    /home-products/{product_id}        public
-POST   /home-products                     auth   — 10/hour limit, Claude-moderated (Opus)
-PUT    /home-products/{product_id}        auth   — owner only
-DELETE /home-products/{product_id}        auth   — owner only
-POST   /home-products/validate            public — 30/hour, real-time moderation hint
-POST   /home-products/{id}/whatsapp-click auth   — log the click, returns rating token
-GET    /home-products/{id}/ratings        public
-GET    /home-products/rate/{token}        public — rating page bootstrap
-POST   /home-products/rate/{token}        public — submit rating
-```
+The router (`app/routers/home_products.py`) was unmounted in MEH-1406 and deleted in MEH-3646 (MEH-796). No `/home-products` route exists; `TestHomeProductsKillSwitch` holds that every one answers 404. The three tables stay until their drop migration.
 
 ### Events (producer farm events — `app/routers/events.py`)
 
@@ -2370,11 +2353,9 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 | Kashrut certificate approved (with expiry) / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
 | New review — not an edit (MEH-2602) | Email | Business owner | `content_notifications.py` |
 | Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
-| Home product removed | Email | Seller | `admin.py` |
 | Newsletter signup (welcome) | Email | Subscriber | `marketing.py` |
 | Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
 | Contact form | Email | Admin | `marketing.py` |
-| 24h after WhatsApp click | WhatsApp | Buyer (rating prompt) | `rating_dispatcher.py` |
 
 All Resend + Twilio sends are **best-effort** — missing env vars or send
 errors are logged but never raise. A broken notification must never
