@@ -31,7 +31,7 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 // The checker seeds from the saved city; none saved here.
 // MEH-3597: the map is next/dynamic (leaflet); a stub records what it got.
 vi.mock("next/dynamic", () => ({
@@ -158,13 +158,15 @@ describe("MEH-3597 — where and when, like the bag page", () => {
 });
 
 describe("MEH-3597 — pickup time and when to pay", () => {
-  it("a window set: «מועד איסוף» is the first row of where-and-when", async () => {
+  it("a window set: the pickup time sits under the title, before the details (MEH-3610, as the bag page)", async () => {
     fixture.gb = { fulfillment_note: null, pickup_note: "איסוף מהמאפייה", delivery_note: null, pickup_starts_at: "2099-01-02T07:00:00", pickup_ends_at: "2099-01-02T11:00:00" };
     await renderPage();
     const row = await screen.findByTestId("group-buy-pickup-window");
-    expect(row.textContent).toContain("group_buys.detail.pickup_time_label");
+    expect(row.textContent).toContain("group_buys.detail.pickup_label");
     expect(row.textContent).toContain("2099-01-02T07:00:00|2099-01-02T11:00:00");
-    expect(row.compareDocumentPosition(screen.getByTestId("group-buy-pickup-note")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const title = screen.getByRole("heading", { level: 1 });
+    expect(title.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("group-buy-details").contains(row)).toBe(false);
   });
 
   it("no window: no row", async () => {

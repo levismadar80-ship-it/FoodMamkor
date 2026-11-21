@@ -8,7 +8,7 @@
  * group reached its goal (no leave in the last 24 h that drops it below).
  */
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -16,6 +16,7 @@ import GroupBuyLineTotal from "@/components/group-buy/GroupBuyLineTotal";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { cancelUntilText } from "@/lib/group-buy-pickup"; // MEH-3610
 
 const QTY_MIN = 1;
 const QTY_MAX = 100;
@@ -23,6 +24,9 @@ const QTY_MAX = 100;
 /** @param {{ gb: any, joinable: boolean, full: boolean, cancelling: boolean, onCancel: () => void, onChanged: () => Promise<void> | void }} props */
 export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, onCancel, onChanged }) {
   const t = useTranslations("group_buys.detail");
+  const locale = useLocale();
+  // MEH-3610: the join confirmation says until when she can leave.
+  const cancelUntil = joinable ? cancelUntilText(gb.deadline, locale) : null;
   const current = gb.user_commit?.quantity || 1;
   const [qty, setQty] = useState(/** @type {number | string} */ (current));
   const [saving, setSaving] = useState(false);
@@ -52,6 +56,11 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
         {gb.unit
           ? t("committed_qty_unit", { count: current, unit: gb.unit })
           : current > 1 && t("committed_units", { count: current })}
+        {cancelUntil && (
+          <span className="block text-xs font-normal text-text mt-1" data-testid="group-buy-cancel-until">
+            {t("cancel_until_short", { date: cancelUntil })}
+          </span>
+        )}
       </div>
       {joinable && full && (
         <p className="text-sm text-fg-muted text-center" data-testid="group-buy-full-member">{t("full_member")}</p>

@@ -1295,9 +1295,10 @@
       "funded_subtitle_closed": "The group reached its goal. Joining is closed.",
       "committed_qty_unit": " ({count} {unit})",
       "cancel_title": "Cancelling",
-      "cancel_body_open": "You can leave at any time until the deadline.",
-      "cancel_body_funded": "You can leave until the deadline. In the 24 hours before it, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
-      "pickup_time_label": "Pickup time",
+      "cancel_body_open": "You can leave at any time until {date}.",
+      "cancel_body_funded": "You can leave until {date}. In the last 24 hours, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
+      "pickup_place_label": "Pickup place",
+      "cancel_until_short": "You can leave until {date}",
       "pay_line": "Nothing to pay now. You arrange payment directly with the business when you coordinate the order.",
       "add_to_calendar": "Add to calendar",
       "calendar_title": "Pickup: {title}"
@@ -1400,6 +1401,13 @@
         "closed_note": "Joining is stopped. People who already joined stay in the group.",
         "saved": "Settings saved",
         "failed": "Couldn't save, please try again"
+      },
+      "safety": {
+        "place_label": "Pickup branch",
+        "place_none": "No branch, just the pickup text",
+        "place_help": "Shown on the group page with a map, and in the reminder participants get before pickup.",
+        "allergens_title": "Allergens",
+        "allergens_help": "Tick what the product contains. What you tick shows on the group page. With nothing ticked, it says no allergens were listed."
       }
     },
     "availability": {

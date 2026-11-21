@@ -30,6 +30,7 @@ import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import GroupBuyProductPicker from "@/components/GroupBuyProductPicker";
 import GroupBuyOwnerSettings from "@/components/group-buy/GroupBuyOwnerSettings"; // MEH-3592
+import GroupBuySafetyFields from "@/components/group-buy/GroupBuySafetyFields"; // MEH-3610
 import GroupBuyPickupWindowFields, { pickupWindowPayload } from "@/components/group-buy/GroupBuyPickupWindowFields"; // MEH-3597
 import InlineMessage from "@/components/ui/InlineMessage";
 import { israelWallClockToIso, parseNaiveUtc } from "@/lib/dates";
@@ -84,6 +85,9 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
   const pickupRef = useRef(null);
   const [windowError, setWindowError] = useState(/** @type {string | null} */ (null));
   const deliveryRef = useRef(null);
+  // MEH-3610: the pickup branch and the allergens, as a rescue bag carries.
+  const [allergens, setAllergens] = useState(/** @type {string[]} */ ([]));
+  const [locationId, setLocationId] = useState("");
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -131,6 +135,9 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
         min_participants: Number(form.min_participants),
         max_participants: form.max_participants ? Number(form.max_participants) : undefined,
         max_units: form.max_units ? Number(form.max_units) : undefined, // MEH-3592
+        // MEH-3610: nothing ticked = not declared (null), never «contains none».
+        allergens: allergens.length ? allergens : null,
+        pickup_location_id: locationId || null,
         // MEH-3219 B13: the field says «לפי שעון ישראל» — read it in Israel,
         // not in the device's zone.
         deadline: israelWallClockToIso(form.deadline),
@@ -355,6 +362,13 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
           onStart={(e) => { setWindowError(null); set("pickup_start")(e); }}
           onEnd={(e) => { setWindowError(null); set("pickup_end")(e); }}
           error={windowError}
+        />
+        <GroupBuySafetyFields
+          idPrefix="gb-new"
+          allergens={allergens}
+          onAllergens={setAllergens}
+          locationId={locationId}
+          onLocation={setLocationId}
         />
       </div>
 

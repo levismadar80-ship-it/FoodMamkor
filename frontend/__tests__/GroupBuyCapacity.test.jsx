@@ -7,6 +7,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
 import GroupBuyOwnerSettings from "@/components/group-buy/GroupBuyOwnerSettings";
 import api from "@/lib/api";
+import { SWRConfig } from "swr";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...rest }) => <a href={href} {...rest}>{children}</a>,
@@ -20,7 +21,7 @@ vi.mock("next-intl", () => ({
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn() } }));
 
 const FUTURE = "2099-01-01T00:00:00";
@@ -146,7 +147,7 @@ describe("participant", () => {
 describe("owner settings", () => {
   const gb = { ...BASE, max_participants: 8, max_units: null };
 
-  it("collapsed by default; open shows caps; save sends both, empty = null", async () => {
+  it("collapsed by default; open shows caps; save sends only what changed, empty = null", async () => {
     const onSaved = vi.fn();
     render(<GroupBuyOwnerSettings gb={gb} onSaved={onSaved} />);
     expect(screen.queryByTestId("group-buy-settings-save")).toBeNull();
@@ -154,9 +155,47 @@ describe("owner settings", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    const [people, units] = screen.getAllByRole("spinbutton");
+    fireEvent.change(people, { target: { value: "" } });
+    fireEvent.change(units, { target: { value: "40" } });
     fireEvent.click(screen.getByTestId("group-buy-settings-save"));
-    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { max_participants: 8, max_units: null }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { max_participants: null, max_units: 40 }));
     expect(onSaved).toHaveBeenCalled();
+  });
+
+  it("MEH-3610: an untouched cap does not ride along with an allergen change (caps freeze when joining closes)", async () => {
+    render(<GroupBuyOwnerSettings gb={{ ...gb, allergens: ["milk"] }} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    expect(screen.getByTestId("gb-gb-1-allergen-milk").getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByTestId("gb-gb-1-allergen-gluten"));
+    fireEvent.click(screen.getByTestId("group-buy-settings-save"));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { allergens: ["gluten", "milk"] }));
+  });
+
+  it("MEH-3610: un-ticking the last allergen sends null (not declared), never []", async () => {
+    render(<GroupBuyOwnerSettings gb={{ ...gb, allergens: ["milk"] }} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    fireEvent.click(screen.getByTestId("gb-gb-1-allergen-milk"));
+    fireEvent.click(screen.getByTestId("group-buy-settings-save"));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { allergens: null }));
+  });
+
+  it("MEH-3610: picking a branch sends its id; the list is her own branches", async () => {
+    api.get.mockImplementation((url) =>
+      Promise.resolve({ data: url === "/producers/me/locations" ? [{ id: "loc-1", label: "הסניף בכרמל", address: "הרצל 5", city: "חיפה" }] : state.gb }),
+    );
+    // A fresh SWR cache: an earlier test's read of the same key is not this one's.
+    render(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <GroupBuyOwnerSettings gb={{ ...gb, pickup_note: "בכניסה" }} onSaved={vi.fn()} />
+      </SWRConfig>,
+    );
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    const select = await screen.findByTestId("gb-gb-1-place");
+    expect(select.textContent).toContain("הסניף בכרמל — הרצל 5, חיפה");
+    fireEvent.change(select, { target: { value: "loc-1" } });
+    fireEvent.click(screen.getByTestId("group-buy-settings-save"));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { pickup_location_id: "loc-1" }));
   });
 
   it("stop, then (when stopped) reopen", async () => {

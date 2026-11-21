@@ -41,7 +41,7 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099", formatDate: () => "1 בינואר 2099" }));
 // The checker seeds from the saved city; none saved here.
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ city: null }) }));
 

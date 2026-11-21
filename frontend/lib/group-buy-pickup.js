@@ -36,6 +36,19 @@ export function pickupWindowText(start, end, locale) {
 }
 
 /**
+ * MEH-3610: «עד מתי אפשר לבטל» — the join deadline as «יום חמישי, 3 בדצמבר,
+ * 20:00» (Israel time), the same day and hour style as the pickup line.
+ * @param {string | null | undefined} deadline naive UTC from the API
+ * @param {string} locale
+ * @returns {string | null}
+ */
+export function cancelUntilText(deadline, locale) {
+  const d = deadline ? parseNaiveUtc(deadline) : null;
+  if (!d || Number.isNaN(d.getTime())) return null;
+  return `${formatDate(d, locale, "long")}, \u2066${israelTime(d.toISOString())}\u2069`;
+}
+
+/**
  * The saved window back into the form's two fields (Israel wall clock):
  * `start` for a datetime-local input, `endTime` for a time input. The form
  * only writes same-day windows; a cross-day one from the API keeps its end
