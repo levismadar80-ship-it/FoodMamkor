@@ -18,6 +18,7 @@ import { useMapFilters } from "@/app/[locale]/map/state/useMapFilters";
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
 
 const BAKERY = { id: "cat-bakery", name: "לחמים ואפייה" };
+// MEH-3076: the counts are per legend row, i.e. per group ("bread").
 
 // demo-delivery-pickup shape: Producer.lat/lng NULL, one pickup row.
 const DELIVERY_ONLY = {
@@ -74,7 +75,7 @@ describe("useMapFilters — viewport bounds derive from locations[] (MEH-1670)",
     // Only delivery-only is in bounds, so the count is 1, not 2 (which would
     // mean the chip ignored committedBounds) and not 0 (which is exactly the
     // "card in list, 0 on chip" gap the ticket named as unacceptable).
-    expect(result.current.viewportCategoryCounts[BAKERY.name]).toBe(1);
+    expect(result.current.viewportCategoryCounts.bread).toBe(1);
   });
 
   it("both stay unfiltered when no viewport has been committed", () => {
@@ -82,7 +83,7 @@ describe("useMapFilters — viewport bounds derive from locations[] (MEH-1670)",
     expect(result.current.visibleProducers.map((p) => p.id)).toEqual(
       expect.arrayContaining(["delivery-only", "far-away"]),
     );
-    expect(result.current.viewportCategoryCounts[BAKERY.name]).toBe(2);
+    expect(result.current.viewportCategoryCounts.bread).toBe(2);
   });
 
   // MEH-3054: the list tests the pins the map DRAWS (mapPinPoints). A business
@@ -103,7 +104,7 @@ describe("useMapFilters — viewport bounds derive from locations[] (MEH-1670)",
     const result = setup([BRANCH_FAR_PICKUP_NEAR, FAR_AWAY]);
     act(() => result.current.setCommittedBounds(BOUNDS));
     expect(result.current.visibleProducers.map((p) => p.id)).not.toContain("branch-far");
-    expect(result.current.viewportCategoryCounts[BAKERY.name]).toBeUndefined();
+    expect(result.current.viewportCategoryCounts.bread).toBeUndefined();
   });
 
   it("with the «איסוף עצמי» chip on, that pickup point counts, in BOTH outputs", () => {
@@ -112,6 +113,6 @@ describe("useMapFilters — viewport bounds derive from locations[] (MEH-1670)",
     act(() => result.current.setChipState((s) => ({ ...s, pickup_points: true })));
     expect(result.current.showAllPickupPoints).toBe(true);
     expect(result.current.visibleProducers.map((p) => p.id)).toContain("branch-far");
-    expect(result.current.viewportCategoryCounts[BAKERY.name]).toBe(1);
+    expect(result.current.viewportCategoryCounts.bread).toBe(1);
   });
 });

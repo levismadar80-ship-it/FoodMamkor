@@ -75,3 +75,23 @@ export function taxonomyEntry(category) {
     (name ? CATEGORY_TAXONOMY.find((c) => c.name === name) : undefined)
   );
 }
+
+/**
+ * MEH-3076 (Sapir 21/11, «צבע לקבוצה»): the 6 groups in chip-row order. The
+ * /map legend and the pin colours both read this order; the chip row
+ * (lib/map-chips.js CATEGORY_CHIPS) lists the same keys.
+ *
+ * @type {ReadonlyArray<CategoryGroup>}
+ */
+export const CATEGORY_GROUPS = Object.freeze(["meat", "produce", "dairy", "bread", "pantry", "care"]);
+
+/**
+ * The group of a DB category, or undefined for one the taxonomy does not know
+ * (an admin-created row: no group colour, no legend row).
+ *
+ * @param {Parameters<typeof taxonomyEntry>[0]} category
+ * @returns {CategoryGroup | undefined}
+ */
+export function groupOf(category) {
+  return taxonomyEntry(category)?.group;
+}
