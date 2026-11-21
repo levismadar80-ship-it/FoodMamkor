@@ -311,6 +311,40 @@ describe("RescueOfferPage — reserving", () => {
     await waitFor(() => expect(screen.getByTestId("rescue-offer-reserved").textContent).toContain("7310"));
   });
 
+  it("a reserved bag offers «הוספה ליומן» for its pickup window (MEH-3616 button)", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      {
+        id: "r1", offer_id: "o1", producer_id: "p1", qty: 1, status: "reserved", pickup_code: "7310",
+        price_agorot: 2500, cancel_until: iso(HOUR / 2), pickup_start: iso(HOUR), pickup_end: iso(3 * HOUR),
+        reviewed: false, cancelled_by_business: false,
+      },
+    ]);
+    await renderWith(offer());
+    const btn = await screen.findByTestId("rescue-offer-add-to-calendar");
+    expect(btn.textContent).toBe(lookup("events.detail.add_to_calendar"));
+  });
+
+  it("no reservation → no calendar button", async () => {
+    await renderWith(offer());
+    expect(screen.getByTestId("rescue-reserve")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-offer-add-to-calendar")).toBeNull();
+  });
+
+  it("a handed bag → no calendar button (the pickup already happened)", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      {
+        id: "r1", offer_id: "o1", producer_id: "p1", qty: 1, status: "handed", pickup_code: "7310",
+        price_agorot: 2500, cancel_until: iso(HOUR / 2), pickup_start: iso(HOUR), pickup_end: iso(3 * HOUR),
+        reviewed: true, cancelled_by_business: false,
+      },
+    ]);
+    await renderWith(offer());
+    await waitFor(() => expect(screen.getByTestId("rescue-offer-reserved")).toBeTruthy());
+    expect(screen.queryByTestId("rescue-offer-add-to-calendar")).toBeNull();
+  });
+
   it("a reservation on ANOTHER bag of the same business is not shown on this one", async () => {
     // Two pickup points → two bags a day; bag o1's page must not show o2's code.
     authUser = { id: "u1" };
