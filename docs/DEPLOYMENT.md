@@ -1006,6 +1006,40 @@ In private mode a red staging is seen only by the nightly run, so
 `if:` conditions match the two cron strings verbatim: changing a cron in
 `e2e.yml` means changing the conditions that name it.
 
+### Resetting staging data (MEH-3630 · MEH-3631)
+
+`backend/scripts/reset_staging.py` empties every table except reference data
+(`KEEP_TABLES`: `alembic_version`, `alembic_lineage`, `categories`, `cities`,
+`admin_checklist_items`, `admin_settings`, `static_pages`) in one `TRUNCATE`,
+then runs the same seed chain as a PR's E2E backend
+(`scripts/e2e/start-local-backend.sh:53-58`). It refuses unless the database
+is local, or `RAILWAY_ENVIRONMENT=staging` with neither `ENV` nor
+`RAILWAY_ENVIRONMENT` set to `production`.
+
+Railway → backend service (staging) → Console, `cwd=/app`:
+
+```bash
+/app/.venv/bin/python scripts/reset_staging.py            # dry run: rows per table
+/app/.venv/bin/python scripts/reset_staging.py --confirm  # wipe + seed
+```
+
+It also refuses when the database URL is the one in `DATABASE_URL_PRODUCTION`,
+and refuses to wipe while any `DEMO_*_PASSWORD` is unset. **What the guard
+cannot see:** a tunnel (`railway connect`, ssh) to another database shows up
+as `localhost` and passes the host check — never point a local
+`DATABASE_URL` at a tunnel and run this.
+
+Before the first `--confirm`, take a backup of staging (`docs/BACKUPS.md`).
+If a seed step fails after the wipe, the script says so and exits 1: the
+database is empty or half-seeded until `--confirm` runs again cleanly.
+
+What disappears with the wipe: every account and session (the E2E run logs in
+again by itself), admin passkeys and recovery codes, and every id (`RESTART
+IDENTITY`). The admin from `ADMIN_EMAIL` comes back with `ADMIN_PASSWORD` only
+when both are set (seed_data.py); the three QA accounts come back with the
+`DEMO_*_PASSWORD` values. Cloudinary images are not deleted
+(`backend/scripts/cleanup_cloudinary_orphans.py`).
+
 ### Staging QA auth fixtures (MEH-1241 · MEH-1528)
 
 Playwright can drive a logged-in **producer**, **consumer**, and **admin**
