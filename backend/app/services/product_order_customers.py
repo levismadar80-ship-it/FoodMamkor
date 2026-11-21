@@ -14,10 +14,12 @@ Related:  app/routers/product_order_business.py (GET …/customers);
 History:  MEH-3561 (creation)
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TypedDict
 from uuid import UUID
 
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session
 
 from app.models.product_orders import ProductOrder
@@ -37,12 +39,21 @@ class CustomerRow(TypedDict):
 
 
 def list_customers(db: Session, producer_id: UUID) -> list[CustomerRow]:
-    """The business's customers, the most recent buyer first."""
+    """The business's customers, the most recent buyer first.
+
+    One GROUP BY in the database, so a long-lived business never ships every
+    order it ever took into Python; the cap is a LIMIT on customers.
+    """
+    last = func.max(ProductOrder.created_at)
+    latest_name = func.array_agg(
+        aggregate_order_by(ProductOrder.customer_name, ProductOrder.created_at.desc())
+    )[1]
     rows = (
         db.query(
             ProductOrder.customer_phone,
-            ProductOrder.customer_name,
-            ProductOrder.created_at,
+            latest_name,
+            func.count(ProductOrder.id),
+            last,
         )
         .filter(
             ProductOrder.producer_id == producer_id,
@@ -51,21 +62,19 @@ def list_customers(db: Session, producer_id: UUID) -> list[CustomerRow]:
             # (services/product_order_privacy.py); she is no one's customer.
             ProductOrder.customer_phone != "",
         )
-        .order_by(ProductOrder.created_at.desc())
+        .group_by(ProductOrder.customer_phone)
+        .order_by(last.desc())
+        .limit(MAX_CUSTOMERS)
         .all()
     )
-    by_phone: dict[str, CustomerRow] = {}
-    for phone, name, created_at in rows:
-        key = str(phone)
-        row = by_phone.get(key)
-        if row is None:
-            # Newest first, so the first order seen carries the current name.
-            by_phone[key] = {
-                "name": str(name),
-                "phone": key,
-                "order_count": 1,
-                "last_order_at": created_at,
-            }
-        else:
-            row["order_count"] += 1
-    return list(by_phone.values())[:MAX_CUSTOMERS]
+    # created_at is stored as naive UTC; sent with its zone, so the browser
+    # does not read it as local time and show the day before (review, MEH-3561).
+    return [
+        {
+            "name": str(name),
+            "phone": str(phone),
+            "order_count": int(count),
+            "last_order_at": when.replace(tzinfo=UTC),
+        }
+        for phone, name, count, when in rows
+    ]

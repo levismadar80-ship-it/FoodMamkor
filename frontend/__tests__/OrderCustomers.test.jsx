@@ -66,6 +66,12 @@ describe("OrderCustomersCard", () => {
     expect(screen.queryByTestId("orders-customers-more")).toBeNull();
   });
 
+  it("dates read in Israel time: 22:30 UTC on the 19th is the 20th", async () => {
+    renderCard([customer(1, { last_order_at: "2026-11-19T22:30:00Z" })]);
+    const [row] = await screen.findAllByTestId("orders-customers-row");
+    expect(row.textContent).toContain("20.11.2026");
+  });
+
   it("two orders make a returning customer, with the dual form", async () => {
     renderCard([customer(1, { order_count: 2 }), customer(2, { order_count: 5 })]);
     const rows = await screen.findAllByTestId("orders-customers-row");

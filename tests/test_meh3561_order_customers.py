@@ -50,6 +50,39 @@ def test_one_row_per_phone_latest_name_count_and_date(client, db, flag_on):
     assert row["name"] == "דנה לוי"  # the newest order's name, not the first
     assert row["order_count"] == 3
     assert row["last_order_at"].startswith(last.created_at.isoformat()[:16])
+    # Sent with its zone: a naive value is read as browser-local time.
+    assert row["last_order_at"].endswith(("Z", "+00:00"))
+
+
+def test_a_late_evening_order_keeps_its_instant(client, db, flag_on):
+    """22:30 UTC on the 19th is 00:30 on the 20th in Israel; the zone must ride
+    along so the browser lands on the 20th."""
+    from datetime import datetime
+
+    shop = Shop(db)
+    stored_order(db, shop, "handed", created_at=datetime(2026, 11, 19, 22, 30))
+    (row,) = client.get(URL, headers=shop.headers).json()["customers"]
+    assert row["last_order_at"] in ("2026-11-19T22:30:00Z", "2026-11-19T22:30:00+00:00")
+
+
+def test_an_excluded_order_does_not_hide_a_counted_one(client, db, flag_on):
+    shop = Shop(db)
+    stored_order(db, shop, "handed", created_at=_ago(5))
+    stored_order(db, shop, "declined", created_at=_ago(1))
+    (row,) = client.get(URL, headers=shop.headers).json()["customers"]
+    assert row["order_count"] == 1
+    assert row["last_order_at"] < _ago(2).isoformat()
+
+
+def test_the_cap_keeps_the_newest_customers(client, db, flag_on, monkeypatch):
+    from app.services import product_order_customers as module
+
+    monkeypatch.setattr(module, "MAX_CUSTOMERS", 2)
+    shop = Shop(db)
+    for i, phone in enumerate(("972500000001", "972500000002", "972500000003")):
+        stored_order(db, shop, "handed", customer_phone=phone, created_at=_ago(10 - i))
+    rows = client.get(URL, headers=shop.headers).json()["customers"]
+    assert [r["phone"] for r in rows] == ["972500000003", "972500000002"]
 
 
 def test_an_order_she_never_took_does_not_count(client, db, flag_on):
