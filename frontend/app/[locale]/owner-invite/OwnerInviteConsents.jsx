@@ -16,8 +16,8 @@ import { Link } from "@/i18n/navigation";
  *           Does not reword the declaration: its full text still comes from
  *           `auth.register.producer.terms.declaration` by KEY, one wording.
  * History:  MEH-3256 (moved out of OwnerInviteClient). MEH-3662: terms and
- *           the licensing declaration became ONE box (Sapir, 21/11). The box
- *           still drives both flags, so the server stamps both exactly as
+ *           the licensing declaration became ONE box (Sapir, 21/11). The parent
+ *           sends it as both flags, so the server stamps both exactly as
  *           before; the declaration's text sits behind «הצהרת הרישוי», closed
  *           until she opens it, instead of 45 words inside the label. The
  *           farmer line stays its own box: the server records it apart
@@ -30,8 +30,7 @@ const BOX_CLASS = "w-5 h-5 accent-primary mt-0.5 flex-shrink-0";
 
 /**
  * @param {{
- *   terms: boolean, onTerms: (v: boolean) => void,
- *   declaration: boolean, onDeclaration: (v: boolean) => void,
+ *   consent: boolean, onConsent: (v: boolean) => void,
  *   farmerRequired: boolean, farmer: boolean, onFarmer: (v: boolean) => void,
  *   testIdPrefix?: string,
  * }} props
@@ -40,7 +39,6 @@ export default function OwnerInviteConsents({ testIdPrefix = "owner-invite", ...
   const tReg = useTranslations("auth.register.producer");
   const [declarationOpen, setDeclarationOpen] = useState(false);
   const declarationId = useId();
-  const accepted = props.terms && props.declaration;
   return (
     <>
       <div>
@@ -48,11 +46,8 @@ export default function OwnerInviteConsents({ testIdPrefix = "owner-invite", ...
           <input
             type="checkbox"
             data-testid={`${testIdPrefix}-consent`}
-            checked={accepted}
-            onChange={(e) => {
-              props.onTerms(e.target.checked);
-              props.onDeclaration(e.target.checked);
-            }}
+            checked={props.consent}
+            onChange={(e) => props.onConsent(e.target.checked)}
             className={BOX_CLASS}
           />
           <span className="leading-relaxed text-fg-muted">

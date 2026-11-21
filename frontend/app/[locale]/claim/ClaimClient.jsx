@@ -77,8 +77,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
   const [deadToken, setDeadToken] = useState(null);
   const [newLink, setNewLink] = useState("idle"); // idle | sending | sent | failed
 
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
+  // MEH-3662: one box carries both the terms and the declaration.
+  const [consented, setConsented] = useState(false);
   const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   const [validation, setValidation] = useState(null);
   const [submitError, setSubmitError] = useState(null);
@@ -153,8 +153,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
   const submit = async (e) => {
     e.preventDefault();
     setSubmitError(null);
-    if (!agreedToTerms) return setValidation(tReg("validation.terms_required"));
-    if (!declarationConfirmed) return setValidation(tReg("validation.declaration_required"));
+    if (!consented) return setValidation(tReg("validation.terms_required"));
     if (farmerRequired && !farmerConfirmed) return setValidation(tReg("validation.farmer_required"));
     setValidation(null);
     setSubmitting(true);
@@ -163,8 +162,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
         token,
         // Same fold as registration: the grower line is part of the one
         // licensing declaration the server stamps (MEH-759 Chunk C).
-        declaration_accepted: declarationConfirmed && (!farmerRequired || farmerConfirmed),
-        terms_accepted: agreedToTerms,
+        declaration_accepted: consented && (!farmerRequired || farmerConfirmed),
+        terms_accepted: consented,
         // MEH-3137: and on its own, so the server records it apart.
         ...(farmerRequired && { farmer_declaration_accepted: farmerConfirmed }),
       });
@@ -336,10 +335,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
 
           <OwnerInviteConsents
             testIdPrefix="claim"
-            terms={agreedToTerms}
-            onTerms={setAgreedToTerms}
-            declaration={declarationConfirmed}
-            onDeclaration={setDeclarationConfirmed}
+            consent={consented}
+            onConsent={setConsented}
             farmerRequired={farmerRequired}
             farmer={farmerConfirmed}
             onFarmer={setFarmerConfirmed}
