@@ -76,7 +76,10 @@ vi.mock("@/components/CategoryIcons", () => {
   };
 });
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
-vi.mock("@/components/ProducerCard", () => ({ default: () => <div data-testid="card" /> }));
+// MEH-2233: forwards imagePriority so the first-screen set is observable.
+vi.mock("@/components/ProducerCard", () => ({
+  default: ({ imagePriority }) => <div data-testid="card" data-priority={imagePriority ?? "lazy"} />,
+}));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
@@ -410,5 +413,17 @@ describe("ProducersClient distance as a location trigger (MEH-2616)", () => {
     fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
     expect(getCurrentPosition).not.toHaveBeenCalled();
     await waitFor(() => expect(distanceCalls().length).toBeGreaterThan(0));
+  });
+});
+
+// MEH-2233: one of the first cards' photos is the /producers LCP element.
+// The first four (one row at xl, two on a phone) load eagerly; only the first
+// two (the phone's first row) get fetchpriority=high.
+describe("ProducersClient first-screen card photos (MEH-2233)", () => {
+  it("first two high, next two eager, the rest lazy", () => {
+    const items = Array.from({ length: 6 }, (_, i) => ({ id: String(i + 1), categories: [] }));
+    render(<ProducersClient {...PROPS} initialItems={items} initialTotal={6} />);
+    const flags = screen.getAllByTestId("card").map((c) => c.getAttribute("data-priority"));
+    expect(flags).toEqual(["high", "high", "eager", "eager", "lazy", "lazy"]);
   });
 });
