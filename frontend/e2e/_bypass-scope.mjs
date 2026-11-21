@@ -31,32 +31,8 @@
 export async function scopeBypassToOrigin(context, targetUrl, headers) {
   const secret = headers?.["x-vercel-protection-bypass"];
   if (!secret) return "";
-  let origin = new URL(targetUrl).origin;
-  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(new URL(origin).hostname)) return "";
-
-  for (let hop = 0; hop < 3; hop++) {
-    const r = await context.request.get(`${origin}/`, { maxRedirects: 0, failOnStatusCode: false });
-    const loc = r.headers().location;
-    if (r.status() < 300 || r.status() >= 400 || !loc) break;
-    const next = new URL(loc, origin);
-    // A protected origin answers 302 to vercel.com/sso-api: that is the wall,
-    // not an alias, so the origin before it is the canonical one.
-    if (next.origin === origin || /(^|\.)vercel\.com$/.test(next.hostname)) break;
-    origin = next.origin;
-  }
-
-  const r = await context.request.get(`${origin}/`, {
-    headers: { "x-vercel-protection-bypass": secret, "x-vercel-set-bypass-cookie": "true" },
-    maxRedirects: 0,
-    failOnStatusCode: false,
-  });
-  const cookies = await context.cookies(origin);
-  if (!cookies.some((c) => c.name === "_vercel_jwt")) {
-    throw new Error(
-      `[bypass] ${origin} set no _vercel_jwt cookie (HTTP ${r.status()}). ` +
-        "Check that VERCEL_AUTOMATION_BYPASS_SECRET is the current secret.",
-    );
-  }
+  const origin = await fetchBypassCookie(context.request, targetUrl, secret);
+  if (!origin) return "";
 
   const names = [...new Set(["x-vercel-protection-bypass", ...Object.keys(headers).map((h) => h.toLowerCase())])];
   context.on("request", (req) => {
@@ -68,5 +44,49 @@ export async function scopeBypassToOrigin(context, targetUrl, headers) {
       }
     }, () => {});
   });
+  return origin;
+}
+
+/**
+ * The cookie half on its own, for a bare APIRequestContext (global-setup.ts
+ * writes its storageState for every spec, MEH-3629). Resolves the canonical
+ * origin without the secret, sends the secret there once with no redirects,
+ * and throws if Vercel set no `_vercel_jwt`. Local target or no secret = "".
+ *
+ * @param {import("playwright").APIRequestContext} api
+ * @param {string} targetUrl
+ * @param {string} secret
+ * @returns {Promise<string>} the origin the cookie was set for
+ */
+export async function fetchBypassCookie(api, targetUrl, secret) {
+  if (!secret) return "";
+  let origin = new URL(targetUrl).origin;
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(new URL(origin).hostname)) return "";
+
+  for (let hop = 0; hop < 3; hop++) {
+    const r = await api.get(`${origin}/`, { maxRedirects: 0, failOnStatusCode: false });
+    const loc = r.headers().location;
+    if (r.status() < 300 || r.status() >= 400 || !loc) break;
+    const next = new URL(loc, origin);
+    // A protected origin answers 302 to vercel.com/sso-api: that is the wall,
+    // not an alias, so the origin before it is the canonical one.
+    if (next.origin === origin || /(^|\.)vercel\.com$/.test(next.hostname)) break;
+    origin = next.origin;
+  }
+
+  const r = await api.get(`${origin}/`, {
+    headers: { "x-vercel-protection-bypass": secret, "x-vercel-set-bypass-cookie": "true" },
+    maxRedirects: 0,
+    failOnStatusCode: false,
+  });
+  const { cookies } = await api.storageState();
+  const host = new URL(origin).hostname;
+  const forHost = (d) => host === d || host.endsWith(`.${d}`);
+  if (!cookies.some((c) => c.name === "_vercel_jwt" && forHost(c.domain.replace(/^\./, "")))) {
+    throw new Error(
+      `[bypass] ${origin} set no _vercel_jwt cookie (HTTP ${r.status()}). ` +
+        "Check that VERCEL_AUTOMATION_BYPASS_SECRET is the current secret.",
+    );
+  }
   return origin;
 }

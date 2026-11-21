@@ -25,6 +25,15 @@ const BASE_URL =
 // toolbar to suppress — so on a local target they are pure cost. Gate them on
 // the target instead of deleting them, so a manual run against a preview URL
 // still gets MEH-264's bypass and MEH-306 sub-B's toolbar suppression.
+function remoteHeaders(): Record<string, string> {
+  if (isLocalTarget) return {};
+  if (!WEBKIT_TLS) return { "x-vercel-skip-toolbar": "1" };
+  return {
+    "x-vercel-protection-bypass":
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "",
+    "x-vercel-skip-toolbar": "1",
+  };
+}
 const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(BASE_URL);
 
 // MEH-2897 — the golden-path project (anchor plan §C.2) walks seeded personas
@@ -153,29 +162,20 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "on-first-retry",
     video: "retain-on-failure",
-    // MEH-264 — Vercel Deployment Protection returns 403 "host_not_allowed"
-    // on every preview URL until requests present this bypass header.
-    // MEH-1241 — canonical env name is VERCEL_AUTOMATION_BYPASS_SECRET (the
-    // Vercel system env / GitHub secret name); the legacy job-export alias
-    // VERCEL_BYPASS_SECRET is kept only as a fallback. Same precedence as
-    // global-setup.ts so both surfaces read the same value. When unset (local
-    // runs), we send an empty string which Vercel ignores for non-protected
-    // environments.
-    //
+    // MEH-3629: past Vercel Deployment Protection with the host-only bypass
+    // cookie global-setup.ts writes here (empty on a local target). The secret
+    // used to sit in extraHTTPHeaders, which reaches every host a page loads.
+    storageState: "e2e/.auth/bypass.json",
     // MEH-306 sub-B — `x-vercel-skip-toolbar=1` removes the
     // <vercel-live-feedback> widget from preview pages so its overlay
     // doesn't intercept pointer events during tests (per
     // https://vercel.com/docs/vercel-toolbar/managing-toolbar).
     // MEH-1727: gated on the target — see isLocalTarget above. Empty object on
     // localhost so cross-origin font preflights carry no unlisted header.
-    // guard-ok: manual staging runs only; CI targets localhost, where this is {} (MEH-3629 moves it to the bypass cookie)
-    extraHTTPHeaders: isLocalTarget
-      ? {}
-      : {
-          "x-vercel-protection-bypass":
-            process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "",
-          "x-vercel-skip-toolbar": "1",
-        },
+    // The WebKit TLS proxy (local, sandbox only) browses a local origin, so the
+    // cookie cannot apply there and it keeps the header.
+    // guard-ok: the secret is sent only in the sandbox-only WebKit TLS proxy mode (MEH-3153)
+    extraHTTPHeaders: remoteHeaders(),
   },
   projects: [
     {
