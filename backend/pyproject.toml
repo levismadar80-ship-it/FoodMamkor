@@ -393,6 +393,7 @@ files = [
     "app/services/retention_purge.py",
     "app/services/retired_slugs.py",
     "app/services/sanitization.py",
+    "app/services/staging_reset_job.py",
     "app/services/submission_confirmation.py",
     "app/services/submission_gate.py",
     "app/services/trust_tier.py",

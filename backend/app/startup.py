@@ -873,6 +873,10 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
     # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
     _register_weekly_owner_summary(followup_scheduler)
     _register_job_staleness_check(followup_scheduler)
+    # MEH-3630: weekly wipe + re-seed of the staging DB, staging only.
+    from app.services import staging_reset_job
+
+    staging_reset_job.register(followup_scheduler)
     # MEH-3296: on-site orders, flag-gated (PRODUCT_ORDERS_ENABLED).
     _register_product_order_job(followup_scheduler)
 
