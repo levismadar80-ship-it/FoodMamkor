@@ -157,7 +157,7 @@ class TestResetPasswordPolicy:
         assert int(user.password_changed_at.timestamp()) > old_claims["iat"]
         me_after = client.get("/auth/me", headers={"Authorization": f"Bearer {old_token}"})
         assert me_after.status_code == 401
-        assert me_after.json()["detail"] == "session_invalidated_by_password_change"
+        assert me_after.json()["detail"] == "הסיסמה שונתה, צריך להתחבר מחדש."
 
 
 # ---------- Change password ----------
@@ -275,7 +275,7 @@ class TestChangePasswordPolicy:
         # Token A — issued before the change — is now invalidated.
         me_a = client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"})
         assert me_a.status_code == 401
-        assert me_a.json()["detail"] == "session_invalidated_by_password_change"
+        assert me_a.json()["detail"] == "הסיסמה שונתה, צריך להתחבר מחדש."
 
 
 # ---------- /auth/check-password ----------
