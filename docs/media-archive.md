@@ -21,6 +21,9 @@ Files that landed on staging while this PR was open, removed in the same PR
 and kept at the staging tip it merged in, `df052ed1dd41b11ec3de68d74b78e02de7f7c77d`:
 `qa-artifacts/MEH-3524/` (4 WebP captures).
 
+And 37 more that landed overnight 20→21/11 (`qa-artifacts/` MEH-2233, 2952,
+3194, 3511, 3524, 3525, 3528), kept at `a8c69fe08ba8deb610318eaf053394c5d95de64d`.
+
 Text evidence in those folders (`.md`, `.json`, `.log`, `.txt`, `.html`,
 scripts) was kept.
 
