@@ -494,6 +494,12 @@ def _maybe_fire_review_ready(
     of a pending producer (first image / license completed). Fire-and-forget
     BackgroundTask mirroring the resubmit ping's contract; the transition
     check (not a sent-flag) is the idempotency guard — no schema change."""
+    # MEH-3026 (F7): after the admin asked for changes, the owner's own
+    # «סיימתי להשלים — שלחו לבדיקה» (POST /producers/me/request-review) is the
+    # signal, and it pings the admin itself. Firing review-ready on the save
+    # just before it sent the admin two emails 7 s apart for one action.
+    if producer.requested_changes:
+        return
     if not was_approvable and _pending_and_approvable(db, producer):
         background_tasks.add_task(
             notify_admin_producer_review_ready,

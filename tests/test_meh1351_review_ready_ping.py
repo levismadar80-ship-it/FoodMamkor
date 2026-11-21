@@ -45,6 +45,25 @@ def test_fires_once_on_first_image(client, db):
     ping.assert_called_once_with("משק הפינג", producer.city, test_cause=False)
 
 
+def test_no_fire_after_admin_requested_changes(client, db):
+    """MEH-3026 (F7): once the admin asked for changes, the owner's «סיימתי
+    להשלים» is the admin's signal (it pings by itself), so the save that makes
+    the business approvable must not send a second email 7 s earlier."""
+    user, producer = _pending_producer_user(db)
+    producer.requested_changes = "חסרה תמונה"
+    db.commit()
+    with patch(PATCH_TARGET) as ping:
+        r = client.put(
+            "/producers/me",
+            json={
+                "images": ["https://res.cloudinary.com/demo/image/upload/v1/first.jpg"]
+            },
+            headers=auth_header(user),
+        )
+        assert r.status_code == 200, r.text
+        ping.assert_not_called()
+
+
 def test_no_fire_when_already_approvable(client, db):
     """A producer already past the gate must not re-ping on further edits."""
     cat = make_category(db)
