@@ -139,7 +139,7 @@ MEH-3486 · MEH-3488, added since):
   out after 20 s on the device whose geometry covers it and passes everywhere
   else (measured 20/11: Chromium's click retry scrolled the Leaflet pane and
   rescued it, so only WebKit went red). Use the
-  spec's helper (`tapMarker` in `manual/map.spec.ts`, `pickCity` in
+  spec's helper (`tapMarker` in `manual/_map-shared.ts`, `pickCity` in
   `flows/_pick-city.ts`); `E2EClickPreconditionGuard.test.js` holds both.
 
 **A flaky warning on staging gets a Linear card the same day.** From the

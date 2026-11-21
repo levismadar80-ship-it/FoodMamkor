@@ -215,7 +215,12 @@ describe("ChatWidget i18n (MEH-1617)", () => {
       // getByText: the answers carry embedded newlines (rendered via
       // whitespace-pre-line), and getByText's whitespace normalisation will
       // not match a multi-line string.
-      expect(screen.getByRole("log").textContent).toContain(answerText);
+      // 20/11: a site path in the answer renders as a link labelled with the
+      // page name (ChatMessageText), so compare against the rendered form.
+      const messages = locale === "he" ? he : en;
+      const rendered = answerText.replace(/\/register\/producer|\/map/g, (p) =>
+        messages.chat.pages[p === "/map" ? "map" : "register_business"]);
+      expect(screen.getByRole("log").textContent).toContain(rendered);
       expect(api.post).not.toHaveBeenCalled();
     },
   );

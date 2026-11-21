@@ -145,7 +145,7 @@ function RegisterProducerPageBody({ routeKind }) {
   // CROSS_STEP_REQUIRED fields, and `crossStepErrors` is derived from it — so
   // a fulfilment key in there inflated the submit-gate summary to two
   // offenders while listing one, which is exactly what
-  // RegisterProducerClient.test.jsx caught.
+  // RegisterProducerClient-01/-02.test.jsx caught.
   const [fulfilmentError, setFulfilmentError] = useState("");
   // MEH-1807: per-field messages for CROSS_STEP_REQUIRED, keyed by form field.
   // Only ever holds those three, which is what lets the STORY summary below

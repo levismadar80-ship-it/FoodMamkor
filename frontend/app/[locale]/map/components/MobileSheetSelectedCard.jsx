@@ -32,7 +32,7 @@ const GAP_PX = 8;
  *           on the card, as a corner badge over the chevron column, no row); MEH-0000 (Escape
  *           dismisses it — the one gap an audit of the X found; the X itself
  *           was already a real 44x44 button with a Hebrew aria-label and a
- *           focus ring, measured in map.spec.ts:1352).
+ *           focus ring, measured in map-02.spec.ts:117).
  */
 export default function MobileSheetSelectedCard({
   selectedProducer,
@@ -50,7 +50,7 @@ export default function MobileSheetSelectedCard({
   //
   // Scoped deliberately: a key that went to a text field, a select or anything
   // inside a dialog belongs to that control (clearing a combobox, closing the
-  // filter sheet — e2e/flows/manual/map.spec.ts:894 covers the latter).
+  // filter sheet — e2e/flows/manual/map-01.spec.ts:252 covers the latter).
   // `[role="dialog"]` rather than a list of component names, so a future modal
   // is covered without editing this.
   //

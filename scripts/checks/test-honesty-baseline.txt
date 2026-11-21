@@ -17,5 +17,5 @@ no-verify tests/test_cleanup_cloudinary_orphans.py::TestConfirmOrAbort.test_trai
 skip-no-card tests/test_fuzz_schemathesis.py::pytestmark
 skip-no-card tests/test_meh2794_marketing_fixtures.py::test_rescue_bag_satisfies_its_db_checks
 skip-no-card tests/test_meh3373_registration_recipient_limit.py::test_another_spelling_of_the_same_address_is_the_same_bucket
-no-verify tests/test_producer_owner_invite.py::TestTokenNeverReachesSentry.test_the_scrubber_never_breaks_reporting
+no-verify tests/_test_producer_owner_invite__p03.py::TestTokenNeverReachesSentry.test_the_scrubber_never_breaks_reporting
 skip-no-card frontend/__tests__/FooterCopyrightYear.test.jsx::precondition — the runner's own calendar still says 2026 at this instant

@@ -22,7 +22,7 @@ import api from "@/lib/api";
 // every tag callback, so key-based assertions below are byte-identical while
 // the real <Link>/<a> nodes still mount.
 // MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
-// file's mocks do not feed; its wiring is covered in RegisterProducerClient.test.jsx.
+// file's mocks do not feed; its wiring is covered in RegisterProducerClient-01/-02.test.jsx.
 vi.mock("@/components/RegisterCardPreview", () => ({
   default: () => <div data-testid="card-preview-stub" />,
 }));
@@ -272,7 +272,7 @@ async function fillAccountToDetails() {
 
 // ---------------------------------------------------------------------------
 // MEH-2460 — the organizer option. Harness above copied verbatim from
-// RegisterProducerClient.test.jsx (same mocks, same entry path) so these cases
+// RegisterProducerClient-01/-02.test.jsx (same mocks, same entry path) so these cases
 // exercise the real wizard state machine, not a re-implementation of it.
 // ---------------------------------------------------------------------------
 
