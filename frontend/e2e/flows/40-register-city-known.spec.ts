@@ -31,7 +31,6 @@ const FREE_TEXT_TOWN = "עיירה שאינה ברשימה";
 
 async function reachDetails(page: Page) {
   await page.goto("/register/producer");
-  await page.getByTestId("register-preflight-start").click();
   await expect(page.getByTestId("register-frame-account")).toBeVisible({ timeout: 15_000 });
   await page.getByTestId("register-account-name").fill("טסט בדיקה");
   await page.getByTestId("register-account-email").fill(`city+${Date.now()}@mehamakor.online`);

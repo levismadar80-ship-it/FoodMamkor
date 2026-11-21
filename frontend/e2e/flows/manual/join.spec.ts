@@ -282,14 +282,14 @@ test.describe("manual › /join (MEH-995)", () => {
     expect(await computedDirection(showcase)).toBe("ltr");
   });
 
-  // MT:MEH-995:6 — clicking "מצטרפים" lands on /register/producer (the MEH-994 pre-flight screen).
-  test("CTA → wizard: the join CTA lands on /register/producer's pre-flight screen", async ({ page }) => {
+  // MT:MEH-995:6 — clicking "מצטרפים" lands on /register/producer (MEH-3656: straight on frame 01).
+  test("CTA → wizard: the join CTA lands on /register/producer's first frame", async ({ page }) => {
     await gotoJoin(page);
     await scope(page).getByTestId("join-cta").click();
     await page.waitForURL(/\/register\/producer(?:[/?#]|$)/);
-    // The pre-flight screen itself is covered by RegisterProducerClient-01/-02.test.jsx;
+    // The frame itself is covered by RegisterProducerClient-01/-02.test.jsx;
     // here it is only the landing marker — proof the navigation reached the wizard.
-    await expect(scope(page).getByTestId("register-preflight-start")).toBeVisible(FIRST_PAINT);
+    await expect(scope(page).getByTestId("register-frame-account")).toBeVisible(FIRST_PAINT);
   });
 
   // MT:MEH-995:7 — footer "הוסיפו את העסק שלכם" → /join: COVERED by frontend/__tests__/FooterNavGroups.test.jsx:62 (not duplicated here).
