@@ -265,7 +265,6 @@ class TestNotifierMessage:
 
         sent = []
         monkeypatch.setattr(n.settings, "admin_email", "admin@example.com")
-        monkeypatch.setattr(n.settings, "admin_whatsapp_to", "")
         monkeypatch.setattr(
             n, "send_email", lambda to, subject, body, test_cause=False: sent.append((to, subject, body))
         )

@@ -49,7 +49,7 @@ def admin_channels(monkeypatch):
 def test_admin_ping_sends_template_not_text(admin_channels, call):
     with (
         patch.object(an, "send_template", return_value=True) as tmpl,
-        patch("app.services.whatsapp.send_text") as text,  # MEH-3589
+        patch.object(an, "send_text", create=True) as text,  # MEH-3589
         patch.object(an, "send_email") as mail,
     ):
         call()

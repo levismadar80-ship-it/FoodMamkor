@@ -29,7 +29,7 @@ flowchart TD
     CreateProducer --> CreateUser[Create User<br/>role=producer<br/>producer_id=new producer.id]
     CreateUser --> LinkCats[Link producer_categories + delivery_areas]
     LinkCats --> TxEnd[Commit tx]
-    TxEnd --> NotifyAdmin[Optional: Twilio WhatsApp + SMTP<br/>admin notification<br/>fail-open on missing config]
+    TxEnd --> NotifyAdmin[Optional: admin email via Resend<br/>WhatsApp only as template admin_business_pending_v1<br/>fail-open on missing config]
     NotifyAdmin --> IssueJWTp[create_access_token user.id]
     ReturnTokenP -.->|owner completes profile,<br/>then presses שליחה לבדיקה| SubmitReview[POST /producers/me/submit-for-review<br/>MEH-2100: draft-only, server-side gate<br/>image + product + category + location + phone_verified]
     SubmitReview -->|gate passes| Pending[status=pending<br/>submitted_for_review_at stamped<br/>3-business-day SLA starts HERE]
