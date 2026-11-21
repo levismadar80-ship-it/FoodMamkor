@@ -186,7 +186,7 @@ def _set_license(db, producer, value):
 
 
 def test_approve_license_required_no_license_is_approved_without_badge(
-    client, db, monkeypatch
+    client, db, monkeypatch, caplog
 ):
     """MEH-3026 (Sapir 21/11): license-required category + NULL license, plain
     approve with no override → approved, and no «מאומת» badge. Replaces the
@@ -207,6 +207,12 @@ def test_approve_license_required_no_license_is_approved_without_badge(
     assert producer.status == "approved"
     assert producer.verified_at is None, "approval alone must not grant «מאומת»"
     assert len(calls) == 1, "approve must fire producer_approved_v1 once"
+    assert "approved without a licence number" in caplog.text, (
+        "a licence-less approval must leave an audit line"
+    )
+    page = client.get(f"/producers/{producer.id}")
+    assert page.status_code == 200
+    assert page.json()["verification_tier"] != "verified"
 
 
 def test_approve_license_required_with_license_succeeds(client, db, monkeypatch):

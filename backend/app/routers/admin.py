@@ -411,10 +411,9 @@ def admin_create_producer(
     # MEH-2322: skipped for an owner-claim DRAFT only. The license is the
     # owner's to supply after she claims it. A draft cannot be approved at all
     # until she submits it (approve_producer 409s on draft), and approval runs
-    # `_assert_approvable` — the MEH-971 license gate, which an admin can
-    # override with ?allow_without_license=true after checking the license
-    # out-of-band. Same exposure, and same override, as the public register
-    # path's `license_pending`; this branch adds no new route to "live".
+    # `_assert_approvable`, which since MEH-3026 approves a missing license
+    # (logged, no «מאומת» badge). Same exposure as the public register path's
+    # `license_pending`; this branch adds no new route to "live".
     if not data.as_draft:
         ensure_license_for_categories(
             db, data.category_ids, data.producer_license_number

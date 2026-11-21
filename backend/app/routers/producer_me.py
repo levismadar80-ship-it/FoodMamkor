@@ -259,9 +259,8 @@ def _sync_active_offer(
         ) from exc
 
 
-# MEH-1351: approvability = the admin approve gate's definition, REUSED not
-# reimplemented — ≥1 image (MEH-799) AND license present when the categories
-# require one (MEH-971). Keep in sync with admin.py:approve_producer.
+# MEH-1351: approvability = the admin approve gate's definition — ≥1 image
+# (MEH-799). Keep in sync with services/producer_approval.py::_assert_approvable.
 def _is_approvable(db: Session, producer: Producer) -> bool:
     # MEH-3026: the photo is the only approve gate this mirrors now — a missing
     # licence no longer blocks approval (services/producer_approval.py).
