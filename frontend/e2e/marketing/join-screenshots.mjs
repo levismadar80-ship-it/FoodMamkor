@@ -42,12 +42,12 @@
  * "Option not found" and Playwright then writes no video, silently.
  *
  * ───────────────────────────────────────────────────────────────────────────
- * THE SELECTORS IN THIS FILE HAVE NEVER RUN. Read this before trusting it.
+ * THE SELECTORS WERE WRITTEN BLIND. Read this before trusting them.
  * ───────────────────────────────────────────────────────────────────────────
- * The CC sandbox cannot reach staging (MEH-2090: egress to vercel.com is
- * refused) and cannot stand up a local stack (`alembic upgrade` is a denied
- * action), so every selector below was written from the source and verified
- * against NOTHING. Expect a first run to report misses.
+ * Every selector below was first written from the source, verified against
+ * nothing (MEH-2794). They have since run end to end: 24/24 against the
+ * local stack on 21/11 (MEH-3495). A product change can still break one, so
+ * expect a run after a redesign to report misses.
  *
  * That is survivable only because of how this script fails, which is the one
  * design decision worth defending here:
@@ -633,7 +633,7 @@ const CLIPS = [
       // and the «פתוחות להצטרפות» tab lists status=open only, so the clip
       // opened on «עדיין אין קבוצות רכישה פעילות» (run 3, 21/11).
       const demo = page.locator('[data-testid="group-buy-card"]:has-text("מאפיית רוח השדה")');
-      const onOpenTab = await demo.first().isVisible().catch(() => false);
+      const onOpenTab = await demo.first().waitFor({ state: "visible", timeout: 3_000 }).then(() => true, () => false);
       if (!onOpenTab) {
         await page.getByRole("button", { name: "הגיעו ליעד", exact: true }).click();
         await demo.first().waitFor({ state: "visible", timeout: 10_000 });
@@ -735,9 +735,18 @@ const MARKER_CSS = `
 //
 // `addInitScript` runs on every document in the page, including the ones
 // `clip-return` navigates to mid-recording, and it is not silenced.
+// It also installs the two request routes (bypass header scoped to the target
+// origin; QA_DIRECT_IMAGES), plus a guard that fails the run if the secret is
+// ever seen on a request to any other host.
 async function installOverlayStyles(page) {
   if (BYPASS) {
     const origin = new URL(BASE).origin;
+    page.on("request", (req) => {
+      if (new URL(req.url()).origin !== origin && req.headers()["x-vercel-protection-bypass"]) {
+        console.error(`ABORT: the bypass secret was sent to ${new URL(req.url()).host}`);
+        process.exit(3);
+      }
+    });
     await page.route(
       (url) => url.origin === origin,
       (route) => route.fallback({ headers: { ...route.request().headers(), ...BYPASS_HEADERS } }),

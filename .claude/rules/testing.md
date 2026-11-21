@@ -371,7 +371,11 @@ Without it: `ERR_CONNECTION_CLOSED`/`RESET`, which reads like an outage.
 `extraHTTPHeaders: { "x-vercel-protection-bypass":
 process.env.VERCEL_AUTOMATION_BYPASS_SECRET, "x-vercel-set-bypass-cookie":
 "true" }`. Control: `/he` → 200 with them, 302 → `vercel.com/sso-api` without.
-Never write the secret to a file, commit, PR body or log.
+Never write the secret to a file, commit, PR body or log. `extraHTTPHeaders`
+goes to EVERY host the page loads (map tiles, Cloudinary, analytics), so a
+harness whose pages load third-party hosts scopes the headers to the target
+origin instead: a `page.route` on that origin with `route.fallback({ headers })`,
+plus explicit headers on each `request.get` (MEH-3495, `join-screenshots.mjs`).
 
 ### 3. Log in as a seeded demo account — a screen behind login is checked, not skipped (MEH-3140)
 
