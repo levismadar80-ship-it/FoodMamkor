@@ -326,7 +326,11 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
 
   test("C1 — the password eye toggle reveals and re-hides the value", async ({ page }) => {
     await page.goto("/he/login");
-    const password = page.getByTestId("login-password");
+    // MEH-3563 — fill only once React owns the field. A fill on the server
+    // copy (in the HTML since MEH-2233) is wiped when React hydrates, and the
+    // run then ends with the toggles working on an empty field (value="" in
+    // the failing log, staging run 44883669871). Same guard as C2 and flows/25.
+    const password = await settledField(page, "login-password");
     await password.fill(VALID_PASSWORD);
 
     await expect(password).toHaveAttribute("type", "password");
