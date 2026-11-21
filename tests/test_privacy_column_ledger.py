@@ -27,7 +27,7 @@ PRIVACY_PAGE = ROOT / "frontend/app/[locale]/privacy/page.js"
 NOT_PERSONAL = "not-personal"
 # The baseline only shrinks. Lower this when you classify columns out of it;
 # raising it is how a new column would be smuggled in as "pre-existing".
-BASELINE_CEILING = 771
+BASELINE_CEILING = 0
 
 
 def _lines(path: Path) -> list[str]:

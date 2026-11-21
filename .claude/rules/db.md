@@ -33,9 +33,9 @@ schema authority.
 gets a row in `docs/privacy/columns.tsv`: a category from the privacy page's
 `DATA_ITEMS`, or `not-personal`, with a reason. A personal-data category that the
 page does not yet describe means the page changes in the same PR.
-`tests/test_privacy_column_ledger.py` fails on a column with no row; the columns
-that existed on 21/11/2026 are in `docs/privacy/column-baseline.txt`, which only
-shrinks.
+`tests/test_privacy_column_ledger.py` fails on a column with no row. Every
+column that existed on 21/11/2026 was classified under MEH-3644, so
+`docs/privacy/column-baseline.txt` is empty and stays empty (ceiling 0).
 
 ---
 

@@ -68,7 +68,11 @@ const SECTION_IDS = [
 // gets its own line rather than hiding inside `identity`.
 // MEH-3299 (MEH-2208 option א): `outreach` = the leads list — contact details
 // of businesses that have not joined, taken from public sources for outreach.
-const DATA_ITEMS = ["identity", "business", "outreach", "technical", "location", "cookies", "ugc", "registrations"];
+// MEH-3644: `orders` and `messages` — personal data the site collects that the
+// page did not name, found when every column was classified in
+// docs/privacy/columns.tsv (tests/test_privacy_column_ledger.py). The neighbour
+// listings (home_products) are NOT here: that router is unmounted since MEH-1406.
+const DATA_ITEMS = ["identity", "business", "outreach", "technical", "location", "cookies", "ugc", "registrations", "orders", "messages"];
 const WHY_ITEMS = ["service", "analytics", "notifications", "compliance"];
 // MEH-1058 (Amendment 13 disclosure duty): full live sub-processor list —
 // twilio was STALE (WhatsApp ships via Meta Cloud API, services/whatsapp.py);
