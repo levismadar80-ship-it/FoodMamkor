@@ -158,6 +158,8 @@ describe("ProfileCompletenessCard — improve mode (after submission)", () => {
     render(<ProfileCompletenessCard producer={{ ...base, phone_verified: false }} />);
     expect(screen.getByTestId("completeness-row-contact").dataset.done).toBe("true");
     expect(screen.getByTestId("completeness-open-cta-phone_verified").getAttribute("href")).toBe("#phone-verify");
+    // the anchor must reach the dashboard's reverify card, not this row itself
+    expect(screen.getByTestId("completeness-open-phone_verified").id).toBe("");
   });
 });
 

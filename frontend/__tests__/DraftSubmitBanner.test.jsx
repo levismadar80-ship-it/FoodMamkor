@@ -399,7 +399,21 @@ describe("DraftSubmitBanner variant=actions (MEH-3659)", () => {
     render(<DraftSubmitBanner variant="actions" producer={{ ...READY, phone_verified: false }} />);
     expect(screen.queryByTestId("draft-missing-list")).toBeNull();
     expect(screen.queryByTestId("phone-verify-card")).toBeNull();
+    expect(screen.queryByTestId("draft-phone-verify")).toBeNull();
     expect(screen.queryByText("cta_disabled_hint")).toBeNull();
     expect(screen.getByTestId("draft-submit-cta")).toBeDisabled();
+  });
+
+  it("a server 422 does not leave a dead button — it stays tappable for a retry", async () => {
+    post.mockRejectedValueOnce({
+      response: { data: { detail: { code: "x", message: "m", params: { missing: ["phone_verified"] } } } },
+    });
+    render(<DraftSubmitBanner variant="actions" producer={READY} />);
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId("draft-submit-cta")).not.toBeDisabled());
+    post.mockResolvedValueOnce({ data: { detail: "ok" } });
+    fireEvent.click(screen.getByTestId("draft-submit-cta"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
   });
 });

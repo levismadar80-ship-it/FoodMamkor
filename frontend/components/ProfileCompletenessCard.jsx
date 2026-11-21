@@ -46,16 +46,21 @@ import { licenseMissingForProfile } from "@/lib/license-required-categories";
  *           MEH-1895 (hours as the 5th step; the ring's divisor became
  *           steps.length, closing the gap MEH-1884 left — the card mounted for
  *           missing hours while showing 4/4 green).
+ *           MEH-3659 (one checklist: ring, chips, next-step box and bottom CTA
+ *           removed; draft mode lists only what blocks «שליחה לבדיקה»).
  *
  * States:
- *   complete (all steps) — collapses to a single confirmation line.
- *   incomplete           — progress ring + the checklist, each row a
- *                          deep-link to its editor section, plus an emphasized
- *                          next-step box and CTA. Never red (MEH-1092) — a
- *                          partial profile is progress, not a failure.
+ *   draft                — the submit gate only (details · image · product ·
+ *                          WhatsApp), «N מתוך M», the first undone row open
+ *                          (the WhatsApp row hosts the OTP card); the submit
+ *                          button (footer) shows once every row is done.
+ *   improve, complete    — collapses to a single confirmation line.
+ *   improve, incomplete  — «לשפר את העמוד», «N מתוך M» over the 7 steps, the
+ *                          first undone row open with one «להשלמה» link.
+ *                          Never red (MEH-1092).
  */
 
-// The checklist steps drive the ring + percent (goal-gradient). Named per
+// The checklist steps drive the «N מתוך M» counter (goal-gradient). Named per
 // exec §10. Steps ①②④⑤ derive from the shared heuristic (image, category+city+
 // location, contact, hours); step ③ (products) is card-only per MEH-1106 B1.
 //
@@ -77,11 +82,6 @@ const CHECKLIST_PRODUCTS_MIN = 1;
 // (edit/page.js — id="profile-*"). Named per exec §10.
 const EDIT_HUB = "/producer/dashboard/edit";
 
-// Ring stroke per state. Raw hex in the SVG stroke attribute follows the
-// existing inline-SVG precedent in the dashboard (ViewsLineChart, page.js:613).
-// MEH-1092 (F3): incomplete never uses red — a partial profile is progress, not
-// a failure. Incomplete uses the gold token (#896714); complete uses the
-// primary token (#2e6853). No threat colour.
 // Build the checklist steps from the shared heuristic + the card-only
 // products signal. Each step: { key, done, href }.
 function buildSteps(producer, missingLabels) {
@@ -273,7 +273,9 @@ function Checklist({ rows, label, labelKey, t, openContent = undefined }) {
           return (
             <li
               key={r.key}
-              id={r.key === "phone_verified" ? "phone-verify" : undefined}
+              // MEH-3659: only the draft row hosts the OTP card; in improve mode
+              // #phone-verify belongs to the dashboard's reverify wrapper.
+              id={openContent && r.key === "phone_verified" ? "phone-verify" : undefined}
               data-testid={`completeness-open-${r.key}`}
               className="bg-primary/5 border border-primary/20 rounded-md p-4 my-2"
             >

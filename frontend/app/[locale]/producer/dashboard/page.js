@@ -520,9 +520,9 @@ export default function ProducerDashboardPage() {
       {/* Wait for /producers/me (created_at) and the analytics (the moment
           counts) so no card replaces another one already on screen. One card
           in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
-      {/* MEH-3659: a business in draft sees one card — the checklist below is
+      {/* MEH-3659: a business (not an organizer) in draft sees one card — the checklist below is
           her welcome; the slot opens once she has submitted. */}
-      {slotOpen && producer.status !== "draft" &&
+      {slotOpen && !(producer.status === "draft" && !isOrganizer) &&
         (welcome.show ? (
           <OwnerWelcomeCard onClose={welcome.dismiss} showCta={!(completenessFirst && profile && !isOrganizer)} />
         ) : slotMoment ? (
