@@ -34,7 +34,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
-| Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`) | `ui/Avatar.jsx` | `AvatarGuard` |
+| Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
@@ -93,7 +93,9 @@ header, a row here, and a guard when a hand-written copy would be easy to write.
   `lib/language-context.js` (`useLanguage()`) and `lib/i18n-key-map.js` are
   deleted; `OneI18nMechanismGuard.test.js` fails if either comes back.
 - **Zod before consuming an API response** (workflow rule 19) — `safeParse()`
-  via `lib/schemas.js` or `lib/api-schemas.js` (which re-exports it). Covers
+  via `lib/schemas.js` (producer feeds, request side) or `lib/api-responses.js`
+  (every other response, taken from the generated `lib/generated/api.zod.js`
+  — never a hand-written field list, MEH-1748). Covers
   the home grid, `/map` and `/favorites`, and each routes failure to its own
   error state — the `showToast.info(error.issues[0].message)` form is
   **request-side only** (`LocationsEditor.jsx:105`). Full rule:

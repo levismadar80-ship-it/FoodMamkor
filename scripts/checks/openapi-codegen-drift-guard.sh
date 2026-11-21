@@ -9,7 +9,9 @@
 # Does NOT: validate the CONTENT of the generated schemas (that is orval's job),
 #           and does NOT check the hand-written lib/schemas.js — MEH-1891's
 #           backend-contract-parity.test.js owns that, and MEH-1748 Phase 1 is
-#           additive: nothing imports lib/generated/ yet.
+#           additive (since Phase 2 the app parses responses with
+#           lib/generated/ — via lib/api-responses.js — so this guard now
+#           protects a live path).
 # Related:  frontend/orval.config.js (the generator), backend/openapi.json (the
 #           reviewable contract), docs/audits/codegen-phase1-comparison.md,
 #           scripts/checks/README.md (the guard-authoring contract).

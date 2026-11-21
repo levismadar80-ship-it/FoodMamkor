@@ -14,6 +14,7 @@
 * `backend/app/routers/auth_register_producer.py` — ‏`/auth/register/producer` ו-`/auth/register/producer/oauth` (הופרדו מ-`auth.py` ב-MEH-3293).
 * `backend/app/config.py` — ‏`JWT_SECRET_KEY` נדרש ב-production; חסר = `RuntimeError` באתחול.
 * `frontend/lib/safe-redirect.js` — יעד חזרה בטוח אחרי התחברות.
+* `frontend/lib/prehydration-flags-inline.js` — סקריפט inline ראשון ב-`<head>`: מסמן `data-cookie-answered` / `data-has-token` על `<html>` לפני ה-hydration, וחוסם שליחה נייטיבית של טופס `data-no-native-submit` (הסיסמה לא תגיע ל-URL). `/login` נבנה סטטי עם הטופס ב-HTML (MEH-2233).
 * `backend/app/routers/users_me.py` + `backend/app/services/email_change_guard.py` — שינוי אימייל: דורש סיסמה, 5 סיסמאות שגויות לשעה לכל חשבון, ומנתק את שאר המכשירים (MEH-3104, MEH-3425).
 * **מפתח גישה לחשבון אדמין (MEH-3305).** `backend/app/services/admin_passkey.py` (בדיקות WebAuthn, כרטיס חד-פעמי, קודי שחזור), `backend/app/routers/admin_passkey.py` (‏`/auth/passkey/*`), `frontend/lib/webauthn.js`, `frontend/components/PasskeyRecoveryPanel.jsx` (שלב קוד השחזור ב-`/login`), `frontend/app/[locale]/admin/settings/PasskeySettings.jsx` (הוספה, הסרה, קודים). אדמין עם מפתח לא מקבל סשן מ-`/auth/login` / Google / Apple עד שהמפתח (או קוד) מאשר.
 
@@ -26,5 +27,6 @@
 * `tests/test_producer_oauth.py` · `tests/test_oauth_verify_4xx.py` · `tests/test_meh2080_oauth_terms_consent.py`
 * `frontend/e2e/flows/30-login-journey-c.spec.ts` · `frontend/e2e/flows/manual/auth.spec.ts` · `frontend/e2e/flows/11-password-policy.spec.ts`
 * `frontend/e2e/flows/25-role-reachability.spec.ts`
+* `frontend/__tests__/PrehydrationFlags.test.jsx` — הדגלים, חסימת השליחה הנייטיבית, וטופס ההתחברות ב-HTML של השרת.
 
 **מזהי רישום שזה מכסה.** `social_signup`.

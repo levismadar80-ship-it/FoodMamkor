@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Route } from "@playwright/test";
+import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
 // The seven Phase-1 items the stub serves (MEH-2954: test data, the product
 // reads them from the database).
 import { ADMIN_REVIEW_CHECKLIST_ITEMS } from "../_admin-review-checklist-items";
@@ -184,6 +185,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
 
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-2952: the admin list and edit screen read the «עסק בדיקה» ids; unstubbed it hits the
+  // real backend, whose 401 sends this fake-auth session to /login mid-click.
+  await page.route("**/admin/test-businesses", (r) => json(r, { producer_ids: [] }));
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/admin/dashboard", (r) =>
     json(r, {
@@ -239,6 +243,11 @@ async function stubRejectedOwner(page: Page, reason: string, code: string): Prom
   // from the real backend — found by the MEH-2957 guard, which now fails it.
   await page.route("**/producers/me/order-settings", (r) =>
     r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+  // MEH-3194: the approved dashboard home reads the month summary (MonthValueLine).
+  // Unstubbed, the fake token draws a 401 that ends the session (the MEH-3446 class).
+  await page.route("**/producers/me/billing/summary", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MONTH_SUMMARY_ZERO) }),
   );
 }
 

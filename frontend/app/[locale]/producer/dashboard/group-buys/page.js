@@ -25,7 +25,7 @@ import BackLink from "@/components/ui/BackLink";
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 // MEH-2491: focus trap + return for the confirm dialog (shared with ProductsSection).
 import Dialog from "@/components/ui/Dialog";
-import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
+import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-responses";
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import GroupBuyProductPicker from "@/components/GroupBuyProductPicker";

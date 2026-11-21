@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
+import { ProducerClaimLinkSchema } from "@/lib/api-responses";
 import { showToast } from "@/lib/toast";
 
 /**

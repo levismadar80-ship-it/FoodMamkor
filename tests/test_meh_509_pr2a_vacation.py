@@ -135,7 +135,7 @@ def test_get_with_inconsistent_persisted_state_coerces_to_inactive(client, db):
     the typed GET must coerce to inactive instead of 500-ing.
 
     Mirrors the existing corrupt-ISO-date defense at
-    backend/app/routers/admin_extra.py:415-418.
+    backend/app/services/vacation_state.py (read_vacation_state).
     """
     from app.models import AdminSetting
 

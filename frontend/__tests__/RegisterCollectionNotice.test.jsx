@@ -8,7 +8,7 @@ import heMessages from "../messages/he.json";
 // MEH-2200 — Amendment-13 (s.11) collection notice on the producer register
 // wizard's submitting frame.
 //
-// Unlike RegisterProducerClient.test.jsx, this file resolves keys against the
+// Unlike RegisterProducerClient-01/-02.test.jsx, this file resolves keys against the
 // REAL messages/he.json instead of echoing the key path. That is deliberate:
 // the thing under test is a legal disclosure, so a test that passes while the
 // shipped Hebrew says nothing of the sort would be worthless (MEH-1909 — a
@@ -18,7 +18,7 @@ function lookup(key) {
 }
 
 // MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
-// file's mocks do not feed; its wiring is covered in RegisterProducerClient.test.jsx.
+// file's mocks do not feed; its wiring is covered in RegisterProducerClient-01/-02.test.jsx.
 vi.mock("@/components/RegisterCardPreview", () => ({ default: () => null }));
 vi.mock("next-intl", () => ({
   useTranslations: () => {

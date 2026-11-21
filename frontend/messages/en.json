@@ -1653,7 +1653,15 @@
         "heading": "Other queues",
         "all_clear": "Nothing waiting in the other queues"
       },
-      "analytics_link": "Stats and analytics →"
+      "analytics_link": "Stats and analytics →",
+      "licences": {
+        "heading": "Licences expiring soon",
+        "subtitle": "Approved businesses whose licence expires in the next 30 days",
+        "days_left": "{count, plural, one {1 day left} other {# days left}} · until {date}",
+        "today": "Expires today · {date}",
+        "open": "Open",
+        "error": "Could not load the expiring licences"
+      }
     },
     "producers": {
       "list": {
@@ -2103,6 +2111,38 @@
         "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
         "load_failed": "Couldn't load the drafts. Try refreshing.",
         "draft_group": "Group: {name}"
+      },
+      "test_business": {
+        "label": "Test business — hidden from the site"
+      },
+      "verified": {
+        "title": "Verified badge",
+        "intro": "The badge shows on the business page after you have checked a document: a business license, a license exemption or a cosmetics registration.",
+        "organizer": "Market and event organizers don't get a verified badge.",
+        "state_on": "This business has been verified since {date} ({doc}).",
+        "state_off": "This business has no verified badge.",
+        "doc_label": "Which document did you check?",
+        "doc_license": "Business license",
+        "doc_exemption": "License exemption",
+        "doc_cosmetics": "Cosmetics registration",
+        "grant": "Give the verified badge",
+        "regrant": "Update the badge",
+        "saving": "Saving…",
+        "revoke": "Remove the badge",
+        "confirm_revoke": "Remove the badge? It disappears from the business page right away.",
+        "confirm_yes": "Yes, remove",
+        "confirm_no": "Cancel",
+        "done_granted": "Badge given.",
+        "done_revoked": "Badge removed.",
+        "error": "We couldn't save. Please try again."
+      },
+      "alcohol": {
+        "title": "Alcohol sales",
+        "intro": "Without this mark, customers can't order products that contain alcohol from this business. Turn it on only after you've checked that the business holds a licence to sell alcohol.",
+        "label": "This business is licensed to sell alcohol",
+        "saved": "Saved.",
+        "error": "We couldn't save. Please try again.",
+        "load_error": "We couldn't load the mark. Refresh the page."
       }
     },
     "users": {
@@ -2469,7 +2509,8 @@
         "heading": "Auto-hidden home products",
         "empty": "No hidden products",
         "restore": "Restore"
-      }
+      },
+      "page_hidden": "The page is already hidden"
     },
     "reviews": {
       "title": "Reviews",
@@ -2762,7 +2803,22 @@
       "top_cities": "Top cities",
       "top_producers_favorites": "Businesses with the most favorites",
       "geographic": "Geographic distribution",
-      "map_count": "{count} businesses with map location"
+      "map_count": "{count} businesses with map location",
+      "rescue": {
+        "heading": "Rescue bags — pilot",
+        "subtitle": "Last {days} days",
+        "error": "Could not load the rescue-bag numbers",
+        "tiles": {
+          "offers": "Offers published",
+          "bags_offered": "Bags offered",
+          "bags_reserved": "Bags reserved",
+          "sell_through": "Reserved share",
+          "no_show_rate": "No-show rate",
+          "buyers": "Buyers",
+          "repeat_buyers": "Repeat buyers",
+          "donated": "Given away free"
+        }
+      }
     },
     "help": {
       "intro": "Short answers to “how do I…”, in menu order.",
@@ -4890,6 +4946,13 @@
   },
   "dashboard": {
     "producer": {
+      "month_value": {
+        "none": "No orders through the site yet this month",
+        "one": "This month one order came through the site",
+        "one_value": "This month one order came through the site, worth {value}",
+        "many": "This month {count} orders came through the site",
+        "many_value": "This month {count} orders came through the site, worth {value}"
+      },
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
       "unsaved_guard": {
@@ -6591,8 +6654,8 @@
       "approval_time": "How long does approval take?"
     },
     "answers": {
-      "register": "You register through a short form — completely free! After registering you complete your profile in the dashboard (a photo, your first product), send it for review — and our team checks and approves your business within 3 business days, and then it appears on the site.",
-      "find_nearby": "There are two easy ways:\n\n1. Our map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
+      "register": "You register through a short form at /register/producer, and it is free. After registering you complete your profile in the dashboard (a photo, your first product), send it for review — and our team checks and approves your business within 3 business days, and then it appears on the site.",
+      "find_nearby": "There are two easy ways:\n\n1. /map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
     },
     "fallback_reply": "I couldn't understand the question — could you rephrase it?",
     "error_rate_limit": "You sent a lot of messages in a short time — try again in a minute",
@@ -6624,6 +6687,26 @@
         "diet_lactose_free": "Which products are lactose-free?",
         "diet_no_added_sugar": "Which products have no added sugar?"
       }
+    },
+    "pages": {
+      "map": "The map",
+      "events": "Events",
+      "experiences": "Experiences",
+      "group_buys": "Group buys",
+      "favorites": "My favorites",
+      "register": "Sign up",
+      "login": "Log in",
+      "join": "Join as a business",
+      "register_business": "the business sign-up form",
+      "pricing": "the business price list",
+      "dashboard": "the dashboard",
+      "recommend": "Recommend a business",
+      "about": "About",
+      "contact": "Contact us",
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "accessibility": "Accessibility statement",
+      "rescue": "Surprise bags"
     }
   },
   "diet_pages": {
@@ -7708,5 +7791,24 @@
       "external_order": "Through an order form"
     },
     "blocked": "Some cards on this page have unsaved changes. Save them first, then these details."
+  },
+  "my_orders": {
+    "title": "My orders",
+    "row": "{business} · {date} · {status}",
+    "row_no_status": "{business} · {date}",
+    "empty": "You haven't ordered through Mehamakor yet.",
+    "empty_cta": "Browse businesses",
+    "load_error": "We couldn't load your orders.",
+    "status": {
+      "pending": "Waiting for confirmation",
+      "change_proposed": "The business suggested a change",
+      "confirmed": "Confirmed",
+      "ready": "Ready",
+      "handed": "Handed over",
+      "declined": "Not accepted",
+      "cancelled": "Cancelled",
+      "expired": "No reply in time",
+      "no_show": "Not collected"
+    }
   }
 }

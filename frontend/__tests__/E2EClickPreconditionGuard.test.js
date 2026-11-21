@@ -5,7 +5,8 @@
  * checked could take the click, and the failure surfaced as a 20 s timeout or
  * three steps later on an unrelated locator.
  *
- *  - map.spec.ts clicked a marker that, on a short phone (iPhone 13, 390×664),
+ *  - map.spec.ts (since MEH-3540: `manual/map-NN.spec.ts`, helpers in
+ *    `manual/_map-shared.ts`) clicked a marker that, on a short phone (iPhone 13, 390×664),
  *    sat under the PEEK sheet. `tapMarker` hit-tests the pin, drags the map
  *    until it clears the sheet, and fails by name if it is still covered.
  *  - Register specs picked a town with fill() + option.click() and trusted the
@@ -23,7 +24,13 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = path.resolve(__dirname, "..");
 const FLOWS = path.join(ROOT, "e2e", "flows");
-const MAP_SPEC = path.join(FLOWS, "manual", "map.spec.ts");
+// MEH-3540: the map spec was split into map-NN.spec.ts parts; tapMarker lives
+// in _map-shared.ts. All of them are read as one source.
+const MANUAL = path.join(FLOWS, "manual");
+const MAP_FILES = fs
+  .readdirSync(MANUAL)
+  .filter((n) => n === "_map-shared.ts" || /^map-\d+\.spec\.ts$/.test(n))
+  .map((n) => path.join(MANUAL, n));
 
 /** Drop lines that are only a comment (`//…`, ` * …`, `/** …`); keep everything else verbatim. */
 function code(text) {
@@ -90,8 +97,12 @@ describe("E2E click preconditions (MEH-3486 · MEH-3488)", () => {
     expect(offenders, "use pickCity() from e2e/flows/_pick-city.ts").toEqual([]);
   });
 
-  it("map.spec.ts clicks a marker only inside tapMarker", () => {
-    const src = code(fs.readFileSync(MAP_SPEC, "utf8"));
+  it("the map specs click a marker only inside tapMarker", () => {
+    expect(
+      MAP_FILES.filter((f) => /map-\d+\.spec\.ts$/.test(f)).length,
+      "control: no map-NN.spec.ts parts found — the scan is looking in the wrong place",
+    ).toBeGreaterThanOrEqual(2);
+    const src = MAP_FILES.map((f) => code(fs.readFileSync(f, "utf8"))).join("\n");
     const body = tapMarkerBody(src);
     expect(body, "control: tapMarker must exist").not.toBeNull();
     expect(body.match(MARKER_CLICK) ?? [], "tapMarker itself must click the marker").toHaveLength(1);

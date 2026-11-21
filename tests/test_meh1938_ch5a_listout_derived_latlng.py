@@ -10,7 +10,7 @@ Does NOT: change the wire shape (`lat`/`lng` are still float | None), touch
           `locations[]` (asserted unchanged as the control), or drop the
           columns (chunk 5b).
 Related:  backend/app/schemas/schemas.py (ProducerListOut._derive_lat_lng_from_primary_location) ·
-          backend/app/routers/admin_extra.py (_primary_location_points — the
+          backend/app/services/admin_dashboard.py (primary_location_points — the
           same rule for the admin map, 5a.2) · tests/test_meh1938_ch5a_admin_map_points.py.
 History:  MEH-1938 chunk 5a.3 (creation).
 

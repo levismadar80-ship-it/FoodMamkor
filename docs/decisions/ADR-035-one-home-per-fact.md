@@ -42,7 +42,7 @@ pointer to it.**
 | Decisions and their reasons | `docs/decisions/` (ADRs) |
 | What is open / who owns it | Linear (live state) |
 | Where we are right now | `HANDOFF.md` — the last ~7 days, one screen per session |
-| What happened | `docs/CHANGELOG.md` + git; older HANDOFF sections in `docs/archive/handoff/` |
+| What happened | `docs/CHANGELOG.md` (about one month) + git; older CHANGELOG entries in `docs/archive/changelog/`, older HANDOFF sections in `docs/archive/handoff/` |
 | Tool access, account quirks, Sapir's working preferences | The Claude project's memory (not in the repo) |
 | The claude.ai project instructions | `docs/PROJECT_INSTRUCTIONS.md` — Sapir pastes from it, never edits the pasted copy first |
 

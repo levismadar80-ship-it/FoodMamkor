@@ -45,5 +45,8 @@ export function setCookieConsent(mode) {
   // A storage that throws still gets the event: the page-level gates fire for
   // this visit, and the banner simply comes back on the next load.
   try { localStorage.setItem(COOKIE_CONSENT_KEY, mode); } catch {}
+  // MEH-2233: what lib/prehydration-flags-inline.js would set on the next
+  // load, set now, so a remounted banner's pre-mount copy stays hidden.
+  document.documentElement.setAttribute("data-cookie-answered", "");
   window.dispatchEvent(new CustomEvent(COOKIE_CONSENT_EVENT));
 }

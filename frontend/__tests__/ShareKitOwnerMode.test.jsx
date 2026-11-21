@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
+import { contractRow, uuidFor } from "./helpers/contract-row";
+import { ReviewsPageSchema } from "@/lib/api-responses";
 import { render, screen, waitFor } from "@testing-library/react";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import ReviewCardCanvas from "@/components/ReviewCardCanvas";
@@ -71,6 +73,10 @@ const producer = {
   categories: [],
 };
 
+// MEH-1748: the card parses the generated ReviewsPage, so each review is a
+// contract-valid ReviewOut (UUID id, producer_id, created_at).
+const REVIEW = ReviewsPageSchema._zod.def.shape.reviews._zod.def.element;
+const review = (r) => contractRow(REVIEW, { ...r, id: uuidFor(r.id) });
 const reviewsPayload = (reviews) => ({ data: { reviews, total: reviews.length, page: 1, pages: 1 } });
 
 describe("StoryCardCanvas owner mode — the Cloudinary upload gate (MEH-1428 chunk A)", () => {
@@ -138,8 +144,8 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
     apiMock.get.mockImplementation((_url, config) =>
       Promise.resolve(
         config.params.page === 1
-          ? { data: { reviews: [{ id: "r1", stars: 5, body: null }], total: 2, page: 1, pages: 2 } }
-          : { data: { reviews: [{ id: "r2", stars: 5, body: "הלחם מושלם" }], total: 2, page: 2, pages: 2 } },
+          ? { data: { reviews: [review({ id: "r1", stars: 5, body: null })], total: 2, page: 1, pages: 2 } }
+          : { data: { reviews: [review({ id: "r2", stars: 5, body: "הלחם מושלם" })], total: 2, page: 2, pages: 2 } },
       ),
     );
     render(<ReviewCardCanvas producer={producer} />);
@@ -151,7 +157,7 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
 
   it("stops at the last page rather than paging forever", async () => {
     apiMock.get.mockResolvedValue(
-      { data: { reviews: [{ id: "r1", stars: 5, body: null }], total: 1, page: 1, pages: 1 } },
+      { data: { reviews: [review({ id: "r1", stars: 5, body: null })], total: 1, page: 1, pages: 1 } },
     );
     render(<ReviewCardCanvas producer={producer} />);
     expect(await screen.findByTestId("review-card-empty")).toBeInTheDocument();
@@ -161,8 +167,8 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
   it("rating-only reviews count as nothing to share", async () => {
     apiMock.get.mockResolvedValue(
       reviewsPayload([
-        { id: "r1", stars: 5, body: null },
-        { id: "r2", stars: 4, body: "   " },
+        review({ id: "r1", stars: 5, body: null }),
+        review({ id: "r2", stars: 4, body: "   " }),
       ]),
     );
     render(<ReviewCardCanvas producer={producer} />);
@@ -171,7 +177,7 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
   });
 
   it("exactly 1 review → the card, and NO picker (a one-option select does nothing)", async () => {
-    apiMock.get.mockResolvedValue(reviewsPayload([{ id: "r1", stars: 5, body: "מעולה" }]));
+    apiMock.get.mockResolvedValue(reviewsPayload([review({ id: "r1", stars: 5, body: "מעולה" })]));
     render(<ReviewCardCanvas producer={producer} />);
     expect(await screen.findByTestId("review-card-canvas")).toBeInTheDocument();
     expect(screen.queryByTestId("review-card-pick")).not.toBeInTheDocument();
@@ -183,9 +189,9 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
   it("several reviews → a picker with one option per review", async () => {
     apiMock.get.mockResolvedValue(
       reviewsPayload([
-        { id: "r1", stars: 5, body: "הלחם מושלם" },
-        { id: "r2", stars: 4, body: "שירות נהדר" },
-        { id: "r3", stars: 5, body: "חוזרת כל שבוע" },
+        review({ id: "r1", stars: 5, body: "הלחם מושלם" }),
+        review({ id: "r2", stars: 4, body: "שירות נהדר" }),
+        review({ id: "r3", stars: 5, body: "חוזרת כל שבוע" }),
       ]),
     );
     render(<ReviewCardCanvas producer={producer} />);
@@ -199,8 +205,8 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
   it("prints no reviewer name or id anywhere in the block, including the picker", async () => {
     apiMock.get.mockResolvedValue(
       reviewsPayload([
-        { id: "r1", stars: 5, body: "הלחם מושלם", user_name: "רונית לוי", user_id: "u-77" },
-        { id: "r2", stars: 4, body: "שירות נהדר", user_name: "דנה כהן", user_id: "u-78" },
+        review({ id: "r1", stars: 5, body: "הלחם מושלם", user_name: "רונית לוי", user_id: "u-77" }),
+        review({ id: "r2", stars: 4, body: "שירות נהדר", user_name: "דנה כהן", user_id: "u-78" }),
       ]),
     );
     const { container } = render(<ReviewCardCanvas producer={producer} />);
@@ -219,14 +225,14 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
   });
 
   it("a malformed payload is an error, never a half-drawn card (rule 19)", async () => {
-    apiMock.get.mockResolvedValue({ data: { reviews: [{ id: "r1", stars: "five" }] } });
+    apiMock.get.mockResolvedValue({ data: { reviews: [review({ id: "r1", stars: "five" })] } });
     render(<ReviewCardCanvas producer={producer} />);
     expect(await screen.findByTestId("review-card-error")).toBeInTheDocument();
     expect(screen.queryByTestId("review-card-canvas")).not.toBeInTheDocument();
   });
 
   it("reads page 1 of the public nested reviews route for this producer", async () => {
-    apiMock.get.mockResolvedValue(reviewsPayload([{ id: "r1", stars: 5, body: "טעים" }]));
+    apiMock.get.mockResolvedValue(reviewsPayload([review({ id: "r1", stars: 5, body: "טעים" })]));
     render(<ReviewCardCanvas producer={producer} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     const [url, config] = apiMock.get.mock.calls[0];

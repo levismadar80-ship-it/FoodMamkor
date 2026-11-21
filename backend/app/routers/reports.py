@@ -127,6 +127,10 @@ def get_flagged_producers(
             {
                 "producer_id": str(producer_id),
                 "producer_name": producer.name if producer else None,
+                # MEH-3524: the reports page offers «השהה עסק» only on a live
+                # page — toggle-status flips both ways, and on a hidden page
+                # the click would put it back on the site.
+                "producer_status": producer.status if producer else None,
                 "report_count": report_count,
                 "auto_flagged": report_count >= AUTO_FLAG_THRESHOLD,
                 "reports": [
