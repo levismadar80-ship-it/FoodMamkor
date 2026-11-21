@@ -21,6 +21,8 @@ describe("useMyOrdersNavGate", () => {
     const again = renderHook(() => useMyOrdersNavGate({ id: "u1" }));
     await waitFor(() => expect(again.result.current).toBe(true));
     expect(api.get).toHaveBeenCalledTimes(1);
+    // MEH-3552: the probe never refreshes or logs the person out on a 401.
+    expect(api.get).toHaveBeenCalledWith("/users/me/product-orders", { skipAuthRefresh: true });
   });
 
   it("stays off when ordering is switched off (404)", async () => {

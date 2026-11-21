@@ -165,9 +165,13 @@ api.interceptors.response.use(
 
     // MEH-1627: the exact-match allowlist wins over the prefix skip-list.
     const path = url.split("?")[0];
+    // MEH-3552: a background probe (the «ההזמנות שלי» menu gate) opts out with
+    // `skipAuthRefresh: true` — its 401 must never refresh, log the person out
+    // and send her to /login in the middle of whatever page she is on.
     const skipRefresh =
-      !REFRESH_ALLOWED_EXACT.has(path) &&
-      SKIP_REFRESH.some((prefix) => url.startsWith(prefix));
+      error.config?.skipAuthRefresh === true ||
+      (!REFRESH_ALLOWED_EXACT.has(path) &&
+        SKIP_REFRESH.some((prefix) => url.startsWith(prefix)));
 
     if (status === 401 && typeof window !== "undefined" && !skipRefresh) {
       // MEH-1315: retry-once guard — a request that already retried after a
