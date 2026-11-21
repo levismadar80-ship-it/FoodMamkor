@@ -34,7 +34,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
 | A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
-| Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`) | `ui/Avatar.jsx` | `AvatarGuard` |
+| Person's photo or initial — the signed-in person, and an owner's / host's initial on public pages (`tone="soft"`); `decorative` inside a control already named for the person | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |

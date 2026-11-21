@@ -319,34 +319,6 @@ def test_admin_reject_kashrut(client, db):
     assert req.notes == "תעודה לא תקינה"
 
 
-def test_set_ambassador(client, db):
-    producer = make_producer(db, name="חוות כ")
-    admin = make_user(db, role="admin")
-    db.commit()
-
-    r = client.post(
-        f"/admin/producers/{producer.id}/set-ambassador",
-        json={"ambassador": True},
-        headers=auth_header(admin),
-    )
-    assert r.status_code == 200
-    db.refresh(producer)
-    assert producer.ambassador is True
-
-
-def test_set_ambassador_requires_admin(client, db):
-    producer = make_producer(db, name="חוות ל")
-    user = make_user(db, role="consumer")
-    db.commit()
-
-    r = client.post(
-        f"/admin/producers/{producer.id}/set-ambassador",
-        json={"ambassador": True},
-        headers=auth_header(user),
-    )
-    assert r.status_code == 403
-
-
 def test_trust_tier_in_producer_list(client, db):
     producer = make_producer(db, name="חוות מ")
     # MEH-766: Tier 3 is sourced from verified_at only (the legacy

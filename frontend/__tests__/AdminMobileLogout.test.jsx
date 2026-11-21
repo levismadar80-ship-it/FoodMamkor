@@ -60,4 +60,13 @@ describe("MEH-2533 logout on the mobile admin", () => {
     render(<AdminLayout><div /></AdminLayout>);
     expect(screen.getByTestId("admin-mobile-logout").className).not.toContain("text-error");
   });
+
+  // MEH-3026 (F3): the root layout already renders <main id="main-content">;
+  // the admin layout must not add a second, nested main landmark.
+  it("renders its content region without a <main> of its own", () => {
+    authState.user = { id: "a1", role: "admin", name: "ספיר" };
+    const { container } = render(<AdminLayout><p>תוכן</p></AdminLayout>);
+    expect(container.querySelectorAll("main")).toHaveLength(0);
+    expect(screen.getByTestId("admin-content")).toHaveTextContent("תוכן");
+  });
 });

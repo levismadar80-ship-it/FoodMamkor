@@ -170,7 +170,11 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit", title,
     ? t("resend_in", { seconds: cooldown })
     : sending
       ? t("sending")
-      : t("send_cta");
+      : codeSent
+        // MEH-3567: once a code has gone out, the idle button says so — it
+        // used to fall back to «שלחו קוד אימות» as if nothing had been sent.
+        ? t("resend_cta")
+        : t("send_cta");
 
   return (
     <div
