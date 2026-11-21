@@ -64,11 +64,12 @@ anthropic.Anthropic(
 )
 ```
 
-Used at **6 call sites** (enumerated 2026-08-03, MEH-1861 — this listed 2):
+Call sites (enumerated 2026-08-03, MEH-1861; three moderation copies became one helper 21/11, MEH-3619; `tests/test_anthropic_http_client.py` holds the full set):
 `routers/chat.py:173`, `routers/reviews.py:60`,
-`services/home_product_moderation.py:70`, `services/experience_moderation.py:69`,
-`services/producer_recipe_moderation.py:65`, `services/bio_generator.py:39`.
-All six comply. Don't "clean up" the
+`services/moderation_common.py` (`make_anthropic_client`, shared by the
+home-product, experience and recipe moderation services since MEH-3619),
+`services/bio_generator.py:39`.
+All comply. Don't "clean up" the
 kwarg — AI features silently break (the error is caught by the fail-open
 path, so there's no 5xx warning you). Full trap:
 [docs/LOCKED_DECISIONS.md](../../docs/LOCKED_DECISIONS.md).
