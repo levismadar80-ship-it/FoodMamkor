@@ -50,6 +50,8 @@ describe("NextDeliveryLine in DeliveryBlock (MEH-3485)", () => {
       { id: 3, city: "נהריה", min_order: 90 },
     ];
     renderIn(<DeliveryBlock areas={areas} producer={producer({ delivery_areas: areas })} />);
+    // Beside the checker the list opens on a tap (Sapir 20/11).
+    fireEvent.click(screen.getByTestId("delivery-list-toggle"));
     const lines = screen.getAllByTestId("next-delivery").map((n) => n.textContent);
     expect(lines).toEqual([line("יום שני 30.11"), line("יום חמישי 26.11")]);
   });

@@ -5,7 +5,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import NextDeliveryLine from "@/components/NextDeliveryLine";
-import { daysOfRow } from "@/lib/nextDelivery";
+import { daysOfRow, cutoffOfRow } from "@/lib/nextDelivery";
+import DeliveryTerms from "@/components/DeliveryTerms"; // MEH-3511
 import { formatPrice } from "@/lib/utils";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import { canonicalCity } from "@/data/cities";
@@ -71,7 +72,10 @@ export function matchDeliveryCity({ city, nationwide, excluded = [], areas = [] 
   // MEH-1255: nationwide is an EXCLUSION model — everywhere except the list.
   if (nationwide) {
     const hit = excluded.find((c) => norm(c) === q);
-    return hit ? { status: "no", city: hit } : { status: "yes_nationwide", city: typed };
+    if (hit) return { status: "no", city: hit };
+    // MEH-3511: a zone city gets its zone's terms; any other city «כל הארץ».
+    const zone = areas.find((a) => a?.zone_name && norm(a.city) === q);
+    if (!zone) return { status: "yes_nationwide", city: typed };
   }
 
   const area = areas.find((a) => norm(a?.city) === q);
@@ -83,6 +87,8 @@ export function matchDeliveryCity({ city, nationwide, excluded = [], areas = [] 
     // MEH-3485: every day of the city, for «המשלוח הבא ל…».
     days: daysOfRow(area),
     minOrder: area.min_order ?? null,
+    // MEH-3511: the city's zone row — its delivery time and own cutoff.
+    area,
   };
 }
 
@@ -219,10 +225,20 @@ export default function DeliveryChecker({
               </p>
             )}
             {result.status === "yes" && (
+              <DeliveryTerms
+                daysMin={result.area.delivery_days_min}
+                daysMax={result.area.delivery_days_max}
+                cutoffRow={result.area}
+                className="mt-0.5 ms-6 text-sm text-fg-muted"
+                testid="checker-terms"
+              />
+            )}
+            {result.status === "yes" && (
               <NextDeliveryLine
                 days={result.days}
                 producer={producer}
                 city={result.city}
+                cutoff={cutoffOfRow(result.area)}
                 className="mt-0.5 ms-6"
               />
             )}

@@ -12,7 +12,7 @@
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report",
     "knip": "knip",
-    "lint:ratchet": "node ../scripts/checks/lint-ratchet.mjs && node ../scripts/checks/eslint-ratchet.mjs",
+    "lint:ratchet": "node ../scripts/checks/lint-ratchet.mjs && node ../scripts/checks/eslint-ratchet.mjs && node ../scripts/checks/e2e-self-skip-ratchet.mjs",
     "lint:ratchet:baseline": "node ../scripts/checks/lint-ratchet.mjs --update-baseline",
     "design:lint": "design.md lint ../docs/DESIGN.md",
     "design:export": "design.md export --format tailwind ../docs/DESIGN.md > tailwind.tokens.json",
@@ -38,6 +38,7 @@
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
     "server-only": "^0.0.1",
+    "swr": "^2.5.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {

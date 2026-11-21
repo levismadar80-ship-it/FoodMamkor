@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { uuidFor } from "./helpers/contract-row";
 import { render, screen, waitFor } from "@testing-library/react";
 
 // MEH-1709 — the producer group-buys dashboard, seen by a business owner in
@@ -51,20 +52,25 @@ vi.mock("@/lib/auth-context", () => ({
 // Mutable fixture the api mock reads — set per test before render.
 const fixture = { status: "approved", groupBuys: [] };
 
-const groupBuy = (over = {}) => ({
-  id: "gb1",
-  producer_id: "p1",
-  title: "ארגז ירקות שבועי",
-  product_name: "ארגז ירקות",
-  status: "open",
-  price_per_unit_group: 80,
-  price_per_unit_regular: 100,
-  commits_count: 2,
-  min_participants: 10,
-  deadline: "2026-09-01T09:00:00Z",
-  created_at: "2026-07-01T09:00:00Z",
-  ...over,
-});
+// MEH-1748: the page parses each row with the generated GroupBuyOut, so ids
+// are real UUIDs; tests keep short names and `uuidFor` maps them.
+const groupBuy = (over = {}) => {
+  const row = {
+    id: "gb1",
+    producer_id: "p1",
+    title: "ארגז ירקות שבועי",
+    product_name: "ארגז ירקות",
+    status: "open",
+    price_per_unit_group: "80.00",
+    price_per_unit_regular: "100.00",
+    commits_count: 2,
+    min_participants: 10,
+    deadline: "2026-09-01T09:00:00Z",
+    created_at: "2026-07-01T09:00:00Z",
+    ...over,
+  };
+  return { ...row, id: uuidFor(row.id), producer_id: uuidFor(row.producer_id) };
+};
 
 vi.mock("@/lib/api", () => ({
   default: {

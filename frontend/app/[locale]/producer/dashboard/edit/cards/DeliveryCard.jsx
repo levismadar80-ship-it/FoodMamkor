@@ -26,6 +26,7 @@ import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import DeliveryBulkDay from "./DeliveryBulkDay";
 import DeliveryZonesEditor, { zonesFromProfile, zonesForSave, zoneOfCity } from "./DeliveryZonesEditor";
+import DeliveryDefaultTerms from "./DeliveryDefaultTerms";
 
 // MEH-1577: mirrors backend/app/schemas/schemas.py MAX_DELIVERY_MONEY. Not
 // importable across the Python/JS boundary, so kept in sync by hand — the
@@ -75,6 +76,10 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     // `||` would blank the field every time the owner reopened the form.
     fee: profile?.delivery_fee ?? "",
     freeAbove: profile?.free_delivery_above ?? "",
+    // MEH-3511: business-wide minimum and delivery time (business days).
+    minOrder: profile?.delivery_min_order ?? "",
+    dmin: profile?.delivery_days_min ?? "",
+    dmax: profile?.delivery_days_max ?? "",
     // MEH-1644: optional per-city dispatch day (canonical Hebrew values —
     // lib/delivery-days.js mirrors the backend whitelist). "" = no day
     // ("בתיאום מראש"). Legacy free-text values not in the vocabulary load as
@@ -136,6 +141,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     // permanently dirty (blocking the unsaved-changes guard from ever clearing).
     String(form.fee) !== String(baseline.fee) ||
     String(form.freeAbove) !== String(baseline.freeAbove) ||
+    ["minOrder", "dmin", "dmax"].some((k) => String(form[k]) !== String(baseline[k])) ||
     // MEH-1644: a day change on any currently-chosen city is a real edit.
     form.cities.some((c) => (form.days[c] || "") !== (baseline.days[c] || "")) ||
     // MEH-1772 chunk 3: same for a per-city fee. String() both sides for the
@@ -147,8 +153,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
     form.cities.some(
       (c) => String(form.mins[c] ?? "") !== String(baseline.mins[c] ?? ""),
     ) ||
-    JSON.stringify(zonesForSave(form.zones, form.cities)) !==
-      JSON.stringify(zonesForSave(baseline.zones, baseline.cities));
+    JSON.stringify(zonesForSave(form.zones, form.nationwide ? null : form.cities)) !==
+      JSON.stringify(zonesForSave(baseline.zones, baseline.nationwide ? null : baseline.cities));
   useEffect(() => {
     reportDirty("delivery", dirty);
     return () => reportDirty("delivery", false);
@@ -201,18 +207,23 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
       // nationwide/cities above, same normalisation rule.
       fee: form.offersDelivery ? toNullableInt(form.fee) : null,
       freeAbove: form.offersDelivery ? toNullableInt(form.freeAbove) : null,
+      minOrder: form.offersDelivery ? toNullableInt(form.minOrder) : null,
+      dmin: form.offersDelivery ? toNullableInt(form.dmin) : null,
+      dmax: form.offersDelivery ? toNullableInt(form.dmax) : null,
       days: form.days,
       fees: form.fees,
       mins: form.mins,
       zones: form.zones,
       storedDays: form.storedDays,
     };
-    // MEH-3484: zones only exist with a city list; nationwide / pickup-only
-    // sends none (the server clears them).
-    const zones =
-      form.offersDelivery && !form.nationwide
-        ? zonesForSave(normalized.zones, cities).filter((z) => z.name || z.cities.length)
-        : [];
+    // MEH-3484: pickup-only sends no zones (the server clears them).
+    // MEH-3511: nationwide keeps its zones — areas on other terms, cities
+    // picked freely (null = no city list to limit them to).
+    const zones = form.offersDelivery
+      ? zonesForSave(normalized.zones, normalized.nationwide ? null : cities).filter(
+          (z) => z.name || z.cities.length,
+        )
+      : [];
     // MEH-1644: structured rows replace the flat delivery_area_cities send —
     // each city carries its optional canonical day ("" → null = בתיאום מראש)
     // and preserves any registration-captured min_order (previously wiped by
@@ -236,6 +247,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
+        delivery_min_order: normalized.minOrder,
+        delivery_days_min: normalized.dmin,
+        delivery_days_max: normalized.dmax,
         delivery_zones: zones,
       });
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
@@ -247,6 +261,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         delivery_excluded_cities: normalized.excluded,
         delivery_fee: normalized.fee,
         free_delivery_above: normalized.freeAbove,
+        delivery_min_order: normalized.minOrder,
+        delivery_days_min: normalized.dmin,
+        delivery_days_max: normalized.dmax,
         delivery_zones: zones,
       });
       // MEH-1577: back to "" for the inputs — normalized carries null, and a
@@ -255,6 +272,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
         ...normalized,
         fee: normalized.fee ?? "",
         freeAbove: normalized.freeAbove ?? "",
+        minOrder: normalized.minOrder ?? "",
+        dmin: normalized.dmin ?? "",
+        dmax: normalized.dmax ?? "",
       };
       setBaseline(asFields);
       setForm(asFields);
@@ -447,6 +467,12 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                   className="w-32"
                 />
               </div>
+              <DeliveryDefaultTerms
+                minOrder={form.minOrder}
+                dmin={form.dmin}
+                dmax={form.dmax}
+                onChange={set}
+              />
             </div>
             {!form.nationwide && (
               <div>
@@ -602,6 +628,12 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {}, saveUrl 
                   value={form.excluded}
                   onChange={(excluded) => set({ excluded })}
                   showRegionChips
+                />
+                <DeliveryZonesEditor
+                  zones={form.zones}
+                  cities={[]}
+                  nationwide
+                  onChange={(zones) => set({ zones })}
                 />
               </div>
             )}

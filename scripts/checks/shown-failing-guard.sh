@@ -53,7 +53,7 @@
 #         correctly, 1 = a case sorted wrong.
 set -euo pipefail
 
-TEST_PATH_RE='(^|/)(tests/test_[^/]+\.py|__tests__/[^/]+\.test\.(js|jsx|ts|tsx)|e2e/(flows|visual)/[^/]+\.spec\.ts)$'
+TEST_PATH_RE='(^|/)(tests/_?test_[^/]+\.py|__tests__/[^/]+\.test\.(js|jsx|ts|tsx)|e2e/(flows|visual)/[^/]+\.spec\.ts)$'
 KEY_SHOWN="Shown-failing"
 KEY_DISC="Discriminates"
 
@@ -128,7 +128,7 @@ self_test() {
   t() { if is_test_path "$1"; then echo 0; else echo 1; fi; }
 
   echo " path classifier — anchored to files this repo actually commits (MEH-1909):"
-  local anchors=(frontend/__tests__/CopyGate.test.js tests/test_meh2242_delivery_day_offers_delivery.py frontend/e2e/visual/parity.spec.ts)
+  local anchors=(frontend/__tests__/CopyGate.test.js tests/test_meh2242_delivery_day_offers_delivery.py tests/_test_api__p01.py frontend/e2e/visual/parity.spec.ts)
   local p
   for p in "${anchors[@]}"; do
     if git ls-files --error-unmatch "$p" >/dev/null 2>&1; then
@@ -141,6 +141,7 @@ self_test() {
   expect "real: scripts/checks/run-all.sh is not"           1 "$(t scripts/checks/run-all.sh)"
   echo " path classifier — synthetic edges:"
   expect "tests/conftest.py is not (fixture, not a test)"   1 "$(t tests/conftest.py)"
+  expect "tests/_helpers.py is not (MEH-3540: only _test_<stem>__pNN parts are)" 1 "$(t tests/_helpers.py)"
   expect "frontend/__tests__/x.test.tsx is"                 0 "$(t frontend/__tests__/x.test.tsx)"
   expect "frontend/e2e/screenshots.spec.ts is not (root-level, CI never runs it)" 1 "$(t frontend/e2e/screenshots.spec.ts)"
   expect "backend/app/tests_helper.py is not"               1 "$(t backend/app/tests_helper.py)"

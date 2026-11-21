@@ -10,6 +10,7 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
+import TestBusinessTag from "@/components/admin/TestBusinessTag"; // MEH-2952
 import AdminReviewChecklist from "./AdminReviewChecklist";
 import { CopyClaimMessageButton, DraftOwnerBadge } from "./AdminDraftClaimActions";
 import { DraftMissing } from "./AdminDraftMissing";
@@ -539,6 +540,9 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
             <CompletenessBadge missing={missing} priority={priority} />
             <span>{p.name}</span>
           </div>
+          {/* MEH-2952 chunk 4: in the name cell, not the md-only tags cell,
+              so a phone sees that this «approved» row is off the site. */}
+          <TestBusinessTag producerId={p.id} />
           <ReferralSource producer={p} />
         </td>
         <td className="hidden md:table-cell px-4 py-3 text-muted">{p.city || "—"}</td>

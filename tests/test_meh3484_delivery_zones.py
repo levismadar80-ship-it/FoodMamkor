@@ -285,11 +285,9 @@ def test_the_caps_on_zones_and_on_cities_per_zone(client, db):
     )
 
 
-def test_nationwide_with_zone_cities_is_refused(client, db):
-    _, user = _owner(db)
-    body = _body([_zone()])
-    body["delivery_nationwide"] = True
-    assert "לא ניתן לבחור גם משלוחים לכל הארץ" in _detail(_put(client, user, body))
+# MEH-3511 reversed the MEH-3484 rule that refused zones on a nationwide
+# business: «כל הארץ» plus areas on other terms («גוש דן, אקספרס») is now the
+# shape Cardinal needs. tests/test_meh3511_delivery_terms.py covers it.
 
 
 # ---------- the admin writes the same way ----------
@@ -348,7 +346,8 @@ def test_zone_cities_count_toward_the_delivery_city_cap(client, db, monkeypatch)
     assert _rows_of(db, producer) == {}
 
 
-def test_zones_add_no_cities_when_the_saved_state_is_nationwide(client, db):
+def test_zones_on_a_nationwide_business_write_only_the_zone_cities(client, db):
+    # MEH-3511: before, a nationwide business silently dropped its zones.
     producer, user = _owner(db)
     producer.offers_delivery = True
     producer.delivery_nationwide = True
@@ -359,9 +358,9 @@ def test_zones_add_no_cities_when_the_saved_state_is_nationwide(client, db):
         headers=auth_header(user),
     )
     assert r.status_code == 200, r.text
-    assert _rows_of(db, producer) == {}
+    assert set(_rows_of(db, producer)) == {"חיפה"}
     db.refresh(producer)
-    assert producer.delivery_zones is None
+    assert [z["name"] for z in producer.delivery_zones] == ["צפון"]
 
 
 def test_a_city_a_zone_keeps_is_not_reported_as_new(db):

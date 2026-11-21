@@ -148,8 +148,8 @@ vi.mock("@/lib/api", () => ({ /* overridden below */
 
 const PROPS = { initialItems: [], initialTotal: 0, initialPage: 1, totalPages: 1, perPage: 12 };
 const CATS = [
-  { id: 2, name: "חלב וגבינות" },
-  { id: 7, name: "דבש" },
+  { id: 2, name: "חלב וגבינות", requires_license: false },
+  { id: 7, name: "דבש", requires_license: false },
 ];
 
 function stubApi(cats) {

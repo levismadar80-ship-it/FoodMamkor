@@ -534,6 +534,9 @@ def _has_delivery_condition() -> ColumnElement[bool]:
     original bare `Producer.delivery_areas.any()` made exactly the businesses
     that deliver *furthest* invisible to the משלוח chip.
 
+    MEH-3511: a nationwide business may now also hold rows — the cities of its
+    zones on other terms. Either conjunct still answers "delivers".
+
     delivery_excluded_cities is deliberately NOT consulted here. This filter
     asks "does this business deliver?", not "does it deliver to city X" — a
     nationwide producer with a non-empty exclusion list still delivers, so it
@@ -667,6 +670,8 @@ def _delivery_day_condition(
     """MEH-1645 v1 semantics: only EXPLICIT day rows match — nationwide
     producers and day-less rows ("בתיאום מראש") are excluded from day
     filtering; the integrity of "משלוח ביום X" beats recall.
+    MEH-3511: a nationwide business whose zone row carries day X does match —
+    the same explicit-row rule; its «כל הארץ» terms still never do.
 
     With a city, the city AND the day must match on the SAME delivery_areas
     row (one EXISTS). Two separate EXISTS would wrongly match a producer

@@ -37,13 +37,8 @@ import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 import { selectFeaturedProducer } from "@/lib/featured-producer";
 import { consumeHistoryReturn } from "@/lib/route-memory";
 import { findRegionForCity } from "@/data/regions";
-import {
-  CategoriesResponseSchema,
-  StatsSchema,
-  ProducerSchema,
-  ProducersResponseSchema,
-  RandomProducerSchema,
-} from "@/lib/api-schemas";
+import { ProducerSchema, ProducersResponseSchema } from "@/lib/schemas";
+import { CategoriesResponseSchema, StatsSchema, RandomProducerSchema } from "@/lib/api-responses";
 
 const PAGE_SIZE = 8;
 

@@ -292,10 +292,11 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
     expect(screen.getByText("דוכן השוק")).toBeInTheDocument();
     expect(screen.getByText("יריד אורגני")).toBeInTheDocument();
-    expect(screen.getByText("חיפה")).toBeInTheDocument(); // city subline (label present)
+    // City beside the label, muted (Sapir 20/11), only when a label owns the line.
+    expect(screen.getAllByTestId("pickup-city").map((el) => el.textContent)).toContain(" · חיפה");
     // opening_hours — MEH-2604 wraps the range in an LTR span, so the text is
     // split across nodes; match the row's whole text, then the isolated range.
-    const hoursRow = screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "שישי 8-13");
+    const hoursRow = screen.getByText((_, el) => el?.dataset?.testid === "pickup-hours" && el.textContent === "שישי 8-13");
     expect(hoursRow.querySelector('[dir="ltr"]').textContent).toBe("8-13");
     expect(screen.queryByText("הסניף הראשי")).not.toBeInTheDocument(); // branch out of scope
     // Outbound Waze nav link built from lat/lng (no second in-page map).
@@ -606,7 +607,9 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     Array.from({ length: n }, (_, i) => ({
       id: from + i,
       city: `עיר ${String(from + i).padStart(2, "0")}`,
-      min_order: 100,
+      // MEH-3511: a distinct minimum per town, so each is its own row (towns
+      // with identical terms share one row).
+      min_order: 100 + from + i,
       delivery_day: day,
     }));
 
@@ -696,8 +699,8 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
         areas={[
           ...areaRows(4, { day: "ראשון", from: 1 }),
           ...areaRows(3, { day: "שני", from: 5 }),
-          { id: 8, city: "עיר 08", min_order: 100 },
-          { id: 9, city: "עיר 09", min_order: 100 },
+          { id: 8, city: "עיר 08", min_order: 108 },
+          { id: 9, city: "עיר 09", min_order: 109 },
         ]}
         pickup={false}
         producer={producer}

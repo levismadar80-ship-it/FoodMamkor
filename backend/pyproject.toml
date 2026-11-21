@@ -167,6 +167,8 @@ plugins = ["pydantic.mypy"]
 # STOP-condition (a) triggered: auth.py + schemas/ = 57 errors > 50 threshold.
 # Scoped to auth.py only per MEH-562 spec §STOP-a. schemas/ deferred to follow-up ticket.
 files = [
+    "app/site_pages.py",
+    "app/services/chat_site_knowledge.py",
     "app/allergens.py",
     "app/auth.py",
     "app/body_limit.py",
@@ -204,6 +206,7 @@ files = [
     "app/routers/admin_kashrut.py",
     "app/routers/admin_outreach.py",
     "app/routers/admin_recipes.py",
+    "app/routers/admin_test_business.py",
     "app/routers/admin_whatsapp.py",
     "app/routers/alerts.py",
     "app/routers/auth.py",
@@ -281,6 +284,9 @@ files = [
     "app/services/account_guards.py",
     "app/services/admin_audit.py",
     "app/services/admin_pending_reminder.py",
+    "app/services/rescue_reads.py",  # MEH-3541
+    "app/services/admin_dashboard.py",  # MEH-3538
+    "app/services/admin_settings.py",  # MEH-3538
     "app/services/billing_start_signal.py",
     "app/services/admin_producer_emails.py",
     "app/services/outbound_guard.py",

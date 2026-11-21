@@ -6,8 +6,9 @@
  *           being a thing a human has to remember.
  * Touches:  reads ../backend/openapi.json, writes lib/generated/ ONLY.
  * Does NOT: touch lib/schemas.js or lib/api-schemas.js, and does NOT generate a
- *           client, hooks, mocks, or REQUEST-side schemas — see below. Nothing
- *           in the app imports the output yet; MEH-1748 Phase 1 is additive.
+ *           client, hooks, mocks, or REQUEST-side schemas — see below. Since
+ *           MEH-1748 Phase 2 the app parses responses with this output only
+ *           (through lib/api-responses.js and direct imports).
  * Related:  backend/openapi.json (the reviewable contract this derives from),
  *           scripts/checks/openapi-codegen-drift-guard.sh (the CI drift gate),
  *           docs/audits/codegen-phase1-comparison.md (why orval, and what the
@@ -26,8 +27,8 @@
  *   Zod Mini + pure annotations, so unimported schemas can leave the bundle
  *   entirely. MEH-1751 refuted the spike's esbuild-proxy bundle number; `mini`
  *   is the tool-level answer to the 6,066-line concern the spike raised. The
- *   measured delta is in the comparison report — it is 0 B today because
- *   nothing imports this, which is a property of Phase 1, not of `mini`.
+ *   measured delta is in the comparison report (Phase 1, 0 B — nothing imported
+ *   it then); the Phase 2 cutover numbers are in lib/api-responses.js.
  *
  * WHY version: 4 (pinned, not 'auto')
  *   'auto' infers the target from whichever `zod` resolves in package.json, so
@@ -57,6 +58,13 @@ module.exports = {
         zod: {
           version: 4,
           variant: "mini",
+          // MEH-1748: accept a datetime with NO timezone too. The backend
+          // serialises naive DB columns without an offset (production
+          // GET /producers/{id}: created_at "2026-11-11T13:49:10.726940",
+          // updated_at "…Z" — measured 20/11), and with `offset` alone every
+          // such response failed the generated schema. The hand-written
+          // schemas accepted any string, so this is still stricter than them.
+          dateTimeOptions: { offset: true, local: true },
           generate: {
             response: true,
             param: false,

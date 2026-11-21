@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { DraftProductSchema } from "@/lib/api-schemas";
+import { DraftProductSchema } from "@/lib/api-responses";
 import ProductPrice from "@/components/ProductPrice";  // MEH-2936
 import AdminProductImageButton from "@/components/admin/AdminProductImageButton";  // MEH-3456
 import Input from "@/components/ui/Input";

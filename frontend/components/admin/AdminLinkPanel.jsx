@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { detailToMessage } from "@/lib/errors";
-import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
+import { ProducerClaimLinkSchema } from "@/lib/api-responses";
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";

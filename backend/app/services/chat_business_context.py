@@ -380,12 +380,39 @@ def _delivery(producer: Any, on_vacation: bool, now: datetime) -> dict[str, Any]
                 "min_order": _money(a.min_order),
                 "fee": _money(a.delivery_fee),
                 "free_above": _money(getattr(a, "free_delivery_above", None)),
+                # MEH-3511: the zone's delivery time and own order cutoff.
+                "business_days": _days(
+                    getattr(a, "delivery_days_min", None),
+                    getattr(a, "delivery_days_max", None),
+                ),
+                "orders_until": _cutoff(
+                    getattr(a, "order_cutoff_day", None),
+                    getattr(a, "order_cutoff_time", None),
+                ),
             }
             for a in producer.delivery_areas
         ],
         "fee": _money(producer.delivery_fee),
         "free_above": _money(producer.free_delivery_above),
+        # MEH-3511: business-wide delivery time and order minimum.
+        "business_days": _days(
+            getattr(producer, "delivery_days_min", None),
+            getattr(producer, "delivery_days_max", None),
+        ),
+        "min_order": _money(getattr(producer, "delivery_min_order", None)),
     }
+
+
+def _days(low: Any, high: Any) -> str | None:
+    if low is None and high is None:
+        return None
+    if low is None or low == high:
+        return f"עד {high}" if low is None else str(low)
+    return f"{low}-{high}" if high is not None else str(low)
+
+
+def _cutoff(day: Any, time: Any) -> str | None:
+    return f"{day} {time}" if day and time else None
 
 
 def facts(

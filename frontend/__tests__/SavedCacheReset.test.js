@@ -7,7 +7,7 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 import api from "@/lib/api";
 import { ensureSavedLoaded, isSaved, resetSavedCache } from "@/lib/saved-cache";
 
-const A_ID = "11111111-1111-1111-1111-111111111111";
+const A_ID = "11111111-1111-4111-8111-111111111111";
 
 function deferred() {
   let resolve;

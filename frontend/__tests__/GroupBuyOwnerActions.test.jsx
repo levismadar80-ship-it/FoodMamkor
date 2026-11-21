@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { uuidFor } from "./helpers/contract-row";
 import { render, screen, waitFor, fireEvent, within, act } from "@testing-library/react";
 
 // MEH-2435 (chunk 3) — the owner's action buttons on /producer/dashboard/group-buys.
@@ -49,20 +50,25 @@ vi.mock("@/lib/toast", () => ({
 const FUTURE = "2099-01-01T09:00:00Z";
 const PAST = "2020-01-01T09:00:00Z";
 
-const groupBuy = (over = {}) => ({
-  id: "gb1",
-  producer_id: "p1",
-  title: "ארגז ירקות שבועי",
-  product_name: "ארגז ירקות",
-  status: "open",
-  price_per_unit_group: "80.00",
-  price_per_unit_regular: "100.00",
-  commits_count: 2,
-  min_participants: 5,
-  deadline: FUTURE,
-  created_at: "2026-07-01T09:00:00Z",
-  ...over,
-});
+// MEH-1748: the page parses each row with the generated GroupBuyOut, so ids
+// are real UUIDs; tests keep short names and `uuidFor` maps them.
+const groupBuy = (over = {}) => {
+  const row = {
+    id: "gb1",
+    producer_id: "p1",
+    title: "ארגז ירקות שבועי",
+    product_name: "ארגז ירקות",
+    status: "open",
+    price_per_unit_group: "80.00",
+    price_per_unit_regular: "100.00",
+    commits_count: 2,
+    min_participants: 5,
+    deadline: FUTURE,
+    created_at: "2026-07-01T09:00:00Z",
+    ...over,
+  };
+  return { ...row, id: uuidFor(row.id), producer_id: uuidFor(row.producer_id) };
+};
 
 const fixture = { groupBuys: [] };
 const getFails = { groupBuys: false };
@@ -259,7 +265,7 @@ describe("confirming", () => {
     fireEvent.click(within(second).getByTestId("group-buy-action-cancel"));
     fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
     await waitFor(() =>
-      expect(patch).toHaveBeenCalledWith("/group-buys/b/status", {
+      expect(patch).toHaveBeenCalledWith(`/group-buys/${uuidFor("b")}/status`, {
         status: "cancelled",
         expected_status: "open",
       }),
@@ -316,7 +322,7 @@ describe("dropped rows are reported (MEH-2491)", () => {
     expect(captureMessage).toHaveBeenCalledTimes(1);
     const [, opts] = captureMessage.mock.calls[0];
     expect(opts.level).toBe("warning");
-    expect(opts.extra.dropped.map((d) => d.id)).toEqual(["bad"]);
+    expect(opts.extra.dropped.map((d) => d.id)).toEqual([uuidFor("bad")]);
   });
 
   it("nothing is reported when every row is valid", async () => {

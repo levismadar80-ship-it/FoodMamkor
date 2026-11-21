@@ -64,4 +64,4 @@ a quiet second line adds «N בתי עסק שהצטרפו עד היום»; below
 number at all (MEH-521). The numeral is set in the line's own face, semibold,
 `text-primary`, LTR-isolated — Cormorant's default old-style italic figures read
 as «ɜı» beside Hebrew (no lowercase for them to match), Sapir 07/11. Pinned by `HomeTrustBandCountGate.test.jsx`,
-`e2e/flows/manual/home.spec.ts` and the "home trust band" VRT element shot.
+`e2e/flows/manual/home-03.spec.ts` and the "home trust band" VRT element shot.
