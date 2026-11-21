@@ -136,6 +136,22 @@ Then `jq` or import into Grafana Cloud k6 (free tier) for percentile charts.
 - `docs/DEPLOYMENT.md:176` — canonical per-environment Railway backend URLs (the source of truth for the BASE_URL default in this script).
 - `frontend/next.config.js:130-134` — Next.js only proxies `/api/:path*` to the backend; `/producers/*` is a Next.js page route, NOT a backend proxy. This is why `BASE_URL=https://staging.mehamakor.online` failed the first run.
 
+## Re-run 2026-11-21 (MEH-3564)
+
+**Setup.** The script is `scripts/load-test.js` at `c54ed22`, run against the staging backend from `.github/workflows/load-test.yml` (`workflow_dispatch`). Each ramp runs on its own, one after another: 1→50 VUs for each endpoint, with `/chat` at 10/s. Peak is 87 VUs, which fits the Grafana Cloud free tier's 100-VU limit. A 429 counts as expected and is tallied separately (`rate_limited`). A real error means any status outside the expected set. Gates per endpoint: p95 < 2000ms and real errors < 1%.
+
+| Endpoint | p95, GitHub runner (run 44917050198) | p95, Grafana Cloud, Columbus (run 9063351) | Real errors |
+|---|---|---|---|
+| `GET /producers` | 745ms | 644ms (worst minute 778ms) | 0% |
+| `GET /producers/by-slug/{slug}` | 670ms | 461ms | 0% |
+| `GET /producers/{producer_id}` | 696ms | 578ms | 0% |
+| `POST /users/me/favorites/{producer_id}` (unauth, 401) | 602ms | 628ms | 0% |
+| `POST /chat` | 1.59s | 459ms | 0% |
+
+All thresholds passed in both runs (18/18 on the runner).
+
+**List tail at peak.** An earlier cloud run, 9063095 on `bddf0b4`, failed one threshold: `http_req_duration{endpoint:producers_list}`. Grafana Cloud evaluates thresholds during the run, and the short-window p95 crossed 2s twice at peak (about 71 requests over 2s), while the whole-run p95 was 1.06s. Run 9063351 passed, yet about 263 of 35.8k list requests (0.7%) still went over 2s. The counts come from histogram buckets, so they are estimates. The cause is unverified (DB pool wait at burst is the likely candidate). The test hits Railway directly, bypassing the 30s edge cache that the site uses. Follow-up: MEH-3625.
+
 ## Out of scope
 
 - Production load (Linear spec: staging-only; production is unobserved).
