@@ -711,6 +711,9 @@ function RegisterProducerPageBody({ routeKind }) {
         body.name = form.name;
         body.password = form.password;
       }
+      // MEH-3026 (F11): the outreach link's token, so the lead it came from is
+      // marked «נרשמה». The server ignores an unknown or expired one.
+      if (prefillToken) body.prefill_token = prefillToken;
       const res = await api.post("/auth/register/producer", body);
       // MEH-328 Chunk D: branch on response shape rather than the frontend
       // `isUpgrade` flag — guards against a token expiring between mount

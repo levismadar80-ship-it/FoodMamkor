@@ -8,7 +8,7 @@ Touches:  producers.delivery_zones (JSONB), delivery_areas (zone_name,
           delivery_days, delivery_day, min_order, delivery_fee,
           free_delivery_above).
 Does NOT: validate (schemas/catalog.py DeliveryZoneIn + check_zones), or
-          replace the city list (routers/producer_me.py _sync_delivery_areas,
+          replace the city list (services/producer_me_writes.py _sync_delivery_areas,
           routers/admin.py _write_delivery_areas run first).
 Related:  services/product_order_delivery.py (reads the copied threshold),
           services/producer_listing.py _delivery_day_condition (reads
