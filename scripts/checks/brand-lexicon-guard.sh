@@ -133,11 +133,16 @@ RULES=(
   # A forward / leads-to arrow is «←» in Hebrew (Sapir 21/11, MEH-3665): the
   # reading direction is right-to-left, so «A → B» points back at A. «→» stays
   # only where it LEADS a string («→ חזרה», «→ הקודם»). The hit is a Hebrew
-  # letter at most two bytes before «→» (room for `\"`, `)`, «״»): a
-  # mid-sentence Hebrew arrow. English strings (en.json, LTR, where «→» is
-  # right) and code like `${a} → ${b}` have no Hebrew letter there. Letters are
-  # spelled out, not a range: see `(ה)?` above for why a range class fails.
-  $'forward-arrow\t(א|ב|ג|ד|ה|ו|ז|ח|ט|י|כ|ך|ל|מ|ם|נ|ן|ס|ע|פ|ף|צ|ץ|ק|ר|ש|ת).?.?[[:space:]]*→\t-\t'
+  # letter, then at most two non-Hebrew, non-space characters (room for `\"`
+  # and `)`), then «→»: a mid-sentence Hebrew arrow. English strings (en.json,
+  # LTR, where «→» is right) and code like `${a} → ${b}` have no Hebrew letter
+  # there. Letters are spelled out, not a range: see `(ה)?` above for why a
+  # range class fails. The gap EXCLUDES Hebrew letters on purpose: with `.?.?`
+  # gawk in a UTF-8 locale (the CI runner) starts the match one letter earlier
+  # than mawk does (leftmost-longest), so the reported text, and with it the
+  # baseline key, depended on which awk ran. Measured 21/11: self-test 23/23
+  # under mawk, 22/23 under gawk C.UTF-8.
+  $'forward-arrow\t(א|ב|ג|ד|ה|ו|ז|ח|ט|י|כ|ך|ל|מ|ם|נ|ן|ס|ע|פ|ף|צ|ץ|ק|ר|ש|ת)[^אבגדהוזחטיכךלמםנןסעפףצץקרשת׳״[:space:]]?[^אבגדהוזחטיכךלמםנןסעפףצץקרשת׳״[:space:]]?[[:space:]]*→\t-\t'
 )
 
 # Every candidate file, one path per line, relative to the repo root.

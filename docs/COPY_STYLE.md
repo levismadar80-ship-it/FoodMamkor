@@ -128,7 +128,8 @@ previous (e.g. `→ חזרה`).
 
 `brand-lexicon-guard.sh` rule `forward-arrow` fails a Hebrew word followed by
 `→`. It catches the common shape only: a Latin word or a number right before
-the arrow (`ב-WhatsApp → …`, `(30%) → …`) is not caught.
+the arrow (`ב-WhatsApp → …`, `(30%) → …`), or a quote in gershayim
+(`״שלום״ → …`), is not caught.
 
 > The em-dash `—` (U+2014) is the correct connective dash in Hebrew copy (per
 > DESIGN.md), distinct from any arrow glyph — leave em-dashes alone.
