@@ -12,6 +12,7 @@ Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           ip_hash and user_id set to NULL, the row kept.
           MEH-3225: also `rescue_no_show_tombstones`, 30 days after the
           bag's pickup_end (the no-show rule's own window).
+          MEH-3535: also `email_outbox`, 30 days after created_at.
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -54,6 +55,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from sqlalchemy import ColumnElement, CursorResult, delete, or_, select, update
 from sqlalchemy.orm import Session
 
+from app.models.email_outbox import EmailOutbox  # MEH-3535
 from app.models.models import (
     AlertLog,
     ContactClick,
@@ -74,6 +76,7 @@ logger = logging.getLogger(__name__)
 
 #: Sapir's ruling 05/09 — internal alert logs keep 30 days.
 ALERT_LOG_RETENTION_DAYS = 30
+EMAIL_OUTBOX_RETENTION_DAYS = 30  # MEH-3535
 
 #: MEH-2763 — the sign-up form promises «נמחקים 30 יום אחרי המועד»
 #: (approved 6/11). Counted from the event's / experience's own date.
@@ -101,6 +104,7 @@ class PurgeResult:
     otps_deleted: int = 0
     contact_clicks_anonymized: int = 0
     tombstones_deleted: int = 0
+    email_outbox_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -286,8 +290,25 @@ def run_purge(
         now - timedelta(days=NO_SHOW_WINDOW_DAYS),
     )
 
+    # MEH-3535: the email queue. A finished row has no address or words left
+    # (email_outbox._clear); the bare row goes after the same 30 days.
+    outbox = _delete_in_batches(
+        db,
+        EmailOutbox,
+        EmailOutbox.created_at,
+        now - timedelta(days=EMAIL_OUTBOX_RETENTION_DAYS),
+    )
+
     result = PurgeResult(
-        boundary, views, clicks, alerts, registrations, otps, contacts, tombstones
+        boundary,
+        views,
+        clicks,
+        alerts,
+        registrations,
+        otps,
+        contacts,
+        tombstones,
+        outbox,
     )
     logger.info("[RETENTION-PURGE] %s", result)
     return result

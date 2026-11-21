@@ -155,6 +155,11 @@ def test_production_profile_admin_approve_of_an_ordinary_business_sends(
     )
 
     assert r.status_code == 200, r.text
+    # MEH-3535: the approval email is queued; the outbox dispatcher sends it.
+    assert production.emails == []
+    from app.services.email_outbox import dispatch_due
+
+    dispatch_due(db)
     assert _to(production.emails) == [owner.email]
     # The owner's approval template only — MEH-3589 dropped the admin's echo of
     # her own decision.
@@ -536,13 +541,18 @@ def test_inventory_classifier_anchored_to_a_real_repo_file():
     rel = "routers/admin_decisions.py"
     src = (APP_DIR / rel).read_text(encoding="utf-8")
     sites = collect_sites(src, rel)
-    approve = [s for s in sites if s.func == "approve_producer"]
+    # MEH-3535: the approval email is queued from _queue_approved_email.
     # MEH-3589: the admin's own-decision WhatsApp echo is gone; only the owner mail.
-    assert {s.callee for s in approve} == {"_send_notification_email"}
+    approve = [
+        s for s in sites if s.func in ("approve_producer", "_queue_approved_email")
+    ]
+    assert {(s.func, s.callee) for s in approve} == {
+        ("_queue_approved_email", "_send_notification_email"),
+    }
     for s in approve:
         assert s.flag is not None and not isinstance(s.flag, ast.Constant), s
     inner = [s for s in sites if s.func == "_send_notification_email"]
-    assert len(inner) == 1 and inner[0].callee == "send_email"
+    assert len(inner) == 1 and inner[0].callee == "enqueue_email"  # MEH-3535
     assert isinstance(inner[0].flag, ast.Name) and inner[0].flag.id == FLAG
     # And the wrapper check sees approve's forwarded notify call as held.
     assert wrapper_violations({rel: src}) == []
