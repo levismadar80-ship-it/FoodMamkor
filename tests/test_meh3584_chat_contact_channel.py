@@ -52,7 +52,7 @@ def _p(**fields):
             "instagram",
         ),  # no number → next with data
         (
-            {"method": "website", "phone": "050", "website": "  "},
+            {"method": "website", "phone": "050-1234567", "website": "  "},
             "whatsapp",
         ),  # blank = absent
         (
