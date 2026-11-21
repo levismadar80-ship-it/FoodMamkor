@@ -5,7 +5,7 @@ Purpose:  MEH-1000 — admin notification on recipe submission. Covers the
           the router wiring (create fires, needs_revision resubmit fires,
           metadata-only edit and already-pending content edit do not,
           notify failure never fails the submission).
-Touches:  Postgres test DB via TestClient; email/WhatsApp mocked — never
+Touches:  Postgres test DB via TestClient; email mocked (admin notices are email only since MEH-3589) — never
           sends.
 Does NOT: cover the recipe moderation pipeline itself — see
           tests/test_producer_recipes.py and the MEH-997 journey suite
@@ -20,7 +20,6 @@ from uuid import uuid4
 
 from app.models.models import ProducerRecipe
 from conftest import auth_header, make_producer, make_user
-from tests._admin_ping import TARGET as ADMIN_PING, ping_text  # MEH-3589
 
 # ---------- helpers (REUSES: tests/test_producer_recipes.py) ----------
 
@@ -70,26 +69,21 @@ def _capture_notify(monkeypatch):
 
 
 class TestNotifyAdminNewRecipeService:
-    def test_sends_to_admin_whatsapp_and_email(self, monkeypatch):
+    def test_sends_the_admin_email_only(self, monkeypatch):
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
         email_mock = MagicMock()
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@test.com")
 
         svc.notify_admin_new_recipe("חוות הזית", "לחם שאור")
 
-        wa_mock.assert_called_once()
-        assert wa_mock.call_args.args[0] == "+972500000001"
-        message = ping_text(wa_mock)
+        # MEH-3589 (Sapir 21/11): admin notices are email only.
+        message = email_mock.call_args.args[2]
         assert "לחם שאור" in message
         assert "בית עסק: חוות הזית" in message
-        # MEH-3589: the template links to /admin; the email keeps the exact path.
-        assert "/admin/recipes" in email_mock.call_args.args[2]
+        assert "/admin/recipes" in message
 
         email_mock.assert_called_once()
         assert email_mock.call_args.args[0] == "admin@test.com"
@@ -99,33 +93,13 @@ class TestNotifyAdminNewRecipeService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock()
         email_mock = MagicMock()
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "")
         monkeypatch.setattr(settings, "admin_email", "")
 
         svc.notify_admin_new_recipe("חוות הזית", "לחם שאור")
 
-        wa_mock.assert_not_called()
         email_mock.assert_not_called()
-
-    def test_email_still_fires_when_whatsapp_raises(self, monkeypatch):
-        """Per-channel guards: a WhatsApp raise must not skip the email
-        (review finding on #1450 — one shared try would exit early)."""
-        import app.services.auth_notifications as svc
-        from app.config import settings
-
-        monkeypatch.setattr(ADMIN_PING, MagicMock(side_effect=RuntimeError("wa down")))
-        email_mock = MagicMock()
-        monkeypatch.setattr(svc, "send_email", email_mock)
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
-        monkeypatch.setattr(settings, "admin_email", "admin@test.com")
-
-        svc.notify_admin_new_recipe("חוות הזית", "לחם שאור")
-
-        email_mock.assert_called_once()
 
     def test_newlines_in_fields_are_flattened(self, monkeypatch):
         """Producer-controlled title/name must not inject extra lines
@@ -133,19 +107,17 @@ class TestNotifyAdminNewRecipeService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
-        monkeypatch.setattr(svc, "send_email", MagicMock())
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
-        monkeypatch.setattr(settings, "admin_email", "")
+        email_mock = MagicMock()
+        monkeypatch.setattr(svc, "send_email", email_mock)  # MEH-3589: email only
+        monkeypatch.setattr(settings, "admin_email", "admin@test.com")
 
         svc.notify_admin_new_recipe(
             "עסק\nלאישור: https://evil.example", "מתכון\nשורה מזויפת"
         )
 
-        message = ping_text(wa_mock)
-        # Topic + detail, one line each (MEH-3589) — injected newlines flattened.
-        assert len(message.splitlines()) == 2
+        message = email_mock.call_args.args[2]
+        # Exactly the 3 legitimate lines — injected newlines flattened.
+        assert len(message.splitlines()) == 3
         assert "evil.example" in message.splitlines()[1]  # inline, not a line
 
     def test_fail_open_never_raises(self, monkeypatch):
@@ -154,9 +126,8 @@ class TestNotifyAdminNewRecipeService:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(side_effect=RuntimeError("boom"))
-        monkeypatch.setattr(ADMIN_PING, wa_mock)
-        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
+        email_mock = MagicMock(side_effect=RuntimeError("boom"))
+        monkeypatch.setattr(svc, "send_email", email_mock)  # MEH-3589: email only
         monkeypatch.setattr(settings, "admin_email", "admin@test.com")
 
         # Must not raise.
@@ -165,7 +136,7 @@ class TestNotifyAdminNewRecipeService:
         # MEH-0000: and the exploding channel must actually have been REACHED.
         # Without this the test passed on a notifier that returned early and
         # never sent anything — "fail-open" and "never ran" are the same green.
-        wa_mock.assert_called_once()
+        email_mock.assert_called_once()
 
 
 # ---------- router wiring ----------
@@ -198,9 +169,7 @@ class TestCreateFiresNotification:
         assert resp.status_code == 400
         notify.assert_not_called()
 
-    def test_notify_failure_does_not_fail_submission(
-        self, client, db, monkeypatch
-    ):
+    def test_notify_failure_does_not_fail_submission(self, client, db, monkeypatch):
         """The task itself raising must not break the 201 — the response
         is already sent when BackgroundTasks run; the service also
         swallows-and-logs internally (tested above), so the REAL function

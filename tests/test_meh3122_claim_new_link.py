@@ -282,9 +282,5 @@ class TestNotifierMessage:
 
         sent = []
         monkeypatch.setattr(n, "send_email", lambda *a, **k: sent.append(a))
-        # MEH-3589: the admin ping goes through admin_whatsapp.send_template.
-        monkeypatch.setattr(
-            "app.services.admin_whatsapp.send_template", lambda *a, **k: sent.append(a)
-        )
         n.notify_admin_claim_link_requested("x", "y", test_cause=True)
         assert sent == []
