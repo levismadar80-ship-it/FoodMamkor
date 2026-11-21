@@ -1,7 +1,7 @@
 """meh3592_group_buy_capacity
 
 Revision ID: 2189efe602b9
-Revises: b4e6a8c0d2f3
+Revises: c5e7a9b1d3f6
 Create Date: 2026-11-21 14:00:00.000000+00:00
 
 MEH-3592 (Sapir approved the migration 21/11). Expand-only (ADR-007): two
@@ -26,7 +26,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "2189efe602b9"
-down_revision: Union[str, None] = "b4e6a8c0d2f3"
+down_revision: Union[str, None] = "c5e7a9b1d3f6"  # MEH-3592: re-pointed after MEH-3535 email_outbox landed first
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

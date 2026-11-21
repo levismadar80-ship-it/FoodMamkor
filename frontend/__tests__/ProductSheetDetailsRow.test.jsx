@@ -67,10 +67,11 @@ describe("ProductSheet — «פרטים על המוצר» row (MEH-3450)", () =>
     expect(screen.getByTestId("product-sheet-allergens")).toHaveTextContent("מכיל: חלב");
   });
 
-  it("nothing declared at all: no row, the «לא ציין» line still shows", () => {
+  it("nothing declared at all: no row and no allergen line (MEH-3585)", () => {
     renderSheet({});
     expect(screen.queryByTestId("product-sheet-details")).toBeNull();
-    expect(screen.getByTestId("product-sheet-allergens-undeclared")).toHaveTextContent(UNDECLARED);
+    expect(screen.queryByTestId("product-sheet-facts")).toBeNull();
+    expect(screen.queryByText(UNDECLARED)).toBeNull();
   });
 
   it("ingredients only: closed by default, «מכיל» visible in the summary, ingredients folded", () => {
@@ -108,9 +109,10 @@ describe("ProductSheet — «פרטים על המוצר» row (MEH-3450)", () =>
     expect(screen.getAllByTestId("product-sheet-allergens-none")).toHaveLength(1);
   });
 
-  it("row with nothing declared about allergens: «לא ציין» stays visible in the summary", () => {
+  it("row with nothing declared about allergens: the summary is the heading alone (MEH-3585)", () => {
     renderSheet({ ingredients: "דבש" });
-    expect(summaryOf()).toContainElement(screen.getByTestId("product-sheet-allergens-undeclared"));
+    expect(summaryOf()).toHaveTextContent(new RegExp(`^${HEADING}$`));
+    expect(screen.queryByText(UNDECLARED)).toBeNull();
   });
 
   it("paging to the next product: a row opened on one product starts closed on the next", () => {
