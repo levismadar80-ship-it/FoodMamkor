@@ -725,7 +725,8 @@ export default function ProducerDashboardPage() {
         <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
       ) : !isApproved ? null : (
         // MEH-3079: not while pending — its «שתפו» contradicted the
-        // share-locked line just above (new-business walkthrough 18/11).
+        // share-locked line of «הלינק שלי» (new-business walkthrough 18/11;
+        // that card sits below the numbers since MEH-3076).
         // MEH-2884 (placement audit item 5): ONE empty state for the numbers
         // — the activity pulse's own empty card is gone — and it carries the
         // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
@@ -912,8 +913,8 @@ export default function ProducerDashboardPage() {
 
 
       {/* MEH-288: profile-completeness card — surfaces the existing
-          producerCompleteness() heuristic to the owner, above the analytics
-          stats. Guarded on `profile` (the full /producers/me record carries
+          producerCompleteness() heuristic to the owner (below the analytics
+          stats since MEH-3076). Guarded on `profile` (the full /producers/me record carries
           the fields the heuristic reads). MEH-1134: this slot served the
           approved+complete state; MEH-1397 removes it — once the business is
           approved AND complete the collapsed "העמוד מלא ✓" card is noise with
