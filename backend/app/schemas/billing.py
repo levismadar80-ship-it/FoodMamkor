@@ -59,6 +59,18 @@ class BillingHistoryMonthOut(BaseModel):
     would_pay_total_agorot: int
 
 
+class BillingYearOut(BaseModel):
+    """MEH-3189: income from January to the month, against the exempt-dealer ceiling."""
+
+    year: int
+    income_agorot: int
+    ceiling_agorot: int
+    # The year the ceiling amount was set for; differs from `year` when stale.
+    ceiling_year: int
+    percent: int
+    alert_percent: int  # 0, or the highest warning level reached
+
+
 class BillingOverviewOut(BaseModel):
     month: str
     threshold_agorot: int
@@ -70,6 +82,7 @@ class BillingOverviewOut(BaseModel):
     start_billing_months: int
     would_pay_total_agorot: int
     phase: Literal["launch", "billing"]  # "launch" = nothing is charged
+    year: BillingYearOut
     # The month and the five before it, newest first.
     history: list[BillingHistoryMonthOut]
     rows: list[BillingOverviewRowOut]

@@ -8,7 +8,8 @@ Does NOT: write, charge or notify. A month is an ISRAEL calendar month.
           Voided rows are never counted.
 Related:  app/services/billing_ledger.py (the writer) · app/pricing.py ·
           app/routers/billing.py
-History:  MEH-3181 (creation, 2026-11-14).
+History:  MEH-3181 (creation, 2026-11-14); MEH-3189 (year-to-date income
+          against the exempt-dealer ceiling, 2026-11-21).
 """
 
 from __future__ import annotations
@@ -252,6 +253,41 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
         "would_pay_total_agorot": sum(r["would_pay_agorot"] for r in rows),
         # "launch" = nothing is charged. The same word summarize() returns.
         "phase": pricing.BILLING_PHASE,
+        "year": year_to_date(db, month),
         "history": history,
         "rows": rows,
+    }
+
+
+def _would_pay(counts: dict[UUID, tuple[int, int, int]], threshold: int) -> int:
+    """A month's commission: only businesses at or over the threshold pay."""
+    return sum(fee for _, value, fee in counts.values() if value >= threshold)
+
+
+def year_to_date(db: Session, month: Month) -> dict[str, Any]:
+    """MEH-3189: what the site brings in from January to `month`, against the
+    exempt-dealer ceiling.
+
+    The income is the commission the ledger computes (the same rule as
+    `would_pay_total_agorot`). While BILLING_PHASE is "launch" nothing is
+    charged, so this is what WOULD have been charged; the screen says so.
+    Subscriptions are not counted: no subscription exists yet (MEH-3182).
+    Sapir's other income is not here either; the ceiling counts all of it.
+    """
+    threshold = current_price_list().threshold_paid_bookings_agorot
+    income = sum(
+        _would_pay(_bookings_by_business(db, Month(month.year, m)), threshold)
+        for m in range(1, month.month + 1)
+    )
+    ceiling = pricing.EXEMPT_DEALER_CEILING_AGOROT
+    percent = income * 100 // ceiling
+    passed = [p for p in pricing.EXEMPT_DEALER_ALERT_PERCENTS if percent >= p]
+    return {
+        "year": month.year,
+        "income_agorot": income,
+        "ceiling_agorot": ceiling,
+        "ceiling_year": pricing.EXEMPT_DEALER_CEILING_YEAR,
+        "percent": percent,
+        # The highest warning level reached, 0 when none.
+        "alert_percent": passed[-1] if passed else 0,
     }

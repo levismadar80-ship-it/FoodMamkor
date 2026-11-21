@@ -607,6 +607,9 @@
           "would_pay_total_agorot": {
             "title": "Would Pay Total Agorot",
             "type": "integer"
+          },
+          "year": {
+            "$ref": "#/components/schemas/BillingYearOut"
           }
         },
         "required": [
@@ -618,6 +621,7 @@
           "start_billing_months",
           "would_pay_total_agorot",
           "phase",
+          "year",
           "history",
           "rows"
         ],
@@ -736,6 +740,45 @@
           "price_list_version"
         ],
         "title": "BillingSummaryOut",
+        "type": "object"
+      },
+      "BillingYearOut": {
+        "description": "MEH-3189: income from January to the month, against the exempt-dealer ceiling.",
+        "properties": {
+          "alert_percent": {
+            "title": "Alert Percent",
+            "type": "integer"
+          },
+          "ceiling_agorot": {
+            "title": "Ceiling Agorot",
+            "type": "integer"
+          },
+          "ceiling_year": {
+            "title": "Ceiling Year",
+            "type": "integer"
+          },
+          "income_agorot": {
+            "title": "Income Agorot",
+            "type": "integer"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "income_agorot",
+          "ceiling_agorot",
+          "ceiling_year",
+          "percent",
+          "alert_percent"
+        ],
+        "title": "BillingYearOut",
         "type": "object"
       },
       "BioGenerateIn": {
