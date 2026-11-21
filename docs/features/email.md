@@ -12,7 +12,7 @@
 * `frontend/components/EmailLinkUnsubscribe.jsx` — דף הנחיתה האחד של כל קישור «הסרה» במייל (ניוזלטר, רשימת המתנה, סיכום שבועי): שולח את הטוקן ב-POST בטעינה, «נסו שוב» על 429/5xx/רשת, והטוקן יורד מכתובת הדף (MEH-3464).
 * `backend/app/services/email_layout.py` — **המסגרת האחת של כל מייל** (MEH-3587): לוגו, כרטיס, RTL, כותרת, כפתורים. `send_email` עוטף בה אוטומטית כל מייל שנשלח כטקסט בלבד: שורה «תווית: כתובת» הופכת לכפתור, וגרסת הטקסט יוצאת בלי שינוי. מייל חדש לא צריך לבנות HTML כדי להיראות ממותג.
 * `backend/app/services/registration_emails.py` — `_shell` (עכשיו קורא ל-`frame` של email_layout) ו-`_button`.
-* `backend/app/services/email_branding.py` — הלוגו.
+* `backend/app/services/email_branding.py` — הלוגו. תמונות במייל נטענות תמיד מ-mehamakor.co.il, בכל סביבה: ה-staging נעול בהגנת Vercel ושרתי התמונות של Gmail/Outlook לא מגיעים אליו (MEH-3583). קישורים במייל ממשיכים ללכת אחרי FRONTEND_URL.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py` · `backend/app/services/pending_nudge.py`
 * `backend/app/services/push.py` — התראות דפדפן.
 * `backend/app/services/weekly_owner_summary.py` · `backend/app/routers/producer_me_weekly_summary.py` — הסיכום השבועי לבית העסק. כל מייל נושא `List-Unsubscribe` ו-one-click לפי RFC 8058 (`send_email(..., headers=)`), ובעלת העסק מחזירה או מפסיקה אותו במתג ב«תובנות» (MEH-3212). נשלח רק מ-5 צפיות בשבוע, או פחות כשהייתה לחיצה על וואטסאפ או קשר (`MIN_VIEWS`, `worth_sending`, MEH-3476).
