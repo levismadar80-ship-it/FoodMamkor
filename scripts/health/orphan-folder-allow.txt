@@ -1,0 +1,5 @@
+# Folders orphan-folder-scan.sh must not list, one per line: <path> <reason>.
+# Add a line only with a reason a reviewer can check. Removing one is free.
+frontend/lib/icons        only LICENSES.md — the icon licence texts CategoryIcons.jsx cites; legal record, not code
+scripts/fixtures          read by scripts/checks/legacy-expiry-check.sh:83 (guard mentions do not count)
+scripts/checks/testdata   read by scripts/checks/lint-ratchet.mjs:52 and other guard self-tests
