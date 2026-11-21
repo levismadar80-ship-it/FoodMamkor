@@ -76,10 +76,13 @@
  *   - First ~3 seconds: clean p(95) latency baseline for all endpoints
  *   - After ~3 seconds: ~95% HTTP 429 (rate-limited) on /producers/*
  *     because slowapi caps GET /producers at 120/min per IP (see
- *     backend/app/routers/producers.py rate_limit). The error-rate
- *     thresholds below (rate < 0.95) accept this 429-dominated shape.
+ *     backend/app/routers/producers.py rate_limit). Since MEH-3564 a 429
+ *     is an expected status (not counted in http_req_failed), it is
+ *     counted in `rate_limited`, and the error gates are the real < 1%.
  *     For a true capacity-ceiling test, disable slowapi in staging
  *     env for the test window — tracked as a post-launch follow-up.
+ *     That run must drop the `rate_limited ... count>0` thresholds,
+ *     which require the limiter to fire.
  */
 
 import http from 'k6/http';
@@ -107,10 +110,18 @@ const headers = {
 // every check green). Each call now names the statuses that are a coherent
 // answer; anything else (5xx, a timeout, a 422 from a wrong payload) is a
 // failure, and the gate below is the real SLA: under 1%.
+// A 404 on a business page is expected only with the placeholder slug / UUID
+// (no PRODUCER_SLUG / PRODUCER_ID given). The workflow always passes a real
+// producer, so there a 404 is a regression and counts as a failure.
+// /chat never answers 503: without ANTHROPIC_API_KEY or over the daily cap it
+// returns 200 with the offline reply (backend/app/routers/chat.py, `chat()`).
+const USING_PLACEHOLDER = !__ENV.PRODUCER_SLUG || !__ENV.PRODUCER_ID;
 const ok = {
   list: http.expectedStatuses(200, 429),
-  detail: http.expectedStatuses(200, 404, 429),
-  chat: http.expectedStatuses(200, 429, 503),
+  detail: USING_PLACEHOLDER
+    ? http.expectedStatuses(200, 404, 429)
+    : http.expectedStatuses(200, 429),
+  chat: http.expectedStatuses(200, 429),
   favorites: http.expectedStatuses(401),
 };
 // Expected is not invisible: every 429 is counted here, per endpoint, and
@@ -118,8 +129,13 @@ const ok = {
 // never answered 429 at 50 VUs means the limit is gone, not that all is well.
 // (Same pattern as Zuplo's k6 rate-limit example: expected, counted, asserted.)
 const rateLimited = new Counter('rate_limited');
+// And the server still served real answers: 429s are fast, so a run where
+// almost nothing but 429 came back would pass the latency gate on rejections
+// alone. `served` counts the 200s per endpoint; thresholds require some.
+const served = new Counter('served');
 function countLimit(res) {
   if (res.status === 429) rateLimited.add(1);
+  if (res.status === 200) served.add(1);
 }
 
 // Ramping VU profile shared by 4 scenarios: 2 min ramp 1->50, 2 min
@@ -191,16 +207,12 @@ export const options = {
       tags: { endpoint: 'favorites_unauth' },
     },
   },
-  // SLA gates per endpoint. p(95) latency gates stay at <2s (those
-  // measure real server responses, not rate-limit rejections). Error
-  // rate gates RELAXED to <0.95 on /producers/* because slowapi caps
-  // GET /producers at 120/min per IP and a 50-VU ramp from one IP
-  // generates ~3000 req/min — expect ~95% HTTP 429 after the first
-  // 3 seconds. The first-3s latency is the real baseline signal.
-  // True capacity-ceiling testing requires disabling slowapi in
-  // staging for the test window (post-launch follow-up ticket).
-  // MEH-3564: those 429s (and favorites' 401) are now expected statuses
-  // (`ok` above), so every endpoint carries the real error gate, < 1%.
+  // SLA gates per endpoint: p(95) < 2s and real errors < 1%. slowapi caps
+  // GET /producers at 120/min per IP and a 50-VU ramp from one IP generates
+  // ~3000 req/min, so most responses after the first seconds are 429. Those
+  // 429s (and favorites' 401) are expected statuses (`ok` above), counted in
+  // `rate_limited`; `served` proves 200s still came back. p95 mixes served
+  // answers and fast 429s; the first-3s latency is the clean server signal.
   thresholds: {
     'http_req_duration{endpoint:producers_list}': ['p(95)<2000'],
     'http_req_failed{endpoint:producers_list}': ['rate<0.01'],
@@ -222,6 +234,12 @@ export const options = {
     'rate_limited{endpoint:producer_detail_slug}': ['count>0'],
     'rate_limited{endpoint:producer_detail_uuid}': ['count>0'],
     'rate_limited{endpoint:chat}': ['count>0'],
+
+    // The server served real answers too (see `served` above).
+    'served{endpoint:producers_list}': ['count>0'],
+    'served{endpoint:producer_detail_slug}': ['count>0'],
+    'served{endpoint:producer_detail_uuid}': ['count>0'],
+    'served{endpoint:chat}': ['count>0'],
   },
 };
 
@@ -267,11 +285,10 @@ export function chat() {
     });
     const res = http.post(`${BASE_URL}/chat`, payload, { headers, responseCallback: ok.chat });
     countLimit(res);
-    // 200 (success), 429 (rate-limited — expected), or 503 (fail-open
-    // when ANTHROPIC_API_KEY is unset on staging) are all valid.
+    // 200 (an answer, or the offline reply when the key is unset or the
+    // daily cap is hit) or 429 (rate-limited — expected).
     check(res, {
-      'status 200/429/503': (r) =>
-        r.status === 200 || r.status === 429 || r.status === 503,
+      'status 200 or 429': (r) => r.status === 200 || r.status === 429,
     });
   });
 }
