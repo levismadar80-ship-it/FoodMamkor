@@ -12,7 +12,9 @@
  *           live in OrderSheetPhone.jsx.
  * Related:  lib/order-sheet.js (bodies + calls), components/public/OrderBar.jsx
  *           (opens it), app/[locale]/order/[id]/ (where it lands)
- * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»)
+ * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»);
+ *           MEH-3640 what she typed survives closing the sheet, and a line
+ *           says why «שליחת הבקשה» waits for a city
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -41,6 +43,24 @@ import {
 } from "@/lib/order-sheet";
 
 const QUOTE_DELAY_MS = 400;
+
+// MEH-3640 (Nielsen #3, user control): closing the sheet used to throw away
+// her name, phone and address. Kept here, per business, for this page visit
+// only: memory, never storage, because it is personal data. The code, the
+// slot and the age box are not kept: each belongs to one attempt.
+const KEPT_FIELDS = /** @type {const} */ (["fulfilment", "city", "address", "name", "phone", "note"]);
+/** @type {Map<string, Record<string, string>>} */
+const drafts = new Map();
+
+/** Tests only: start every case from an empty sheet. */
+export function forgetOrderDrafts() {
+  drafts.clear();
+}
+
+/** @param {Record<string, any>} form */
+function keptPart(form) {
+  return Object.fromEntries(KEPT_FIELDS.map((k) => [k, form[k]]));
+}
 const CONFLICT = 409;
 
 /**
@@ -59,17 +79,26 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   const byId = useMemo(() => new Map(menu.products.map((p) => [p.id, p])), [menu]);
   const hasAlcohol = Object.keys(picks).some((id) => byId.get(id)?.contains_alcohol);
   const ways = fulfilmentsOffered(menu, hasAlcohol);
-  const [form, setForm] = useState(() => ({
-    fulfilment: ways[0] ?? "pickup",
-    slot: "",
-    city: "",
-    address: "",
-    name: "",
-    phone: "",
-    code: "",
-    note: "",
-    age: false,
-  }));
+  const [form, setForm] = useState(() => {
+    const blank = {
+      fulfilment: ways[0] ?? "pickup",
+      slot: "",
+      city: "",
+      address: "",
+      name: "",
+      phone: "",
+      code: "",
+      note: "",
+      age: false,
+    };
+    const kept = drafts.get(producer.id);
+    // A kept fulfilment the menu no longer offers falls back to the first.
+    if (kept && !ways.includes(kept.fulfilment)) return { ...blank, ...kept, fulfilment: blank.fulfilment };
+    return { ...blank, ...kept };
+  });
+  useEffect(() => {
+    drafts.set(producer.id, keptPart(form));
+  }, [producer.id, form]);
   const [key] = useState(newOrderKey);
   // The quote together with the request it answers: a total is shown, and
   // «שליחת הבקשה» enabled, only when it answers what is on the form now — a
@@ -98,6 +127,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
       const href = await sendOrder(
         orderBody({ producerId: producer.id, picks, ...form, slotStart: form.slot, ageDeclared: form.age, key }),
       );
+      drafts.delete(producer.id);
       router.push(href);
     } catch (err) {
       const res = /** @type {any} */ (err)?.response;
@@ -157,6 +187,9 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         </Button>
         <Button type="button" variant="outlined" onClick={onClose} data-autofocus="">{t("close")}</Button>
       </div>
+      {needsCity && slots.length > 0 && (
+        <p className="mt-2 text-sm text-fg-muted" data-testid="order-sheet-needs-city">{t("needs_city")}</p>
+      )}
     </Dialog>
   );
 }
