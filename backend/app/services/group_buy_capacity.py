@@ -20,8 +20,8 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import BackgroundTasks, HTTPException
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import exists, func, or_
+from sqlalchemy.orm import Session, object_session
 
 from app.models.models import GroupBuy, GroupBuyCommit, GroupBuyWaitlist, User
 from app.services.group_buy_notifications import (
@@ -38,6 +38,11 @@ WAITLIST_MAX = 50
 # if that drops a funded project below its goal. A last-minute leave would
 # otherwise cancel the group for everyone (the daily job, MEH-3287).
 LAST_CALL = timedelta(hours=24)
+
+# MEH-3592 review: an offered row is offered again after this long, if the
+# place went to someone else; and at most this many emails per freed batch.
+REOFFER_AFTER = timedelta(hours=24)
+OFFER_BATCH = 10
 
 JOINS_CLOSED = "בית העסק עצר את ההצטרפות לקבוצה הזאת"
 FULL = "קבוצת הרכישה מלאה"
@@ -112,31 +117,63 @@ def drop_from_waitlist(db: Session, gb_id: Any, user_id: Any) -> None:
     ).delete(synchronize_session=False)
 
 
-def offer_freed_place(
-    db: Session, gb: GroupBuy, background_tasks: BackgroundTasks
-) -> None:
-    """A place freed: stamp the first waitlisted visitor not yet offered whose
-    quantity fits, and queue one email. Caller holds the row lock and commits.
-    Each row is offered once, ever (the events waitlist rule)."""
-    if gb.status not in ("open", "funded") or gb.joins_closed_at is not None:
-        return
-    if gb.deadline < utc_now():
-        return
-    people, units = counts(db, gb.id)
-    if gb.max_participants and people >= gb.max_participants:
-        return
-    left = units_left(gb, units)
+def is_waitlisted(gb: GroupBuy, user_id: Any) -> bool:
+    """One EXISTS query, not the whole waitlist relationship."""
+    db = object_session(gb)
+    if db is None:
+        return False
+    return db.query(
+        exists().where(
+            GroupBuyWaitlist.group_buy_id == gb.id, GroupBuyWaitlist.user_id == user_id
+        )
+    ).scalar() is True
+
+
+def _next_in_line(db: Session, gb_id: Any, left: int | None, skip: set[Any]) -> GroupBuyWaitlist | None:
+    """The first row never offered, else the oldest offered more than
+    REOFFER_AFTER ago — so a place taken back (a quantity toggled down and up,
+    a leave and a rejoin) cannot spend every row's only offer (MEH-3592 review)."""
     q = db.query(GroupBuyWaitlist).filter(
-        GroupBuyWaitlist.group_buy_id == gb.id, GroupBuyWaitlist.offered_at.is_(None)
+        GroupBuyWaitlist.group_buy_id == gb_id,
+        or_(
+            GroupBuyWaitlist.offered_at.is_(None),
+            GroupBuyWaitlist.offered_at < utc_now() - REOFFER_AFTER,
+        ),
     )
+    if skip:
+        q = q.filter(GroupBuyWaitlist.id.notin_(skip))
     if left is not None:
         q = q.filter(GroupBuyWaitlist.quantity <= left)
-    row = q.order_by(GroupBuyWaitlist.created_at.asc()).first()
-    if row is None:
-        return
-    email = db.query(User.email).filter(User.id == row.user_id).scalar()
-    row.offered_at = utc_now()
-    if email:
+    return (
+        q.order_by(GroupBuyWaitlist.offered_at.asc().nullsfirst(), GroupBuyWaitlist.created_at.asc())
+        .first()
+    )
+
+
+def offer_freed_place(
+    db: Session, gb: GroupBuy, background_tasks: BackgroundTasks
+) -> int:
+    """Places freed: email the next waitlisted visitors in line, one per free
+    place (at most OFFER_BATCH a call), and stamp offered_at. The place is not
+    held. Caller holds the row lock and commits. Returns how many were told."""
+    if gb.status not in ("open", "funded") or gb.joins_closed_at is not None:
+        return 0
+    if gb.deadline < utc_now():
+        return 0
+    people, units = counts(db, gb.id)
+    free_people = (gb.max_participants - people) if gb.max_participants else OFFER_BATCH
+    left = units_left(gb, units)
+    told = 0
+    skip: set[Any] = set()
+    while told < min(free_people, OFFER_BATCH) and (left is None or left >= 1):
+        row = _next_in_line(db, gb.id, left, skip)
+        if row is None:
+            break
+        skip.add(row.id)
+        email = db.query(User.email).filter(User.id == row.user_id).scalar()
+        if not email:
+            continue  # an offer to nobody is not spent
+        row.offered_at = utc_now()
         background_tasks.add_task(
             send_waitlist_place,
             str(email),
@@ -144,6 +181,10 @@ def offer_freed_place(
             str(gb.id),
             test_cause=bool(gb.producer and gb.producer.is_test),
         )
+        told += 1
+        if left is not None:
+            left -= int(row.quantity or 1)
+    return told
 
 
 def tell_owner_of_late_join(

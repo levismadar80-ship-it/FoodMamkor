@@ -45,6 +45,34 @@ def _locked(db: Session, group_buy_id: UUID) -> GroupBuy:
     return gb
 
 
+def _refuse_unless_owner(db: Session, group_buy_id: UUID, user: User) -> None:
+    """IDOR (security.md): the owning business, or an admin — checked before
+    the row lock, and a hidden group answers 404 to a stranger (MEH-2484)."""
+    peek = db.query(GroupBuy.producer_id).filter(GroupBuy.id == group_buy_id).first()
+    if not peek:
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
+    if (user.producer_id and user.producer_id == peek[0]) or user.role == "admin":
+        return
+    if not _is_public(db, group_buy_id):
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
+    raise HTTPException(status_code=403, detail="אין הרשאה לשנות את קבוצת הרכישה הזאת")
+
+
+def _cap_grew(old: Any, new: Any) -> bool:
+    """None is no cap: removing one, or a bigger number, is more room."""
+    if old is None:
+        return False
+    return new is None or new > old
+
+
+def _room_grew(before: tuple[Any, Any, bool], gb: GroupBuy) -> bool:
+    """Only a raised cap or reopened joins offers waitlist places (review: an
+    unchanged save must not spend the next offer)."""
+    old_people, old_units, was_closed = before
+    reopened = was_closed and gb.joins_closed_at is None
+    return reopened or _cap_grew(old_people, gb.max_participants) or _cap_grew(old_units, gb.max_units)
+
+
 def _refuse_unless_running(gb: GroupBuy) -> None:
     if gb.status not in ("open", "funded"):
         raise HTTPException(status_code=400, detail=_NOT_OPEN)
@@ -62,6 +90,11 @@ def update_commit(  # noqa: PLR0913 — FastAPI-injected args
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    # Her commit first: a stranger learns nothing about a hidden group (review).
+    if not db.query(GroupBuyCommit.id).filter(
+        GroupBuyCommit.group_buy_id == group_buy_id, GroupBuyCommit.user_id == current_user.id
+    ).first():
+        raise HTTPException(status_code=404, detail="לא נמצאה הצטרפות")
     gb = _locked(db, group_buy_id)
     _refuse_unless_running(gb)
     commit = (
@@ -153,12 +186,10 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    _refuse_unless_owner(db, group_buy_id, current_user)
     gb = _locked(db, group_buy_id)
-    # IDOR (security.md): the owning business, or an admin.
-    is_owner = bool(current_user.producer_id and current_user.producer_id == gb.producer_id)
-    if not (is_owner or current_user.role == "admin"):
-        raise HTTPException(status_code=403, detail="אין הרשאה לשנות את קבוצת הרכישה הזאת")
     _refuse_unless_running(gb)
+    before = (gb.max_participants, gb.max_units, gb.joins_closed_at is not None)
     people, units = capacity.counts(db, gb.id)
     sent = data.model_fields_set
     # Eventbrite: capacity can change, never below what is already sold.
@@ -166,6 +197,11 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
         if data.max_participants is not None and data.max_participants < people:
             raise HTTPException(
                 status_code=400, detail=f"כבר הצטרפו {people}, אי אפשר להגביל לפחות מזה"
+            )
+        if data.max_participants is not None and data.max_participants < gb.min_participants:
+            raise HTTPException(
+                status_code=400,
+                detail=f"המקסימום לא יכול להיות קטן מהיעד ({gb.min_participants} משתתפים)",
             )
         gb.max_participants = data.max_participants  # type: ignore[assignment]
     if "max_units" in sent:
@@ -177,7 +213,8 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
     if data.joins_open is not None:
         gb.joins_closed_at = None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]
     db.flush()
-    capacity.offer_freed_place(db, gb, background_tasks)
+    if _room_grew(before, gb):
+        capacity.offer_freed_place(db, gb, background_tasks)
     db.commit()
     return {
         "detail": "ההגדרות נשמרו",

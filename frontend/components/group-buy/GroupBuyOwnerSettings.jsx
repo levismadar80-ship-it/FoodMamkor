@@ -19,8 +19,10 @@ import { showToast } from "@/lib/toast";
 
 /** @param {number | string | null | undefined} v */
 const toField = (v) => (v == null ? "" : String(v));
-/** @param {string} v */
-const toCap = (v) => (String(v).trim() === "" ? null : Math.max(1, Math.floor(Number(v)) || 1));
+// The server takes a people cap of 2 or more (GroupBuySettingsUpdate, ge=2).
+const PEOPLE_MIN = 2;
+/** @param {string} v @param {number} floor */
+const toCap = (v, floor) => (String(v).trim() === "" ? null : Math.max(floor, Math.floor(Number(v)) || floor));
 
 /** @param {{ gb: any, onSaved: () => Promise<void> | void }} props */
 export default function GroupBuyOwnerSettings({ gb, onSaved }) {
@@ -62,12 +64,12 @@ export default function GroupBuyOwnerSettings({ gb, onSaved }) {
       {open && (
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("max_people")} type="number" min={1} value={maxPeople} onChange={(e) => setMaxPeople(e.target.value)} placeholder={t("no_cap")} dir="ltr" />
+            <Input label={t("max_people")} type="number" min={PEOPLE_MIN} value={maxPeople} onChange={(e) => setMaxPeople(e.target.value)} placeholder={t("no_cap")} dir="ltr" />
             <Input label={t("max_units")} type="number" min={1} value={maxUnits} onChange={(e) => setMaxUnits(e.target.value)} placeholder={t("no_cap")} dir="ltr" />
           </div>
           <p className="text-xs text-fg-muted">{t("caps_hint")}</p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary" size="md" disabled={busy} onClick={() => send({ max_participants: toCap(maxPeople), max_units: toCap(maxUnits) })} data-testid="group-buy-settings-save">
+            <Button variant="primary" size="md" disabled={busy} onClick={() => send({ max_participants: toCap(maxPeople, PEOPLE_MIN), max_units: toCap(maxUnits, 1) })} data-testid="group-buy-settings-save">
               {t("save")}
             </Button>
             <Button variant="outlined" size="md" disabled={busy} onClick={() => send({ joins_open: Boolean(gb.joins_closed) })} data-testid="group-buy-joins-switch">

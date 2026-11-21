@@ -1290,9 +1290,10 @@
       "waitlisted": "You're on the waitlist. If a place frees up, we'll email you.",
       "waitlist_leave": "Leave the waitlist",
       "waitlist_cta": "Join the waitlist",
-      "waitlist_hint": "When a place frees up, the first people on the list get an email. The place goes to whoever joins first.",
+      "waitlist_hint": "When a place frees up, people on the list get an email in the order they signed up. The place goes to whoever joins first.",
       "joins_closed": "The business has stopped new joins for this group",
-      "funded_subtitle_closed": "The group reached its goal. Joining is closed."
+      "funded_subtitle_closed": "The group reached its goal. Joining is closed.",
+      "committed_qty_unit": " ({count} {unit})"
     },
     "dashboard": {
       "status": {

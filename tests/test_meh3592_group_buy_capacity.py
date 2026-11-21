@@ -237,3 +237,125 @@ def test_a_join_before_the_goal_does_not_mail_the_business_as_late(client, db, m
     gb, _ = _group(db, min_participants=3)
     assert _join(client, gb, make_user(db, email="a@example.com")).status_code == 201
     assert not [c for c in mail if c[0] == "late"]
+
+
+# --- review round 1 (rule 5a) ----------------------------------------------
+
+
+def _full_with_waitlist(db, client, n_wait=2, **kw):
+    gb, owner = _group(db, max_participants=2, **kw)
+    a = _member(db, gb, "a@example.com")
+    _member(db, gb, "b@example.com")
+    waiters = []
+    for i in range(n_wait):
+        w = make_user(db, email=f"w{i}@example.com")
+        assert client.post(f"/group-buys/{gb.id}/waitlist", json={}, headers=auth_header(w)).status_code == 201
+        waiters.append(w)
+    return gb, owner, a, waiters
+
+
+def test_admin_can_change_settings(client, db, mail):
+    gb, _ = _group(db)
+    admin = make_user(db, email="admin3592@example.com", role="admin")
+    r = client.patch(f"/group-buys/{gb.id}/settings", json={"joins_open": False}, headers=auth_header(admin))
+    assert r.status_code == 200 and r.json()["joins_closed"] is True
+
+
+def test_stranger_gets_404_on_a_hidden_group(client, db):
+    producer, _ = _producer_user(db, email="hidden3592@example.com", status="pending")
+    gb = _make_group_buy(db, producer)
+    r = client.patch(f"/group-buys/{gb.id}/settings", json={"joins_open": False}, headers=auth_header(make_user(db, email="x@example.com")))
+    assert r.status_code == 404
+
+
+def test_cap_below_the_goal_is_refused(client, db):
+    gb, owner = _group(db, min_participants=4)
+    r = client.patch(f"/group-buys/{gb.id}/settings", json={"max_participants": 3}, headers=auth_header(owner))
+    assert r.status_code == 400 and "4" in r.json()["detail"]
+
+
+def test_a_quantity_decrease_offers_the_waitlist(client, db, mail):
+    gb, owner = _group(db, max_units=4)
+    a = _member(db, gb, "a@example.com", quantity=4)
+    w = make_user(db, email="w@example.com")
+    assert client.post(f"/group-buys/{gb.id}/waitlist", json={}, headers=auth_header(w)).status_code == 201
+    assert client.patch(f"/group-buys/{gb.id}/commit", json={"quantity": 3}, headers=auth_header(a)).status_code == 200
+    assert ("place", "w@example.com") in mail
+
+
+def test_toggling_a_quantity_does_not_burn_the_waitlist(client, db, mail):
+    """Down, up, down: the first row is offered once; the second is told on the
+    second free place, and after 24 h the first can be told again."""
+    gb, _ = _group(db, max_units=4)
+    a = _member(db, gb, "a@example.com", quantity=4)
+    for e in ("w1@example.com", "w2@example.com"):
+        client.post(f"/group-buys/{gb.id}/waitlist", json={}, headers=auth_header(make_user(db, email=e)))
+    h = auth_header(a)
+    for q in (3, 4, 3, 4, 3):
+        assert client.patch(f"/group-buys/{gb.id}/commit", json={"quantity": q}, headers=h).status_code == 200
+    places = [c[1] for c in mail if c[0] == "place"]
+    assert places == ["w1@example.com", "w2@example.com"]
+    db.query(GroupBuyWaitlist).filter_by(group_buy_id=gb.id).update(
+        {GroupBuyWaitlist.offered_at: utc_now() - timedelta(hours=25)}
+    )
+    db.commit()
+    client.patch(f"/group-buys/{gb.id}/commit", json={"quantity": 4}, headers=h)
+    client.patch(f"/group-buys/{gb.id}/commit", json={"quantity": 3}, headers=h)
+    assert [c[1] for c in mail if c[0] == "place"][-1] == "w1@example.com"
+
+
+def test_raising_the_cap_by_two_tells_two(client, db, mail):
+    gb, owner, _, _ = _full_with_waitlist(db, client, n_wait=3)
+    client.patch(f"/group-buys/{gb.id}/settings", json={"max_participants": 4}, headers=auth_header(owner))
+    assert [c[1] for c in mail if c[0] == "place"] == ["w0@example.com", "w1@example.com"]
+
+
+def test_an_unchanged_save_tells_nobody(client, db, mail):
+    gb, owner, _, _ = _full_with_waitlist(db, client)
+    client.patch(f"/group-buys/{gb.id}/settings", json={"max_participants": 2}, headers=auth_header(owner))
+    client.patch(f"/group-buys/{gb.id}/settings", json={"joins_open": True}, headers=auth_header(owner))
+    assert not [c for c in mail if c[0] == "place"]
+
+
+def test_reopening_joins_tells_the_waitlist(client, db, mail):
+    gb, owner = _group(db, max_participants=3)
+    _member(db, gb, "a@example.com")
+    _member(db, gb, "b@example.com")
+    h = auth_header(owner)
+    client.patch(f"/group-buys/{gb.id}/settings", json={"max_participants": 2}, headers=h)
+    w = make_user(db, email="w@example.com")
+    client.post(f"/group-buys/{gb.id}/waitlist", json={}, headers=auth_header(w))
+    client.patch(f"/group-buys/{gb.id}/settings", json={"joins_open": False}, headers=h)
+    client.patch(f"/group-buys/{gb.id}/settings", json={"joins_open": True, "max_participants": 3}, headers=h)
+    assert ("place", "w@example.com") in mail
+
+
+def test_waitlist_refuses_a_participant_and_a_second_row(client, db):
+    gb, _, a, waiters = _full_with_waitlist(db, client, n_wait=1)
+    assert client.post(f"/group-buys/{gb.id}/waitlist", json={}, headers=auth_header(a)).status_code == 400
+    assert client.post(f"/group-buys/{gb.id}/waitlist", json={}, headers=auth_header(waiters[0])).status_code == 400
+
+
+@pytest.mark.parametrize("body", [{"quantity": 0}, {"quantity": 101}])
+def test_quantity_bounds(client, db, body):
+    gb, _ = _group(db)
+    a = _member(db, gb, "a@example.com")
+    assert client.patch(f"/group-buys/{gb.id}/commit", json=body, headers=auth_header(a)).status_code == 422
+
+
+def test_cap_bounds(client, db):
+    gb, owner = _group(db)
+    h = auth_header(owner)
+    assert client.patch(f"/group-buys/{gb.id}/settings", json={"max_units": 0}, headers=h).status_code == 422
+    assert client.patch(f"/group-buys/{gb.id}/settings", json={"max_participants": 1}, headers=h).status_code == 422
+
+
+def test_a_regrown_group_tells_the_business_of_the_join(client, db, mail):
+    """Funded, a leave drops it to open, a new join crosses the goal again:
+    the funded mail is latched, so the business hears of it as a late join."""
+    gb, _ = _group(db, min_participants=2, deadline=utc_now() + timedelta(days=3))
+    gb.funded_notified_at = utc_now()
+    db.commit()
+    _member(db, gb, "a@example.com")
+    assert _join(client, gb, make_user(db, email="c@example.com")).status_code == 201
+    assert ("late", "owner3592@example.com", 2, 2) in mail

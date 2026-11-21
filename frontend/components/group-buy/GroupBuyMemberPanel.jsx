@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import GroupBuyLineTotal from "@/components/group-buy/GroupBuyLineTotal";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
@@ -48,7 +49,9 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
     <div className="space-y-3" data-testid="group-buy-member">
       <div className="rounded-md bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
         {t("committed_confirm")}
-        {current > 1 && t("committed_units", { count: current })}
+        {gb.unit
+          ? t("committed_qty_unit", { count: current, unit: gb.unit })
+          : current > 1 && t("committed_units", { count: current })}
       </div>
       {joinable && full && (
         <p className="text-sm text-fg-muted text-center" data-testid="group-buy-full-member">{t("full_member")}</p>
@@ -73,6 +76,7 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
           </Button>
         </div>
       )}
+      {joinable && <GroupBuyLineTotal gb={gb} quantity={qty} />}
       {error && <InlineMessage>{error}</InlineMessage>}
       {joinable && (
         <button

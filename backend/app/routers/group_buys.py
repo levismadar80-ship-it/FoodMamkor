@@ -84,7 +84,7 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict[str, Any]:
         commit = next((c for c in gb.commits if c.user_id == current_user.id), None)
         base["user_committed"] = commit is not None
         base["user_commit"] = commit
-        base["user_waitlisted"] = any(w.user_id == current_user.id for w in gb.waitlist)
+        base["user_waitlisted"] = capacity.is_waitlisted(gb, current_user.id)
     else:
         base["user_committed"] = False
         base["user_commit"] = None
@@ -386,8 +386,13 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         _notify_late_joiner(gb, current_user, background_tasks)
         capacity.tell_owner_of_late_join(db, gb, background_tasks)  # MEH-3592
     elif new_count >= gb.min_participants:
+        # MEH-3592: a group that fell back to open and re-crosses the goal is a
+        # join after the goal for the business — the funded mail is latched.
+        refunded = gb.funded_notified_at is not None
         gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
+        if refunded:
+            capacity.tell_owner_of_late_join(db, gb, background_tasks)
 
     db.commit()
     db.refresh(commit)
