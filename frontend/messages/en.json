@@ -7465,9 +7465,9 @@
     },
     "items": {
       "gallery_story": {
-        "label": "Photo gallery, About and Behind the business",
+        "label": "Photo gallery, logo, About and Behind the business",
         "tile_title": "Gallery and story",
-        "tile_line": "Photos, \"About\" and \"Behind the business\""
+        "tile_line": "Logo, photos, \"About\" and \"Behind the business\""
       },
       "page_fill": {
         "label": "Fill the page from free text: write about the business, check, approve"
