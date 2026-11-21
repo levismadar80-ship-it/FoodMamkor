@@ -40,6 +40,15 @@ from app.services.group_buy_notifications import (
 from app.services import indexnow  # MEH-2852
 from app.services import group_buy_capacity as capacity  # MEH-3592
 from app.services.producer_listing import is_business
+from app.services.group_buy_pickup_text import (
+    is_delivery_only,
+    pickup_lines,
+)  # MEH-3597
+from app.services.group_buy_pickup_place import (  # MEH-3610
+    location_out,
+    own_location,
+    place_line,
+)
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -74,6 +83,13 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict[str, Any]:
         "fulfillment_note": gb.fulfillment_note,
         "pickup_note": gb.pickup_note,
         "delivery_note": gb.delivery_note,
+        "pickup_starts_at": gb.pickup_starts_at,  # MEH-3597
+        "pickup_ends_at": gb.pickup_ends_at,
+        "allergens": gb.allergens,  # MEH-3610
+        # A delivery-only group has no pickup place, even if one was saved.
+        "pickup_location": None
+        if _delivery_only(gb)
+        else location_out(gb.pickup_location),
         "status": gb.status,
         "commits_count": commits_count,
         # MEH-3592: caps beyond people. units_left is a number, never a roster.
@@ -152,7 +168,11 @@ def list_group_buys(
     # shares that query and only counts rows, so loading commits there would be
     # waste in the other direction.
     items = (
-        q.options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        q.options(
+            selectinload(GroupBuy.commits),
+            selectinload(GroupBuy.producer),
+            selectinload(GroupBuy.pickup_location),  # MEH-3610: _enrich reads it
+        )
         .order_by(GroupBuy.deadline.asc())
         .all()
     )
@@ -208,7 +228,11 @@ def list_my_group_buys(
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
     items = (
         db.query(GroupBuy)
-        .options(selectinload(GroupBuy.commits), selectinload(GroupBuy.producer))
+        .options(
+            selectinload(GroupBuy.commits),
+            selectinload(GroupBuy.producer),
+            selectinload(GroupBuy.pickup_location),  # MEH-3610
+        )
         .filter(GroupBuy.producer_id == current_user.producer_id)
         .order_by(GroupBuy.created_at.desc())
         .all()
@@ -297,6 +321,23 @@ def _maybe_notify_funded(
         str(gb.producer_id),
         # MEH-2952: a test business's group buy mails nobody.
         test_cause=bool(gb.producer and gb.producer.is_test),
+        pickup=_pickup_text(gb),  # MEH-3597
+    )
+
+
+def _delivery_only(gb: GroupBuy) -> bool:
+    return is_delivery_only(gb.pickup_note, gb.delivery_note, gb.fulfillment_note)  # type: ignore[arg-type]
+
+
+def _pickup_text(gb: GroupBuy) -> str:
+    # MEH-3610: the branch first, then the time and the notes. A
+    # delivery-only group names no branch (same rule as the page).
+    place = "" if _delivery_only(gb) else place_line(gb.pickup_location)
+    return place + pickup_lines(
+        gb.pickup_starts_at,  # type: ignore[arg-type]
+        gb.pickup_ends_at,  # type: ignore[arg-type]
+        gb.pickup_note,  # type: ignore[arg-type]
+        gb.delivery_note,  # type: ignore[arg-type]
     )
 
 
@@ -318,6 +359,7 @@ def _notify_late_joiner(
         str(gb.id),
         str(gb.producer_id),
         test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+        pickup=_pickup_text(gb),  # MEH-3597
         late_joiner=True,
     )
 
@@ -554,6 +596,10 @@ def create_group_buy(
         fulfillment_note=data.fulfillment_note,
         pickup_note=data.pickup_note,
         delivery_note=data.delivery_note,
+        pickup_starts_at=data.pickup_starts_at,  # MEH-3597
+        pickup_ends_at=data.pickup_ends_at,
+        allergens=data.allergens,  # MEH-3610
+        pickup_location_id=own_location(db, producer.id, data.pickup_location_id),
         status="open",
     )
     db.add(gb)

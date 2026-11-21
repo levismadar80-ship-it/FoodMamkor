@@ -30,6 +30,8 @@ import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import GroupBuyProductPicker from "@/components/GroupBuyProductPicker";
 import GroupBuyOwnerSettings from "@/components/group-buy/GroupBuyOwnerSettings"; // MEH-3592
+import GroupBuySafetyFields from "@/components/group-buy/GroupBuySafetyFields"; // MEH-3610
+import GroupBuyPickupWindowFields, { pickupWindowPayload } from "@/components/group-buy/GroupBuyPickupWindowFields"; // MEH-3597
 import InlineMessage from "@/components/ui/InlineMessage";
 import { israelWallClockToIso, parseNaiveUtc } from "@/lib/dates";
 import StruckPrice from "@/components/ui/StruckPrice";
@@ -68,6 +70,8 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
     deadline: "",
     city: producerCity || "",
     pickup_note: "",
+    pickup_start: "", // MEH-3597
+    pickup_end: "",
     delivery_note: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -80,7 +84,11 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
   // The error sits under the pair, not at the end of the form.
   const [noteError, setNoteError] = useState(null);
   const pickupRef = useRef(null);
+  const [windowError, setWindowError] = useState(/** @type {string | null} */ (null));
   const deliveryRef = useRef(null);
+  // MEH-3610: the pickup branch and the allergens, as a rescue bag carries.
+  const [allergens, setAllergens] = useState(/** @type {string[]} */ ([]));
+  const [locationId, setLocationId] = useState("");
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -108,10 +116,18 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
       (invalid[0] === "pickup" ? pickupRef : deliveryRef).current?.focus();
       return;
     }
+    // MEH-3597: the optional pickup window, both halves or neither.
+    const { pickup_start: pickupStart, pickup_end: pickupEnd, ...rest } = form;
+    const pickupWindow = pickupWindowPayload(pickupStart, pickupEnd);
+    if ("error" in pickupWindow) {
+      setWindowError(pickupWindow.error);
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post("/group-buys", {
-        ...form,
+        ...rest,
+        ...pickupWindow,
         // Blank means "not offered" — sent as null, never as "".
         pickup_note: pickupNote || null,
         delivery_note: deliveryNote || null,
@@ -120,6 +136,9 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
         min_participants: Number(form.min_participants),
         max_participants: form.max_participants ? Number(form.max_participants) : undefined,
         max_units: form.max_units ? Number(form.max_units) : undefined, // MEH-3592
+        // MEH-3610: nothing ticked = not declared (null), never «contains none».
+        allergens: allergens.length ? allergens : null,
+        pickup_location_id: locationId || null,
         // MEH-3219 B13: the field says «לפי שעון ישראל» — read it in Israel,
         // not in the device's zone.
         deadline: israelWallClockToIso(form.deadline),
@@ -338,6 +357,20 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
             </p>
           )}
         </fieldset>
+        <GroupBuyPickupWindowFields
+          start={form.pickup_start}
+          endTime={form.pickup_end}
+          onStart={(e) => { setWindowError(null); set("pickup_start")(e); }}
+          onEnd={(e) => { setWindowError(null); set("pickup_end")(e); }}
+          error={windowError}
+        />
+        <GroupBuySafetyFields
+          idPrefix="gb-new"
+          allergens={allergens}
+          onAllergens={setAllergens}
+          locationId={locationId}
+          onLocation={setLocationId}
+        />
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}

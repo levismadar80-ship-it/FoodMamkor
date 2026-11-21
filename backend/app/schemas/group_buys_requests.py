@@ -7,11 +7,13 @@ Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Literal, Self
 from uuid import UUID
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from app.allergens import normalize_allergens
+from app.limits import MAX_TAG_LIST
 from app.services.sanitization import sanitize_text
 from app.schemas.schemas import (
     SanitizedLabelField,
@@ -33,6 +35,19 @@ class GroupBuyCommitOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class GroupBuyPickupLocationOut(BaseModel):
+    """MEH-3610: the branch a group buy is picked up from, as public as the
+    business made it. An `approximate` branch gives the city only — no street
+    and no pin (MEH-829, the product_order_views.pickup_address rule)."""
+
+    id: UUID
+    label: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
 
 
 class GroupBuyOut(BaseModel):
@@ -66,6 +81,13 @@ class GroupBuyOut(BaseModel):
     max_units: int | None = None
     joins_closed: bool = False
     units_left: int | None = None
+    # MEH-3597: the pickup window (naive UTC), or null.
+    pickup_starts_at: datetime | None = None
+    pickup_ends_at: datetime | None = None
+    # MEH-3610: what the business declares (null = nothing declared — the page
+    # says so in words), and the branch people pick up from.
+    allergens: list[str] | None = None
+    pickup_location: GroupBuyPickupLocationOut | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -109,6 +131,31 @@ class GroupBuyCreate(BaseModel):
     fulfillment_note: str | None = Field(None, max_length=1000)
     pickup_note: str | None = Field(None, max_length=1000)
     delivery_note: str | None = Field(None, max_length=1000)
+    # MEH-3597: an optional pickup window. Both or neither; end after start.
+    pickup_starts_at: datetime | None = None
+    pickup_ends_at: datetime | None = None
+    # MEH-3610: allergens (as a rescue bag) and the pickup branch. The router
+    # checks the branch is this business's own.
+    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    pickup_location_id: UUID | None = None
+
+    @field_validator("allergens")
+    @classmethod
+    def _known_allergens_only(cls, v: list[str] | None) -> list[str] | None:
+        return _known_allergens(v)
+
+    @field_validator("pickup_starts_at", "pickup_ends_at")
+    @classmethod
+    def _pickup_to_naive_utc(cls, v: datetime | None) -> datetime | None:
+        return _naive_utc(v)
+
+    @model_validator(mode="after")
+    def _pickup_window_whole(self) -> Self:
+        _check_pickup_window(self.pickup_starts_at, self.pickup_ends_at)
+        # MEH-3597 review: pickup comes once joining has closed.
+        if self.pickup_starts_at is not None and self.pickup_starts_at < self.deadline:
+            raise ValueError(PICKUP_BEFORE_DEADLINE)
+        return self
 
     # MEH-1626 chunk 1: description gets the same bleach every other
     # description field in this module has (EventCreate:2528, HomeProductCreate,
@@ -159,6 +206,39 @@ class GroupBuyCreate(BaseModel):
         return v
 
 
+# MEH-3597: a pickup window longer than this is not a window.
+PICKUP_WINDOW_MAX = timedelta(days=7)
+
+
+def _naive_utc(v: datetime | None) -> datetime | None:
+    """Aware → naive UTC, the one world of `deadline` (MEH-1454)."""
+    if v is not None and v.tzinfo is not None:
+        try:
+            v = v.astimezone(timezone.utc).replace(tzinfo=None)
+        except OverflowError as exc:  # year 9999 + an offset: 422, not 500
+            raise ValueError("התאריך מחוץ לטווח") from exc
+    return v
+
+
+PICKUP_BEFORE_DEADLINE = "האיסוף צריך להתחיל אחרי המועד האחרון להצטרפות"
+
+
+def _known_allergens(value: list[str] | None) -> list[str] | None:
+    """MEH-3610: the bag's rule (schemas/rescue.RescueTypicalItemsIn) — one
+    helper decides a valid code, an unknown one is a 422, [] becomes None."""
+    return normalize_allergens(value)
+
+
+def _check_pickup_window(start: datetime | None, end: datetime | None) -> None:
+    if (start is None) != (end is None):
+        raise ValueError("יש למלא גם את תחילת האיסוף וגם את סופו")
+    if start is not None and end is not None:
+        if end <= start:
+            raise ValueError("סוף האיסוף צריך להיות אחרי תחילתו")
+        if end - start > PICKUP_WINDOW_MAX:
+            raise ValueError("חלון האיסוף יכול להיות עד שבוע")
+
+
 class GroupBuyCommitRequest(BaseModel):
     quantity: int = Field(1, ge=1, le=100)
     # MEH-1651: `phone` removed. MEH-1626 chunk 1 had added a PhoneNumberField
@@ -190,6 +270,32 @@ class GroupBuySettingsUpdate(BaseModel):
     max_participants: int | None = Field(None, ge=2)
     max_units: int | None = Field(None, ge=1, le=100000)
     joins_open: bool | None = None
+    # MEH-3597: set or change the pickup window while the group runs; both
+    # sent together, or both null to clear it.
+    pickup_starts_at: datetime | None = None
+    pickup_ends_at: datetime | None = None
+    # MEH-3610: change the allergens or the branch while the group runs; an
+    # explicit null clears either.
+    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    pickup_location_id: UUID | None = None
+
+    @field_validator("allergens")
+    @classmethod
+    def _known_allergens_only(cls, v: list[str] | None) -> list[str] | None:
+        return _known_allergens(v)
+
+    @field_validator("pickup_starts_at", "pickup_ends_at")
+    @classmethod
+    def _pickup_to_naive_utc(cls, v: datetime | None) -> datetime | None:
+        return _naive_utc(v)
+
+    @model_validator(mode="after")
+    def _pickup_window_whole(self) -> Self:
+        sent = self.model_fields_set & {"pickup_starts_at", "pickup_ends_at"}
+        if sent and len(sent) == 1:
+            raise ValueError("יש למלא גם את תחילת האיסוף וגם את סופו")
+        _check_pickup_window(self.pickup_starts_at, self.pickup_ends_at)
+        return self
 
 
 # MEH-2436: the owner's status change. The four values are the whole domain of

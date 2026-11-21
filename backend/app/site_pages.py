@@ -79,6 +79,7 @@ NOT_FOR_ASSISTANT: Final[dict[str, str]] = {
     "/forgot-password": "reached from /login",
     "/freshness/confirm": _FLOW,
     "/messages": "the signed-in visitor's own inbox, reached from the header",
+    "/my-group-buys": "the signed-in visitor's own group buys, reached from the header menu",
     "/my-orders": "the signed-in buyer's own orders, reached from the header menu",
     "/newsletter/confirm": _FLOW,
     "/newsletter/unsubscribe": _FLOW,

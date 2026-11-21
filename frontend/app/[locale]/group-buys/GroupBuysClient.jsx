@@ -3,8 +3,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { ShoppingCart, Clock, MapPin, Truck } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { ShoppingCart, Clock, MapPin, Truck, CalendarBlank } from "@phosphor-icons/react";
+import { useTranslations, useLocale } from "next-intl";
 import HubShell from "@/components/HubShell";
 import api from "@/lib/api";
 import Image from "next/image";
@@ -22,6 +22,7 @@ import HubAlertHint from "@/components/HubAlertHint";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { parseNaiveUtc } from "@/lib/dates";
 import StruckPrice from "@/components/ui/StruckPrice";
+import { pickupWindowText } from "@/lib/group-buy-pickup"; // MEH-3597
 
 // MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
 // this page's own MEH-797 photo retired so a tab switch never swaps images.
@@ -34,6 +35,10 @@ import StruckPrice from "@/components/ui/StruckPrice";
 function GroupBuyCard({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
+  const locale = useLocale();
+  // MEH-3597: no pickup time on a delivery-only group.
+  const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
+  const pickupWhen = deliveryOnly ? null : pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
   const funded = gb.status === "funded";
   const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
   // MEH-3219 B13: naive UTC, parsed as UTC.
@@ -130,6 +135,13 @@ function GroupBuyCard({ gb }) {
             <Clock size={16} aria-hidden="true" className="shrink-0" />
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
+          {pickupWhen && (
+            <span className="inline-flex items-start gap-1.5 min-w-0" data-testid="group-buy-card-pickup-window">
+              <CalendarBlank size={16} aria-hidden="true" className="shrink-0 mt-0.5" />
+              {/* wraps, not truncate: the hours are at the end of the line */}
+              <span>{t("pickup_when", { when: pickupWhen })}</span>
+            </span>
+          )}
           {/* MEH-2621 split (UI): one short line per answer (pickup / delivery); a group
               made before the split shows its single note as before. */}
           {(gb.pickup_note || gb.delivery_note

@@ -65,6 +65,7 @@ left in v1" vs "what's planned for v2".
 | `/verify-email` | Email verification landing |
 | `/account-deleted` | Landing after an account is deleted (MEH-3248) |
 | `/favorites` | Saved businesses and items, with alert preferences (new events, group buys, rescue bags) |
+| `/my-group-buys` | MEH-3609: «הקבוצות שלי», the group buys the signed-in person joined, running ones first; each row opens `/group-buys/[id]`. Linked from the account menus |
 | `/my-orders` | MEH-3525: the signed-in buyer's on-site orders, newest first; each row opens `/order/[id]`. Linked from the account menus while ordering is on |
 | `/messages` | Messages between visitors and businesses |
 | `/settings` | Profile, security, notifications, delete account |

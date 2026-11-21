@@ -38,7 +38,7 @@ vi.mock("next/image", () => ({
   default: ({ src, alt, onError }) => <img src={src} alt={alt} data-testid="gb-img" onError={onError} />,
 }));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u, IMAGE_RATIOS: {} }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "20 בנובמבר 2099" }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "20 בנובמבר 2099", formatDate: () => "20 בנובמבר 2099" }));
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
