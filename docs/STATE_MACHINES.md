@@ -178,6 +178,7 @@ funded on purpose: the owner fulfils or cancels it.
 | Newsletter | subscribed (row) · gone | form, signed unsubscribe link (`routers/marketing.py`) |
 | Weekly summary to owners | on · opted out (one way, by link) | `routers/marketing.py` |
 | Favorite alerts | per favorite: which alerts, WhatsApp opt-in | `routers/alerts.py`; removing the favorite removes them |
+| Queued email (`email_outbox.outcome`, MEH-3535) | pending → sent / skipped (a final non-send answer, or `stale` after 2 days) / failed (5 tries, a provider error or a crash on the row each spending one); a try that fails keeps it pending with a later `send_after` | the outbox dispatcher only (`services/email_outbox.py:dispatch_due`), run by the worker or the web scheduler |
 | Billing ledger (`billable_events`) | counted · voided | `services/billing_ledger.py`, on sign-up, handover, group-buy fulfilment; voided when the booking is cancelled |
 
 ## Every status column

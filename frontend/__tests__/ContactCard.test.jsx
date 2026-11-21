@@ -20,7 +20,8 @@ vi.mock("next-intl", () => ({
       "producer.detail.contact_card.aria.email": "אימייל",
       "producer.detail.contact_card.aria.facebook": "פייסבוק",
       "producer.detail.contact_card.aria.external_order": "טופס הזמנות",
-      "producer.detail.contact_card.aria.whatsapp_group": "עדכונים",
+      "producer.detail.contact_card.aria.whatsapp_channel": "ערוץ וואטסאפ",
+      "producer.detail.contact_card.aria.whatsapp_group_chat": "קבוצת וואטסאפ",
       "whatsapp.question_chips.ask_us": "שאלו אותנו",
       "whatsapp.question_chips.delivery_to_my_area": "אפשר משלוח לאזור שלי?",
       // MEH-1233 B2: ל attaches directly to the city, no maqaf ("לזכרון", not "ל-זכרון").
@@ -56,7 +57,8 @@ vi.mock("@phosphor-icons/react", () => {
     Phone: Stub,
     Receipt: Stub,
     WhatsappLogo: Stub,
-    Bell: Stub, // MEH-2626: the «עדכונים» channel icon (module-scope in CHANNELS)
+    Megaphone: Stub, // MEH-3585: the WhatsApp channel / group icons (module-scope in CHANNELS)
+    UsersThree: Stub,
     // MEH-1168 P1 / MEH-1302: stubs from when WhatsAppQuestionChips was a
     // child of the card (it left in MEH-3460); harmless, kept for any reuse.
     ChatCircle: Stub,
