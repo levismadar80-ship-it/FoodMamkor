@@ -10691,25 +10691,6 @@
         "title": "ProducerAdminUpdate",
         "type": "object"
       },
-      "ProducerCityOut": {
-        "description": "MEH-970 — one row of GET /producers/cities: live approved-producer\ncount for a single city, consumed by the /map region control.",
-        "properties": {
-          "city": {
-            "title": "City",
-            "type": "string"
-          },
-          "count": {
-            "title": "Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "city",
-          "count"
-        ],
-        "title": "ProducerCityOut",
-        "type": "object"
-      },
       "ProducerClaimLinkOut": {
         "properties": {
           "expires_at": {
@@ -19516,34 +19497,6 @@
         "title": "ReviewsPage",
         "type": "object"
       },
-      "RiskScoreResponse": {
-        "properties": {
-          "reasoning": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reasoning"
-          },
-          "score": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Score"
-          }
-        },
-        "title": "RiskScoreResponse",
-        "type": "object"
-      },
       "SavedEventOut": {
         "properties": {
           "category": {
@@ -20192,19 +20145,6 @@
           }
         },
         "title": "SearchOut",
-        "type": "object"
-      },
-      "SetAmbassadorIn": {
-        "properties": {
-          "ambassador": {
-            "title": "Ambassador",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ambassador"
-        ],
-        "title": "SetAmbassadorIn",
         "type": "object"
       },
       "StaticPageOut": {
@@ -25053,110 +24993,6 @@
         "summary": "Revoke Verified",
         "tags": [
           "admin"
-        ]
-      }
-    },
-    "/admin/producers/{producer_id}/risk-score": {
-      "get": {
-        "operationId": "get_producer_risk_score_admin_producers__producer_id__risk_score_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RiskScoreResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Get Producer Risk Score",
-        "tags": [
-          "admin-extra"
-        ]
-      }
-    },
-    "/admin/producers/{producer_id}/set-ambassador": {
-      "post": {
-        "operationId": "set_ambassador_admin_producers__producer_id__set_ambassador_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetAmbassadorIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Set Ambassador",
-        "tags": [
-          "admin-kashrut"
         ]
       }
     },
@@ -30728,32 +30564,6 @@
           }
         },
         "summary": "Get Producer By Slug",
-        "tags": [
-          "producers"
-        ]
-      }
-    },
-    "/producers/cities": {
-      "get": {
-        "description": "MEH-970 — per-city approved-producer counts for the /map region control.\n\nGROUP BY city over approved producers only. NULL / blank cities are\nomitted so a chip never lands on an empty map (empty-region guard). Counts\nare computed live from the DB — never hardcoded (over-claim guard MEH-519).\nOrdered by count desc, then city name. Returns ``[{\"city\": str, \"count\": int}]``.\nThe /map frontend buckets these into regions client-side (MEH-970 chunk 2).\n\nMEH-1986: the empty-region guard now also covers availability. It existed\nfor blank city names only, so a city whose every producer was on vacation\nstill published a chip — and the catalog behind that chip returns nothing.\nA city drops out entirely once its last non-vacation producer does.",
-        "operationId": "producers_cities_producers_cities_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProducerCityOut"
-                  },
-                  "title": "Response Producers Cities Producers Cities Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Producers Cities",
         "tags": [
           "producers"
         ]

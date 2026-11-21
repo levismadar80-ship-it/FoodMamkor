@@ -194,7 +194,7 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         "licence-expiry list (moved from routers/admin.py, MEH-3562)",
     ),
     "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
-    "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
+    "backend/app/routers/admin_kashrut.py": (1, "admin screens (set-ambassador deleted, MEH-3527)"),
     "backend/app/routers/admin_extra.py": (
         1,
         "blocking the only owner hides a live business — a state transition, "

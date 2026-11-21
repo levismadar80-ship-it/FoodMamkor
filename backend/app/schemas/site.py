@@ -552,14 +552,6 @@ class VacationModeState(BaseModel):
         return self
 
 
-# --- Admin: producer risk score (admin_extra.py) ---
-# MEH-509 PR3: shape of GET /admin/producers/{id}/risk-score. Both fields
-# nullable — NULL means "not scored yet OR Anthropic call failed".
-class RiskScoreResponse(BaseModel):
-    score: int | None = None
-    reasoning: str | None = None
-
-
 # --- Admin: undelivered WhatsApp messages (admin_whatsapp.py) ---
 # MEH-771 Chunk C: shape of GET /admin/whatsapp/failed. One row per
 # outbound message that did NOT reach the recipient (status='failed' or
