@@ -98,6 +98,8 @@ export const ProducerListSchema = z.object({
     // MEH-3255 (D10): served on every nested category; declared so the
     // nested-parity guard does not strip it.
     requires_license: z.boolean().optional(),
+    // MEH-3076: stable key for the /en category name (lib/category-label.js).
+    slug: z.string().nullable().optional(),
   })).optional().default([]),
   slug: z.string().nullable().optional(),
   price_range: z.string().nullable().optional(),

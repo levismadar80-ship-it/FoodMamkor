@@ -7,6 +7,8 @@ import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin, ArrowLeft } from "@phosphor-icons/react";
 import { producersToMapQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
+// MEH-3076: a category's shown name follows the locale (category_names.<slug>).
+import { categoryLabel } from "@/lib/category-label";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
@@ -131,6 +133,7 @@ export default function ProducersClient({
   const t = useTranslations("producers");
   // MEH-2616: the location-error strings shared with /map's GPS button.
   const tGeo = useTranslations("map.client.errors");
+  const tRoot = useTranslations(); // MEH-3076: category_names.<slug>
   const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
   const searchParams = useSearchParams();
 
@@ -907,7 +910,7 @@ export default function ProducersClient({
       const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c ?? g.iconName ?? "");
       const style = c ? CATEGORY_STYLES[c.name] : null;
       const iconColor = c ? (style ? (style.textColor ?? style.color) : undefined) : g.iconColor;
-      const label = c ? c.name : withChipCopy({ key: g.key }).label;
+      const label = c ? categoryLabel(tRoot, c) : withChipCopy({ key: g.key }).label;
       return {
         key: g.key,
         label,
@@ -1330,6 +1333,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
   // MEH-2827 PR 4: a search that found nothing is the moment someone knows a
   // business we don't — the footer link was the only way to /recommend.
   const tNav = useTranslations("nav.footer");
+  const tRoot = useTranslations();
   // MEH-2634: ALL live categories, deliberately NOT the `visibleCategories` /
   // `categoryChips` subset the filter row uses. That subset is data-gated on
   // what the CURRENT result set loaded (`loadedCategoryIds`), and this state
@@ -1366,7 +1370,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
               data-testid="producers-empty-category"
               className="bg-surface border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
-              {c.name}
+              {categoryLabel(tRoot, c)}
             </button>
           ))}
         </div>

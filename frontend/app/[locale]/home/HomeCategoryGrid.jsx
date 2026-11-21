@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRevealSkip } from "@/lib/route-memory";
 import { useTranslations } from "next-intl";
+import { categoryLabel } from "@/lib/category-label";
 import FadeInSection from "@/components/FadeInSection";
 // MEH-2163: the no-photo glyph AND its fallback both come from the registry's
 // total lookup. The local `Leaf` import that used to supply the fallback here
@@ -94,9 +95,7 @@ export function HomeCategoryGrid({ categoryCards }) {
             resolveCategoryGlyph(card);
           // MEH-3076: the shown name comes from the messages (en has its own,
           // approved by Sapir 21/11); `card.name` stays the DB match key.
-          const label = t.has(`home.categories.names.${card.key}`)
-            ? t(`home.categories.names.${card.key}`)
-            : card.name;
+          const label = categoryLabel(t, card);
           const cardClassName = [
             // MEH-3061 (Sapir 13/11): no card frame — a photo with its name under
             // it reads as navigation, not as one more business card (the business

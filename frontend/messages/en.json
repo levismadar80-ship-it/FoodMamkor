@@ -523,19 +523,7 @@
       "eyebrow": "Categories",
       "heading": "Browse by category",
       "subheading": "Straight from the producer — no middlemen",
-      "aria": "Show category: {name}",
-      "names": {
-        "veg": "Vegetables",
-        "bread": "Bread & Baking",
-        "meat": "Meat",
-        "dairy": "Dairy & Cheese",
-        "oil": "Oils",
-        "care": "Natural Soaps",
-        "fish": "Fish",
-        "fruit": "Fruit",
-        "drinks": "Wine, Beer & Drinks",
-        "cream": "Natural Cosmetics"
-      }
+      "aria": "Show category: {name}"
     },
     "producers": {
       "heading": "Local businesses",
@@ -631,6 +619,26 @@
     "tasting": "Tasting",
     "workshop": "Workshop",
     "fermented": "Fermented"
+  },
+  "category_names": {
+    "meat": "Meat",
+    "dairy": "Dairy & Cheese",
+    "eggs": "Eggs",
+    "bread": "Bread & Baking",
+    "oil": "Oils",
+    "veg": "Vegetables",
+    "fruit": "Fruit",
+    "ferments": "Ferments & Pickles",
+    "prepared": "Ready-Made Foods",
+    "herbs": "Herbal Remedies & Supplements",
+    "care": "Natural Soaps",
+    "cosmetics": "Natural Cosmetics",
+    "candles": "Candles & Aromatics",
+    "drinks": "Wine, Beer & Drinks",
+    "spices": "Spices & Herbs",
+    "chocolate": "Artisan Chocolate & Sweets",
+    "honey": "Honey",
+    "fish": "Fish"
   },
   "seo": {
     "home": {
