@@ -12,7 +12,7 @@
 * `backend/app/services/experience_moderation.py` — בדיקת AI, נכשלת פתוח בלי `ANTHROPIC_API_KEY`.
 * `backend/app/services/experience_sessions.py` — מועדים של סדנה חוזרת (MEH-3441): עד 12 קדימה, ומקומות, המתנה ורישום כפול לכל מועד. סדנה חוזרת בלי מועדים נשארת מאגר מקומות אחד.
 * `frontend/components/ExperienceSessionsField.jsx` — «מועדים» בתוך «החוויה חוזרת» בטופס בעלת העסק (MEH-3447): שורה לכל מועד, הסרת מועד עם נרשמות שואלת קודם.
-* `frontend/components/RegistrationCta.jsx` — כפתור ההרשמה. לחיצה על וואטסאפ, התקשרות או «שאלה» נספרת לבית העסק (`trackChannelClick`, MEH-2991), כמו בדף בית העסק. קישור הרשמה חיצוני לא נספר. שומר: `frontend/__tests__/RegistrationCtaContactCount.test.jsx`.
+* `frontend/components/RegistrationCta.jsx` — כפתור ההרשמה. לחיצה על וואטסאפ, התקשרות או «שאלה» נספרת לבית העסק (`trackChannelClick`, MEH-2991), כמו בדף בית העסק. קישור הרשמה חיצוני לא נספר. שומר: `frontend/__tests__/RegistrationCtaContactCount.test.jsx`. לחיצה על וואטסאפ (הכפתור, רשימת ההמתנה או «שאלה» עם נייד) נשלחת גם ל-PostHog כאירוע `item_whatsapp_click`, עם סוג הדף, הפריט, בית העסק והקישור, כדי לראות כמה הרשמות נסגרות מחוץ לאתר. שום דבר לא נחסם (MEH-3194). שומר: `frontend/__tests__/RegistrationCtaOffSiteWhatsApp.test.jsx`.
 * `frontend/components/RegistrationSessionSelect.jsx` — «מועד», השדה הראשון בטופס ההרשמה (MEH-3447). מועד מלא נשאר לבחירה והופך לרשימת ההמתנה של אותו מועד. רשימת הנרשמות בלוח הבקרה (`frontend/components/RegistrationsList.jsx`) מקובצת לפי מועד. שומר: `frontend/__tests__/ExperienceSessionsUi.test.jsx`.
 * `frontend/lib/use-duplicate-source.js` — «שכפול» ברשימת החוויות פותח את `new?from=<id>` עם כל השדות מלאים חוץ מהתאריך. השורה נמצאת ב-`/experiences/mine` (MEH-3438). הטסט `frontend/__tests__/NewExperienceDashboardPage.test.jsx`.
 
