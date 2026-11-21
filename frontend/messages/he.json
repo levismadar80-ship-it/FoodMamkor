@@ -6953,6 +6953,7 @@
       "title": "סל הפתעה",
       "cta": "לשריין · משלמים בקופה",
       "saving": "חיסכון של {pct}%",
+      "pickup_today": "איסוף היום {from}–{until}",
       "typical": "בדרך כלל: {items}",
       "allergens_title": "אלרגנים",
       "cancel_until": "ביטול חינם עד {time}",

@@ -25,3 +25,22 @@ export function groupBuyDiscountPct(regular, group) {
   if (!(r > 0) || !Number.isFinite(g) || g >= r) return 0;
   return Math.round(((r - g) / r) * 100);
 }
+
+/**
+ * MEH-3585: how a member gets the goods — one entry per answer the business
+ * gave (MEH-2621: pickup and delivery are two fields). A group made before the
+ * split carries only `fulfillment_note`, shown as a pickup line. Blank answers
+ * are dropped, so the result is 0, 1 or 2 entries.
+ * @param {{ pickup_note?: string|null, delivery_note?: string|null, fulfillment_note?: string|null }} gb
+ * @returns {Array<{ kind: "pickup"|"delivery"|"fulfillment", note: string }>}
+ */
+export function groupBuyFulfillment(gb) {
+  const pick = (s) => (typeof s === "string" ? s.trim() : "");
+  const split = [
+    { kind: /** @type {const} */ ("pickup"), note: pick(gb?.pickup_note) },
+    { kind: /** @type {const} */ ("delivery"), note: pick(gb?.delivery_note) },
+  ].filter((e) => e.note);
+  if (split.length > 0) return split;
+  const old = pick(gb?.fulfillment_note);
+  return old ? [{ kind: "fulfillment", note: old }] : [];
+}

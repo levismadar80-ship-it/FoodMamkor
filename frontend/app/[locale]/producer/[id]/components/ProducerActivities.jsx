@@ -2,16 +2,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CaretLeft } from "@phosphor-icons/react";
+import { CaretLeft, MapPin, Truck } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { SEED_FILLS, SEED_PATH } from "@/lib/brand-seeds";
 import { formatPrice } from "@/lib/utils";
-import { groupBuyDiscountPct } from "@/lib/group-buy-progress";
+import { groupBuyDiscountPct, groupBuyFulfillment } from "@/lib/group-buy-progress";
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
+import OfferCard from "@/components/ui/OfferCard";
 import { parseNaiveUtc } from "@/lib/dates";
 
 // MEH-2602: the business page lists its open group buys and upcoming
@@ -130,53 +130,51 @@ function GroupBuyRow({ gb }) {
 
   // MEH-2827 PR 7: a SMALL card, and the whole card is the one link to the
   // group's page — no buttons inside (joining and sharing live there).
+  // MEH-3585: drawn by the shared OfferCard, the same card as the surprise bag.
   return (
-    <Link
+    <OfferCard
       href={`/group-buys/${gb.id}`}
-      data-testid="producer-group-buy-row"
-      className="flex rounded-lg border border-border bg-surface-card p-4 hover:border-primary transition focus-ring"
-    >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2 min-w-0">{gb.title}</h3>
-          {/* Forward caret: points left in Hebrew, flipped to point right in English. */}
-          <CaretLeft size={20} aria-hidden="true" className="text-primary shrink-0 mt-1 ltr:rotate-180" />
-        </div>
-        {gb.product_name && (
-          <p className="text-sm text-fg-muted" data-testid="group-buy-product-name">{gb.product_name}</p>
-        )}
-        <p className="mt-2 flex items-baseline gap-2">
-          <span dir="ltr" className="font-headline-md text-2xl font-black text-primary leading-none">
-            {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
+      testId="producer-group-buy-row"
+      title={gb.title}
+      // Forward caret: points left in Hebrew, flipped to point right in English.
+      trailing={<CaretLeft size={20} aria-hidden="true" className="text-primary shrink-0 mt-1 ltr:rotate-180" />}
+      lines={
+        <>
+          {gb.product_name && (
+            <p className="text-sm text-fg-muted" data-testid="group-buy-product-name">{gb.product_name}</p>
+          )}
+          {/* MEH-3585: where / how the goods arrive — the first thing a member
+              needs before joining, and the bag card beside it shows its address.
+              Same lines as the hub card (GroupBuysClient, MEH-2621). */}
+          {groupBuyFulfillment(gb).map(({ kind, note }) => {
+            const Icon = kind === "delivery" ? Truck : MapPin;
+            return (
+              <p key={kind} className="mt-0.5 flex items-start gap-1.5 text-sm text-fg-muted min-w-0" data-testid={`group-buy-row-${kind}`}>
+                <Icon size={16} aria-hidden="true" className="shrink-0 mt-0.5" />
+                <span className="line-clamp-2">{note}</span>
+              </p>
+            );
+          })}
+        </>
+      }
+      price={formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
+      worth={formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
+      unit={gb.unit ? t("unit_prefix", { unit: gb.unit }) : null}
+      saving={discount > 0 ? td("discount_hint", { discount }) : null}
+      savingTestId="group-buy-saving"
+      bandStart={
+        <>
+          <GroupBuyProgressMark commits={gb.commits_count} min={gb.min_participants} funded={funded} label={progress} />
+          <span
+            className={`text-xs font-bold ${funded ? "text-primary" : "text-text"}`}
+            data-testid="group-buy-progress-line"
+          >
+            {funded ? t("funded_banner") : remaining === 0 ? progress : td("remaining_to_open", { n: remaining })}
           </span>
-          <span dir="ltr" className="text-sm text-fg-muted line-through">
-            {formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
-          </span>
-          {gb.unit && <span className="text-xs text-fg-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
-        </p>
-        {discount > 0 && (
-          <p className="mt-1 text-xs font-semibold text-gold-deep" data-testid="group-buy-saving">
-            {td("discount_hint", { discount })}
-          </p>
-        )}
-        {/* flex-wrap: ten seeds + a long count can exceed a 375 card; the days
-            then drop under the count instead of overflowing. */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-background-alt px-2.5 py-2">
-          <span className="flex items-center gap-2 min-w-0">
-            <GroupBuyProgressMark commits={gb.commits_count} min={gb.min_participants} funded={funded} label={progress} />
-            <span
-              className={`text-xs font-bold ${funded ? "text-primary" : "text-text"}`}
-              data-testid="group-buy-progress-line"
-            >
-              {funded ? t("funded_banner") : remaining === 0 ? progress : td("remaining_to_open", { n: remaining })}
-            </span>
-          </span>
-          <span className="text-xs text-fg-muted shrink-0">
-            {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
-          </span>
-        </div>
-      </div>
-    </Link>
+        </>
+      }
+      bandEnd={daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
+    />
   );
 }
 

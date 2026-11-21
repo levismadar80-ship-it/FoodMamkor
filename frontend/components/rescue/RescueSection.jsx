@@ -24,6 +24,8 @@ import {
 import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
+import OfferCard from "@/components/ui/OfferCard";
+import { GroupBuyProgressMark } from "@/app/[locale]/producer/[id]/components/ProducerActivities";
 import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
@@ -43,8 +45,8 @@ import { isUnverifiedEmailError } from "@/lib/errors";
  *           one short cancel line, allergens folded) · MEH-2737 (a cancel
  *           says it worked, or why not; past the cutoff the card says the bag
  *           can no longer be cancelled) · MEH-2738 (says when the business
- *           cancelled the bag) · MEH-3585 (the group-buy card's anatomy:
- *           title + where, price + saving, beige status band)
+ *           cancelled the bag) · MEH-3585 (drawn by the shared ui/OfferCard,
+ *           the group-buy card: same size, seeds for the bags left)
  */
 
 /** The struck-through "worth": the business's own LOW estimate, and only when
@@ -327,32 +329,22 @@ export default function RescueSection({ producer }) {
           )}
         </div>
       ) : offer ? (
-        // MEH-3585: one anatomy with the group-buy card under «קבוצות רכישה
-        // פתוחות» (ProducerActivities GroupBuyRow): title + where, the price
-        // with the struck worth and a gold saving line, then the beige status
-        // band (what is left · when). Sapir 21/11: the two offer cards read as
-        // two designs for one idea. The reserve button stays on the card — it
-        // is the only place a bag is reserved.
-        <div
-          className="mt-3 border border-border bg-surface-card rounded-lg p-4 grid gap-3"
-          data-testid="rescue-section-card"
-        >
-          <div className="flex items-start gap-3">
-            <span aria-hidden="true" className="w-11 h-11 rounded-lg bg-green-50 text-primary grid place-items-center shrink-0">
-              <Basket size={24} weight="regular" />
-            </span>
-            <div className="min-w-0 flex-1">
-              {/* No typical items → no card title: «סל הפתעה» is already the
-                  section heading right above, and a screen reader would hear it
-                  twice (MEH-3585 review). */}
-              {offer.typical_items?.length > 0 && (
-                <h3 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2" data-testid="rescue-section-typical">
-                  {t("section.typical", { items: offer.typical_items.join(", ") })}
-                </h3>
-              )}
-              {/* Full address: a live bag is the MEH-829 carve-out, and the point
-                  is exact-precision or the backend refuses the offer. */}
-              {offer.producer?.location_address && (
+        // MEH-3585: the shared OfferCard — the same card as the group buys under
+        // «קבוצות רכישה פתוחות», in the same half-width grid (Sapir 21/11: one
+        // design, one size). The reserve button stays on the card — it is the
+        // only place a bag is reserved.
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <OfferCard
+            testId="rescue-section-card"
+            icon={<Basket size={24} weight="regular" />}
+            // No typical items → no card title: «סל הפתעה» is already the
+            // section heading right above (MEH-3585 review).
+            title={offer.typical_items?.length > 0 ? t("section.typical", { items: offer.typical_items.join(", ") }) : null}
+            titleTestId="rescue-section-typical"
+            lines={
+              // Full address: a live bag is the MEH-829 carve-out, and the point
+              // is exact-precision or the backend refuses the offer.
+              offer.producer?.location_address && (
                 <p className="mt-0.5 flex items-start gap-1.5 text-sm text-fg-muted" data-testid="rescue-section-address">
                   <MapPin aria-hidden="true" size={16} className="shrink-0 mt-0.5" />
                   <span>
@@ -360,84 +352,81 @@ export default function RescueSection({ producer }) {
                     {offer.producer.location_city ? `, ${offer.producer.location_city}` : ""}
                   </span>
                 </p>
-              )}
-            </div>
-          </div>
-
-          {price !== null && (
-            <div>
-              <p className="flex items-baseline gap-2">
-                <b dir="ltr" className="font-headline-md text-2xl font-black text-primary leading-none numeric" data-testid="rescue-section-price">
-                  {t("row.price", { price })}
-                </b>
-                {worth !== null && (
-                  // aria-hidden: read aloud as a second bare price it says nothing useful.
-                  <s dir="ltr" aria-hidden="true" className="text-sm text-fg-muted numeric" data-testid="rescue-section-worth">
-                    {t("row.price", { price: worth })}
-                  </s>
-                )}
-              </p>
-              {savingPct > 0 && (
-                <p className="mt-1 text-xs font-semibold text-gold-deep" data-testid="rescue-section-saving">
-                  {t("section.saving", { pct: savingPct })}
+              )
+            }
+            price={price !== null ? t("row.price", { price }) : null}
+            priceTestId="rescue-section-price"
+            worth={worth !== null ? t("row.price", { price: worth }) : null}
+            worthTestId="rescue-section-worth"
+            saving={savingPct > 0 ? t("section.saving", { pct: savingPct }) : null}
+            savingTestId="rescue-section-saving"
+            bandStart={
+              <>
+                {/* The logo seeds, as on the group-buy card: one per bag, filled
+                    = still available. */}
+                <GroupBuyProgressMark
+                  commits={offer.qty_left}
+                  min={offer.qty_total || offer.qty_left}
+                  label={t("row.left", { count: offer.qty_left })}
+                />
+                <span className="text-xs font-bold text-text" data-testid="rescue-section-stock">
+                  {t("row.left", { count: offer.qty_left })}
+                </span>
+              </>
+            }
+            bandEnd={
+              from && until && (
+                <span className="flex items-center gap-1" data-testid="rescue-section-pickup">
+                  <Clock aria-hidden="true" size={14} className="shrink-0" />
+                  {/* MEH-3585: say the day — the public list is today's bags
+                      only, and a bare window reads as «every day». */}
+                  {t("section.pickup_today", { from, until })}
+                </span>
+              )
+            }
+          >
+            <div className="grid gap-2">
+              {errorLine}
+              <Button
+                type="button"
+                onClick={reserve}
+                disabled={busy || offer.qty_left < 1}
+                data-testid="rescue-reserve"
+                variant="primary" size="lg" className="w-full"
+              >
+                {t("section.cta")}
+              </Button>
+              {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
+                  confirmation, where confirm.terms still carries it. */}
+              {cancelUntil && (
+                <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
+                  {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
                 </p>
               )}
             </div>
-          )}
 
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-background-alt px-2.5 py-2">
-            <span className="text-xs font-bold text-text" data-testid="rescue-section-stock">
-              {t("row.left_short", { count: offer.qty_left })}
-            </span>
-            {from && until && (
-              <span className="flex items-center gap-1 text-xs text-fg-muted" data-testid="rescue-section-pickup">
-                <Clock aria-hidden="true" size={14} className="shrink-0" />
-                {t("row.pickup", { from, until })}
-              </span>
-            )}
-          </div>
-
-          <div className="grid gap-2 md:max-w-xs">
-            {errorLine}
-            <Button
-              type="button"
-              onClick={reserve}
-              disabled={busy || offer.qty_left < 1}
-              data-testid="rescue-reserve"
-              variant="primary" size="lg" className="w-full"
+            <details
+              className="border-t border-border pt-2.5 font-body-sm text-sm text-fg-muted"
+              data-testid="rescue-section-allergens"
             >
-              {t("section.cta")}
-            </Button>
-            {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
-                confirmation, where confirm.terms still carries it. */}
-            {cancelUntil && (
-              <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
-                {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
-              </p>
-            )}
-          </div>
-
-          <details
-            className="border-t border-border pt-2.5 font-body-sm text-sm text-fg-muted"
-            data-testid="rescue-section-allergens"
-          >
-            <summary className="cursor-pointer text-text font-medium">{t("section.allergens_title")}</summary>
-            {/* MEH-2752: what THIS business declared, not one sentence for
-                everyone. `null` and a list are genuinely different answers —
-                an empty list would read as "contains none of the 14", which
-                is a claim nobody made, so the API never sends one. */}
-            {offer.allergens?.length ? (
-              <p className="mt-1.5" data-testid="rescue-section-allergens-declared">
-                {t("section.allergens_declared", {
-                  list: offer.allergens.map((code) => tProducts(`allergen_${code}`)).join(", "),
-                })}
-              </p>
-            ) : (
-              <p className="mt-1.5" data-testid="rescue-section-allergens-none">
-                {t("section.allergens_undeclared")}
-              </p>
-            )}
-          </details>
+              <summary className="cursor-pointer text-text font-medium">{t("section.allergens_title")}</summary>
+              {/* MEH-2752: what THIS business declared, not one sentence for
+                  everyone. `null` and a list are genuinely different answers —
+                  an empty list would read as "contains none of the 14", which
+                  is a claim nobody made, so the API never sends one. */}
+              {offer.allergens?.length ? (
+                <p className="mt-1.5" data-testid="rescue-section-allergens-declared">
+                  {t("section.allergens_declared", {
+                    list: offer.allergens.map((code) => tProducts(`allergen_${code}`)).join(", "),
+                  })}
+                </p>
+              ) : (
+                <p className="mt-1.5" data-testid="rescue-section-allergens-none">
+                  {t("section.allergens_undeclared")}
+                </p>
+              )}
+            </details>
+          </OfferCard>
         </div>
       ) : null}
     </section>

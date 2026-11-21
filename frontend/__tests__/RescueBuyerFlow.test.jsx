@@ -468,14 +468,23 @@ describe("the business-page section — reserve and confirm", () => {
     expect(screen.queryByTestId("rescue-section-worth")).toBeNull();
   });
 
-  it("shows the stock as a short tag: one bag and many", async () => {
-    fetchOffers.mockResolvedValue([offer({ qty_left: 1 })]);
+  // MEH-3585 (Sapir 21/11): «נשארו 4» said nothing about what — the stock
+  // names the bags, beside the logo seeds the group-buy card uses (one seed per
+  // bag of the day, filled = still available).
+  it("shows the stock with the word «סלים» and one seed per bag: one bag and many", async () => {
+    fetchOffers.mockResolvedValue([offer({ qty_left: 1, qty_total: 4 })]);
     const { unmount } = render(<RescueSection producer={PRODUCER} />);
-    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר 1");
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר סל אחד");
+    let seeds = screen.getByTestId("gb-progress-seeds");
+    expect(seeds.querySelectorAll("svg")).toHaveLength(4);
+    expect(seeds.querySelectorAll("svg[data-filled='true']")).toHaveLength(1);
+    expect(seeds.getAttribute("aria-label")).toBe("נשאר סל אחד");
     unmount();
-    fetchOffers.mockResolvedValue([offer({ qty_left: 4 })]);
+    fetchOffers.mockResolvedValue([offer({ qty_left: 4, qty_total: 4 })]);
     render(<RescueSection producer={PRODUCER} />);
-    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשארו 4");
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשארו 4 סלים");
+    seeds = screen.getByTestId("gb-progress-seeds");
+    expect(seeds.querySelectorAll("svg[data-filled='true']")).toHaveLength(4);
   });
 
   // Sapir 6/11: the no-show rule is too much on the card; it stays on the
@@ -532,12 +541,15 @@ describe("the business-page section — reserve and confirm", () => {
   it("puts the pickup window in the status band with the stock, and the address under the title", async () => {
     render(<RescueSection producer={PRODUCER} />);
     const pickup = await screen.findByTestId("rescue-section-pickup");
-    expect(pickup.textContent).toMatch(/^איסוף \d{2}:\d{2}–\d{2}:\d{2}$/);
+    expect(pickup.textContent).toMatch(/^איסוף היום \d{2}:\d{2}–\d{2}:\d{2}$/);
     expect(pickup.querySelector("svg")).not.toBeNull();
-    expect(pickup.parentElement).toBe(screen.getByTestId("rescue-section-stock").parentElement);
+    // Same band: stock on its start side, pickup on its end side.
+    const band = screen.getByTestId("rescue-section-stock").parentElement.parentElement;
+    expect(band.contains(pickup)).toBe(true);
+    expect(band.contains(screen.getByTestId("rescue-reserve"))).toBe(false);
     const title = screen.getByTestId("rescue-section-typical");
     expect(title.tagName).toBe("H3");
-    expect(title.parentElement.contains(screen.getByTestId("rescue-section-address"))).toBe(true);
+    expect(title.parentElement.parentElement.contains(screen.getByTestId("rescue-section-address"))).toBe(true);
     expect(screen.getByTestId("rescue-section-address").querySelector("svg")).not.toBeNull();
   });
 
@@ -1000,7 +1012,7 @@ describe("cancelling a reservation (MEH-2737)", () => {
     expect((await screen.findByTestId("rescue-cancelled-notice")).textContent).toBe(
       "השריון בוטל, והסל חזר לרשימה.",
     );
-    expect((await screen.findByTestId("rescue-section-stock")).textContent).toContain("1");
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר סל אחד");
   });
 
   it("a cancel refused because the cutoff passed says so, and the code stays", async () => {
