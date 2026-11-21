@@ -126,7 +126,6 @@ def _mute_side_effects(monkeypatch) -> None:
     """
     monkeypatch.setattr(admin_mod, "_send_notification_email", lambda *a, **k: None)
     monkeypatch.setattr(admin_mod, "notify_producer_approved", lambda *a, **k: None)
-    monkeypatch.setattr(admin_mod, "_send_whatsapp", lambda *a, **k: None)
     monkeypatch.setattr(admin_mod.indexnow, "schedule", lambda *a, **k: None)
     monkeypatch.setattr(
         cloudinary_utils, "destroy_removed_images", lambda *a, **k: None
