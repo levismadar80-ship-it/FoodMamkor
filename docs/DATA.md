@@ -233,6 +233,7 @@ producers (
   secondary_phone_label VARCHAR(30) NULL,
   -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
   owner_bio text nullable, owner_photo_url varchar(500) nullable,
+  logo_url varchar(500) nullable (MEH-3611: the business logo; owner saves it via PUT /producers/me after /upload/image, own-upload guard MEH-3247, replaced logo destroyed after commit; public on ProducerListOut and the rescue bag summary),
   -- MEH-1541: self-reported founding year → public "מאז {שנה}" masthead line
   -- (app-validated 1800..current year; NULL = line absent from DOM)
   established_year integer nullable,

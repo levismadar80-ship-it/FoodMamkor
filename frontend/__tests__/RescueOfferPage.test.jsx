@@ -194,6 +194,20 @@ describe("RescueOfferPage — an available bag", () => {
   });
 });
 
+describe("RescueOfferPage — the business's logo (MEH-3611)", () => {
+  it("a logo → it sits in the business row's circle, not cropped", async () => {
+    await renderWith(offer({ producer: { ...offer().producer, logo_url: "https://res.cloudinary.com/x/image/upload/logo.png" } }));
+    const img = screen.getByTestId("rescue-offer-business").querySelector("img");
+    expect(img?.getAttribute("src")).toContain("logo.png");
+    expect(img?.className).toContain("object-contain");
+  });
+
+  it("no logo → the letter avatar, no image", async () => {
+    await renderWith(offer({ producer: { ...offer().producer, logo_url: null } }));
+    expect(screen.getByTestId("rescue-offer-business").querySelector("img")).toBeNull();
+  });
+});
+
 describe("RescueOfferPage — the cover", () => {
   it("no photo → no cover band at all; share sits beside the «סל הפתעה» chip", async () => {
     await renderWith(offer());

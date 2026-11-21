@@ -144,6 +144,7 @@
     "lat",
     "lng",
     "locations",
+    "logo_url",
     "name",
     "noindex",
     "offers_delivery",

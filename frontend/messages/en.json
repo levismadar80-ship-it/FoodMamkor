@@ -5462,6 +5462,17 @@
         "upload_error": "Image upload failed. Please try again.",
         "save_error": "Save failed. Please try again."
       },
+      "logo": {
+        "label": "Logo",
+        "where": "Shown beside the business name on the business page and the bag page",
+        "hint": "A square logo on a light background works best.",
+        "cta": "Upload a logo",
+        "replace_cta": "Replace logo",
+        "remove_cta": "Remove logo",
+        "uploading": "Uploading the logo…",
+        "upload_error": "The logo upload failed. Try again.",
+        "save_error": "Saving failed. Try again."
+      },
       "location": {
         "heading": "Map location",
         "subtitle": "Type your address and pick from the list — this places your business at the right spot on the map.",
@@ -7454,9 +7465,9 @@
     },
     "items": {
       "gallery_story": {
-        "label": "Photo gallery, About and Behind the business",
+        "label": "Photo gallery, logo, About and Behind the business",
         "tile_title": "Gallery and story",
-        "tile_line": "Photos, \"About\" and \"Behind the business\""
+        "tile_line": "Logo, photos, \"About\" and \"Behind the business\""
       },
       "page_fill": {
         "label": "Fill the page from free text: write about the business, check, approve"
