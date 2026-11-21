@@ -769,6 +769,10 @@ reads as a rendering bug (the ghost-strip class). Rules:
   the `EventEntryRow` mark. `tone="soft"` (green-50 + primary letter) is that
   look; `letterClassName` sets the letter's type; a caller placing it
   `absolute` keeps its own position. Never hand-draw an initial circle.
+  **Inside a control whose `aria-label` already names the person** (the
+  BottomNav account tab) pass `decorative` (MEH-3539): the circle is
+  `aria-hidden` and the letter is drawn by CSS from `data-initial`, so it is
+  not text in the control. Same pixels.
   Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts

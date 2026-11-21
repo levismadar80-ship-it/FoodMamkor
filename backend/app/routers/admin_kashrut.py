@@ -19,7 +19,6 @@ from app.schemas.schemas import (
     KashrutRequestOut,
     KashrutRejectIn,
     KashrutRevokeIn,
-    SetAmbassadorIn,
 )
 from app.sentry import capture_background_exception
 from app.services.content_notifications import (
@@ -229,27 +228,6 @@ def revoke_kashrut_badge(
         producer.kashrut_expires_at = None  # type: ignore[assignment]
     db.commit()
     return {"detail": "התג בוטל"}
-
-
-@router.post("/producers/{producer_id}/set-ambassador", response_model=None)
-def set_ambassador(
-    producer_id: UUID,
-    body: SetAmbassadorIn,
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-) -> dict[str, Any]:
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    if body.ambassador and producer.status != "approved":
-        raise HTTPException(
-            status_code=400, detail="ניתן להגדיר שגריר רק לבית עסק פעיל"
-        )
-    if producer.ambassador == body.ambassador:
-        return {"detail": "ללא שינוי", "ambassador": producer.ambassador}
-    producer.ambassador = body.ambassador  # type: ignore[assignment]
-    db.commit()
-    return {"detail": "עודכן", "ambassador": producer.ambassador}
 
 
 def _normalize_il_phone(phone: str) -> str:

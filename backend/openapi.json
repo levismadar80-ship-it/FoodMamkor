@@ -607,6 +607,9 @@
           "would_pay_total_agorot": {
             "title": "Would Pay Total Agorot",
             "type": "integer"
+          },
+          "year": {
+            "$ref": "#/components/schemas/BillingYearOut"
           }
         },
         "required": [
@@ -618,6 +621,7 @@
           "start_billing_months",
           "would_pay_total_agorot",
           "phase",
+          "year",
           "history",
           "rows"
         ],
@@ -736,6 +740,45 @@
           "price_list_version"
         ],
         "title": "BillingSummaryOut",
+        "type": "object"
+      },
+      "BillingYearOut": {
+        "description": "MEH-3189: income from January to the month, against the exempt-dealer ceiling.",
+        "properties": {
+          "alert_percent": {
+            "title": "Alert Percent",
+            "type": "integer"
+          },
+          "ceiling_agorot": {
+            "title": "Ceiling Agorot",
+            "type": "integer"
+          },
+          "ceiling_year": {
+            "title": "Ceiling Year",
+            "type": "integer"
+          },
+          "income_agorot": {
+            "title": "Income Agorot",
+            "type": "integer"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "income_agorot",
+          "ceiling_agorot",
+          "ceiling_year",
+          "percent",
+          "alert_percent"
+        ],
+        "title": "BillingYearOut",
         "type": "object"
       },
       "BioGenerateIn": {
@@ -913,6 +956,52 @@
           "file"
         ],
         "title": "Body_upload_owner_photo_upload_owner_photo_post",
+        "type": "object"
+      },
+      "BusinessCustomerOut": {
+        "description": "MEH-3561: one customer of the business, grouped by phone.",
+        "properties": {
+          "last_order_at": {
+            "format": "date-time",
+            "title": "Last Order At",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "order_count": {
+            "title": "Order Count",
+            "type": "integer"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "order_count",
+          "last_order_at"
+        ],
+        "title": "BusinessCustomerOut",
+        "type": "object"
+      },
+      "BusinessCustomersOut": {
+        "properties": {
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/BusinessCustomerOut"
+            },
+            "title": "Customers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "customers"
+        ],
+        "title": "BusinessCustomersOut",
         "type": "object"
       },
       "BusinessOrderOut": {
@@ -10645,25 +10734,6 @@
         "title": "ProducerAdminUpdate",
         "type": "object"
       },
-      "ProducerCityOut": {
-        "description": "MEH-970 — one row of GET /producers/cities: live approved-producer\ncount for a single city, consumed by the /map region control.",
-        "properties": {
-          "city": {
-            "title": "City",
-            "type": "string"
-          },
-          "count": {
-            "title": "Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "city",
-          "count"
-        ],
-        "title": "ProducerCityOut",
-        "type": "object"
-      },
       "ProducerClaimLinkOut": {
         "properties": {
           "expires_at": {
@@ -15166,6 +15236,18 @@
             ],
             "title": "Phone"
           },
+          "prefill_token": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prefill Token"
+          },
           "primary_contact_method": {
             "default": "whatsapp",
             "title": "Primary Contact Method",
@@ -19470,34 +19552,6 @@
         "title": "ReviewsPage",
         "type": "object"
       },
-      "RiskScoreResponse": {
-        "properties": {
-          "reasoning": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reasoning"
-          },
-          "score": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Score"
-          }
-        },
-        "title": "RiskScoreResponse",
-        "type": "object"
-      },
       "SavedEventOut": {
         "properties": {
           "category": {
@@ -20146,19 +20200,6 @@
           }
         },
         "title": "SearchOut",
-        "type": "object"
-      },
-      "SetAmbassadorIn": {
-        "properties": {
-          "ambassador": {
-            "title": "Ambassador",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ambassador"
-        ],
-        "title": "SetAmbassadorIn",
         "type": "object"
       },
       "StaticPageOut": {
@@ -23010,16 +23051,6 @@
           },
           {
             "in": "query",
-            "name": "allow_without_license",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Allow Without License",
-              "type": "boolean"
-            }
-          },
-          {
-            "in": "query",
             "name": "allow_unverified_phone",
             "required": false,
             "schema": {
@@ -24690,16 +24721,6 @@
               "title": "Producer Id",
               "type": "string"
             }
-          },
-          {
-            "in": "query",
-            "name": "allow_without_license",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Allow Without License",
-              "type": "boolean"
-            }
           }
         ],
         "requestBody": {
@@ -25007,110 +25028,6 @@
         "summary": "Revoke Verified",
         "tags": [
           "admin"
-        ]
-      }
-    },
-    "/admin/producers/{producer_id}/risk-score": {
-      "get": {
-        "operationId": "get_producer_risk_score_admin_producers__producer_id__risk_score_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RiskScoreResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Get Producer Risk Score",
-        "tags": [
-          "admin-extra"
-        ]
-      }
-    },
-    "/admin/producers/{producer_id}/set-ambassador": {
-      "post": {
-        "operationId": "set_ambassador_admin_producers__producer_id__set_ambassador_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "producer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Producer Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetAmbassadorIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Set Ambassador",
-        "tags": [
-          "admin-kashrut"
         ]
       }
     },
@@ -30687,32 +30604,6 @@
         ]
       }
     },
-    "/producers/cities": {
-      "get": {
-        "description": "MEH-970 — per-city approved-producer counts for the /map region control.\n\nGROUP BY city over approved producers only. NULL / blank cities are\nomitted so a chip never lands on an empty map (empty-region guard). Counts\nare computed live from the DB — never hardcoded (over-claim guard MEH-519).\nOrdered by count desc, then city name. Returns ``[{\"city\": str, \"count\": int}]``.\nThe /map frontend buckets these into regions client-side (MEH-970 chunk 2).\n\nMEH-1986: the empty-region guard now also covers availability. It existed\nfor blank city names only, so a city whose every producer was on vacation\nstill published a chip — and the catalog behind that chip returns nothing.\nA city drops out entirely once its last non-vacation producer does.",
-        "operationId": "producers_cities_producers_cities_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProducerCityOut"
-                  },
-                  "title": "Response Producers Cities Producers Cities Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Producers Cities",
-        "tags": [
-          "producers"
-        ]
-      }
-    },
     "/producers/count": {
       "get": {
         "description": "MEH-159 — lightweight total count for keeping pagination fresh client-side.\n\nMEH-1986: applies the catalog's default-hide rule, so this number and the\n``X-Total-Count`` header of ``GET /producers`` are the same number. They\nfeed the same \"X מתוך Y\" counter (``ProducersClient.jsx:378``), and before\nthis they disagreed by every producer on vacation.",
@@ -31998,6 +31889,33 @@
           }
         ],
         "summary": "List Business Orders",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/customers": {
+      "get": {
+        "description": "MEH-3561: «הלקוחות שלכם» — one row per customer who ordered.",
+        "operationId": "list_business_customers_producers_me_product_orders_customers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessCustomersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Business Customers",
         "tags": [
           "product-orders"
         ]

@@ -15,7 +15,8 @@ Related:  frontend/lib/nextDelivery.js (the rule ported in `next_delivery`);
           frontend/lib/orderWindow.js getSingleOrderCutoff;
           routers/experiences.py _public_listing_query;
           routers/group_buys.py _status_tab_query.
-History:  MEH-3510 (creation; reviews the page shows, no names)
+History:  MEH-3510 (creation; reviews the page shows, no names); MEH-3584
+          (contact_channel: the page button's channel)
 """
 
 from __future__ import annotations
@@ -273,3 +274,55 @@ def reviews(producer: Any) -> list[dict[str, Any]] | None:
         for r in rows
     ]
     return out or None
+
+
+# ---------- MEH-3584: the contact button's channel ----------
+
+# REUSES: frontend/lib/contact-method.js getResolvedMethod — the declared
+# method if the business has the field it needs, else the first channel in
+# this order that has one. Same order as CONTACT_METHODS there; the pytest
+# tests/test_meh3584_chat_contact_channel.py reads that file and fails when
+# the two orders differ.
+CONTACT_CHANNELS: tuple[tuple[str, str], ...] = (
+    ("whatsapp", "phone"),
+    ("phone", "phone"),
+    ("website", "website"),
+    ("email", "contact_email"),
+    ("instagram", "instagram"),
+    ("facebook", "facebook"),
+    ("external_order", "external_order_form"),
+)
+_FIELD = dict(CONTACT_CHANNELS)
+
+
+_MOBILE = re.compile(r"972[5-9]\d{8}")
+
+
+def _text(producer: Any, channel: str) -> str:
+    return str(getattr(producer, _FIELD[channel], None) or "").strip()
+
+
+def _has(producer: Any, channel: str) -> bool:
+    """Whether the page can build this channel's link (contactHref is not
+    null): WhatsApp needs an Israeli mobile (lib/utils.js normalizePhone), a
+    call needs a digit (telHref), Instagram a handle after any «@»."""
+    value = _text(producer, channel)
+    if channel in ("whatsapp", "phone"):
+        digits = re.sub(r"\D", "", value)
+        if channel == "phone":
+            return bool(digits)
+        local = "972" + digits[1:] if digits.startswith("0") else digits
+        return bool(_MOBILE.fullmatch(local))
+    if channel == "instagram":
+        return bool(value.lstrip("@"))
+    return bool(value)
+
+
+def contact_channel(producer: Any) -> str | None:
+    """The channel name only — never the number, address or link itself."""
+    declared = getattr(producer, "primary_contact_method", None)
+    if declared not in _FIELD:
+        declared = "whatsapp"
+    if _has(producer, declared):
+        return str(declared)
+    return next((c for c, _ in CONTACT_CHANNELS if _has(producer, c)), None)

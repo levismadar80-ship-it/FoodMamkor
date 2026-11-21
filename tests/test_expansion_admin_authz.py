@@ -28,7 +28,6 @@ ADMIN_MUTATING_ENDPOINTS = [
     ("post", f"/admin/producers/{_U}/reject"),
     ("post", f"/admin/producers/{_U}/toggle-status"),
     ("delete", f"/admin/producers/{_U}"),
-    ("post", f"/admin/producers/{_U}/set-ambassador"),
     # MEH-1406: /admin/home-products/* endpoints unmounted (feature disabled) —
     # they now 404, so there is no require_admin guard left to regression-test.
     ("post", f"/admin/kashrut/{_U}/approve"),

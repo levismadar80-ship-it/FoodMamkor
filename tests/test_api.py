@@ -73,7 +73,6 @@ from _test_api__p04 import (  # noqa: F401
 from _test_api__p05 import (  # noqa: F401
     TestAvailabilityState,
     TestProducersCount,
-    TestProducersCities,
     TestCategoryRequests,
     TestFavoritesCount,
     TestSimilarProducersExclude,

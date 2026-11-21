@@ -105,9 +105,16 @@
 
 ## להשאיר את ה-runner דלוק
 
-ב-21/11 לא נמצאה תיקיית `actions-runner` ב-`C:\` או בתיקיית הבית, וכל ה-jobs
-האחרונים רצו על `ubuntu-latest` (הריפו ציבורי). **ייתכן שאין עדיין runner
-רשום** — לבדוק ב-Settings → Actions → Runners.
+**מצב ב-21/11 (הוקם באותו יום):** runner בשם `topazschnapp-wsl` (labels
+`self-hosted,Linux,X64`), בתוך WSL2 Ubuntu 26.04, כשירות systemd תחת משתמש נפרד
+`ghrunner`, עם Docker Engine. ההתקנה: `C:\Users\topaz\runner-setup\setup-in-ubuntu.sh`
+(בתוך Ubuntu) ו-`admin-power-and-autostart.ps1` (PowerShell כמנהל). ב-`/etc/wsl.conf`
+כבויים `automount` ו-`interop`, כך שה-runner לא רואה את `C:\`.
+
+**כלים שה-workflows מניחים שמותקנים** (ב-`ubuntu-latest` הם מותקנים מראש; כאן לא):
+`sudo apt-get install -y jq gh zip unzip postgresql-client` — הותקנו ב-21/11.
+בדיקה (בתוך Ubuntu כ-`ghrunner`): `for t in git curl jq gh zip unzip xz file bc python3 psql pg_dump docker; do command -v $t >/dev/null || echo "MISSING $t"; done`.
+Python 3.11/3.12 (`setup-python`) ו-Playwright 1.65 תומכים ב-Ubuntu 26.04 (נבדק ב-manifest).
 
 1. **ה-runner כשירות, לא בחלון פתוח.** בתוך WSL2 (Ubuntu) עם Docker:
    `./config.sh --url https://github.com/levismadar80-ship-it/FoodMamkor --token <מה-GitHub>`
@@ -117,7 +124,9 @@
 2. **WSL לא נכבה.** WSL מכבה את ה-VM כשאין בו תהליכים. ב-`/etc/wsl.conf`:
    `[boot]` + `systemd=true` (כדי שהשירות ירוץ), וב-`%UserProfile%\.wslconfig`:
    `[wsl2]` + `vmIdleTimeout=-1`. ב-Task Scheduler: משימה «At startup» שמריצה
-   `wsl.exe -d Ubuntu --exec /bin/true`, כדי ש-WSL יעלה גם בלי login.
+   `wsl.exe -d Ubuntu --exec sleep infinity` בחלון מוסתר, בלי מגבלת זמן.
+   **לא `/bin/true`:** נמדד ב-21/11 ש-WSL מכבה את Ubuntu שניות אחרי שהתהליך
+   האחרון שהופעל מ-Windows נסגר, גם כשה-runner רץ בפנים ו-`vmIdleTimeout=-1`.
 3. **Windows לא נרדם.** Settings → System → Power: Sleep = Never כשמחובר לחשמל;
    מכסה סגור (לפטופ) = Do nothing. Windows Update → Active hours, כדי ש-restart
    לא ייפול באמצע ריצה.
