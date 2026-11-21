@@ -919,14 +919,7 @@ from app.schemas.catalog import (  # noqa: E402
 )
 from app.schemas.community import (  # noqa: E402
     FavoriteOut as FavoriteOut,
-    HomeProductCreate as HomeProductCreate,
-    HomeProductModerationRequest as HomeProductModerationRequest,
-    HomeProductModerationResult as HomeProductModerationResult,
-    HomeProductOut as HomeProductOut,
-    HomeProductRatingOut as HomeProductRatingOut,
-    HomeProductUpdate as HomeProductUpdate,
     ProducerInfoReportCreate as ProducerInfoReportCreate,
-    RatingSubmit as RatingSubmit,
     ReportCreate as ReportCreate,
     ReportOut as ReportOut,
     REVIEW_REPORT_REASONS as REVIEW_REPORT_REASONS,

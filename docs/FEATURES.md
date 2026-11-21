@@ -191,7 +191,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1.5.1 | Report a review — ⋮ on each review card (public page + owner dashboard), reason list, email to admin, no automatic action (MEH-3260) | `frontend/components/ReviewReportMenu.jsx` |
 | ✅ | v1 | Image gallery with keyboard nav + 44px touch targets | `frontend/components/ImageGallery.jsx` |
 | ✅ | v1 | Slug-based producer URLs (`/cow-farm-name`) | `frontend/app/[slug]/page.js` |
-| ✅ | v1 | "מהמטבח של השכן" — dedicated `/neighbor` page | `frontend/app/neighbor/NeighborClient.jsx` |
+| ❌ | v1 | "מהמטבח של השכן" — `/neighbor` page, removed (MEH-793; backend MEH-796) | — |
 | ✅ | v1 | Events: list, filter, detail (`/events`, `/events/:id`) | `frontend/app/events/` |
 | ✅ | v1 | Upcoming events preview on homepage (3 cards) | `frontend/app/page.js` |
 | ✅ | v1 | Community experiences: list, submit, detail (`/experiences`, `/experiences/new`, `/experiences/:id`) | `frontend/app/experiences/` |
@@ -222,25 +222,22 @@ left in v1" vs "what's planned for v2".
 
 ### Home cooks (`/neighbor`)
 
+❌ Removed. The page went in MEH-793; the API was unmounted in MEH-1406; the rows, the code and the tables are being removed by MEH-796 (MEH-3645 rows, MEH-3646 code, then a table drop). Brand LOCK: licensed businesses only.
+
+### Moderation and forms
+
 | Status | Version | Feature | Where |
 |---|---|---|---|
-| ✅ | v1 | Free posting (no producer approval required) | `backend/app/routers/home_products.py` |
-| ✅ | v1 | Hybrid AI moderation: APPROVED / FLAGGED / REJECTED | `backend/app/services/home_product_moderation.py` |
-| ✅ | v1 | Real-time validation while typing (debounced 1.5s) | `frontend/components/HomeProductForm.jsx` |
 | ✅ | v1 | Experiences moderation: Claude Haiku pre-check + admin approval gate | `backend/app/services/experience_moderation.py`, `backend/app/routers/admin_experiences.py` |
 | ✅ | v1 | Approved-business edit check (MEH-3261): changed description / tagline / owner story and product name / description / ingredients / storage («אחסון ותוקף», MEH-3444) / cereal and nut detail (MEH-3442) go through the AI check (REJECTED → 422, nothing saved; fail-open saves); one admin ping per content save, marked when FLAGGED | `backend/app/services/approved_edit_moderation.py`, `backend/app/routers/producer_me.py` |
 | ✅ | v1 | `/admin/experiences` queue with tabs, approve / request-changes / reject + feedback modal | `frontend/app/admin/experiences/page.js` |
 | ✅ | v1 | Address autocomplete via Nominatim (street + house number) | `frontend/components/AddressSearch.jsx` |
-| ✅ | v1 | Trust badges (organic, kosher, storage, category) | `frontend/components/HomeProductCard.jsx` |
-| ✅ | v1 | Private street/zip stored server-side, only city/neighborhood shown publicly | `backend/app/models/models.py` |
-| ✅ | v1 | "🔍 בבדיקה" badge for FLAGGED listings | `HomeProductCard.jsx` |
 
 ### AI features
 
 | Status | Version | Feature | Where |
 |---|---|---|---|
 | ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop + mobile — mobile icon-only and always shown above the BottomNav (hid on scroll-down under MEH-2499 until 4/11/2026, MEH-2664)) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
-| ✅ | v1 | Auto-moderation for `/neighbor` listings (Anthropic, fail-open) | `backend/app/services/home_product_moderation.py` |
 | ✅ | v1 | Upload a menu → product rows (MEH-3430): the owner photographs her menu or uploads a PDF on the products card, Opus 5.5 reads it (`AI_MENU_MODEL`), she checks and publishes. No key → 503 and she adds by hand | `backend/app/routers/menu_import.py`, `frontend/components/MenuImport.jsx` |
 | ✅ | v1 | Fill the page from free text (MEH-3483): «ספרו לנו על העסק» at the top of the edit hub (and the admin edit page). The owner writes about her business; Claude drafts description, categories, delivery cities, hours and contact details from the text only; she ticks what to keep and it saves through the normal edit routes. No key → 503 and she fills by hand | `backend/app/routers/page_fill.py`, `frontend/components/PageFillPanel.jsx` |
 | 📋 | v2 | AI search agent — natural-language search ("בשר grass-fed בחיפה") | [ROADMAP.md](./ROADMAP.md) |
@@ -330,7 +327,6 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 | ✅ | v1 | Newsletter signup (footer) — POST /newsletter, rate-limited 5/hour per IP + 3/hour per email; double opt-in via POST /newsletter/confirm from /newsletter/confirm (MEH-3300) | `backend/app/routers/marketing.py` |
 | ✅ | v1 | Contact form — standalone `/contact` page (migrated out of `/about`), POST /contact persists to `contact_messages` + sends SMTP email to CONTACT_EMAIL, fail-open if SMTP unconfigured, rate-limited 5/hour per IP, 12 pytest cases | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact`, `tests/test_api.py::TestContact` |
 | ✅ | v1 | WhatsApp share button on every producer page (viral loop) | `frontend/components/WhatsAppShareButton.jsx` |
-| ✅ | v1 | WhatsApp click tracking on home products | `home_products.py` |
 | ✅ | v1 | Social proof bar with `AnimatedCounter` | `frontend/components/AnimatedCounter.jsx` |
 | ✅ | v1 | Sitemap.xml (auto-generated, includes producer slugs) | `frontend/app/sitemap.js` |
 | ✅ | v1 | robots.txt | `frontend/public/robots.txt` |
