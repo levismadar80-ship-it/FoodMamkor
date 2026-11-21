@@ -313,9 +313,7 @@ def compose_waitlist_confirmation(m: VisitorEmail) -> Mail:
     title = _one_line(m.title)
     subject = f'נכנסתם לרשימת ההמתנה ל-"{title}"'
     rows = _rows(m)
-    note = (
-        "כרגע אין מקומות. אם יתפנה מקום, נשלח מייל לראשונים ברשימה עם קישור להרשמה."
-    )
+    note = "כרגע אין מקומות. אם יתפנה מקום, נשלח מייל לראשונים ברשימה עם קישור להרשמה."
     body = (
         f"{subject}\n\n"
         + "\n".join(f"{k}: {v}" for k, v in rows)
