@@ -7,7 +7,7 @@ Purpose:  Lock the MEH-2151 restructure of the producer-approval email — a
 Touches:  Nothing. The builders are pure; the one endpoint test monkeypatches
           `_send_notification_email` and never reaches Resend.
 Does NOT: re-assert what MEH-2134 owns — the community paragraph's text, the
-          founder signature, and the invite-absent degradation all live in
+          team signature, and the invite-absent degradation all live in
           `tests/test_meh2134_approval_email_community.py`, which holds the
           byte-exact body. This file asserts the properties MEH-2151 adds, plus
           the ONE overlap it cannot delegate: that the community block sits
@@ -117,7 +117,7 @@ def test_text_part_orders_the_blocks_greeting_to_signature():
         ("page url", PAGE_URL),
         ("dashboard label", _APPROVED_DASHBOARD_LABEL),
         ("dashboard url", DASHBOARD_URL),
-        ("signature", "ספיר שנפ"),
+        ("signature", "צוות מהמקור"),
     ]
 
     positions = []
@@ -151,7 +151,7 @@ def test_community_block_sits_below_both_links(monkeypatch):
     assert community_at != -1, "community block missing while the invite is set"
     assert body.find(PAGE_URL) < community_at
     assert body.find(DASHBOARD_URL) < community_at
-    assert community_at < body.find("ספיר שנפ")
+    assert community_at < body.find("צוות מהמקור")
 
 
 # --- the slug guard ---------------------------------------------------------
@@ -174,7 +174,7 @@ def test_falsy_slug_omits_the_view_page_block_from_the_text_part(slug):
     # The mail must still be complete, not merely free of the omitted block.
     assert _APPROVED_DASHBOARD_LABEL in body
     assert DASHBOARD_URL in body
-    assert "ספיר שנפ" in body
+    assert "צוות מהמקור" in body
 
 
 @pytest.mark.parametrize("slug", NO_SLUG_VALUES, ids=["none", "empty", "whitespace"])

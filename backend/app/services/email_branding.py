@@ -48,3 +48,29 @@ def email_logo_html() -> str:
         f'alt="{EMAIL_LOGO_ALT}" style="display:block;border:0;margin:0 0 24px auto;'
         'color:#2e6853;font-size:18px;font-weight:bold;font-family:Arial,Helvetica,sans-serif">'
     )
+
+
+# MEH-3594 (Sapir, 21/11): the team sign-off carries the flower mark beside
+# it. The square app icon (frontend/public/icon-192.png), on the same public
+# origin as the logo, shown at 22×22.
+EMAIL_ICON_PATH = "/icon-192.png"
+EMAIL_ICON_SIZE = 22
+EMAIL_SIGNOFF = "צוות מהמקור"
+
+
+def email_icon_url() -> str:
+    return f"{EMAIL_ASSET_ORIGIN}{EMAIL_ICON_PATH}"
+
+
+def email_signoff_html() -> str:
+    """«צוות מהמקור» with the flower mark before it (RTL: to its right).
+
+    Inline content, so it sits inside whatever <p>/<td> the template already
+    styles. alt="" because the words beside it already say who signs; a
+    blocked image must not print «מהמקור» twice."""
+    return (
+        f'<img src="{html_escape(email_icon_url())}" width="{EMAIL_ICON_SIZE}" '
+        f'height="{EMAIL_ICON_SIZE}" alt="" style="display:inline-block;'
+        'vertical-align:middle;border:0;border-radius:5px;margin:0 0 0 6px;">'
+        f'<span style="vertical-align:middle;">{EMAIL_SIGNOFF}</span>'
+    )

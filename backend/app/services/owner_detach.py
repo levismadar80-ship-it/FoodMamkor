@@ -15,7 +15,7 @@ History:  MEH-3256 (grill retro D9, creation).
 from html import escape as html_escape
 
 from app.services.email import send_email
-from app.services.email_branding import email_logo_html
+from app.services.email_branding import email_logo_html, email_signoff_html
 
 
 def send_owner_detached_email(
@@ -32,7 +32,7 @@ def send_owner_detached_email(
         "החשבון עצמו נשאר: אפשר להמשיך להתחבר, והמועדפים והביקורות שלך שמורים.",
         "אם זה נעשה בטעות, אפשר להשיב למייל הזה ונסדר את זה.",
     ]
-    body = f"{greeting}\n\n" + "\n\n".join(lines) + "\n\nספיר שנפ\nמייסדת | מהמקור"
+    body = f"{greeting}\n\n" + "\n\n".join(lines) + "\n\nצוות מהמקור"
     paragraphs = "".join(
         f'<p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">'
         f"{html_escape(line)}</p>"
@@ -52,7 +52,7 @@ def send_owner_detached_email(
               {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">{html_escape(greeting)}</h1>
               {paragraphs}
-              <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:12px 0 0;">ספיר שנפ<br>מייסדת | מהמקור</p>
+              <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:12px 0 0;">{email_signoff_html()}</p>
             </td>
           </tr>
         </table>

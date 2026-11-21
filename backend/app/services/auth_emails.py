@@ -17,7 +17,7 @@ from html import escape as html_escape
 
 from app.config import settings
 from app.services.email import send_email
-from app.services.email_branding import email_logo_html
+from app.services.email_branding import email_logo_html, email_signoff_html
 
 logger = logging.getLogger(__name__)
 
@@ -498,8 +498,7 @@ def send_owner_invite_email(
         f"הקישור תקף ל-7 ימים ונועד לשימוש אישי.\n\n"
         f"המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.\n\n"
         f"איך אנחנו שומרים על המידע: {privacy_url}\n\n"
-        f"ספיר שנפ\n"
-        f"מייסדת | מהמקור"
+        f"צוות מהמקור"
     )
     # MEH-440-followup: escape anything that reaches the HTML part. `business`
     # is an admin-entered business name and `first_name` an admin-entered
@@ -539,7 +538,7 @@ def send_owner_invite_email(
                 אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
                 <a href="{link}" style="color:#2e6853;">{link}</a>
               </p>
-              <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:0;">ספיר שנפ<br>מייסדת | מהמקור</p>
+              <p style="color:#1C1A17;font-size:14px;line-height:1.6;margin:0;">{email_signoff_html()}</p>
             </td>
           </tr>
         </table>
@@ -565,7 +564,7 @@ def send_owner_invite_code_email(
     one before any account exists.
 
     Deliberately short and unsigned: no name, no link, no privacy paragraph,
-    no «ספיר שנפ» signature. It can be sent to an address nobody has verified
+    no signature. It can be sent to an address nobody has verified
     yet, including one entered by mistake, so it says as little as possible
     about who is inviting whom. Copy is LOCKED (<hebrew_copy> v3).
 

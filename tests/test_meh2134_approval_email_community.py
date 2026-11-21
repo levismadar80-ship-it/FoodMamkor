@@ -1,6 +1,6 @@
 """
 Module:   test_meh2134_approval_email_community
-Purpose:  Lock the MEH-2134 producer-approval email body — founder signature,
+Purpose:  Lock the MEH-2134 producer-approval email body — team signature,
           and a WhatsApp-community block that appears only when
           `settings.whatsapp_community_invite_url` is set.
 Does NOT: exercise the approval endpoint or the WhatsApp template
@@ -13,7 +13,7 @@ History:  MEH-2134 (creation, 2026-08-20).
           link blocks ABOVE the community block, so every full-string
           assertion below was re-derived from the new layout. What MEH-2134
           owns is unchanged and still asserted verbatim: the community
-          paragraph's text, the founder signature, and the invite-absent
+          paragraph's text, the team signature, and the invite-absent
           degradation. Only this file's copy of the SURROUNDING body moved.
           It is updated here rather than in a new file because a byte-exact
           expectation is a description of one layout — two files each holding
@@ -35,7 +35,6 @@ from app.services.admin_producer_emails import (
     _producer_changes_requested_body,
     _producer_rejected_body,
 )
-from app.services.onboarding_followup import SITE_DOMAIN
 
 # NOT a real invite. The repo is public, so the live
 # WHATSAPP_COMMUNITY_INVITE_URL never enters a tracked file — including this
@@ -91,9 +90,7 @@ def test_body_carries_community_block_and_link_when_url_is_set(invite_url):
         "לצאת בכל רגע:\n"
         f"{FAKE_INVITE_URL}\n"
         "\n"
-        "ספיר שנפ\n"
-        "מייסדת | מהמקור\n"
-        f"{SITE_DOMAIN}"
+        "צוות מהמקור"
     )
 
 
@@ -101,7 +98,7 @@ def test_body_omits_the_whole_block_when_url_is_empty(invite_url):
     """Phase C has not run yet — the block must vanish without a trace.
 
     No dangling label, no double blank line, and the mail still closes on the
-    founder signature. This is the state that ships on merge.
+    team signature. This is the state that ships on merge.
     """
     invite_url("")
 
@@ -114,16 +111,14 @@ def test_body_omits_the_whole_block_when_url_is_empty(invite_url):
         "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
         f"{_LINKS}"
         "\n"
-        "ספיר שנפ\n"
-        "מייסדת | מהמקור\n"
-        f"{SITE_DOMAIN}"
+        "צוות מהמקור"
     )
     # Named separately from the equality above so a failure says WHICH
     # property broke, rather than dumping two near-identical Hebrew blobs.
     assert "וואטסאפ" not in body
     assert "\n\n\n" not in body
-    assert body.endswith(f"ספיר שנפ\nמייסדת | מהמקור\n{SITE_DOMAIN}")
-    assert "צוות מהמקור" not in body
+    assert body.endswith("צוות מהמקור")
+    assert "ספיר שנפ" not in body
 
 
 def test_whitespace_only_url_is_treated_as_unset(invite_url):
