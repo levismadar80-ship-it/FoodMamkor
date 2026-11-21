@@ -11,5 +11,6 @@ Standing operational procedures: what to run, in what order, and what you expect
 | [cloudinary-orphan-cleanup.md](./cloudinary-orphan-cleanup.md) | Cleaning up unreferenced Cloudinary assets (MEH-375) |
 | [security-incident.md](./security-incident.md) | A secret leaked, an account was taken over, or personal data was exposed (MEH-3309) |
 | [load-testing.md](./load-testing.md) | k6 baseline: before launch, and after the triggers listed inside (MEH-559) |
+| [private-repo-switch.md](./private-repo-switch.md) | Before making the GitHub repo private: what breaks, a safe trial, how to revert (MEH-3568) |
 
 The release checklist lives at [../RELEASE_CHECKLIST.md](../RELEASE_CHECKLIST.md).
