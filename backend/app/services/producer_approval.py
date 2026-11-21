@@ -203,7 +203,6 @@ class ApprovalOverrides(NamedTuple):
     the door, which is the MEH-971 property this mirrors.
     """
 
-    without_license: bool = False
     unverified_phone: bool = False
 
 
@@ -259,21 +258,17 @@ def _assert_approvable(
             status_code=422,
             detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
         )
-    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
-    # of register-time ensure_license_for_categories. 422 matches the photo gate
-    # above (not MEH-769's 409, which is for status transitions).
+    # MEH-3026 (Sapir 21/11): a missing licence no longer blocks approval. The
+    # business goes live without the «מאומת» badge, which only the document
+    # check (`verified_at`, trust_tier.py) grants. It replaces the MEH-971
+    # chunk-4 422 and its `?allow_without_license` override.
+    # DO NOT re-add a licence 422 here — the ruling is "not a blocker".
     category_ids = [c.id for c in producer.categories]
     license_missing = not (producer.producer_license_number or "").strip()
-    needs_license = categories_require_license(db, category_ids) and license_missing
-    if needs_license and not overrides.without_license:
-        raise HTTPException(
-            status_code=422,
-            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון ייצור ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
-        )
-    if needs_license and overrides.without_license:
-        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
+    if license_missing and categories_require_license(db, category_ids):
+        # Audit trail, unchanged in shape from the override log it replaces.
         logger.warning(
-            "approve_producer: license-pending override for producer %s by admin %s",
+            "approve_producer: approved without a licence number, producer %s by admin %s",
             producer.id,
             admin_id,
         )

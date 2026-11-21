@@ -70,6 +70,20 @@ describe("MEH-2527 trust copy", () => {
     expect(en.terms.sections.licensing.outro).not.toContain("does not inspect, verify, or approve");
   });
 
+  // MEH-3026: a business can join without a licence, so §2 must not say every
+  // business declared it holds all of them — that is the v2 registration text
+  // the declaration dropped. It names the responsibility instead, and keeps
+  // "not a party", which docs/legal/2026-11-not-a-marketer.md rests on.
+  it("terms §2 matches the v3 declaration: responsibility, not a claim of holding every licence", () => {
+    const outro = he.terms.sections.licensing.outro;
+    expect(outro).not.toContain("מחזיק בכל הרישיונות");
+    expect(outro).toContain("אחראי לבדוק אילו רישיונות");
+    expect(outro).toContain("לא יוצג לו תג «מאומת»");
+    expect(outro).toContain("ואינה צד לעסקה");
+    expect(en.terms.sections.licensing.outro).not.toContain("holds all required licenses");
+    expect(en.terms.sections.licensing.outro).toContain("is not a party to the transaction");
+  });
+
   // MEH-2636: the section-level no-supervision clause covers §5's intro and
   // declared_body too, not just the badge. Deleting it as a "duplicate" would
   // narrow the disclaimer.

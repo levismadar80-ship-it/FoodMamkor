@@ -122,7 +122,6 @@ describe("PublishWithConsentPanel", () => {
     expect(api.post).toHaveBeenCalledWith(
       "/admin/producers/d-1/publish-with-consent",
       { consent_confirmed: true, consent_note: "אישרו בוואטסאפ, 17.11" },
-      undefined,
     );
   });
 
@@ -154,7 +153,6 @@ describe("PublishWithConsentPanel", () => {
         consent_note: "אישרו בוואטסאפ, 17.11",
         consent_screenshot_url: SHOT,
       },
-      undefined,
     );
   });
 
@@ -205,15 +203,15 @@ describe("PublishWithConsentPanel", () => {
     expect(submit()).not.toBeDisabled();
   });
 
-  it("the licence box ticked: the override is sent", async () => {
+  it("MEH-3026: there is no licence box, and publishing sends no override", async () => {
     api.post.mockResolvedValue({ data: { status: "approved" } });
     wrap(<PublishWithConsentPanel producerId="d-1" />);
+    expect(screen.queryByTestId("consent-publish-without-license")).not.toBeInTheDocument();
     fill();
     tick("consent-publish-consent");
-    tick("consent-publish-without-license");
     fireEvent.click(submit());
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    expect(api.post.mock.calls[0][2]).toEqual({ params: { allow_without_license: true } });
+    expect(api.post.mock.calls[0]).toHaveLength(2);
   });
 
   it("a refusal shows the server's reason and does not report success", async () => {
