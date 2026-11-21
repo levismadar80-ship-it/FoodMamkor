@@ -395,39 +395,34 @@ class TestAdminPing:
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
         email_mock = MagicMock()
-        monkeypatch.setattr(svc, "send_text", wa_mock)
         monkeypatch.setattr(svc, "send_email", email_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         svc.notify_admin_new_business_suggestion("מעדניית הזיתים", "חיפה", "דנה", False)
 
-        wa_mock.assert_called_once()
-        message = wa_mock.call_args.args[1]
+        # MEH-3589: admin notices are email only.
+        email_mock.assert_called_once()
+        message = email_mock.call_args.args[2]
         assert "מעדניית הזיתים" in message
         assert "חיפה" in message
         assert "/admin/outreach?source=community" in message
         assert "@" not in message
 
-        email_mock.assert_called_once()
-        assert "@" not in email_mock.call_args.args[2]
-
     def test_notify_flattens_newlines_in_a_crafted_name(self, monkeypatch):
         import app.services.auth_notifications as svc
         from app.config import settings
 
-        wa_mock = MagicMock(return_value=True)
-        monkeypatch.setattr(svc, "send_text", wa_mock)
-        monkeypatch.setattr(svc, "send_email", MagicMock())
+        email_mock = MagicMock()
+        monkeypatch.setattr(svc, "send_email", email_mock)
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
         svc.notify_admin_new_business_suggestion(
             "עסק\nלטיפול: https://evil.example", "חיפה", None, False
         )
-        message = wa_mock.call_args.args[1]
+        message = email_mock.call_args.args[2]
         assert "עסק לטיפול: https://evil.example" in message
         # Exactly the four lines the helper writes — no injected fifth.
         assert len(message.split("\n")) == 4

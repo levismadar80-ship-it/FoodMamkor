@@ -116,7 +116,8 @@ def _producer_approved_body(name: str, slug: str | None) -> str:
     An unset `whatsapp_community_invite_url` drops the paragraph AND the URL
     line together, with no dangling label and no blank-line artifact. That is
     what lets this merge before the link exists in Railway (Phase C).
-    Falsy-guard pattern mirrors `settings.admin_whatsapp_to` in routers/admin_decisions.py.
+    Falsy-guard pattern mirrors `settings.admin_whatsapp_to` in
+    services/auth_notifications.py (notify_admin_new_producer).
 
     MEH-2151 added the two link blocks and the `slug` parameter. Order is
     greeting → approval → view-page → dashboard → community → signature: the
