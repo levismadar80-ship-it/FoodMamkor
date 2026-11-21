@@ -4485,6 +4485,14 @@
           "registrations": {
             "label": "Signing up for an event or workshop:",
             "value": "Name, phone, and email. The details go to the business only for that sign-up, and are deleted 30 days after the date."
+          },
+          "orders": {
+            "label": "Orders and surprise bags:",
+            "value": "Name, phone, and for delivery also address and city, a note for the order and the order details. The business receives the name, phone and address to handle the order. For a surprise bag, the business sees only the pickup code. When you delete your account, the name, phone, address and note are removed from your orders."
+          },
+          "messages": {
+            "label": "WhatsApp and email messages:",
+            "value": "When you write to us on WhatsApp, we keep the phone number and the message text so we can reply. For WhatsApp messages we send, we keep the number, the message type and the delivery status. An email we send keeps its address and content only until it is sent, and the record of the send is deleted after 30 days. When you delete your account, the WhatsApp messages linked to its phone number are deleted."
           }
         }
       },
