@@ -38,7 +38,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import require_admin
@@ -46,7 +46,9 @@ from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
-from app.routers.producers import _servable_kashrut_certs
+from app.services.kashrut_cert_proxy import (  # MEH-3559: moved from routers/producers.py
+    servable_kashrut_certs as _servable_kashrut_certs,
+)
 from app.schemas.registration import (
     DraftConsentPublishIn,
     DraftConsentPublishOut,
@@ -164,7 +166,7 @@ def read_draft_preview(
     if not producer or not _ownerless_draft(db, producer):
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
 
-    # REUSES: routers/producers.py get_producer — the same hydration, in the
+    # REUSES: services/producer_detail.py detail_payload (was routers/producers.py get_producer, MEH-3559) — the same hydration, in the
     # same order, so the preview and the live page cannot drift apart.
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)
@@ -183,15 +185,11 @@ def read_draft_preview(
     response_model=DraftConsentPublishOut,
 )
 @limiter.limit("30/hour")
-def publish_draft_with_consent(  # noqa: PLR0913 — seven FastAPI-injected parameters (slowapi's request, path id, body, BackgroundTasks, one override flag, auth dep, db dep), same local-noqa shape as admin_decisions.approve_producer
+def publish_draft_with_consent(  # noqa: PLR0913 — six FastAPI-injected parameters (slowapi's request, path id, body, BackgroundTasks, auth dep, db dep), same local-noqa shape as admin_decisions.approve_producer
     request: Request,
     producer_id: UUID,
     body: DraftConsentPublishIn,
     background_tasks: BackgroundTasks,
-    # The same flag, default and audit log as approve_producer's (MEH-971).
-    # Sapir, 17/11: a business with no licence number may go live; it simply
-    # never gets the «מאומת» badge, which only grant-verified gives.
-    allow_without_license: bool = Query(default=False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -213,14 +211,13 @@ def publish_draft_with_consent(  # noqa: PLR0913 — seven FastAPI-injected para
     if not _ownerless_draft(db, producer):
         raise HTTPException(status_code=409, detail=_NOT_OWNERLESS_DRAFT)
 
-    # The photo and licence gates run as they do on approve. The phone gate is
+    # The photo gate runs as it does on approve; a missing licence is logged,
+    # not blocked (MEH-3026). The phone gate is
     # overridden, and logged by _assert_approvable: an ownerless page has no
     # one who could verify the number, exactly as a business the admin creates
     # live (admin_create_producer) has none. She can verify from her dashboard
     # after the owner invite.
-    overrides = ApprovalOverrides(
-        without_license=allow_without_license, unverified_phone=True
-    )
+    overrides = ApprovalOverrides(unverified_phone=True)
     _assert_approvable(db, producer, overrides, user.id)  # type: ignore[arg-type]
     _apply_approval_state(producer)
     # The audit record, in the column the owner invite also writes: one
@@ -243,7 +240,6 @@ def publish_draft_with_consent(  # noqa: PLR0913 — seven FastAPI-injected para
         "draft_preview.published_with_consent",
         producer_id=str(producer_id),
         admin_id=str(admin_id),
-        without_license=allow_without_license,
         has_screenshot=body.consent_screenshot_url is not None,
     )
     indexnow.schedule_public_producer(background_tasks, producer)

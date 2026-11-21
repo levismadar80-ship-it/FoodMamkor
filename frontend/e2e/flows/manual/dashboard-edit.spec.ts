@@ -444,7 +444,9 @@ test.describe("edit tab — required/optional chip", () => {
       // precisely what the row forbids, and a presence check cannot see it.
       await expect(chips, `${group}: one chip per card`).toHaveCount(n);
       for (const label of await chips.allInnerTexts()) {
-        expect(["חובה", "רשות"], `${group}: unexpected chip text «${label}»`).toContain(label.trim());
+        // MEH-3026: «מומלץ» is the third state — the licence card in a
+        // licence-required category earns the badge but never blocks.
+        expect(["חובה", "רשות", "מומלץ"], `${group}: unexpected chip text «${label}»`).toContain(label.trim());
       }
       seen += n;
       await backLink(page).click();
