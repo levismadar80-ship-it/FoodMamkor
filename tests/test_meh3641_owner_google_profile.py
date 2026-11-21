@@ -111,6 +111,13 @@ def test_routes_are_for_owners_only(client, db):
     assert client.get(BASE).status_code == 401
 
 
+def test_every_route_needs_a_login(client):
+    # One line per route, so docs/release/action-map.md sees each negative cell.
+    assert client.get(f"{BASE}/candidates", params={"q": "x"}).status_code == 401
+    assert client.get(f"{BASE}/check").status_code == 401
+    assert client.put(BASE, json={"google_place_id": PLACE}).status_code == 401
+
+
 # ── search ──────────────────────────────────────────────────────────────────
 
 
