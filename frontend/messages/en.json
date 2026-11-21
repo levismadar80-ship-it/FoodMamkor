@@ -1006,7 +1006,8 @@
         "city": "City",
         "address": "Delivery address",
         "name": "Full name",
-        "phone": "Mobile phone · we send a verification code to it",
+        "phone": "Mobile phone · we send a verification code and order updates to it",
+        "needs_city": "Enter a city to see the total and send the request.",
         "send_code": "Send code",
         "send_code_again": "Send a new code",
         "code": "Verification code",
@@ -1617,7 +1618,7 @@
       "back_to_dashboard": "Admin dashboard",
       "back_home": "Back to site",
       "error_loading": "Error loading data",
-      "error_generic": "Error",
+      "error_generic": "Something went wrong. Try again in a moment.",
       "no_data": "No data yet",
       "no_results": "No data yet",
       "items_pending_label": "{count} items awaiting approval",
@@ -2375,7 +2376,7 @@
         "delete_failed": "Could not delete — try again",
         "lead_added": "Lead added",
         "duplicate": "A similar lead already exists",
-        "generic_error": "Something went wrong",
+        "generic_error": "Something went wrong. Try again in a moment.",
         "copied": "Text copied",
         "copy_failed": "Could not copy — copy manually"
       },
@@ -7241,11 +7242,11 @@
   "contact_cta": {
     "whatsapp": "Message on WhatsApp",
     "phone": "Call",
-    "website": "Order on the website",
+    "website": "Order on the business's site",
     "email": "Send an email",
     "instagram": "Message on Instagram",
     "facebook": "Message on Facebook",
-    "external_order": "Order",
+    "external_order": "Order on the business's site",
     "wa_greeting": "Hi! I found you on Mehamakor — {name}"
   },
   "registration": {

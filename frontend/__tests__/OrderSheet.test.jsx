@@ -10,7 +10,7 @@ vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
 
 import api from "@/lib/api";
-import OrderSheet from "@/components/public/OrderSheet";
+import OrderSheet, { forgetOrderDrafts } from "@/components/public/OrderSheet";
 import { cancelDeadline, fulfilmentsOffered, orderBody, slotsFor } from "@/lib/order-sheet";
 
 const PRODUCER = "7e57a6f0-0000-4000-8000-000000000007";
@@ -94,6 +94,7 @@ describe("OrderSheet", () => {
   beforeEach(() => {
     vi.mocked(api.post).mockReset();
     push.mockReset();
+    forgetOrderDrafts();
   });
 
   it("shows the server's total and the disclosure lines before sending", async () => {
@@ -184,5 +185,43 @@ describe("OrderSheet", () => {
     expect(await screen.findByText("סך הכול: 56 ₪")).toBeTruthy();
     expect(screen.getByText("המועד שנבחר כבר לא זמין. צריך לבחור מועד אחר")).toBeTruthy();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  // MEH-3640 (Nielsen #1): a greyed-out «שליחת הבקשה» says why.
+  it("says a city is missing only while a delivery has no city", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    renderSheet();
+    expect(screen.queryByTestId("order-sheet-needs-city")).toBeNull();
+    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    expect(screen.getByTestId("order-sheet-needs-city").textContent).toBe("כתבו עיר כדי לראות את הסכום ולשלוח את הבקשה.");
+    fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
+    expect(screen.queryByTestId("order-sheet-needs-city")).toBeNull();
+  });
+
+  // MEH-3640 (Nielsen #3): closing the sheet keeps what she typed, not the code.
+  it("keeps the name, phone and address after closing and opening again", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const first = renderSheet();
+    fireEvent.change(screen.getByTestId("order-sheet-fulfilment"), { target: { value: "delivery" } });
+    fireEvent.change(screen.getByTestId("order-sheet-city"), { target: { value: "חיפה" } });
+    fireEvent.change(screen.getByTestId("order-sheet-address"), { target: { value: "הרצל 1" } });
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    fireEvent.change(screen.getByTestId("order-sheet-phone"), { target: { value: "0501234567" } });
+    first.unmount();
+    renderSheet();
+    expect(screen.getByTestId("order-sheet-fulfilment").value).toBe("delivery");
+    expect(screen.getByTestId("order-sheet-city").value).toBe("חיפה");
+    expect(screen.getByTestId("order-sheet-address").value).toBe("הרצל 1");
+    expect(screen.getByTestId("order-sheet-name").value).toBe("דנה לוי");
+    expect(screen.getByTestId("order-sheet-phone").value).toBe("0501234567");
+  });
+
+  it("starts empty for another business", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: QUOTE });
+    const first = renderSheet();
+    fireEvent.change(screen.getByTestId("order-sheet-name"), { target: { value: "דנה לוי" } });
+    first.unmount();
+    renderSheet(undefined, { id: "7e57a6f0-0000-4000-8000-000000000008", payment_info: { methods: ["cash"] } });
+    expect(screen.getByTestId("order-sheet-name").value).toBe("");
   });
 });
