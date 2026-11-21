@@ -37,7 +37,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 /** @type {import("swr").SWRConfiguration} */
-export const API_DEFAULTS = {
+const API_DEFAULTS = {
   revalidateOnFocus: false,
   revalidateOnReconnect: false,
   shouldRetryOnError: false,
