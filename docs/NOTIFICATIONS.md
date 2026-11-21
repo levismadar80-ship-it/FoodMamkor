@@ -8,7 +8,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-85 send sites · 74 on a single channel.
+85 send sites · 82 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
@@ -27,7 +27,7 @@
 | `routers/report_info.py` | `report_review` | מייל | בית עסק / מנהלת |
 | `routers/whatsapp_webhook.py` | `_maybe_process_optout` | וואטסאפ | בלי שורת עסק |
 | `services/admin_pending_reminder.py` | `send_admin_pending_reminder` | מייל | בלי שורת עסק |
-| `services/approved_edit_moderation.py` | `notify_admin_content_edit` | מייל + וואטסאפ | בעלת העסק |
+| `services/approved_edit_moderation.py` | `notify_admin_content_edit` | מייל | בעלת העסק |
 | `services/auth_emails.py` | `send_deletion_email` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_duplicate_attempt_email` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_email_changed_notice` | מייל | משתמשת (חשבון) |
@@ -36,16 +36,16 @@
 | `services/auth_emails.py` | `send_reset_email` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_verify_email` | מייל | משתמשת (חשבון) |
 | `services/auth_emails.py` | `send_welcome_email` | מייל | משתמשת (חשבון) |
-| `services/auth_notifications.py` | `notify_admin_claim_link_requested` | מייל + וואטסאפ | בית עסק / מנהלת |
-| `services/auth_notifications.py` | `notify_admin_draft_claimed` | מייל + וואטסאפ | בית עסק / מנהלת |
-| `services/auth_notifications.py` | `notify_admin_new_business_suggestion` | מייל + וואטסאפ | בלי שורת עסק |
-| `services/auth_notifications.py` | `notify_admin_new_category_request` | מייל + וואטסאפ | בית עסק / מנהלת |
+| `services/auth_notifications.py` | `notify_admin_claim_link_requested` | מייל | בית עסק / מנהלת |
+| `services/auth_notifications.py` | `notify_admin_draft_claimed` | מייל | בית עסק / מנהלת |
+| `services/auth_notifications.py` | `notify_admin_new_business_suggestion` | מייל | בלי שורת עסק |
+| `services/auth_notifications.py` | `notify_admin_new_category_request` | מייל | בית עסק / מנהלת |
 | `services/auth_notifications.py` | `notify_admin_new_producer` | מייל + וואטסאפ | בית עסק / מנהלת |
-| `services/auth_notifications.py` | `notify_admin_new_recipe` | מייל + וואטסאפ | בית עסק / מנהלת |
-| `services/auth_notifications.py` | `notify_admin_owner_invite_accepted` | מייל + וואטסאפ | בית עסק / מנהלת |
+| `services/auth_notifications.py` | `notify_admin_new_recipe` | מייל | בית עסק / מנהלת |
+| `services/auth_notifications.py` | `notify_admin_owner_invite_accepted` | מייל | בית עסק / מנהלת |
 | `services/auth_notifications.py` | `notify_admin_producer_resubmit` | מייל + וואטסאפ | בית עסק / מנהלת |
 | `services/auth_notifications.py` | `notify_admin_producer_review_ready` | מייל + וואטסאפ | בית עסק / מנהלת |
-| `services/auth_notifications.py` | `notify_admin_producer_sensitive_edit` | מייל + וואטסאפ | בית עסק / מנהלת |
+| `services/auth_notifications.py` | `notify_admin_producer_sensitive_edit` | מייל | בית עסק / מנהלת |
 | `services/auth_notifications.py` | `notify_producer_approved` | וואטסאפ | בעלת העסק |
 | `services/auth_notifications.py` | `notify_producer_changes_requested` | וואטסאפ | בעלת העסק |
 | `services/auth_notifications.py` | `notify_producer_registered` | וואטסאפ | בעלת העסק |

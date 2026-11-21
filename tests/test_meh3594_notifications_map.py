@@ -132,9 +132,14 @@ def test_map_sees_the_known_sites():
     # Control: rows the map must contain, so an empty map cannot read as green.
     rows = {(f, fn): ch for f, fn, ch, _g in build_rows()}
     assert len(rows) > 40, "the map found almost nothing — the inventory read is broken"
-    assert rows[("services/auth_notifications.py", "notify_admin_new_recipe")] == [
+    # MEH-3147: business-pending is the one admin notice on two channels.
+    assert rows[("services/auth_notifications.py", "notify_admin_new_producer")] == [
         "email",
         "whatsapp",
+    ]
+    # MEH-3589 (Sapir 21/11): every other admin notice is email only.
+    assert rows[("services/auth_notifications.py", "notify_admin_new_recipe")] == [
+        "email"
     ]
     assert any("push" in ch for ch in rows.values()), "no Web Push site found"
 
