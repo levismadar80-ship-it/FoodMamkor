@@ -190,6 +190,7 @@ UPDATE_CODE_INDEX=1 pytest tests/test_meh3604_code_index.py
 | `services/email.py` | Email delivery via Resend HTTP API. |
 | `services/email_branding.py` | The brand header shared by every HTML email (MEH-2834 PR 2). |
 | `services/email_change_guard.py` | The password gate on an account-email change (PATCH /users/me): a per-ACCOUNT cap on wrong passwords, and the messages for an account that has no password at … |
+| `services/email_layout.py` | The ONE branded frame every email is sent in (MEH-3587). Logo on the public origin, white card on the site's warm background, RTL, viewport, the green heading … |
 | `services/experience_moderation.py` | AI pre-moderation for community-submitted experiences. |
 | `services/experience_notifications.py` | Email notifications for the experiences moderation flow. |
 | `services/experience_sessions.py` | MEH-3441 (stage 2 of MEH-3264) — a recurring workshop's dates. An owner lists dates (date + time); … |
