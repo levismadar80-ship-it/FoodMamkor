@@ -20,14 +20,15 @@ const BOM = "﻿";
 const AGOROT = 100;
 
 /**
- * A cell Excel would run as a formula (it starts with =, +, -, an at-sign, tab
- * or CR) is prefixed with
- * an apostrophe: a business name is user text (OWASP CSV injection).
+ * A cell Excel would run as a formula (it starts with =, +, -, an at-sign, tab,
+ * CR or LF, also after leading whitespace) is prefixed with an apostrophe: a business name is user text (OWASP CSV injection).
  * @param {unknown} value
  */
 export function csvCell(value) {
   let text = String(value ?? "");
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  // The first character, and the first after any whitespace or invisible
+  // mark (some importers trim them): = + - @ tab CR LF.
+  if (/^[\s\u200B-\u200F\u2060\uFEFF]*[=+\-@\t\r\n]/.test(text)) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;
 }
 

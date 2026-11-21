@@ -241,6 +241,9 @@ describe("AdminBillingPage (MEH-3182)", () => {
       "יולי 2026אף בית עסק לא הגיע ל-1,000₪",
       "יוני 2026לא היו הזמנות דרך האתר",
     ]);
+    // MEH-3189: a month that had bookings can be exported; June (none) cannot.
+    const hasCsv = lines.map((line) => line.querySelector("[data-testid^='admin-billing-csv-']") !== null);
+    expect(hasCsv).toEqual([true, true, true, true, false]);
   });
 
   it("a failed fetch shows an error, never a screen of zeros", async () => {

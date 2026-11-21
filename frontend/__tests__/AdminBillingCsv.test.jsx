@@ -78,6 +78,14 @@ describe("buildBillingCsv (MEH-3189)", () => {
     expect(csvCell("-1")).toBe(`"'-1"`);
     expect(csvCell("@x")).toBe(`"'@x"`);
     expect(csvCell('משק "הגבעה"')).toBe('"משק ""הגבעה"""');
+    // tab, CR, LF, and a formula behind leading whitespace or a zero-width mark
+    expect(csvCell("\t=1")).toBe(`"'\t=1"`);
+    expect(csvCell("\r=1")).toBe(`"'\r=1"`);
+    expect(csvCell("\n=1")).toBe(`"'\n=1"`);
+    expect(csvCell("  =1")).toBe(`"'  =1"`);
+    expect(csvCell("\u200B=1")).toBe(`"'\u200B=1"`);
+    // an ordinary name, and a dash INSIDE a name, are left alone
+    expect(csvCell("משק הגבעה - רמת גן")).toBe('"משק הגבעה - רמת גן"');
   });
 });
 
@@ -109,6 +117,13 @@ describe("BillingCsvButton (MEH-3189)", () => {
     expect(state.calls[0][0]).toBe("/admin/billing/overview?month=2026-10");
     expect(state.toasts).toEqual([]);
     spy.mockRestore();
+  });
+
+  it("a rejected read toasts the error", async () => {
+    state.reply = () => Promise.reject(new Error("network"));
+    show();
+    fireEvent.click(screen.getByTestId("admin-billing-csv-2026-10"));
+    await waitFor(() => expect(state.toasts).toEqual([he.admin.billing.csv.error]));
   });
 
   it("a failed or malformed read toasts the error and downloads nothing", async () => {
