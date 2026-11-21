@@ -406,7 +406,19 @@ const SHOTS = [
   },
   {
     file: "recipe.webp",
-    route: `/${SLUG}/recipes`,
+    // MEH-3495: `/${SLUG}/recipes` is not a route — only
+    // app/[locale]/[slug]/recipes/[recipe_id] exists — so this shot was a 404
+    // page that `main` matched (21/11). The recipe id is read from the API at
+    // run time, because a re-seed mints new ids.
+    route: async (page) => {
+      const res = await page.request.get(`${BASE}/api/producers/${SLUG}/recipes`);
+      if (!res.ok()) throw new Error(`recipe list for ${SLUG}: HTTP ${res.status()}`);
+      const list = await res.json();
+      if (!Array.isArray(list) || !list.length) {
+        throw new Error(`${SLUG} has no recipe on this backend — re-run the seed`);
+      }
+      return `/${SLUG}/recipes/${list[0].id}`;
+    },
     selector: "main",
     feature_ids: ["recipes"],
   },
@@ -1019,7 +1031,7 @@ async function captureStills(browser) {
   for (const shot of SHOTS) {
     const entry = {
       file: shot.file,
-      route: shot.route,
+      route: typeof shot.route === "function" ? "(resolved at run time)" : shot.route,
       selector: shot.selector,
       feature_ids: shot.feature_ids ?? [],
       ...(shot.note ? { note: shot.note } : {}),
@@ -1055,10 +1067,18 @@ async function captureStills(browser) {
 
 
     try {
-      await page.goto(`${BASE}/he${shot.route}`, { waitUntil: "domcontentloaded" });
+      const route = typeof shot.route === "function" ? await shot.route(page) : shot.route;
+      entry.route = route;
+      await page.goto(`${BASE}/he${route}`, { waitUntil: "domcontentloaded" });
       if (shot.prepare) await shot.prepare(page);
       const el = page.locator(shot.selector).first();
       await el.waitFor({ state: "visible", timeout: shot.timeout ?? 20_000 });
+      // MEH-3495: a 404 or error page renders inside `main` too, so a shot
+      // gated on `main` "passed" as a not-found page (recipe.webp, 21/11).
+      // StatusPage is the one shell every 404 / error page uses.
+      if (await page.locator('[data-testid="status-page"]').count()) {
+        throw new Error(`${route} rendered a status page (404 or error), not the feature`);
+      }
       await page.waitForTimeout(400); // let fonts/images settle
       // IN-FRAME CLEANLINESS — the subject is the element being clipped, so
       // this asks exactly what the file will show. Checked BEFORE the write,
@@ -1111,7 +1131,7 @@ async function captureStills(browser) {
           // neither width nor height, it is intermittent, and it is silent —
           // which is the whole reason this assertion runs on every write
           // rather than once at the start.
-          `the DOM can be complete and the raster still empty — ${shot.route} ` +
+          `the DOM can be complete and the raster still empty — ${entry.route} ` +
             `at ${VIEWPORT.width}px. Cause unestablished; see the note here.`,
         );
       } catch (err) {
