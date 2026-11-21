@@ -1,0 +1,8 @@
+# Privacy column ledger (MEH-3643). One row per column added since 21/11/2026:
+# <table.column>\t<category>\t<reason>
+# category = an id from DATA_ITEMS in frontend/app/[locale]/privacy/page.js
+#            (identity, business, outreach, technical, location, cookies, ugc,
+#            registrations), or not-personal. The reason is required either way:
+#            for a category, what the field holds; for not-personal, why it is not.
+# A column in the models with no row here (and not in column-baseline.txt) fails
+# tests/test_privacy_column_ledger.py.
