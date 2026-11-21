@@ -247,8 +247,8 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
         gb.max_units = data.max_units  # type: ignore[assignment]
     if data.joins_open is not None:
         gb.joins_closed_at = (
-            None if data.joins_open else (gb.joins_closed_at or utc_now())
-        )  # type: ignore[assignment]
+            None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]
+        )
     db.flush()
     if _room_grew(before, gb):
         capacity.offer_freed_place(db, gb, background_tasks)
