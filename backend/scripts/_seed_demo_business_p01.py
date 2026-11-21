@@ -13,14 +13,14 @@ from datetime import date, datetime, time, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from app.models import Producer, ProducerLocation  # noqa: E402  # imports must follow sys.path.insert (script shim)
-from app.models.models import (
+from app.models.models import (  # noqa: E402  # imports must follow sys.path.insert (script shim)
     Event,
     Experience,
     GroupBuy,
     KashrutBadgeRequest,
     RescueOffer,
     User,
-)  # noqa: E402  # imports must follow sys.path.insert (script shim)
+)
 from app.routers.rescue import RESERVE_CLOSES_BEFORE_END  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import ISRAEL_TZ  # noqa: E402  # imports must follow sys.path.insert (script shim)
 

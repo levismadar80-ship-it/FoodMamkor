@@ -59,7 +59,7 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
     Product,
     ProducerRecipe,
 )
-from app.models.models import (
+from app.models.models import (  # noqa: E402  # imports must follow sys.path.insert (script shim)
     ContactClick,
     Event,
     Experience,
@@ -73,7 +73,7 @@ from app.models.models import (
     ProducerWhatsAppClick,
     RescueOffer,
     User,
-)  # noqa: E402  # imports must follow sys.path.insert (script shim)
+)
 from app.services.analytics_rollup import rollup_watermark  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
