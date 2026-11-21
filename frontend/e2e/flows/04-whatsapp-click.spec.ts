@@ -1,5 +1,6 @@
 import { test, expect } from "./_cloudinary-stub";
 import { pickProducer, detailPath, openDetail, watchPageErrors, REQUIREMENTS } from "./_producer-fixture";
+import { layoutSettled } from "./_layout-settled";
 
 /**
  * MEH-1426 attribution chain: the producer-detail primary CTA fires
@@ -67,9 +68,16 @@ test.describe("WhatsApp analytics", () => {
       "the API says this producer's primary contact method is whatsapp but the CTA disagrees",
     ).toHaveAttribute("data-method", "whatsapp");
 
+    // MEH-3153: flaky in the blocking WebKit core job (run 44888155845, passed
+    // on retry). Two shapes from testing.md «E2E flake prevention»: a click
+    // into a card that is still moving can land on an ancestor (MEH-3449), and
+    // a fixed 500 ms wait is a wall-clock budget. Gate the click on a settled
+    // layout, then poll for the beacon instead of sleeping.
+    await layoutSettled(primaryCta);
     await primaryCta.click();
-    await page.waitForTimeout(500);
 
-    expect(beaconFired, "whatsapp-click beacon did not fire").toBe(true);
+    await expect
+      .poll(() => beaconFired, { message: "whatsapp-click beacon did not fire", timeout: 10_000 })
+      .toBe(true);
   });
 });
