@@ -56,8 +56,8 @@ def producer_by_slug_or_raise(db: Session, slug: str) -> Producer:
     """The public business at `slug`; 410 for a deleted one, 404 otherwise."""
     producer = (
         _detail_query(db)
-        .filter(Producer.slug == slug, is_business())
-        .first()  # MEH-2459
+        .filter(Producer.slug == slug, is_business())  # MEH-2459
+        .first()
     )
     if not producer:
         # MEH-2534: the URL of a deleted business answers 410, so the page can

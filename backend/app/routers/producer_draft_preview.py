@@ -166,7 +166,7 @@ def read_draft_preview(
     if not producer or not _ownerless_draft(db, producer):
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
 
-    # REUSES: routers/producers.py get_producer — the same hydration, in the
+    # REUSES: services/producer_detail.py detail_payload (was routers/producers.py get_producer, MEH-3559) — the same hydration, in the
     # same order, so the preview and the live page cannot drift apart.
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)
