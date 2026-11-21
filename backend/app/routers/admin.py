@@ -30,10 +30,10 @@ from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
     validate_transition,
 )
-from app.routers.producer_me import reconcile_secondary_phone  # MEH-3339
-from app.routers.producer_me import (
+from app.services.producer_me_writes import reconcile_secondary_phone  # MEH-3339
+from app.services.producer_me_writes import (
     _apply_delivery_rows,
-)  # MEH-3475: one writer for structured rows
+)  # MEH-3475: one writer for structured rows (moved from routers/producer_me.py, MEH-3569)
 from app.data.cities import canonical_city  # MEH-3475
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
@@ -301,7 +301,7 @@ def admin_create_producer(
     # explicit `false` alongside delivery cities is a deliberate declaration
     # that MEH-1848's predicates are right to exclude. Only the UNSTATED case
     # is derived, which `model_fields_set` distinguishes and a plain falsy
-    # check cannot. Same distinction `_sync_active_offer` (producer_me.py)
+    # check cannot. Same distinction `_sync_active_offer` (services/producer_me_writes.py)
     # already relies on: "omitted" and "explicitly false" are different answers.
     if data.delivery_area_cities and "offers_delivery" not in data.model_fields_set:
         producer.offers_delivery = True  # type: ignore[assignment]

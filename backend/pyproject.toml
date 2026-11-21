@@ -232,6 +232,8 @@ files = [
     "app/services/admin_draft_missing.py",
     "app/services/draft_preview.py",
     "app/routers/producer_me.py",
+    "app/services/producer_me_writes.py",
+    "app/services/owner_products.py",
     "app/routers/producer_me_analytics.py",
     "app/routers/producer_me_locations.py",
     "app/routers/producer_me_review.py",
