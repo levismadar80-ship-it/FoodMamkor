@@ -138,8 +138,14 @@ def test_a_rejected_google_token_does_not_burn_a_live_code(client, db):
     producer, token = _invited(client, db)
     user = _google_user(db)
     code = _arm(client, token, user)[2]
+    db.expire_all()
+    hash_before = _row(db, producer).owner_invite_code_hash
     with _with_claims(None):
         assert _accept(client, token, user).status_code == 422
+    db.expire_all()
+    # Not one of the code's attempts was spent, and the code itself is intact.
+    assert _row(db, producer).owner_invite_code_attempts in (None, 0)
+    assert _row(db, producer).owner_invite_code_hash == hash_before
     r = _accept(client, token, user, google_id_token=None, code=code)
     assert r.status_code == 200, r.text
 
@@ -180,3 +186,34 @@ def test_an_admin_with_a_fresh_google_token_is_still_refused(client, db):
         r = _accept(client, token, admin)
     assert r.status_code == 403
     verifier.assert_not_called()
+
+
+def test_a_signin_from_the_future_is_refused(client, db):
+    producer, token = _invited(client, db)
+    user = _google_user(db)
+    ahead = int(time.time() + oig._CLOCK_SKEW.total_seconds() + 60)
+    with _with_claims(_claims(iat=ahead)):
+        r = _accept(client, token, user)
+    assert r.status_code == 422
+    _not_accepted(db, producer, user)
+
+
+def test_an_iat_of_the_wrong_shape_is_refused_not_a_500(client, db):
+    producer, token = _invited(client, db)
+    user = _google_user(db)
+    for iat in (True, str(int(time.time())), float("nan"), 1e30):
+        with _with_claims(_claims(iat=iat)):
+            r = _accept(client, token, user)
+        assert r.status_code == 422, iat
+    _not_accepted(db, producer, user)
+
+
+def test_with_both_a_token_and_a_code_the_token_decides(client, db):
+    """A refused token is not rescued by a valid code sent alongside it."""
+    producer, token = _invited(client, db)
+    user = _google_user(db)
+    code = _arm(client, token, user)[2]
+    with _with_claims(_claims(sub="someone-else")):
+        r = _accept(client, token, user, code=code)
+    assert r.status_code == 422
+    _not_accepted(db, producer, user)

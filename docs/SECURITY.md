@@ -1405,3 +1405,12 @@ Stage 2b of on-site ordering adds the first routes where a **guest** writes data
 - **10-minute replay window:** a repeat of `POST /product-orders` with the same idempotency key, phone and business within 10 minutes returns the same order and token **without a new code** (a lost answer must not cost the buyer her order). For those 10 minutes the key is a credential. It is a client-made UUID that appears in no response, view or log. **The frontend must never put it in a URL or an analytics event.**
 - **What a business may do alone:** confirm at or below the total the buyer saw, and only before the slot starts. Anything else needs the buyer's acceptance. Two no-shows in 90 days block a phone, so a no-show can be reported only after the slot of an order that was confirmed in time.
 - **Ownership:** a business reaches only its own orders (404 otherwise); there is no admin path yet (stage 6).
+
+### Owner invite on an existing account: a fresh Google sign-in replaces the email code (MEH-3675)
+
+- **What the code proves:** on `POST /auth/owner-invite/accept-existing` the emailed code shows that whoever is at the screen can reach the account right now. An old session alone never accepts.
+- **The Google path:** the body may carry `google_id_token` instead of `code`. It counts only when `verify_google_token` passes (signature, `aud`, `iss`, `exp`; None when Google sign-in is unconfigured), `email_verified is True`, `sub` equals the account's linked `google_id` (never the email, same rule as `/auth/google`), and `iat` is at most 5 minutes old (30 s future skew). Any missing or odd claim fails closed with the same 422 as a missing code (`backend/app/services/owner_invite_google.py`).
+- **Precedent:** OIDC `max_age` / `auth_time` re-authentication, GitHub sudo mode.
+- **What it does not change:** admin and has-business refusals come first; a refused token spends none of the code's attempts and does not consume a live code; the lock order (producer, then user) and the `token_version` bump on accept are unchanged.
+- **Client side:** the credential lives only in page state, dropped on sign-out or an account change (`useFreshGoogleCredential.js`); never stored or logged.
+- Tests: `tests/test_meh3675_owner_invite_google_fresh.py`, `frontend/__tests__/OwnerInviteExistingGoogle.test.jsx`.

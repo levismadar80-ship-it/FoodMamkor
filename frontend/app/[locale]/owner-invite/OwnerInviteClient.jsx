@@ -20,6 +20,7 @@ import {
   stashOwnerInviteToken,
 } from "@/lib/claim-token";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
+import useFreshGoogleCredential from "./useFreshGoogleCredential";
 import { env } from "@/lib/env";
 import PasswordInput from "@/components/PasswordInput";
 import StatusPage from "@/components/StatusPage";
@@ -102,7 +103,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
   // MEH-3675: the Google credential from a sign-in on THIS page. The
   // existing-account form sends it instead of an email code; the server
   // takes it only while it is a few minutes old.
-  const [googleCredential, setGoogleCredential] = useState(/** @type {string|null} */ (null));
+  const [googleCredential, setGoogleCredential] = useFreshGoogleCredential(user?.id);
 
   const [token, setToken] = useState(null);
   const [view, setView] = useState(VIEW.LOADING);

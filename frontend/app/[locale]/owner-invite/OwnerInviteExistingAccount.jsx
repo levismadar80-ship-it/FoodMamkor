@@ -134,8 +134,12 @@ export default function OwnerInviteExistingAccount({
       router.push("/producer/dashboard");
     } catch (error) {
       // A Google sign-in the server did not take (too old, another Google
-      // account) drops back to the code step; its reason is shown as is.
-      if (viaGoogle && error?.response?.status === 422) onGoogleExpired?.();
+      // account) drops back to the code step; its reason is shown as is. The
+      // server's refusal is the same sentence as `owner_invite.code_required`
+      // («צריך לבקש קוד אימות…»); any other refusal (the farmer line, a
+      // schema error) keeps the sign-in, so she does not lose it for nothing.
+      if (viaGoogle && error?.response?.data?.detail === t("code_required"))
+        onGoogleExpired?.();
       fail(error, t("submit_error"));
       setSubmitting(false);
     }

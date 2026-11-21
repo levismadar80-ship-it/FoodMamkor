@@ -20,7 +20,12 @@ verified mailbox NOW. It never protected a leaked invite link: a stranger
 holding the link gets a code in their own mailbox (`producer_owner_invite.py`
 module docstring). A Google ID token minted in the last few minutes, for the
 Google identity this account is linked to, shows that whoever is at the screen
-just passed Google's own sign-in for that mailbox. An OLD session shows
+just passed Google's own sign-in for that identity. The match is on `sub`, not
+on the token's email: Google documents `sub` as the one stable identifier (an
+address can change on either side), and `/auth/google` and
+`account_guards._fresh_match` match the same way. So this proves "the owner of
+the account's Google identity is here now", which is what the code proved for
+the mailbox. An OLD session shows
 neither, which is why the window is short and why there is no fallback to
 "the account is signed in, so skip it".
 
@@ -49,9 +54,14 @@ _CLOCK_SKEW = timedelta(seconds=30)
 
 def _is_fresh(info: dict[str, Any], now: datetime) -> bool:
     iat = info.get("iat")
-    if not isinstance(iat, (int, float)):
+    # `bool` is an `int` in Python; a NaN or out-of-range float makes
+    # `fromtimestamp` raise. Every odd shape fails closed (422), never 500.
+    if isinstance(iat, bool) or not isinstance(iat, (int, float)):
         return False
-    issued = datetime.fromtimestamp(iat, tz=timezone.utc)
+    try:
+        issued = datetime.fromtimestamp(iat, tz=timezone.utc)
+    except (OverflowError, ValueError, OSError):
+        return False
     return now - GOOGLE_FRESH_SIGNIN_MAX_AGE <= issued <= now + _CLOCK_SKEW
 
 

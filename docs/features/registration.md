@@ -18,7 +18,7 @@
 * `backend/app/services/auth_notifications.py` — `notify_admin_draft_claimed`: מייל לאדמין כשבעלת עסק קולטת טיוטה (MEH-3410; בלי וואטסאפ מאז MEH-3589).
 * `backend/app/services/admin_draft_missing.py` · `frontend/app/[locale]/admin/producers/AdminDraftMissing.jsx` — מה חסר בטיוטה שנקלטה, ברשימת האדמין (MEH-3409).
 * `backend/app/routers/producer_draft_preview.py` · `backend/app/services/draft_preview.py` · `frontend/components/admin/DraftPreviewLinkPanel.jsx` (also renders `frontend/components/admin/AdminLinkPanel.jsx`) · `frontend/components/admin/PublishWithConsentPanel.jsx` · `frontend/scripts/capture-page-video.mjs`
-* `frontend/app/[locale]/owner-invite/OwnerInviteConsents.jsx` — תיבת ההסכמה האחת (תנאים + הצהרת רישוי, ההצהרה המלאה נפתחת בלחיצה) והצהרת החקלאית, משותפת להזמנת בעלים ול-claim. בהזמנת בעלים הטופס נפתח שלב אחרי שלב (מייל, קוד, סיסמה ותיבה), ויש «המשך עם Google» שמעביר לטופס של חשבון קיים (MEH-3662).
+* `frontend/app/[locale]/owner-invite/OwnerInviteConsents.jsx` — תיבת ההסכמה האחת (תנאים + הצהרת רישוי, ההצהרה המלאה נפתחת בלחיצה) והצהרת החקלאית, משותפת להזמנת בעלים ול-claim. בהזמנת בעלים הטופס נפתח שלב אחרי שלב (מייל, קוד, סיסמה ותיבה), ויש «המשך עם Google» שמעביר לטופס של חשבון קיים (MEH-3662). כניסה עם Google שנעשתה בדף הזה לפני פחות מ-5 דקות מחליפה שם את הקוד במייל (MEH-3675, `backend/app/services/owner_invite_google.py`, `frontend/app/[locale]/owner-invite/useFreshGoogleCredential.js`).
 * `backend/app/services/pending_nudge.py` — מיילי ההמשך לעסק שלא סיים.
 * `frontend/lib/business-features.js` — ממנו `/join` מרנדר את רשימת הכלים.
 
@@ -27,7 +27,7 @@
 **טסטים**
 * `frontend/e2e/flows/18-producer-register-wizard.spec.ts` · `frontend/e2e/flows/29-register-journey-a.spec.ts` · `frontend/e2e/flows/32-register-journey-b-oauth.spec.ts`
 * `frontend/e2e/flows/manual/register-producer.spec.ts` · `frontend/e2e/flows/manual/join.spec.ts`
-* `frontend/e2e/flows/46-owner-invite.spec.ts` · `tests/test_producer_owner_invite.py` · `tests/test_producer_claim.py` · `tests/test_meh3246_invite_gates.py` · `tests/test_meh3268_accept_keeps_incomplete_page_hidden.py`
+* `frontend/e2e/flows/46-owner-invite.spec.ts` · `tests/test_producer_owner_invite.py` · `tests/test_producer_claim.py` · `tests/test_meh3246_invite_gates.py` · `tests/test_meh3268_accept_keeps_incomplete_page_hidden.py` · `tests/test_meh3675_owner_invite_google_fresh.py` · `frontend/__tests__/OwnerInviteExistingGoogle.test.jsx`
 * `tests/test_producer_draft_preview.py` · `frontend/__tests__/DraftPreviewConsentPublish.test.jsx`
 * `frontend/__tests__/ClaimLinkPreviewMetadata.test.js`
 * `frontend/__tests__/OwnerInviteAcceptSignsIn.test.jsx` · `frontend/__tests__/OwnerInviteExistingAccount.test.jsx` · `frontend/__tests__/ClaimPage.test.jsx`

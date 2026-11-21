@@ -38,7 +38,7 @@ vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push }),
 }));
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ user: authUser, loading: false, refreshUser: vi.fn(async () => {}), logout: vi.fn() }),
+  useAuth: () => ({ user: authUser, loading: false, refreshUser: vi.fn(async () => {}), logout: () => { authUser = null; } }),
 }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 vi.mock("@/components/PasswordInput", () => ({
@@ -97,12 +97,36 @@ describe("owner invite — fresh Google sign-in instead of the code (MEH-3675)",
   });
 
   it("a Google sign-in the server refuses drops back to the code step with its reason", async () => {
-    api.post.mockRejectedValueOnce({ response: { status: 422, data: { detail: "הקוד שגוי או שפג תוקפו." } } });
+    api.post.mockRejectedValueOnce({ response: { status: 422, data: { detail: "צריך לבקש קוד אימות ולהזין אותו." } } });
     wrap();
     await signInWithGoogleHere();
     fireEvent.click(screen.getByTestId("owner-invite-consent"));
     fireEvent.submit(screen.getByTestId("owner-invite-existing-form"));
     expect(await screen.findByTestId("owner-invite-existing-send-code")).toBeTruthy();
-    expect(screen.getByTestId("owner-invite-existing-error").textContent).toContain("הקוד שגוי");
+    expect(screen.getByTestId("owner-invite-existing-error").textContent).toContain("צריך לבקש קוד אימות");
+  });
+
+  it("any other refusal keeps the Google sign-in (no code step forced on her)", async () => {
+    api.post.mockRejectedValueOnce({ response: { status: 422, data: { detail: "צריך לאשר את הצהרת החקלאית." } } });
+    wrap();
+    await signInWithGoogleHere();
+    fireEvent.click(screen.getByTestId("owner-invite-consent"));
+    fireEvent.submit(screen.getByTestId("owner-invite-existing-form"));
+    await screen.findByTestId("owner-invite-existing-error");
+    expect(screen.queryByTestId("owner-invite-existing-send-code")).toBeNull();
+  });
+
+  it("signing out drops the credential: the next account in this tab gets the code step", async () => {
+    const { rerender } = wrap();
+    await signInWithGoogleHere();
+    fireEvent.click(screen.getByTestId("owner-invite-existing-sign-out"));
+    authUser = { ...CONSUMER, id: "u2", email: "other@example.com" };
+    rerender(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <OwnerInviteClient />
+      </NextIntlClientProvider>,
+    );
+    expect(await screen.findByTestId("owner-invite-existing-send-code")).toBeTruthy();
   });
 });
+
