@@ -8,11 +8,12 @@
 * `frontend/app/[locale]/freshness/confirm/` — הבדיקה החודשית «הכול עדיין נכון?» ([page-freshness.md](./page-freshness.md))
 
 **קבצים מרכזיים**
-* `backend/app/services/email.py` — ‏`send_email()`. נכשל פתוח בלי `RESEND_API_KEY`.
+* `backend/app/services/email.py` — ‏`send_email()`. נכשל פתוח בלי `RESEND_API_KEY`. מייל שנשלח בלי html מקבל אוטומטית את המסגרת הממותגת (MEH-3587).
 * `backend/app/services/email_outbox.py` — תור המיילים העמיד (MEH-3535): ‏`enqueue_email()` כותב את המייל לטבלה `email_outbox` באותה טרנזקציה של מה שגרם לו (במיילי האישור: דרך `before_commit` של `_persist_approval`), ו-`dispatch_due()` שולח עם ניסיונות חוזרים. כרגע עוברים בו מיילי ההחלטה על בית עסק (אושר / נדחה / חסר פרט) ומיילי ההרשמה לאירוע ולסדנה.
 * `backend/app/worker.py` — שירות ה-worker הנפרד ב-Railway (`railway.worker.json`) שמריץ את התור ואת טיק ההזמנות, אחרי `OUTBOX_EXTERNAL_WORKER=true` בשירות האתר.
 * `frontend/components/EmailLinkUnsubscribe.jsx` — דף הנחיתה האחד של כל קישור «הסרה» במייל (ניוזלטר, רשימת המתנה, סיכום שבועי): שולח את הטוקן ב-POST בטעינה, «נסו שוב» על 429/5xx/רשת, והטוקן יורד מכתובת הדף (MEH-3464).
-* `backend/app/services/registration_emails.py` — המסגרת המשותפת (`_shell`) של כל מייל HTML, ו-`_button`.
+* `backend/app/services/email_layout.py` — **המסגרת האחת של כל מייל** (MEH-3587): לוגו, כרטיס, RTL, כותרת, כפתורים. `send_email` עוטף בה אוטומטית כל מייל שנשלח כטקסט בלבד: שורה «תווית: כתובת» הופכת לכפתור, וגרסת הטקסט יוצאת בלי שינוי. מייל חדש לא צריך לבנות HTML כדי להיראות ממותג.
+* `backend/app/services/registration_emails.py` — `_shell` (עכשיו קורא ל-`frame` של email_layout) ו-`_button`.
 * `backend/app/services/email_branding.py` — הלוגו. תמונות במייל נטענות תמיד מ-mehamakor.co.il, בכל סביבה: ה-staging נעול בהגנת Vercel ושרתי התמונות של Gmail/Outlook לא מגיעים אליו (MEH-3583). קישורים במייל ממשיכים ללכת אחרי FRONTEND_URL.
 * `backend/app/services/rescue_emails.py` · `backend/app/services/rescue_no_show.py` · `backend/app/services/pending_nudge.py`
 * `backend/app/services/push.py` — התראות דפדפן.
@@ -23,7 +24,7 @@
 
 **טסטים**
 * `tests/test_meh0000_email_frame.py` — המסגרת: viewport, פלטה, ריפוד בנייד.
-* `tests/test_email_logo.py` · `tests/test_meh2164_newsletter_mobile_width.py` · `tests/test_meh2151_approval_email_cta.py`
+* `tests/test_meh3587_email_layout.py` · `tests/test_email_logo.py` · `tests/test_meh2164_newsletter_mobile_width.py` · `tests/test_meh2151_approval_email_cta.py`
 * `tests/test_newsletter_unsubscribe.py` · `tests/test_meh2611_newsletter_resend_sync.py` · `tests/test_meh2875_newsletter_kicker.py`
 * `tests/test_meh3079_weekly_owner_summary.py` · `tests/test_meh3212_weekly_summary_toggle.py` — הסיכום השבועי, ההסרה, המתג והכותרות.
 * `tests/test_meh3350_heartbeat_logging.py`

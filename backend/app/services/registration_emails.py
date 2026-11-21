@@ -29,7 +29,7 @@ from html import escape as html_escape
 from typing import NamedTuple
 
 from app.services.email import send_email
-from app.services.email_branding import email_logo_html
+from app.services.email_layout import frame
 
 
 class Mail(NamedTuple):
@@ -47,29 +47,8 @@ def _one_line(value: str) -> str:
 
 
 def _shell(heading: str, rows_html: str, button_html: str = "") -> str:
-    """The rescue_emails.py card, without its code box."""
-    return f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F0E8;padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
-  <tr><td align="center">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
-      <tr><td style="text-align:right;padding:0 4px 14px;">{email_logo_html()}</td></tr>
-      <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e5dfd3;overflow:hidden;">
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-          <tr><td style="background:#2e6853;color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{heading}</td></tr>
-          <tr><td style="padding:18px 22px 6px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.8;">{rows_html}</td></tr>
-          {button_html}
-        </table>
-      </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#5C584F;">צוות מהמקור</td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>"""
+    """MEH-3587: the shared frame now lives in email_layout (one frame, not two)."""
+    return frame(heading, rows_html, button_html)
 
 
 def _button(url: str, label: str) -> str:

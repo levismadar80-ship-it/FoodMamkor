@@ -11,6 +11,7 @@ import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 /**
  * /join — producer recruitment landing (MEH-995; rebuilt to the approved
@@ -54,7 +55,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/join", locale),
   };
