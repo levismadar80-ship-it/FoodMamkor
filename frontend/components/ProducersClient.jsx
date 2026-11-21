@@ -50,6 +50,7 @@ import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import { cardImagePriority } from "@/lib/card-image-priority";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
@@ -1277,12 +1278,10 @@ export default function ProducersClient({
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4" data-testid="producers-grid">
-            {displayItems.map((p) => (
+            {displayItems.map((p, i) => (
               <ProducerCard
-                key={p.id}
-                producer={p}
-                referrer="producers-index"
-                highlightQuery={searchQ || undefined}
+                key={p.id} producer={p} referrer="producers-index" highlightQuery={searchQ || undefined}
+                imagePriority={cardImagePriority(i) /* MEH-2233: the LCP is a first-row photo */}
               />
             ))}
           </div>
