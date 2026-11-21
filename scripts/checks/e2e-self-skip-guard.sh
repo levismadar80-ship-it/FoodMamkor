@@ -22,7 +22,8 @@
 #   here under the required Repo guards job.
 #
 # WHAT A RISE IS
-#   The per-rule TOTAL in the baseline, compared with the base branch's copy.
+#   The per-rule TOTAL in the baseline, compared with its copy at the commit
+#   where this branch left staging (the PR merge commit's first parent in CI).
 #   Rows may move between files; a total may fall. A total that rises fails,
 #   unless this branch also changes the ratchet script or its ESLint config
 #   (a new detector finds old code — same exception as test-honesty-guard.sh).
@@ -53,8 +54,10 @@ totals() {
 
 # rises BASE HEAD -> one line per rule whose total is higher in HEAD.
 rises() {
+  # FILENAME, not NR == FNR: with an empty base file NR == FNR stays true for
+  # the head rows too, and every rise from zero would vanish.
   awk -F'\t' '
-    NR == FNR { base[$1] = $2; next }
+    FILENAME == ARGV[1] { base[$1] = $2; next }
     { was = ($1 in base) ? base[$1] : 0; if ($2 + 0 > was + 0) printf "%s\t%d -> %d\n", $1, was, $2 }
   ' "$1" "$2"
 }
@@ -78,10 +81,18 @@ self_test() {
   ran=$((ran + 1))
   printf 'a.spec.ts\tr1\tmany\n' > "$dir/head.tsv"
   if totals "$dir/head.tsv" >/dev/null 2>&1; then bad=$((bad + 1)); echo "  self-test FAIL: a non-numeric count must be an error, not a zero"; fi
-  # Anchored: the real baseline parses and is not empty.
+  check_from_empty() {
+    ran=$((ran + 1))
+    : > "$dir/empty.tot"; printf 'r1\t3\n' > "$dir/h.tot"
+    got="$(rises "$dir/empty.tot" "$dir/h.tot" | wc -l | tr -d ' ')"
+    if [ "$got" != "1" ]; then bad=$((bad + 1)); echo "  self-test FAIL: a rise from an empty base — expected 1 rise, got $got"; fi
+  }
+  check_from_empty
+  # Anchored: the real baseline parses. An empty one is legal (zero findings
+  # is where this is meant to end), so only the parse is required.
   ran=$((ran + 1))
-  if ! totals "$BL" > "$dir/real.tot" || [ ! -s "$dir/real.tot" ]; then
-    bad=$((bad + 1)); echo "  self-test FAIL: the real $BL did not parse, or has no rows"
+  if ! totals "$BL" > "$dir/real.tot"; then
+    bad=$((bad + 1)); echo "  self-test FAIL: the real $BL did not parse"
   fi
   rm -rf "$dir"
   if [ "$bad" -ne 0 ]; then echo "e2e-self-skip-guard: $bad of $ran self-test case(s) failed."; return 1; fi
@@ -106,20 +117,41 @@ if ! node "$RATCHET" --self-test --no-eslint; then
 fi
 
 # 2 · the baseline does not rise.
-BASE_NAME="${GITHUB_BASE_REF:-staging}"
-BASE_REF="origin/$BASE_NAME"
-if ! git rev-parse --verify --quiet "$BASE_REF^{commit}" >/dev/null; then
-  # Repo guards checks out at depth 2 with no remote-tracking ref for the base.
-  if git fetch --no-tags --quiet --depth=1 origin "$BASE_NAME" 2>/dev/null &&
-     git rev-parse --verify --quiet "FETCH_HEAD^{commit}" >/dev/null; then
-    BASE_REF="$(git rev-parse FETCH_HEAD)"
-  fi
-fi
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
-if ! git show "$BASE_REF:$BL" > "$TMP/base.tsv" 2>/dev/null; then
-  echo "e2e-self-skip-guard: no $BL on $BASE_REF — baseline growth not checked."
+# A release PR (staging -> main) compares two branches that each passed this
+# guard already; main's older baseline would read as a rise.
+if [ -n "${GITHUB_BASE_REF:-}" ] && [ "$GITHUB_BASE_REF" != "staging" ]; then
+  echo "e2e-self-skip-guard: baseline comparison skipped — the base is $GITHUB_BASE_REF, not staging."
   exit 0
 fi
+# The commit to compare with is where this branch left the base, not the base
+# tip: against the tip, a ratchet change that staging made later would read as
+# "changed in this branch" and open the exception below.
+#   - CI checks out the PR merge commit at depth 2: its first parent is the base.
+#   - Locally: the merge-base with origin/staging.
+BASE=""
+if [ "$(git cat-file -p HEAD 2>/dev/null | grep -c '^parent ')" = "2" ] && [ -n "${GITHUB_BASE_REF:-}" ]; then
+  BASE="$(git rev-parse --verify --quiet 'HEAD^1^{commit}' || true)"
+fi
+if [ -z "$BASE" ]; then
+  BASE="$(git merge-base HEAD origin/staging 2>/dev/null || true)"
+fi
+if [ -z "$BASE" ]; then
+  echo "e2e-self-skip-guard FAILED — could not find the commit this branch left staging at"
+  echo "(no PR merge commit with a readable first parent, no merge-base with origin/staging)."
+  echo "The baseline was not compared; failing instead of passing."
+  exit 1
+fi
+BASE_REF="${BASE:0:9}"
+if ! git cat-file -e "$BASE:$BL" 2>/dev/null; then
+  if git cat-file -e "$BASE^{tree}" 2>/dev/null; then
+    echo "e2e-self-skip-guard: $BL does not exist at $BASE_REF — nothing to compare with."
+    exit 0
+  fi
+  echo "e2e-self-skip-guard FAILED — the tree of $BASE_REF is not readable; the baseline was not compared."
+  exit 1
+fi
+git show "$BASE:$BL" > "$TMP/base.tsv" || { echo "e2e-self-skip-guard FAILED — could not read $BL at $BASE_REF."; exit 1; }
 totals "$TMP/base.tsv" > "$TMP/base.tot" || { echo "e2e-self-skip-guard: the base copy of $BL did not parse."; exit 1; }
 totals "$BL" > "$TMP/head.tot" || { echo "e2e-self-skip-guard: $BL did not parse."; exit 1; }
 RISES="$(rises "$TMP/base.tot" "$TMP/head.tot")"
@@ -127,7 +159,7 @@ if [ -z "$RISES" ]; then
   echo "e2e-self-skip-guard OK — no rule's baseline total is above $BASE_REF."
   exit 0
 fi
-git diff --quiet "$BASE_REF" -- "$RATCHET" "$CONFIG" 2>/dev/null; DIFF_RC=$?
+git diff --quiet "$BASE" HEAD -- "$RATCHET" "$CONFIG" 2>/dev/null; DIFF_RC=$?
 # 0 = unchanged, 1 = changed; anything else is git failing, which is not "changed".
 if [ "$DIFF_RC" -gt 1 ]; then
   echo "e2e-self-skip-guard FAILED — the baseline rose and git could not say whether the ratchet changed (exit $DIFF_RC)."
