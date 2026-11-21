@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { favoriteRow } from "./helpers/contract-row";
+import { GetFavoritesUsersMeFavoritesGetResponseItem as FAV } from "@/lib/generated/api.zod";
 import { render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -179,7 +181,7 @@ describe("MEH-1628 · favorites list alerts hint", () => {
   it("renders EXACTLY ONE bell in the hint row, interpolated inside the sentence", async () => {
     // A populated list is what mounts the hint row (the empty state replaces it).
     api.get.mockImplementation(() =>
-      Promise.resolve({ data: [{ producer_id: "p1", producer: { id: "p1", name: "טסט" } }] }),
+      Promise.resolve({ data: [favoriteRow(FAV, "p1", { name: "טסט" })] }),
     );
     const { container } = render(<FavoritesClient />);
     await waitFor(() => expect(container.querySelector("p[dir='rtl']")).toBeTruthy());

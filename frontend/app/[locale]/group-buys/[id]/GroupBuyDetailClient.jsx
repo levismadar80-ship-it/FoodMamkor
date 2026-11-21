@@ -25,7 +25,7 @@ import { GroupBuyProgressMark, SEEDS_BESIDE_TEXT } from "@/app/[locale]/producer
 import Input from "@/components/ui/Input";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
-import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
+import { GroupBuyProducerDeliverySchema } from "@/lib/api-responses";
 import { SkeletonDetail } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";

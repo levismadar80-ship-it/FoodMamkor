@@ -8,6 +8,14 @@ Backend pytest suite. Tests live at the **repo root** `tests/`, not
 ## Canonical pattern
 - `tests/test_api.py` — general API tests organized by `TestX` classes
   (one per router/feature).
+- **Split modules (MEH-3540).** `test_api`, `test_experiences`,
+  `test_group_buys_api`, `test_meh2952_send_layer`, `test_meh3263_order_route`
+  and `test_producer_owner_invite` keep their tests in `tests/_<stem>__pNN.py`
+  parts and their helpers in `tests/_<stem>__common.py`; `tests/<stem>.py`
+  imports them, so node ids are unchanged. **A new test goes in a part AND in
+  the aggregator's import list** — pytest never collects a part directly.
+  `tests/test_meh3540_split_parts_collected.py` fails on a test left out.
+  A part near 1,500 lines → start the next `_pNN` part.
 - `tests/test_category_requests.py` — MEH-555 reference for adding a
   small focused test module for a new validator/feature.
 - `tests/test_auth.py` — auth flows with the HIBP autouse mock pattern.

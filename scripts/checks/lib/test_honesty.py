@@ -197,7 +197,11 @@ def scan_js(path: Path, rel: str) -> list[tuple[str, int]]:
 def scan(root: Path) -> list[tuple[str, str, int]]:
     """[(key, rel_path, line)] over the whole repo, sorted."""
     found: list[tuple[str, str, int]] = []
-    for p in sorted((root / "tests").rglob("test_*.py")):
+    # MEH-3540: a split test module keeps its tests in `_test_<stem>__pNN.py`
+    # parts (collected through the `test_<stem>.py` aggregator) — scan both.
+    for p in sorted((root / "tests").rglob("*.py")):
+        if not re.match(r"_?test_.+\.py$", p.name):
+            continue
         rel = p.relative_to(root).as_posix()
         found += [(k, rel, ln) for k, ln in scan_python(p, rel)]
     js_root = root / "frontend" / "__tests__"

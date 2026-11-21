@@ -1,5 +1,7 @@
 // MEH-2743 — useFavoriteProducers().reserve: hold the strip's height only while
 // the list is loading for a browser whose user had favorites last visit.
+import { favoriteRow, uuidFor } from "./helpers/contract-row";
+import { GetFavoritesUsersMeFavoritesGetResponseItem as FAV } from "@/lib/generated/api.zod";
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -12,8 +14,7 @@ import { useFavoriteProducers } from "@/lib/use-favorite-producers";
 import { resetFavoritesCache } from "@/lib/favorites-cache";
 
 const row = (i) => ({
-  producer_id: `p${i}`,
-  producer: { id: `p${i}`, name: `עסק ${i}`, city: "בנימינה", slug: `b-${i}`, images: [] },
+  ...favoriteRow(FAV, `p${i}`, { name: `עסק ${i}`, city: "בנימינה", slug: `b-${i}`, images: [] }),
   created_at: "2026-11-01T10:00:00Z",
 });
 
@@ -47,7 +48,7 @@ describe("useFavoriteProducers reserve", () => {
     await act(async () => {
       release({ data: [row(1)] });
     });
-    expect(result.current.items.map((p) => p.id)).toEqual(["p1"]);
+    expect(result.current.items.map((p) => p.id)).toEqual([uuidFor("p1")]);
     expect(result.current.reserve).toBe(false);
   });
 

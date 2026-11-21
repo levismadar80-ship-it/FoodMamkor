@@ -51,7 +51,7 @@ import en from "../../../messages/en.json";
  *           the `/en/` half of MT:MEH-841:4 — both live on the home surface,
  *           which is chunk 7's route (producer fixture, 184 items). The home
  *           teaser itself was removed in MEH-2441 (its absence is asserted in
- *           home.spec.ts), so MT:MEH-841:3 no longer has a subject. Does NOT
+ *           home-03.spec.ts), so MT:MEH-841:3 no longer has a subject. Does NOT
  *           duplicate MT:MEH-534:10 / MT:MEH-1289:5's footer half (the footer
  *           nav hrefs) — COVERED at component level by
  *           frontend/__tests__/FooterNavGroups.test.jsx:61-62. Does NOT convert

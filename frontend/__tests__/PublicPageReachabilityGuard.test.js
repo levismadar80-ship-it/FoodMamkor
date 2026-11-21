@@ -111,6 +111,7 @@ const ROUTES = {
   "/freshness/confirm": { kind: "noindex" },
   "/login": { kind: "noindex" },
   "/messages": { kind: "noindex" },
+  "/my-orders": { kind: "noindex" }, // MEH-3525: signed-in only
   "/newsletter/confirm": { kind: "noindex" }, // MEH-3300
   "/newsletter/unsubscribe": { kind: "noindex" },
   "/order/[id]": { kind: "noindex" },

@@ -40,8 +40,10 @@ const wrap = (ui) =>
     </NextIntlClientProvider>,
   );
 
-const bread = { id: "x1", name: "לחם מחמצת", price_min: "32.00", price_max: null };
-const cookies = { id: "x2", name: "עוגיות", price_min: "20.00", price_max: "30.00" };
+// MEH-1748: the panel parses the generated ProductOut (id is a UUID,
+// price_unit is required).
+const bread = { id: "b5e1c2d3-4f5a-4b6c-8d7e-9f0a1b2c3d4e", name: "לחם מחמצת", price_min: "32.00", price_max: null, price_unit: "יחידה" };
+const cookies = { id: "c6f2d3e4-5a6b-4c7d-8e9f-0a1b2c3d4e5f", name: "עוגיות", price_min: "20.00", price_max: "30.00", price_unit: "יחידה" };
 
 function fill({ name = "", price_min = "", price_max = "", description = "" }) {
   fireEvent.change(screen.getByLabelText(new RegExp(P.form.name_label)), {
@@ -138,7 +140,7 @@ describe("DraftProductsPanel — delete", () => {
     fireEvent.click(within(row).getByTestId("draft-product-confirm-delete"));
 
     await waitFor(() => expect(screen.getAllByTestId("draft-product-row")).toHaveLength(1));
-    expect(api.delete).toHaveBeenCalledWith("/admin/producers/d-1/products/x1");
+    expect(api.delete).toHaveBeenCalledWith(`/admin/producers/d-1/products/${bread.id}`);
     expect(screen.getByTestId("draft-product-row")).toHaveTextContent("עוגיות");
   });
 

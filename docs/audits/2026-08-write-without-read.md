@@ -212,7 +212,7 @@ MEH-1856) ואחר כך `name` · `starting_price_label` · `is_available_today`
 
 | # | מקרה | מה הכרטיס טען | מה נמדד |
 |---|---|---|---|
-| 1 | `getOrderWindowRanges` | "יתום, בחיווט ע"י MEH-1875" | ❌ **כבר מחווט.** `OrderWindowStrip.jsx:131` צורך אותו, וה-block מורכב ב-`ProducerSections.jsx:512`. גם ה-QA harness של אותו כרטיס (`frontend/e2e/qa-meh1875-order-window-schedule.mjs`) כבר על staging — כלומר MEH-1875 נחת. **לא יתום.** |
+| 1 | `getOrderWindowRanges` | "יתום, בחיווט ע"י MEH-1875" | ❌ **כבר מחווט.** `OrderWindowStrip.jsx:131` צורך אותו, וה-block מורכב ב-`ProducerSections.jsx:512`. גם ה-QA harness של אותו כרטיס (`frontend/e2e/_qa-archive/qa-meh1875-order-window-schedule.mjs`) כבר על staging — כלומר MEH-1875 נחת. **לא יתום.** |
 | 2 | `custom_questions` | "יתום, בחיווט ע"י MEH-1886" | ❌ **מחווט מאז MEH-1302**, הרבה לפני MEH-1886. השרשרת: `ContactCard.jsx:255` → `WhatsAppQuestionChips.jsx:185` → `lib/categoryQuestions.js:88`, שם שאלות הבעלים **גוברות** על ברירות המחדל לפי קטגוריה. הופיע ב-grep של ציר 2 עם 3 הפניות ציבוריות. **הנחת MEH-1886 הייתה שגויה מלכתחילה** — דווח על אותו כרטיס ב-04/08. |
 | 3 | `israelNowParts` | יתום | ✅ **משוחזר.** `lib/orderWindow.js:57` — production=0, internal=1, test=3. שייך לקבוצת §1.4 (עוזר טהור עם טסט בבידוד), לא לשלושת החדים. |
 | 4 | `normalizeDayEntries` | יתום | ✅ **משוחזר.** `lib/orderWindow.js:93` — production=0, internal=3, test=1. אותה קבוצה. |

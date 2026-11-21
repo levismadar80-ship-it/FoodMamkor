@@ -4,9 +4,11 @@ import { render, screen } from "@testing-library/react";
 /**
  * MEH-2597 — /join, /about/for-businesses and /about/why-local each carry one
  * decorative photo (the 29/10 survey found no image on any of them at any
- * width). The photo is decorative (alt=""), lazy (not priority — it sits under
- * the CTA or mid-article, never the LCP), and goes through optimizeCloudinary
- * at 16:9 with a capped width.
+ * width). The photo is decorative (alt="") and goes through optimizeCloudinary
+ * at 16:9 with a capped width. It is lazy on the two /about pages
+ * (mid-article). MEH-2233: on /join it is in the first phone screen and was
+ * measured as the page's LCP (3.8s on staging 20/11, Pixel 5 slow 4G), so
+ * there it loads with the page.
  */
 
 vi.mock("next-intl/server", () => {
@@ -42,17 +44,17 @@ import WhyLocalPage from "@/app/[locale]/about/why-local/page";
 const params = { params: Promise.resolve({ locale: "he" }) };
 
 describe.each([
-  ["/join", JoinPage, "join-photo", "login/hero-produce-crate.jpg"],
-  ["/about/for-businesses", ForBusinessesPage, "for-businesses-photo", "register/hero-box-produce.jpg"],
-  ["/about/why-local", WhyLocalPage, "why-local-photo", "events/hero-market.jpg"],
-])("MEH-2597 · %s photo", (_, Page, testId, asset) => {
-  it("renders exactly one decorative, lazy, 16:9 photo", async () => {
+  ["/join", JoinPage, "join-photo", "login/hero-produce-crate.jpg", "true"],
+  ["/about/for-businesses", ForBusinessesPage, "for-businesses-photo", "register/hero-box-produce.jpg", "false"],
+  ["/about/why-local", WhyLocalPage, "why-local-photo", "events/hero-market.jpg", "false"],
+])("MEH-2597 · %s photo", (_, Page, testId, asset, priority) => {
+  it(`renders exactly one decorative 16:9 photo, priority=${priority}`, async () => {
     render(await Page(params));
     const boxes = screen.getAllByTestId(testId);
     expect(boxes).toHaveLength(1);
     const img = boxes[0].querySelector("img");
     expect(img.getAttribute("alt")).toBe("");
-    expect(img.dataset.priority).toBe("false");
+    expect(img.dataset.priority).toBe(priority);
     expect(img.getAttribute("src")).toContain(asset);
     expect(img.getAttribute("src")).toContain("ar_16:9");
     expect(img.getAttribute("src")).toContain("w_1200");

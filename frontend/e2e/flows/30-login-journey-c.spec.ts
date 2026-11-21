@@ -391,10 +391,11 @@ test.describe("MEH-215 journey C — sign in to an existing account", () => {
     // MEH-3154 — the click is deliberately NOT wrapped in `settledField`, and
     // that asymmetry (fields guarded, button bare) was measured NOT to be the
     // flake's cause. Recorded here because it is the obvious "fix" and it is
-    // wrong: the server HTML for /he/login contains ZERO of the form's
-    // data-testids (login-email / login-password / login-submit — 0 occurrences
-    // in 285 KB), so there is no un-hydrated copy to click early; Playwright's
-    // own actionability wait already covers the node's creation. Measured
+    // wrong. When this was measured the server HTML for /he/login held none of
+    // the form's data-testids. Since MEH-2233 the form IS in the server HTML,
+    // but it carries `data-prehydration` (pointer-events: none) until React
+    // mounts, so a click on the un-hydrated copy still cannot land, and
+    // Playwright's actionability wait holds the click until it can. Measured
     // against a seeded local stack with /api/auth/login stubbed (no credentials,
     // no limiter): the POST was issued 12/12 — 6 runs at CPU x6 + 120 ms per
     // response, 6 at CPU x20 + 400 ms — with the button React-owned at click

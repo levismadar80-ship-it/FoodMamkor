@@ -83,7 +83,7 @@ const rows = [];
   // sanctioned route rather than `playwright install`.
   // Use the sandbox build only IF PRESENT, else let Playwright resolve its own.
   // That is the house pattern across ~20 harnesses here — see
-  // e2e/qa-meh2108-citysearch-occlusion.mjs:608 and the note above it.
+  // e2e/_qa-archive/qa-meh2108-citysearch-occlusion.mjs:608 and the note above it.
   // An env-var override was written here first and is reverted: it reddened
   // `Env drift (.env.example)`, which BLOCKS on any env var read in code and
   // undocumented in a .env.example. Documenting it would mean ADDING an env

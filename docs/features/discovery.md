@@ -23,7 +23,7 @@
 
 **טסטים**
 * `frontend/e2e/flows/02-search-producer.spec.ts` · `frontend/e2e/flows/16-producers-browse.spec.ts` · `frontend/e2e/flows/17-producers-search.spec.ts`
-* `frontend/e2e/flows/manual/producers.spec.ts` · `frontend/e2e/flows/manual/home.spec.ts`
+* `frontend/e2e/flows/manual/producers.spec.ts` · `frontend/e2e/flows/manual/home-01.spec.ts` · `frontend/e2e/flows/manual/home-02.spec.ts` · `frontend/e2e/flows/manual/home-03.spec.ts` (fixtures: `frontend/e2e/flows/manual/_home-shared.ts`)
 * `frontend/e2e/flows/26-delivery-checker.spec.ts` · `frontend/e2e/flows/27-delivery-day-discoverability.spec.ts`
 * `frontend/__tests__/nextDelivery.test.js` (כולל בדיקה מול אורקל סביב החלפת שעון) · `frontend/__tests__/NextDeliveryLine.test.jsx`
 * `tests/test_producers_sort.py` · `tests/test_producers_cities_filter.py` · `tests/test_producer_listing_stable_order.py`

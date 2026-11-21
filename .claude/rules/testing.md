@@ -108,7 +108,8 @@ Cloudinary-401 cause is unestablished — don't state it as fact.
 
 Only CI-run specs matter. `parity.spec.ts` is converted;
 `e2e/screenshots.spec.ts` (not run by CI) is ticketed; don't bulk-"fix" the
-~108 `qa-*.mjs` probe scripts.
+`qa-*.mjs` probe scripts (archived in `frontend/e2e/_qa-archive/` since
+MEH-3531; the two in live use stay in `frontend/e2e/`).
 
 ---
 
@@ -145,7 +146,7 @@ MEH-3486 · MEH-3488, added since):
   out after 20 s on the device whose geometry covers it and passes everywhere
   else (measured 20/11: Chromium's click retry scrolled the Leaflet pane and
   rescued it, so only WebKit went red). Use the
-  spec's helper (`tapMarker` in `manual/map.spec.ts`, `pickCity` in
+  spec's helper (`tapMarker` in `manual/_map-shared.ts`, `pickCity` in
   `flows/_pick-city.ts`); `E2EClickPreconditionGuard.test.js` holds both.
 
 **A flaky warning on staging gets a Linear card the same day.** From the
@@ -210,6 +211,22 @@ Eight instances in one week:
 2. **ORDERS §3.0 (10/08)** — DNS probe whose own control also returned zero.
 3. **ORDERS §3.0 (10/08)** — routes inventory and self-test built on one wrong guess.
 4. **#2786 (11/08)** — six "successful" PNGs of an error boundary.
+
+---
+
+## A test runs the code; it does not read it as text (MEH-3531)
+
+A test that opens a source file and asserts a string is in it (`readFileSync`
+on `components/**`, `read_text()` on `backend/app/**`) breaks on every
+refactor and passes on most bugs; Google calls it a change-detector test.
+
+- **New test → behaviour.** Render, call, request, then assert what came out.
+  Read source text only where nothing runs it (a config shape, a registry
+  entry, a docs link) — and say so in one comment line.
+- **An existing source-text test that breaks** is replaced by a behavioural
+  test or by a lint rule, not patched to the new text.
+- A guard in `scripts/checks/` is source-text by nature and is not covered
+  here.
 
 ---
 
