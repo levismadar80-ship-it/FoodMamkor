@@ -7808,7 +7808,9 @@
     "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
     "line": "{qty} × {name}",
     "back": "Back",
-    "failed": "That didn't work. Please try again."
+    "failed": "That didn't work. Please try again.",
+    "calendar_pickup": "Order pickup: {business_name}",
+    "calendar_delivery": "Order delivery: {business_name}"
   },
   "product_variants": {
     "from": "From ",
