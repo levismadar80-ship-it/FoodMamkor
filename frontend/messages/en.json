@@ -1392,7 +1392,7 @@
         "max_units": "Maximum quantity",
         "no_cap": "No limit",
         "caps_hint": "You can raise or lower them, but not below what has already been ordered. Empty = no limit.",
-        "save": "Save limits",
+        "save": "Save",
         "stop": "Stop new joins",
         "reopen": "Reopen joining",
         "closed_note": "Joining is stopped. People who already joined stay in the group.",

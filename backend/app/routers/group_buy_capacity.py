@@ -29,6 +29,9 @@ from app.schemas.schemas import (
     GroupBuyWaitlistRequest,
 )
 from app.services import group_buy_capacity as capacity
+from app.services.group_buy_goal_flap import participant_emails
+from app.services.group_buy_notifications import send_pickup_changed
+from app.services.group_buy_pickup_text import pickup_lines
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -177,12 +180,27 @@ def leave_waitlist(
     return {"detail": "יצאת מרשימת ההמתנה"}
 
 
-def _set_pickup_window(gb: GroupBuy, data: GroupBuySettingsUpdate) -> None:
-    """MEH-3597: the window, never starting before joining closes."""
+def _set_pickup_window(
+    db: Session, gb: GroupBuy, data: GroupBuySettingsUpdate, background_tasks: BackgroundTasks
+) -> None:
+    """MEH-3597: the window, never starting before joining closes. A change
+    on a group people already joined emails each of them the new time."""
     if data.pickup_starts_at is not None and data.pickup_starts_at < gb.deadline:
         raise HTTPException(status_code=400, detail=PICKUP_BEFORE_DEADLINE)
+    if (gb.pickup_starts_at, gb.pickup_ends_at) == (data.pickup_starts_at, data.pickup_ends_at):  # type: ignore[comparison-overlap]
+        return
     gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]
     gb.pickup_ends_at = data.pickup_ends_at  # type: ignore[assignment]
+    emails = participant_emails(db, gb)
+    if emails:
+        background_tasks.add_task(
+            send_pickup_changed,
+            emails,
+            str(gb.title),
+            str(gb.id),
+            pickup_lines(gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note),  # type: ignore[arg-type]
+            test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+        )
 
 
 @router.patch("/{group_buy_id}/settings", response_model=None)
@@ -220,7 +238,7 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
             )
         gb.max_units = data.max_units  # type: ignore[assignment]
     if "pickup_starts_at" in sent:  # MEH-3597: the schema sends both or neither
-        _set_pickup_window(gb, data)
+        _set_pickup_window(db, gb, data, background_tasks)
     if data.joins_open is not None:
         gb.joins_closed_at = None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]
     db.flush()

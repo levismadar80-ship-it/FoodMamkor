@@ -328,6 +328,7 @@ files = [
     "app/services/farmer_declaration.py",
     "app/services/gallery_cap.py",
     "app/services/group_buy_capacity.py",
+    "app/services/group_buy_pickup_text.py",
     "app/services/group_buy_delist.py",
     "app/services/group_buy_expiry.py",
     "app/services/group_buy_goal_flap.py",

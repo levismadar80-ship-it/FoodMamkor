@@ -49,3 +49,19 @@ describe("pickupWindowPayload", () => {
     });
   });
 });
+
+// MEH-3597: the saved window back into the settings form.
+import { pickupWindowFields } from "@/lib/group-buy-pickup";
+
+describe("pickupWindowFields", () => {
+  it("winter and summer: naive UTC to the Israel wall clock", () => {
+    expect(pickupWindowFields("2099-12-04T07:00:00", "2099-12-04T11:00:00")).toEqual({ start: "2099-12-04T09:00", endTime: "13:00" });
+    expect(pickupWindowFields("2099-07-03T06:00:00", "2099-07-03T10:00:00")).toEqual({ start: "2099-07-03T09:00", endTime: "13:00" });
+  });
+  it("late UTC evening is already tomorrow in Israel", () => {
+    expect(pickupWindowFields("2099-12-03T22:30:00", "2099-12-03T23:30:00")).toEqual({ start: "2099-12-04T00:30", endTime: "01:30" });
+  });
+  it("no window: empty fields", () => {
+    expect(pickupWindowFields(null, null)).toEqual({ start: "", endTime: "" });
+  });
+});

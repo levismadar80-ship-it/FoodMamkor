@@ -38,6 +38,7 @@ from app.services.group_buy_notifications import (
 from app.services import indexnow  # MEH-2852
 from app.services import group_buy_capacity as capacity  # MEH-3592
 from app.services.producer_listing import is_business
+from app.services.group_buy_pickup_text import pickup_lines  # MEH-3597
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -297,7 +298,12 @@ def _maybe_notify_funded(
         str(gb.producer_id),
         # MEH-2952: a test business's group buy mails nobody.
         test_cause=bool(gb.producer and gb.producer.is_test),
+        pickup=_pickup_text(gb),  # MEH-3597
     )
+
+
+def _pickup_text(gb: GroupBuy) -> str:
+    return pickup_lines(gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note)  # type: ignore[arg-type]
 
 
 def _notify_late_joiner(
@@ -318,6 +324,7 @@ def _notify_late_joiner(
         str(gb.id),
         str(gb.producer_id),
         test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+        pickup=_pickup_text(gb),  # MEH-3597
         late_joiner=True,
     )
 

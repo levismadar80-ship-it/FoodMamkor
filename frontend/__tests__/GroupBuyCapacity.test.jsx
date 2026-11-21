@@ -155,7 +155,7 @@ describe("owner settings", () => {
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(screen.getByTestId("group-buy-settings-save"));
-    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { max_participants: 8, max_units: null }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { max_participants: 8, max_units: null, pickup_starts_at: null, pickup_ends_at: null }));
     expect(onSaved).toHaveBeenCalled();
   });
 
@@ -169,6 +169,33 @@ describe("owner settings", () => {
     expect(text("group-buy-joins-closed-owner")).toBe("closed_note");
     fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
     expect(screen.getByTestId("group-buy-joins-switch").textContent).toBe("reopen");
+  });
+
+  // MEH-3597 (Sapir 21/11): the pickup time changes here too.
+  it("a saved window is prefilled in Israel time and sent back with the caps", async () => {
+    render(<GroupBuyOwnerSettings gb={{ ...gb, pickup_starts_at: "2099-12-04T07:00:00", pickup_ends_at: "2099-12-04T11:00:00" }} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    const box = screen.getByTestId("gb-pickup-window");
+    const [start, end] = box.querySelectorAll("input");
+    expect(start.value).toBe("2099-12-04T09:00");
+    expect(end.value).toBe("13:00");
+    fireEvent.change(end, { target: { value: "14:00" } });
+    fireEvent.click(screen.getByTestId("group-buy-settings-save"));
+    await waitFor(() =>
+      expect(api.patch).toHaveBeenCalledWith(
+        "/group-buys/gb-1/settings",
+        expect.objectContaining({ pickup_starts_at: "2099-12-04T07:00:00.000Z", pickup_ends_at: "2099-12-04T12:00:00.000Z" }),
+      ),
+    );
+  });
+
+  it("half a window: the form says so and nothing is sent", async () => {
+    render(<GroupBuyOwnerSettings gb={gb} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    fireEvent.change(screen.getByTestId("gb-pickup-window").querySelectorAll("input")[0], { target: { value: "2099-12-04T09:00" } });
+    fireEvent.click(screen.getByTestId("group-buy-settings-save"));
+    expect(screen.getByTestId("gb-pickup-window-error").textContent).toBe("pickup_window_both");
+    expect(api.patch).not.toHaveBeenCalled();
   });
 
   it("a refused save shows the server's Hebrew reason", async () => {

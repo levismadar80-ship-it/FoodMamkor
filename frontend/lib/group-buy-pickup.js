@@ -11,6 +11,7 @@
 import { formatDate } from "@/lib/format-date";
 import { parseNaiveUtc } from "@/lib/dates";
 import { israelTime } from "@/lib/rescue";
+import { israelToday } from "@/lib/israel-date";
 
 /**
  * @param {string | null | undefined} start
@@ -32,4 +33,20 @@ export function pickupWindowText(start, end, locale) {
   return startDay === endDay
     ? `${startDay}, ${ltr(`${from}\u2060–\u2060${until}`)}` // word joiners: the range never splits across lines
     : `${startDay}, ${ltr(from)} – ${endDay}, ${ltr(until)}`;
+}
+
+/**
+ * The saved window back into the form's two fields (Israel wall clock):
+ * `start` for a datetime-local input, `endTime` for a time input. The form
+ * only writes same-day windows; a cross-day one from the API keeps its end
+ * hour and is moved to the start's day on the next save.
+ * @param {string | null | undefined} start
+ * @param {string | null | undefined} end
+ * @returns {{ start: string, endTime: string }}
+ */
+export function pickupWindowFields(start, end) {
+  const s = start ? parseNaiveUtc(start) : null;
+  const e = end ? parseNaiveUtc(end) : null;
+  if (!s || !e) return { start: "", endTime: "" };
+  return { start: `${israelToday(s)}T${israelTime(s.toISOString())}`, endTime: israelTime(e.toISOString()) ?? "" };
 }

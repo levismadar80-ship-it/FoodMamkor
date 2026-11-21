@@ -15,7 +15,7 @@
 * `frontend/app/[locale]/group-buys/GroupBuysClient.jsx`
 * `frontend/app/[locale]/group-buys/page.js` — הרשימה הראשונה (סטטוס «פתוחה», בלי עיר) והמונים שלה נקראים בשרת דרך `frontend/lib/server-first-json.js` (ISR של 60 שניות), כך שה-HTML הראשון כבר מכיל את הכרטיסים. הלקוח משתמש בהם פעם אחת, וכל רשימה אחריהם נטענת כמו קודם. כשל בשרת = הלקוח טוען בעצמו (MEH-2233).
 * `backend/app/services/group_buy_capacity.py` + `backend/app/routers/group_buy_capacity.py` — תקרה ביחידות (`max_units`), עצירת הצטרפות על ידי בית העסק, עריכת כמות, כלל 24 השעות האחרונות (ביטול שמוריד קבוצה שהגיעה ליעד מתחת ליעד — נחסם), רשימת המתנה לקבוצה מלאה ומייל לבית העסק על הצטרפות מאוחרת (MEH-3592).
-* `frontend/lib/group-buy-pickup.js` + `frontend/components/group-buy/GroupBuyPickupWindowFields.jsx` — מועד איסוף מובנה (`pickup_starts_at` / `pickup_ends_at`): שדה בטופס, שורה בכרטיס ובדף (MEH-3597).
+* `frontend/lib/group-buy-pickup.js` + `frontend/components/group-buy/GroupBuyPickupWindowFields.jsx` — מועד איסוף מובנה (`pickup_starts_at` / `pickup_ends_at`): שדה בטופס וב«הגדרות הצטרפות», שורה בכרטיס ובדף, במייל «הגיעה ליעד», ומייל למצטרפים כשהמועד משתנה (`backend/app/services/group_buy_pickup_text.py`) (MEH-3597).
 * `frontend/components/offer-detail/WhereSection.jsx` + `frontend/components/offer-detail/HowSteps.jsx` — «איסוף ומשלוח» עם מפה ו«איך זה עובד», אותם בלוקים כמו דף הסל (MEH-3597).
 * `frontend/components/GroupBuyProductPicker.jsx` — «מילוי ממוצר קיים» בטופס היצירה: בחירה ממלאת את שם המוצר ואת המחיר הרגיל. כשאין לעסק מוצרים, הרשימה לא מוצגת (MEH-3438). הטסט `frontend/__tests__/GroupBuyFulfillmentRequired.test.jsx`.
 

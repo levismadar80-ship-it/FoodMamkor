@@ -139,3 +139,66 @@ def test_a_stranger_cannot_set_the_window(client, db):
     assert r.status_code in (403, 404)
     db.refresh(gb)
     assert gb.pickup_starts_at is None
+
+
+# MEH-3597 (Sapir 21/11, «תבדוק מה עוד חסר»): the emails carry the pickup.
+from datetime import datetime  # noqa: E402
+
+from app.routers import group_buy_capacity as capacity_router  # noqa: E402
+from app.services import group_buy_notifications as notes  # noqa: E402
+from app.services.group_buy_pickup_text import pickup_lines, pickup_window_he  # noqa: E402
+from conftest import make_user  # noqa: E402
+
+
+def test_pickup_text_in_israel_time_winter_summer_and_across_days():
+    assert pickup_window_he(datetime(2099, 12, 4, 7), datetime(2099, 12, 4, 11)) == "יום שישי 4.12, 09:00–13:00"
+    assert pickup_window_he(datetime(2099, 7, 3, 6), datetime(2099, 7, 3, 10)) == "יום שישי 3.7, 09:00–13:00"
+    assert pickup_window_he(datetime(2099, 12, 4, 7), datetime(2099, 12, 5, 11)) == "יום שישי 4.12, 09:00 – יום שבת 5.12, 13:00"
+    assert pickup_window_he(None, None) == ""
+    assert pickup_lines(None, None, None, None) == ""
+    assert pickup_lines(datetime(2099, 12, 4, 7), datetime(2099, 12, 4, 11), "מהמאפייה", None) == (
+        "מועד איסוף: יום שישי 4.12, 09:00–13:00\nאיסוף: מהמאפייה\n"
+    )
+
+
+def test_the_funded_email_says_when_and_where(monkeypatch):
+    sent = []
+    monkeypatch.setattr(notes, "_send_email", lambda to, subject, body, test_cause=False: sent.append(body))
+    notes.notify_participant_funded("a@example.com", "קמח", "טחנה", "gb-1", "p-1", pickup="מועד איסוף: יום שישי 4.12, 09:00–13:00\n")
+    assert "מועד איסוף: יום שישי 4.12, 09:00–13:00" in sent[0]
+    notes.notify_participant_funded("a@example.com", "קמח", "טחנה", "gb-1", "p-1")
+    assert "מועד איסוף" not in sent[1]
+
+
+def _changed_sends(monkeypatch):
+    calls = []
+    monkeypatch.setattr(capacity_router, "send_pickup_changed", lambda emails, title, gid, pickup, **kw: calls.append((list(emails), pickup)))
+    return calls
+
+
+def test_changing_the_window_emails_who_joined_once(client, db, monkeypatch):
+    calls = _changed_sends(monkeypatch)
+    producer, owner = _producer_user(db, email="pw11@example.com")
+    gb = _make_group_buy(db, producer)
+    member = make_user(db, email="joined@example.com")
+    assert client.post(f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(member)).status_code == 201
+    body = {"pickup_starts_at": "2099-12-05T07:00:00Z", "pickup_ends_at": "2099-12-05T11:00:00Z"}
+    h = auth_header(owner)
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=body, headers=h).status_code == 200
+    assert calls == [(["joined@example.com"], "מועד איסוף: יום שבת 5.12, 09:00–13:00\n" + (f"איסוף: {gb.pickup_note}\n" if gb.pickup_note else "") + (f"משלוח: {gb.delivery_note}\n" if gb.delivery_note else ""))]
+    # the same window again: nobody is mailed twice
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=body, headers=h).status_code == 200
+    assert len(calls) == 1
+
+
+def test_no_one_joined_no_email(client, db, monkeypatch):
+    calls = _changed_sends(monkeypatch)
+    producer, owner = _producer_user(db, email="pw12@example.com")
+    gb = _make_group_buy(db, producer)
+    r = client.patch(
+        f"/group-buys/{gb.id}/settings",
+        json={"pickup_starts_at": "2099-12-05T07:00:00Z", "pickup_ends_at": "2099-12-05T11:00:00Z"},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 200
+    assert calls == []

@@ -92,8 +92,12 @@ def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
     group_buy_id: str,
     producer_id: str,
     test_cause: bool = False,
+    pickup: str = "",
 ) -> None:
     """Fired on the open->funded transition, once per participant.
+
+    MEH-3597: `pickup` = the group's pickup time and pickup / delivery notes
+    (group_buy_pickup_text.pickup_lines), so she knows when and where.
 
     Direction of contact is participant -> business, matching MEH-1650's
     wording and every other contact surface on the site. The business name is
@@ -104,9 +108,10 @@ def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
         f"שלום,\n\n"
         f'הקבוצה שהצטרפת אליה, "{title}", הגיעה ליעד.\n'
         f"לתיאום ההזמנה צרו קשר עם {producer_name}.\n\n"
+        + (f"{pickup}\n" if pickup else "")
         # MEH-2453: the business page shows its delivery areas and pickup
         # points. A link to the page, never its contact record.
-        f"לדף העסק: {_producer_url(producer_id)}\n"
+        + f"לדף העסק: {_producer_url(producer_id)}\n"
         f"לצפייה בקבוצה ובפרטי ההזמנה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
@@ -124,6 +129,7 @@ def send_funded_notifications(  # noqa: PLR0913
     producer_id: str,
     test_cause: bool = False,
     late_joiner: bool = False,
+    pickup: str = "",
 ) -> None:
     """BackgroundTasks entry point — dispatches both sides, never raises.
 
@@ -171,6 +177,7 @@ def send_funded_notifications(  # noqa: PLR0913
                 group_buy_id,
                 producer_id,
                 test_cause=test_cause,
+                pickup=pickup,
             )
         except Exception:  # noqa: BLE001 — one failure must not stop the rest
             logger.exception(
@@ -351,3 +358,28 @@ def send_waitlist_place(
         notify_waitlist_place(email, title, group_buy_id, test_cause=test_cause)
     except Exception:  # best-effort
         logger.exception("waitlist place email failed (%s)", group_buy_id)
+
+
+def notify_pickup_changed(
+    email: str, title: str, group_buy_id: str, pickup: str, test_cause: bool = False
+) -> None:
+    """MEH-3597: the business changed the pickup time of a group she joined."""
+    subject = f'מהמקור — מועד האיסוף בקבוצה "{title}" השתנה'
+    body = (
+        f"שלום,\n\n"
+        f'בית העסק שינה את מועד האיסוף בקבוצת הרכישה "{title}".\n\n'
+        + (pickup or "מועד האיסוף הוסר. פרטי האיסוף בדף הקבוצה.\n")
+        + f"\nלדף הקבוצה: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(email, subject, body, test_cause=test_cause)
+
+
+def send_pickup_changed(
+    emails: list[str], title: str, group_buy_id: str, pickup: str, test_cause: bool = False
+) -> None:
+    for email in emails:
+        try:
+            notify_pickup_changed(email, title, group_buy_id, pickup, test_cause=test_cause)
+        except Exception:  # best-effort, one failure must not stop the rest
+            logger.exception("pickup-changed email failed (%s)", group_buy_id)

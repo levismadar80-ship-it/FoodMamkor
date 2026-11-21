@@ -26,6 +26,7 @@ from app.config import settings
 from app.models.models import GroupBuy, GroupBuyCommit, User
 from app.services.email import send_email
 from app.services.group_buy_notifications import send_funded_notifications
+from app.services.group_buy_pickup_text import pickup_lines
 from app.utils.clock import utc_now
 
 # DO NOT interpolate a participant list, phone, or email into the body below
@@ -126,5 +127,10 @@ def notify_back_at_goal(
             f["group_buy_id"],
             str(gb.producer_id),
             test_cause=f["test_cause"],
+            pickup=pickup_lines(gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note),  # MEH-3597
         )
     return len(emails)
+
+
+# MEH-3597: the settings route mails the same people when the pickup time changes.
+participant_emails = _participant_emails
