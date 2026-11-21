@@ -109,8 +109,9 @@ _LEGACY_MARK_DAYS: tuple[int, ...] = (1,)
 # ---------- email copy ----------
 #
 # LOCKED — approved verbatim by Sapir 31/07/2026 in the MEH-1818 description
-# (<hebrew_copy locked="✓">). Style matches onboarding_followup: Sapir's first
-# person (feminine — "אני קוראת"), addressing the reader in the plural.
+# (<hebrew_copy locked="✓">). Style matches onboarding_followup: addressing the
+# reader in the plural. MEH-3594 (Sapir, 21/11): the closing line moved from
+# her first person to the team voice, and the sign-off is the team's.
 # Changing a character requires Sapir's sign-off.
 
 _SUBJECT = "עוד צעד קטן — והעסק שלך עובר לבדיקה"
@@ -147,7 +148,7 @@ _BODY = """\
 הכל בלוח הבקרה, לוקח פחות מ-5 דקות:
 {frontend_url}/producer/dashboard
 
-צריך עזרה או משהו לא ברור? תכתבו לי בחזרה — אני קוראת כל אימייל.
+צריך עזרה או משהו לא ברור? אפשר פשוט לענות למייל הזה, וכל מייל נקרא.
 
 צוות מהמקור
 """
