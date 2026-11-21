@@ -45,7 +45,7 @@ export function A6Card({ name, svg, t }) {
   return (
     <article
       data-testid="print-kit-a6"
-      className="w-full max-w-[105mm] print:w-[105mm] print:max-w-none mx-auto bg-surface text-black px-5 print:px-6 py-8 flex flex-col items-center justify-center text-center"
+      className="w-full max-w-[105mm] print:w-[105mm] print:max-w-none mx-auto bg-surface text-text px-5 print:px-6 py-8 flex flex-col items-center justify-center text-center"
       style={{ minHeight: "148mm" }}
     >
       <h1 className="font-headline-md text-2xl font-black mb-6 break-words">{name}</h1>
@@ -61,7 +61,7 @@ export function A4Poster({ name, svg, t }) {
   return (
     <article
       data-testid="print-kit-poster"
-      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none mx-auto bg-surface text-black px-6 print:px-[15mm] py-10 flex flex-col items-center justify-center text-center"
+      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none print:h-[297mm] print:overflow-hidden mx-auto bg-surface text-text px-6 print:px-[15mm] py-10 flex flex-col items-center justify-center text-center"
       style={{ minHeight: "297mm" }}
     >
       <h1 className="font-headline-md text-4xl print:text-6xl font-black mb-8 break-words">{name}</h1>
@@ -98,11 +98,11 @@ export function TableSign(props) {
   return (
     <article
       data-testid="print-kit-table"
-      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none mx-auto bg-surface text-black"
+      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none print:h-[297mm] print:overflow-hidden mx-auto bg-surface text-text"
     >
       <TableSignHalf {...props} flipped />
       {/* The fold line: dashed, so it guides the fold and reads as one. */}
-      <div aria-hidden="true" className="border-t border-dashed border-black/40" />
+      <div aria-hidden="true" className="border-t border-dashed border-border" />
       <TableSignHalf {...props} />
     </article>
   );
@@ -119,13 +119,13 @@ export function StickerSheet({ name, svg, t }) {
   return (
     <article
       data-testid="print-kit-sticker"
-      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none mx-auto bg-surface text-black grid grid-cols-3 print:px-0 py-4 print:py-[2mm]"
+      className="w-full max-w-[210mm] print:w-[210mm] print:max-w-none mx-auto bg-surface text-text grid grid-cols-3 print:h-[297mm] print:overflow-hidden print:px-0 py-4 print:py-[2mm]"
     >
       {Array.from({ length: STICKER_COUNT }, (_, i) => (
         <div key={i} className="flex items-center justify-center p-1 print:p-0 print:h-[73mm]">
           <div
             data-testid="print-kit-sticker-item"
-            className="w-full max-w-[64mm] print:w-[64mm] aspect-square rounded-full border border-black/30 flex flex-col items-center justify-center text-center overflow-hidden"
+            className="w-full max-w-[64mm] print:w-[64mm] aspect-square rounded-full border border-border flex flex-col items-center justify-center text-center overflow-hidden"
           >
             <QrBox svg={svg} className="w-1/2 aspect-square" />
             <p className="font-body-sm text-[9px] print:text-[8pt] font-bold leading-tight mt-1 px-[12%] break-words">

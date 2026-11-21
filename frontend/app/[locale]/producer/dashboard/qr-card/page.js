@@ -108,7 +108,14 @@ export default function QrCardPage() {
 
   return (
     <main className="min-h-screen bg-surface" data-testid="business-qr-card-print">
-      {a4 && <style>{"@media print { @page { size: A4; margin: 0; } }"}</style>}
+      {/* MEH-3557: the body keeps a bottom padding for the phone nav (68px),
+          and it prints too: an A4 layout that fills the page then spills onto a
+          second sheet. Zeroed for print on this page only. */}
+      <style>
+        {`@media print { body { padding-bottom: 0 !important; min-height: 0 !important; }${
+          a4 ? " @page { size: A4; margin: 0; }" : ""
+        } }`}
+      </style>
       {/* Screen-only: neither the way back, the picker nor the hint belongs on the paper. */}
       <div className="print:hidden px-4 py-3 border-b border-border">
         {/* MEH-2882 PR 1: the QR card lives in «כלים» → «שיתוף» now. */}

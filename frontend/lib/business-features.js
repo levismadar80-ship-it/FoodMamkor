@@ -88,7 +88,7 @@ export const BUSINESS_FEATURES = [
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx", "frontend/components/producer/FeedPostCanvas.jsx", "frontend/components/producer/LinkEverywhere.jsx"] },
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
   // #4104), so this is live — see the PR body.
-  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
+  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js", "frontend/components/producer/print-kit/PrintKitLayouts.jsx"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
