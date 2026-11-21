@@ -38,6 +38,7 @@ import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import WhereSection from "@/components/offer-detail/WhereSection";
 import HowSteps from "@/components/offer-detail/HowSteps";
 import { pickupWindowText } from "@/lib/group-buy-pickup"; // MEH-3597
+import GroupBuyCalendarButton from "@/components/group-buy/GroupBuyCalendarButton"; // MEH-3597
 // MEH-3592: the join card's member / waitlist / line-total parts.
 import GroupBuyMemberPanel from "@/components/group-buy/GroupBuyMemberPanel";
 import GroupBuyWaitlistPanel from "@/components/group-buy/GroupBuyWaitlistPanel";
@@ -570,6 +571,7 @@ export default function GroupBuyDetailClient({ id }) {
                   map={whereMap}
                   testId="group-buy-fulfillment"
                 >
+                  {gb.user_committed && pickupWhen && <GroupBuyCalendarButton gb={gb} />}
                   {producer && <div className="mt-4">{deliveryChecker}</div>}
                 </WhereSection>
               ) : (

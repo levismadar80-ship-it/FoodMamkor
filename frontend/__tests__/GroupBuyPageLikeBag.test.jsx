@@ -38,9 +38,12 @@ vi.mock("next/dynamic", () => ({
   default: () => (props) => <div data-testid="mini-map" data-lat={props.lat} data-name={props.name} />,
 }));
 // MEH-3597: the window's wording is lib/group-buy-pickup's own test; here only whether it shows.
-vi.mock("@/lib/group-buy-pickup", () => ({
+vi.mock("@/lib/group-buy-pickup", async (importOriginal) => ({
+  ...(await importOriginal()),
   pickupWindowText: (s, e) => (s && e ? `${s}|${e}` : null),
 }));
+const downloadIcs = vi.fn();
+vi.mock("@/lib/event-ics", () => ({ downloadIcs: (...a) => downloadIcs(...a) }));
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ city: null }) }));
 
 const GB = {
@@ -184,6 +187,24 @@ describe("MEH-3597 — pickup time and when to pay", () => {
     await screen.findByTestId("group-buy-fulfillment-note");
     expect(screen.queryByTestId("group-buy-pay-line")).toBeNull();
     expect(screen.queryByTestId("group-buy-cancel")).toBeNull();
+  });
+
+  it("a member with a window: «הוספה ליומן» puts the pickup in her calendar", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: "איסוף מהמאפייה", delivery_note: null, pickup_starts_at: "2099-12-04T07:00:00", pickup_ends_at: "2099-12-04T11:00:00", user_committed: true, user_commit: { quantity: 1 } };
+    await renderPage();
+    const button = await screen.findByTestId("group-buy-add-to-calendar");
+    button.click();
+    expect(downloadIcs).toHaveBeenCalledWith(
+      expect.objectContaining({ event_date: "2099-12-04", event_time: "09:00", end_time: "13:00", location: "איסוף מהמאפייה" }),
+      expect.objectContaining({ filename: "group-buy-gb-1.ics" }),
+    );
+  });
+
+  it("not a member, or no window: no calendar button", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: "איסוף", delivery_note: null, pickup_starts_at: "2099-12-04T07:00:00", pickup_ends_at: "2099-12-04T11:00:00" };
+    await renderPage();
+    await screen.findByTestId("group-buy-pickup-window");
+    expect(screen.queryByTestId("group-buy-add-to-calendar")).toBeNull();
   });
 
   it("joinable: the pay line sits with the join button", async () => {

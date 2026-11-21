@@ -31,7 +31,7 @@ from app.schemas.schemas import (
 from app.services import group_buy_capacity as capacity
 from app.services.group_buy_goal_flap import participant_emails
 from app.services.group_buy_notifications import send_pickup_changed
-from app.services.group_buy_pickup_text import pickup_lines
+from app.services.group_buy_pickup_text import is_delivery_only, note_lines, pickup_window_he
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -180,6 +180,9 @@ def leave_waitlist(
     return {"detail": "יצאת מרשימת ההמתנה"}
 
 
+_PICKUP_FIELDS = {"pickup_starts_at", "pickup_ends_at"}
+
+
 def _set_pickup_window(
     db: Session, gb: GroupBuy, data: GroupBuySettingsUpdate, background_tasks: BackgroundTasks
 ) -> None:
@@ -189,8 +192,12 @@ def _set_pickup_window(
         raise HTTPException(status_code=400, detail=PICKUP_BEFORE_DEADLINE)
     if (gb.pickup_starts_at, gb.pickup_ends_at) == (data.pickup_starts_at, data.pickup_ends_at):  # type: ignore[comparison-overlap]
         return
+    first = gb.pickup_starts_at is None
     gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]
     gb.pickup_ends_at = data.pickup_ends_at  # type: ignore[assignment]
+    # A delivery-only group shows no pickup time, so nobody is told of one.
+    if is_delivery_only(gb.pickup_note, gb.delivery_note, gb.fulfillment_note):  # type: ignore[arg-type]
+        return
     emails = participant_emails(db, gb)
     if emails:
         background_tasks.add_task(
@@ -198,7 +205,9 @@ def _set_pickup_window(
             emails,
             str(gb.title),
             str(gb.id),
-            pickup_lines(gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note),  # type: ignore[arg-type]
+            pickup_window_he(gb.pickup_starts_at, gb.pickup_ends_at),  # type: ignore[arg-type]
+            note_lines(gb.pickup_note, gb.delivery_note),  # type: ignore[arg-type]
+            first=first,
             test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
         )
 
@@ -215,10 +224,14 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
 ) -> dict[str, Any]:
     _refuse_unless_owner(db, group_buy_id, current_user)
     gb = _locked(db, group_buy_id)
-    _refuse_unless_running(gb)
+    sent = data.model_fields_set
+    # MEH-3597: the pickup time can still change once joining has closed —
+    # that is when a business most needs to move it. Everything else waits
+    # for a running group.
+    if not (sent <= _PICKUP_FIELDS and gb.status in ("open", "funded")):
+        _refuse_unless_running(gb)
     before = (gb.max_participants, gb.max_units, gb.joins_closed_at is not None)
     people, units = capacity.counts(db, gb.id)
-    sent = data.model_fields_set
     # Eventbrite: capacity can change, never below what is already sold.
     if "max_participants" in sent:
         if data.max_participants is not None and data.max_participants < people:

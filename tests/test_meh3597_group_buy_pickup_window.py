@@ -172,33 +172,98 @@ def test_the_funded_email_says_when_and_where(monkeypatch):
 
 def _changed_sends(monkeypatch):
     calls = []
-    monkeypatch.setattr(capacity_router, "send_pickup_changed", lambda emails, title, gid, pickup, **kw: calls.append((list(emails), pickup)))
+    monkeypatch.setattr(
+        capacity_router,
+        "send_pickup_changed",
+        lambda emails, title, gid, window, notes, **kw: calls.append((list(emails), window, notes, kw)),
+    )
     return calls
 
 
-def test_changing_the_window_emails_who_joined_once(client, db, monkeypatch):
+def _joined(client, db, gb, email):
+    member = make_user(db, email=email)
+    assert client.post(f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(member)).status_code == 201
+
+
+WINDOW = {"pickup_starts_at": "2099-12-05T07:00:00Z", "pickup_ends_at": "2099-12-05T11:00:00Z"}
+
+
+def test_setting_then_changing_then_clearing_tells_who_joined(client, db, monkeypatch):
     calls = _changed_sends(monkeypatch)
     producer, owner = _producer_user(db, email="pw11@example.com")
     gb = _make_group_buy(db, producer)
-    member = make_user(db, email="joined@example.com")
-    assert client.post(f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(member)).status_code == 201
-    body = {"pickup_starts_at": "2099-12-05T07:00:00Z", "pickup_ends_at": "2099-12-05T11:00:00Z"}
+    gb.pickup_note, gb.delivery_note, gb.fulfillment_note = "מהמאפייה", None, None
+    db.commit()
+    _joined(client, db, gb, "joined@example.com")
     h = auth_header(owner)
-    assert client.patch(f"/group-buys/{gb.id}/settings", json=body, headers=h).status_code == 200
-    assert calls == [(["joined@example.com"], "מועד איסוף: יום שבת 5.12, 09:00–13:00\n" + (f"איסוף: {gb.pickup_note}\n" if gb.pickup_note else "") + (f"משלוח: {gb.delivery_note}\n" if gb.delivery_note else ""))]
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=WINDOW, headers=h).status_code == 200
+    assert calls[0][:3] == (["joined@example.com"], "יום שבת 5.12, 09:00–13:00", "איסוף: מהמאפייה\n")
+    assert calls[0][3]["first"] is True
     # the same window again: nobody is mailed twice
-    assert client.patch(f"/group-buys/{gb.id}/settings", json=body, headers=h).status_code == 200
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=WINDOW, headers=h).status_code == 200
     assert len(calls) == 1
+    later = {"pickup_starts_at": "2099-12-05T08:00:00Z", "pickup_ends_at": "2099-12-05T11:00:00Z"}
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=later, headers=h).status_code == 200
+    assert calls[1][1] == "יום שבת 5.12, 10:00–13:00" and calls[1][3]["first"] is False
+    assert client.patch(f"/group-buys/{gb.id}/settings", json={"pickup_starts_at": None, "pickup_ends_at": None}, headers=h).status_code == 200
+    assert calls[2][1] == ""
 
 
-def test_no_one_joined_no_email(client, db, monkeypatch):
+def test_a_cap_only_save_leaves_the_window_and_mails_nobody(client, db, monkeypatch):
     calls = _changed_sends(monkeypatch)
-    producer, owner = _producer_user(db, email="pw12@example.com")
+    producer, owner = _producer_user(db, email="pw13@example.com")
     gb = _make_group_buy(db, producer)
-    r = client.patch(
-        f"/group-buys/{gb.id}/settings",
-        json={"pickup_starts_at": "2099-12-05T07:00:00Z", "pickup_ends_at": "2099-12-05T11:00:00Z"},
-        headers=auth_header(owner),
-    )
-    assert r.status_code == 200
+    _joined(client, db, gb, "j13@example.com")
+    h = auth_header(owner)
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=WINDOW, headers=h).status_code == 200
+    assert client.patch(f"/group-buys/{gb.id}/settings", json={"max_units": 50}, headers=h).status_code == 200
+    db.refresh(gb)
+    assert gb.pickup_starts_at.hour == 7 and len(calls) == 1
+
+
+def test_delivery_only_group_mails_no_pickup_time(client, db, monkeypatch):
+    calls = _changed_sends(monkeypatch)
+    producer, owner = _producer_user(db, email="pw14@example.com")
+    gb = _make_group_buy(db, producer)
+    gb.pickup_note, gb.delivery_note, gb.fulfillment_note = None, "משלוח לחדרה", None
+    db.commit()
+    _joined(client, db, gb, "j14@example.com")
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=WINDOW, headers=auth_header(owner)).status_code == 200
     assert calls == []
+    assert pickup_lines(datetime(2099, 12, 4, 7), datetime(2099, 12, 4, 11), None, "משלוח לחדרה") == "משלוח: משלוח לחדרה\n"
+
+
+def test_after_the_deadline_only_the_pickup_time_can_change(client, db, monkeypatch):
+    _changed_sends(monkeypatch)
+    producer, owner = _producer_user(db, email="pw15@example.com")
+    gb = _make_group_buy(db, producer)
+    gb.deadline = utc_now() - timedelta(hours=1)
+    db.commit()
+    h = auth_header(owner)
+    assert client.patch(f"/group-buys/{gb.id}/settings", json=WINDOW, headers=h).status_code == 200
+    assert client.patch(f"/group-buys/{gb.id}/settings", json={"max_units": 50}, headers=h).status_code == 400
+
+
+def test_the_change_email_says_set_changed_or_removed(monkeypatch):
+    sent = []
+    monkeypatch.setattr(notes, "_send_email", lambda to, subject, body, test_cause=False: sent.append((body, test_cause)))
+    notes.notify_pickup_changed("a@example.com", "קמח", "gb-1", "יום שישי 4.12, 09:00–13:00", "איסוף: מהטחנה\n", first=True)
+    notes.notify_pickup_changed("a@example.com", "קמח", "gb-1", "יום שישי 4.12, 10:00–13:00", "")
+    notes.notify_pickup_changed("a@example.com", "קמח", "gb-1", "", "איסוף: מהטחנה\n", test_cause=True)
+    assert "קבע מועד איסוף" in sent[0][0] and "איסוף: מהטחנה" in sent[0][0]
+    assert "המועד החדש: יום שישי 4.12, 10:00–13:00" in sent[1][0]
+    assert "הסיר את מועד האיסוף" in sent[2][0] and sent[2][1] is True
+
+
+def test_the_funded_send_carries_the_pickup(client, db, monkeypatch):
+    from app.routers import group_buys as gb_router
+
+    queued = []
+    monkeypatch.setattr(gb_router, "send_funded_notifications", lambda *a, **kw: queued.append(kw.get("pickup")))
+    producer, _ = _producer_user(db, email="pw16@example.com")
+    gb = _make_group_buy(db, producer, min_participants=1)
+    gb.pickup_note, gb.delivery_note, gb.fulfillment_note = "מהמאפייה", None, None
+    gb.pickup_starts_at, gb.pickup_ends_at = datetime(2099, 12, 5, 7), datetime(2099, 12, 5, 11)
+    db.commit()
+    _joined(client, db, gb, "j16@example.com")
+    assert queued == ["מועד איסוף: יום שבת 5.12, 09:00–13:00\nאיסוף: מהמאפייה\n"]

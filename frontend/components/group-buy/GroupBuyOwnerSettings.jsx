@@ -55,14 +55,24 @@ export default function GroupBuyOwnerSettings({ gb, onSaved }) {
     }
   };
 
+  // A delivery-only group has no pickup time (the page hides it too).
+  const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
   const saveAll = () => {
+    const caps = { max_participants: toCap(maxPeople, PEOPLE_MIN), max_units: toCap(maxUnits, 1) };
+    // Untouched fields are not sent: a cap save must not rewrite (and mail
+    // everyone about) a window the form cannot show exactly — a cross-day one.
+    if (deliveryOnly || (pickupStart === saved.start && pickupEnd === saved.endTime)) {
+      setWindowError(null);
+      send(caps);
+      return;
+    }
     const pickupWindow = pickupWindowPayload(pickupStart, pickupEnd);
     if ("error" in pickupWindow) {
       setWindowError(pickupWindow.error);
       return;
     }
     setWindowError(null);
-    send({ max_participants: toCap(maxPeople, PEOPLE_MIN), max_units: toCap(maxUnits, 1), ...pickupWindow });
+    send({ ...caps, ...pickupWindow });
   };
 
   return (
@@ -86,13 +96,15 @@ export default function GroupBuyOwnerSettings({ gb, onSaved }) {
             <Input label={t("max_units")} type="number" min={1} value={maxUnits} onChange={(e) => setMaxUnits(e.target.value)} placeholder={t("no_cap")} dir="ltr" />
           </div>
           <p className="text-xs text-fg-muted">{t("caps_hint")}</p>
-          <GroupBuyPickupWindowFields
-            start={pickupStart}
-            endTime={pickupEnd}
-            onStart={(e) => setPickupStart(e.target.value)}
-            onEnd={(e) => setPickupEnd(e.target.value)}
-            error={windowError}
-          />
+          {!deliveryOnly && (
+            <GroupBuyPickupWindowFields
+              start={pickupStart}
+              endTime={pickupEnd}
+              onStart={(e) => setPickupStart(e.target.value)}
+              onEnd={(e) => setPickupEnd(e.target.value)}
+              error={windowError}
+            />
+          )}
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="md" disabled={busy} onClick={saveAll} data-testid="group-buy-settings-save">
               {t("save")}

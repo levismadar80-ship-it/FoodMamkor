@@ -155,7 +155,7 @@ describe("owner settings", () => {
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(screen.getByTestId("group-buy-settings-save"));
-    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { max_participants: 8, max_units: null, pickup_starts_at: null, pickup_ends_at: null }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", { max_participants: 8, max_units: null }));
     expect(onSaved).toHaveBeenCalled();
   });
 
@@ -187,6 +187,30 @@ describe("owner settings", () => {
         expect.objectContaining({ pickup_starts_at: "2099-12-04T07:00:00.000Z", pickup_ends_at: "2099-12-04T12:00:00.000Z" }),
       ),
     );
+  });
+
+  it("a cap save leaves an untouched window out of the request", async () => {
+    render(<GroupBuyOwnerSettings gb={{ ...gb, pickup_starts_at: "2099-12-04T07:00:00", pickup_ends_at: "2099-12-05T11:00:00" }} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    fireEvent.click(screen.getByTestId("group-buy-settings-save"));
+    await waitFor(() => expect(api.patch).toHaveBeenCalled());
+    expect(api.patch.mock.calls[0][1]).not.toHaveProperty("pickup_starts_at");
+  });
+
+  it("delivery only: no pickup time fields", () => {
+    render(<GroupBuyOwnerSettings gb={{ ...gb, delivery_note: "משלוח לחדרה", pickup_note: null, fulfillment_note: null }} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    expect(screen.queryByTestId("gb-pickup-window")).toBeNull();
+  });
+
+  it("clearing both fields sends nulls", async () => {
+    render(<GroupBuyOwnerSettings gb={{ ...gb, pickup_starts_at: "2099-12-04T07:00:00", pickup_ends_at: "2099-12-04T11:00:00" }} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("group-buy-settings-toggle"));
+    const [start, end] = screen.getByTestId("gb-pickup-window").querySelectorAll("input");
+    fireEvent.change(start, { target: { value: "" } });
+    fireEvent.change(end, { target: { value: "" } });
+    fireEvent.click(screen.getByTestId("group-buy-settings-save"));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/settings", expect.objectContaining({ pickup_starts_at: null, pickup_ends_at: null })));
   });
 
   it("half a window: the form says so and nothing is sent", async () => {

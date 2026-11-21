@@ -101,7 +101,9 @@ def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
 
     Direction of contact is participant -> business, matching MEH-1650's
     wording and every other contact surface on the site. The business name is
-    not a contact detail; no number or address is carried.
+    not a contact detail; no number or address is carried. The pickup and
+    delivery notes are the business's own public text from the group page
+    (MEH-3597), not its contact record.
     """
     subject = f'מהמקור — הקבוצה "{title}" הגיעה ליעד'
     body = (
@@ -360,26 +362,45 @@ def send_waitlist_place(
         logger.exception("waitlist place email failed (%s)", group_buy_id)
 
 
-def notify_pickup_changed(
-    email: str, title: str, group_buy_id: str, pickup: str, test_cause: bool = False
+
+def notify_pickup_changed(  # noqa: PLR0913 — plain data for a BackgroundTasks entry
+    email: str,
+    title: str,
+    group_buy_id: str,
+    window: str,
+    notes: str,
+    first: bool = False,
+    test_cause: bool = False,
 ) -> None:
-    """MEH-3597: the business changed the pickup time of a group she joined."""
-    subject = f'מהמקור — מועד האיסוף בקבוצה "{title}" השתנה'
+    """MEH-3597: the business set, changed or removed the pickup time of a
+    group she joined. `window` = pickup_window_he(); "" = removed."""
+    if not window:
+        news = f'בית העסק הסיר את מועד האיסוף בקבוצת הרכישה "{title}". את מועד האיסוף מתאמים ישירות מול בית העסק.\n'
+    elif first:
+        news = f'בית העסק קבע מועד איסוף לקבוצת הרכישה "{title}": {window}.\n'
+    else:
+        news = f'בית העסק שינה את מועד האיסוף בקבוצת הרכישה "{title}". המועד החדש: {window}.\n'
+    subject = f'מהמקור — מועד האיסוף בקבוצה "{title}" עודכן'
     body = (
-        f"שלום,\n\n"
-        f'בית העסק שינה את מועד האיסוף בקבוצת הרכישה "{title}".\n\n'
-        + (pickup or "מועד האיסוף הוסר. פרטי האיסוף בדף הקבוצה.\n")
+        f"שלום,\n\n{news}"
+        + (f"\n{notes}" if notes else "")
         + f"\nלדף הקבוצה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     _send_email(email, subject, body, test_cause=test_cause)
 
 
-def send_pickup_changed(
-    emails: list[str], title: str, group_buy_id: str, pickup: str, test_cause: bool = False
+def send_pickup_changed(  # noqa: PLR0913 — BackgroundTasks entry, plain data
+    emails: list[str],
+    title: str,
+    group_buy_id: str,
+    window: str,
+    notes: str,
+    first: bool = False,
+    test_cause: bool = False,
 ) -> None:
     for email in emails:
         try:
-            notify_pickup_changed(email, title, group_buy_id, pickup, test_cause=test_cause)
+            notify_pickup_changed(email, title, group_buy_id, window, notes, first=first, test_cause=test_cause)
         except Exception:  # best-effort, one failure must not stop the rest
             logger.exception("pickup-changed email failed (%s)", group_buy_id)
