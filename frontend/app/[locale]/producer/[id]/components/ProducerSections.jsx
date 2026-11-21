@@ -53,6 +53,7 @@ import GoogleRatingLine from "@/components/GoogleRatingLine";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
 import FactLine from "@/components/ui/FactLine";
+import { allergensDeclared } from "@/lib/allergens"; // MEH-3585
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
 // WORSE, and the measurement is on the ticket. Reserving a 356px box that
@@ -227,6 +228,8 @@ export default function ProducerSections({
   // nor, on its own, makes the signature block appear.
   const producerPriceLabel = isPriceLabel(producer.price_range) ? producer.price_range : null;
   const hasSignature = !!(producer.top_product_name || producerPriceLabel);
+  // MEH-3585: the products anchor exists exactly when this section renders.
+  const hasCatalogue = producer.products?.length > 0 || hasSignature;
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
@@ -405,9 +408,19 @@ export default function ProducerSections({
       {!producer.description && <ReservistBadgeLine producer={producer} className="mt-8" />}
       {!producer.description && <OwnerCard producer={producer} />}
 
+      {/* MEH-3585: one anchor for «what you can buy here» — the bag and the
+          catalogue. The «מוצרים» tab lands on the bag when there is one and
+          stays lit while it is on screen; before this the bag belonged to no
+          tab, so the tab skipped it and «אודות» stayed lit over it (Sapir
+          21/11). The wrapper has no margin of its own: the first child's mt-12
+          collapses through it, so the anchor lands on whichever comes first.
+          No catalogue → no anchor, as before: the tab's gate
+          (lib/section-nav.js) cannot see an offer fetched client-side. */}
+      <div id={hasCatalogue ? "section-products" : undefined} className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24">
       {/* MEH-2648: the rescue bag sits after the header/bio and BEFORE
           products, per the chunk-4 spec — it is tonight's thing and expires,
-          the catalogue does not. OUTSIDE the products gate below on purpose:
+          the catalogue does not (Wolt / Uber Eats likewise open the menu with
+          the time-limited offers). OUTSIDE the products gate below on purpose:
           a business with a bag and no catalogue must still show the bag. */}
       <RescueSection producer={producer} />
 
@@ -415,13 +428,20 @@ export default function ProducerSections({
           MEH-1146 chunk B: the section also renders when only the signature
           product exists (no product entries) so the moved-out header
           signature never vanishes. */}
-      {(producer.products?.length > 0 || hasSignature) && (
-        <section id="section-products" className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
+      {hasCatalogue && (
+        <section data-testid="section-products-catalogue" className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
           {/* MEH-1306: owner pencil beside the heading → #products card. */}
           <div className="flex items-center gap-2 mb-4">
             <SectionHeading size="content">{t("producer.detail.sections.products.heading")}</SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="products" sectionKey="products" />
           </div>
+          {/* MEH-3585: said ONCE for the list, not on every product sheet —
+              and only while at least one product has no allergen answer. */}
+          {producer.products?.some((p) => !allergensDeclared(p)) && (
+            <p className="-mt-2 mb-4 text-xs text-fg-muted" data-testid="products-allergens-note">
+              {t("producer.detail.sections.products.allergens_note")}
+            </p>
+          )}
 
           {/* Signature product — moved from ProducerHeader (MEH-1146 chunk B).
               MEH-1233 B4: rendered as a real highlight CARD (thumbnail + name +
@@ -704,6 +724,7 @@ export default function ProducerSections({
           )}
         </section>
       )}
+      </div>
 
       {/* MEH-3489: the way into the site chat, scoped to this business — a
           block in the page, not a floating button (MEH-1168). Sapir 20/11:
