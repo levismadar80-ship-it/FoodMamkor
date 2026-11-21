@@ -449,7 +449,7 @@ describe("the business-page section — reserve and confirm", () => {
   it("shows the price big, and says on the CTA that payment is AT THE COUNTER", async () => {
     render(<RescueSection producer={PRODUCER} />);
     const cta = await screen.findByTestId("rescue-reserve");
-    expect(cta.textContent).toBe("לשריין · משלמים בקופה");
+    expect(cta.textContent).toBe("לשריין את הסל · משלמים בקופה");
     expect(screen.getByTestId("rescue-section-price").textContent).toBe("15 ₪");
   });
 

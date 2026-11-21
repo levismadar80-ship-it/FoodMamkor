@@ -6955,7 +6955,7 @@
     },
     "section": {
       "title": "Rescue bag",
-      "cta": "Reserve · pay at the counter",
+      "cta": "Reserve the bag · pay at the counter",
       "typical": "Usually: {items}",
       "allergens_title": "Allergens",
       "cancel_until": "Free cancellation until {time}",
@@ -7130,7 +7130,7 @@
       "loading": "Loading the bag…",
       "bar_note": "₪{price} · pickup until {until}",
       "details_link": "All bag details",
-      "bar_cta": "Reserve"
+      "bar_cta": "Reserve the bag"
     }
   },
   "holidays": {
