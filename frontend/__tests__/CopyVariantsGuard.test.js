@@ -31,10 +31,10 @@ const DIFFERENT_ROLES = [
 const entries = flat(he).filter(([, v]) => typeof v === "string");
 const enEntries = flat(en).filter(([, v]) => typeof v === "string");
 
-// MEH-3465: an acronym's gershayim sits before its last letter (ק״ג, מע״מ,
+// MEH-3627: an acronym's gershayim sits before its last letter (ק״ג, מע״מ,
 // ארה״ב). A quote followed by a whole word is a real quotation (ה"בעלים",
 // ו"מאחורי העסק") and stays.
-export const ASCII_ACRONYM = /(?<=[א-ת])["“”](?=[א-ת](?![א-ת]))/;
+const ASCII_ACRONYM = /(?<=[א-ת])["“”](?=[א-ת](?![א-ת]))/;
 const isUrl = (v) => /^https?:/.test(v);
 
 function variantGroups(rows) {

@@ -321,7 +321,7 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
 });
 
 // MEH-3033 (Sapir chose א, 13/11): the distance is its own fact after the
-// city — «עיר · כ-3 ק"מ» — the same label as the cards (formatDistance, no
+// city — «עיר · כ-3 ק״מ» — the same label as the cards (formatDistance, no
 // «ממך», MEH-1307), measured to the NEAREST location row (producerPoints),
 // and only when the visitor's location is already cached. Never asks.
 describe("ProducerHeader distance fact (MEH-3033)", () => {

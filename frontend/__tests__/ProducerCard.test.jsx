@@ -47,11 +47,11 @@ vi.mock("next-intl", () => ({
     // MEH-2676: card delivery row folds a free-delivery threshold in.
     if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
     if (key === "producer.offer.card_delivery_sr") return "משלוח";
-    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
+    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק״ג`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
-  // ('ק"מ' on the Hebrew card). The experience-card test set the precedent
+  // ('ק״מ' on the Hebrew card). The experience-card test set the precedent
   // for this mock shape before MEH-2248 deleted it.
   useLocale: () => "he",
 }));
