@@ -79,6 +79,7 @@ This page links to those and does not repeat their numbers.
 | Backups | Railway volume + the backup job | restore is checked by `backup-restore-verify.yml` ([BACKUPS.md](./BACKUPS.md)); a copy restored anywhere but production has its personal details replaced by `scripts/anonymize_restored_db.sql` (MEH-3406) |
 | Draft of a registration form, recent searches, chosen city | browser storage | never on the server |
 | Which «הקישור שלך בכל מקום» rows the owner ticked (MEH-3331) | browser `localStorage`, `mehamakor.link-everywhere.<producer id>` | a per-device reminder; never on the server, lost with the browser's storage |
+| Whether the account menus show «ההזמנות שלי» (MEH-3525) | browser `sessionStorage`, `meh_my_orders_nav`: the account id, on/off, and when it was asked | 30 minutes, cleared with the tab; a cached answer for another account id is ignored |
 
 ## What gives first under load
 
@@ -102,7 +103,10 @@ inventory.
    bucket and get 429s on ordinary reads.
 4. **Server-rendered pages on Vercel.** Almost every public page renders on
    each request, about 140 ms of CPU each. Traffic raises cost linearly; there
-   is no cache to absorb a spike.
+   is no cache to absorb a spike. The exceptions are ISR pages such as `/` and
+   the `/events` + `/experiences` hub (MEH-2233): the server reads the first
+   `/events` and `/experiences` lists at most once a minute per locale, and
+   every visit in between gets the cached HTML.
 5. **Anthropic credit or rate limit.** Moderation fails open and chat goes
    offline. Nobody is told unless they look at Sentry.
 6. **Sentry's monthly error quota.** Past it, new errors are dropped silently,
