@@ -37,7 +37,7 @@ export const RESCUE_SECTION_ID = "section-rescue";
  * the way Too Good To Go opens a bag before its store; the business page
  * still carries the bag block for someone already there.
  *
- * @param {{ id?: string|null }} offer
+ * @param {{ id?: unknown, [key: string]: unknown } | null | undefined} offer
  * @returns {string|null}
  */
 export function rescueOfferPath(offer) {

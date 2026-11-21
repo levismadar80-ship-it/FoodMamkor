@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Basket } from "@phosphor-icons/react";
 
 import { Link } from "@/i18n/navigation";
+import InlineMessage from "@/components/ui/InlineMessage";
 import EntityCover from "@/components/EntityCover";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import OwnerRow from "@/components/OwnerRow";
@@ -64,7 +65,7 @@ export default function RescueOfferPage({ offerId }) {
   if (failed) {
     return (
       <Shell t={t}>
-        <p className="text-sm text-fg-muted" role="alert">{t("list.failed")}</p>
+        <InlineMessage tone="error">{t("list.failed")}</InlineMessage>
         <Link href="/rescue" className="mt-2 inline-block text-primary font-semibold underline">{t("offer_page.other_bags")}</Link>
       </Shell>
     );
