@@ -8,7 +8,8 @@ Purpose:  The exact body text of each WhatsApp template as submitted to Meta,
 Touches:  nothing.
 Does NOT: send (services/whatsapp.py) or build parameters (each template
           class's fields, in {{n}} order).
-History:  MEH-3589 — admin_update_v1.
+History:  MEH-3589 — admin_update_v1 (reworded 21/11 after Meta's
+          category check read the first body as Marketing).
           MEH-3296 — order templates, copy approved by Sapir 18/11/2026
           (2, 4, 5, 6 at 19:48Z; 1 and 3 reworded at 20:23Z after Meta
           blocked them).
@@ -47,9 +48,11 @@ META_BODIES: dict[str, str] = {
     "product_order_closed_v1": "ההזמנה מ{{1}} בוטלה. פרטים: {{2}}\n" + SIGNATURE,
     # MEH-3589: admin-only (Sapir is the one reader), feminine «לך».
     "admin_update_v1": (
-        "עדכון חדש במהמקור שמחכה לך: {{1}}.\n"
+        "שלום, יש פעולה חדשה בחשבון הניהול שלך באתר מהמקור.\n"
+        "נושא: {{1}}\n"
         "פרטים: {{2}}\n"
-        "ללוח הניהול: https://mehamakor.co.il/admin\n" + SIGNATURE
+        "כדי לצפות ולטפל, היכנסי ללוח הניהול באתר: https://mehamakor.co.il/admin\n"
+        "תודה, צוות מהמקור"
     ),
     "product_order_tomorrow_v1": (
         "תזכורת: מחר {{1}} מ{{2}}, בשעות {{3}} עד {{4}}. "
