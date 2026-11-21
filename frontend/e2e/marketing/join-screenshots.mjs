@@ -727,8 +727,13 @@ async function pinChromeForElementShot(el) {
   await el.evaluate((node, label) => {
     const touched = [];
     for (const n of document.querySelectorAll("body *")) {
-      if (n === node || node.contains(n) || n.contains(node)) continue;
+      if (n === node || n.contains(node)) continue;
       const pos = getComputedStyle(n).position;
+      // MEH-3495: a sticky bar INSIDE the subject also paints over it — the
+      // dashboard tab bar sits inside `main` and covered «המתכונים שלי» on
+      // dash-recipes (21/11). Sticky → static keeps its flow space, so it is
+      // safe inside the subject too; fixed ones inside stay as they are.
+      if (node.contains(n) && pos !== "sticky") continue;
       if (pos === "sticky") {
         touched.push([n, "position", n.style.getPropertyValue("position"), n.style.getPropertyPriority("position")]);
         n.style.setProperty("position", "static", "important");
@@ -1113,6 +1118,37 @@ async function captureStills(browser) {
       const outFile = path.join(OUT, shot.file);
       const unpin = await pinChromeForElementShot(el);
       try {
+        // MEH-3495: an element shot scrolls its subject into view, and a
+        // section below the fold can start loading only then — dash-rescue
+        // came out with «טוען...» and dash-share-kit with empty image boxes
+        // (21/11). So: every image in the frame decoded, and the frame not a
+        // loading state, checked again right before the write.
+        await el.scrollIntoViewIfNeeded();
+        await el.evaluate(async (node) => {
+          for (const img of node.querySelectorAll("img")) img.loading = "eager";
+          await Promise.race([
+            Promise.all(
+              [...node.querySelectorAll("img")].map((img) =>
+                img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; }),
+              ),
+            ),
+            new Promise((r) => setTimeout(r, 15_000)),
+          ]);
+        });
+        const settledBy = Date.now() + 15_000;
+        for (;;) {
+          try {
+            await assertNotLoading(el, `${shot.file}, checked again right before the write`);
+            const unloaded = await el.evaluate((node) =>
+              [...node.querySelectorAll("img")].filter((i) => !i.complete || i.naturalWidth === 0).length,
+            );
+            if (unloaded) throw new Error(`${unloaded} image(s) in the frame never loaded — ${shot.file}`);
+            break;
+          } catch (err) {
+            if (Date.now() > settledBy) throw err;
+            await page.waitForTimeout(500);
+          }
+        }
         await el.screenshot({ path: outFile, type: "webp", quality: 80 });
       } finally {
         await unpin();
@@ -1164,18 +1200,52 @@ async function captureClips(browser) {
   for (const clip of CLIPS) {
     const dir = path.join(TMP, clip.name);
     await mkdir(dir, { recursive: true });
+    const entry = { file: `${clip.name}.mp4`, route: clip.route, kind: "clip" };
+    // MEH-3495: LOG IN OUTSIDE THE RECORDING. A context records from the
+    // moment it exists, so logging in inside it filmed the login form with
+    // the demo address in the field (clip-insights, 21/11). The session is
+    // made in a context with no video and handed over as storageState.
+    let storageState;
+    if (clip.auth) {
+      try {
+        const pre = await newPage(browser, { auth: true });
+        storageState = await pre.context.storageState();
+        await pre.context.close();
+      } catch (err) {
+        entry.status = "missing";
+        entry.error = `login failed: ${err.message.split("\n")[0]}`;
+        console.log(`  ✗ ${clip.name}  — ${entry.error}`);
+        results.push(entry);
+        continue;
+      }
+    }
+    const recordingFrom = Date.now();
     const context = await browser.newContext(
-      contextOptions({ recordVideo: { dir, size: VIEWPORT } }),
+      contextOptions({ recordVideo: { dir, size: VIEWPORT }, ...(storageState ? { storageState } : {}) }),
     );
     const page = await context.newPage();
-    const entry = { file: `${clip.name}.mp4`, route: clip.route, kind: "clip" };
-    const started = Date.now();
     try {
       await installOverlayStyles(page);
-      if (clip.auth) await login(page);
       await page.goto(`${BASE}/he${clip.route}`, { waitUntil: "domcontentloaded" });
       // Never start a clip on a loading state (ticket): wait for real content.
-      await page.locator("main").first().waitFor({ state: "visible", timeout: 20_000 });
+      const main = page.locator("main").first();
+      await main.waitFor({ state: "visible", timeout: 20_000 });
+      // MEH-3495: `main` is visible while the data is still in flight
+      // («טעינת סטטיסטיקות...» opened clip-insights, 21/11). Wait until the
+      // frame stops being a loading state, then cut everything before that
+      // moment out of the mp4 (`trim_start_s`, used by toMp4).
+      const loadedBy = Date.now() + 20_000;
+      for (;;) {
+        try {
+          await assertNotLoading(main, `${clip.name} opened on a loading state`);
+          break;
+        } catch (err) {
+          if (Date.now() > loadedBy) throw err;
+          await page.waitForTimeout(300);
+        }
+      }
+      await page.waitForTimeout(300);
+      entry.trim_start_s = Math.max(0, Math.round((Date.now() - recordingFrom) / 100) / 10);
       // A clip's deliverable is the scrolling viewport, not the document, so
       // the cleanliness question is asked over what is on screen — sampled at
       // the opening frame and again at the closing one. A body-wide read here
@@ -1209,7 +1279,7 @@ async function captureClips(browser) {
             `«${dirty.slice(Math.max(0, dirty.indexOf(TEST_ROW) - 40), dirty.indexOf(TEST_ROW) + 20)}»`,
         );
       }
-      entry.duration_s = Math.round((Date.now() - started) / 100) / 10;
+      entry.duration_s = Math.round(((Date.now() - recordingFrom) / 1000 - (entry.trim_start_s ?? 0)) * 10) / 10;
       await context.close(); // flushes the .webm
       const webm = (await readdir(dir)).find((f) => f.endsWith(".webm"));
       if (!webm) throw new Error("playwright wrote no video file");
@@ -1241,7 +1311,10 @@ async function toMp4(webmPath, name, entry) {
   const mp4 = path.join(TMP, `${name}.mp4`);
   const poster = path.join(TMP, `${name}-poster.webp`);
   await run("ffmpeg", [
-    "-y", "-i", webmPath,
+    "-y",
+    // MEH-3495: drop the frames recorded before the page finished loading.
+    ...(entry.trim_start_s ? ["-ss", String(entry.trim_start_s)] : []),
+    "-i", webmPath,
     "-c:v", "libx264", "-crf", "23", "-preset", "slow",
     "-pix_fmt", "yuv420p", "-r", "30", "-an",
     // H.264 needs even dimensions; 390x844 at 2x is 780x1688, already even,
