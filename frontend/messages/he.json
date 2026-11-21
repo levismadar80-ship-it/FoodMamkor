@@ -7811,7 +7811,7 @@
   "product_variants": {
     "from": "מ-",
     "choose": "בחירה",
-    "chosen": "{count, plural, one {נבחר אחד} other {נבחרו #}}",
+    "chosen": "{count, plural, one {נבחר אחד} two {נבחרו 2} other {נבחרו #}}",
     "list_title": "אפשרויות",
     "pick_hint": "בוחרים אפשרות ומוסיפים",
     "editor_title": "אפשרויות (גדלים או טעמים)",
