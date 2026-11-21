@@ -20,6 +20,8 @@ import api from "@/lib/api";
 
 const CACHE_KEY = "meh_my_orders_nav";
 const TTL_MS = 30 * 60 * 1000; // the flag moves by deploy, not by the minute
+// MEH-3552: read by the api.js 401 interceptor (not an axios option).
+const PROBE_CONFIG = /** @type {import("axios").AxiosRequestConfig} */ ({ skipAuthRefresh: true });
 
 /** @param {string} uid */
 function readCache(uid) {
@@ -64,7 +66,11 @@ function load(uid) {
   let pending = inFlight.get(uid);
   if (!pending) {
     pending = api
-      .get("/users/me/product-orders")
+      // MEH-3552: a probe, not the person's own read — a 401 here is "no
+      // answer", never a reason to refresh and log her out (it did exactly
+      // that on every page in the staging E2E, whose specs sign in with a
+      // fake token the live backend rejects).
+      .get("/users/me/product-orders", PROBE_CONFIG)
       .then(() => {
         writeCache(uid, true);
         return true;
