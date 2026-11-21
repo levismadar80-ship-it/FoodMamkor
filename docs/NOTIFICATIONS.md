@@ -8,11 +8,11 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3594_notifications_map.py -->
 
-86 send sites · 83 on a single channel.
+87 send sites · 84 on a single channel.
 
 | קובץ (`backend/app/`) | פונקציה | ערוצים | על מי |
 |---|---|---|---|
-| `routers/admin_decisions.py` | `approve_producer` | מייל | בעלת העסק |
+| `routers/admin_decisions.py` | `_queue_approved_email` | מייל | בעלת העסק |
 | `routers/admin_decisions.py` | `reject_producer` | מייל | בעלת העסק |
 | `routers/admin_decisions.py` | `request_producer_changes` | מייל | בעלת העסק |
 | `routers/admin_kashrut.py` | `kashrut_expiry_reminders` | וואטסאפ | בעלת העסק |
@@ -62,6 +62,7 @@
 | `services/content_notifications.py` | `notify_reviewer_reply` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `_notify_cities` | מייל | לקוחה |
 | `services/delivery_waitlist.py` | `send_host_confirmation` | מייל | לקוחה |
+| `services/email_outbox.py` | `_handle` | מייל | בלי שורת עסק |
 | `services/experience_notifications.py` | `notify_admin_new_submission` | מייל | בית עסק / מנהלת |
 | `services/experience_notifications.py` | `notify_host_approved` | מייל | בעלת העסק |
 | `services/experience_notifications.py` | `notify_host_changes_requested` | מייל | בעלת העסק |
