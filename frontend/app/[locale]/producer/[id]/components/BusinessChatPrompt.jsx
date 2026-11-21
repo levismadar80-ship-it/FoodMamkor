@@ -1,12 +1,16 @@
 // @ts-check
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { PaperPlaneTilt, Sparkle } from "@phosphor-icons/react";
 import { openBusinessChat } from "@/lib/business-chat";
 import { businessChatPrompts } from "@/lib/business-chat-prompts";
 import { businessChatHandoff } from "@/lib/business-chat-handoff";
 import { usePreviewMode } from "@/lib/preview-mode";
+
+// The panel's own field has the same cap (components/ChatWidget.jsx input).
+const CHAT_MAX_CHARS = 500;
 
 /**
  * BusinessChatPrompt — the business page's way into the site chat (MEH-3489).
@@ -33,8 +37,10 @@ import { usePreviewMode } from "@/lib/preview-mode";
  */
 export default function BusinessChatPrompt({ producer, signatureProduct = null }) {
   const t = useTranslations("chat.business");
+  const tChat = useTranslations("chat");
   const tWa = useTranslations("whatsapp.question_chips");
   const preview = usePreviewMode();
+  const [draft, setDraft] = useState("");
   if (!producer?.id || preview || producer.status !== "approved") return null;
   const name = producer.name || "";
   const prompts = businessChatPrompts(producer, signatureProduct);
@@ -89,18 +95,42 @@ export default function BusinessChatPrompt({ producer, signatureProduct = null }
           })}
         </ul>
       )}
-      {/* Looks like the field it opens (Rufus's «Ask Rufus a question» box):
-          one more outlined button under the chips read as a fourth chip. */}
-      <button
-        type="button"
-        data-testid="business-chat-open"
-        aria-haspopup="dialog"
-        onClick={() => open()}
-        className="mt-3 flex min-h-touch w-full items-center justify-between gap-2 rounded-full border border-border bg-surface-card px-4 text-start text-sm text-fg-muted transition hover:border-primary focus-visible:ring-2 focus-visible:ring-primary"
+      {/* MEH-3584 (Sapir 21/11 «נראה כאילו אני אמורה להקליד כאן וזה נפתח
+          לצ'אט»): a field that LOOKS typeable must BE typeable. Like the
+          «Ask Rufus» box on an Amazon product page: type here, send, and the
+          panel opens with the question already sent. An empty send opens the
+          panel, as the old button did. */}
+      <form
+        data-testid="business-chat-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const question = draft.trim();
+          setDraft("");
+          open(question || undefined);
+        }}
+        className="mt-3 flex min-h-touch items-center gap-1 rounded-full border border-border bg-surface-card ps-4 transition focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
       >
-        <span>{t("page_other")}</span>
-        <PaperPlaneTilt size={16} weight="fill" className="flex-shrink-0 text-primary rtl:-scale-x-100" aria-hidden="true" />
-      </button>
+        <input
+          type="text"
+          data-testid="business-chat-input"
+          aria-label={t("page_other")}
+          placeholder={t("page_other")}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          maxLength={CHAT_MAX_CHARS}
+          enterKeyHint="send"
+          className="min-w-0 flex-1 bg-transparent py-2 text-base text-text placeholder:text-fg-muted focus:outline-none"
+        />
+        <button
+          type="submit"
+          data-testid="business-chat-open"
+          aria-haspopup="dialog"
+          aria-label={tChat("send_label")}
+          className="grid size-11 flex-shrink-0 place-items-center rounded-full text-primary focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <PaperPlaneTilt size={18} weight="fill" className="rtl:-scale-x-100" aria-hidden="true" />
+        </button>
+      </form>
     </section>
   );
 }
