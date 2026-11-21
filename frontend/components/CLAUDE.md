@@ -38,6 +38,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
 | «הצגת עוד» on a list that grows in place | `ui/ShowMore.jsx` | `ShowMoreGuard` |
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
+| Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
 | Fact line with its icon (business page) | `ui/FactLine.jsx` | `FactLineIconGuard` |
 | Empty list / no results | `ui/EmptyState.jsx` | — |
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
