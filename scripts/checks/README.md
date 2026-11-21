@@ -9,6 +9,11 @@ workflow edit and guards were bottlenecked on one person. Now a single generic
 job runs [`run-all.sh`](./run-all.sh), which discovers and runs everything in
 here — thin YAML, fat script.
 
+Checks that depend on a **date or a folder's age** do not belong here (they
+would warn on PRs that did not cause them). They live in
+[`scripts/health/`](../health/README.md) and run in the weekly repo health scan
+(MEH-3615).
+
 ---
 
 ## The contract

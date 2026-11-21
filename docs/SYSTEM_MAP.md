@@ -53,6 +53,7 @@ This page links to those and does not repeat their numbers.
 | Backend | Google Places | a business's Google rating | the rating line disappears |
 | Meta | Backend | WhatsApp webhook (HMAC-checked) | delivery status stays "accepted" |
 | Grafana Cloud k6, or a GitHub runner (`.github/workflows/load-test.yml`, manual only, MEH-3564) | Staging backend | k6 load test (`scripts/load-test.js`); results kept in Grafana Cloud when `K6_CLOUD_TOKEN` is set | the run goes red; nothing else depends on it. Refuses any URL but the staging backend |
+| Scheduled Claude Code task «בדיקת בריאות שבועית לריפו» (Thursday 09:00 Israel, MEH-3615) | GitHub (read the repo) · Linear (cards) · Sapir (one Hebrew report) | runs `scripts/health/weekly-repo-health.sh`: orphan folders, due `Re-check:` dates, Python dead code, knip totals, expiry dates; one card per new finding | no report that week; nothing in the product depends on it |
 | GitHub Actions (`.github/workflows/staging-health.yml`) | GitHub commit statuses | `Staging health` on every open PR into staging, rule 41 (`scripts/ci/staging_health.py`) | posts failure («could not read staging runs»); a PR labeled `fixes-staging-red` gets green |
 
 ## Where each kind of data lives
