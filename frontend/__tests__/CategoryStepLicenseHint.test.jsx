@@ -88,7 +88,8 @@ describe("licence hint names the category (MEH-2928)", () => {
     renderStep([2]);
     const body = document.body.textContent ?? "";
     expect(body).not.toContain("אחרי האישור");
-    expect(body).toContain("כשתוסיפו את המספר, נוכל לבדוק אותו ולהוסיף לעסק תג «מאומת»");
+    // MEH-3663: shortened; the promise is still "we check the number, then the badge".
+    expect(body).toContain("ואז נבדוק אותו ונוסיף לעסק תג «מאומת»");
   });
 });
 
