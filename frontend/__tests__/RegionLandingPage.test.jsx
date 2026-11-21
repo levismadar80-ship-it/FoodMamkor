@@ -22,6 +22,7 @@
  *
  * Failing-by-construction runs are in the PR body (MEH-1619).
  */
+import { render } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/env", () => ({
@@ -42,7 +43,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/i18n/navigation", () => ({ Link: ({ children }) => children }));
-vi.mock("@/components/ProducerCard", () => ({ default: () => null }));
+// MEH-2233: forwards imagePriority so the first-screen set is observable.
+vi.mock("@/components/ProducerCard", () => ({
+  default: ({ imagePriority }) => <div data-testid="card" data-priority={imagePriority ?? "lazy"} />,
+}));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
 
 vi.mock("next-intl/server", () => ({
@@ -243,5 +247,16 @@ describe("the reserved diet path", () => {
     await expect(
       RegionLandingPage({ params: Promise.resolve({ ...PARAMS, category: "vegan" }) }),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+// MEH-2233: the LCP on a region page is a first-row card photo (staging 20/11).
+describe("first-screen card photos (MEH-2233)", () => {
+  it("first two high, next two eager, the rest lazy", async () => {
+    route({ cellTotal: () => 6, items: rows(6) });
+    const ui = await RegionLandingPage({ params: Promise.resolve(PARAMS) });
+    const { container } = render(ui);
+    const flags = [...container.querySelectorAll('[data-testid="card"]')].map((c) => c.getAttribute("data-priority"));
+    expect(flags).toEqual(["high", "high", "eager", "eager", "lazy", "lazy"]);
   });
 });

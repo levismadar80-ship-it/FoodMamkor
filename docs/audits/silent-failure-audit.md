@@ -12,7 +12,7 @@ Every verdict in this document comes from a **measurement**, not from reading th
 Where a measurement was impossible, the row says so instead of guessing.
 
 Probe harnesses (committed, re-runnable):
-- `frontend/e2e/qa-meh1619-silent-failure-probe.mjs` — computed-style / rendered-DOM verdicts (classes A + B)
+- `frontend/e2e/_qa-archive/qa-meh1619-silent-failure-probe.mjs` — computed-style / rendered-DOM verdicts (classes A + B)
 - `frontend/e2e/qa-meh1619-visual-noop.mjs` — before/after pixel proof for CSS deletions
 
 ---

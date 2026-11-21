@@ -24,7 +24,7 @@
  * discriminate on this change, but NOT evidence about rendered behaviour. The
  * behavioural probe (computed `display`, and `.focus()` actually landing, which a
  * display:none element cannot do) lives in
- * e2e/qa-meh2031-eventform-upload-a11y.mjs, where a stylesheet exists.
+ * e2e/_qa-archive/qa-meh2031-eventform-upload-a11y.mjs, where a stylesheet exists.
  *
  * REUSES: __tests__/EventFormSubmitValidation.test.jsx (harness shape),
  *         __tests__/ExperienceImageUpload.test.jsx (the sibling's cases).

@@ -66,7 +66,11 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/image", () => ({
   // MEH-1211: forward onError so the load-failure fallback can be exercised.
-  default: ({ src, alt, onError }) => <img src={src} alt={alt} onError={onError} />,
+  // MEH-2233: forward loading / fetchPriority as data attributes, so the
+  // above-the-fold eager path is observable without React's attribute rules.
+  default: ({ src, alt, onError, loading, fetchPriority }) => (
+    <img src={src} alt={alt} onError={onError} data-loading={loading} data-fetchpriority={fetchPriority} />
+  ),
 }));
 
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
@@ -1109,5 +1113,31 @@ describe("ProducerCard — signup preview shape (MEH-3074)", () => {
     expect(producer.categories.map((cat) => cat.id)).toEqual([2, 1]);
     expect(container.textContent).toContain("מאפים");
     expect(container.textContent).not.toContain("ירקות");
+  });
+});
+
+// MEH-2233: on /producers the LCP element is a first-row card photo (measured
+// 20/11 on staging: IMG, 5.4s median at slow 4G + CPU x4) and next/image made
+// it loading="lazy" — the browser waits for layout before it even asks for it.
+describe("ProducerCard — imagePriority (MEH-2233)", () => {
+  it("default card photo stays lazy, with no fetch priority", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const img = screen.getByAltText(fullProducer.name);
+    expect(img.getAttribute("data-loading")).toBeNull();
+    expect(img.getAttribute("data-fetchpriority")).toBeNull();
+  });
+
+  it("imagePriority=high loads the photo eagerly at high fetch priority", () => {
+    render(<ProducerCard producer={fullProducer} imagePriority="high" />);
+    const img = screen.getByAltText(fullProducer.name);
+    expect(img.getAttribute("data-loading")).toBe("eager");
+    expect(img.getAttribute("data-fetchpriority")).toBe("high");
+  });
+
+  it("imagePriority=eager loads eagerly without raising fetch priority", () => {
+    render(<ProducerCard producer={fullProducer} imagePriority="eager" />);
+    const img = screen.getByAltText(fullProducer.name);
+    expect(img.getAttribute("data-loading")).toBe("eager");
+    expect(img.getAttribute("data-fetchpriority")).toBeNull();
   });
 });
