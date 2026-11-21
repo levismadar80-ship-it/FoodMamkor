@@ -236,6 +236,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   // MEH-2952: the admin list and edit screen read the «עסק בדיקה» ids; unstubbed it hits the
   // real backend, whose 401 sends this fake-auth session to /login mid-click.
   await page.route("**/admin/test-businesses", (r) => json(r, { producer_ids: [] }));
+  // MEH-3524: the edit page mounts AdminAlcoholPanel, which reads the order settings. A 404
+  // (no settings row) hides the panel; unstubbed, the real backend's 401 ends the session.
+  await page.route("**/admin/producers/*/order-settings", (r) => r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "not found" }) }));
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/admin/dashboard", (r) =>
     json(r, {
