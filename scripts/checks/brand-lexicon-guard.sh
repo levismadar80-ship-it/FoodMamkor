@@ -215,7 +215,12 @@ strip_comments() {
             }
             out = out line; line = ""
           }
-          if (raw !~ /^[[:space:]]*(#|$)/) prevcode = raw
+          # The trailing `# noqa` is stripped first, or `def f():  # noqa`
+          # would not end in `:` and its docstring would be read as copy
+          # (rule-5a reviewer, MEH-3655). Known blind spot, acceptable: a
+          # value string alone on the line after `"key":` / `else:` is read as
+          # a docstring. That can only HIDE a match, never invent one.
+          if (raw !~ /^[[:space:]]*(#|$)/) { pc = raw; sub(/[[:space:]]+#.*$/, "", pc); prevcode = pc }
           print FILENAME ":" FNR ":" out
           next
         }
@@ -362,7 +367,6 @@ write_baseline() {
 # ADDED BY MEH-3655 (21/11/2026) — lines the guard could not see before
 #
 #   slash-gender · /ה /ת /תה   (backend/app/services/onboarding_followup.py)
-#   slash-gender · /ת          (backend/app/routers/chat.py, the chat FAQ prompt)
 #   slash-gender · /י איש/אשת  (he.json report.reason_placeholder,
 #                               owner_story.contact_label)
 #   feminine-address · אלייך   (he.json account_deleted.body)
@@ -377,7 +381,8 @@ write_baseline() {
 #
 #   yatzran · יצרנית           (backend/app/services/producer_recipe_moderation.py)
 #   licensed-term · מורשים     (backend/app/services/experience_moderation.py)
-#     The Hebrew SYSTEM PROMPTS of the moderation model, same reason as the
+#   slash-gender · /ת          (backend/app/routers/chat.py, the chat FAQ prompt)
+#     The Hebrew SYSTEM PROMPTS of the moderation and chat models, same reason as the
 #     producer_risk.py line above: a model instruction, not copy anyone reads.
 HEAD
     scan "$1" | keys_of
@@ -433,10 +438,10 @@ SL
   # body assigned from a triple-quoted string, beside real docstrings.
   cat > "$tmp/backend/app/services/mail2.py" <<'PY2'
 """
-Module:   mail2 — «לקוח/ה» in a module docstring is prose.
+Module:   mail2 — לקוח/ה in a module docstring is prose.
 """
-def f():
-    """«מסכים/ה» in a function docstring is prose."""
+def f():  # noqa: D401
+    """מסכים/ה in a function docstring is prose."""
     return 1
 
 _EMAIL_2_BODY = """\
