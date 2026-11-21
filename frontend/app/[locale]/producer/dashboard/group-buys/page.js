@@ -237,7 +237,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
           dir="ltr"
         />
         <Input
-          label={t("max_label")}
+          label={<>{t("max_label")} <InfoTooltip content={t("max_tooltip")} /></>}
           type="number"
           min={2}
           value={form.max_participants}
