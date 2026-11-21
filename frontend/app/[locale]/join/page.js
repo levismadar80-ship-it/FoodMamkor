@@ -158,6 +158,10 @@ export default async function JoinPage({ params }) {
         <EditorialPhoto
           src="https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg"
           testId="join-photo"
+          // MEH-2233: on a phone this photo is the page's LCP (3.8s on
+          // staging 20/11 while it waited as a lazy image); it is in the
+          // first screen, so it loads with the page.
+          priority
           className="mb-10 sm:mb-14"
         />
 

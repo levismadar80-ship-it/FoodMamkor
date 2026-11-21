@@ -13,7 +13,7 @@ import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
-import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
+import { ProducerAdminCreatedSchema } from "@/lib/api-responses";
 import { israelToday } from "@/lib/israel-date";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";

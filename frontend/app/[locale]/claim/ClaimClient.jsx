@@ -10,7 +10,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import { ProducerClaimPreviewSchema, ProducerClaimResultSchema } from "@/lib/api-schemas";
+import { ProducerClaimPreviewSchema, ProducerClaimResultSchema } from "@/lib/api-responses";
 import { requiresFarmerDeclaration } from "@/lib/farmer-declaration";
 import { clearClaimToken, readClaimToken, stashClaimToken } from "@/lib/claim-token";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
