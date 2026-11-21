@@ -57,7 +57,7 @@ describe("MEH-3329 /og/business/[file]", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 404, json: async () => ({}) });
     const res = await GET(...req("nope.png"));
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("https://site.test/og-image.png");
+    expect(res.headers.get("location")).toBe("https://site.test/og-image.jpg");
     expect(res.headers.get("cache-control")).toContain("max-age=300");
   });
 
