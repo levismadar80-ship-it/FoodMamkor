@@ -152,6 +152,7 @@ function clearFieldError(setErrors, field) {
  *   is_lactose_free: boolean, is_no_added_sugar: boolean,
  *   ingredients: string, allergens: string[], may_contain: string[], storage_info: string,
  *   gluten_detail: string, nuts_detail: string, no_allergens: boolean,
+ *   available_weekdays: number | null,
  * }} ProductForm
  */
 /**
@@ -340,6 +341,7 @@ export default function ProductsSection({
       return;
     }
     setFormErrors({});
+    if (weekdaysMissing(form.available_weekdays)) return setError(tw("none_picked")); // MEH-3618
 
     // MEH-2137 chunk 3: SOFT duplicate-name confirm. Two products may
     // legitimately share a name (מחמצת and כוסמין can both be «לחם»), which is
@@ -362,7 +364,6 @@ export default function ProductsSection({
   // directly when the name is unique, and from the dialog's confirm when it is
   // not. Validation already ran in `handleAdd`; this never re-gates.
   const submitAdd = async () => {
-    if (weekdaysMissing(form.available_weekdays)) return setError(tw("none_picked")); // MEH-3618
     // MEH-2924: an empty price posts null, never Number("") === 0.
     const minNum = form.price_min === "" ? null : Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);

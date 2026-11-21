@@ -91,6 +91,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
 
   // MEH-3618: only days on which every picked product is made.
   const { slots, limiting } = cartSlots(slotsFor(menu, form.fulfilment, hasAlcohol), picks, byId);
+  const slot = slots.some((s) => s.start === form.slot) ? form.slot : ""; // MEH-3618: a picked slot the cart no longer allows is dropped
   const delivery = form.fulfilment === "delivery";
   const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment: form.fulfilment, city: form.city }));
   const needsCity = delivery && !form.city.trim();
@@ -103,7 +104,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     setError(null);
     try {
       const href = await sendOrder(
-        orderBody({ producerId: producer.id, picks, ...form, slotStart: form.slot, ageDeclared: form.age, key }),
+        orderBody({ producerId: producer.id, picks, ...form, slotStart: slot, ageDeclared: form.age, key }),
       );
       router.push(href);
     } catch (err) {
@@ -114,7 +115,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     }
   };
 
-  const deadline = form.slot ? cancelDeadline(form.slot, menu.cancel_cutoff_hours) : null;
+  const deadline = slot ? cancelDeadline(slot, menu.cancel_cutoff_hours) : null;
   return (
     <Dialog onClose={onClose} labelledBy="order-sheet-title" size="lg" as="form" onSubmit={submit} closeOnBackdrop={false} testId="order-sheet">
       <h2 id="order-sheet-title" className="text-xl font-bold text-text mb-4">{t("title")}</h2>
@@ -130,7 +131,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         ) : slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
-          <Select label={t("when")} required value={form.slot} onChange={(e) => set({ slot: e.target.value })} data-testid="order-sheet-slot">
+          <Select label={t("when")} required value={slot} onChange={(e) => set({ slot: e.target.value })} data-testid="order-sheet-slot">
             <option value="" disabled>{t("when_pick")}</option>
             {slots.map((s) => (
               <option key={s.start} value={s.start}>

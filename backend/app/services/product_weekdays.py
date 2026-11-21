@@ -43,11 +43,14 @@ def refuse_closed_day(db: Session, product_ids: list[Any], start: datetime) -> N
     """409 with the product's name when a line is not made on the slot's day."""
     weekday = slot_weekday(start)
     rows = (
-        db.query(Product.name, Product.available_weekdays)
+        db.query(Product.id, Product.name, Product.available_weekdays)
         .filter(Product.id.in_(product_ids))
         .all()
     )
-    for name, mask in rows:
+    by_id = {pid: (name, mask) for pid, name, mask in rows}
+    # In the order of the lines, so the product named is always the same one.
+    for pid in product_ids:
+        name, mask = by_id.get(pid, ("", None))
         if not is_open(mask, weekday):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail=day_closed_detail(name)

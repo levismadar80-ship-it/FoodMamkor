@@ -17,6 +17,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StrictInt,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -836,7 +837,7 @@ class ProductCreate(BaseModel):
     no_allergens: bool = False  # MEH-3445: «אין במוצר אלרגנים מהרשימה»
     # MEH-3618: the days the product is made, Sunday = 1 … Saturday = 64.
     # NULL (and 127, every day) = every day.
-    available_weekdays: int | None = None
+    available_weekdays: StrictInt | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod
@@ -921,7 +922,7 @@ class ProductUpdate(BaseModel):
     # column is NOT NULL). The router clears it while a code is stored.
     no_allergens: bool | None = None
     # MEH-3618: exclude_unset → unsent stays put; null = every day again.
-    available_weekdays: int | None = None
+    available_weekdays: StrictInt | None = None
 
     @field_validator("allergens", "may_contain")
     @classmethod

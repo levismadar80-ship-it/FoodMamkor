@@ -260,3 +260,77 @@ def test_the_chat_names_the_days_only_for_a_limited_product(db):
     _limit(db, shop.bread, _bit(THURSDAY) | FRIDAY_ONLY)
     facts = chat_business_context._product(shop.bread)
     assert facts["made_only_on_days"] == ["חמישי", "שישי"]
+
+
+# --- the Israel clock, end to end ------------------------------------------------
+
+# Thursday 19/11/2026 20:00 UTC = 22:00 Israel. Thursday's 08–20 window is over;
+# the next slot is Friday 00:00 Israel, whose UTC date is still Thursday.
+_THURSDAY_EVENING_UTC = datetime(2026, 11, 19, 20, 0)
+_FRIDAY_MIDNIGHT_UTC = "2026-11-19T22:00:00"
+
+
+def _friday_midnight_slot(client, db, monkeypatch, shop):
+    from datetime import time
+
+    from app.models.product_orders import ProducerOrderWindow
+    from app.routers import product_order_offer
+    from app.services import product_order_create
+
+    for mod in (product_order_offer, product_order_create):
+        monkeypatch.setattr(mod, "utc_now", lambda: _THURSDAY_EVENING_UTC)
+    db.add(
+        ProducerOrderWindow(
+            producer_id=shop.producer.id,
+            weekday=FRIDAY,
+            start_time=time(0),
+            end_time=time(1),
+            fulfilment="pickup",
+        )
+    )
+    db.commit()
+    menu = client.get(f"/producers/{shop.id}/order-menu").json()
+    starts = [s["start"] for s in menu["slots"] if s["fulfilment"] == "pickup"]
+    slot = next(s for s in starts if s.startswith(_FRIDAY_MIDNIGHT_UTC))
+    assert slot == starts[0]  # the first slot offered, on the UTC Thursday
+    return slot
+
+
+def test_a_friday_only_product_orders_the_friday_midnight_slot(
+    client, db, flag_on, sent, monkeypatch
+):
+    shop = Shop(db)
+    _limit(db, shop.bread, FRIDAY_ONLY)
+    slot = _friday_midnight_slot(client, db, monkeypatch, shop)
+    res = _order(client, shop, sent, slot, [_line(shop.bread)])
+    assert res.status_code == 201, res.text
+
+
+def test_a_thursday_only_product_cannot_take_the_friday_midnight_slot(
+    client, db, flag_on, sent, monkeypatch
+):
+    shop = Shop(db)
+    _limit(db, shop.bread, _bit(THURSDAY))
+    slot = _friday_midnight_slot(client, db, monkeypatch, shop)
+    res = _order(client, shop, sent, slot, [_line(shop.bread)])
+    assert res.status_code == 409
+    assert res.json()["detail"] == pw.day_closed_detail("חלה")
+
+
+def test_the_product_named_is_the_first_closed_line(client, db, flag_on, sent):
+    shop = Shop(db)
+    slot, day = _slot_and_day(client, shop)
+    closed = _bit((day + 1) % 7)
+    _limit(db, shop.bread, closed)
+    _limit(db, shop.cheese, closed)
+    first_cheese = _order(client, shop, sent, slot, [_line(shop.cheese), _line(shop.bread)])
+    assert first_cheese.json()["detail"] == pw.day_closed_detail("גבינה")
+    first_bread = _order(client, shop, sent, slot, [_line(shop.bread), _line(shop.cheese)])
+    assert first_bread.json()["detail"] == pw.day_closed_detail("חלה")
+
+
+def test_true_is_not_a_mask(client, db):
+    shop = Shop(db)
+    assert _put(client, shop.bread, shop.headers, True).status_code == 422
+    db.refresh(shop.bread)
+    assert shop.bread.available_weekdays is None

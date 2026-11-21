@@ -157,6 +157,17 @@ describe("OrderSheet — days (MEH-3618)", () => {
     expect(slotOptions().map((o) => o.value)).toEqual([FRI_SLOT.start]);
   });
 
+  it("a picked slot the cart stops allowing is dropped, not kept hidden", () => {
+    const products = [product(BREAD, "חלה"), product(CAKE, "עוגה", bit(FRI))];
+    const { rerender } = renderSheet(products, { [BREAD]: 1 });
+    fireEvent.change(screen.getByTestId("order-sheet-slot"), { target: { value: THU_SLOT.start } });
+    expect(screen.getByTestId("order-sheet-slot").value).toBe(THU_SLOT.start);
+    const menu = { producer_id: PRODUCER, min_order_agorot: null, cancel_cutoff_hours: 12, lead_time_hours: 0, business_id_number: "512345678", products, slots: SLOTS };
+    rerender(withIntl(<OrderSheet producer={{ id: PRODUCER }} menu={menu} picks={{ [BREAD]: 1, [CAKE]: 1 }} onChange={() => {}} onClose={() => {}} />));
+    expect(slotOptions().map((o) => o.value)).toEqual([FRI_SLOT.start]);
+    expect(screen.getByTestId("order-sheet-slot").value).toBe("");
+  });
+
   it("no shared day: names the product, offers to remove it, and sends nothing", () => {
     const onChange = vi.fn();
     renderSheet([product(BREAD, "חלה", bit(FRI)), product(CAKE, "עוגה", bit(THU) | bit(SAT))], { [BREAD]: 2, [CAKE]: 1 }, onChange);

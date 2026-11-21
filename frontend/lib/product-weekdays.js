@@ -17,7 +17,7 @@
 import { splitKey } from "@/lib/product-variants";
 
 export const DAYS_IN_WEEK = 7;
-export const ALL_DAYS_MASK = (1 << DAYS_IN_WEEK) - 1; // 127
+const ALL_DAYS_MASK = (1 << DAYS_IN_WEEK) - 1; // 127
 const TZ = "Asia/Jerusalem";
 const EN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -39,7 +39,7 @@ export function isOpen(mask, weekday) {
 }
 
 /** @param {any} product */
-export function isLimited(product) {
+function isLimited(product) {
   return typeof product?.available_weekdays === "number";
 }
 
