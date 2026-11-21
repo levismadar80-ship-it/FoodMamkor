@@ -188,7 +188,11 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
         1,
         "public list adds not_test_producer() (moved from routers/rescue.py, MEH-3541)",
     ),
-    "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
+    "backend/app/routers/admin.py": (1, "admin screens and state transitions"),
+    "backend/app/services/admin_producer_reads.py": (
+        1,
+        "licence-expiry list (moved from routers/admin.py, MEH-3562)",
+    ),
     "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
     "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
     "backend/app/routers/admin_extra.py": (

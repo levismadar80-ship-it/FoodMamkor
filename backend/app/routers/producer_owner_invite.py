@@ -194,7 +194,7 @@ def _invite_url(token: str) -> str:
 
 
 def _has_owner(db: Session, producer_id: UUID) -> bool:
-    """Same predicate as producer_claim._has_owner and admin._attach_has_owner:
+    """Same predicate as producer_claim._has_owner and admin_producer_reads.attach_has_owner:
     at least one account points at this business."""
     return db.query(User.id).filter(User.producer_id == producer_id).first() is not None
 
