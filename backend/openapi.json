@@ -15193,6 +15193,18 @@
             ],
             "title": "Phone"
           },
+          "prefill_token": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prefill Token"
+          },
           "primary_contact_method": {
             "default": "whatsapp",
             "title": "Primary Contact Method",

@@ -284,6 +284,7 @@ files = [
     "app/services/account_guards.py",
     "app/services/admin_audit.py",
     "app/services/admin_pending_reminder.py",
+    "app/services/outreach_lead_registration.py",
     "app/services/rescue_reads.py",  # MEH-3541
     "app/services/kashrut_cert_proxy.py",  # MEH-3559
     "app/services/producer_catalog.py",  # MEH-3559
