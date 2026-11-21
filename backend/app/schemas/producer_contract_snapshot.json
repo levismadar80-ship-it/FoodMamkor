@@ -266,7 +266,8 @@
       "price_min",
       "price_range",
       "price_unit",
-      "storage_info"
+      "storage_info",
+      "variants"
     ],
     "ProducerListOut.active_offer": [
       "expires_at",
