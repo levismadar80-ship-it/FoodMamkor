@@ -81,6 +81,10 @@ test.beforeAll(async ({ request }) => {
   });
 });
 
+// MEH-3529: keep the trace of a failed FIRST attempt (the config records only
+// the retry). File level: Playwright refuses `trace` inside a describe.
+test.use({ trace: "retain-on-failure" });
+
 test.describe("MEH-3021 — long product list collapses", () => {
   test("closed shows the first rows, open shows all, close returns", async ({ page }, info) => {
     watchPageErrors(page);
@@ -116,10 +120,31 @@ test.describe("MEH-3021 — long product list collapses", () => {
     const total = await rows.count(); // DOM rows while closed: 8 (2 hidden on phone)
     expect(total, "closed list renders the desktop preview").toBe(DESKTOP_ROWS);
     const isMobile = (page.viewportSize()?.width ?? 1280) < 768;
-    const visible = await rows.evaluateAll((els) =>
-      els.filter((e) => (e as HTMLElement).offsetParent !== null).length,
+    // MEH-3529 (staging push 20/11, mobile, passed on retry): 3 visible where 6
+    // were expected, with all 8 rows in the DOM. Not reproduced locally (90/90,
+    // CPU-loaded); the push run reads the Railway staging business, which the
+    // sandbox cannot reach. The count stays the assertion; the per-row state
+    // goes into its message so the next red names which rows were hidden and by
+    // what (own class, the orderable wrapper's class, or a hidden ancestor).
+    const seen = await rows.evaluateAll((els) =>
+      els.map((e) => {
+        const el = e as HTMLElement;
+        const wrap = el.parentElement;
+        let hiddenBy = "";
+        for (let n: HTMLElement | null = el; n && !hiddenBy; n = n.parentElement) {
+          if (getComputedStyle(n).display === "none") hiddenBy = `${n.tagName.toLowerCase()}.${n.className.split(" ").slice(0, 2).join(".")}`;
+        }
+        return {
+          shown: el.offsetParent !== null,
+          hiddenBy,
+          name: (el.textContent || "").trim().slice(0, 16),
+          cls: el.className.split(" ").slice(0, 2).join(" "),
+          wrap: (wrap?.className || "").split(" ").slice(0, 2).join(" "),
+        };
+      }),
     );
-    expect(visible, `visible rows on ${info.project.name}`).toBe(isMobile ? MOBILE_ROWS : DESKTOP_ROWS);
+    const visible = seen.filter((r) => r.shown).length;
+    expect(visible, `visible rows on ${info.project.name} at ${page.viewportSize()?.width}px: ${JSON.stringify(seen)}`).toBe(isMobile ? MOBILE_ROWS : DESKTOP_ROWS);
 
     const label = (await toggle.textContent())?.trim() ?? "";
     const m = label.match(/\d+/);

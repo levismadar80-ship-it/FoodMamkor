@@ -38,11 +38,18 @@ import {
  */
 export default function CookieBanner() {
   const t = useTranslations("modals.cookie_banner");
-  const [visible, setVisible] = useState(false);
+  // MEH-2233: rendered in the server HTML (visible until the effect below
+  // reads localStorage), so its text paints with the page instead of after
+  // hydration, where it was the /map LCP at 6.4s. A visitor who already
+  // answered never sees it: lib/prehydration-flags-inline.js marks <html>
+  // before the first paint and app/globals.css hides the pre-mount copy.
+  const [visible, setVisible] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const bannerRef = useRef(null);
 
   useEffect(() => {
-    if (!hasCookieConsent()) setVisible(true);
+    setVisible(!hasCookieConsent());
+    setMounted(true);
     // MEH-3196: the footer's «הגדרות עוגיות» re-opens the banner.
     const reopen = () => setVisible(true);
     window.addEventListener(COOKIE_SETTINGS_EVENT, reopen);
@@ -92,6 +99,7 @@ export default function CookieBanner() {
       className="cookie-banner vv-pin print:hidden fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-cookie-banner bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="region"
       data-testid="cookie-banner"
+      data-prehydration={mounted ? undefined : ""}
       aria-label={t("aria_label")}
     >
       <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col items-stretch gap-2 md:flex-row md:items-center md:justify-between md:gap-3">

@@ -5,10 +5,15 @@ import { test, expect } from "./_cloudinary-stub";
  * The toggle swaps between list and calendar modes; the calendar
  * always shows the current-month grid with day cells ≥ 44×44 for touch.
  */
+const CALENDAR_URL = `/events?city=${encodeURIComponent("תל אביב")}`;
+
 test.describe("Calendar view on /events", () => {
   // Mock the /events API so CalendarView renders regardless of DB state.
   // Without this, an empty response hits the events.length === 0 branch and
   // CalendarView is never mounted — role="grid" aria-label="לוח שנה" never appears.
+  // MEH-2233: an unfiltered /events arrival now renders the server's list and
+  // makes no browser request, so the stub would never be hit. A ?city= arrival
+  // still fetches in the browser, which keeps this spec independent of the DB.
   test.beforeEach(async ({ page }) => {
     await page.route("**/api/events**", (route) =>
       route.fulfill({
@@ -32,7 +37,7 @@ test.describe("Calendar view on /events", () => {
   });
 
   test("toggle swaps to calendar mode and renders the grid", async ({ page }) => {
-    await page.goto("/events");
+    await page.goto(CALENDAR_URL);
     await page.waitForLoadState("domcontentloaded");
     // View-mode tablist is always rendered (not data-dependent) — explicit wait
     // avoids flaky getByRole assertions if React hydration is still settling.
@@ -56,7 +61,7 @@ test.describe("Calendar view on /events", () => {
   });
 
   test("day cells meet the 44px touch target", async ({ page }) => {
-    await page.goto("/events");
+    await page.goto(CALENDAR_URL);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForSelector('[role="tablist"][aria-label="מצב תצוגה"]', { timeout: 20_000 });
     await page.getByRole("tab", { name: "לוח שנה", exact: true }).click();
