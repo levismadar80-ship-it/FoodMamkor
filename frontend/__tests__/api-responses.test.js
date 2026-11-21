@@ -1,22 +1,18 @@
-// Rule-19 coverage for the non-map api-schemas (MEH-779 covers the map).
+// Rule-19 coverage for the non-map response schemas, lib/api-responses.js —
+// generated from the backend contract since MEH-1748 (MEH-779 covers the map).
 // Validates that each schema accepts the real backend shape and that a
 // structurally-broken payload fails safeParse (callers route to their
 // existing empty/error state on failure).
 import { describe, it, expect } from "vitest";
-import {
-  CategoriesResponseSchema,
-  StatsSchema,
-  FavoritesResponseSchema,
-  ProducerSchema,
-  ProducersResponseSchema,
-} from "@/lib/api-schemas";
+import { CategoriesResponseSchema, StatsSchema, FavoritesResponseSchema } from "@/lib/api-responses";
+import { ProducerSchema, ProducersResponseSchema } from "@/lib/schemas";
 
 describe("CategoriesResponseSchema", () => {
   it("accepts a valid category list", () => {
     const data = [
-      { id: 1, name: "ירקות", emoji: "🥬" },
-      { id: 2, name: "מאפים", emoji: null },
-      { id: 3, name: "ללא אימוג'י" },
+      { id: 1, name: "ירקות", emoji: "🥬", requires_license: false },
+      { id: 2, name: "מאפים", emoji: null, requires_license: false },
+      { id: 3, name: "ללא אימוג'י", requires_license: true },
     ];
     const result = CategoriesResponseSchema.safeParse(data);
     expect(result.success).toBe(true);
@@ -24,7 +20,7 @@ describe("CategoriesResponseSchema", () => {
 
   it("tolerates extra/unknown keys (forward-compatible)", () => {
     const result = CategoriesResponseSchema.safeParse([
-      { id: 1, name: "x", new_field: "future" },
+      { id: 1, name: "x", requires_license: false, new_field: "future" },
     ]);
     expect(result.success).toBe(true);
   });

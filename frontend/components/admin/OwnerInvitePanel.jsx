@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { OwnerInviteCreatedSchema } from "@/lib/api-schemas";
+import { OwnerInviteCreatedSchema } from "@/lib/api-responses";
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
