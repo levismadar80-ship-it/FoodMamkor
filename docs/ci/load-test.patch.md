@@ -46,8 +46,13 @@ the test window. That is a security decision and is not part of this patch.
   starts, so production cannot be loaded by a typo.
 - `cloud` without the two secrets fails with a message naming them, rather than
   silently running locally.
-- `PRODUCER_SLUG` and `PRODUCER_ID` come from a real `/producers` row, so the
-  numbers are not dominated by 404s. If none is found the run stops.
+- `PRODUCER_SLUG` and `PRODUCER_ID` come from the first `/producers` row that
+  has both a slug and a UUID, so the numbers are not dominated by 404s. A slug
+  with whitespace is refused, because it would split the k6 flags. If none is
+  found the run stops.
+- `local` mode with the two secrets set still uploads results to Grafana Cloud
+  (the action enables the cloud integration whenever the token exists). That
+  uses no VUh from the cloud load generators, only result storage.
 
 ## The YAML
 
@@ -86,6 +91,9 @@ jobs:
     name: k6 load test
     runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
     env:
       BASE_URL: ${{ inputs.base_url }}
       K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
@@ -111,11 +119,12 @@ jobs:
       - name: Pick a real producer
         id: producer
         run: |
-          body="$(curl -fsS --max-time 30 "$BASE_URL/producers?page_size=1")"
-          slug="$(printf '%s' "$body" | jq -r '(.[0].slug // .producers[0].slug // .items[0].slug) // empty')"
-          pid="$(printf '%s' "$body" | jq -r '(.[0].id // .producers[0].id // .items[0].id) // empty')"
-          if [ -z "$slug" ] || [ -z "$pid" ]; then
-            echo "::error::No producer found at $BASE_URL/producers. The run would measure 404s only."
+          body="$(curl -fsS --max-time 30 "$BASE_URL/producers")"
+          slug="$(printf '%s' "$body" | jq -r 'first(.[] | select(.slug != null and .id != null) | .slug) // empty')"
+          pid="$(printf '%s' "$body" | jq -r 'first(.[] | select(.slug != null and .id != null) | .id) // empty')"
+          # No spaces or newlines: both end up in k6 flags and in GITHUB_OUTPUT.
+          if ! [[ "$slug" =~ ^[^[:space:]]+$ ]] || ! [[ "$pid" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+            echo "::error::No producer with a slug and a UUID at $BASE_URL/producers. The run would measure 404s only."
             exit 1
           fi
           echo "slug=$slug" >> "$GITHUB_OUTPUT"
