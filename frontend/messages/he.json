@@ -855,6 +855,7 @@
         },
         "products": {
           "heading": "מוצרים",
+          "allergens_note": "יש לכם רגישות למזון? שאלו את בית העסק לפני ההזמנה.",
           "signature_label": "המוצר המוביל",
           "show_all": "הצגת כל {count} המוצרים",
           "show_less": "הצגת פחות",
@@ -874,7 +875,6 @@
             "allergens_heading": "אלרגנים",
             "contains": "מכיל: {list}",
             "may_contain": "עלול להכיל: {list}",
-            "allergens_undeclared": "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.",
             "no_allergens": "אין במוצר אלרגנים מהרשימה",
             "storage_heading": "אחסון ותוקף",
             "declared_by_business": "לפי הצהרת בית העסק"
@@ -942,7 +942,8 @@
           "email": "אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנות",
-          "whatsapp_group": "עדכונים"
+          "whatsapp_channel": "ערוץ וואטסאפ",
+          "whatsapp_group_chat": "קבוצת וואטסאפ"
         },
         "single": {
           "phone": "חייגו אלינו",
@@ -951,7 +952,8 @@
           "email": "שלחו אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנה",
-          "whatsapp_group": "עדכונים מבית העסק בוואטסאפ"
+          "whatsapp_channel": "ערוץ הוואטסאפ של בית העסק",
+          "whatsapp_group_chat": "קבוצת הוואטסאפ של בית העסק"
         },
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
         "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
@@ -4071,6 +4073,7 @@
     "modal_title_experience": "שיתוף החוויה",
     "modal_title_recipe": "שתפו את המתכון",
     "modal_title_organizer": "שתפו את דף המארגן",
+    "modal_title_rescue": "שתפו את הסל",
     "copy_link": "שתפו לינק",
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
@@ -7003,7 +7006,9 @@
     },
     "section": {
       "title": "סל הפתעה",
-      "cta": "לשריין · משלמים בקופה",
+      "cta": "לשריין את הסל · משלמים בקופה",
+      "saving": "חיסכון של {pct}%",
+      "pickup_today": "איסוף היום {from}–{until}",
       "typical": "בדרך כלל: {items}",
       "allergens_title": "אלרגנים",
       "cancel_until": "ביטול חינם עד {time}",
@@ -7146,6 +7151,35 @@
         "mark": "מסמנים «אשר מסירה» בלוח. הקונה לא הגיע עד סוף זמן האיסוף? מסמנים «לא הגיע»."
       },
       "footer": "התשלום בקופה, במחיר שמופיע בהזמנה. שאלות — כותבים לנו."
+    },
+    "offer_page": {
+      "eyebrow": "סל הפתעה",
+      "worth_range": "שווי משוער {min}–{max} ₪",
+      "worth_one": "שווי משוער {min} ₪",
+      "pickup_title": "איסוף היום",
+      "address_title": "איפה אוספים",
+      "inside_title": "מה יש בסל",
+      "inside_body": "זו הפתעה: בסל יש מה שנשאר היום, ולכן התכולה משתנה מיום ליום.",
+      "inside_typical": "בדרך כלל יש בו:",
+      "how_title": "איך זה עובד",
+      "how_1": "משריינים כאן. לא משלמים עכשיו.",
+      "how_2": "מגיעים בשעות האיסוף ואומרים בקופה את הקוד שתקבלו.",
+      "how_3": "משלמים בקופה ולוקחים את הסל.",
+      "cancel_title": "ביטול",
+      "cancel_body": "אפשר לבטל בחינם עד {time}. אחרי זה השריון נשאר בתוקף.",
+      "cancel_passed": "מועד הביטול החינמי עבר, כך ששריון מעכשיו נשאר בתוקף.",
+      "no_show": "מי שלא מגיע לאסוף פעמיים נחסם משריונים.",
+      "business_link": "לדף של {name}",
+      "state_sold_out": "הסל הזה אזל להיום.",
+      "state_cancelled": "בית העסק ביטל את הסל של היום.",
+      "state_ended": "השריונים לסל הזה נסגרו להיום.",
+      "other_bags": "לסלים אחרים באזור",
+      "not_found_title": "הסל הזה לא נמצא",
+      "not_found_body": "אולי הוא היה של יום אחר. סלים חדשים מתפרסמים כל יום.",
+      "loading": "טוענים את הסל…",
+      "bar_note": "{price} ₪ · איסוף עד {until}",
+      "details_link": "לכל פרטי הסל",
+      "bar_cta": "לשריין את הסל"
     }
   },
   "holidays": {
@@ -7848,7 +7882,9 @@
     "too_late": "את ההזמנה הזאת כבר אי אפשר לבטל באתר. אפשר לפנות לבית העסק.",
     "line": "{qty} × {name}",
     "back": "חזרה",
-    "failed": "הפעולה לא הצליחה. נסו שוב."
+    "failed": "הפעולה לא הצליחה. נסו שוב.",
+    "calendar_pickup": "איסוף הזמנה: {business_name}",
+    "calendar_delivery": "משלוח הזמנה: {business_name}"
   },
   "price_unit": {
     "unit": "ליחידה",

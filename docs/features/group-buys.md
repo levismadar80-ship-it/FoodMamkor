@@ -28,6 +28,7 @@
 * `tests/test_meh3609_my_group_buys.py` · `frontend/__tests__/MyGroupBuysPage.test.jsx` — «הקבוצות שלי» (MEH-3609).
 * `tests/test_meh3592_group_buy_capacity.py` — תקרות, עצירה, עריכת כמות, 24 השעות, רשימת המתנה, מייל לבית העסק.
 * `tests/test_meh2943_group_buy_commit_scoping.py` · `tests/test_meh3128_group_buy_counts.py` · `tests/test_group_buys_cancel_on_delist.py`
+* `tests/test_meh3591_missing_emails.py` — מייל אישור ההצטרפות (רק כשההצטרפות לא הביאה ליעד), ומייל «הסיסמה שונתה».
 * `frontend/e2e/flows/manual/dashboard-offer-groupbuy.spec.ts`
 * `frontend/__tests__/GroupBuysServerFirstList.test.jsx` — ה-HTML מהשרת מכיל את הכרטיסים, הגעה בלי סינון לא שולחת בקשה, ועיר שמוקלדת אחר כך כן (MEH-2233).
 * `frontend/__tests__/GroupBuyAfterGoal.test.jsx` — מה רואים כשהקבוצה מגיעה ליעד: «הקבוצה הגיעה ליעד» ומספר המצטרפות לבד (לא «2 מתוך 2», שנקרא כמו «מלאה»), «נשארו N מקומות» כשיש תקרה, באנר «עוד אפשר להצטרף» למי שלא הצטרפה, ו«איך זה עובד» שנשאר כל עוד אפשר להצטרף (MEH-3588).

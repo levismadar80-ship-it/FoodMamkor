@@ -168,3 +168,6 @@ DELETE FROM product_order_phone_codes;
 DELETE FROM admin_passkeys;
 DELETE FROM admin_recovery_codes;
 DELETE FROM rescue_no_show_tombstones;
+-- MEH-3535: queued emails hold an address and the words; a restored copy
+-- must also never send a production email.
+DELETE FROM email_outbox;

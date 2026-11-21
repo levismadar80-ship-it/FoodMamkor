@@ -345,6 +345,7 @@ files = [
     "app/services/job_heartbeat.py",
     "app/services/job_staleness.py",
     "app/services/license_validation.py",
+    "app/services/moderation_common.py",
     "app/services/moderation_fail_open.py",
     "app/services/moderation_prompt.py",
     "app/services/moderation_schemas.py",
@@ -373,6 +374,9 @@ files = [
     "app/services/product_order_menu.py",
     "app/services/product_order_quote.py",
     "app/services/product_order_outbox.py",
+    "app/services/email_outbox.py",  # MEH-3535
+    "app/models/email_outbox.py",  # MEH-3535
+    "app/worker.py",  # MEH-3535
     "app/services/product_order_phone.py",
     "app/services/product_order_privacy.py",
     "app/services/product_order_slots.py",
