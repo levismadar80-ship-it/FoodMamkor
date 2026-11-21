@@ -19,7 +19,7 @@ THE RULES
      nothing fails, so the list can only shrink.
   R2 lenient-only-beacons — get_current_user_lenient is used only by the three
      beacon handlers in routers/producers.py (MEH-1627, MEH-2159).
-  R3 one-schema-owner — `.create_all(` is called only in backend/app/startup.py,
+  R3 one-schema-owner — `.create_all(` is called nowhere in backend/ but startup.py,
      and no `_migrate_columns` function exists in backend/ (db.md, MEH-267).
   R4 locked-deps — backend/app never imports smtplib (Resend only) or
      geoalchemy2, no SQL string in backend/ creates the postgis extension, and
@@ -62,7 +62,10 @@ def _suppressed(source: str, line: int) -> bool:
 
 
 def _literal_text(node: ast.AST) -> str | None:
-    """The constant text of a str literal or f-string; None if not literal."""
+    """The constant text of a str literal, f-string or `+` of them; None if not literal."""
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left, right = _literal_text(node.left), _literal_text(node.right)
+        return None if left is None or right is None else left + right
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
     if isinstance(node, ast.JoinedStr):
@@ -71,6 +74,15 @@ def _literal_text(node: ast.AST) -> str | None:
             if isinstance(v, ast.Constant) and isinstance(v.value, str)
         )
     return None
+
+
+def _aliases(tree: ast.AST, name: str) -> set[str]:
+    """`name` plus every local name it is imported as (`import … as x`)."""
+    out = {name}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            out |= {a.asname for a in node.names if a.name == name and a.asname}
+    return out
 
 
 def _call_name(func: ast.AST) -> str:
@@ -85,8 +97,10 @@ def _call_name(func: ast.AST) -> str:
 def hebrew_detail(rel: str, source: str) -> list[tuple[int, str]]:
     """(line, literal) for every non-Hebrew literal detail in this file."""
     found = []
-    for node in ast.walk(ast.parse(source)):
-        if not isinstance(node, ast.Call) or _call_name(node.func) != "HTTPException":
+    tree = ast.parse(source)
+    names = _aliases(tree, "HTTPException")
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or _call_name(node.func) not in names:
             continue
         detail = next((k.value for k in node.keywords if k.arg == "detail"), None)
         if detail is None and len(node.args) >= 2:
@@ -113,17 +127,20 @@ def load_allowlist(text: str) -> dict[tuple[str, str], str]:
 def lenient_uses(rel: str, source: str) -> list[tuple[int, str]]:
     """(line, enclosing function) for each reference to the lenient dep."""
     uses = []
+    tree = ast.parse(source)
+    names = _aliases(tree, "get_current_user_lenient")
 
     def visit(node: ast.AST, func: str) -> None:
         for child in ast.iter_child_nodes(node):
             name = func
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 name = child.name
-            if isinstance(child, ast.Name) and child.id == "get_current_user_lenient":
+            if (isinstance(child, ast.Name) and child.id in names) or \
+                    (isinstance(child, ast.Attribute) and child.attr == "get_current_user_lenient"):
                 uses.append((child.lineno, func))
             visit(child, name)
 
-    visit(ast.parse(source), "<module>")
+    visit(tree, "<module>")
     return uses
 
 
@@ -143,7 +160,7 @@ def schema_owner_violations(rel: str, source: str) -> list[tuple[int, str]]:
     out = []
     for node in ast.walk(ast.parse(source)):
         if isinstance(node, ast.Call) and _call_name(node.func) == "create_all" \
-                and rel != CREATE_ALL_OWNER and rel.startswith("backend/app/"):
+                and rel != CREATE_ALL_OWNER:
             out.append((node.lineno, f".create_all() outside {CREATE_ALL_OWNER} — "
                                      "Alembic is the one schema owner (MEH-267)"))
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) \
@@ -188,23 +205,67 @@ def dep_file_violations(rel: str, text: str) -> list[tuple[int, str]]:
 def networkidle_violations(rel: str, source: str) -> list[tuple[int, str]]:
     out = []
     lines = source.splitlines()
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line) + 1)
     for idx, line in enumerate(lines):
         code = line.split("//", 1)[0]
-        if "networkidle" not in code or code.lstrip().startswith("*"):
+        stripped = code.lstrip()
+        if "networkidle" not in code or stripped.startswith(("*", "/*")):
             continue
-        statement = " ".join(lines[idx: idx + 3]).split(";", 1)[0]
-        if "timeout" not in statement:
+        if "timeout" not in _enclosing_call(source, offsets[idx] + code.index("networkidle")):
             out.append((idx + 1, "unbounded networkidle wait — banned in specs (MEH-215); "
                                  "pass { timeout } or gate on a testid/response"))
     return out
 
 
+def _enclosing_call(source: str, pos: int) -> str:
+    """The text of the innermost `( … )` holding position `pos`, parens balanced."""
+    depth, start = 0, pos
+    while start > 0:
+        start -= 1
+        if source[start] == ")":
+            depth += 1
+        elif source[start] == "(":
+            if depth == 0:
+                break
+            depth -= 1
+    depth, end = 0, start
+    while end < len(source):
+        if source[end] == "(":
+            depth += 1
+        elif source[end] == ")":
+            depth -= 1
+            if depth == 0:
+                break
+        end += 1
+    return source[start: end + 1]
+
+
+SPEC_GLOBS = ("*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.jsx", "*.mjs", "*.cjs")
+
+
 # ---------------------------------------------------------------- runner
-def _py_files(*dirs: str) -> list[Path]:
+def _py_files(root: Path, *dirs: str) -> list[Path]:
     files = []
     for d in dirs:
-        files += sorted((ROOT / d).rglob("*.py"))
+        files += sorted((root / d).rglob("*.py"))
     return [f for f in files if "__pycache__" not in f.parts]
+
+
+def hebrew_detail_report(sources: dict[str, str], allow: dict[tuple[str, str], str]) -> list[str]:
+    report, used = [], set()
+    for rel, source in sources.items():
+        for line, text in hebrew_detail(rel, source):
+            if (rel, text) in allow:
+                used.add((rel, text))
+            else:
+                report.append(f"{rel}:{line}: detail={text!r} is not Hebrew — "
+                              "routers/CLAUDE.md requires Hebrew; a machine-facing "
+                              f"answer goes in {ALLOWLIST} with its reason")
+    for rel, text in sorted(set(allow) - used):
+        report.append(f"{ALLOWLIST}:1: stale row {rel} {text!r} matches nothing — delete it")
+    return report
 
 
 def run(root: Path = ROOT) -> list[str]:
@@ -216,21 +277,11 @@ def run(root: Path = ROOT) -> list[str]:
                 report.append(f"{rel}:{line}: {msg}")
 
     allow = load_allowlist((root / ALLOWLIST).read_text(encoding="utf-8"))
-    used: set[tuple[str, str]] = set()
-    for path in _py_files("backend/app/routers"):
-        rel = path.relative_to(root).as_posix()
-        source = path.read_text(encoding="utf-8")
-        for line, text in hebrew_detail(rel, source):
-            if (rel, text) in allow:
-                used.add((rel, text))
-            else:
-                report.append(f"{rel}:{line}: detail={text!r} is not Hebrew — "
-                              "routers/CLAUDE.md requires Hebrew; a machine-facing "
-                              f"answer goes in {ALLOWLIST} with its reason")
-    for rel, text in sorted(set(allow) - used):
-        report.append(f"{ALLOWLIST}:1: stale row {rel} {text!r} matches nothing — delete it")
+    sources = {p.relative_to(root).as_posix(): p.read_text(encoding="utf-8")
+               for p in _py_files(root, "backend/app/routers")}
+    report += hebrew_detail_report(sources, allow)
 
-    for path in _py_files("backend/app", "backend/alembic", "backend/scripts"):
+    for path in _py_files(root, "backend/app", "backend/alembic", "backend/scripts"):
         rel = path.relative_to(root).as_posix()
         source = path.read_text(encoding="utf-8")
         if rel.startswith("backend/app/"):
@@ -244,7 +295,7 @@ def run(root: Path = ROOT) -> list[str]:
             add(dep, text, dep_file_violations(dep, text))
 
     for d in ("frontend/e2e/flows", "frontend/e2e/visual"):
-        for path in sorted((root / d).rglob("*.ts")):
+        for path in sorted(p for g in SPEC_GLOBS for p in (root / d).rglob(g)):
             rel = path.relative_to(root).as_posix()
             source = path.read_text(encoding="utf-8")
             add(rel, source, networkidle_violations(rel, source))
@@ -268,6 +319,12 @@ def self_test() -> int:
     real = (ROOT / "backend/app/routers/whatsapp_webhook.py").read_text(encoding="utf-8")
     expect("R1 anchored whatsapp_webhook.py has English answers",
            int(len(hebrew_detail("x", real)) >= 1), 1)
+    expect("R1 alias + concat", len(hebrew_detail("r.py",
+           'from fastapi import HTTPException as HE\nraise HE(400, detail="a" + "b")\n')), 1)
+    expect("R1 stale allowlist row fails", len(hebrew_detail_report(
+           {"r.py": 'HTTPException(400, detail="שגיאה")\n'}, {("r.py", "Gone"): "x"})), 1)
+    expect("R1 allowlisted literal passes", len(hebrew_detail_report(
+           {"r.py": 'HTTPException(400, detail="Forbidden")\n'}, {("r.py", "Forbidden"): "x"})), 0)
     try:
         load_allowlist("a\tb\t\n")
         fails.append("R1 allowlist row without a reason was accepted")
@@ -282,6 +339,10 @@ def self_test() -> int:
     expect("R2 anchored: producers.py clean", len(lenient_violations(rel, real)), 0)
     r2 = "def update_x(u=Depends(get_current_user_lenient)):\n    pass\n"
     expect("R2 synthetic", len(lenient_violations("backend/app/routers/x.py", r2)), 1)
+    r2b = ("from app import auth\nfrom app.auth import get_current_user_lenient as gl\n"
+           "def a(u=Depends(auth.get_current_user_lenient)):\n    pass\n"
+           "def b(u=Depends(gl)):\n    pass\n")
+    expect("R2 attribute + alias", len(lenient_violations("backend/app/routers/x.py", r2b)), 2)
 
     # R3
     r3 = "Base.metadata.create_all(bind=e)\ndef _migrate_columns():\n    pass\n"
@@ -299,6 +360,8 @@ def self_test() -> int:
     expect("R4 comment is not code", len(locked_dep_violations("backend/app/x.py",
                                                                 "# no smtplib, no postgis\n")), 0)
     expect("R4 dep file", len(dep_file_violations("p", 'deps = ["geoalchemy2>=0.14"]\n')), 1)
+    lock = (ROOT / "backend/uv.lock").read_text(encoding="utf-8")
+    expect("R4 anchored: uv.lock is a real lock file", int('name = "sqlalchemy"' in lock.lower()), 1)
 
     # R5 — the real parity.spec.ts holds the one sanctioned bounded wait.
     r5 = ('await page.waitForLoadState("networkidle");\n'
@@ -306,6 +369,11 @@ def self_test() -> int:
           'await page.goto(u, { waitUntil: "networkidle" });\n'
           'await page.waitForLoadState("networkidle", { timeout: 5_000 });\n')
     expect("R5 synthetic", len(networkidle_violations("s.ts", r5)), 2)
+    r5b = ('await page.waitForLoadState("networkidle")\n'
+           'await page.goto(u, { timeout: 5 })\n'
+           '/* networkidle in a block comment */\n'
+           'await page.waitForLoadState(\n  "networkidle",\n  { timeout: 5_000 },\n)\n')
+    expect("R5 timeout in the NEXT statement does not count", len(networkidle_violations("s.ts", r5b)), 1)
     real = (ROOT / "frontend/e2e/visual/parity.spec.ts").read_text(encoding="utf-8")
     expect("R5 anchored: parity.spec.ts bounded wait passes", len(networkidle_violations("p", real)), 0)
     expect("R5 anchored: parity.spec.ts really waits on networkidle",
@@ -321,7 +389,11 @@ def self_test() -> int:
 def main(argv: list[str]) -> int:
     if argv[1:] == ["--self-test"]:
         return self_test()
-    report = run()
+    try:
+        report = run()
+    except SyntaxError as err:
+        print(f"  VIOLATION {err.filename}:{err.lineno}: cannot parse — {err.msg}")
+        return 1
     for line in report:
         print(f"  VIOLATION {line}")
     return 1 if report else 0
