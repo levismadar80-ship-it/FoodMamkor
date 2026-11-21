@@ -8,7 +8,7 @@
 * `frontend/app/[locale]/freshness/confirm/` — הבדיקה החודשית «הכול עדיין נכון?» ([page-freshness.md](./page-freshness.md))
 
 **קבצים מרכזיים**
-* `backend/app/services/email.py` — ‏`send_email()`. נכשל פתוח בלי `RESEND_API_KEY`.
+* `backend/app/services/email.py` — ‏`send_email()`. נכשל פתוח בלי `RESEND_API_KEY`. מייל שנשלח בלי html מקבל אוטומטית את המסגרת הממותגת (MEH-3587).
 * `frontend/components/EmailLinkUnsubscribe.jsx` — דף הנחיתה האחד של כל קישור «הסרה» במייל (ניוזלטר, רשימת המתנה, סיכום שבועי): שולח את הטוקן ב-POST בטעינה, «נסו שוב» על 429/5xx/רשת, והטוקן יורד מכתובת הדף (MEH-3464).
 * `backend/app/services/email_layout.py` — **המסגרת האחת של כל מייל** (MEH-3587): לוגו, כרטיס, RTL, כותרת, כפתורים. `send_email` עוטף בה אוטומטית כל מייל שנשלח כטקסט בלבד: שורה «תווית: כתובת» הופכת לכפתור, וגרסת הטקסט יוצאת בלי שינוי. מייל חדש לא צריך לבנות HTML כדי להיראות ממותג.
 * `backend/app/services/registration_emails.py` — `_shell` (עכשיו קורא ל-`frame` של email_layout) ו-`_button`.

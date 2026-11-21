@@ -37,9 +37,22 @@ CARD_BORDER = "#e5dfd3"
 # the logo already says «מהמקור», so the heading drops that prefix.
 _BRAND_PREFIX = re.compile(r"^\s*מהמקור\s*[—–-]\s*")
 _URL = re.compile(r"https?://[^\s<>\"']+")
-# «לדף העסק: https://…» — a label, a colon, a URL and nothing else.
-_LABEL_URL = re.compile(r"^(?P<label>[^:：]{2,60}?)\s*[:：]\s*(?P<url>https?://\S+)$")
-_TRAILING_PUNCT = ".,;)»\"'"
+# «לדף העסק: https://…» at the end of a line, optionally after a sentence
+# («…10:00–11:00. לאישור: https://…»): the words after the last sentence
+# break and before the colon are the button label.
+# A button label is a short call to action. Anything longer is a sentence
+# (MEH-3587 review: «את כל השריונים… בלוח הבקרה:» became a 45-letter button);
+# the sentence stays text and the address gets the generic label.
+MAX_LABEL = 32
+_TAIL_LABEL_URL = re.compile(
+    r"(?:^|(?<=[.!?] ))(?P<label>[^.!?:：\n]{2,%d})\s*[:：]\s*(?P<url>https?://\S+)$"
+    % MAX_LABEL
+)
+_SENTENCE_BREAK = re.compile(r"[.!?]\s")
+_TRAILING_PUNCT = ".,;:!?…)]»\"'׳״"
+# An opt-out is never the main action of an email, so it is never the filled
+# button (the weekly summary's «להפסקת הסיכום השבועי»).
+_OPT_OUT = re.compile(r"^(ל?הפסק|ל?הסר|ל?ביטול|לא רוצה)")
 
 # Copy for an address that had no words of its own in the text body.
 BARE_URL_LABEL = "לפתיחה"
@@ -128,26 +141,58 @@ def _paragraphs(body: str) -> list[list[str]]:
     return [p for p in paras if p]
 
 
-def _actions(lines: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
-    """Pull the «label: URL», «label:» + URL and bare-URL lines out as buttons."""
-    text: list[str] = []
-    actions: list[tuple[str, str]] = []
+def _short_label(text: str) -> str | None:
+    label = text.rstrip(":：").strip()
+    if 2 <= len(label) <= MAX_LABEL and not _SENTENCE_BREAK.search(label + " "):
+        return label
+    return None
+
+
+def _actions(lines: list[str]) -> list[tuple[str, str | None, str]]:
+    """Each line as ("text", None, line) or ("button", label, url), in order.
+
+    Shapes: «label: URL» (alone or ending a sentence), «label:» then a URL
+    line, and a bare URL line. A label that reads as a sentence stays text.
+    """
+    out: list[tuple[str, str | None, str]] = []
     i = 0
     while i < len(lines):
         line = lines[i]
         nxt = lines[i + 1] if i + 1 < len(lines) else ""
-        m = _LABEL_URL.match(line)
-        if m and not _URL.search(m.group("label")):
-            actions.append((m.group("label").strip(), _split_url(m.group("url"))[0]))
-        elif line.endswith((":", "：")) and _URL.fullmatch(nxt):
-            actions.append((line[:-1].strip(), _split_url(nxt)[0]))
+        tail = _TAIL_LABEL_URL.search(line)
+        if tail and not _URL.search(tail.group("label")):
+            before = line[: tail.start()].strip()
+            if before:
+                out.append(("text", None, before))
+            out.append(
+                (
+                    "button",
+                    tail.group("label").strip(),
+                    _split_url(tail.group("url"))[0],
+                )
+            )
+        elif line.endswith((":", "：")) and _URL.fullmatch(_split_url(nxt)[0] or "-"):
+            label = _short_label(line)
+            if label is None:
+                out.append(("text", None, line))
+            out.append(("button", label or BARE_URL_LABEL, _split_url(nxt)[0]))
             i += 1
-        elif _URL.fullmatch(line):
-            actions.append((BARE_URL_LABEL, _split_url(line)[0]))
+        elif _URL.fullmatch(_split_url(line)[0] or "-"):
+            out.append(("button", BARE_URL_LABEL, _split_url(line)[0]))
         else:
-            text.append(line)
+            out.append(("text", None, line))
         i += 1
-    return text, actions
+    return out
+
+
+def _drop_signoff(paras: list[list[str]]) -> list[list[str]]:
+    """Remove a closing «צוות מהמקור» (and a «בברכה,» right above it) only."""
+    if not paras or paras[-1][-1] != _SIGNOFF:
+        return paras
+    last = paras[-1][:-1]
+    if last and last[-1].rstrip(",") in ("בברכה", "תודה"):
+        last = last[:-1]
+    return paras[:-1] + ([last] if last else [])
 
 
 def text_to_html(subject: str, body: str) -> str:
@@ -157,24 +202,33 @@ def text_to_html(subject: str, body: str) -> str:
     so a button sits next to the sentence that introduced it.
     """
     rows: list[str] = []
-    paras = _paragraphs(body)
-    if paras and paras[-1][-1] == _SIGNOFF:
-        paras = paras[:-1]
-    for para in paras:
-        text, actions = _actions(para)
+    text: list[str] = []
+    buttons: list[str] = []
+    primary_used = False
+
+    def flush() -> None:
         if text:
-            rows.append(
-                '<p style="margin:0 0 14px;">'
-                + "<br>".join(_inline(t) for t in text)
-                + "</p>"
-            )
-        if actions:
-            buttons = "".join(
-                button(url, label, primary=(n == 0))
-                for n, (label, url) in enumerate(actions)
-            )
+            rows.append('<p style="margin:0 0 14px;">' + "<br>".join(text) + "</p>")
+            text.clear()
+        if buttons:
             rows.append(
                 '<table width="100%" cellpadding="0" cellspacing="0" role="presentation" '
-                f'style="margin:0 0 14px;">{buttons}</table>'
+                f'style="margin:0 0 14px;">{"".join(buttons)}</table>'
             )
+            buttons.clear()
+
+    for para in _drop_signoff(_paragraphs(body)):
+        for kind, label, value in _actions(para):
+            if kind == "text":
+                if buttons:
+                    flush()
+                text.append(_inline(value))
+                continue
+            label = label or BARE_URL_LABEL
+            primary = not primary_used and not _OPT_OUT.match(label)
+            primary_used = primary_used or primary
+            if text and not buttons:
+                flush()
+            buttons.append(button(value, label, primary=primary))
+        flush()
     return frame(html_escape(heading_from_subject(subject)), "".join(rows))

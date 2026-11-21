@@ -31,7 +31,9 @@ def _visible_text(html: str) -> str:
 
 
 def _buttons(html: str) -> list[tuple[str, str]]:
-    return re.findall(r'<a href="([^"]+)"[^>]*display:inline-block[^>]*>([^<]+)</a>', html)
+    return re.findall(
+        r'<a href="([^"]+)"[^>]*display:inline-block[^>]*>([^<]+)</a>', html
+    )
 
 
 @pytest.fixture
@@ -49,7 +51,9 @@ def _payload(client) -> dict:
 
 
 def test_a_text_only_send_goes_out_with_the_branded_html(resend):
-    body = "שלום,\n\nלדף העסק: https://mehamakor.co.il/producer/abc\n\nבברכה,\nצוות מהמקור"
+    body = (
+        "שלום,\n\nלדף העסק: https://mehamakor.co.il/producer/abc\n\nבברכה,\nצוות מהמקור"
+    )
     email_service.send_email("person@gmail.com", "מהמקור — בדיקה", body)
     sent = _payload(resend)
     assert sent["text"] == body, "the text part must go out unchanged"
@@ -94,7 +98,10 @@ def test_text_to_html_shapes():
         ("https://x.example/a", "לחצו"),
         ("https://x.example/b", BARE_URL_LABEL),
     ]
-    assert f'<a href="https://x.example/c" style="color:#2e6853;font-weight:bold;">{INLINE_URL_LABEL}</a>.' in html
+    assert (
+        f'<a href="https://x.example/c" style="color:#2e6853;font-weight:bold;">{INLINE_URL_LABEL}</a>.'
+        in html
+    )
     assert "פסקה ראשונה<br>שורה שנייה" in html
     assert "http" not in _visible_text(html)
     assert ">כותרת</td>" in html
@@ -116,3 +123,67 @@ def test_text_is_escaped():
 )
 def test_heading_drops_the_brand_prefix(subject, heading):
     assert heading_from_subject(subject) == heading
+
+
+# --- fresh-review round 1 (21/11): the shapes the real bodies use ---------
+
+
+def test_a_sentence_before_a_link_line_stays_text():
+    """rescue_business_emails: «…בלוח הבקרה:» + URL became a 45-letter button."""
+    sentence = "את כל השריונים של היום אפשר לראות בלוח הבקרה:"
+    html = text_to_html("s", f"{sentence}\nhttps://x.example/rescue\n\nצוות מהמקור")
+    assert _buttons(html) == [("https://x.example/rescue", BARE_URL_LABEL)]
+    assert sentence in _visible_text(html)
+
+
+def test_a_paragraph_ending_in_a_colon_keeps_its_words():
+    """delivery_waitlist: the whole paragraph became the button label."""
+    line = "ביקשת שנודיע לך כשהם יגיעו לחיפה — וזה קרה. עכשיו אפשר להזמין:"
+    html = text_to_html("s", f"היי,\n\n{line}\nhttps://x.example/p\n")
+    assert line in _visible_text(html)
+    assert all(len(label) <= 32 for _, label in _buttons(html))
+
+
+def test_a_label_ending_a_sentence_becomes_a_button():
+    """product_order_outbox: «…10:00–11:00. לאישור: URL» lost its wording."""
+    html = text_to_html(
+        "s",
+        "הזמנה חדשה ממהמקור: דנה, 2 פריטים, 80 ₪, איסוף בשני 10:00–11:00. לאישור: https://x.example/o#t=abc",
+    )
+    assert _buttons(html) == [("https://x.example/o#t=abc", "לאישור")]
+    assert "10:00–11:00." in _visible_text(html)
+
+
+def test_only_the_signoff_line_is_dropped():
+    html = text_to_html("s", "תוכן\nעוד תוכן\nצוות מהמקור")
+    assert "עוד תוכן" in _visible_text(html)
+    assert _visible_text(html).count("צוות מהמקור") == 1
+
+
+def test_trailing_punctuation_stays_out_of_the_link():
+    html = text_to_html("s", "הנה: https://x.example/a!\n\nhttps://x.example/b?")
+    assert [u for u, _ in _buttons(html)] == [
+        "https://x.example/a",
+        "https://x.example/b",
+    ]
+
+
+def test_an_opt_out_is_never_the_filled_button():
+    html = text_to_html(
+        "s",
+        "להפסקת הסיכום השבועי: https://x.example/stop\n\nלכל הנתונים: https://x.example/all",
+    )
+    stop, all_ = re.findall(
+        r'<a href="[^"]+" style="display:inline-block;([^;]+);', html
+    )
+    assert stop == "background:#ffffff" and all_ == "background:#2e6853"
+
+
+def test_a_converter_bug_still_sends_the_text(resend, monkeypatch):
+    def boom(*_a):
+        raise ValueError("converter bug")
+
+    monkeypatch.setattr(email_service, "text_to_html", boom)
+    email_service.send_email("person@gmail.com", "s", "the text")
+    sent = _payload(resend)
+    assert sent["text"] == "the text" and "html" not in sent
