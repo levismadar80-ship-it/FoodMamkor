@@ -180,6 +180,10 @@ An agent reads a big file in slices and misses what is outside the slice.
   from that import list never runs, and `tests/test_meh3540_split_parts_collected.py`
   catches it). Playwright: `<name>-NN.spec.ts` + `_<name>-shared.ts`. vitest:
   `<name>-NN.test.jsx`, with the `vi.mock` header repeated in each file.
+  Scripts (MEH-3542): `seed_demo_business.py` and `action_map.py` keep their
+  entry file and re-export every name from `_<name>_pNN.py` parts; code that
+  reads a name a test patches on the module (`utc_now`, `engine`,
+  `SessionLocal`) stays in the entry file, or the patch would miss it.
 
 ---
 
