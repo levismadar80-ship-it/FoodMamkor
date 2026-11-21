@@ -230,9 +230,13 @@ test.describe("MEH-3153 — «הכל» is visible right after load", () => {
       json(route, { id: "meh3153-user", email: "meh3153@example.com", name: "יעל", role: "user", city: null }),
     );
     await page.route(/\/api\/users\/me\/favorites(?:\/|\?|$)/, (route) => json(route, []));
+    // Rows the generated schema accepts (lib/generated/api.zod.js,
+    // GetSavedUsersMeSavedGetResponse): since #4998 a row that fails it is
+    // dropped, and a page of dropped rows is the empty state with no chips.
     const future = isoDaysFromToday(10);
-    const two = (kind: string) =>
-      [1, 2].map((n) => ({ id: `meh3153-${kind}-${n}`, title: `${kind} ${n}`, event_date: future, is_active: true }));
+    const stamp = `${isoDaysFromToday(0)}T09:00:00`;
+    const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const producer = uuid(99);
     await page.route(/\/api\/users\/me\/saved(?:\/ids)?(?:\?|$)/, (route) => {
       const isIds = new URL(route.request().url()).pathname.endsWith("/ids");
       return json(
@@ -241,12 +245,33 @@ test.describe("MEH-3153 — «הכל» is visible right after load", () => {
           ? []
           : {
               recipes: [1, 2].map((n) => ({
-                id: `meh3153-recipe-${n}`,
+                id: uuid(n),
                 title: `מתכון ${n}`,
                 producer_name: "עסק לדוגמה",
+                producer_slug: "example-business",
+                saved_at: stamp,
               })),
-              events: two("event"),
-              experiences: two("experience"),
+              events: [3, 4].map((n) => ({
+                id: uuid(n),
+                title: `אירוע ${n}`,
+                category: "workshop",
+                created_at: stamp,
+                event_date: future,
+                is_active: true,
+                price: 0,
+                producer_id: producer,
+                saved_at: stamp,
+              })),
+              experiences: [5, 6].map((n) => ({
+                id: uuid(n),
+                title: `חוויה ${n}`,
+                description: "תיאור",
+                created_at: stamp,
+                event_date: future,
+                location_type: "on_site",
+                status: "active",
+                saved_at: stamp,
+              })),
             },
       );
     });
