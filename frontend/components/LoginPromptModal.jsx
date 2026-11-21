@@ -82,10 +82,15 @@ export default function LoginPromptModal({
 
   // MEH-3661: every way out without signing in (X, «אולי אחר כך», Esc, the
   // scrim) is one "dismiss" — measured here, once, not at each control.
-  const onClose = useCallback(() => {
+  // Read through a ref: callers pass a new arrow every render, and the
+  // open-effect below must not re-run (and re-focus «היכנסו») on each one —
+  // a re-render from the auth store would pull focus off the Google button.
+  const dismissRef = useRef(() => {});
+  dismissRef.current = () => {
     trackEvent("login_prompt_action", { reason, action: "dismiss" });
     onCloseProp();
-  }, [reason, onCloseProp]);
+  };
+  const onClose = useCallback(() => dismissRef.current(), []);
   const handleSignedIn = () => {
     trackEvent("login_prompt_action", { reason, action: "google" });
     (onSignedIn ?? onCloseProp)();
@@ -136,7 +141,7 @@ export default function LoginPromptModal({
       window.removeEventListener("keydown", handleKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, onClose]);
+  }, [open, onClose]); // onClose is stable (dismissRef) — runs once per open
 
   if (!open) return null;
 

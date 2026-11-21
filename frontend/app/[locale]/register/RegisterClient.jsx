@@ -16,7 +16,7 @@ import PasswordInput from "@/components/PasswordInput";
 import Input from "@/components/ui/Input";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
-import { safeInternalRedirect } from "@/lib/safe-redirect";
+import { isReturnablePath, safeInternalRedirect } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -158,7 +158,7 @@ function RegisterPageBody() {
       await register({ ...form, terms_accepted: agreedToTerms });
       // MEH-3661: the verification link brings her back here, not to "/".
       rememberReturnPath(redirectTo);
-      trackEvent("consumer_signup_submitted", { method: "email", has_redirect: redirectTo !== "/" });
+      trackEvent("consumer_signup_submitted", { method: "email", has_redirect: isReturnablePath(redirectTo) });
       setEmailSent(true);
     } catch (err) {
       const status = err.response?.status;
@@ -182,7 +182,7 @@ function RegisterPageBody() {
 
   // MEH-3661: one place for an OAuth success — measure it, then go back.
   const oauthDone = (method) => {
-    trackEvent("consumer_signup_submitted", { method, has_redirect: redirectTo !== "/" });
+    trackEvent("consumer_signup_submitted", { method, has_redirect: isReturnablePath(redirectTo) });
     router.push(redirectTo);
   };
 

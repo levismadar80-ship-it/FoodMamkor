@@ -60,3 +60,28 @@ describe("remember / peek / clear", () => {
     expect(peekReturnPath()).toBeNull();
   });
 });
+
+describe("MEH-3661 review — control characters and token pages", () => {
+  it.each([
+    ["/\t/evil.example", false],
+    ["/\n/evil.example", false],
+    ["/x\u0000y", false],
+    ["/en?x=1", false],
+    ["/draft-preview/tok", false],
+    ["/newsletter/confirm?token=t", false],
+    ["/freshness/confirm?t=1", false],
+    ["/unsubscribe/weekly?token=t", false],
+    ["/delivery-waitlist/host-confirm?token=t", false],
+    ["/account-deleted", false],
+    ["/newsletters-guide", true],
+  ])("isReturnablePath(%j) → %s", (path, expected) => {
+    expect(isReturnablePath(path)).toBe(expected);
+  });
+
+  it("safeInternalRedirect refuses a tab- or newline-smuggled protocol-relative path", async () => {
+    const { safeInternalRedirect } = await import("@/lib/safe-redirect");
+    expect(safeInternalRedirect("/\t/evil.example")).toBe("/");
+    expect(safeInternalRedirect("/\n/evil.example", "/home")).toBe("/home");
+    expect(safeInternalRedirect("/meshek")).toBe("/meshek");
+  });
+});

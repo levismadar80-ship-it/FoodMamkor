@@ -16,6 +16,11 @@
 // backslash tricks ("/\\evil.com" — browsers fold "\" to "/"), and non-path
 // schemes ("javascript:..."). Bare "/" is allowed (next char is end-of-string).
 const INTERNAL_PATH = /^\/(?![/\\])/;
+// MEH-3661: browsers drop tab / newline / other C0 controls while parsing a
+// URL, so "/\t/evil.com" resolves to //evil.com — a protocol-relative jump.
+// Any control character makes a candidate unsafe, wherever it sits.
+// eslint-disable-next-line no-control-regex -- matching control characters is the point
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 
 /**
  * @param {unknown} raw       candidate redirect target (e.g. searchParams value)
@@ -24,7 +29,7 @@ const INTERNAL_PATH = /^\/(?![/\\])/;
  */
 export function safeInternalRedirect(raw, fallback = "/") {
   if (typeof raw !== "string" || raw === "") return fallback;
-  return INTERNAL_PATH.test(raw) ? raw : fallback;
+  return INTERNAL_PATH.test(raw) && !CONTROL_CHARS.test(raw) ? raw : fallback;
 }
 
 /**
@@ -70,9 +75,15 @@ const NO_RETURN =
  *          the home page, the auth screens and the token flows.
  */
 export function loginLinkFor(path, localePrefix = "") {
-  if (typeof path !== "string" || !INTERNAL_PATH.test(path) || NO_RETURN.test(path)) return "/login";
+  if (typeof path !== "string" || !INTERNAL_PATH.test(path) || CONTROL_CHARS.test(path) || NO_RETURN.test(path)) return "/login";
   return `/login?redirect=${encodeURIComponent(localePrefix + path)}`;
 }
+
+// MEH-3661: more pages whose address can carry a token or that only make
+// sense once — never stored for 24 h by lib/post-auth-return.js. Kept apart
+// from NO_RETURN so the «כניסה» links of MEH-3026 do not change.
+const TOKEN_PAGES =
+  /^\/(?:draft-preview|delivery-waitlist|newsletter|freshness|unsubscribe|account-deleted|business-gone)(?:[/?]|$)/;
 
 /**
  * MEH-3661: may a signed-in reader be sent back to `path`? Internal, not the
@@ -82,9 +93,10 @@ export function loginLinkFor(path, localePrefix = "") {
  * @returns {boolean}
  */
 export function isReturnablePath(path) {
-  if (typeof path !== "string" || !INTERNAL_PATH.test(path)) return false;
-  const bare = path.replace(/^\/(?:he|en)(?=\/|$|\?)/, "") || "/";
-  return !NO_RETURN.test(bare);
+  if (typeof path !== "string" || !INTERNAL_PATH.test(path) || CONTROL_CHARS.test(path)) return false;
+  const stripped = path.replace(/^\/(?:he|en)(?=\/|$|\?)/, "");
+  const bare = stripped.startsWith("/") ? stripped : `/${stripped}`;
+  return !NO_RETURN.test(bare) && !TOKEN_PAGES.test(bare);
 }
 
 /** The «כניסה» link for the page the browser is on. Client only. */
