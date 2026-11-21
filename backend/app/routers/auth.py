@@ -33,6 +33,7 @@ from app.services.auth_emails import (
     # working. New code should use the public names directly.
     send_deletion_email as _send_deletion_email,
     send_duplicate_attempt_email as _send_duplicate_attempt_email,
+    send_password_changed_notice,
     send_reset_email as _send_reset_email,
     send_verify_email as _send_verify_email,
     send_welcome_email as _send_welcome_email,
@@ -801,7 +802,10 @@ def forgot_password(
 # brute-force token guessing.
 @limiter.limit("10/15 minutes")
 async def reset_password(
-    request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)
+    request: Request,
+    data: ResetPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
@@ -837,6 +841,12 @@ async def reset_password(
     user.reset_token_expires_at = None  # type: ignore[assignment]
     db.commit()
     logger.info("[RESET] password_updated user_id=%s", user.id)
+    # MEH-3591: the account's address hears about it, after the commit.
+    background_tasks.add_task(
+        send_password_changed_notice,
+        user.email,  # type: ignore[arg-type]
+        test_cause=bool(user.is_test),
+    )
     return {"detail": "הסיסמה עודכנה בהצלחה"}
 
 

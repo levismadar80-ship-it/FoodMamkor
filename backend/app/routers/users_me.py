@@ -52,7 +52,11 @@ from app.schemas.schemas import (
 )
 from app.services import user_phone_verify
 from app.utils.phone import canonical_il_msisdn
-from app.services.auth_emails import send_email_changed_notice, send_verify_email
+from app.services.auth_emails import (
+    send_email_changed_notice,
+    send_password_changed_notice,
+    send_verify_email,
+)
 from app.services.password_policy import validate_password
 from app.utils.clock import utc_now
 
@@ -244,10 +248,11 @@ def update_profile(  # noqa: PLR0913 — FastAPI-injected; MEH-3425 added respon
 
 @router.patch("/password", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("5/hour")
-async def change_password(
+async def change_password(  # noqa: PLR0913 — +background_tasks (MEH-3591)
     request: Request,
     data: PasswordChange,
     response: Response,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
@@ -305,6 +310,12 @@ async def change_password(
     user.password_changed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
     db.refresh(user)
+    # MEH-3591: the account's address hears about it, after the commit.
+    background_tasks.add_task(
+        send_password_changed_notice,
+        user.email,  # type: ignore[arg-type]
+        test_cause=bool(user.is_test),
+    )
     # MEH-306: Set-Cookie on the 204 response. Body stays empty (frontend
     # auth-context.js:145 contract preserved); fresh cookies arrive in the
     # response headers so /auth/refresh succeeds on this device. Other

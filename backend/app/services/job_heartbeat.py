@@ -62,6 +62,7 @@ BILLING_START_SIGNAL_CRON = "0 5 1-3 * *"  # MEH-3413
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
 PRODUCT_ORDERS_INTERVAL_MINUTES = 2  # MEH-3296: order expiry + outbox tick
+EMAIL_OUTBOX_INTERVAL_MINUTES = 1  # MEH-3535: the durable email queue
 # Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the
 # schedule so DST moves the UTC fire time, in the trigger and the monitor alike.
 WEEKLY_OWNER_SUMMARY_CRON = "0 8 * * sun"
@@ -134,6 +135,8 @@ UNMONITORED_SLUGS = frozenset(
         "billing-start-signal-monthly",
         # MEH-3296: on-site orders tick; flag-gated, no Sentry monitor (plan limit).
         "product-orders-tick",
+        # MEH-3535: the email queue tick. No Sentry monitor (plan limit).
+        "email-outbox-tick",
     }
 )
 

@@ -16,6 +16,7 @@ import {
   CancelOrderRescueOrdersOrderIdCancelPostResponse,
   CreateOrderRescueOrdersPostResponse,
   CreateReviewRescueOrdersOrderIdReviewPostResponse,
+  GetOfferRescueOffersOfferIdGetResponse,
   ListMyReservationsRescueOrdersMineGetResponse,
   ListOffersRescueOffersGetResponse,
 } from "@/lib/generated/api.zod";
@@ -63,6 +64,20 @@ export function leftoverGroupUrl(city, groups = RESCUE_LEFTOVER_GROUPS) {
 export function walkingMinutes(distanceKm) {
   if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm)) return null;
   return Math.max(1, Math.round(((distanceKm * 1.3) / 5) * 60));
+}
+
+/**
+ * The struck-through "worth": the business's own LOW estimate, and only when
+ * it is above the price — never a made-up discount. MEH-3586: one copy for
+ * BagRow, RescueSection and the bag page (each carried its own).
+ *
+ * @param {{ value_min_agorot?: number|null, price_agorot?: number }|null|undefined} offer
+ * @returns {number|null}
+ */
+export function worthAgorot(offer) {
+  const v = offer?.value_min_agorot;
+  if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
+  return v > offer.price_agorot ? v : null;
 }
 
 /** Agorot → whole shekels. Prices in the pilot are whole-shekel by construction. */
@@ -138,6 +153,28 @@ export async function fetchOffers({ city, lat, lng } = {}) {
   // Rule 19: validate before consuming. The schema is generated from the
   // backend's own OpenAPI, so it cannot drift from the server by hand.
   const parsed = ListOffersRescueOffersGetResponse.safeParse(res.data);
+  if (!parsed.success) throw new RescueShapeError(parsed.error.issues);
+  return parsed.data;
+}
+
+/**
+ * One of today's bags, for its own page (MEH-3586). `null` = not found (a
+ * missing id, another day's bag, or the pilot off — the backend answers 404
+ * for all three, and 422 for an id that is not a UUID). Anything else throws,
+ * so the page shows «couldn't load» rather than «no such bag».
+ *
+ * @param {string} offerId
+ */
+export async function fetchOffer(offerId) {
+  let res;
+  try {
+    res = await api.get(`/rescue/offers/${encodeURIComponent(offerId)}`);
+  } catch (err) {
+    const status = err?.response?.status;
+    if (status === HTTP_NOT_FOUND || status === HTTP_UNPROCESSABLE) return null;
+    throw err;
+  }
+  const parsed = GetOfferRescueOffersOfferIdGetResponse.safeParse(res.data);
   if (!parsed.success) throw new RescueShapeError(parsed.error.issues);
   return parsed.data;
 }
