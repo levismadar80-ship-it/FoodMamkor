@@ -90,13 +90,9 @@ def pending_producers(
 
 
 @router.post("/producers/{producer_id}/approve", response_model=None)
-def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path id, BackgroundTasks, two override flags, auth dep, db dep); MEH-2852 added the IndexNow hop
+def approve_producer(
     producer_id: UUID,
     background_tasks: BackgroundTasks,
-    # MEH-971 chunk 4: explicit admin override for the license-pending guard
-    # below. Defaults False so the guard is on by default; an admin who has
-    # verified a license out-of-band passes ?allow_without_license=true.
-    allow_without_license: bool = Query(default=False),
     # MEH-2121: the same shape, for the WhatsApp-verification gate. Default
     # False, so an admin has to ask for the door in the URL.
     allow_unverified_phone: bool = Query(default=False),
@@ -129,7 +125,6 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
             detail="העסק עדיין בטיוטה — טרם נשלח לבדיקה",
         )
     overrides = ApprovalOverrides(
-        without_license=allow_without_license,
         unverified_phone=allow_unverified_phone,
     )
     # MEH-2017: the approval gates (MEH-799 photo, MEH-971 license, MEH-2121

@@ -3,21 +3,17 @@ import { render, screen, fireEvent, waitFor, renderHook, act } from "@testing-li
 import ProducersPageWrapper from "@/app/[locale]/admin/producers/page";
 import { useReviewChecklist } from "@/app/[locale]/admin/producers/use-review-checklist";
 
-// MEH-2299 — "אשרי בלי רישיון". Sapir, 22/10: a business with no license
-// number may be approved case by case; it simply gets no badge. The backend has
-// accepted `?allow_without_license=true` since MEH-971 chunk 4 (admin.py) — this
-// ticket only gives it a control.
+// MEH-3026 (replaces MEH-2299's «אשרי בלי רישיון»). Sapir, 21/11: a missing
+// licence number never blocks approval; the business just goes live without
+// «מאומת». So the separate menu item and its `allow_without_license` param
+// are gone, and the plain «אשרי» is the one approve for every row.
 //
-// What these cases must be able to tell apart, and why each one exists:
-//   * the item appears on exactly ONE cell of status × license_pending
-//     (pending × true). On any other cell the plain approve either works or
-//     the row is not approvable at all, so an override there is noise.
-//   * the override request carries the param, and the PLAIN approve does NOT —
-//     a refactor that always sends the param would turn every approve into a
-//     silent license bypass, which is the failure worth a red test.
-//   * the override goes through the soft checklist confirm and survives it —
-//     dropping `opts` in confirmApprove would send a plain approve that 422s,
-//     which looks like "the button does nothing".
+// What these cases must tell apart:
+//   * the old item is absent on the very row it used to appear on (pending ×
+//     license_pending), with a control proving the menu is open;
+//   * the plain approve sends no param on that row either;
+//   * the 422 paths the plain approve can still hit (photo, phone) keep their
+//     handling.
 
 const BASE_ROW = {
   id: 7,
@@ -29,8 +25,6 @@ const BASE_ROW = {
   categories: [],
 };
 const LICENSE_PENDING_ROW = { ...BASE_ROW, license_pending: true };
-const NO_LICENSE_ISSUE_ROW = { ...BASE_ROW, license_pending: false };
-const APPROVED_LICENSE_ROW = { ...BASE_ROW, status: "approved", slug: "dairy", license_pending: true };
 
 const LABEL = "אשרי בלי רישיון";
 const MENU = "פעולות נוספות";
@@ -101,53 +95,17 @@ async function openMenu(rows) {
 const approveCalls = () =>
   apiMock.post.mock.calls.filter(([url]) => url === "/admin/producers/7/approve");
 
-describe("MEH-2299 — approve without license: which rows offer it", () => {
+describe("MEH-3026 — no separate «approve without licence» item", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("offers it on a pending row whose license is pending — exactly once", async () => {
+  it("is not offered on a pending row whose license is pending", async () => {
     await openMenu([LICENSE_PENDING_ROW]);
-    expect(screen.getAllByRole("menuitem", { name: LABEL })).toHaveLength(1);
-  });
-
-  it("does NOT offer it on a pending row with no license issue", async () => {
-    await openMenu([NO_LICENSE_ISSUE_ROW]);
     // control: the menu IS open — otherwise "absent" proves nothing
     expect(screen.getByRole("menuitem", { name: "דחייה" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: LABEL })).not.toBeInTheDocument();
   });
 
-  it.each(["rejected", "inactive"])(
-    "does NOT offer it on a %s row, even if license_pending",
-    async (status) => {
-      await openMenu([{ ...LICENSE_PENDING_ROW, status }]);
-      // control: the menu IS open (delete is offered on every row)
-      expect(screen.getAllByRole("menuitem").length).toBeGreaterThan(0);
-      expect(screen.queryByRole("menuitem", { name: LABEL })).not.toBeInTheDocument();
-    },
-  );
-
-  it("does NOT offer it on an approved row, even if license_pending", async () => {
-    await openMenu([APPROVED_LICENSE_ROW]);
-    expect(screen.getAllByRole("menuitem").length).toBeGreaterThan(0);
-    expect(screen.queryByRole("menuitem", { name: LABEL })).not.toBeInTheDocument();
-  });
-});
-
-describe("MEH-2299 — the request it sends", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("sends allow_without_license=true", async () => {
-    await openMenu([LICENSE_PENDING_ROW]);
-    fireEvent.click(screen.getByRole("menuitem", { name: LABEL }));
-    await waitFor(() => expect(approveCalls()).toHaveLength(1));
-    expect(approveCalls()[0]).toEqual([
-      "/admin/producers/7/approve",
-      undefined,
-      { params: { allow_without_license: true } },
-    ]);
-  });
-
-  it("the plain approve still sends NO override", async () => {
+  it("the plain approve on that row sends NO override", async () => {
     mockApi([LICENSE_PENDING_ROW]);
     render(<ProducersPageWrapper />);
     await screen.findByText(BASE_ROW.name);
@@ -157,29 +115,26 @@ describe("MEH-2299 — the request it sends", () => {
   });
 });
 
-describe("MEH-2299 — another gate still stops the override", () => {
+describe("MEH-3026 — the gates the plain approve can still hit", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("a photo-gate 422 on the override takes the existing blocked path, not a silent no-op", async () => {
+  it("a photo-gate 422 takes the existing blocked path, not a silent no-op", async () => {
     apiMock.post.mockImplementation((url) =>
       url.endsWith("/approve")
         ? Promise.reject({ response: { status: 422, data: { detail: "לא ניתן לאשר בית עסק ללא תמונה." } } })
         : Promise.resolve({ data: {} }),
     );
-    await openMenu([LICENSE_PENDING_ROW]);
-    fireEvent.click(screen.getByRole("menuitem", { name: LABEL }));
+    mockApi([LICENSE_PENDING_ROW]);
+    render(<ProducersPageWrapper />);
+    await screen.findByText(BASE_ROW.name);
+    fireEvent.click(screen.getByRole("button", { name: "אשרי" }));
     await waitFor(() =>
       expect(toastMock.info).toHaveBeenCalledWith("producers.request_changes.approve_blocked_info"),
     );
-    expect(approveCalls()[0][2]).toEqual({ params: { allow_without_license: true } });
     expect(toastMock.success).not.toHaveBeenCalled();
   });
-});
 
-describe("MEH-2299 — a phone-gate 422 does not pose as a photo problem", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("shows the backend instruction and opens no request-changes modal", async () => {
+  it("a phone-gate 422 shows the backend instruction and opens no request-changes modal", async () => {
     const PHONE = "לא ניתן לאשר בית עסק ללא אימות מספר הוואטסאפ. בקשי מבעלת העסק לאמת את המספר, או אשרי עם דריסה מפורשת.";
     apiMock.post.mockImplementation((url) =>
       url.endsWith("/approve")
@@ -196,41 +151,14 @@ describe("MEH-2299 — a phone-gate 422 does not pose as a photo problem", () =>
   });
 });
 
-describe("MEH-2299 — the override survives the soft checklist confirm", () => {
+describe("the soft checklist confirm keeps a plain approve a one-argument call", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // One ACTIVE item, nothing ticked => attemptApprove must open the confirm
-    // instead of approving, and the confirm must carry opts through.
     apiMock.get.mockImplementation((url) =>
       url === "/admin/checklist-items"
         ? Promise.resolve({ data: [{ id: 1, label: "בדיקה" }] })
         : Promise.resolve({ data: [] }),
     );
-  });
-
-  it("confirmApprove passes { withoutLicense: true } to approve", async () => {
-    const approve = vi.fn();
-    const { result } = renderHook(() => useReviewChecklist(approve));
-    await waitFor(() => expect(result.current.items).toHaveLength(1));
-
-    act(() => result.current.attemptApprove(LICENSE_PENDING_ROW, { withoutLicense: true }));
-    expect(approve).not.toHaveBeenCalled();
-    expect(result.current.approveConfirm).not.toBeNull();
-
-    act(() => result.current.confirmApprove());
-    expect(approve).toHaveBeenCalledTimes(1);
-    expect(approve).toHaveBeenCalledWith(LICENSE_PENDING_ROW, { withoutLicense: true });
-  });
-
-  it("…and through the fail-closed confirm when the list never loaded", async () => {
-    apiMock.get.mockImplementation(() => new Promise(() => {})); // never resolves
-    const approve = vi.fn();
-    const { result } = renderHook(() => useReviewChecklist(approve));
-
-    act(() => result.current.attemptApprove(LICENSE_PENDING_ROW, { withoutLicense: true }));
-    expect(result.current.approveConfirm).toMatchObject({ count: null });
-    act(() => result.current.confirmApprove());
-    expect(approve).toHaveBeenCalledWith(LICENSE_PENDING_ROW, { withoutLicense: true });
   });
 
   it("a plain approve stays a one-argument call", async () => {

@@ -233,6 +233,8 @@ files = [
     "app/services/admin_draft_missing.py",
     "app/services/draft_preview.py",
     "app/routers/producer_me.py",
+    "app/services/producer_me_writes.py",
+    "app/services/owner_products.py",
     "app/routers/producer_me_analytics.py",
     "app/routers/producer_me_locations.py",
     "app/routers/producer_me_review.py",
@@ -285,7 +287,11 @@ files = [
     "app/services/account_guards.py",
     "app/services/admin_audit.py",
     "app/services/admin_pending_reminder.py",
+    "app/services/outreach_lead_registration.py",
     "app/services/rescue_reads.py",  # MEH-3541
+    "app/services/kashrut_cert_proxy.py",  # MEH-3559
+    "app/services/producer_catalog.py",  # MEH-3559
+    "app/services/producer_detail.py",  # MEH-3559
     "app/services/rescue_writes.py",  # MEH-3554
     "app/services/admin_dashboard.py",  # MEH-3538
     "app/services/admin_settings.py",  # MEH-3538
@@ -368,6 +374,7 @@ files = [
     "app/services/product_order_state.py",
     "app/services/product_order_sweeper.py",
     "app/services/product_order_views.py",
+    "app/services/product_order_customers.py",
     "app/services/push.py",
     "app/services/rating_dispatcher.py",
     "app/services/registration_emails.py",

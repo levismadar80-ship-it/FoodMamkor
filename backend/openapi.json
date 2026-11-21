@@ -607,6 +607,9 @@
           "would_pay_total_agorot": {
             "title": "Would Pay Total Agorot",
             "type": "integer"
+          },
+          "year": {
+            "$ref": "#/components/schemas/BillingYearOut"
           }
         },
         "required": [
@@ -618,6 +621,7 @@
           "start_billing_months",
           "would_pay_total_agorot",
           "phase",
+          "year",
           "history",
           "rows"
         ],
@@ -736,6 +740,45 @@
           "price_list_version"
         ],
         "title": "BillingSummaryOut",
+        "type": "object"
+      },
+      "BillingYearOut": {
+        "description": "MEH-3189: income from January to the month, against the exempt-dealer ceiling.",
+        "properties": {
+          "alert_percent": {
+            "title": "Alert Percent",
+            "type": "integer"
+          },
+          "ceiling_agorot": {
+            "title": "Ceiling Agorot",
+            "type": "integer"
+          },
+          "ceiling_year": {
+            "title": "Ceiling Year",
+            "type": "integer"
+          },
+          "income_agorot": {
+            "title": "Income Agorot",
+            "type": "integer"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "income_agorot",
+          "ceiling_agorot",
+          "ceiling_year",
+          "percent",
+          "alert_percent"
+        ],
+        "title": "BillingYearOut",
         "type": "object"
       },
       "BioGenerateIn": {
@@ -913,6 +956,52 @@
           "file"
         ],
         "title": "Body_upload_owner_photo_upload_owner_photo_post",
+        "type": "object"
+      },
+      "BusinessCustomerOut": {
+        "description": "MEH-3561: one customer of the business, grouped by phone.",
+        "properties": {
+          "last_order_at": {
+            "format": "date-time",
+            "title": "Last Order At",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "order_count": {
+            "title": "Order Count",
+            "type": "integer"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "order_count",
+          "last_order_at"
+        ],
+        "title": "BusinessCustomerOut",
+        "type": "object"
+      },
+      "BusinessCustomersOut": {
+        "properties": {
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/BusinessCustomerOut"
+            },
+            "title": "Customers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "customers"
+        ],
+        "title": "BusinessCustomersOut",
         "type": "object"
       },
       "BusinessOrderOut": {
@@ -15147,6 +15236,18 @@
             ],
             "title": "Phone"
           },
+          "prefill_token": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prefill Token"
+          },
           "primary_contact_method": {
             "default": "whatsapp",
             "title": "Primary Contact Method",
@@ -22950,16 +23051,6 @@
           },
           {
             "in": "query",
-            "name": "allow_without_license",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Allow Without License",
-              "type": "boolean"
-            }
-          },
-          {
-            "in": "query",
             "name": "allow_unverified_phone",
             "required": false,
             "schema": {
@@ -24629,16 +24720,6 @@
               "format": "uuid",
               "title": "Producer Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "allow_without_license",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Allow Without License",
-              "type": "boolean"
             }
           }
         ],
@@ -31808,6 +31889,33 @@
           }
         ],
         "summary": "List Business Orders",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
+    "/producers/me/product-orders/customers": {
+      "get": {
+        "description": "MEH-3561: «הלקוחות שלכם» — one row per customer who ordered.",
+        "operationId": "list_business_customers_producers_me_product_orders_customers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessCustomersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Business Customers",
         "tags": [
           "product-orders"
         ]
