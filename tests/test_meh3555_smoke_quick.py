@@ -126,3 +126,40 @@ def test_quick_run_aborts_when_fetch_reports_200_for_everything(smoke, monkeypat
     monkeypatch.setattr(smoke, "fetch", lambda url, user_agent="x": (200, b"", {}))
 
     assert smoke.main(["--base-url", BASE, "--quick"]) == 2
+
+
+def test_control_failure_stops_the_run_before_any_page_is_fetched(smoke, monkeypatch):
+    asked: list[str] = []
+
+    def always_200(url, user_agent="x"):
+        asked.append(url)
+        return 200, b"", {}
+
+    monkeypatch.setattr(smoke, "fetch", always_200)
+
+    assert smoke.main(["--base-url", BASE, "--quick"]) == 2
+    assert asked == [f"{BASE}/api/health/liveness", f"{BASE}{smoke.CONTROL_404_PATH}"]
+
+
+@pytest.mark.parametrize("catalog", ["500", "empty"])
+def test_quick_run_fails_when_the_catalog_has_no_business(smoke, monkeypatch, catalog):
+    """Without this, an empty catalog only SKIPs the business-page checks (exit 0)."""
+    fetch, _ = fake_site(broken={"/api/producers?limit=100&offset=0"} if catalog == "500" else set())
+    if catalog == "empty":
+        inner = fetch
+
+        def fetch(url, user_agent="x"):
+            if "/api/producers?" in url:
+                return 200, b"[]", {}
+            return inner(url, user_agent)
+
+    monkeypatch.setattr(smoke, "fetch", fetch)
+
+    assert smoke.main(["--base-url", BASE, "--quick"]) == 1
+
+
+def test_quick_run_fails_when_the_cloudinary_image_breaks(smoke, monkeypatch):
+    fetch, _ = fake_site(broken={IMAGE})
+    monkeypatch.setattr(smoke, "fetch", fetch)
+
+    assert smoke.main(["--base-url", BASE, "--quick"]) == 1

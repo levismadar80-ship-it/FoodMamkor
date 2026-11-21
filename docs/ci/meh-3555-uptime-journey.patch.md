@@ -13,17 +13,19 @@ This patch runs `smoke_production.py --quick` (added in the same PR) inside the 
 
 One `--quick` run = **15 requests to Vercel** (the script prints the count), about 1.5 MB. At 48 ticks a day that is ~22k requests and ~2 GB a month, under 3% of what the Vercel plan includes. It adds about 30 s to a tick. No secret, no write.
 
+The step is bounded by `timeout 240` (4 minutes, worst case 15 requests × 25 s). A job killed by `timeout-minutes` never writes `fail=`, and the outage step that runs `if: always()` would read the empty value as recovery and close an open issue. A `timeout` exit is non-zero, so it sets `fail=1` instead. `timeout-minutes` goes from 5 to 12: 4 minutes for this step plus the existing curl probes at their retry worst case (about 70 s each).
+
 ## Checks run on the prepared file
 
 - `git apply --check` of the diff below against `uptime.yml` on staging: OK.
 - `yaml.safe_load` of the patched file: OK.
-- sha256 of the patched file: `2989df653f16c399996e3d50a4963f1f38eda7ba7112fccbc0642fec20436999`.
+- sha256 of the patched file: `75eec871e97f91d0479600a0eb780592989aa30ef4888f5ee471500a254d8162`.
 
 ## Diff
 
 ```diff
 --- a/.github/workflows/uptime.yml	2026-11-20 22:44:42.782690454 +0000
-+++ b/.github/workflows/uptime.yml	2026-11-21 07:37:51.912414192 +0000
++++ b/.github/workflows/uptime.yml	2026-11-21 07:43:03.590727328 +0000
 @@ -19,9 +19,9 @@
  
  jobs:
@@ -32,7 +34,7 @@ One `--quick` run = **15 requests to Vercel** (the script prints the count), abo
 +    name: Probe /, /api/health/readiness, Google Places, the OSM map tiles and the user journey
      runs-on: ${{ (vars.CI_MODE == 'private' || github.event.repository.private) && 'self-hosted' || 'ubuntu-latest' }}
 -    timeout-minutes: 5
-+    timeout-minutes: 8
++    timeout-minutes: 12
      env:
        HOME_URL: https://mehamakor.co.il/
        READY_URL: https://mehamakor.co.il/api/health/readiness
@@ -51,7 +53,7 @@ One `--quick` run = **15 requests to Vercel** (the script prints the count), abo
        - name: Probe the site, readiness, Places and the map tiles
          id: probe
          shell: bash
-@@ -68,6 +76,15 @@
+@@ -68,6 +76,17 @@
              echo "::warning::OSM tile blocked or unreachable — map tiles on the site may show «Access blocked»"
              fail=1
            fi
@@ -60,7 +62,9 @@ One `--quick` run = **15 requests to Vercel** (the script prints the count), abo
 +          # only "the site answers". GET only; ~15 requests to Vercel a tick.
 +          # Its failure feeds the same fail=1, so two failing ticks in a row
 +          # open the same uptime issue as everything else here.
-+          if ! python scripts/checks/smoke_production.py --quick; then
++          # Bounded well under timeout-minutes: a job killed by its timeout
++          # never writes fail=, and the next step would read that as recovery.
++          if ! timeout 240 python scripts/checks/smoke_production.py --quick; then
 +            echo "::warning::production journey check failed (smoke_production.py --quick) — see the lines above"
 +            fail=1
 +          fi
@@ -72,4 +76,4 @@ One `--quick` run = **15 requests to Vercel** (the script prints the count), abo
 ## After applying
 
 1. Move the register row to `applied` in the same PR.
-2. Run `uptime.yml` once by hand (workflow_dispatch) and read the log: the journey lines and `production smoke clean` should be there.
+2. Run `uptime.yml` once by hand (workflow_dispatch) and read the log: the journey lines and `production smoke clean` should be there. In private CI mode the job runs on the self-hosted runner, where `python` comes from setup-python's toolcache and `timeout` from Git Bash coreutils; the manual run is the check for that runner too.

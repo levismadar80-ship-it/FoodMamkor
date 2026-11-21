@@ -483,6 +483,11 @@ def main(argv: list[str] | None = None) -> int:
         "public catalog size",
         f"{len(listing)} producer(s) served by GET /api/producers",
     )
+    if args.quick and not listing:
+        # MEH-3555: on the uptime tick an unreachable or empty catalog is the
+        # outage a visitor sees, not a reason to skip the business-page checks.
+        board.add(FAIL, "--quick: the catalog lists at least one business",
+                  "GET /api/producers gave no business (non-200, bad JSON or [])")
     check_pages(base, board, listing[0].get("slug") if listing else None)
     if args.quick:
         # Said in the output, so a quick run is never read as the full one.
