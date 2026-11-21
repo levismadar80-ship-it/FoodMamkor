@@ -7,12 +7,13 @@ import { QUEUES } from "@/app/[locale]/admin/queues";
  * MEH-2359 — every per-queue stat key the admin nav + home read must be a key the
  * backend's /admin/dashboard `stats` dict actually ships. A missing key reads as
  * `null` → "nothing to show" on the home (a false all-clear), so key drift
- * between admin/queues.js and admin_extra.py has to go red here, not in
+ * between admin/queues.js and admin_dashboard.py has to go red here, not in
  * production. The check is textual on purpose: the backend builds `stats` as a
  * literal dict, so `"<key>":` is the contract line itself.
  */
+// MEH-3538: the stats dict moved from routers/admin_extra.py to this service.
 const ADMIN_EXTRA = readFileSync(
-  resolve(__dirname, "../../backend/app/routers/admin_extra.py"),
+  resolve(__dirname, "../../backend/app/services/admin_dashboard.py"),
   "utf8",
 );
 // From `stats = {` to the dict's closing brace (4-space indent), so a key that

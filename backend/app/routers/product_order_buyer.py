@@ -47,7 +47,11 @@ from app.services.product_order_create import create_order, token_hash
 from app.services.product_order_quote import quote_order
 from app.services.product_order_menu import takes_orders
 from app.services.product_order_state import Actor
-from app.services.product_order_views import buyer_view, buyer_view_expired
+from app.services.product_order_views import (
+    BUYER_VIEW_AFTER_CLOSE,
+    buyer_view,
+    buyer_view_expired,
+)
 from app.utils.clock import utc_now
 
 log = logging.getLogger(__name__)
@@ -244,10 +248,19 @@ def list_own_orders(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Any:
-    """The logged-in buyer's orders, newest first."""
+    """The logged-in buyer's orders, newest first.
+
+    MEH-3525: an order closed more than BUYER_VIEW_AFTER_CLOSE ago is left out,
+    because its page (`_own_order`) answers 404 by then and the row would be a
+    dead link.
+    """
+    shown_since = utc_now() - BUYER_VIEW_AFTER_CLOSE
     orders = (
         db.query(ProductOrder)
         .filter(ProductOrder.user_id == user.id)
+        .filter(
+            ProductOrder.closed_at.is_(None) | (ProductOrder.closed_at >= shown_since)
+        )
         .order_by(ProductOrder.created_at.desc())
         .limit(MAX_OWN_ORDERS)
         .all()

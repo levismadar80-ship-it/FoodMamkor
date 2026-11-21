@@ -7743,5 +7743,24 @@
       "external_order": "Through an order form"
     },
     "blocked": "Some cards on this page have unsaved changes. Save them first, then these details."
+  },
+  "my_orders": {
+    "title": "My orders",
+    "row": "{business} · {date} · {status}",
+    "row_no_status": "{business} · {date}",
+    "empty": "You haven't ordered through Mehamakor yet.",
+    "empty_cta": "Browse businesses",
+    "load_error": "We couldn't load your orders.",
+    "status": {
+      "pending": "Waiting for confirmation",
+      "change_proposed": "The business suggested a change",
+      "confirmed": "Confirmed",
+      "ready": "Ready",
+      "handed": "Handed over",
+      "declined": "Not accepted",
+      "cancelled": "Cancelled",
+      "expired": "No reply in time",
+      "no_show": "Not collected"
+    }
   }
 }
