@@ -53,6 +53,7 @@ import GoogleRatingLine from "@/components/GoogleRatingLine";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
 import FactLine from "@/components/ui/FactLine";
+import { allergensDeclared } from "@/lib/allergens"; // MEH-3585
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
 // WORSE, and the measurement is on the ticket. Reserving a 356px box that
@@ -405,12 +406,6 @@ export default function ProducerSections({
       {!producer.description && <ReservistBadgeLine producer={producer} className="mt-8" />}
       {!producer.description && <OwnerCard producer={producer} />}
 
-      {/* MEH-2648: the rescue bag sits after the header/bio and BEFORE
-          products, per the chunk-4 spec — it is tonight's thing and expires,
-          the catalogue does not. OUTSIDE the products gate below on purpose:
-          a business with a bag and no catalogue must still show the bag. */}
-      <RescueSection producer={producer} />
-
       {/* Products (premium only) + the signature product at the top.
           MEH-1146 chunk B: the section also renders when only the signature
           product exists (no product entries) so the moved-out header
@@ -422,6 +417,13 @@ export default function ProducerSections({
             <SectionHeading size="content">{t("producer.detail.sections.products.heading")}</SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="products" sectionKey="products" />
           </div>
+          {/* MEH-3585: said ONCE for the list, not on every product sheet —
+              and only while at least one product has no allergen answer. */}
+          {producer.products?.some((p) => !allergensDeclared(p)) && (
+            <p className="-mt-2 mb-4 text-xs text-fg-muted" data-testid="products-allergens-note">
+              {t("producer.detail.sections.products.allergens_note")}
+            </p>
+          )}
 
           {/* Signature product — moved from ProducerHeader (MEH-1146 chunk B).
               MEH-1233 B4: rendered as a real highlight CARD (thumbnail + name +
@@ -740,6 +742,14 @@ export default function ProducerSections({
       {/* Events + experiences (one list) and open group buys — MEH-2602,
           reshaped under MEH #2659. */}
       <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
+
+      {/* MEH-3585 (Sapir 21/11): the rescue bag moved here from above
+          «מוצרים». The catalogue — what this business always makes — comes
+          first; dated offers come after it, and the bag sits right after the
+          group buys (ProducerActivities ends with them), in the same card
+          anatomy, so the page's two deals read as one family. Was MEH-2648's
+          slot before products. Renders even with no catalogue. */}
+      <RescueSection producer={producer} />
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
