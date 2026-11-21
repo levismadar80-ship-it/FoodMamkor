@@ -70,7 +70,7 @@ function TablerGlyph({ size = 24, color = "currentColor", className, children })
 }
 
 // בשר · Tabler `meat` (MIT). See frontend/lib/icons/LICENSES.md.
-export function Meat(props) {
+function Meat(props) {
   return (
     <TablerGlyph {...props}>
       <path d="M13.62 8.382l1.966 -1.967a2 2 0 1 1 3.414 -1.415a2 2 0 1 1 -1.413 3.414l-1.82 1.821" />
@@ -130,7 +130,7 @@ function Candle(props) {
 // דבש · Material Symbols `hive` (Apache-2.0). Filled honeycomb (no stroke);
 // viewBox is Material's -960 baseline. `color` fills; `weight`/`size` ignored
 // beyond dimensions so it slots into the same render contract as the others.
-export function Hive({ size = 24, color = "currentColor", className }) {
+function Hive({ size = 24, color = "currentColor", className }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -153,7 +153,7 @@ export function Hive({ size = 24, color = "currentColor", className }) {
 // (MEH-397 WebFetch allowlist + proxy 403), so the CC0 original was redrawn
 // from its rendered form rather than byte-copied — CC0 permits reproduction.
 // Provenance: frontend/lib/icons/LICENSES.md.
-export function OliveOil(props) {
+function OliveOil(props) {
   return (
     <TablerGlyph {...props}>
       <path d="M10.5 4L10.5 6.2L7.2 9.2Q6.5 10 6.5 11.2L6.5 19.8Q6.5 22 8.7 22L15.3 22Q17.5 22 17.5 19.8L17.5 11.2Q17.5 10 16.8 9.2L13.5 6.2L13.5 4Z" />
@@ -163,9 +163,8 @@ export function OliveOil(props) {
   );
 }
 
-// Phosphor re-exports — the 11 base glyphs, surfaced from this single module so
-// consumers import the whole family from one place (MEH-683 V1).
-export { FishSimple, Cheese, Bread };
+// MEH-3076: the glyphs are reached through CATEGORY_GLYPHS only (keyed by
+// slug), so the components are no longer exported one by one.
 
 /**
  * CATEGORY_GLYPHS — category slug → glyph component (MEH-3076: keyed by the
