@@ -855,6 +855,7 @@
         },
         "products": {
           "heading": "מוצרים",
+          "allergens_note": "יש לכם רגישות למזון? שאלו את בית העסק לפני ההזמנה.",
           "signature_label": "המוצר המוביל",
           "show_all": "הצגת כל {count} המוצרים",
           "show_less": "הצגת פחות",
@@ -874,7 +875,6 @@
             "allergens_heading": "אלרגנים",
             "contains": "מכיל: {list}",
             "may_contain": "עלול להכיל: {list}",
-            "allergens_undeclared": "בית העסק לא ציין אלרגנים. אם יש לכם רגישות, שאלו לפני ההזמנה.",
             "no_allergens": "אין במוצר אלרגנים מהרשימה",
             "storage_heading": "אחסון ותוקף",
             "declared_by_business": "לפי הצהרת בית העסק"
@@ -942,7 +942,8 @@
           "email": "אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנות",
-          "whatsapp_group": "עדכונים"
+          "whatsapp_channel": "ערוץ וואטסאפ",
+          "whatsapp_group_chat": "קבוצת וואטסאפ"
         },
         "single": {
           "phone": "חייגו אלינו",
@@ -951,7 +952,8 @@
           "email": "שלחו אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנה",
-          "whatsapp_group": "עדכונים מבית העסק בוואטסאפ"
+          "whatsapp_channel": "ערוץ הוואטסאפ של בית העסק",
+          "whatsapp_group_chat": "קבוצת הוואטסאפ של בית העסק"
         },
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
         "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
@@ -6961,6 +6963,8 @@
     "section": {
       "title": "סל הפתעה",
       "cta": "לשריין את הסל · משלמים בקופה",
+      "saving": "חיסכון של {pct}%",
+      "pickup_today": "איסוף היום {from}–{until}",
       "typical": "בדרך כלל: {items}",
       "allergens_title": "אלרגנים",
       "cancel_until": "ביטול חינם עד {time}",
