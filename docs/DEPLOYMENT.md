@@ -1023,10 +1023,20 @@ Railway → backend service (staging) → Console, `cwd=/app`:
 /app/.venv/bin/python scripts/reset_staging.py --confirm  # wipe + seed
 ```
 
+It also refuses when the database URL is the one in `DATABASE_URL_PRODUCTION`,
+and refuses to wipe while any `DEMO_*_PASSWORD` is unset. **What the guard
+cannot see:** a tunnel (`railway connect`, ssh) to another database shows up
+as `localhost` and passes the host check — never point a local
+`DATABASE_URL` at a tunnel and run this.
+
 Before the first `--confirm`, take a backup of staging (`docs/BACKUPS.md`).
-Everyone logged in to staging is logged out; the E2E run logs in again by
-itself. The admin account from `ADMIN_EMAIL` is recreated with
-`ADMIN_PASSWORD` (seed_data.py), and the three QA accounts with the
+If a seed step fails after the wipe, the script says so and exits 1: the
+database is empty or half-seeded until `--confirm` runs again cleanly.
+
+What disappears with the wipe: every account and session (the E2E run logs in
+again by itself), admin passkeys and recovery codes, and every id (`RESTART
+IDENTITY`). The admin from `ADMIN_EMAIL` comes back with `ADMIN_PASSWORD` only
+when both are set (seed_data.py); the three QA accounts come back with the
 `DEMO_*_PASSWORD` values. Cloudinary images are not deleted
 (`backend/scripts/cleanup_cloudinary_orphans.py`).
 

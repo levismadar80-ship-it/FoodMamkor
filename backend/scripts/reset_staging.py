@@ -65,7 +65,9 @@ SEED_CHAIN = (
 LOCAL_HOSTS = ("localhost", "127.0.0.1")
 
 
-def reset_refusal(db_url: str, env: str, railway_env: str) -> str | None:
+def reset_refusal(
+    db_url: str, env: str, railway_env: str, production_url: str = ""
+) -> str | None:
     """Why this run must not touch the database, or None when it may.
 
     Production is refused on either signal before anything else, so a
@@ -80,6 +82,14 @@ def reset_refusal(db_url: str, env: str, railway_env: str) -> str | None:
     # libpq's host= / hostaddr= query parameter overrides the URL host.
     if {"host", "hostaddr"} & parse_qs(parts.query).keys():
         return "DATABASE_URL carries a host= override"
+    if production_url:
+        prod = urlsplit(production_url.replace("postgresql+psycopg2", "postgresql"))
+        if (prod.hostname, prod.port, prod.path) == (
+            parts.hostname,
+            parts.port,
+            parts.path,
+        ):
+            return "DATABASE_URL is the production database (DATABASE_URL_PRODUCTION)"
     if (parts.hostname or "").lower() in LOCAL_HOSTS:
         return None
     if railway_env.strip().lower() == "staging":
@@ -119,6 +129,15 @@ def wipe(tables: list[str]) -> None:
         conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY"))
 
 
+# The seed chain logs these accounts in later; a step that finds one unset
+# either skips it or invents a password nobody knows. Checked BEFORE the wipe.
+REQUIRED_ENV = ("DEMO_OWNER_PASSWORD", "DEMO_CONSUMER_PASSWORD", "DEMO_ADMIN_PASSWORD")
+
+
+def missing_env() -> list[str]:
+    return [name for name in REQUIRED_ENV if not os.getenv(name)]
+
+
 def run_seed_chain() -> None:
     for step in SEED_CHAIN:
         print(f"seed: {' '.join(step)}", flush=True)
@@ -144,6 +163,7 @@ def main(argv: list[str] | None = None) -> int:
         str(engine.url.render_as_string(hide_password=False)),
         settings.env,
         os.getenv("RAILWAY_ENVIRONMENT", ""),
+        settings.database_url_production,
     )
     if refusal:
         print(f"REFUSING to reset: {refusal}.", file=sys.stderr)
@@ -159,9 +179,30 @@ def main(argv: list[str] | None = None) -> int:
         print("dry run — nothing changed. Re-run with --confirm to wipe and re-seed.")
         return 0
 
+    missing = missing_env()
+    if missing:
+        print(
+            f"REFUSING to wipe: {', '.join(missing)} not set (nothing changed).",
+            file=sys.stderr,
+        )
+        return 2
+    if not (settings.admin_email and settings.admin_password):
+        print(
+            "note: ADMIN_EMAIL / ADMIN_PASSWORD not set — only demo-admin will exist."
+        )
+
     wipe(tables)
     print("wiped. seeding…", flush=True)
-    run_seed_chain()
+    try:
+        run_seed_chain()
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"SEED FAILED at {' '.join(exc.cmd[1:])} (exit {exc.returncode}). "
+            "The database is WIPED and only partly seeded. Fix the cause and run "
+            "--confirm again; the backup is the way back.",
+            file=sys.stderr,
+        )
+        return 1
     with engine.connect() as conn:
         _print_counts("rows after the seed:", row_counts(conn, tables))
     return 0

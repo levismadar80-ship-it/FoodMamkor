@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 from app.database import engine
 from app.models import Producer
-from app.models.models import StaticPage, User
+from app.models.models import AdminSetting, City, StaticPage, User
 
 SCRIPT = (
     Path(__file__).resolve().parents[1] / "backend" / "scripts" / "reset_staging.py"
@@ -63,6 +63,14 @@ def test_guard_refuses(url, env, railway_env):
 )
 def test_guard_allows(url, railway_env):
     assert reset_staging.reset_refusal(url, "development", railway_env) is None
+
+
+def test_guard_refuses_the_production_database_url():
+    prod = "postgresql://u:p@prod-db.railway.internal:5432/railway"
+    assert reset_staging.reset_refusal(prod, "development", "staging", prod) is not None
+    assert (
+        reset_staging.reset_refusal(STAGING_URL, "development", "staging", prod) is None
+    )
 
 
 def test_main_refuses_production_and_writes_nothing(db, monkeypatch):
@@ -121,6 +129,8 @@ def test_seed_chain_matches_the_e2e_backend():
 
 
 def _seed_old_state(db):
+    db.add(City(name_he="חיפה"))
+    db.add(AdminSetting(key="reset-test", value="נשמר"))
     db.add(StaticPage(slug="about", title="אודות", body="טקסט שנערך בידי האדמין"))
     db.add(User(email="ok+mwq1@example.com", name="e2e leftover", role="consumer"))
     db.add(
@@ -143,10 +153,54 @@ def test_dry_run_changes_nothing(db, capsys):
     assert "users" in out and "producers" in out
 
 
-def test_confirm_wipes_then_reseeds(db, monkeypatch):
-    for var in ("DEMO_OWNER_PASSWORD", "DEMO_CONSUMER_PASSWORD", "DEMO_ADMIN_PASSWORD"):
+@pytest.fixture
+def demo_env(monkeypatch):
+    for var in reset_staging.REQUIRED_ENV:
         monkeypatch.setenv(var, os.environ.get(var) or "Reset-Test-Pass-9!")
     monkeypatch.setenv("ENV", "development")
+
+
+@pytest.fixture
+def alembic_version_row():
+    """create_all builds no alembic_version; make one so its survival is checked."""
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS alembic_version (version_num varchar(32) PRIMARY KEY)"
+            )
+        )
+        conn.execute(text("INSERT INTO alembic_version VALUES ('abc123')"))
+    yield
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE alembic_version"))
+
+
+def test_wipe_list_excludes_every_kept_table(alembic_version_row):
+    with engine.connect() as conn:
+        wiped = set(reset_staging.tables_to_wipe(conn))
+    assert "users" in wiped and "producers" in wiped
+    assert not wiped & reset_staging.KEEP_TABLES
+
+
+def test_missing_demo_password_refuses_before_wiping(db, demo_env, monkeypatch):
+    monkeypatch.delenv("DEMO_ADMIN_PASSWORD")
+    _seed_old_state(db)
+
+    assert reset_staging.main(["--confirm"]) == 2
+    assert db.query(User).count() == 1
+
+
+def test_seed_failure_after_wipe_says_so(db, demo_env, monkeypatch, capsys):
+    monkeypatch.setattr(
+        reset_staging, "SEED_CHAIN", (("-c", "import sys; sys.exit(3)"),)
+    )
+    _seed_old_state(db)
+
+    assert reset_staging.main(["--confirm"]) == 1
+    assert "WIPED and only partly seeded" in capsys.readouterr().err
+
+
+def test_confirm_wipes_then_reseeds(db, demo_env, alembic_version_row):
     _seed_old_state(db)
 
     assert reset_staging.main(["--confirm"]) == 0
@@ -158,6 +212,13 @@ def test_confirm_wipes_then_reseeds(db, monkeypatch):
     # kept, untouched
     page = db.query(StaticPage).filter(StaticPage.slug == "about").one()
     assert page.body == "טקסט שנערך בידי האדמין"
+    assert db.query(City).filter(City.name_he == "חיפה").count() == 1
+    assert db.get(AdminSetting, "reset-test").value == "נשמר"
+    with engine.connect() as conn:
+        assert (
+            conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+            == "abc123"
+        )
     # re-seeded by the chain
     assert db.query(Producer).filter(Producer.slug == "ruach-hasadeh").count() == 1
     emails = {e for (e,) in db.query(User.email)}
