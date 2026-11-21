@@ -597,10 +597,8 @@
       "aria_label": "עימוד",
       "per_page_label": "הצגה לעמוד",
       "per_page_aria": "פריטים לעמוד",
-      "prev_aria": "עמוד קודם",
       "prev": "→ הקודם",
       "page_aria": "עמוד {page}",
-      "next_aria": "עמוד הבא",
       "next": "הבא ←"
     },
     "breadcrumb": {
