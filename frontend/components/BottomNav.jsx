@@ -598,7 +598,8 @@ export default function BottomNav() {
                 // Avatar: green token circle + white initial (MEH-20 treatment,
                 // old raw-hex green → bg-primary token); image when one is set.
                 // MEH-3069: the shared circle (ui/Avatar).
-                <Avatar src={user.avatar_url} name={user.name} size={24} className="z-10" />
+                // MEH-3539: decorative — the button's aria-label names the person.
+                <Avatar src={user.avatar_url} name={user.name} size={24} className="z-10" decorative />
               ) : (
                 <User
                   size={24}

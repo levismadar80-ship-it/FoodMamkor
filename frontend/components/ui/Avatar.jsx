@@ -17,6 +17,12 @@
  *           bylines, the event-row mark) — each drew its own circle before.
  *           `letterClassName` sets the letter's type when the default ladder
  *           does not fit; extra props (aria-hidden, data-testid) pass through.
+ *           MEH-3539: `decorative` — for a circle inside a control whose
+ *           aria-label already names the person (BottomNav account tab). The
+ *           letter is drawn by CSS from `data-initial`, so it is not text in
+ *           the control: axe's label-content-name-mismatch counts every text
+ *           node, aria-hidden or not, and «נ» + «נועה» is not in «תפריט — נועה
+ *           לביא». Looks the same; the circle is aria-hidden.
  * Does NOT: decide who is signed in, or draw the guest icon — callers keep
  *           their own `<User>` glyph for a guest. Not for business logos.
  * Why:      until 13/11 the same `name.trim().charAt(0).toUpperCase()` line was
@@ -57,7 +63,7 @@ function letterClass(size) {
 const PLACED = /(^|\s)(absolute|fixed|sticky)(\s|$)/;
 
 /**
- * @param {{ src?: string | null, name?: string | null, size?: number, tone?: "primary" | "soft" | "none", className?: string, letterClassName?: string, fallback?: string, style?: import("react").CSSProperties, [key: string]: any }} props
+ * @param {{ src?: string | null, name?: string | null, size?: number, tone?: "primary" | "soft" | "none", className?: string, letterClassName?: string, fallback?: string, decorative?: boolean, style?: import("react").CSSProperties, [key: string]: any }} props
  */
 export default function Avatar({
   src,
@@ -67,13 +73,16 @@ export default function Avatar({
   className = "",
   letterClassName,
   fallback = "?",
+  decorative = false,
   style,
   ...rest
 }) {
   const position = PLACED.test(className) ? "" : "relative ";
+  const letterCls = letterClassName ?? `${letterClass(size)} font-semibold leading-none`;
   return (
     <span
       data-avatar=""
+      {...(decorative ? { "aria-hidden": "true" } : {})}
       {...rest}
       className={`${position}inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${src ? "" : TONES[tone]} ${className}`}
       style={{ width: size, height: size, ...style }}
@@ -83,10 +92,13 @@ export default function Avatar({
         // images.remotePatterns (frozen, MEH-3069 keeps it as it was).
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" className="h-full w-full object-cover" />
+      ) : decorative ? (
+        <span
+          data-initial={avatarInitial(name, fallback)}
+          className={`${letterCls} before:content-[attr(data-initial)]`}
+        />
       ) : (
-        <span className={letterClassName ?? `${letterClass(size)} font-semibold leading-none`}>
-          {avatarInitial(name, fallback)}
-        </span>
+        <span className={letterCls}>{avatarInitial(name, fallback)}</span>
       )}
     </span>
   );
