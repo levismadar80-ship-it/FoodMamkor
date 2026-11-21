@@ -1,7 +1,7 @@
 """meh3645_delete_home_product_rows
 
 Revision ID: d6f8b0c2e4a7
-Revises: c5e7a9b1d3f6
+Revises: c5f7a9b1d3e4
 Create Date: 2026-11-21 19:40:00.000000+00:00
 
 MEH-3645. Data only: deletes every row of the neighbour home-food listings
@@ -30,7 +30,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "d6f8b0c2e4a7"
-down_revision: Union[str, None] = "c5e7a9b1d3f6"
+down_revision: Union[str, None] = "c5f7a9b1d3e4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
