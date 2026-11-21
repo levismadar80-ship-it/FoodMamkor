@@ -24,6 +24,7 @@
 **טסטים**
 * `tests/test_meh0000_email_frame.py` — המסגרת: viewport, פלטה, ריפוד בנייד.
 * `tests/test_meh3587_email_layout.py` · `tests/test_meh3621_email_frame_parts.py` · `tests/test_email_logo.py` · `tests/test_meh2164_newsletter_mobile_width.py` · `tests/test_meh2151_approval_email_cta.py`
+* `tests/test_meh3591_missing_emails.py` — «הסיסמה בחשבון שונתה» ואישור הצטרפות לקבוצה (MEH-3591).
 * `tests/test_newsletter_unsubscribe.py` · `tests/test_meh2611_newsletter_resend_sync.py` · `tests/test_meh2875_newsletter_kicker.py`
 * `tests/test_meh3079_weekly_owner_summary.py` · `tests/test_meh3212_weekly_summary_toggle.py` — הסיכום השבועי, ההסרה, המתג והכותרות.
 * `tests/test_meh3350_heartbeat_logging.py`

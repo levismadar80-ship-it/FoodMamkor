@@ -347,6 +347,33 @@ def send_email_changed_notice(
     )
 
 
+def send_password_changed_notice(email: str, test_cause: bool = False) -> None:
+    """MEH-3591: tell the account's address that its password changed.
+
+    Sent after a change from the profile and after a reset link was used.
+    Google / GitHub / OWASP all send it: if the change was not hers, this is
+    the only sign of it, and it says where to turn. No password, no token and
+    no name in it (the same reasoning as send_email_changed_notice above).
+    """
+    base = settings.frontend_url
+    body = (
+        "שלום,\n\n"
+        "הסיסמה בחשבון שלך במהמקור שונתה עכשיו, "
+        "וכל המכשירים האחרים שהיו מחוברים לחשבון נותקו.\n\n"
+        "אם השינוי נעשה על ידך, אין צורך לעשות דבר.\n"
+        "אם לא, כדאי לבחור סיסמה חדשה מיד ולספר לנו.\n\n"
+        f"לבחירת סיסמה חדשה: {base}/forgot-password\n"
+        f"ליצירת קשר: {base}/contact\n\n"
+        "בברכה,\nצוות מהמקור"
+    )
+    send_email(
+        email,
+        "מהמקור - הסיסמה בחשבון שונתה",
+        body,
+        test_cause=test_cause,
+    )
+
+
 # ---------------------------------------------------------------------------
 # MEH-2974 — owner invite for a business an admin built end to end
 # ---------------------------------------------------------------------------

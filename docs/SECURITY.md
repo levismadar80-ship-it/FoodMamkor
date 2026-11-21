@@ -987,6 +987,12 @@ The environment decides, not the row. `is_test` (MEH-2952) drops sends caused by
 - **Other devices signed out (MEH-3425):** a real change bumps `token_version`, as `/auth/logout-all-devices` does; the caller's device gets fresh refresh + fingerprint cookies and recovers via `/auth/refresh`.
 - **No password on the account (MEH-3425):** a non-OAuth account with no `password_hash` gets its own 403, which points to «שכחתי סיסמה», instead of «הסיסמה הנוכחית שגויה».
 
+## 17e. Password changed notice (MEH-3591)
+
+A successful `PATCH /users/me/password` or `POST /auth/reset-password` queues one email to the account address after the commit (`services/auth_emails.py::send_password_changed_notice`): no password, no token, no name, with links to `/forgot-password` and `/contact`. A refused request (wrong current password, bad or expired token, policy failure) raises before the task is queued. Spam is bounded by the routes themselves: a reset needs a single-use token, a change needs a session and the current password (5/hour).
+
+The group-buy join confirmation (same PR) goes only to a **verified** address: without that, join/leave in a loop on an account registered with someone else's unverified address would mail that address from our domain.
+
 ## 18. Skills supply chain (MEH-397)
 
 Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
