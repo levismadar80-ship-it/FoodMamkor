@@ -342,11 +342,14 @@ export default function RescueSection({ producer }) {
               <Basket size={24} weight="regular" />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2" data-testid="rescue-section-typical">
-                {offer.typical_items?.length > 0
-                  ? t("section.typical", { items: offer.typical_items.join(", ") })
-                  : t("section.title")}
-              </h3>
+              {/* No typical items → no card title: «סל הפתעה» is already the
+                  section heading right above, and a screen reader would hear it
+                  twice (MEH-3585 review). */}
+              {offer.typical_items?.length > 0 && (
+                <h3 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2" data-testid="rescue-section-typical">
+                  {t("section.typical", { items: offer.typical_items.join(", ") })}
+                </h3>
+              )}
               {/* Full address: a live bag is the MEH-829 carve-out, and the point
                   is exact-precision or the backend refuses the offer. */}
               {offer.producer?.location_address && (

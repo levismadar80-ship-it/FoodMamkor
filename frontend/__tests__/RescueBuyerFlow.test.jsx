@@ -559,6 +559,17 @@ describe("the business-page section — reserve and confirm", () => {
     expect(screen.getByTestId("rescue-section-typical").textContent).toBe("בדרך כלל: לחם, חלה");
   });
 
+  // MEH-3585 review: no typical items → no card title, so «סל הפתעה» (the
+  // section heading) is not repeated as an h3 right under itself.
+  it("no typical items: no card title, the section heading is the only «סל הפתעה»", async () => {
+    fetchOffers.mockResolvedValue([offer({ typical_items: [] })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(screen.queryByTestId("rescue-section-typical")).toBeNull();
+    expect(screen.getAllByText("סל הפתעה")).toHaveLength(1);
+    expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
+  });
+
   it("renders nothing when this business has no bag today", async () => {
     fetchOffers.mockResolvedValue([offer({ producer: { ...PRODUCER, id: "someone-else" } })]);
     const { container } = render(<RescueSection producer={PRODUCER} />);
