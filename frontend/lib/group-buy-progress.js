@@ -25,3 +25,20 @@ export function groupBuyDiscountPct(regular, group) {
   if (!(r > 0) || !Number.isFinite(g) || g >= r) return 0;
   return Math.round(((r - g) / r) * 100);
 }
+
+/**
+ * MEH-3588: the minimum is a goal, not a cap — reaching it opens the price and
+ * the group keeps taking joiners (MEH-3289). True once `commits` reaches `min`.
+ */
+export function groupBuyGoalReached(commits, min) {
+  return Boolean(min) && min > 0 && (commits || 0) >= min;
+}
+
+/**
+ * MEH-3588: places left under `max_participants`; null when the business set
+ * no maximum (then nothing about places is shown).
+ */
+export function groupBuySpotsLeft(commits, max) {
+  if (typeof max !== "number" || max <= 0) return null;
+  return Math.max(0, max - (commits || 0));
+}

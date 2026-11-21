@@ -112,9 +112,9 @@ def test_admin_message_says_the_page_did_not_go_live(monkeypatch):
     from app.services import auth_notifications as an
 
     sent = []
-    monkeypatch.setattr(an.settings, "admin_whatsapp_to", "+972500000000")
-    monkeypatch.setattr(an, "send_text", lambda to, msg, **k: sent.append(msg) or True)
-    monkeypatch.setattr(an, "send_email", lambda *a, **k: None)
+    monkeypatch.setattr(an.settings, "admin_email", "admin@example.com")
+    # MEH-3589: the admin reads it by email only.
+    monkeypatch.setattr(an, "send_email", lambda to, subj, body, **k: sent.append(body))
 
     an.notify_admin_owner_invite_accepted(
         "מאפיית דנה", "o@example.com", False, missing=["תמונה"]

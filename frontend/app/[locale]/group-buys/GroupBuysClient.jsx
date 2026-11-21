@@ -113,8 +113,9 @@ function GroupBuyCard({ gb }) {
             <div className="h-2.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-1.5 text-sm font-medium text-text" data-testid="group-buy-progress-line">
-            {/* MEH-3289: past the minimum, the count alone (see detail page). */}
-            {gb.commits_count > gb.min_participants
+            {/* MEH-3289 · MEH-3588: from the minimum on, the count alone —
+                «5 מתוך 5» read as «full» (see detail page). */}
+            {gb.commits_count >= gb.min_participants
               ? t("progress_joined", { commits: gb.commits_count })
               : funded || remaining === 0
               ? t("progress_label", { commits: gb.commits_count, min: gb.min_participants })
