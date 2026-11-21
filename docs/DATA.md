@@ -1369,7 +1369,7 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      (services/invite_gate.py content_gaps) is HELD — the owner is linked, status stays "inactive", no 422 (she cannot
                                                      fix it from this page). An already-approved page gets no status write. IndexNow is pinged only when the page was
                                                      published. After the commit the admin is notified
-                                                     (notify_admin_owner_invite_accepted — WhatsApp + email through the existing family, no new env var), with `published`
+                                                     (notify_admin_owner_invite_accepted — email only since MEH-3589, no new env var), with `published`
                                                      distinguishing the outcomes and `missing` naming what a held page lacks.
                                                      Issues the same access token + refresh/fingerprint cookies as /auth/login. Background: the EXISTING
                                                      business-approved email (the two builders in services/admin_producer_emails.py, by import) — no welcome mail, no WhatsApp template;
