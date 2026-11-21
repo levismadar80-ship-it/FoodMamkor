@@ -41,6 +41,8 @@ import path from "node:path";
 import { loginFailureMessage, withRateLimitRetry } from "./login-retry";
 import { goldenOnly } from "./golden-selection";
 import { webkitTlsEnabled, WEBKIT_TLS_URL } from "./webkit-tls";
+// @ts-expect-error -- plain .mjs helper, shared with the QA scripts (MEH-3607)
+import { fetchBypassCookie } from "./_bypass-scope.mjs";
 
 type Role = {
   name: string;
@@ -86,8 +88,46 @@ const ROLES: Role[] = [
 ];
 
 export const AUTH_DIR = path.join(__dirname, ".auth");
+// MEH-3629: the default storageState of every spec (playwright.config.ts).
+// Remote target: holds Vercel's host-only `_vercel_jwt` bypass cookie, so the
+// browser never sends the secret, which `extraHTTPHeaders` sent to every host
+// a page loads. Local target: an empty state.
+export const BYPASS_STATE = path.join(AUTH_DIR, "bypass.json");
+
+type Cookie = Awaited<ReturnType<Awaited<ReturnType<typeof request.newContext>>["storageState"]>>["cookies"][number];
+
+async function writeBypassState(baseURL: string): Promise<Cookie[]> {
+  fs.mkdirSync(AUTH_DIR, { recursive: true });
+  let cookies: Cookie[] = [];
+  const remote = !/\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(baseURL);
+  // The WebKit TLS proxy browses a local origin; it keeps the config header.
+  if (remote && !webkitTlsEnabled()) {
+    const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "";
+    if (!secret) {
+      throw new Error(
+        `[global-setup] ${baseURL} is behind Vercel Deployment Protection and ` +
+          "VERCEL_AUTOMATION_BYPASS_SECRET is not set: every page would be the SSO wall.",
+      );
+    }
+    const api = await request.newContext({ ignoreHTTPSErrors: true });
+    try {
+      await fetchBypassCookie(api, baseURL, secret);
+      cookies = (await api.storageState()).cookies;
+    } finally {
+      await api.dispose();
+    }
+  }
+  fs.writeFileSync(BYPASS_STATE, JSON.stringify({ cookies, origins: [] }, null, 2));
+  return cookies;
+}
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
+  const bypassCookies = await writeBypassState(
+    config.projects[0]?.use?.baseURL ||
+      process.env.PLAYWRIGHT_BASE_URL ||
+      process.env.TEST_URL ||
+      "http://localhost:3000",
+  );
   // MEH-2897: a `--project=golden` run logs in its own seven personas
   // (e2e/golden/session.ts) and reads none of the demo-role files. Provisioning
   // them anyway would spend 3–4 of the 5/minute per-IP login permits before the
@@ -205,6 +245,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // localStorage where the SPA reads it (lib/auth-context.js).
     const state = await ctx.storageState();
     await ctx.dispose();
+    // MEH-3629: a role's state replaces the default one, so it carries the
+    // bypass cookie too.
+    state.cookies = [...state.cookies, ...bypassCookies];
     state.origins = [
       {
         origin,
