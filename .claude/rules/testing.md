@@ -101,7 +101,8 @@ timestamp built from the UTC clock is green at most hours and red at one.
 No **unbounded** `waitForLoadState("networkidle")` / `waitUntil: "networkidle"`
 in `e2e/flows/**` or `e2e/visual/**` (the globs `playwright.config.ts` runs).
 The only sanctioned form is a bounded, caught wait
-(`e2e/visual/parity.spec.ts`, ~5 s) — don't "fix" it. The `timeout` is the
+(`e2e/visual/parity.spec.ts`, ~5 s) — don't "fix" it. `scripts/checks/prose-rules-guard.sh` (R5)
+fails a `networkidle` in those globs with no `timeout` in its statement. The `timeout` is the
 operative half; a bare `.catch` is not enough. To prove something did **not**
 happen, await the unwanted event with a bound and require it times out. To
 wait for readiness, gate on that thing (`data-testid`, response, URL). The
