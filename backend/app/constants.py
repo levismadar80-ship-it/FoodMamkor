@@ -96,7 +96,10 @@ DECLARATION_VERSION: str = "2026-11-v3"
 #   v2 ("2026-09-v2") — MEH-2080: the checkbox now also carries the 18+
 #      self-declaration («אני מעל גיל 18 ומסכימה …»), and acceptance became
 #      mandatory on both email registration paths (422 when absent).
-TERMS_VERSION: str = "2026-09-v2"
+#   v3 ("2026-11-v3") — MEH-3026: section 2 no longer says the business holds
+#      every required licence; it says the business is responsible for finding
+#      out what it needs, and that a business without «מאומת» was not checked.
+TERMS_VERSION: str = "2026-11-v3"
 
 # MEH-759 Chunk C (ADR-022 gate 2): the agricultural categories that add the
 # conditional GROWER line to the licensing declaration («תוצרת שגידלתי בחלקתי
