@@ -9,7 +9,7 @@
  * Does NOT: seed the demo business — that is
  *           backend/scripts/seed_demo_business.py, run separately (see RUNNING
  *           below). Does NOT touch /join itself (that is the redesign PR).
- * Related:  e2e/qa-meh2100-draft-live.mjs (the target/bypass/guard pattern this
+ * Related:  e2e/_qa-archive/qa-meh2100-draft-live.mjs (the target/bypass/guard pattern this
  *           copies), frontend/lib/business-features.js (MEH-2791 — the registry
  *           the manifest maps images back to).
  * History:  MEH-2794 (creation, 2026-11-07).

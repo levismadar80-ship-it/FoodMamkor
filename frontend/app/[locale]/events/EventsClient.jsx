@@ -79,7 +79,8 @@ const categoriesFor = (tab, values) => {
 // MEH-2245: one hub behind two routes. MEH-3463: rendered once by
 // app/[locale]/(whats-on)/layout.js; the tab comes from the URL. `initialTab`
 // is only the fallback for a path that names no tab (unit tests render on "/").
-export default function EventsPage({ initialTab = "events" }) {
+/** @param {{ initialTab?: string, initialRows?: { events?: any[] | null, experiences?: any[] | null } }} props */
+export default function EventsPage({ initialTab = "events", initialRows = undefined }) {
   const t = useTranslations("events.list");
   const tErr = useTranslations("error");
   const tCat = useTranslations("events.categories");
@@ -105,8 +106,22 @@ export default function EventsPage({ initialTab = "events" }) {
   // to whichever data set (events / experiences) is loaded.
   const [view, setView] = useState("list");
 
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // MEH-2233: the server's unfiltered list for the tab this visit ARRIVED on
+  // ((whats-on)/layout.js). It is the first paint, for that first load only,
+  // when the URL carries no filter, and is then refreshed quietly (no
+  // skeleton): the ISR HTML can be a minute old, and a Back replays the
+  // router's cached copy. Every later load (a tab switch, a filter) fetches as
+  // before. null = no server data → fetch, exactly as before.
+  // The value is fixed at mount (state); the ref only marks it used, in an effect.
+  const [initialSeed] = useState(() =>
+    Array.isArray(initialRows?.[tab]) ? { tab, rows: initialRows[tab] } : null,
+  );
+  const seed = useRef(initialSeed);
+  const [rows, setRows] = useState(() => (initialSeed ? initialSeed.rows : []));
+  const [loading, setLoading] = useState(() => !initialSeed);
+  // Which tab `rows` belong to — lets the server rows render before the URL's
+  // filters are read (MEH-3463 shows the skeleton only for another tab's rows).
+  const [rowsTab, setRowsTab] = useState(() => (initialSeed ? initialSeed.tab : null));
   // MEH-2396: a failed load is its own state. Before, the catch did
   // setRows([]) and the page rendered the editorial "אין אירועים" empty
   // state — a false statement when the server simply did not answer.
@@ -183,13 +198,21 @@ export default function EventsPage({ initialTab = "events" }) {
 
   useEffect(() => {
     if (!urlReady) return; // MEH-2984: one request, with the URL's filters
+    const first = seed.current;
+    seed.current = null; // one use only, whatever happens below
+    if (first && first.tab === tab && !city && !categories.length) {
+      // MEH-2233: the server answered this exact request; refresh it quietly.
+      setPresent({ tab, city, cats: presentCategories(first.rows) });
+      load({ quiet: true });
+      return;
+    }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlReady, tab, city, categories]);
 
-  const load = async () => {
+  const load = async ({ quiet = false } = {}) => {
     const ticket = ++loadTicket.current;
-    setLoading(true);
+    if (!quiet) setLoading(true);
     setLoadError(false);
     try {
       const params = {};
@@ -205,13 +228,16 @@ export default function EventsPage({ initialTab = "events" }) {
       const r = await api.get(endpoint, { params, timeout: 15000 });
       if (ticket !== loadTicket.current) return; // superseded
       setRows(r.data);
+      setRowsTab(tab);
       // MEH-3124: with no category picked, the list IS the category-less set
       // for {tab, city}. No second request for the other case (MEH-2984: a
       // deep link costs one request) — an unknown set shows every chip.
       if (!categories.length) setPresent({ tab, city, cats: presentCategories(r.data) });
     } catch {
       if (ticket !== loadTicket.current) return; // superseded
+      if (quiet) return; // MEH-2233: the server's rows stay on screen
       setRows([]);
+      setRowsTab(tab);
       setLoadError(true);
       // MEH-3124: a failed load forgets the set — every chip, not last city's.
       setPresent({ tab, city, cats: null });
@@ -222,7 +248,8 @@ export default function EventsPage({ initialTab = "events" }) {
 
   // MEH-3463: rows still belong to the previous tab (or to no filters yet)
   // until this tab's URL filters are read — show the skeleton, never them.
-  const busy = loading || !urlReady;
+  // MEH-2233: the server rows of this same tab are shown while the URL is read.
+  const busy = loading || (!urlReady && rowsTab !== tab);
   const isExp = tab === "experiences";
   // Backward-compatibility alias so the render code keeps using `events`
   // even when the tab is experiences.
@@ -463,7 +490,7 @@ export default function EventsPage({ initialTab = "events" }) {
         {busy ? (
           <SkeletonRows srLabel={isExp ? t("loading_experiences") : t("loading_events")} />
         ) : loadError ? (
-          <LoadError tErr={tErr} onRetry={load} />
+          <LoadError tErr={tErr} onRetry={() => load()} />
         ) : filteredToZero ? (
           <NoResults t={t} onReset={resetFilters} />
         ) : datasetEmpty ? (

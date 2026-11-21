@@ -33,12 +33,17 @@ const DEFAULT_OPTIONS = { weekday: "long", day: "numeric", month: "long" };
 export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
   if (!iso) return "";
   try {
+    // MEH-2233: a bare `YYYY-MM-DD` is a calendar day. `new Date()` reads it
+    // as UTC midnight, which is the previous day west of UTC, so the server
+    // (UTC) and an en-US browser disagreed during hydration. Printing it in
+    // UTC gives the stored day in every zone.
+    const day = typeof iso === "string" && DATE_ONLY.test(iso);
     const d = new Date(iso);
     // HOT-018 (MEH-782): a malformed-but-non-empty string yields an Invalid
     // Date, whose toLocaleDateString returns the literal "Invalid Date" (it
     // does not throw). Guard it so callers render nothing instead of garbage.
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleDateString(LOCALE_TAG[locale] ?? "he-IL", options);
+    return d.toLocaleDateString(LOCALE_TAG[locale] ?? "he-IL", day ? { ...options, timeZone: "UTC" } : options);
   } catch {
     // A Date input must still come back as a string, per @returns.
     return String(iso);

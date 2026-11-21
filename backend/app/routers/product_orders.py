@@ -11,7 +11,8 @@ Does NOT: create, list or change an order — no route here touches
           `alcohol_licensed`.
 Related:  app/schemas/product_orders.py (the shapes),
           app/models/product_orders.py (the table)
-History:  MEH-3218 (creation; stage 1 of MEH-3216)
+History:  MEH-3218 (creation; stage 1 of MEH-3216); MEH-3524 (admin GET, so the
+          admin screen can show the alcohol mark it sets)
 
 REUSES: backend/app/routers/rescue.py:137-183 — the flag read through getattr
 and the 404 gate, so a switched-off feature looks like a route that was never
@@ -162,6 +163,28 @@ def put_my_order_settings(
     db.commit()
     db.refresh(row)
     return row
+
+
+@admin_router.get(
+    "/producers/{producer_id}/order-settings",
+    response_model=ProducerOrderSettingsOut,
+    dependencies=[Depends(require_product_orders_enabled)],
+)
+@limiter.limit("60/minute")
+def get_order_settings_as_admin(
+    request: Request,
+    producer_id: UUID,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> Any:
+    """MEH-3524: what the admin's alcohol switch reads before it writes. Read
+    only, and it creates no row: a business that never saved gets the defaults,
+    the same shape the owner's GET returns."""
+    if not db.query(Producer.id).filter(Producer.id == producer_id).first():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=NO_BUSINESS_DETAIL
+        )
+    return _settings_row(db, producer_id) or _defaults(producer_id)
 
 
 @admin_router.put(

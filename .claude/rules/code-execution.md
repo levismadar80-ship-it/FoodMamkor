@@ -163,15 +163,18 @@ hook enforcement here; if drift becomes a problem, open a follow-up for
 An agent reads a big file in slices and misses what is outside the slice.
 
 - **New source file ≤ 1,500 lines** — `scripts/checks/file-size-ratchet.sh`
-  fails above that (scans `backend/app`, `frontend/{app,components,lib}`; tests and
-  `lib/generated/` excluded).
+  fails above that (scans `backend/app`, `frontend/{app,components,lib}`, and
+  since 20/11 also `tests/`, `frontend/__tests__/`, `frontend/e2e/`, `scripts/`,
+  `backend/scripts/`; only `lib/generated/` excluded).
 - **A file in `scripts/checks/file-size-baseline.txt` does not grow.** When a
   task touches one, put the new or changed part in its own module and import it
   (a router helper → `backend/app/services/`, a dashboard card → its own file).
   Growth prints a warning now; lower the baseline number when the file shrinks,
   never raise it.
 - Don't split a big file you aren't otherwise changing — no refactor-only PRs
-  before launch.
+  before launch. **Exception (Sapir 20/11):** the 11 test/script files that were
+  over the cap when tests joined the scan are split on purpose, mechanically
+  (move whole groups, prove the same test IDs collect before and after).
 
 ---
 

@@ -419,7 +419,7 @@ module.exports = {
 ה-CSP הנאכף (`frontend/next.config.js`) עדיין מתיר `'unsafe-inline'` ו-`'unsafe-eval'`.
 שלב 1: כותרת `Content-Security-Policy-Report-Only` נגזרת ממנו בלי `'unsafe-eval'` ומדווחת
 ל-Sentry דרך אותו report-uri. שלב 2 (אחרי שבוע נקי): להוריד `'unsafe-eval'` מהנאכף.
-שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. `CspReportOnly.test.js` שומר
+שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. שלב 3 צריך לכסות גם את הסקריפט ה-inline השני ב-`<head>`, ‏`frontend/lib/prehydration-flags-inline.js` (MEH-2233): בלי nonce עליו, הדגלים לא נקבעים, באנר העוגיות מהבהב, ושליחה לפני hydration כבר לא נחסמת. `CspReportOnly.test.js` שומר
 ששתי הכותרות זהות פרט ל-`'unsafe-eval'`.
 בלי `NEXT_PUBLIC_SENTRY_DSN` אין report-uri, ולכן הכותרת Report-Only לא נשלחת בכלל (MEH-3286): מדיניות שאין לה לאן לדווח לא מודדת כלום, ו-WebKit כותב עליה שגיאה בקונסול בכל דף.
 

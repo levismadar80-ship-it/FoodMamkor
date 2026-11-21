@@ -2597,6 +2597,27 @@ export const AdminUpdateLocationAdminProducersProducerIdLocationsLocationIdPutRe
 
 
 /**
+ * MEH-3524: what the admin's alcohol switch reads before it writes. Read
+ * only, and it creates no row: a business that never saved gets the defaults,
+ * the same shape the owner's GET returns.
+ * @summary Get Order Settings As Admin
+ */
+export const GetOrderSettingsAsAdminAdminProducersProducerIdOrderSettingsGetResponse = /*#__PURE__*/ zod.object({
+  "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "business_id_number": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "shabbat_observant": /*#__PURE__*/ zod.boolean(),
+  "slot_minutes": /*#__PURE__*/ zod.int()
+})
+
+
+/**
  * Mark a business as licensed to sell alcohol (or take the mark away).
  *
  * Sapir's decision of 14/11: alcohol can be ordered only from a business an
@@ -9410,6 +9431,10 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
 
 /**
  * The logged-in buyer's orders, newest first.
+ *
+ * MEH-3525: an order closed more than BUYER_VIEW_AFTER_CLOSE ago is left out,
+ * because its page (`_own_order`) answers 404 by then and the row would be a
+ * dead link.
  * @summary List Own Orders
  */
 export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({
