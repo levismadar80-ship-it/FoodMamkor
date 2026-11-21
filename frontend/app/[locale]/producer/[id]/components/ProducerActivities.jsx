@@ -123,8 +123,8 @@ function GroupBuyRow({ gb }) {
   const daysLeft = Math.max(0, Math.ceil(((parseNaiveUtc(gb.deadline)?.getTime() ?? 0) - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
-  // MEH-3289: past the minimum, the count alone (see the group-buy page).
-  const progress = gb.commits_count > gb.min_participants
+  // MEH-3289 · MEH-3588: from the minimum on, the count alone (see the group-buy page).
+  const progress = gb.commits_count >= gb.min_participants
     ? t("progress_joined", { commits: gb.commits_count })
     : t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
 
