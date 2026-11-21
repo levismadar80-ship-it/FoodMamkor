@@ -1286,14 +1286,16 @@
       "full_member": "This group is full. Your place is kept.",
       "quantity_update": "Update quantity",
       "quantity_updated_toast": "Quantity updated",
-      "cancel_rule": "The group reached its goal: in the 24 hours before the deadline you can leave only if the group stays at its goal",
       "waitlisted": "You're on the waitlist. If a place frees up, we'll email you.",
       "waitlist_leave": "Leave the waitlist",
       "waitlist_cta": "Join the waitlist",
       "waitlist_hint": "When a place frees up, people on the list get an email in the order they signed up. The place goes to whoever joins first.",
       "joins_closed": "The business has stopped new joins for this group",
       "funded_subtitle_closed": "The group reached its goal. Joining is closed.",
-      "committed_qty_unit": " ({count} {unit})"
+      "committed_qty_unit": " ({count} {unit})",
+      "cancel_title": "Cancelling",
+      "cancel_body_open": "You can leave at any time until the deadline.",
+      "cancel_body_funded": "You can leave until the deadline. In the 24 hours before it, you can leave only if the group stays at its goal, so it isn't cancelled for everyone."
     },
     "dashboard": {
       "status": {

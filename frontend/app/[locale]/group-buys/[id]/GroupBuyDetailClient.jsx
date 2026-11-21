@@ -34,6 +34,9 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
+// MEH-3597: the offer-page blocks shared with the rescue bag page.
+import WhereSection from "@/components/offer-detail/WhereSection";
+import HowSteps from "@/components/offer-detail/HowSteps";
 // MEH-3592: the join card's member / waitlist / line-total parts.
 import GroupBuyMemberPanel from "@/components/group-buy/GroupBuyMemberPanel";
 import GroupBuyWaitlistPanel from "@/components/group-buy/GroupBuyWaitlistPanel";
@@ -234,7 +237,33 @@ export default function GroupBuyDetailClient({ id }) {
   // MEH-2621 split (UI): pickup / delivery as two answers; old groups carry only the
   // pre-split fulfillment_note.
   const hasSplitNotes = Boolean(gb.pickup_note || gb.delivery_note);
-  const hasFulfillment = hasSplitNotes || Boolean(gb.fulfillment_note);
+  // MEH-3597: rows + map for WhereSection. The map pins the business's own
+  // locations (as on its page) unless the group is delivery-only.
+  const whereRows = hasSplitNotes
+    ? [
+        ["pickup", MapPin, gb.pickup_note],
+        ["delivery", Truck, gb.delivery_note],
+      ]
+        .filter(([, , note]) => note)
+        .map(([kind, Icon, note]) => ({ key: kind, Icon, label: t(`${kind}_label`), text: note, testId: `group-buy-${kind}-note` }))
+    : gb.fulfillment_note
+      ? [{ key: "note", Icon: MapPin, text: gb.fulfillment_note, testId: "group-buy-fulfillment-note" }]
+      : [];
+  const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
+  const whereMap =
+    producer && typeof producer.lat === "number" && typeof producer.lng === "number" && !deliveryOnly
+      ? { lat: producer.lat, lng: producer.lng, name: producer.name, locations: producer.locations, producer }
+      : null;
+  const showWhere = whereRows.length > 0 || Boolean(whereMap);
+  const deliveryChecker = producer && (
+    <DeliveryChecker
+      offersDelivery={producer.offers_delivery}
+      nationwide={producer.delivery_nationwide}
+      excluded={producer.delivery_excluded_cities}
+      areas={producer.delivery_areas}
+      producer={producer}
+    />
+  );
   const fulfilled = gb.status === "fulfilled";
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
@@ -516,94 +545,43 @@ export default function GroupBuyDetailClient({ id }) {
               <p className="text-lg text-text/90 leading-relaxed whitespace-pre-line">{gb.description}</p>
             )}
 
-            {/* MEH-2544: how a group buy works, while it can still be joined —
-                copy approved by Sapir 29/10. */}
-            {joinable && !full && (
-              <section className="mt-6 rounded-lg bg-background-alt p-4" data-testid="group-buy-how">
-                <SectionHeading size="content" className="mb-3">{t("how_title")}</SectionHeading>
-                <ol className="space-y-2">
-                  {howLines.map((line, i) => (
-                    <li key={i} className="flex gap-3 text-base text-text">
-                      <span
-                        aria-hidden="true"
-                        className="shrink-0 w-6 h-6 rounded-full bg-primary text-background text-sm font-bold grid place-items-center"
-                      >
-                        {i + 1}
-                      </span>
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
+            {/* MEH-3597 (Sapir 21/11): the same blocks, in the same order and
+                look, as the rescue bag page — where and when (with the map and
+                Waze / Google), how it works, cancelling. One look for two offers,
+                as Airbnb draws stays and experiences from one set of sections. */}
+            <div className="mt-8 grid gap-8">
+              {/* MEH-2615 / MEH-2621: pickup and delivery under one heading; a
+                  group made before the split carries only fulfillment_note.
+                  The heading rides on a note or the map: the checker can hide
+                  itself (DeliveryChecker gates 1–3), and a heading over
+                  nothing would be an orphan. */}
+              {showWhere ? (
+                <WhereSection
+                  title={t("fulfillment_title")}
+                  headingId="group-buy-where"
+                  rows={whereRows}
+                  map={whereMap}
+                  testId="group-buy-fulfillment"
+                >
+                  {producer && <div className="mt-4">{deliveryChecker}</div>}
+                </WhereSection>
+              ) : (
+                producer && <div data-testid="group-buy-fulfillment">{deliveryChecker}</div>
+              )}
 
-            {/* MEH-2615: pickup and delivery as ONE titled section — the
-                business's own note («מתי ואיך מקבלים», MEH-1457) and «מגיעים
-                אלייך?» under it — instead of two unrelated boxes with the
-                business row wedged between them (Eventbrite / Groupon: each
-                kind of detail under its own heading, the organizer last).
-                The heading rides on the note: the checker can hide itself
-                (DeliveryChecker gates 1–3), and a heading over nothing would
-                be an orphan. Without a note the checker stands alone, as
-                before. */}
-            {/* MEH-2621 split (UI): new groups answer pickup and delivery separately,
-                each as its own labelled row (MapPin / Truck). A group made
-                before the split carries only fulfillment_note and renders as
-                it did. */}
-            {(hasFulfillment || producer) && (
-              // Spacing lives on the children, not the section: when there is
-              // no note and the checker hides itself, the section collapses to
-              // nothing instead of leaving an empty 2rem gap (review #3900).
-              <section data-testid="group-buy-fulfillment">
-                {hasFulfillment && (
-                  <SectionHeading size="content" className="mt-8 mb-3">{t("fulfillment_title")}</SectionHeading>
-                )}
-                {hasSplitNotes ? (
-                  <dl className="flex flex-col gap-4">
-                    {[
-                      ["pickup", MapPin, gb.pickup_note],
-                      ["delivery", Truck, gb.delivery_note],
-                    ]
-                      .filter(([, , note]) => note)
-                      .map(([kind, Icon, note]) => (
-                        // MEH-2708: a <dl> may wrap each dt/dd pair in ONE <div>,
-                        // never two (axe definition-list + dlitem). The icon moves
-                        // into the <dt>, positioned at the start edge, so the
-                        // layout is the same: icon column, then label over note.
-                        <div key={kind} className="relative ps-[34px] min-w-0" data-testid={`group-buy-${kind}-note`}>
-                          <dt className="text-sm font-bold text-text">
-                            <Icon size={24} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
-                            {t(`${kind}_label`)}
-                          </dt>
-                          <dd className="text-base text-text whitespace-pre-line">{note}</dd>
-                        </div>
-                      ))}
-                  </dl>
-                ) : (
-                  gb.fulfillment_note && (
-                    <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
-                      <MapPin size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                      <span>{gb.fulfillment_note}</span>
-                    </p>
-                  )
-                )}
-                {/* MEH-2453: «מגיעים אלייך?» from the business's own delivery
-                    data, same component and copy as its page. It hides itself
-                    for a business that does not deliver, or whose answer is the
-                    same for every city (DeliveryChecker gates 1–3). */}
-                {producer && (
-                  <div className={hasFulfillment ? "mt-4" : "mt-6"}>
-                    <DeliveryChecker
-                      offersDelivery={producer.offers_delivery}
-                      nationwide={producer.delivery_nationwide}
-                      excluded={producer.delivery_excluded_cities}
-                      areas={producer.delivery_areas}
-                      producer={producer}
-                    />
-                  </div>
-                )}
-              </section>
-            )}
+              {/* MEH-2544: how a group buy works, while it can still be joined. */}
+              {joinable && !full && (
+                <HowSteps title={t("how_title")} steps={howLines} headingId="group-buy-how-title" testId="group-buy-how" />
+              )}
+
+              {/* MEH-3597: the leave rule as its own section, like the bag's. */}
+              {joinable && (
+                <section aria-labelledby="group-buy-cancel" data-testid="group-buy-cancel">
+                  <SectionHeading size="content" id="group-buy-cancel" className="mb-3">{t("cancel_title")}</SectionHeading>
+                  <p className="text-base text-text">{funded ? t("cancel_body_funded") : t("cancel_body_open")}</p>
+                </section>
+              )}
+            </div>
 
             {/* MEH-2472: the business, as a tappable row (MEH-2538 OwnerRow);
                 without a producer_id the row is plain text, never a dead link.

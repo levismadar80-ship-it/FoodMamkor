@@ -120,14 +120,14 @@ describe("participant", () => {
     await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/group-buys/gb-1/commit", { quantity: 4 }));
   });
 
-  it("funded: the last-day leave rule is shown; open: it is not", async () => {
+  it("funded: the «ביטול» section names the last-day rule", async () => {
     await show({ ...member, status: "funded" });
-    expect(text("group-buy-cancel-rule")).toBe("cancel_rule");
+    expect(text("group-buy-cancel")).toContain("cancel_body_funded");
   });
 
-  it("open group: no leave rule line", async () => {
+  it("open group: the «ביטול» section says leave any time", async () => {
     await show({ ...member });
-    expect(text("group-buy-cancel-rule")).toBeNull();
+    expect(text("group-buy-cancel")).toContain("cancel_body_open");
   });
 
   it("in a full group: «full, your place is kept», no waitlist", async () => {

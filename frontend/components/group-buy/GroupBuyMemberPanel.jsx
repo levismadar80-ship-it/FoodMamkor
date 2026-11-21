@@ -88,9 +88,7 @@ export default function GroupBuyMemberPanel({ gb, joinable, full, cancelling, on
           {cancelling ? t("cancelling") : t("cancel_cta")}
         </button>
       )}
-      {joinable && gb.status === "funded" && (
-        <p className="text-xs text-fg-muted text-center" data-testid="group-buy-cancel-rule">{t("cancel_rule")}</p>
-      )}
+      {/* MEH-3597: the leave rule lives in the page's «ביטול» section. */}
     </div>
   );
 }

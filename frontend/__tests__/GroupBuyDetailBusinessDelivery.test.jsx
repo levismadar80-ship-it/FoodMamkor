@@ -289,10 +289,11 @@ describe("pickup and delivery as two rows", () => {
     expect(section.querySelector("h2").textContent).toBe(TITLE);
     const pickup = screen.getByTestId("group-buy-pickup-note");
     const delivery = screen.getByTestId("group-buy-delivery-note");
-    expect(pickup.querySelector("dt").textContent).toBe("group_buys.detail.pickup_label");
-    expect(pickup.querySelector("dd").textContent).toBe(PICKUP);
-    expect(delivery.querySelector("dt").textContent).toBe("group_buys.detail.delivery_label");
-    expect(delivery.querySelector("dd").textContent).toBe(DELIVERY);
+    // MEH-3597: rows of the shared WhereSection (label in <b>, then the note).
+    expect(pickup.querySelector("b").textContent.trim()).toBe("group_buys.detail.pickup_label");
+    expect(pickup.textContent).toContain(PICKUP);
+    expect(delivery.querySelector("b").textContent.trim()).toBe("group_buys.detail.delivery_label");
+    expect(delivery.textContent).toContain(DELIVERY);
     expect(pickup.compareDocumentPosition(delivery) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(delivery.compareDocumentPosition(checker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByTestId("group-buy-fulfillment-note")).toBeNull();
