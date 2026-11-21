@@ -25,13 +25,13 @@ separate product decision (MEH-1613 §7), deliberately not taken here.
 
 from __future__ import annotations
 
+import logging
 from html import escape
 from typing import Any
 
-import logging
-
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.email_layout import text_to_html
 from app.services.outbound_guard import (
     REDIRECT_BODY_PREFIX,
     route_email,
@@ -296,6 +296,12 @@ def _deliver(  # noqa: PLR0913 — +headers (MEH-3212)
     if _is_reserved_domain(to):
         logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
         return "skipped"
+
+    # MEH-3587: every email goes out in the one branded frame. A caller that
+    # wrote only text gets it built from the text (links become buttons);
+    # the text part itself is sent unchanged. DO NOT make this opt-in per
+    # caller — 49 of 73 call sites were text-only when this landed.
+    html = html or text_to_html(subject, body)
 
     # MEH-3402: outside production a real person never receives mail.
     # DO NOT move this below the Resend call or make it opt-in per caller.
