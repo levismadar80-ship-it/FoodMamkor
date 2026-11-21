@@ -66,7 +66,8 @@ export async function GET(request, ctx) {
   const slug = decodeSlugParam(String(file || "").replace(/\.png$/i, ""));
   try {
     const producer = await getProducer(slug);
-    if (!producer?.name) return fallback(request);
+    // MEH-2952 chunk 3: a test business (noindex) gets no named card.
+    if (!producer?.name || producer.noindex) return fallback(request);
     const [frank, heebo, mark] = await loadAssets();
     const element = producerCard({
       name: producer.name,
