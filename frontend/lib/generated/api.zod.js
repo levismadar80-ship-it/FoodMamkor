@@ -8807,6 +8807,7 @@ export const GetOfferRescueOffersOfferIdGetResponse = /*#__PURE__*/ zod.object({
   "location_city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "name": /*#__PURE__*/ zod.string(),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getOfferRescueOffersOfferIdGetResponseProducerReviewsCountDefault),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 }).check(/*#__PURE__*/ zod.describe('The bag page\'s business block (MEH-3586): the summary plus the public\nbusiness rating, so a buyer can judge who packs the bag. The same two\nnumbers the business page shows; never the bag reviews, which feed only\nthe pilot metrics (RescueReview\'s docstring).')),
   "qty_left": /*#__PURE__*/ zod.int(),

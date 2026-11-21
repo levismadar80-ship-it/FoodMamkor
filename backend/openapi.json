@@ -19199,6 +19199,17 @@
             "title": "Reviews Count",
             "type": "integer"
           },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
           "slug": {
             "anyOf": [
               {

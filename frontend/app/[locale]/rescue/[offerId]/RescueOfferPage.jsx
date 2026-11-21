@@ -130,6 +130,12 @@ export default function RescueOfferPage({ offerId }) {
           </p>
           <OwnerRow href={businessHref} name={producer.name} testId="rescue-offer-business">
             <span className="block font-semibold">{t("offer_page.business_link", { name: producer.name })}</span>
+            {/* The business's own one-liner (Wolt's «about the venue» line): who packs the bag. */}
+            {producer.short_description && (
+              <span className="block text-sm text-text line-clamp-2" data-testid="rescue-offer-business-about">
+                {producer.short_description}
+              </span>
+            )}
             <span className="flex items-center gap-2 text-sm text-fg-muted">
               {town && <span>{town}</span>}
               {producer.reviews_count > 0 && typeof producer.avg_rating === "number" && (

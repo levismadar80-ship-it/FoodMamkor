@@ -275,6 +275,8 @@ class RescueProducerDetail(RescueProducerSummary):
 
     avg_rating: float | None = None
     reviews_count: int = 0
+    # The business's own one-line description, so the page says who it is.
+    short_description: str | None = None
 
 
 class RescueOfferDetailOut(RescueOfferPublicOut):
