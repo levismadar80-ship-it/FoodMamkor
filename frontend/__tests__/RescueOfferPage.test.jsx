@@ -161,6 +161,15 @@ describe("RescueOfferPage — an available bag", () => {
     expect(screen.getAllByTestId("rescue-reserve")).toHaveLength(1);
   });
 
+  // MEH-3570: the bag page reserves too, so it names the seller and says
+  // Mehamakor is not a party, the same line as the business page section.
+  it("under the reserve button: the deal is with the business, Mehamakor is not a party", async () => {
+    await renderWith(offer());
+    expect(screen.getByTestId("rescue-not-a-party").textContent).toBe(
+      "את העסקה עושים ישירות מול מאפיית ההצלה. מהמקור לא המוכרת ולא צד לעסקה.",
+    );
+  });
+
   it("a range of worth reads as a line, not a struck figure", async () => {
     await renderWith(offer({ value_max_agorot: 7000 }));
     expect(screen.queryByTestId("rescue-offer-worth")).toBeNull();

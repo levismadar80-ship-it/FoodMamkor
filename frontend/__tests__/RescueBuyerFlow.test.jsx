@@ -1085,3 +1085,14 @@ describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
     );
   });
 });
+
+// MEH-3570: who the customer deals with, at the reserve button — not only in the terms.
+describe("the business-page section — not a party", () => {
+  it("names the business under the reserve button and says Mehamakor is not the seller", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(screen.getByTestId("rescue-not-a-party").textContent).toBe(
+      "את העסקה עושים ישירות מול מאפיית ההצלה. מהמקור לא המוכרת ולא צד לעסקה.",
+    );
+  });
+});
