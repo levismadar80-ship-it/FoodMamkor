@@ -337,12 +337,64 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           name: "רוח השדה",
           top_product_name: "לחם מחמצת כפרי",
           price_range: "החל מ-25₪",
-          products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          // MEH-3666: the eyebrow needs a second product beside the signature.
+          products: [
+            { id: 21, name: "לחם מחמצת כפרי", image_url: null },
+            { id: 22, name: "עוגיות שיבולת שועל", image_url: null },
+          ],
         }}
       />,
     );
     // mock returns the i18n key verbatim
     expect(screen.getByText("producer.detail.sections.products.signature_label")).toBeInTheDocument();
+  });
+
+  // MEH-3666: «המוצר המוביל» out of one product says nothing. The card stays
+  // (name, photo, price); only the eyebrow goes.
+  describe("MEH-3666 — the eyebrow only when another product sits beside it", () => {
+    const LABEL = "producer.detail.sections.products.signature_label";
+
+    it("signature matches the only product: card shown, no eyebrow", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "רוח השדה",
+            top_product_name: "לחם מחמצת כפרי",
+            products: [{ id: 21, name: "לחם מחמצת כפרי", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText("לחם מחמצת כפרי")).toBeInTheDocument();
+      expect(screen.queryByText(LABEL)).toBeNull();
+    });
+
+    it("free-text signature and no products at all: card shown, no eyebrow", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{ id: 1, name: "חזיזה", top_product_name: "אוכמניות", products: [] }}
+        />,
+      );
+      expect(screen.getByText("אוכמניות")).toBeInTheDocument();
+      expect(screen.queryByText(LABEL)).toBeNull();
+    });
+
+    it("free-text signature plus one real product: eyebrow shown", () => {
+      render(
+        <ProducerSections
+          {...baseProps}
+          producer={{
+            id: 1,
+            name: "חזיזה",
+            top_product_name: "אוכמניות",
+            products: [{ id: 31, name: "דובדבנים", image_url: null }],
+          }}
+        />,
+      );
+      expect(screen.getByText(LABEL)).toBeInTheDocument();
+    });
   });
 
   it("MEH-1463: empty price_range → highlight shows the matched product's description + numeric price", () => {
