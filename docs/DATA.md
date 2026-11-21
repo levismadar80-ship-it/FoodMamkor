@@ -2366,25 +2366,13 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 
 ---
 
-## Notifications (Twilio + Resend)
+## Notifications
 
-| Trigger | Channel | Target | File |
-|---|---|---|---|
-| Producer registers | WhatsApp | Admin | `admin_decisions.py._send_whatsapp` |
-| Producer approved/rejected | Email + WhatsApp | Producer + admin | `admin_decisions.py` (copy: `services/admin_producer_emails.py`) |
-| Experience submitted | Email | Admin (FLAGGED subject if Claude flagged) | `experience_notifications.py` |
-| Experience approved | Email | Host | `experience_notifications.py` |
-| Experience changes-requested | Email | Host (feedback verbatim) | `experience_notifications.py` |
-| Experience rejected | Email | Host (reason verbatim) | `experience_notifications.py` |
-| Recipe approved / changes-requested / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| Kashrut certificate approved (with expiry) / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| New review — not an edit (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
-| Home product removed | Email | Seller | `admin.py` |
-| Newsletter signup (welcome) | Email | Subscriber | `marketing.py` |
-| Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
-| Contact form | Email | Admin | `marketing.py` |
-| 24h after WhatsApp click | WhatsApp | Buyer (rating prompt) | `rating_dispatcher.py` |
+Every email, WhatsApp message and push a user receives — its trigger, channel,
+recipient and the code that sends it — is in
+[NOTIFICATIONS.md](./NOTIFICATIONS.md), generated from the code (MEH-3594).
+This file used to carry a hand-written table here; it had drifted (it still
+named Twilio) and was removed under MEH-3604 so the fact has one home.
 
 All Resend + Twilio sends are **best-effort** — missing env vars or send
 errors are logged but never raise. A broken notification must never
@@ -2423,22 +2411,12 @@ design). No env var, no retry, no Google.
 
 ## Env vars
 
-Critical:
-- `DATABASE_URL` — Railway Postgres reference
-- `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
-- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`services/account_guards.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
-- `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
-- `ENV` — `development|staging|production`
-- `CORS_ORIGINS` — comma-separated, production MUST set explicitly
+Every env var the code reads, backend and frontend, is in
+[ENVIRONMENT.md](./ENVIRONMENT.md), generated from the code (MEH-3598). The
+hand-written list that was here (it still gave a 4.6-era model default) was
+removed under MEH-3604 so the fact has one home. Which value is set in which
+environment: [DEPLOYMENT.md](./DEPLOYMENT.md) §1.
 
-Integrations:
-- `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET`
-- `GOOGLE_CLIENT_ID`, `APPLE_CLIENT_ID`
-- `TWILIO_ACCOUNT_SID` / `_AUTH_TOKEN` / `_WHATSAPP_FROM` / `ADMIN_WHATSAPP_TO`
-- `RESEND_API_KEY` — Resend.com API key; `ADMIN_EMAIL` — notification recipient; `CONTACT_EMAIL` — public contact form recipient (falls back to `ADMIN_EMAIL`)
-- `ANTHROPIC_MODEL` (defaults to `claude-opus-4-6`)
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 
 ---
 
