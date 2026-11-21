@@ -7131,7 +7131,8 @@
       "loading": "טוענים את הסל…",
       "bar_note": "{price} ₪ · איסוף עד {until}",
       "details_link": "לכל פרטי הסל",
-      "bar_cta": "לשריין את הסל"
+      "bar_cta": "לשריין את הסל",
+      "calendar_title": "איסוף סל הפתעה: {business_name}"
     }
   },
   "holidays": {
