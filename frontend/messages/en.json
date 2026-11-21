@@ -5003,6 +5003,13 @@
         "latest_label": "New",
         "empty": "No updates yet. When something changes, it will show up here.",
         "releases": {
+          "v1_5_11": {
+            "i0": "Deliveries: say how many business days a delivery takes, set one minimum order for all deliveries, and set an order cutoff for each zone.",
+            "i1": "A business that ships nationwide can add zones on other terms, for example express delivery to Gush Dan.",
+            "i2": "Each pickup point can have its own pickup days and order cutoff, and customers see when the next pickup is.",
+            "i3": "The assistant on your business page suggests questions based on what your page says, and also answers about delivery zones, the next delivery, group buys and workshops.",
+            "i4": "The dashboard home shows how many orders reached you through the site this month."
+          },
           "v1_5_10": {
             "i0": "Delivery zones: group cities into a zone with shared delivery days, minimum and delivery fee, and set several delivery days per city.",
             "i1": "The business page now shows when the next delivery to your city is.",
