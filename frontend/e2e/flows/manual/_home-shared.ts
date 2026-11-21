@@ -184,7 +184,7 @@ export const CHAT_LAUNCHER_NAME = new RegExp(
  *           ProducerCard.test.jsx:211-221, HomeCategoryGridLinks.test.jsx:41-58,
  *           e2e/flows/02-search-producer.spec.ts:4-27,
  *           e2e/flows/17-producers-search.spec.ts:22-65,
- *           frontend/__tests__/highlight.test.js:4-17), 7 DEVICE-ONLY (the whole
+ *           frontend/__tests__/highlightMatch.test.jsx), 7 DEVICE-ONLY (the whole
  *           iOS-Safari section), 5 CONVERT-PYTEST (backend LIKE-escaping and the
  *           /search limiter — not PW rows), and the remainder re-homed to another
  *           chunk's page (`/favorites`, `/events`, `/map`, `/producer/[id]`,
