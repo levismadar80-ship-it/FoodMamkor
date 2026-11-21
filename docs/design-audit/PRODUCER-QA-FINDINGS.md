@@ -4,7 +4,7 @@
 
 **Tier legend (ADR-016):** GREEN = CC end-to-end · YELLOW = plan + per-chunk · RED = chunk-by-chunk (central files). **Severity:** 0 polish → 4 blocker.
 
-**Screenshots:** [`screenshots/producer-qa/`](./screenshots/producer-qa/).
+**Screenshots:** [`screenshots/producer-qa/`](https://github.com/levismadar80-ship-it/FoodMamkor/tree/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/design-audit/screenshots/producer-qa/).
 
 ---
 

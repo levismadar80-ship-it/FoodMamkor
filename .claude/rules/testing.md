@@ -397,7 +397,27 @@ push). Staging only — the seed refuses production. Details:
 
 ## QA-artifacts screenshot size discipline (MEH-1156)
 
-`qa-artifacts/MEH-XXXX/` has a **2 MB-per-PR** cap, enforced by the
-`qa-artifacts size cap` job inside `CI gate`. Compress every screenshot before
-committing: `node scripts/compress-qa-screenshots.mjs qa-artifacts/MEH-XXXX/`
-(run from `frontend/`; WebP q80, ≤ 1440 px; `--jpeg`, `--keep`).
+### QA screenshots live outside the repo (MEH-3534 — the 2 MB-per-PR cap is now 0)
+
+Screenshots and recordings are **never committed**. 242 MB of them had reached
+the tip of staging by 20/11; the old ones are in history at the commit named in
+[docs/media-archive.md](../../docs/media-archive.md).
+
+- Capture into `qa-artifacts/MEH-XXXX/` as before (the `qa-*.mjs` scripts
+  write there; `.gitignore` keeps the images out), compress with
+  `node scripts/compress-qa-screenshots.mjs qa-artifacts/MEH-XXXX/` (from
+  `frontend/`; WebP q80, ≤ 1440 px), **read** them, then upload them to the
+  card's evidence folder `QA-evidence/MEH-XXXX` in the project Drive (parent
+  folder id `16cZYv36Y0EoMTCzggHXZU-d2xvPLn4MW`; Google Drive connector,
+  `create_file` with a file reference; Sapir's choice 21/11).
+- The PR body carries `Screenshots: <https link to that folder>` (or a
+  `## Screenshots` section with the links). `pr-evidence-guard.sh` checks it
+  for every UI PR (rule 23).
+- `scripts/checks/heavy-media-guard.sh` fails any image or video tracked
+  outside `frontend/public/`, `frontend/e2e/visual/`, `design-reference/`,
+  `logo/` and `docs/research/screenshots/2026-05/`. A new folder that the
+  product or a test really reads goes into its `ALLOW_RE`, with the reason.
+- Text evidence (`.md`, `.json`, `.log`) still goes in `qa-artifacts/MEH-XXXX/`.
+- No Drive connector in the session → say so in the PR body, describe what
+  each screenshot showed, and leave the `Screenshots:` line for the session
+  that can upload; never commit the images to get past the guard.

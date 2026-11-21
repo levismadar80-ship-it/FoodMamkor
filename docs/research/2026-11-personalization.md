@@ -3,7 +3,7 @@
 # התאמה אישית: מה משתמשים משנים לבד
 
 > **דוח מחקר בלבד.** לא שונה קוד. ההחלטות של ספיר. נכתב 17/11/2026 מול `origin/staging` (`e43e137`).
-> הדמיות מיקום (סכמטיות): [`qa-artifacts/research-2026-11-17/t4-saved-search/`](../../qa-artifacts/research-2026-11-17/t4-saved-search/)
+> הדמיות מיקום (סכמטיות): [`qa-artifacts/research-2026-11-17/t4-saved-search/`](https://github.com/levismadar80-ship-it/FoodMamkor/tree/629eb3c6827171564fb9c6a2c9c83cd0cb043067/qa-artifacts/research-2026-11-17/t4-saved-search/)
 
 > **בדיקת כפילויות (17/11):** Linear: «התראות», «חיפושים שמורים» → **MEH-3134** («מקום אחד לכל ההתראות בהגדרות», Backlog) — זו המלצה 1 כאן, כבר בכרטיס; MEH-3079 (לוח בקרה: בחירת התראות, סיכום שבועי); MEH-389 (העדפות משתמשת). אין כרטיס על חיפוש שמור. GitHub: אין PR.
 
