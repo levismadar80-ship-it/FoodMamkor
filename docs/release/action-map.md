@@ -16,19 +16,19 @@
 
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
-| API routes (actor actions) | 323 | 308 | 10 | 5 | 0 |
-| — negative cell of gated routes (401/403) | 241 | 160 | 0 | 81 | 0 |
+| API routes (actor actions) | 324 | 309 | 10 | 5 | 0 |
+| — negative cell of gated routes (401/403) | 242 | 161 | 0 | 81 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 53 | 51 | 1 | 1 | 0 |
-| Pages — public | 60 | 52 | 0 | 8 | 0 |
+| Pages — public | 61 | 52 | 0 | 9 | 0 |
 | Pages — dashboard | 21 | 18 | 0 | 3 | 0 |
 | Pages — admin | 21 | 19 | 0 | 2 | 0 |
 | State-machine rows (audit, every non-exempt section) | 45 | 37 | 1 | 6 | 1 |
 | Mandatory extra rows (§B.3) | 25 | 23 | 1 | 1 | 0 |
 
-Pages opened by a CI-run Playwright spec: **40 / 102** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
+Pages opened by a CI-run Playwright spec: **40 / 103** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 107** (route positive 5 · route negative 81 · tools 1 · pages 13 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 108** (route positive 5 · route negative 81 · tools 1 · pages 14 · machine rows 6 · extra rows 1). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -396,6 +396,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 331 | POST | `/group-buys/{group_buy_id}/waitlist` | `group_buy_capacity.join_waitlist` | registered user | `tests/test_meh3592_group_buy_capacity.py:177` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:381` | 8 |
 | 332 | DELETE | `/group-buys/{group_buy_id}/waitlist` | `group_buy_capacity.leave_waitlist` | registered user | `tests/test_meh3592_group_buy_capacity.py:219` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:381` | 9 |
 | 333 | PATCH | `/group-buys/{group_buy_id}/settings` | `group_buy_capacity.update_group_buy_settings` | registered user | `tests/test_meh3592_group_buy_capacity.py:85` | `tests/test_meh3592_group_buy_capacity.py:113` | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:381` | 8 |
+| 334 | GET | `/users/me/group-buys` | `group_buy_mine.list_own_group_buys` | registered user | `tests/test_meh3609_my_group_buys.py:23` | `tests/test_meh3609_my_group_buys.py:18` | — | 2 |
 
 ### Internal routes (allowlisted — not actor actions)
 
@@ -515,6 +516,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/login` | `frontend/e2e/flows/09-login-console-clean.spec.ts:22` | `frontend/__tests__/title-pattern.test.js:163` | covered |
 | `/map` | `frontend/e2e/flows/05-map-navigation.spec.ts:22` | `frontend/__tests__/title-pattern.test.js:134` | covered |
 | `/messages` | GAP | `frontend/__tests__/title-pattern.test.js:174` | covered |
+| `/my-group-buys` | GAP | GAP | GAP |
 | `/my-orders` | GAP | GAP | GAP |
 | `/newsletter/confirm` | GAP | GAP | GAP |
 | `/newsletter/unsubscribe` | GAP | `frontend/__tests__/title-pattern.test.js:176` | covered |
