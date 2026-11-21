@@ -61,6 +61,11 @@ class GroupBuyOut(BaseModel):
     # number, never a roster (MEH-1651). Filled only on the business's own list
     # (GET /producers/me/group-buys); null on every public reader.
     units_total: int | None = None
+    # MEH-3592: a cap in units, whether the business stopped joins, and the
+    # units still free under the cap (null when there is no cap).
+    max_units: int | None = None
+    joins_closed: bool = False
+    units_left: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -71,6 +76,8 @@ class GroupBuyDetail(GroupBuyOut):
 
     user_committed: bool = False
     user_commit: GroupBuyCommitOut | None = None
+    # MEH-3592: she is on this group's waitlist.
+    user_waitlisted: bool = False
 
 
 class GroupBuyCreate(BaseModel):
@@ -88,6 +95,7 @@ class GroupBuyCreate(BaseModel):
     price_per_unit_group: Decimal = Field(..., gt=0)
     min_participants: int = Field(..., ge=2)
     max_participants: int | None = Field(None, ge=2)
+    max_units: int | None = Field(None, ge=1, le=100000)  # MEH-3592
     deadline: datetime
     city: str | None = Field(None, max_length=100)
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for").
@@ -159,6 +167,29 @@ class GroupBuyCommitRequest(BaseModel):
     # MEH-1626's intent (no silently broken WhatsApp link) is served better by
     # not collecting the number than by validating one nobody dials. Amendment
     # 13 also bars collecting a field that serves no purpose.
+
+
+class GroupBuyQuantityUpdate(BaseModel):
+    """MEH-3592: a participant changes her quantity until the deadline
+    (Kickstarter lets a backer change a pledge until the campaign ends)."""
+
+    quantity: int = Field(..., ge=1, le=100)
+
+
+class GroupBuyWaitlistRequest(BaseModel):
+    """MEH-3592: join the waitlist of a full group buy, with the quantity she
+    would take."""
+
+    quantity: int = Field(1, ge=1, le=100)
+
+
+class GroupBuySettingsUpdate(BaseModel):
+    """MEH-3592: the business changes its caps or stops / reopens joins. A
+    field left out is unchanged; an explicit null clears a cap."""
+
+    max_participants: int | None = Field(None, ge=2)
+    max_units: int | None = Field(None, ge=1, le=100000)
+    joins_open: bool | None = None
 
 
 # MEH-2436: the owner's status change. The four values are the whole domain of
