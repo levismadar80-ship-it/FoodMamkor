@@ -39,6 +39,18 @@ REVISION = (
     Path(__file__).resolve().parents[1]
     / "backend/alembic/versions/20261115_0900_a8d2c6f4e1b7_meh3296_order_notifications.py"
 )
+# MEH-3624: a later revision may widen the kind CHECK. The model's KINDS must
+# equal the NEWEST revision that defines KINDS (dated file names sort in order).
+KINDS_REVISION = max(
+    (
+        path
+        for path in (
+            Path(__file__).resolve().parents[1] / "backend/alembic/versions"
+        ).glob("2*.py")
+        if re.search(r"^KINDS = \(", path.read_text(encoding="utf-8"), re.M)
+    ),
+    key=lambda path: path.name,
+)
 
 # --- the calendar ------------------------------------------------------------
 
@@ -117,13 +129,12 @@ def test_a_start_inside_a_window_counts_from_its_end():
 
 
 def test_the_revision_literals_match_the_model():
-    source = REVISION.read_text(encoding="utf-8")
-
-    def literal(name):
+    def literal(name, path=REVISION):
+        source = path.read_text(encoding="utf-8")
         block = re.search(rf"^{name} = \((.*?)\)$", source, re.S | re.M).group(1)
         return tuple(re.findall(r'"([a-z_]+)"', block))
 
-    assert literal("KINDS") == PRODUCT_ORDER_NOTICE_KINDS
+    assert literal("KINDS", KINDS_REVISION) == PRODUCT_ORDER_NOTICE_KINDS
     assert literal("CHANNELS") == PRODUCT_ORDER_NOTICE_CHANNELS
     assert literal("STATUSES") == PRODUCT_ORDER_NOTICE_STATUSES
 
