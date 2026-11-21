@@ -1,6 +1,6 @@
 # System map
 
-**Last reviewed:** 2026-11-17 · **Owner:** whoever adds a component, a store or an external service ([.claude/rules/system-map.md](../.claude/rules/system-map.md))
+**Last reviewed:** 2026-11-20 · **Owner:** whoever adds a component, a store or an external service ([.claude/rules/system-map.md](../.claude/rules/system-map.md))
 
 One page: what runs, what talks to what, where each kind of data lives, and
 what gives first under load. The repo layout is in
@@ -31,7 +31,8 @@ This page links to those and does not repeat their numbers.
 | Frontend | Next.js App Router, JavaScript. Server-renders public pages, proxies `/api/*`. | Vercel · `frontend/` |
 | Backend | FastAPI. One process holds the API, the rate limiter's counters and the scheduler. | Railway · `backend/app/` |
 | Database | PostgreSQL. Schema changes only through Alembic. | Railway · `backend/alembic/versions/` |
-| Scheduler | APScheduler threads inside the backend process: onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email, the monthly billing-start signal (1st of the month, email to the admin, MEH-3413) and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled, and (production only) a 30-minute check that emails the admin when one of those jobs has no recent success (MEH-3332 — last success in `admin_settings` `job_ok:<slug>`; Sentry's $0 plan monitors only the watchdog). | `backend/app/startup.py` |
+| Outbox worker (MEH-3535) | `python -u -m app.worker`, a second Railway service from the same image (`railway.worker.json`). Every 30 s it sends the due rows of `email_outbox`, and every 2 minutes runs the on-site order tick. Owns them only once the web service has `OUTBOX_EXTERNAL_WORKER=true`; until then the web scheduler runs both (one minute / two minutes). Two dispatchers at once are safe: rows are taken with `SKIP LOCKED`. Watched by the web's overdue-job check (MEH-3332), which adds the worker's two slugs once the flag is true, so a dead worker emails the admin. | Railway · `backend/app/worker.py` |
+| Scheduler | APScheduler threads inside the backend process (the outbox ticks only while `OUTBOX_EXTERNAL_WORKER` is false): onboarding follow-ups, admin reminder, analytics roll-up, retention purge, weekly summary, monthly page-freshness email, the monthly billing-start signal (1st of the month, email to the admin, MEH-3413) and the Sunday stale-pages admin digest, watchdog and rescue digest when enabled, and (production only) a 30-minute check that emails the admin when one of those jobs has no recent success (MEH-3332 — last success in `admin_settings` `job_ok:<slug>`; Sentry's $0 plan monitors only the watchdog). | `backend/app/startup.py` |
 | CI | GitHub Actions: the two required gates, E2E, uptime probe (site, API and the Google Places key, every 5 minutes), backup-restore check, weekly placeholder-search check (opens an issue when a search placeholder returns nothing). Two modes per run (MEH-3453): public repo → GitHub-hosted `ubuntu-latest`; private repo or repo variable `CI_MODE=private` → one `self-hosted` runner on Sapir's PC, with E2E only on `run-e2e` PRs + nightly and 1 test shard. | `.github/workflows/` |
 
 ## What talks to what
@@ -47,6 +48,7 @@ This page links to those and does not repeat their numbers.
 | Browser | PostHog, Clarity, Sentry | analytics and errors, after consent | nothing visible |
 | Backend | Postgres | everything; the app may log in as `app_runtime` (rows only) while the boot migration step uses the schema owner (`MIGRATION_DATABASE_URL`, MEH-3307, DEPLOYMENT.md §1.3) | 5xx |
 | Backend | Anthropic | moderation of reviews, recipes, workshops, owner replies; chat (with one business's public page facts, named in the question or the page it was opened from, MEH-3481 / MEH-3489; MEH-3510 adds its public events, workshops, open group buys and reviews); reading an uploaded menu into product rows (MEH-3430); suggesting product groups from product names (MEH-3478); suggesting a product description (MEH-3479) or a reply to a review (MEH-3480); drafting the page fields from the owner's text (MEH-3483) | **fails open**: content publishes unchecked, chat answers offline; a menu read, a group suggestion, a description / reply suggestion or a page draft answers 503 and the owner does it by hand |
+| Outbox worker (or the web scheduler, until it takes over) | Postgres + Resend + WhatsApp | the queued emails (`email_outbox`) and the order messages (`product_order_notifications`), MEH-3535 | a Resend error is retried 4 more times over ~30 minutes and ends that batch; a dispatcher without the Resend key leaves the rows untouched (the worker refuses to start without it); a worker that is down leaves rows pending, sent when it is back (dropped as `stale` after 2 days) |
 | Backend | Resend | every email, including the monthly page-freshness email (`services/page_freshness.py`) and its Sunday admin digest (`services/page_freshness_digest.py`), off until `PAGE_FRESHNESS_ENABLED`) | verification and reset emails stop |
 | Backend | WhatsApp Cloud API | codes, alerts, digests | message not delivered, logged |
 | Backend | Cloudinary | upload signature, deletes | upload fails with a message |
@@ -67,6 +69,7 @@ This page links to those and does not repeat their numbers.
 | Access token (15 minutes) | browser `localStorage` | sent as a Bearer header |
 | Refresh token (14 days) | httpOnly cookie | rotated by `/auth/refresh` |
 | An unpublished draft page | Postgres; readable by anyone who holds its signed preview link (`/draft-preview/<token>`, 14 days, MEH-3377) | read-only; the link dies when the draft is published, claimed or deleted; the browser scrubs the token from analytics and error events (`lib/claim-token.js`) |
+| An email the site owes (business approved / rejected / changes requested, event and workshop sign-up confirmations, MEH-3535) | Postgres, `email_outbox` | written in the same transaction as its cause (the approval email through `_persist_approval(before_commit=…)`, re-queued on its slug retry); address and words cleared the moment the row is sent, skipped or failed; the bare row deleted after 30 days by the retention purge |
 | Last successful run of each background job, and the day its overdue email went out | Postgres, `admin_settings` keys `job_ok:<slug>` / `job_stale_alerted:<slug>` | written by `@heartbeat` and `services/job_staleness.py`, production only (MEH-3332); bounded by the number of jobs |
 | Images | Cloudinary | Postgres holds the URL only |
 | Screenshot of a business's written consent (MEH-3377, optional) | Cloudinary; URL in `producers.consent_screenshot_url` | shown to admins only; the image is reachable by anyone who holds its unguessable URL |
@@ -120,7 +123,9 @@ inventory.
    and every image returns 401.
 8. **One backend process.** The scheduler, the rate limiter and the API share
    it. A second replica would double every scheduled email and split the rate
-   limits; scaling out needs both moved out of process first.
+   limits; scaling out needs both moved out of process first. The two outbox
+   ticks are the first to move (MEH-3535, the outbox worker); the daily jobs
+   and the rate limiter have not.
 9. **The Postgres volume.** 0.5 GB. Far from full today; the analytics tables
    are what grow.
 10. **CI in private mode.** With the repo private (or `CI_MODE=private`), every
