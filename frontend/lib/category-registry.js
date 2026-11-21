@@ -38,17 +38,25 @@
 import { Meat, FishSimple, Cheese, Bread, OliveOil, Hive } from "@/components/CategoryIcons";
 import { Plant, FlowerTulip, Leaf } from "@phosphor-icons/react";
 
-// The chip / register-selector / home-card line-art glyph map (18 canonical DB
-// names → component) is defined next to its components in CategoryIcons.jsx;
-// re-exported here so the registry is the one import hub for category data.
-// MEH-2163: imported into local scope as well (a bare `export … from` does NOT
-// bind the name here) so the resolver below can read it. The public export
-// surface is unchanged — `import { CATEGORY_ICONS } from "@/lib/category-registry"`
-// resolves exactly as before.
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+// MEH-3076: glyphs are keyed by slug (CATEGORY_GLYPHS, next to their
+// components). The name-keyed CATEGORY_ICONS below is DERIVED from it through
+// the one taxonomy list, kept for the callers that still hold a bare name
+// string (a map chip's iconName) — it is no longer a second hand-kept table.
+import { CATEGORY_GLYPHS } from "@/components/CategoryIcons";
+import { CATEGORY_TAXONOMY, taxonomyEntry } from "./category-taxonomy";
 import { COLOR } from "./color-tokens";
 
-export { CATEGORY_ICONS };
+export { CATEGORY_GLYPHS };
+
+/** Hebrew DB name → glyph, derived (MEH-3076). */
+export const CATEGORY_ICONS = Object.freeze(
+  Object.fromEntries(
+    CATEGORY_TAXONOMY.filter((c) => Object.hasOwn(CATEGORY_GLYPHS, c.slug)).map((c) => [
+      c.name,
+      CATEGORY_GLYPHS[c.slug],
+    ]),
+  ),
+);
 
 /**
  * MEH-2163 — the ONE fallback glyph.
@@ -115,23 +123,21 @@ export const DEFAULT_CATEGORY_STYLE = {
 /**
  * MEH-2163 — THE key indirection, and the only one.
  *
- * The glyph map is keyed by the canonical Hebrew DB `name` today. `slug`
- * (MEH-2139, `backend/app/services/category_slug.NAME_TO_SLUG`) is the stable
- * identity and is already serialized in `CategoryOut`, but the frontend has no
- * name→slug table and writing one would be a THIRD copy of that backend map,
- * in a language the test pinning the existing two cannot reach — the reasoning
- * spelled out at CategorySelector.jsx's POPULAR comment. So the key stays
- * `name`, and **MEH-1456 swaps it by changing the one `?? category.name` line
- * below** — no consumer moves, because no consumer indexes the map directly.
+ * MEH-3076: the glyph map is keyed by `slug` (MEH-2139, the stable identity
+ * serialized in `CategoryOut`). The objection MEH-2163 recorded here — that a
+ * frontend name→slug table would be an unpinned third copy of the backend
+ * map — is answered by lib/category-taxonomy.js plus
+ * __tests__/CategoryTaxonomyGuard.test.js, which holds that list equal to
+ * backend NAME_TO_SLUG. No consumer indexes the map directly, so none moved.
  *
  * @param {string|{name?: string, slug?: string}|null|undefined} category
  * @returns {string} the registry key, or "" when there is nothing to key on.
  */
 export function categoryGlyphKey(category) {
-  if (typeof category === "string") return category;
-  // MEH-1456 swaps this line to `category?.slug ?? ""` once the glyph map is
-  // re-keyed by slug. Until then `name` is the key the backend already exposes.
-  return category?.name ?? "";
+  // MEH-3076: the key is the slug (MEH-1456's swap). A bare string or a row
+  // with no slug is matched to its slug through the taxonomy by name; a
+  // category the taxonomy does not know keys on nothing (fallback glyph).
+  return taxonomyEntry(category)?.slug ?? "";
 }
 
 /**
@@ -158,8 +164,8 @@ export function categoryGlyphKey(category) {
  */
 export function resolveCategoryGlyph(category) {
   const key = categoryGlyphKey(category);
-  if (key && Object.hasOwn(CATEGORY_ICONS, key)) {
-    return { glyph: CATEGORY_ICONS[key], isFallback: false };
+  if (key && Object.hasOwn(CATEGORY_GLYPHS, key)) {
+    return { glyph: CATEGORY_GLYPHS[key], isFallback: false };
   }
   return { glyph: CATEGORY_GLYPH_FALLBACK, isFallback: true };
 }

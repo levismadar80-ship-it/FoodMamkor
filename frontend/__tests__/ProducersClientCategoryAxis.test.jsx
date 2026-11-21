@@ -95,7 +95,7 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/components/CategoryIcons", () => {
   const Glyph = (p) => <span data-testid="cat-glyph" {...p} />;
   return {
-    CATEGORY_ICONS: { "בשר": Glyph, "דבש": Glyph },
+    CATEGORY_GLYPHS: { meat: Glyph, honey: Glyph },
     Meat: Glyph,
     FishSimple: Glyph,
     Cheese: Glyph,

@@ -168,29 +168,30 @@ export function OliveOil(props) {
 export { FishSimple, Cheese, Bread };
 
 /**
- * CATEGORY_ICONS — canonical DB category name → glyph component. Keys are the
- * exact strings from backend/seed_data.py CATEGORIES (18 rows, post-MEH-927).
- * A category with no key here has no glyph (add its row when the taxonomy grows).
+ * CATEGORY_GLYPHS — category slug → glyph component (MEH-3076: keyed by the
+ * stable slug of lib/category-taxonomy.js, no longer by the Hebrew DB name).
+ * lib/category-registry.js derives the old name-keyed CATEGORY_ICONS from it.
+ * CategoryTaxonomyGuard.test.js fails when a taxonomy slug has no glyph here.
  */
-export const CATEGORY_ICONS = {
-  "בשר": Meat,
-  "דגים": FishSimple,
-  "ירקות": Carrot,
-  "פירות": Apple,
-  "חלב וגבינות": Cheese,
-  "לחמים ואפייה": Bread,
-  "ביצים": Egg,
-  "דבש": Hive,
-  "שמנים": OliveOil,
-  "מותססים וכבושים": Jar,
-  "מוצרים מוכנים": CookingPot,
-  "תבלינים וצמחי תיבול": Pepper,
-  "יין, בירה ומשקאות": Wine,
-  "שוקולד וממתקים בוטיק": Chocolate,
-  "סבונים טבעיים": HandSoap,
-  "קוסמטיקה טבעית": Perfume,
-  "צמחי מרפא ותוספים": FlowerLotus,
-  "נרות וארומה": Candle,
+export const CATEGORY_GLYPHS = {
+  meat: Meat,
+  fish: FishSimple,
+  veg: Carrot,
+  fruit: Apple,
+  dairy: Cheese,
+  bread: Bread,
+  eggs: Egg,
+  honey: Hive,
+  oil: OliveOil,
+  ferments: Jar,
+  prepared: CookingPot,
+  spices: Pepper,
+  drinks: Wine,
+  chocolate: Chocolate,
+  care: HandSoap,
+  cosmetics: Perfume,
+  herbs: FlowerLotus,
+  candles: Candle,
   // MEH-3401: roasteries only, so the bean, not a café cup.
-  "קפה": CoffeeBean,
+  kph: CoffeeBean,
 };
