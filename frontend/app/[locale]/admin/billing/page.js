@@ -12,6 +12,7 @@ import { formatEventDate } from "@/lib/format-date";
 import { SkeletonTiles } from "@/components/Skeleton";
 import BackLink from "@/components/ui/BackLink";
 import BillingYearCard from "@/components/admin/BillingYearCard";
+import BillingCsvButton from "@/components/admin/BillingCsvButton";
 
 /**
  * Module:   admin/billing/page
@@ -22,8 +23,9 @@ import BillingYearCard from "@/components/admin/BillingYearCard";
  * Touches:  GET /admin/billing/overview (read only).
  * Does NOT: charge, change a business's state or hold a price. Every number
  *           comes from the server; the price list is ADR-042 / lib/pricing.js.
- *           No actions yet — the «needs attention» queue, manual corrections
- *           and export arrive with the billing stage (MEH-3180).
+ *           No actions yet — the «needs attention» queue and manual
+ *           corrections arrive with the billing stage (MEH-3180). The one
+ *           action is a CSV of a month (MEH-3189, read only).
  * Related:  backend/app/services/billing_summary.py · admin/AdminLayoutClient.jsx
  *           (the «חיוב» nav entry).
  * History:  MEH-3182 (creation, 2026-11-14); the six-month history (shadow
@@ -141,6 +143,10 @@ function MonthCard({ data }) {
           </dd>
         </div>
       </dl>
+      {/* MEH-3189: the month as a file for the bookkeeper. */}
+      <div className="mt-4">
+        <BillingCsvButton month={data.month} />
+      </div>
     </section>
   );
 }
@@ -193,6 +199,11 @@ function HistoryMonth({ past, threshold }) {
     <li className="px-4 py-3 text-sm" data-testid="admin-billing-history-month">
       <p className="font-medium text-text">{monthName(past.month, locale)}</p>
       <p className="mt-0.5 text-fg-muted">{line}</p>
+      {past.businesses > 0 ? (
+        <div className="mt-2">
+          <BillingCsvButton month={past.month} />
+        </div>
+      ) : null}
     </li>
   );
 }

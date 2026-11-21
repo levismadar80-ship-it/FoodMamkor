@@ -2799,7 +2799,25 @@
       "history_lead": "What would have happened each month if billing had been on. None of it was charged.",
       "history_line": "{over, plural, one {# business would have paid} other {# businesses would have paid}}, <amount></amount> in total",
       "history_nobody": "No business reached <amount></amount>",
-      "history_none": "No bookings through the site"
+      "history_none": "No bookings through the site",
+      "csv": {
+        "button": "Export month as CSV",
+        "error": "The export failed. You can try again.",
+        "headers": [
+          "Month",
+          "Business",
+          "ID",
+          "Bookings",
+          "Bookings value (₪)",
+          "Reached the amount",
+          "Fee by price list (₪)",
+          "Billing state"
+        ],
+        "yes": "Yes",
+        "no": "No",
+        "phase_on": "Billing is on",
+        "phase_off": "Billing is off, nothing charged"
+      }
     },
     "analytics": {
       "title": "Analytics",
