@@ -13319,6 +13319,18 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "required": [
@@ -13440,6 +13452,17 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "precision": {
             "default": "exact",
@@ -13587,6 +13610,17 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "required": [
@@ -13768,6 +13802,18 @@
               }
             ],
             "title": "Pickup Days"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           }
         },
         "title": "ProducerLocationUpdate",
@@ -19206,6 +19252,17 @@
             "format": "date-time",
             "title": "Pickup End",
             "type": "string"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "pickup_start": {
             "format": "date-time",

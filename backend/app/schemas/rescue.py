@@ -291,6 +291,9 @@ class RescueOfferDetailOut(RescueOfferPublicOut):
     producer: RescueProducerDetail
     lat: float | None = None
     lng: float | None = None
+    # MEH-3593: «הוראות איסוף» of the bag's pickup point
+    # (producer_locations.pickup_note); None = none written.
+    pickup_note: str | None = None
 
 
 class RescueOrderCreatedOut(RescueOrderOut):

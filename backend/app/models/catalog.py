@@ -341,6 +341,10 @@ class ProducerLocation(Base):
     order_cutoff_day = Column(String(10), nullable=True)
     order_cutoff_time = Column(String(5), nullable=True)
     phone = Column(String(20), nullable=True)
+    # MEH-3593: «הוראות איסוף» for this point («נכנסים מהכניסה האחורית»). On
+    # the address, not on a bag or an order, so every pickup here reads one
+    # text. NULL = none; the schema stores "" as NULL.
+    pickup_note = Column(Text, nullable=True)
     is_primary = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )

@@ -203,6 +203,19 @@ describe("RescueOfferPage — an available bag", () => {
   });
 });
 
+describe("RescueOfferPage — pickup note (MEH-3593)", () => {
+  it("no note → no line", async () => {
+    await renderWith(offer({ pickup_note: null }));
+    expect(screen.queryByTestId("rescue-offer-pickup-note")).toBeNull();
+  });
+  it("a note → one line with it", async () => {
+    await renderWith(offer({ pickup_note: "דלת אחורית" }));
+    expect(screen.getByTestId("rescue-offer-pickup-note").textContent).toBe(
+      lookup("rescue.offer_page.pickup_note").replace("{note}", "דלת אחורית"),
+    );
+  });
+});
+
 describe("RescueOfferPage — the cover", () => {
   it("no photo → no cover band at all; share sits beside the «סל הפתעה» chip", async () => {
     await renderWith(offer());

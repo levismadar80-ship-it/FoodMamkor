@@ -9,7 +9,7 @@
 
 **Routes**
 * `frontend/app/[locale]/rescue/`
-* `frontend/app/[locale]/rescue/[offerId]/` — דף משלו לכל סל: מחיר מול שווי, איסוף, מפה, מה בדרך כלל בסל, אלרגנים, איך זה עובד, ביטול, שריון. קורא `GET /rescue/offers/{id}`, שמחזיר גם סל שאזל / בוטל / נסגר עם `state` (MEH-3586). השורה ב-`/rescue` והכרטיס בבית פותחים אותו.
+* `frontend/app/[locale]/rescue/[offerId]/` — דף משלו לכל סל: מחיר מול שווי, איסוף, מפה, מה בדרך כלל בסל, אלרגנים, איך זה עובד, ביטול, שריון. קורא `GET /rescue/offers/{id}`, שמחזיר גם סל שאזל / בוטל / נסגר עם `state` (MEH-3586). השורה ב-`/rescue` והכרטיס בבית פותחים אותו. «הוראות איסוף» של נקודת האיסוף (`producer_locations.pickup_note`, נערכות עם הכתובת במיקומים) מופיעות שם מתחת לכתובת, כשיש (MEH-3593).
 * `frontend/app/[locale]/producer/dashboard/rescue/` ‏(+ `counter-card`)
 
 **קבצים מרכזיים**
@@ -26,6 +26,7 @@
 * `tests/test_rescue.py` · `tests/test_rescue_pilot.py` · `tests/test_rescue_migration.py`
 * `tests/test_meh2943_rescue_idor.py` — בדיקת בעלות.
 * `tests/test_meh3586_rescue_offer_detail.py` · `frontend/__tests__/RescueOfferPage.test.jsx` — דף הסל: ארבעת המצבים ומה מוסתר ב-404.
+* `tests/test_meh3593_pickup_note.py` — «הוראות איסוף» על נקודת האיסוף: שמירה, ניקוי, PUT בלי השדה לא מוחק, עסק אחר לא כותב, הדף והמייל (MEH-3593).
 * `tests/test_meh2679_rescue_utc_times.py` · `tests/test_meh2808_rescue_bag_window.py` — חלון האיסוף.
 * `frontend/__tests__/AdminRescueMetrics.test.jsx` — מספרי הפיילוט באדמין.
 * `tests/test_meh2703_rescue_donated.py` · `tests/test_meh2716_rescue_saving_badge.py` · `tests/test_meh2752_rescue_allergens.py`
