@@ -211,7 +211,7 @@ class ProductVariant(Base):
 
     `price_agorot` NULL = the product's own price. `in_stock` false = shown
     disabled; when every variant is out, the product is out
-    (services/product_variants.py::orderable_variants).
+    (services/product_variants.py::has_stock).
     """
 
     __tablename__ = "product_variants"

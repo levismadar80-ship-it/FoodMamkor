@@ -38,7 +38,7 @@ import RecipeCard from "@/components/public/RecipeCard";
 // as an overlay — no route, no marketplace.
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
 import RowOrderControl from "@/components/public/RowOrderControl";  // MEH-3617
-import { needsChoice, variantNamesLine } from "@/lib/product-variants";  // MEH-3617
+import { variantNamesLine, variantsOf } from "@/lib/product-variants";  // MEH-3617
 import { shekelsText } from "@/lib/product-orders";
 import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
@@ -598,7 +598,7 @@ export default function ProducerSections({
                         <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{product.description}</p>
                       )}
                       {/* MEH-3617: the sizes or flavours, by name. */}
-                      {needsChoice(product) && (
+                      {variantsOf(product).length > 0 && (
                         <p className="text-xs text-fg-muted mt-0.5" data-testid="product-variant-names">{variantNamesLine(product)}</p>
                       )}
                       {/* Same price cell/position for every card. MEH-1168 P1:

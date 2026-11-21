@@ -9,7 +9,7 @@
  *           (backend/app/services/product_variants.py); the cart only mirrors
  *           it so the bar shows the same sum.
  * Related:  lib/order-cart.js (picks keyed by lineKey), components/public/
- *           VariantPicker.jsx (the choice), components/dashboard/
+ *           RowOrderControl.jsx (the choice), components/dashboard/
  *           ProductVariantsField.jsx (the owner's list)
  * History:  MEH-3617 (creation)
  */
@@ -67,21 +67,27 @@ export function variantFor(product, variantId) {
 }
 
 /**
- * The lowest price on a business page product (shekels), counting each
- * variant at its own price or, without one, at the product's. Null when the
- * product has fewer than two variants (its own price is shown as before) or
- * no number at all.
+ * The price a business page product shows when it has variants (shekels):
+ * with one variant, that variant's price; with two or more, the lowest of the
+ * ones in stock (all of them when none is), and `from` when they differ, so
+ * the page reads «מ-X ₪». A variant without a price counts at the product's.
+ * Null without variants (the product's own price is shown as before) or when
+ * there is no number at all (MEH-3617).
  * @param {any} product
- * @returns {number | null}
+ * @returns {{ shekels: number, from: boolean } | null}
  */
-export function lowestVariantShekels(product) {
-  const variants = variantsOf(/** @type {any} */ (product));
-  if (variants.length < 2) return null;
+export function variantPrice(product) {
+  const all = variantsOf(product);
+  if (all.length === 0) return null;
+  const inStock = all.filter((v) => v.in_stock);
+  const variants = inStock.length ? inStock : all;
   const base = product.price_min === null || product.price_min === undefined ? null : Number(product.price_min);
-  const prices = variants
+  const prices = /** @type {number[]} */ (variants
     .map((v) => (typeof v.price_agorot === "number" ? v.price_agorot / 100 : base))
-    .filter((p) => typeof p === "number" && Number.isFinite(p));
-  return prices.length ? Math.min(.../** @type {number[]} */ (prices)) : null;
+    .filter((p) => typeof p === "number" && Number.isFinite(p)));
+  if (!prices.length) return null;
+  const low = Math.min(...prices);
+  return { shekels: low, from: low !== Math.max(...prices) };
 }
 
 /**

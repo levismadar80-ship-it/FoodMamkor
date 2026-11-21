@@ -44,7 +44,11 @@ from app.models.product_orders import (
     ProductOrder,
     ProductOrderItem,
 )
-from app.schemas.product_order_buy import OrderCreateIn, OrderQuoteIn
+from app.schemas.product_order_buy import (
+    DUPLICATE_PRODUCT_DETAIL,
+    OrderCreateIn,
+    OrderQuoteIn,
+)
 from app.schemas.product_orders import MAX_MIN_ORDER_AGOROT
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
@@ -217,6 +221,7 @@ def order_lines(
         raise _conflict(PRODUCT_GONE_DETAIL)
     by_id: dict[Any, Product] = {p.id: p for p in products}
     lines = []
+    seen: set[tuple[Any, Any]] = set()
     for line in body.items:  # the buyer's own order of lines
         product = by_id[line.product_id]
         # MEH-3617: which size or flavour, and its price — never the client's.
@@ -226,6 +231,16 @@ def order_lines(
             raise HTTPException(
                 status_code=refused.status_code, detail=refused.detail
             ) from refused
+        # The schema compares the ids as sent; a product's single variant can
+        # be sent bare and by id, so twins are compared on what was resolved
+        # (else one line slips past the per-line qty cap).
+        resolved = (product.id, variant.id if variant is not None else None)
+        if resolved in seen:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=DUPLICATE_PRODUCT_DETAIL,
+            )
+        seen.add(resolved)
         low = _agorot(product.price_min)  # type: ignore[arg-type]
         high = _agorot(product.price_max) if product.price_max is not None else low  # type: ignore[arg-type]
         price, is_range = product_variants.unit_price(low, high, variant)

@@ -17,7 +17,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.limits import MAX_SMALL_LIST, cap_list
 from app.models.catalog import VARIANT_NAME_MAX
-from app.schemas.product_orders import MAX_MIN_ORDER_AGOROT
+
+VARIANT_PRICE_MIN_AGOROT = 100
+VARIANT_PRICE_MAX_AGOROT = 1_000_000
 
 VARIANT_NAME_DETAIL = "צריך לכתוב שם לאפשרות"
 DUPLICATE_VARIANT_DETAIL = "אותה אפשרות מופיעה פעמיים"
@@ -36,7 +38,11 @@ class ProductVariantIn(BaseModel):
     id: UUID | None = None
     name: str = Field(..., max_length=VARIANT_NAME_MAX)
     # Agorot. None = the product's own price.
-    price_agorot: int | None = Field(default=None, ge=0, le=MAX_MIN_ORDER_AGOROT)
+    # The product's own bounds (ProductCreate.price_min: 1..10,000 ₪), so a
+    # variant cannot be free or priced past what a product may be.
+    price_agorot: int | None = Field(
+        default=None, ge=VARIANT_PRICE_MIN_AGOROT, le=VARIANT_PRICE_MAX_AGOROT
+    )
     in_stock: bool = True
 
     @field_validator("name")

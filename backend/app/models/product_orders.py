@@ -423,6 +423,8 @@ class ProductOrderItem(Base):
         ),
         Index("ix_product_order_items_order_id", "order_id"),
         Index("ix_product_order_items_product_id", "product_id"),
+        # MEH-3617: deleting a variant (or its product) SETs NULL here.
+        Index("ix_product_order_items_variant_id", "variant_id"),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

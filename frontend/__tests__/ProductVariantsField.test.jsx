@@ -9,7 +9,7 @@ vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn() } }));
 vi.mock("@phosphor-icons/react", async (importOriginal) => ({ ...(await importOriginal()), ArrowUp: () => <span />, ArrowDown: () => <span />, Trash: () => <span /> }));
 
 import api from "@/lib/api";
-import ProductVariantsField, { MAX_VARIANTS, bodyFrom, rowsFrom } from "@/components/dashboard/ProductVariantsField";
+import ProductVariantsField, { MAX_VARIANTS, bodyFrom, hasBadPrice, rowsFrom } from "@/components/dashboard/ProductVariantsField";
 import { buildJsonLd } from "@/lib/seo";
 
 const S = "05000000-0000-4000-8000-000000000005";
@@ -58,6 +58,20 @@ describe("ProductVariantsField (MEH-3617)", () => {
     fireEvent.click(screen.getByTestId("product-variant-save"));
     await waitFor(() => expect(api.put).toHaveBeenCalled());
     expect(await screen.findByText("אפשר להוסיף עד 10 אפשרויות למוצר אחד.")).toBeTruthy();
+  });
+
+  it("a price that is not a number in 1..10,000 is refused before any request", () => {
+    expect(hasBadPrice([{ key: "a", id: null, name: "x", price: "abc", in_stock: true }])).toBe(true);
+    expect(hasBadPrice([{ key: "a", id: null, name: "x", price: "0", in_stock: true }])).toBe(true);
+    expect(hasBadPrice([{ key: "a", id: null, name: "x", price: "10001", in_stock: true }])).toBe(true);
+    expect(hasBadPrice([{ key: "a", id: null, name: "x", price: "12,5", in_stock: true }])).toBe(false);
+    expect(hasBadPrice([{ key: "a", id: null, name: "x", price: "", in_stock: true }])).toBe(false);
+    expect(bodyFrom([{ key: "a", id: null, name: "x", price: "12,5", in_stock: true }]).variants[0].price_agorot).toBe(1250);
+    render(<ProductVariantsField productId={P} variants={[{ id: S, name: "x", price_agorot: null, in_stock: true }]} onSaved={() => {}} />);
+    fireEvent.change(screen.getByLabelText("price_label"), { target: { value: "abc" } });
+    fireEvent.click(screen.getByTestId("product-variant-save"));
+    expect(screen.getByText("price_invalid")).toBeTruthy();
+    expect(api.put).not.toHaveBeenCalled();
   });
 
   it("at the cap, «הוספת אפשרות» gives way to the cap line", () => {

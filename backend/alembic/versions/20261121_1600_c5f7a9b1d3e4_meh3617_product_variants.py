@@ -69,9 +69,15 @@ def upgrade() -> None:
         ["id"],
         ondelete="SET NULL",
     )
+    # Deleting a variant (or its product, by CASCADE) SETs NULL here; without
+    # an index that is a scan of every order line.
+    op.create_index(
+        "ix_product_order_items_variant_id", "product_order_items", ["variant_id"]
+    )
 
 
 def downgrade() -> None:
+    op.drop_index("ix_product_order_items_variant_id", table_name="product_order_items")
     op.drop_constraint(
         "product_order_items_variant_id_fkey", "product_order_items", type_="foreignkey"
     )

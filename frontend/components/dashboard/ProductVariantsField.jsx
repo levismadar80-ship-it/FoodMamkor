@@ -44,6 +44,33 @@ export function rowsFrom(variants) {
   }));
 }
 
+// The product's own price bounds (ProductCreate.price_min), as the server holds.
+const PRICE_MIN = 1;
+const PRICE_MAX = 10000;
+
+/** A typed price in shekels, or NaN when it is not one. A comma counts as a point. @param {string} text */
+function shekelsOf(text) {
+  const clean = text.trim().replace(",", ".");
+  const [whole, cents = "", ...rest] = clean.split(".");
+  const digits = (/** @type {string} */ part) => [...part].every((c) => c >= "0" && c <= "9");
+  const ok = whole !== "" && digits(whole) && digits(cents) && cents.length <= 2 && rest.length === 0;
+  return ok ? Number(clean) : Number.NaN;
+}
+
+/**
+ * Whether a named row carries a price that would not save: not a number, or
+ * outside 1..10,000 ₪. Checked before the request, so «12,5» or «abc» is
+ * never sent as «the product's price».
+ * @param {Row[]} rows
+ */
+export function hasBadPrice(rows) {
+  return rows.some((r) => {
+    if (!r.name.trim() || r.price.trim() === "") return false;
+    const p = shekelsOf(r.price);
+    return !(p >= PRICE_MIN && p <= PRICE_MAX);
+  });
+}
+
 /** The request body: blank rows dropped, a price in agorot or null. @param {Row[]} rows */
 export function bodyFrom(rows) {
   return {
@@ -52,7 +79,7 @@ export function bodyFrom(rows) {
       .map((r) => ({
         ...(r.id ? { id: r.id } : {}),
         name: r.name.trim(),
-        price_agorot: r.price.trim() === "" ? null : Math.round(Number(r.price) * AGOROT),
+        price_agorot: r.price.trim() === "" ? null : Math.round(shekelsOf(r.price) * AGOROT),
         in_stock: r.in_stock,
       })),
   };
@@ -80,6 +107,10 @@ export default function ProductVariantsField({ productId, variants = [], onSaved
   });
   const add = () => setRows((rs) => [...rs, { key: `new-${Date.now()}-${rs.length}`, id: null, name: "", price: "", in_stock: true }]);
   const save = async () => {
+    if (hasBadPrice(rows)) {
+      setError(t("price_invalid"));
+      return;
+    }
     setSaving(true);
     setError("");
     try {

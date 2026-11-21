@@ -179,10 +179,40 @@ def test_one_variant_out_of_stock_the_others_still_order(client, db, flag_on, se
     assert ok.status_code == 201, ok.text
 
 
-def test_all_variants_out_means_the_product_is_out(client, db, flag_on):
+def test_all_variants_out_means_the_product_is_out(client, db, flag_on, sent):
     shop = Shop(db)
-    _variants(db, shop.bread, ("קטנה", 2000, False), ("גדולה", 3500, False))
+    small, _ = _variants(db, shop.bread, ("קטנה", 2000, False), ("גדולה", 3500, False))
     assert _menu_bread(client, shop)["in_stock"] is False
+    res = _order(
+        client, shop, sent,
+        [{"product_id": str(shop.bread.id), "variant_id": str(small.id), "qty": 1}],
+    )
+    assert res.status_code == 409
+    assert db.query(ProductOrder).count() == 0
+
+
+def test_a_single_sold_out_variant_is_refused(client, db, flag_on, sent):
+    shop = Shop(db)
+    _variants(db, shop.bread, ("גדולה", 3500, False))
+    res = _order(client, shop, sent, [{"product_id": str(shop.bread.id), "qty": 1}])
+    assert res.status_code == 409
+    assert res.json()["detail"] == pv.VARIANT_GONE_DETAIL
+
+
+def test_a_single_variant_sent_bare_and_by_id_is_one_line_not_two(
+    client, db, flag_on, sent
+):
+    """Both resolve to the same variant, so they are twins (each at the
+    per-line maximum would otherwise double it)."""
+    shop = Shop(db)
+    (big,) = _variants(db, shop.bread, ("גדולה", 3500, True))
+    items = [
+        {"product_id": str(shop.bread.id), "qty": 1},
+        {"product_id": str(shop.bread.id), "variant_id": str(big.id), "qty": 1},
+    ]
+    res = _order(client, shop, sent, items)
+    assert res.status_code == 422
+    assert db.query(ProductOrder).count() == 0
 
 
 # --- price comes from the server ----------------------------------------------
@@ -190,7 +220,9 @@ def test_all_variants_out_means_the_product_is_out(client, db, flag_on):
 
 def test_a_client_price_is_never_read(client, db, flag_on, sent):
     """The request has no price field; one sent anyway is refused and nothing
-    is written, and the stored price is the variant's."""
+    is written (that half is the schema's extra=forbid, older than MEH-3617).
+    The evidence for this PR is the honest half: the stored price is the
+    variant's, not the product's 2800."""
     shop = Shop(db)
     (_, big) = _variants(db, shop.bread, ("קטנה", 2000, True), ("גדולה", 3500, True))
     line = {"product_id": str(shop.bread.id), "variant_id": str(big.id), "qty": 1}
@@ -300,6 +332,26 @@ def test_an_id_of_another_products_variant_is_a_new_row_not_a_move(client, db):
     assert res.json()["variants"][0]["id"] != str(cheese_half.id)
     db.refresh(cheese_half)
     assert cheese_half.product_id == shop.cheese.id
+    assert (cheese_half.name, cheese_half.price_agorot) == ("חצי", 5000)
+
+
+def test_an_imported_draft_is_the_admins_not_the_owners(client, db):
+    """The owner gets 404 on a draft product (MEH-2312), the admin writes it."""
+    shop = Shop(db)
+    shop.bread.is_draft = True
+    db.commit()
+    assert _put(client, shop.bread.id, shop.headers, [{"name": "קטנה"}]).status_code == 404
+    assert db.query(ProductVariant).count() == 0
+    admin = make_user(db, role="admin", email=f"a{uuid.uuid4().hex[:8]}@example.com")
+    assert _put(client, shop.bread.id, auth_header(admin), [{"name": "קטנה"}]).status_code == 200
+
+
+@pytest.mark.parametrize("price", [0, 99, 1_000_001])
+def test_a_variant_price_has_the_products_bounds(client, db, price):
+    shop = Shop(db)
+    res = _put(client, shop.bread.id, shop.headers, [{"name": "קטנה", "price_agorot": price}])
+    assert res.status_code == 422
+    assert db.query(ProductVariant).count() == 0
 
 
 # --- limits -------------------------------------------------------------------

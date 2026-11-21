@@ -81,7 +81,7 @@ vi.mock("@/components/public/ProductFacts", () => ({ default: () => null }));
 
 import { pickedLine, pickedTotalAgorot, keepOrderable, rowEstimateAgorot } from "@/lib/order-cart";
 import { quoteBody } from "@/lib/order-sheet";
-import { lineKey, lowestVariantShekels, orderLineName, splitKey } from "@/lib/product-variants";
+import { lineKey, orderLineName, splitKey, variantPrice } from "@/lib/product-variants";
 
 const A = "0a000000-0000-4000-8000-00000000000a";
 const S = "05000000-0000-4000-8000-000000000005";
@@ -138,9 +138,14 @@ describe("business page rows with variants (MEH-3617)", () => {
     expect(picksOf()).toEqual({ [A]: 1 });
   });
 
-  it("1 variant: no choice is shown and the line names that variant", () => {
+  it("1 variant: no choice is shown, the row names it at its price, and the line names it", () => {
     render(<Page page={pageProduct([pv(S, "גדולה", 7000)])} menu={menuProduct([mv(S, "גדולה", 7000)])} />);
-    expect(screen.queryByTestId("product-variant-names")).toBeNull();
+    // The product's own price is 60; the order is priced at the variant's 70,
+    // so the page shows 70 and the name, never 60 alone (rule-5a finding).
+    expect(screen.getByTestId("product-variant-names").textContent).toBe("גדולה");
+    expect(screen.queryByTestId("product-price-from")).toBeNull();
+    expect(screen.getAllByText(/70/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/^60/)).toBeNull();
     expect(screen.queryByTestId("order-choose")).toBeNull();
     fireEvent.click(screen.getByTestId("order-add"));
     expect(picksOf()).toEqual({ [lineKey(A, S)]: 1 });
@@ -233,10 +238,25 @@ describe("cart sums and lines with variants (MEH-3617)", () => {
     expect(rowEstimateAgorot(menuProduct([], { price_is_estimate: true, price_max_agorot: 7000 }))).toBe(7000);
   });
 
-  it("«מ-X» is the lowest variant price, a variant without one counting at the product's", () => {
-    expect(lowestVariantShekels(pageProduct([pv(S, "a", 7000), pv(L, "b", null)]))).toBe(60);
-    expect(lowestVariantShekels(pageProduct([pv(S, "a", 4000), pv(L, "b", null)]))).toBe(40);
-    expect(lowestVariantShekels(pageProduct([pv(S, "a", 4000)]))).toBeNull();
+  it("«מ-X» is the lowest in-stock variant price, a variant without one counting at the product's", () => {
+    expect(variantPrice(pageProduct([]))).toBeNull();
+    expect(variantPrice(pageProduct([pv(S, "a", 7000), pv(L, "b", null)]))).toEqual({ shekels: 60, from: true });
+    expect(variantPrice(pageProduct([pv(S, "a", 4000), pv(L, "b", null)]))).toEqual({ shekels: 40, from: true });
+    // One variant: its own price, no «מ-».
+    expect(variantPrice(pageProduct([pv(S, "a", 4000)]))).toEqual({ shekels: 40, from: false });
+    // All the same price: no «מ-».
+    expect(variantPrice(pageProduct([pv(S, "a", null), pv(L, "b", null)]))).toEqual({ shekels: 60, from: false });
+    // A sold-out cheaper one does not set the price, unless all are sold out.
+    expect(variantPrice(pageProduct([pv(S, "a", 3000, false), pv(L, "b", 5000)]))).toEqual({ shekels: 50, from: false });
+    expect(variantPrice(pageProduct([pv(S, "a", 3000, false), pv(L, "b", 5000, false)]))).toEqual({ shekels: 30, from: true });
+  });
+
+  it("a bare key on a product that has variants is dropped, so no twin line is sent", () => {
+    const one = menuProduct([mv(S, "x", 4500)]);
+    const byId = new Map([[one.id, one]]);
+    expect(pickedLine(byId, A)).toBeNull();
+    expect(pickedLine(byId, lineKey(A, S))?.unitAgorot).toBe(4500);
+    expect(keepOrderable({ [A]: 2, [lineKey(A, S)]: 1 }, [one])).toEqual({ [lineKey(A, S)]: 1 });
   });
 
   it("an order line reads «{product} · {variant}»", () => {

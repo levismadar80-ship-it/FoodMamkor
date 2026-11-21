@@ -17595,8 +17595,8 @@
           "price_agorot": {
             "anyOf": [
               {
-                "maximum": 10000000.0,
-                "minimum": 0.0,
+                "maximum": 1000000.0,
+                "minimum": 100.0,
                 "type": "integer"
               },
               {

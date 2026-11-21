@@ -99,7 +99,7 @@ function unitPriceAgorot(product) {
 /**
  * What one cart line is, or null when it can no longer be ordered: the
  * product left the menu or sold out, or the variant did (MEH-3617). A line
- * of a product with two or more variants must name one.
+ * of a product with variants must name one.
  * @param {Map<string, MenuProduct>} byId
  * @param {string} key
  * @returns {{ product: MenuProduct, variant: MenuProduct["variants"][number] | null, unitAgorot: number } | null}
@@ -111,7 +111,10 @@ export function pickedLine(byId, key) {
   if (variantsOf(product).length === 0) {
     return variantId ? null : { product, variant: null, unitAgorot: unitPriceAgorot(product) };
   }
-  const variant = variantFor(product, variantId);
+  // A bare key on a product that has variants is dropped: the row writes
+  // `{product}~{variant}` even for a single one, so a bare key is a pick made
+  // before the owner added variants, and keeping it would send a twin line.
+  const variant = variantId ? variantFor(product, variantId) : null;
   if (!variant || !variant.in_stock) return null;
   return { product, variant, unitAgorot: variant.price_agorot };
 }

@@ -36,7 +36,7 @@ import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
 import { siteOgImageUrl } from "@/lib/og-site-image";
-import { needsChoice, variantsOf } from "@/lib/product-variants";  // MEH-3617
+import { variantsOf } from "@/lib/product-variants";  // MEH-3617
 export { SITE_URL };
 
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
@@ -334,10 +334,11 @@ function buildOfferCatalog(producer, locale = "he") {
 
   const itemListElement = ordered
     .filter((p) => p?.name?.trim())
-    .slice(0, OFFER_CATALOG_MAX)
-    // MEH-3617: a product with two or more sizes or flavours is one Offer per
-    // variant, each named «{product} · {variant}» at its own price.
-    .flatMap((p) => (needsChoice(p) ? variantsOf(p).map((v) => variantOffer(p, v)) : [productOffer(p)]));
+    // MEH-3617: a product with sizes or flavours is one Offer per variant,
+    // each named «{product} · {variant}» at its own price. The cap counts
+    // offers, so it is taken after the variants are spread.
+    .flatMap((p) => (variantsOf(p).length ? variantsOf(p).map((v) => variantOffer(p, v)) : [productOffer(p)]))
+    .slice(0, OFFER_CATALOG_MAX);
 
   if (itemListElement.length === 0) return null;
   return {
