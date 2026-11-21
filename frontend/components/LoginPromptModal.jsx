@@ -85,11 +85,14 @@ export default function LoginPromptModal({
   // Read through a ref: callers pass a new arrow every render, and the
   // open-effect below must not re-run (and re-focus «היכנסו») on each one —
   // a re-render from the auth store would pull focus off the Google button.
+  // Refreshed in an effect, not during render (react-hooks/refs).
   const dismissRef = useRef(() => {});
-  dismissRef.current = () => {
-    trackEvent("login_prompt_action", { reason, action: "dismiss" });
-    onCloseProp();
-  };
+  useEffect(() => {
+    dismissRef.current = () => {
+      trackEvent("login_prompt_action", { reason, action: "dismiss" });
+      onCloseProp();
+    };
+  });
   const onClose = useCallback(() => dismissRef.current(), []);
   const handleSignedIn = () => {
     trackEvent("login_prompt_action", { reason, action: "google" });
