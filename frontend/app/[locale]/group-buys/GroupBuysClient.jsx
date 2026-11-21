@@ -21,6 +21,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import HubAlertHint from "@/components/HubAlertHint";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { parseNaiveUtc } from "@/lib/dates";
+import StruckPrice from "@/components/ui/StruckPrice";
 
 // MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
 // this page's own MEH-797 photo retired so a tab switch never swaps images.
@@ -102,9 +103,7 @@ function GroupBuyCard({ gb }) {
           <span dir="ltr" className="text-2xl font-bold text-primary">
             {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
           </span>
-          <span dir="ltr" className="text-sm text-fg-muted line-through">
-            {formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
-          </span>
+          <StruckPrice className="text-sm">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</StruckPrice>
           {gb.unit && <span className="text-xs text-fg-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
         </div>
 
