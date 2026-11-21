@@ -137,6 +137,7 @@ left in v1" vs "what's planned for v2".
 | `/admin` | Admin dashboard: pending queue counts, stats, health |
 | `/admin/billing` | Billing: per-business results against the ADR-042 threshold (MEH-3180) |
 | `/admin/audit-log` | Admin audit log: who changed what in the admin area (MEH-3306, #4771) |
+| `/admin/copy` | Site copy: every string in `he.json` by group, with the screens that read it, search and a screen filter; read only (MEH-3672) |
 | `/admin/producers` | Businesses: search, approve, request changes, edit |
 | `/admin/producers/new` | Add a business by hand |
 | `/admin/producers/[id]/edit` | Edit a business |
