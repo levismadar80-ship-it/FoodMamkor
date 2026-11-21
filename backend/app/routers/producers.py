@@ -482,7 +482,6 @@ def get_producer_by_slug(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
-    result.noindex = bool(producer.is_test)  # MEH-2952 chunk 3
     attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
     # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
     result.kashrut_certs = [
@@ -551,7 +550,6 @@ def get_producer(
     )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
-    result.noindex = bool(producer.is_test)  # MEH-2952 chunk 3
     attach_takes_site_orders(db, result, producer)  # MEH-3216 stage 5b
     # MEH-1672: badge codes only — the proxy owns the bytes and the URL.
     result.kashrut_certs = [

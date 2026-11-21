@@ -136,6 +136,21 @@ class TestIncludeTestAllowlist:
         assert "backend/app/routers/producers.py" in callers
         assert len(callers) >= 15, callers
 
+    def test_producers_router_keeps_test_rows_in_by_slug_only(self):
+        """The allowlist is per file; inside producers.py the one call must
+        stay in get_producer_by_slug, so count / cities / random cannot pick
+        it up unseen (MEH-2952 chunk 3 review)."""
+        path = BACKEND / "app/routers/producers.py"
+        source = path.read_text("utf-8")
+        lines = include_test_calls(source)
+        fn = next(
+            n
+            for n in ast.walk(ast.parse(source))
+            if isinstance(n, ast.FunctionDef) and n.name == "get_producer_by_slug"
+        )
+        assert len(lines) == 1, lines
+        assert fn.lineno <= lines[0] <= fn.end_lineno, (lines, fn.lineno)
+
     def test_only_allowlisted_files_keep_test_rows(self):
         offenders = {}
         for path in _py_files(BACKEND / "app", BACKEND / "scripts"):

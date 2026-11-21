@@ -223,11 +223,15 @@ class TestThePage:
         assert "is_test" not in hidden.json()
         assert "is_test" not in ok.json()
 
-    def test_by_slug_still_hides_a_pending_test_row(self, client, db, pair):
+    @pytest.mark.parametrize("change", ["pending", "rejected", "organizer"])
+    def test_by_slug_still_hides_a_non_live_test_row(self, client, db, pair, change):
         # include_test keeps a test row only while it is a live business:
-        # a pending (or organizer) test row stays 404, like any pending row.
+        # a pending, rejected or organizer test row stays 404.
         _, hidden = pair
-        hidden.status = "pending"
+        if change == "organizer":
+            hidden.kind = "organizer"
+        else:
+            hidden.status = change
         db.commit()
         assert client.get(f"/producers/by-slug/{TEST_SLUG}").status_code == 404
 
@@ -238,6 +242,10 @@ class TestThePage:
         seen = client.get(f"/producers/{hidden.id}", headers=auth_header(admin))
         assert seen.status_code == 200, seen.text
         assert seen.json()["noindex"] is True
+        owner = _owner(db, hidden, "meh2952-owner3@example.com")
+        own = client.get(f"/producers/{hidden.id}", headers=auth_header(owner))
+        assert own.status_code == 200, own.text
+        assert own.json()["noindex"] is True
 
     def test_by_id_stranger_404_owner_and_admin_see(self, client, db, pair):
         control, hidden = pair
