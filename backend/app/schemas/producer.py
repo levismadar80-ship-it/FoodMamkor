@@ -714,7 +714,7 @@ class ProducerUpdate(BaseModel):
         return sanitize_text(v, max_length=30) or None
 
     # MEH-3339: the number/label pair is judged on the MERGED state in the
-    # PUT handlers (routers/producer_me.py:reconcile_secondary_phone), not here.
+    # PUT handlers (services/producer_me_writes.py:reconcile_secondary_phone), not here.
 
     @field_validator("whatsapp_group")
     @classmethod

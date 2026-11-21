@@ -336,6 +336,11 @@ PC runner), E2E only on a `run-e2e` PR, the nightly and a manual run (no E2E
 on a push to staging), WebKit weekly (Sunday 02:30 UTC), pytest and vitest 1
 shard. In private mode a PR without `run-e2e` gets no E2E job and no
 `E2E gate` job at all — that is the mode, not a broken trigger.
+**WebKit core blocks (MEH-3153).** `e2e-webkit-core` runs the specs in
+`frontend/e2e/webkit-core.txt` in WebKit (iPhone 13) on every push to staging
+(public mode) and on every `run-e2e` PR (both modes). It is a leg of `E2E gate`
+and votes in `staging_health.py`; the whole-suite WebKit run stays nightly and
+non-voting. Add a spec to the list only after it was green on recent nights.
 In both modes the nightly skips (Chromium, WebKit and `E2E gate`) when the
 newest nightly or manual run on the same staging commit that executed the
 suite was green (MEH-3507); push runs do not count, and any probe error runs it.

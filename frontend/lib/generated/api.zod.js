@@ -59,7 +59,15 @@ export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/
   "start_billing_businesses": /*#__PURE__*/ zod.int(),
   "start_billing_months": /*#__PURE__*/ zod.int(),
   "threshold_agorot": /*#__PURE__*/ zod.int(),
-  "would_pay_total_agorot": /*#__PURE__*/ zod.int()
+  "would_pay_total_agorot": /*#__PURE__*/ zod.int(),
+  "year": /*#__PURE__*/ zod.object({
+  "alert_percent": /*#__PURE__*/ zod.int(),
+  "ceiling_agorot": /*#__PURE__*/ zod.int(),
+  "ceiling_year": /*#__PURE__*/ zod.int(),
+  "income_agorot": /*#__PURE__*/ zod.int(),
+  "percent": /*#__PURE__*/ zod.int(),
+  "year": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('MEH-3189: income from January to the month, against the exempt-dealer ceiling.'))
 })
 
 
@@ -3091,21 +3099,6 @@ export const RevokeVerifiedAdminProducersProducerIdRevokeVerifiedPostResponse = 
 
 
 /**
- * @summary Get Producer Risk Score
- */
-export const GetProducerRiskScoreAdminProducersProducerIdRiskScoreGetResponse = /*#__PURE__*/ zod.object({
-  "reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
-})
-
-
-/**
- * @summary Set Ambassador
- */
-export const SetAmbassadorAdminProducersProducerIdSetAmbassadorPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * Accept base64 JPEG canvas export, upload to Cloudinary, persist URL.
  * @summary Upload Story Card
  */
@@ -6041,28 +6034,6 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
 
 
 /**
- * MEH-970 — per-city approved-producer counts for the /map region control.
- *
- * GROUP BY city over approved producers only. NULL / blank cities are
- * omitted so a chip never lands on an empty map (empty-region guard). Counts
- * are computed live from the DB — never hardcoded (over-claim guard MEH-519).
- * Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
- * The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
- *
- * MEH-1986: the empty-region guard now also covers availability. It existed
- * for blank city names only, so a city whose every producer was on vacation
- * still published a chip — and the catalog behind that chip returns nothing.
- * A city drops out entirely once its last non-vacation producer does.
- * @summary Producers Cities
- */
-export const ProducersCitiesProducersCitiesGetResponseItem = /*#__PURE__*/ zod.object({
-  "city": /*#__PURE__*/ zod.string(),
-  "count": /*#__PURE__*/ zod.int()
-}).check(/*#__PURE__*/ zod.describe('MEH-970 — one row of GET /producers/cities: live approved-producer\ncount for a single city, consumed by the /map region control.'))
-export const ProducersCitiesProducersCitiesGetResponse = /*#__PURE__*/ zod.array(ProducersCitiesProducersCitiesGetResponseItem)
-
-
-/**
  * MEH-159 — lightweight total count for keeping pagination fresh client-side.
  *
  * MEH-1986: applies the catalog's default-hide rule, so this number and the
@@ -7151,6 +7122,20 @@ export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__
   "status": /*#__PURE__*/ zod.string()
 })),
   "total": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * MEH-3561: «הלקוחות שלכם» — one row per customer who ordered.
+ * @summary List Business Customers
+ */
+export const ListBusinessCustomersProducersMeProductOrdersCustomersGetResponse = /*#__PURE__*/ zod.object({
+  "customers": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "last_order_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "name": /*#__PURE__*/ zod.string(),
+  "order_count": /*#__PURE__*/ zod.int(),
+  "phone": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3561: one customer of the business, grouped by phone.')))
 })
 
 

@@ -40,6 +40,12 @@ BASE = "staging"
 # WebKit shadow job is "Playwright E2E (WebKit — shadow, non-blocking)" and is
 # deliberately NOT matched: it carries no vote.
 PLAYWRIGHT_PREFIX = "Playwright E2E (Vercel preview)"
+# MEH-3153: the blocking WebKit core job — "Playwright E2E (WebKit core —
+# blocking)". It votes on its own: the newest run in which IT executed decides
+# its half, and a red there makes staging red. A green there never clears a
+# Chromium red (each half walks back on its own). No such run in the window =
+# no vote, so the window before the job existed reads exactly as before.
+WEBKIT_CORE_PREFIX = "Playwright E2E (WebKit core"
 CONTEXT = "Staging health"
 FIX_LABEL = "fixes-staging-red"
 RUN_WINDOW = 50  # one full window, never paged with varying sizes (CLAUDE.md)
@@ -53,6 +59,23 @@ class Verdict:
 
 
 def decide(runs: list[dict], jobs_of) -> Verdict:
+    """Chromium verdict, then WebKit core can only turn it red (MEH-3153)."""
+    jobs_cache: dict = {}
+
+    def cached(run):
+        key = run.get("id")
+        if key not in jobs_cache:
+            jobs_cache[key] = jobs_of(run)
+        return jobs_cache[key]
+
+    chromium = _decide_prefix(runs, cached, PLAYWRIGHT_PREFIX)
+    webkit = _decide_prefix(runs, cached, WEBKIT_CORE_PREFIX)
+    if webkit.state == "red" and chromium.state != "red":
+        return webkit
+    return chromium
+
+
+def _decide_prefix(runs: list[dict], jobs_of, prefix: str) -> Verdict:
     """runs: newest first, as the API returns them. jobs_of(run) -> job list.
 
     The first run whose Playwright jobs executed decides. A run whose
@@ -63,7 +86,7 @@ def decide(runs: list[dict], jobs_of) -> Verdict:
     for run in runs:
         if run.get("status") != "completed":
             continue
-        pw = [j for j in jobs_of(run) if (j.get("name") or "").startswith(PLAYWRIGHT_PREFIX)]
+        pw = [j for j in jobs_of(run) if (j.get("name") or "").startswith(prefix)]
         ran = [j for j in pw if j.get("conclusion") not in (None, "skipped", "cancelled")]
         # A cancelled shard means part of the suite never ran: the run is not a
         # green and not a red, so it says nothing (fresh review, #4796).
@@ -162,6 +185,9 @@ def self_test() -> int:
     def pw(c, shard=1):
         return {"name": f"{PLAYWRIGHT_PREFIX} {shard}/2", "conclusion": c}
 
+    def core(c):
+        return {"name": "Playwright E2E (WebKit core — blocking)", "conclusion": c}
+
     webkit_red = {"name": "Playwright E2E (WebKit — shadow, non-blocking)", "conclusion": "failure"}
     cases = [
         # name, runs, jobs by run id, expected state
@@ -179,6 +205,15 @@ def self_test() -> int:
          {2: [pw("success"), pw("cancelled", 2)], 1: [pw("failure")]}, "red"),
         ("WebKit shadow red carries no vote", [run(1)], {1: [pw("success"), webkit_red]}, "green"),
         ("only skips in the window = unknown", [run(1)], {1: [pw("skipped")]}, "unknown"),
+        # MEH-3153 — the blocking WebKit core job votes on its own half.
+        ("WebKit core red makes staging red", [run(1)], {1: [pw("success"), core("failure")]}, "red"),
+        ("WebKit core red on a push where Chromium skipped", [run(2), run(1)],
+         {2: [pw("skipped"), core("failure")], 1: [pw("success")]}, "red"),
+        ("WebKit core green does not clear a Chromium red", [run(2), run(1)],
+         {2: [pw("skipped"), core("success")], 1: [pw("failure"), core("success")]}, "red"),
+        ("newer WebKit core green clears its older red", [run(2), run(1)],
+         {2: [pw("skipped"), core("success")], 1: [pw("success"), core("failure")]}, "green"),
+        ("no WebKit core run in the window = no vote", [run(1)], {1: [pw("success")]}, "green"),
         ("no runs at all = unknown", [], {}, "unknown"),
     ]
     status = 0
@@ -196,9 +231,11 @@ def self_test() -> int:
     # Anchor to the real workflow: the job-name prefix must exist in e2e.yml,
     # or every run would look like «nothing executed» and the gate reads unknown.
     wf = os.path.join(os.path.dirname(__file__), "..", "..", ".github", "workflows", E2E_WORKFLOW)
-    anchored = os.path.exists(wf) and PLAYWRIGHT_PREFIX in open(wf, encoding="utf-8").read()
-    status |= not anchored
-    print(f"  [{'ok' if anchored else 'XX'}] job-name prefix present in .github/workflows/{E2E_WORKFLOW}")
+    text = open(wf, encoding="utf-8").read() if os.path.exists(wf) else ""
+    for prefix in (PLAYWRIGHT_PREFIX, WEBKIT_CORE_PREFIX):
+        anchored = prefix in text
+        status |= not anchored
+        print(f"  [{'ok' if anchored else 'XX'}] job-name prefix «{prefix}» present in .github/workflows/{E2E_WORKFLOW}")
     return status
 
 

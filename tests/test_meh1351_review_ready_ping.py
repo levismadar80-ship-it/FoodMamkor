@@ -45,6 +45,25 @@ def test_fires_once_on_first_image(client, db):
     ping.assert_called_once_with("משק הפינג", producer.city, test_cause=False)
 
 
+def test_no_fire_after_admin_requested_changes(client, db):
+    """MEH-3026 (F7): once the admin asked for changes, the owner's «סיימתי
+    להשלים» is the admin's signal (it pings by itself), so the save that makes
+    the business approvable must not send a second email 7 s earlier."""
+    user, producer = _pending_producer_user(db)
+    producer.requested_changes = "חסרה תמונה"
+    db.commit()
+    with patch(PATCH_TARGET) as ping:
+        r = client.put(
+            "/producers/me",
+            json={
+                "images": ["https://res.cloudinary.com/demo/image/upload/v1/first.jpg"]
+            },
+            headers=auth_header(user),
+        )
+        assert r.status_code == 200, r.text
+        ping.assert_not_called()
+
+
 def test_no_fire_when_already_approvable(client, db):
     """A producer already past the gate must not re-ping on further edits."""
     cat = make_category(db)
@@ -96,9 +115,11 @@ def test_no_fire_when_not_pending(client, db):
     ping.assert_not_called()
 
 
-def test_license_required_category_gates_the_ping(client, db):
-    """With a license-required category, an image alone is not approvable —
-    the ping waits for the license and then fires exactly once."""
+def test_license_required_category_does_not_hold_the_ping(client, db):
+    """MEH-3026: a missing licence no longer blocks approval, so with a
+    license-required category the first image alone makes the business
+    approvable and the ping fires once; adding the licence later does not
+    re-fire it."""
     honey = make_category(db, name="דבש", emoji="🍯")  # license-required by name
     user, _ = _pending_producer_user(db, category=honey)
 
@@ -111,7 +132,7 @@ def test_license_required_category_gates_the_ping(client, db):
             headers=auth_header(user),
         )
         assert r1.status_code == 200
-        ping.assert_not_called()
+        ping.assert_called_once()
 
         r2 = client.put(
             "/producers/me",
