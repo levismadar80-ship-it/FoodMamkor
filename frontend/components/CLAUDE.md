@@ -40,6 +40,8 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Card rating «★ 4.8 (12)» | `ui/RatingCompact.jsx` | `RatingCompactGuard` |
 | Old / regular price, struck through, beside the paid one | `ui/StruckPrice.jsx` | `StruckPriceOneOwnerGuard` |
 | Fact line with its icon (business page) | `ui/FactLine.jsx` | `FactLineIconGuard` |
+| Time-limited offer card (group buy, surprise bag): title + where, price + struck price, gold saving, beige status band | `ui/OfferCard.jsx` | `OfferCardOneOwnerGuard` |
+| Progress in the logo's seeds (group-buy joins, bags left today); `label={null}` when the count is written beside it | `ui/SeedProgressMark.jsx` | — |
 | Empty list / no results | `ui/EmptyState.jsx` | — |
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
 | Short hover/tap explainer (not the older `InfoTooltip.jsx`) | `ui/Tooltip.jsx` | `HandWrittenRatchet` |
