@@ -7835,6 +7835,7 @@
     "line": "{qty} × {name}",
     "back": "חזרה",
     "failed": "הפעולה לא הצליחה. נסו שוב.",
+    "write_review": "כתבו ביקורת",
     "calendar_pickup": "איסוף הזמנה: {business_name}",
     "calendar_delivery": "משלוח הזמנה: {business_name}"
   },
