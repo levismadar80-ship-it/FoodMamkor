@@ -57,6 +57,17 @@ license number, **one business at a time**, via «אשרי בלי רישיון»
   lacking one. Whether that wording should change is a counsel question (Q1–Q5 above).
 
 
+## Amendment 21/11/2026 — a missing license no longer blocks approval (MEH-3026)
+Sapir's ruling, 21/11: "I still want to bring businesses on; this must not be a
+blocker — at most, no verified badge." The case-by-case form above is replaced by the
+form it was chosen over: the approve gate no longer refuses a license-required
+business with no license number (`services/producer_approval.py`), and logs it.
+- The badge rule is unchanged: such a business gets no «מאומת» (`verified_at` is
+  only set by the document check) and no «מוצהר».
+- **Still unchanged, and not part of this ruling:** the registration-time and
+  category-edit 422s (registration passes through «עדיין אין לי מספר רישיון»), and
+  the owner-invite gate (`services/invite_gate.py`).
+
 ## Amendment 06/11/2026 — no badge-absence line on the business page (MEH-2710)
 Sapir's ruling, 06/11: the «ללא תג מאומת · מה זה אומר?» line on a declared
 business's page is removed (PR #4032). A tier-2 business page now says nothing about
