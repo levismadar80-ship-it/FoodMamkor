@@ -33,7 +33,7 @@ import { CATEGORY_CARDS } from "../../../lib/home-categories.js";
 
 // MEH-2308: the chat launcher's accessible name is its visible pill text on a
 // first desktop visit and the aria-label once it is icon-only — match either.
-export const reEscChat = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const reEscChat = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 export const CHAT_LAUNCHER_NAME = new RegExp(
   `^(${reEscChat(he.chat.launcher_open_label)}|${reEscChat(he.chat.launcher_pill)})$`,
 );
@@ -233,7 +233,7 @@ export const FRIDAY_EN = en.group_buys.friday_delivery;
 export type Axis = { key: string; label: string; subtext?: string | null; group?: string; scope?: string };
 // MEH-2748: the taxonomy holds keys only; the Hebrew label/subtext are read from
 // the same he.json the app renders (`filter_axes.<key>`).
-export const AXIS_COPY = he.filter_axes as Record<string, { label: string; subtext?: string }>;
+const AXIS_COPY = he.filter_axes as Record<string, { label: string; subtext?: string }>;
 export const AXES = Object.fromEntries(
   Object.entries(FILTER_AXES as Record<string, object>).map(([key, axis]) => [
     key,
@@ -268,7 +268,7 @@ export const I18N_KEY_PATH = /group_buys\.friday_delivery/;
 export type CategoryCard = { key: string; name: string; image?: string };
 export const CARDS = CATEGORY_CARDS as CategoryCard[];
 export const CAT_A = { id: 101, name: CARDS[0].name, requires_license: false };
-export const CAT_B = { id: 102, name: CARDS[1].name, requires_license: false };
+const CAT_B = { id: 102, name: CARDS[1].name, requires_license: false };
 /** A category id no fixture business carries — the MT:1085 zero-result branch. */
 export const CAT_EMPTY = { id: 199, name: "קטגוריה ריקה", requires_license: false };
 export const CATEGORIES = [CAT_A, CAT_B, CAT_EMPTY];
@@ -347,7 +347,7 @@ export function producer(
     ...extra,
   } as Producer;
 }
-export const area = (n: number, city: string, day: string | null): DeliveryArea => ({
+const area = (n: number, city: string, day: string | null): DeliveryArea => ({
   id: uuid(500 + n),
   city,
   delivery_day: day,
@@ -371,8 +371,8 @@ export const P3 = producer(3, "עסק ארצי ללא שורת עיר", CAT_B, {
   city: CITY_SIBLING,
   delivery_areas: [area(4, CITY_SIBLING, DELIVERY_DAYS[1])],
 });
-export const P4 = producer(4, "גבינות הנגב", CAT_B, { delivers: false });
-export const LONG_NAME = "חוות השקמה של משפחת אברהמי מרחובות והסביבה הקרובה מאוד";
+const P4 = producer(4, "גבינות הנגב", CAT_B, { delivers: false });
+const LONG_NAME = "חוות השקמה של משפחת אברהמי מרחובות והסביבה הקרובה מאוד";
 export const P5 = producer(5, LONG_NAME, CAT_B, {
   // Deliberately far past any card width at either project (measured: the inner
   // clipping span is 224px on desktop, 141px on mobile), so the clip is real and
@@ -387,8 +387,8 @@ export const P5 = producer(5, LONG_NAME, CAT_B, {
 // MEH-1508 chunk 3ב-2: one row declares both `*_scope === "all"`. Since
 // MEH-2677 that pair is a card badge only (no sheet pill), so this row is what
 // makes the sheet's "no whole-business pill" assertion discriminate.
-export const SCOPE_ALL_DECLARED = { vegan_scope: "all", vegetarian_scope: "all" };
-export const REST = [6, 7, 8, 9, 10].map((n) =>
+const SCOPE_ALL_DECLARED = { vegan_scope: "all", vegetarian_scope: "all" };
+const REST = [6, 7, 8, 9, 10].map((n) =>
   producer(n, `עסק לדוגמה ${n}`, CAT_B, n === 6 ? SCOPE_ALL_DECLARED : {}),
 );
 export const PRODUCERS: Producer[] = [P1, P2, P3, P4, P5, ...REST];
@@ -406,7 +406,7 @@ export const REGION_FALLBACK = [P1, P2, P3];
  * Written as a function rather than a constant on purpose — a fixture that
  * ignores the filter it is being asked about is a green with two causes.
  */
-export const categoryAwareFeed = (u: URL): Producer[] => {
+const categoryAwareFeed = (u: URL): Producer[] => {
   const cat = u.searchParams.get("category");
   if (!cat) return PRODUCERS;
   return PRODUCERS.filter((p) => String((p.categories as Array<{ id: number }>)[0]?.id) === cat);
@@ -575,7 +575,7 @@ export const cards = (page: Page) => scope(page).getByTestId("producer-card");
  * fetch. Derived from the app's own taxonomy, so a new axis joins it here for
  * free. (`day` is deliberately absent: `:241` only honours it beside a `city`.)
  */
-export const FORCING_PARAMS = new Set<string>([
+const FORCING_PARAMS = new Set<string>([
   "category",
   "city",
   ...HOME_CHIPS.map((c) => homeParamFor(c.key) as string),
@@ -591,7 +591,7 @@ export const FORCING_PARAMS = new Set<string>([
  * axes, so it is present on every feed. The mock ignores the query anyway — the
  * param exists to defeat the skip, not to filter anything.
  */
-export function withForcedFetch(path: string): string {
+function withForcedFetch(path: string): string {
   const [base, query = ""] = path.split("?");
   const params = new URLSearchParams(query);
   if (![...params.keys()].some((k) => FORCING_PARAMS.has(k))) {
@@ -602,7 +602,7 @@ export function withForcedFetch(path: string): string {
 }
 
 /** A fixture business present in EVERY feed this spec serves (`PRODUCERS` and `CAT_A_MEMBERS` both open with P1). */
-export const FIXTURE_SENTINEL = P1.name;
+const FIXTURE_SENTINEL = P1.name;
 
 /**
  * `gotoWithFeed` for the rows whose SUBJECT is the fixture's own contents, with
@@ -833,12 +833,12 @@ export async function grantGps(context: BrowserContext): Promise<void> {
  * Its own self-test lives in the test below, and drives THIS function — not a
  * copy of it — on three inputs whose answers are known.
  */
-export const NON_RENDERING = ["template", "script", "style", "link", "noscript"];
+const NON_RENDERING = ["template", "script", "style", "link", "noscript"];
 
 // MEH-2747: the rescue-bags module is the one block that may sit between the
 // grid and the map (MEH-2648 puts it right after the grid); it renders null
 // unless the pilot is on for the visitor's town.
-export const ALLOWED_BETWEEN = ["rescue-home-module"];
+const ALLOWED_BETWEEN = ["rescue-home-module"];
 
 export function strangersBetweenGridAndMap(page: Page): Promise<string[]> {
   return page.evaluate(([skip, allowed]) => {
