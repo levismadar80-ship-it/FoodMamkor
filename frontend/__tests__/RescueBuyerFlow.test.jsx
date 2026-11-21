@@ -50,8 +50,17 @@ function rich(raw, values = {}) {
   return parts;
 }
 
+// Strips the rich-text tags from a he.json value so a test can match its
+// visible text. Repeats until nothing changes, so a tag split by another
+// tag cannot survive one pass (CodeQL js/incomplete-multi-character-sanitization).
 function plain(key) {
-  return lookup(key).replace(/<\/?\w+>/g, "");
+  let text = lookup(key);
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/<\/?\w+>/g, "");
+  } while (text !== previous);
+  return text;
 }
 
 vi.mock("next-intl", () => ({
