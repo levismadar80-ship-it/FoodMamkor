@@ -404,12 +404,13 @@ describe("the row", () => {
     expect(photo.style.backgroundImage).toContain("res.cloudinary.com");
   });
 
-  it("links to the business page, where the only reserve button lives", async () => {
+  it("links to the bag's own page, and the row itself reserves nothing", async () => {
     render(<RescueList />);
     const row = await screen.findByTestId("rescue-bag-row");
-    // /{slug}, never /producer/{slug}: that route takes a UUID only and shows
-    // «בית העסק הזה לא נמצא» for a slug. Anchored at the bag section.
-    expect(row.getAttribute("href")).toBe("/hatzala#section-rescue");
+    // MEH-3586: the bag page (by OFFER id), as Too Good To Go opens a bag.
+    // It was `/{slug}#section-rescue` — the business page's bag section.
+    const firstOfferId = fetchOffers.mock.results[0] ? (await fetchOffers.mock.results[0].value)[0].id : null;
+    expect(row.getAttribute("href")).toBe(`/rescue/${firstOfferId}`);
     expect(screen.queryByTestId("rescue-reserve")).toBeNull();
   });
 });

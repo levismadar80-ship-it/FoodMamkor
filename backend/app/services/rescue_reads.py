@@ -139,31 +139,109 @@ def public_offers(  # noqa: PLR0913 — keyword-only inputs the router reads (ME
                 haversine_km(lat, lng, float(location.lat), float(location.lng)), 2
             )
         out.append(
-            {
-                "id": offer.id,
-                "date": offer.date,
-                "qty_left": offer.qty_left,
-                "qty_total": offer.qty_total,
-                "price_agorot": offer.price_agorot,
-                "value_min_agorot": offer.value_min_agorot,
-                "value_max_agorot": offer.value_max_agorot,
-                "pickup_start": offer.pickup_start,
-                "pickup_end": offer.pickup_end,
-                "cancel_until": offer.cancel_until,
-                "producer": {
-                    "id": producer.id,
-                    "name": producer.name,
-                    "slug": producer.slug,
-                    "city": producer.city,
-                    "image_url": (producer.images or [None])[0],
-                    "location_city": location.city,
-                    "location_address": location.address,
-                },
-                "typical_items": list((typical.get(producer.id) or ([], None))[0]),
-                "allergens": (typical.get(producer.id) or ([], None))[1],
-                "distance_km": distance,
-            }
+            _public_row(
+                offer,
+                location,
+                producer,
+                typical.get(producer.id) or ([], None),
+                distance,
+            )
         )
+    return out
+
+
+def _public_row(
+    offer: RescueOffer,
+    location: ProducerLocation,
+    producer: Producer,
+    typical: tuple[Any, Any],
+    distance: float | None,
+) -> dict[str, Any]:
+    """One bag as `RescueOfferPublicOut` reads it. Shared by the list and the
+    single-bag page (MEH-3586) so the two can never describe a bag differently.
+    """
+    return {
+        "id": offer.id,
+        "date": offer.date,
+        "qty_left": offer.qty_left,
+        "qty_total": offer.qty_total,
+        "price_agorot": offer.price_agorot,
+        "value_min_agorot": offer.value_min_agorot,
+        "value_max_agorot": offer.value_max_agorot,
+        "pickup_start": offer.pickup_start,
+        "pickup_end": offer.pickup_end,
+        "cancel_until": offer.cancel_until,
+        "producer": {
+            "id": producer.id,
+            "name": producer.name,
+            "slug": producer.slug,
+            "city": producer.city,
+            "image_url": (producer.images or [None])[0],
+            "location_city": location.city,
+            "location_address": location.address,
+        },
+        "typical_items": list(typical[0] or []),
+        "allergens": typical[1],
+        "distance_km": distance,
+    }
+
+
+def offer_detail(
+    db: Session, *, offer_id: UUID, today: date, pilot: tuple[str, ...]
+) -> dict[str, Any] | None:
+    """One of today's bags, for its own page (MEH-3586). Public — no auth.
+
+    Unlike `public_offers`, a bag that sold out, was cancelled by the business
+    or whose reservations closed is still returned, with `state` saying which:
+    someone who opens a shared link or comes back to the tab should read why
+    the bag is gone, not a «not found». Everything the list hides for safety
+    stays hidden here too — another day's bag, an unapproved or test business,
+    a town outside the pilot — and those answer None (the router's 404).
+    """
+    if not pilot:
+        return None
+    offer = (
+        db.query(RescueOffer)
+        .join(ProducerLocation, RescueOffer.producer_location_id == ProducerLocation.id)
+        .join(Producer, ProducerLocation.producer_id == Producer.id)
+        .options(
+            selectinload(RescueOffer.location).selectinload(ProducerLocation.producer)
+        )
+        .filter(
+            RescueOffer.id == offer_id,
+            RescueOffer.date == today,
+            Producer.status == "approved",
+            not_test_producer(),  # MEH-2952
+            ProducerLocation.city.in_(pilot),
+        )
+        .one_or_none()
+    )
+    if offer is None or offer.location is None or offer.location.producer is None:
+        return None
+    location = offer.location
+    producer = location.producer
+    row = db.query(RescueTypicalItems).filter_by(producer_id=producer.id).one_or_none()
+    typical: tuple[Any, Any] = (row.items or [], row.allergens) if row else ([], None)
+
+    # Same order of reasons the reserve guard answers in: a cancelled bag is
+    # cancelled even if stock remains, and a closed window beats stock.
+    if offer.status == "cancelled":
+        state = "cancelled"
+    elif offer.pickup_end <= utc_now() + RESERVE_CLOSES_BEFORE_END:
+        state = "ended"
+    elif offer.qty_left < 1:
+        state = "sold_out"
+    else:
+        state = "available"
+
+    out = _public_row(offer, location, producer, typical, None)
+    out["state"] = state
+    # Exact-precision point only (an offer cannot be published on any other),
+    # so the map shows the same place the address names.
+    out["lat"] = location.lat
+    out["lng"] = location.lng
+    out["producer"]["avg_rating"] = producer.avg_rating or None
+    out["producer"]["reviews_count"] = producer.reviews_count or 0
     return out
 
 

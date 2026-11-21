@@ -266,6 +266,31 @@ class RescueOfferPublicOut(BaseModel):
     distance_km: float | None = None
 
 
+class RescueProducerDetail(RescueProducerSummary):
+    """The bag page's business block (MEH-3586): the summary plus the public
+    business rating, so a buyer can judge who packs the bag. The same two
+    numbers the business page shows; never the bag reviews, which feed only
+    the pilot metrics (RescueReview's docstring).
+    """
+
+    avg_rating: float | None = None
+    reviews_count: int = 0
+
+
+class RescueOfferDetailOut(RescueOfferPublicOut):
+    """`GET /rescue/offers/{id}` — one of today's bags for its own page.
+
+    `state` is why a bag can or cannot be reserved now; the list omits every
+    bag that is not `available`, the page explains it instead. `lat`/`lng`
+    are the pickup point (exact precision by construction) for the map.
+    """
+
+    state: Literal["available", "sold_out", "cancelled", "ended"]
+    producer: RescueProducerDetail
+    lat: float | None = None
+    lng: float | None = None
+
+
 class RescueOrderCreatedOut(RescueOrderOut):
     """What a successful reservation returns. Same shape as RescueOrderOut
     plus the two numbers the confirmation screen shows without a second
