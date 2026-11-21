@@ -118,6 +118,7 @@ from _test_meh3263_order_route__p01 import (  # noqa: F401
     test_the_token_opens_the_order_and_nothing_else_does,
     test_the_pickup_code_shows_only_while_it_can_be_used,
     test_the_page_stops_answering_a_month_after_the_order_closed,
+    test_my_orders_leaves_out_an_order_whose_page_has_stopped_answering,
     test_mask_phone_keeps_two_digits,
     test_a_buyer_cancels_freely_before_confirmation_and_until_the_cutoff_after,
     test_a_pending_order_is_cancelled_even_an_hour_before_the_slot,

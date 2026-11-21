@@ -485,6 +485,29 @@ body:has([data-meets-footer]) footer[data-site-footer] {
 body.sheet-open .cookie-banner {
   display: none;
 }
+/* MEH-2233: the banner and the login form are in the server HTML, so they
+   paint with the page instead of after hydration. Until React takes over, a
+   visitor who already answered the banner, or who holds a stored session,
+   must not see them: lib/prehydration-flags-inline.js sets these flags on
+   <html> before the first paint, and each element drops its
+   data-prehydration marker once it has mounted and decided for itself. */
+html[data-cookie-answered] .cookie-banner[data-prehydration] {
+  display: none;
+}
+html[data-has-token] [data-auth-pending] {
+  visibility: hidden;
+}
+/* A stored session sees a «loading» line instead of an empty pane. */
+html[data-has-token] [data-auth-pending] [data-auth-pending-note] {
+  display: block;
+  visibility: visible;
+}
+/* Server-rendered controls do nothing until React owns them, so they take no
+   taps until then (a tap would be lost): the banner and the login page drop
+   the marker once mounted. Text typed early is replayed (MEH-3164). */
+[data-prehydration] {
+  pointer-events: none;
+}
 /* Map z-index token system (see .claude/rules/rtl.md § "Map z-index tokens").
    The --z-* properties are emitted on :root from the Z_INDEX scale in
    tailwind.config.js (MEH-3169), so each value is written once:

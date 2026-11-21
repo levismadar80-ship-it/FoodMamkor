@@ -374,7 +374,7 @@ class ProducerListOut(BaseModel):
         there is no such row or its pin is cleared. Inherited by
         ProducerDetailOut → ProducerAdminOut / ProducerOwnerOut, so the list,
         the business page, the admin form and the owner dashboard read ONE
-        answer. Same rule as admin_extra._primary_location_points (5a.2).
+        answer. Same rule as admin_dashboard.primary_location_points (5a.2).
 
         DO NOT fall back to the column value here "for producers without a
         row": that population is empty on every environment (7c1e2a9f4b3d,
