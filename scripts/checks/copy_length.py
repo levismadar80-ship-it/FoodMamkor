@@ -2,9 +2,10 @@
 """copy-length guard: copy in frontend/messages/he.json that is too long for its slot.
 
 Purpose:  Three caps, by the kind of string the key names:
-            button  — at most 3 words   (leaf cta/button/btn/submit, or *_cta/_button/_btn/_submit)
-            seo title — at most 60 chars (meta_title, seo_title, og_title, page_title)
-            seo description — at most 160 chars (meta_description, seo_description, og_description)
+            button  — at most 3 words   (leaf cta/button/btn/submit, cta_*/btn_*/…, or *_cta/*_btn/…)
+            seo title — at most 60 chars (meta_title/og_title/twitter_title/page_title, or
+                      title/*_title under seo.* or a *meta block)
+            seo description — at most 160 chars (same, with description)
           A ratchet: what is over the cap today is listed in
           copy-length-baseline.txt with its measured size. A NEW key over its cap,
           or a baselined key that got LONGER, is red. A baseline line whose key is
@@ -15,6 +16,7 @@ Does NOT: judge wording, read en.json, or check rendered width (that is
           nothing (`save`, `next`) is not checked.
 History:  MEH-3670 (creation, item 8 of MEH-3652).
 """
+
 import json
 import re
 import sys
@@ -24,10 +26,28 @@ ROOT = Path(__file__).resolve().parents[2]
 HE = ROOT / "frontend/messages/he.json"
 BASELINE = Path(__file__).resolve().parent / "copy-length-baseline.txt"
 
-BUTTON_LEAF = re.compile(r"^(cta|button|btn|submit)$|_(cta|button|btn|submit)$")
-NOT_BUTTON = re.compile(r"heading|pitch|title|body|hint|desc|label_long|subtitle|text|error")
-SEO_TITLE = re.compile(r"^(meta_?title|seo_title|og_title|page_title)$")
-SEO_DESC = re.compile(r"^(meta_?description|seo_description|og_description)$")
+BUTTON_LEAF = re.compile(
+    r"^(cta|button|btn|submit)$|^(cta|button|btn|submit)_|_(cta|button|btn|submit)$"
+)
+NOT_BUTTON = re.compile(
+    r"heading|pitch|title|body|hint|desc|label_long|subtitle|subtext|error|tooltip|aria"
+    r"|toast|saving|loading|sending|copied|note|caption|sub$"
+)
+SEO_TITLE = re.compile(r"^(meta_?title|seo_title|og_title|twitter_title|page_title)$")
+SEO_DESC = re.compile(
+    r"^(meta_?description|seo_description|og_description|twitter_description)$"
+)
+# Inside an SEO block a plain `title` / `description` is the page's <title> / meta description.
+SEO_BLOCK_TITLE = re.compile(r"^(title|\w+_title)$")
+SEO_BLOCK_DESC = re.compile(r"^(description|\w+_description)$")
+
+
+def in_seo_block(parts):
+    return parts[0] == "seo" or any(
+        p == "meta" or p.endswith("_meta") for p in parts[:-1]
+    )
+
+
 CAPS = {"button": 3, "seo-title": 60, "seo-description": 160}
 
 
@@ -37,10 +57,12 @@ def words(value):
 
 
 def kind_of(key):
-    leaf = key.rsplit(".", 1)[-1]
-    if SEO_TITLE.search(leaf):
+    parts = re.sub(r"\[\d+\]", "", key).split(".")
+    leaf = parts[-1]
+    seo = in_seo_block(parts)
+    if SEO_TITLE.search(leaf) or (seo and SEO_BLOCK_TITLE.search(leaf)):
         return "seo-title"
-    if SEO_DESC.search(leaf):
+    if SEO_DESC.search(leaf) or (seo and SEO_BLOCK_DESC.search(leaf)):
         return "seo-description"
     if BUTTON_LEAF.search(leaf) and not NOT_BUTTON.search(leaf):
         return "button"
@@ -55,6 +77,9 @@ def flatten(obj, prefix=""):
     if isinstance(obj, dict):
         for k, v in obj.items():
             yield from flatten(v, f"{prefix}.{k}" if prefix else k)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            yield from flatten(v, f"{prefix}[{i}]")
     elif isinstance(obj, str):
         yield prefix, obj
 
@@ -68,21 +93,46 @@ def over_cap(messages):
     return out
 
 
+class BaselineError(Exception):
+    pass
+
+
 def read_baseline(path):
+    if not path.exists():
+        raise BaselineError(
+            f"{path.relative_to(ROOT)} is missing — run --update-baseline"
+        )
     base = {}
-    if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.strip() and not line.startswith("#"):
-                key, size = line.split("\t")[:2]
-                base[key] = int(size)
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip() or line.startswith("#"):
+            continue
+        cols = line.split("\t")
+        if len(cols) != 3 or not cols[1].isdigit() or cols[2] not in CAPS:
+            raise BaselineError(
+                f"{path.relative_to(ROOT)}:{n}: expected key<TAB>size<TAB>kind, got «{line}»"
+            )
+        base[cols[0]] = (int(cols[1]), cols[2])
     return base
 
 
+KEY_LINE = re.compile(r'\s*"((?:[^"\\]|\\.)*)"\s*:\s*(.*)')
+
+
 def line_of(text_lines, key):
-    leaf = '"' + key.rsplit(".", 1)[-1] + '"'
+    # Walks the pretty-printed file keeping the path of open objects, so a leaf
+    # name used in 40 places resolves to the one under the right parents.
+    stack = []
     for i, line in enumerate(text_lines, 1):
-        if line.lstrip().startswith(leaf):
-            return i
+        m = KEY_LINE.match(line)
+        if m:
+            k, rest = m.group(1), m.group(2).strip()
+            path = ".".join(stack + [k])
+            if path == key:
+                return i
+            if rest.startswith("{") and not rest.startswith("{}"):
+                stack.append(k)
+        elif line.strip().startswith("}") and stack:
+            stack.pop()
     return 1
 
 
@@ -92,17 +142,25 @@ def check(messages, base, he_lines):
     for key, (kind, size, value) in sorted(found.items()):
         unit = "words" if kind == "button" else "chars"
         where = f"frontend/messages/he.json:{line_of(he_lines, key)}"
-        if key not in base:
-            errors.append(f"{where}: {key} is a {kind}, {size} {unit} (cap {CAPS[kind]}): «{value}»")
-        elif size > base[key]:
-            errors.append(f"{where}: {key} grew from {base[key]} to {size} {unit} (cap {CAPS[kind]}): «{value}»")
+        if key not in base or base[key][1] != kind:
+            errors.append(
+                f"{where}: {key} is a {kind}, {size} {unit} (cap {CAPS[kind]}): «{value}»"
+            )
+        elif size > base[key][0]:
+            errors.append(
+                f"{where}: {key} grew from {base[key][0]} to {size} {unit} (cap {CAPS[kind]}): «{value}»"
+            )
     for key in sorted(set(base) - set(found)):
-        errors.append(f"scripts/checks/copy-length-baseline.txt: {key} now fits its cap or is gone — delete its line")
+        errors.append(
+            f"scripts/checks/copy-length-baseline.txt: {key} now fits its cap or is gone — delete its line"
+        )
     return found, errors
 
 
 def write_baseline(found):
-    lines = ["# copy-length guard baseline (MEH-3670). Only shrinks. key<TAB>size<TAB>kind"]
+    lines = [
+        "# copy-length guard baseline (MEH-3670). Only shrinks. key<TAB>size<TAB>kind"
+    ]
     lines += [f"{k}\t{s}\t{kind}" for k, (kind, s, _) in sorted(found.items())]
     BASELINE.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -114,23 +172,101 @@ def self_test():
         ("button at cap passes", {"a": {"cta": "שלוש מילים כאן"}}, {}, 0),
         ("button over cap fails", {"a": {"cta": "ארבע מילים בדיוק כאן"}}, {}, 1),
         ("a + is not a word", {"a": {"btn": "+ פרסום מתכון חדש"}}, {}, 0),
-        ("placeholder counts as a word", {"a": {"submit": "אישור כל הטיוטות {count}"}}, {}, 1),
-        ("heading-ish key is not a button", {"a": {"cta_heading": "כותרת ארוכה מאוד של ארבע מילים"}}, {}, 0),
+        (
+            "placeholder counts as a word",
+            {"a": {"submit": "אישור כל הטיוטות {count}"}},
+            {},
+            1,
+        ),
+        (
+            "heading-ish key is not a button",
+            {"a": {"cta_heading": "כותרת ארוכה מאוד של ארבע מילים"}},
+            {},
+            0,
+        ),
         ("seo title 60 passes", {"a": {"meta_title": "א" * 60}}, {}, 0),
         ("seo title 61 fails", {"a": {"meta_title": "א" * 61}}, {}, 1),
         ("seo description 161 fails", {"a": {"og_description": "א" * 161}}, {}, 1),
-        ("baselined, same size passes", {"a": {"cta": "ארבע מילים בדיוק כאן"}}, {"a.cta": 4}, 0),
-        ("baselined, grew fails", {"a": {"cta": "חמש מילים בדיוק כאן עכשיו"}}, {"a.cta": 4}, 1),
-        ("stale baseline line fails", {"a": {"cta": "קצר"}}, {"a.cta": 4}, 1),
+        (
+            "baselined, same size passes",
+            {"a": {"cta": "ארבע מילים בדיוק כאן"}},
+            {"a.cta": (4, "button")},
+            0,
+        ),
+        (
+            "baselined, grew fails",
+            {"a": {"cta": "חמש מילים בדיוק כאן עכשיו"}},
+            {"a.cta": (4, "button")},
+            1,
+        ),
+        (
+            "stale baseline line fails",
+            {"a": {"cta": "קצר"}},
+            {"a.cta": (4, "button")},
+            1,
+        ),
         ("real key is classified as a button", None, None, None),
-        ("error message is not a button", {"a": {"error_submit": "לא הצלחנו לשלוח, נסו שוב בעוד רגע"}}, {}, 0),
+        (
+            "prefix key cta_map is a button",
+            {"a": {"cta_map": "לכל העסקים על המפה"}},
+            {},
+            1,
+        ),
+        ("seo block title 61 fails", {"seo": {"x": {"title": "א" * 61}}}, {}, 1),
+        (
+            "meta block description 161 fails",
+            {"p": {"meta": {"description": "א" * 161}}},
+            {},
+            1,
+        ),
+        ("title outside an seo block is not seo", {"p": {"title": "א" * 61}}, {}, 0),
+        (
+            "button inside a list is seen",
+            {"a": {"items": [{"cta": "ארבע מילים בדיוק כאן"}]}},
+            {},
+            1,
+        ),
+        (
+            "baselined key that changed kind fails",
+            {"seo": {"x": {"title": "א" * 61}}},
+            {"seo.x.title": (61, "button")},
+            1,
+        ),
+        ("real seo.events.title is an seo title", "SEO", None, None),
+        ("line_of resolves the right parent", "LINE", None, None),
+        (
+            "error message is not a button",
+            {"a": {"error_submit": "לא הצלחנו לשלוח, נסו שוב בעוד רגע"}},
+            {},
+            0,
+        ),
     ]
     ok = 0
     for name, msgs, base, want in cases:
-        if msgs is None:
+        if msgs == "SEO":
+            passed = kind_of(
+                "seo.events.title"
+            ) == "seo-title" and "seo.events.title" in dict(flatten(real))
+        elif msgs == "LINE":
+            lines = [
+                "{",
+                '  "a": {',
+                '    "cta": "x"',
+                "  },",
+                '  "b": {',
+                '    "cta": "y"',
+                "  }",
+                "}",
+            ]
+            passed = line_of(lines, "b.cta") == 6 and line_of(lines, "a.cta") == 3
+        elif msgs is None:
             got_kind = kind_of(anchor)
             value = dict(flatten(real)).get(anchor)
-            passed = got_kind == "button" and value is not None and measure("button", value) > CAPS["button"]
+            passed = (
+                got_kind == "button"
+                and value is not None
+                and measure("button", value) > CAPS["button"]
+            )
         else:
             _, errs = check(msgs, base, [])
             passed = len(errs) == want
@@ -149,11 +285,20 @@ def main(argv):
         write_baseline(found)
         print(f"copy-length: baseline written, {len(found)} lines")
         return 0
-    base = read_baseline(BASELINE)
+    if self_test() != 0:
+        print("copy-length: self-test failed — this run proves nothing")
+        return 1
+    try:
+        base = read_baseline(BASELINE)
+    except BaselineError as e:
+        print(f"copy-length: {e}")
+        return 1
     found, errors = check(messages, base, HE.read_text(encoding="utf-8").splitlines())
     for e in errors:
         print(e)
-    print(f"copy-length: {len(found)} over cap · baseline {len(base)} lines · {len(errors)} errors")
+    print(
+        f"copy-length: {len(found)} over cap · baseline {len(base)} lines · {len(errors)} errors"
+    )
     return 1 if errors else 0
 
 
