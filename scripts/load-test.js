@@ -13,7 +13,8 @@
  *
  * Goal (per Linear MEH-559): ramp 1->50 VUs over ~5 min across 5
  * critical endpoints; surface SLA-breaching endpoints before public
- * launch. One-time pre-launch baseline. NOT in CI.
+ * launch. Not a CI gate; run on demand from Actions → «Load test (manual)»
+ * (.github/workflows/load-test.yml, MEH-3564) or locally as below.
  *
  * SLA targets: p95 < 2000ms, error rate < 1% per endpoint.
  *

@@ -26,6 +26,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { licenseMissingForProfile } from "@/lib/license-required-categories";
 
 export default function ChangesRequestedBanner({ profile }) {
   const t = useTranslations("dashboard.producer.changes_requested");
@@ -102,7 +103,9 @@ export default function ChangesRequestedBanner({ profile }) {
           )}
           <div className="flex flex-wrap items-center gap-2 mt-3">
             <LocaleLink
-              href="/producer/dashboard/edit"
+              // MEH-3026 (F5): the licence is the likely thing to complete when
+              // it is missing, so land on its section, open and scrolled to.
+              href={licenseMissingForProfile(profile) ? "/producer/dashboard/edit#license" : "/producer/dashboard/edit"}
               data-testid="changes-requested-cta"
               className="inline-block bg-accent text-white px-4 py-2 rounded-md text-xs font-medium hover:opacity-90 transition"
             >

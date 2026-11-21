@@ -10,7 +10,7 @@ Does NOT: cover the frontend half of the contract — the interceptor that
 Related:  backend/app/auth.py:244 (get_current_user_optional),
           backend/app/auth.py:275 (get_current_user_lenient),
           backend/app/routers/auth.py:392 (upgrade_path),
-          backend/app/routers/producers.py:266 (owner-bypass guard).
+          backend/app/services/producer_detail.py (producer_by_id_for_viewer, owner-bypass guard; MEH-3559).
 History:  MEH-1627 (creation).
 
 The bug this file exists to prevent: get_current_user_optional used to

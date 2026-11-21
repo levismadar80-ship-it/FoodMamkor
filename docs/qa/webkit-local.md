@@ -1,6 +1,12 @@
 # WebKit (Safari engine) QA from a Claude Code sandbox
 
-**Status:** available in the sandbox behind `PW_WEBKIT=1`, and **in CI as a
+**Status (20/11/2026, MEH-3153):** a subset now BLOCKS — `e2e-webkit-core` runs
+`frontend/e2e/webkit-core.txt` in WebKit on staging pushes and `run-e2e` PRs and is
+a leg of `E2E gate`. The whole suite still runs as the non-voting nightly shadow
+job. Local install note: on 20/11 `install-deps webkit` then `install webkit`
+from `frontend/` worked (webkit-2388). The history below is kept as written.
+
+**Status (before MEH-3153):** available in the sandbox behind `PW_WEBKIT=1`, and **in CI as a
 non-voting shadow job**. Step B landed on 2026-08-03 (`323a1258`): `e2e-webkit`
 (`.github/workflows/e2e.yml:432`) installs webkit and runs it under the same flag.
 

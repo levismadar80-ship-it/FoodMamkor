@@ -1,6 +1,6 @@
 # k6 load testing — pre-launch baseline (MEH-559)
 
-> One-time pre-launch baseline for the **Railway staging backend** at `https://foodmamkor-staging.up.railway.app` (NOT the Vercel frontend `staging.mehamakor.online` — that resolves to Next.js page handlers, not the FastAPI API; see Methodology). Script: `scripts/load-test.js`. Runbook + results below. NOT in CI (Linear MEH-559). Companion to MEH-557 verdict ("k6 SHIP — minimal").
+> One-time pre-launch baseline for the **Railway staging backend** at `https://foodmamkor-staging.up.railway.app` (NOT the Vercel frontend `staging.mehamakor.online` — that resolves to Next.js page handlers, not the FastAPI API; see Methodology). Script: `scripts/load-test.js`. Runbook + results below. Not a CI gate (Linear MEH-559); since MEH-3564 it runs on demand from Actions → «Load test (manual)». Companion to MEH-557 verdict ("k6 SHIP — minimal").
 
 ## TL;DR
 
