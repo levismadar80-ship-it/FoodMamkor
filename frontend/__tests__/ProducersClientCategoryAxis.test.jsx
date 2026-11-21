@@ -39,7 +39,9 @@ vi.mock("next/navigation", () => ({
     },
   }),
 }));
-vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
+vi.mock("next-intl", () => ({
+  useTranslations: (s) => Object.assign((k) => (s ? `${s}.${k}` : k), { has: () => false }),
+}));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
   // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
