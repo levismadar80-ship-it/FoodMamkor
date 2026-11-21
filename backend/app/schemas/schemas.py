@@ -421,7 +421,7 @@ def _normalize_contact_email(value: str | None) -> str | None:
     if stripped == "":
         return None
     if not _EMAIL_FORMAT_RE.match(stripped):
-        raise ValueError("כתובת אימייל לא תקינה")
+        raise ValueError("כתובת מייל לא תקינה")
     return stripped
 
 

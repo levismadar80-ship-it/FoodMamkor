@@ -38,8 +38,8 @@ import {
 
 describe("MEH-1943 — the shapes that already worked keep working", () => {
   it("string detail is returned as-is", () => {
-    expect(detailToMessage("יש לאמת את כתובת האימייל תחילה")).toBe(
-      "יש לאמת את כתובת האימייל תחילה"
+    expect(detailToMessage("יש לאמת את כתובת המייל תחילה")).toBe(
+      "יש לאמת את כתובת המייל תחילה"
     );
   });
 

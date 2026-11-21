@@ -100,14 +100,14 @@ import ContactClient from "@/app/[locale]/contact/ContactClient";
 // never mentions an email at all, which would have under-disclosed.
 const APPROVED = {
   chat: "מה שנכתב כאן נשלח ל-Anthropic כדי לנסח את התשובה.",
-  password_reset: "האימייל משמש לשליחת קישור האיפוס בלבד.",
+  password_reset: "המייל משמש לשליחת קישור האיפוס בלבד.",
   experience: "מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.",
   event: "מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.",
   category_request: "הבקשה נשלחת אלינו לעיון ואינה מתפרסמת באתר.",
-  newsletter: "האימייל משמש לשליחת העדכונים בלבד.",
+  newsletter: "המייל משמש לשליחת העדכונים בלבד.",
   contact: "ההודעה נשלחת אלינו כדי שנוכל לחזור עם תשובה, ואינה מתפרסמת באתר.",
   business_suggestion:
-    "נשתמש באימייל רק כדי לעדכן אתכם על ההמלצה הזו. הוא לא עובר לבית העסק ולא משמש לשיווק.",
+    "נשתמש במייל רק כדי לעדכן אתכם על ההמלצה הזו. הוא לא עובר לבית העסק ולא משמש לשיווק.",
 };
 // The link label is a REUSE of the registration pages' string, per the card —
 // one privacy-link label site-wide, not a sixth approved string.

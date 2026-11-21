@@ -662,7 +662,7 @@ describe("every error the API actually returns", () => {
     reserveBag.mockRejectedValue({
       response: {
         status: 403,
-        data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } },
+        data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת המייל תחילה" } },
       },
     });
     render(<RescueSection producer={PRODUCER} />);
