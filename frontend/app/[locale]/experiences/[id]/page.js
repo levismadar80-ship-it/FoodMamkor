@@ -15,8 +15,9 @@ import { buildExperienceJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478:
 // gracefully falls back to seo.experience.title_fallback if API unreachable
 // or experience not found (404 path).
 // MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
-// decided in docs/audits/producer-detail-page-validation.md §6 — never throw,
-// never notFound() (the MEH-1754 class). Shared: lib/ssr-entity-fetch.js (MEH-3465).
+// decided in docs/audits/producer-detail-page-validation.md §6, with MEH-2101's
+// three-way table: 404 → notFound(), any other failure throws (5xx), a bad
+// payload still renders. Shared: lib/ssr-entity-fetch.js (MEH-3465).
 const ROUTE = "/[locale]/experiences/[id]";
 
 function getExperience(id) {

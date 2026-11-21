@@ -17,9 +17,9 @@ import { siteOgImageUrl } from "@/lib/og-site-image";
 // returns no event, fall back to seo.event.title_fallback so we still
 // emit valid hreflang/canonical.
 // MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
-// decided in docs/audits/producer-detail-page-validation.md §6 and is not
-// re-opened here: never throw, never notFound() (the MEH-1754 class).
-// The fetch itself is shared since MEH-3465: lib/ssr-entity-fetch.js.
+// decided in docs/audits/producer-detail-page-validation.md §6, with MEH-2101's
+// three-way table: 404 → notFound(), any other failure throws (5xx), a bad
+// payload still renders. Shared: lib/ssr-entity-fetch.js (MEH-3465).
 const ROUTE = "/[locale]/events/[id]";
 
 function getEvent(id) {

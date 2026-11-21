@@ -14,8 +14,9 @@ import { buildGroupBuyJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: P
 // Fetches group-buy title server-side for D1 title format; gracefully falls
 // back to seo.group_buy.title_fallback if API unreachable.
 // MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
-// decided in docs/audits/producer-detail-page-validation.md §6 — never throw,
-// never notFound() (the MEH-1754 class). Shared: lib/ssr-entity-fetch.js (MEH-3465).
+// decided in docs/audits/producer-detail-page-validation.md §6, with MEH-2101's
+// three-way table: 404 → notFound(), any other failure throws (5xx), a bad
+// payload still renders. Shared: lib/ssr-entity-fetch.js (MEH-3465).
 const ROUTE = "/[locale]/group-buys/[id]";
 
 function getGroupBuy(id) {

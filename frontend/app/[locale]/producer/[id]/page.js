@@ -17,10 +17,9 @@ const ROUTE = "/[locale]/producer/[id]";
 // Reporting was inline at all four SSR sites (MEH-1885's "four call sites,
 // one pattern, inline"); the four identical copies became
 // lib/ssr-entity-fetch.js in MEH-3465. Call shape from lib/api.js:141.
-// A non-ok response only reports at >= 500: a 404 here is an ordinary
-// outcome (deleted producer, crawler on a stale URL) and paging the operator
-// on it would bury the signal this ticket exists to create. Same threshold as
-// lib/api.js:140.
+// 404 / 422 are ordinary outcomes (deleted producer, crawler on a stale URL)
+// and return null without a report; every other non-ok reports and throws
+// (MEH-2101's three-way table, which replaced §6's "never throw").
 function getProducer(id) {
   // MEH-3465: the three-way fetch (null = missing, throw = unavailable) and
   // its reporting live in lib/ssr-entity-fetch.js, shared by four pages.
