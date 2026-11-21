@@ -6951,7 +6951,7 @@
     },
     "section": {
       "title": "סל הפתעה",
-      "cta": "לשריין · משלמים בקופה",
+      "cta": "לשריין את הסל · משלמים בקופה",
       "typical": "בדרך כלל: {items}",
       "allergens_title": "אלרגנים",
       "cancel_until": "ביטול חינם עד {time}",
@@ -7122,7 +7122,7 @@
       "loading": "טוענים את הסל…",
       "bar_note": "{price} ₪ · איסוף עד {until}",
       "details_link": "לכל פרטי הסל",
-      "bar_cta": "לשריין"
+      "bar_cta": "לשריין את הסל"
     }
   },
   "holidays": {
