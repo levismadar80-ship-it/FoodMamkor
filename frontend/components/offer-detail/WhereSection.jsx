@@ -15,6 +15,16 @@
  * History:  MEH-3597 (creation; layout from RescueOfferDetails, MEH-3586)
  *
  * @typedef {{ key: string, Icon: any, label?: string, text: string, testId?: string }} WhereRow
+ */
+import dynamic from "next/dynamic";
+import SectionHeading from "@/components/ui/SectionHeading";
+import { AddressNavLinks } from "@/components/NavAppGlyphs";
+
+// REUSES: app/[locale]/events/[id]/EventDetailClient.jsx:45 — ssr:false,
+// leaflet touches window at module eval.
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+
+/**
  * @param {{
  *   title: string,
  *   headingId: string,
@@ -26,14 +36,6 @@
  *   children?: any,
  * }} props
  */
-import dynamic from "next/dynamic";
-import SectionHeading from "@/components/ui/SectionHeading";
-import { AddressNavLinks } from "@/components/NavAppGlyphs";
-
-// REUSES: app/[locale]/events/[id]/EventDetailClient.jsx:45 — ssr:false,
-// leaflet touches window at module eval.
-const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
-
 export default function WhereSection({ title, headingId, rows, map = null, navLinks = null, navTestId, testId, children }) {
   return (
     <section aria-labelledby={headingId} data-testid={testId}>

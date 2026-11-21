@@ -210,6 +210,9 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
                 status_code=400, detail=f"כבר הוזמנו {units} יחידות, אי אפשר להגביל לפחות מזה"
             )
         gb.max_units = data.max_units  # type: ignore[assignment]
+    if "pickup_starts_at" in sent:  # MEH-3597: the schema sends both or neither
+        gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]
+        gb.pickup_ends_at = data.pickup_ends_at  # type: ignore[assignment]
     if data.joins_open is not None:
         gb.joins_closed_at = None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]
     db.flush()
@@ -221,4 +224,6 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
         "max_participants": gb.max_participants,
         "max_units": gb.max_units,
         "joins_closed": gb.joins_closed_at is not None,
+        "pickup_starts_at": gb.pickup_starts_at,
+        "pickup_ends_at": gb.pickup_ends_at,
     }

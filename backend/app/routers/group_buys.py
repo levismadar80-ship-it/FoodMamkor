@@ -72,6 +72,8 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict[str, Any]:
         "fulfillment_note": gb.fulfillment_note,
         "pickup_note": gb.pickup_note,
         "delivery_note": gb.delivery_note,
+        "pickup_starts_at": gb.pickup_starts_at,  # MEH-3597
+        "pickup_ends_at": gb.pickup_ends_at,
         "status": gb.status,
         "commits_count": commits_count,
         # MEH-3592: caps beyond people. units_left is a number, never a roster.
@@ -517,6 +519,8 @@ def create_group_buy(
         fulfillment_note=data.fulfillment_note,
         pickup_note=data.pickup_note,
         delivery_note=data.delivery_note,
+        pickup_starts_at=data.pickup_starts_at,  # MEH-3597
+        pickup_ends_at=data.pickup_ends_at,
         status="open",
     )
     db.add(gb)

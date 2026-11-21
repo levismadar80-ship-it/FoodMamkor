@@ -7,7 +7,7 @@ Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Literal, Self
 from uuid import UUID
@@ -66,6 +66,9 @@ class GroupBuyOut(BaseModel):
     max_units: int | None = None
     joins_closed: bool = False
     units_left: int | None = None
+    # MEH-3597: the pickup window (naive UTC), or null.
+    pickup_starts_at: datetime | None = None
+    pickup_ends_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -109,6 +112,19 @@ class GroupBuyCreate(BaseModel):
     fulfillment_note: str | None = Field(None, max_length=1000)
     pickup_note: str | None = Field(None, max_length=1000)
     delivery_note: str | None = Field(None, max_length=1000)
+    # MEH-3597: an optional pickup window. Both or neither; end after start.
+    pickup_starts_at: datetime | None = None
+    pickup_ends_at: datetime | None = None
+
+    @field_validator("pickup_starts_at", "pickup_ends_at")
+    @classmethod
+    def _pickup_to_naive_utc(cls, v: datetime | None) -> datetime | None:
+        return _naive_utc(v)
+
+    @model_validator(mode="after")
+    def _pickup_window_whole(self) -> Self:
+        _check_pickup_window(self.pickup_starts_at, self.pickup_ends_at)
+        return self
 
     # MEH-1626 chunk 1: description gets the same bleach every other
     # description field in this module has (EventCreate:2528, HomeProductCreate,
@@ -159,6 +175,27 @@ class GroupBuyCreate(BaseModel):
         return v
 
 
+# MEH-3597: a pickup window longer than this is not a window.
+PICKUP_WINDOW_MAX = timedelta(days=7)
+
+
+def _naive_utc(v: datetime | None) -> datetime | None:
+    """Aware → naive UTC, the one world of `deadline` (MEH-1454)."""
+    if v is not None and v.tzinfo is not None:
+        v = v.astimezone(timezone.utc).replace(tzinfo=None)
+    return v
+
+
+def _check_pickup_window(start: datetime | None, end: datetime | None) -> None:
+    if (start is None) != (end is None):
+        raise ValueError("יש למלא גם את תחילת האיסוף וגם את סופו")
+    if start is not None and end is not None:
+        if end <= start:
+            raise ValueError("סוף האיסוף צריך להיות אחרי תחילתו")
+        if end - start > PICKUP_WINDOW_MAX:
+            raise ValueError("חלון האיסוף יכול להיות עד שבוע")
+
+
 class GroupBuyCommitRequest(BaseModel):
     quantity: int = Field(1, ge=1, le=100)
     # MEH-1651: `phone` removed. MEH-1626 chunk 1 had added a PhoneNumberField
@@ -190,6 +227,23 @@ class GroupBuySettingsUpdate(BaseModel):
     max_participants: int | None = Field(None, ge=2)
     max_units: int | None = Field(None, ge=1, le=100000)
     joins_open: bool | None = None
+    # MEH-3597: set or change the pickup window while the group runs; both
+    # sent together, or both null to clear it.
+    pickup_starts_at: datetime | None = None
+    pickup_ends_at: datetime | None = None
+
+    @field_validator("pickup_starts_at", "pickup_ends_at")
+    @classmethod
+    def _pickup_to_naive_utc(cls, v: datetime | None) -> datetime | None:
+        return _naive_utc(v)
+
+    @model_validator(mode="after")
+    def _pickup_window_whole(self) -> Self:
+        sent = self.model_fields_set & {"pickup_starts_at", "pickup_ends_at"}
+        if sent and len(sent) == 1:
+            raise ValueError("יש למלא גם את תחילת האיסוף וגם את סופו")
+        _check_pickup_window(self.pickup_starts_at, self.pickup_ends_at)
+        return self
 
 
 # MEH-2436: the owner's status change. The four values are the whole domain of

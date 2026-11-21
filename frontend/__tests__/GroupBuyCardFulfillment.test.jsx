@@ -10,7 +10,8 @@ import { render, screen } from "@testing-library/react";
 import GroupBuysClient from "@/app/[locale]/group-buys/GroupBuysClient";
 
 vi.mock("next-intl", () => ({
-  useTranslations: (ns) => (key) => `${ns}.${key}`,
+  useLocale: () => "he",
+  useTranslations: (ns) => (key, vals) => (vals ? `${ns}.${key}:${JSON.stringify(vals)}` : `${ns}.${key}`),
 }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...rest }) => <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>,
@@ -75,5 +76,21 @@ describe("the pickup / delivery line on a list card", () => {
   it("no answer at all: no line", async () => {
     await renderCard({});
     expect(line("pickup") || line("delivery") || line("fulfillment")).toBeNull();
+  });
+});
+
+// MEH-3597: the structured pickup window, a line of its own above the notes.
+describe("the pickup time line on a list card", () => {
+  it("a window set: one line, before the pickup note", async () => {
+    await renderCard({ pickup_note: "מהמשק", pickup_starts_at: "2099-01-02T07:00:00", pickup_ends_at: "2099-01-02T11:00:00" });
+    const when = line("pickup-window");
+    expect(when.textContent).toMatch(/^group_buys\.card\.pickup_when:/);
+    expect(when.textContent).toContain("09:00–13:00");
+    expect(when.compareDocumentPosition(line("pickup")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("no window: no line", async () => {
+    await renderCard({ pickup_note: "מהמשק" });
+    expect(line("pickup-window")).toBeNull();
   });
 });

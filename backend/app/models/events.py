@@ -332,6 +332,10 @@ class GroupBuy(Base):
     # MEH-3592: set when the business stops new joins before the deadline
     # (Eventbrite «stop sales»); NULL = joins open. Existing participants stay.
     joins_closed_at = Column(DateTime, nullable=True)
+    # MEH-3597: the pickup window, naive UTC like `deadline`. Both or neither
+    # (GroupBuyCreate). The free-text pickup_note stays beside it.
+    pickup_starts_at = Column(DateTime, nullable=True)
+    pickup_ends_at = Column(DateTime, nullable=True)
     deadline = Column(DateTime, nullable=False)
     city = Column(String(100), nullable=True)
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).

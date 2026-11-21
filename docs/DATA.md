@@ -1214,6 +1214,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > - `PATCH /group-buys/{id}/commit` `{quantity: 1–100}` — her quantity, until the deadline, within `max_units`; a smaller quantity offers the freed units to the waitlist. 20/min.
 > - `POST /group-buys/{id}/waitlist` `{quantity}` — only when the group is full (people or units); 409 when there is room or the list holds 50. `DELETE /group-buys/{id}/waitlist` — leave it (404 when not on it). 20/min. A freed place emails the first row not yet offered whose quantity fits; the place is not held; each row is offered once (same rule as the events waitlist, MEH-3314).
 > - `PATCH /group-buys/{id}/settings` `{max_participants?, max_units?, joins_open?}` — the owning business or an admin (403 otherwise); a field left out is unchanged, an explicit null clears a cap; a cap below what already joined is 400; raising a cap or reopening offers the waitlist. 30/min.
+>
+> **MEH-3597 — the pickup window (2026-11-21).** Migration `40e9fd2c1b3a` (Expand-only, Sapir's OK pending) adds `group_buys.pickup_starts_at` and `group_buys.pickup_ends_at` (naive UTC, both null = no window; the free-text `pickup_note` stays). `GroupBuyOut` returns both; `GroupBuyCreate` and `PATCH /group-buys/{id}/settings` accept them, both or neither (422 «יש למלא גם את תחילת האיסוף וגם את סופו»), the end after the start, at most 7 days long. The card and the page print them in Israel time (`frontend/lib/group-buy-pickup.js`).
 
 ### Auth (`app/routers/auth.py`; `/auth/register/producer` and `/auth/register/producer/oauth` live in `app/routers/auth_register_producer.py` since MEH-3293)
 

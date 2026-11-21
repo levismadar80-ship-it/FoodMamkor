@@ -37,6 +37,10 @@ vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 209
 vi.mock("next/dynamic", () => ({
   default: () => (props) => <div data-testid="mini-map" data-lat={props.lat} data-name={props.name} />,
 }));
+// MEH-3597: the window's wording is lib/group-buy-pickup's own test; here only whether it shows.
+vi.mock("@/lib/group-buy-pickup", () => ({
+  pickupWindowText: (s, e) => (s && e ? `${s}|${e}` : null),
+}));
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ city: null }) }));
 
 const GB = {
@@ -147,5 +151,29 @@ describe("MEH-3597 — where and when, like the bag page", () => {
     expect(where.compareDocumentPosition(how) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(how.compareDocumentPosition(cancel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(cancel.textContent).toContain("cancel_body_open");
+  });
+});
+
+describe("MEH-3597 — pickup time and when to pay", () => {
+  it("a window set: «מועד איסוף» is the first row of where-and-when", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: "איסוף מהמאפייה", delivery_note: null, pickup_starts_at: "2099-01-02T07:00:00", pickup_ends_at: "2099-01-02T11:00:00" };
+    await renderPage();
+    const row = await screen.findByTestId("group-buy-pickup-window");
+    expect(row.textContent).toContain("group_buys.detail.pickup_time_label");
+    expect(row.textContent).toContain("2099-01-02T07:00:00|2099-01-02T11:00:00");
+    expect(row.compareDocumentPosition(screen.getByTestId("group-buy-pickup-note")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("no window: no row", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: "איסוף", delivery_note: null };
+    await renderPage();
+    await screen.findByTestId("group-buy-pickup-note");
+    expect(screen.queryByTestId("group-buy-pickup-window")).toBeNull();
+  });
+
+  it("joinable: the pay line sits with the join button", async () => {
+    await renderPage();
+    const pay = await screen.findByTestId("group-buy-pay-line");
+    expect(pay.textContent).toBe("group_buys.detail.pay_line");
   });
 });

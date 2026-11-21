@@ -607,7 +607,7 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 1 | `approved` ⇄ `inactive` | admin.py:810 | `DELETE /admin/producers/{producer_id}` | `tests/_test_producer_owner_invite__p03.py:605` | a DELETE handler for a non-delete transition — audit line may be off; nearest write handler — audit line may have drifted |
 | 1 | `pending` → `pending` + feedback | — | `POST /admin/producers/{producer_id}/request-changes` | `tests/test_changes_requested_whatsapp.py:59` | — |
 | 1 | any → any via admin PUT | admin.py:655 | `POST /admin/producers/{producer_id}/toggle-status` | `tests/_test_producer_owner_invite__p03.py:54` | — |
-| 2 | ∅ → `open` | group_buys.py:396 | `DELETE /group-buys/{group_buy_id}/commit` | `tests/_test_group_buys_api__p01.py:196` | a DELETE handler for a non-delete transition — audit line may be off; nearest function — audit line may have drifted |
+| 2 | ∅ → `open` | group_buys.py:396 | `POST /group-buys/{group_buy_id}/commit` | `tests/_test_group_buys_api__p01.py:190` | — |
 | 2 | `open` → `funded` | group_buys.py:295 | `POST /group-buys/{group_buy_id}/commit` | `tests/_test_group_buys_api__p01.py:190` | — |
 | 2 | `funded` → `open` | group_buys.py:340 | `POST /group-buys/{group_buy_id}/commit` | `tests/_test_group_buys_api__p01.py:190` | — |
 | 2 | `funded` → `open` | group_buy_delist.py:102 | — | GAP | — |

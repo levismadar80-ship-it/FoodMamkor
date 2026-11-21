@@ -1227,7 +1227,8 @@
       "days_left": "{days} days left",
       "expired": "Expired",
       "cta_funded_details": "Details",
-      "cta_join": "I want to join!"
+      "cta_join": "I want to join!",
+      "pickup_when": "Pickup: {when}"
     },
     "detail": {
       "loading": "Loading...",
@@ -1295,7 +1296,9 @@
       "committed_qty_unit": " ({count} {unit})",
       "cancel_title": "Cancelling",
       "cancel_body_open": "You can leave at any time until the deadline.",
-      "cancel_body_funded": "You can leave until the deadline. In the 24 hours before it, you can leave only if the group stays at its goal, so it isn't cancelled for everyone."
+      "cancel_body_funded": "You can leave until the deadline. In the 24 hours before it, you can leave only if the group stays at its goal, so it isn't cancelled for everyone.",
+      "pickup_time_label": "Pickup time",
+      "pay_line": "Nothing to pay now. You arrange payment directly with the business once the group reaches its goal."
     },
     "dashboard": {
       "status": {
@@ -1358,7 +1361,13 @@
         "max_tooltip": "After the minimum is reached, people can keep joining up to this number. Leave it empty if you can supply everyone who joins.",
         "max_units_label": "Maximum quantity (optional)",
         "max_units_tooltip": "How many units you can supply in total. Once they run out nobody can join, and people can go on a waitlist. Leave empty for no limit.",
-        "max_units_placeholder": "e.g. 40"
+        "max_units_placeholder": "e.g. 40",
+        "pickup_window_legend": "Pickup time (optional)",
+        "pickup_window_start": "Pickup starts",
+        "pickup_window_end": "Until",
+        "pickup_window_helper": "Shown on the card and the group page, so people know when to come.",
+        "pickup_window_both": "Fill in both the start and the end of pickup",
+        "pickup_window_order": "Pickup must end after it starts"
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {

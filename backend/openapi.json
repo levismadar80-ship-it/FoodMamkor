@@ -4785,6 +4785,18 @@
             "title": "Min Participants",
             "type": "integer"
           },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
           "pickup_note": {
             "anyOf": [
               {
@@ -4796,6 +4808,18 @@
               }
             ],
             "title": "Pickup Note"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
           },
           "price_per_unit_group": {
             "anyOf": [
@@ -4955,6 +4979,18 @@
             "title": "Min Participants",
             "type": "integer"
           },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
           "pickup_note": {
             "anyOf": [
               {
@@ -4965,6 +5001,18 @@
               }
             ],
             "title": "Pickup Note"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -5179,6 +5227,18 @@
             "title": "Min Participants",
             "type": "integer"
           },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
           "pickup_note": {
             "anyOf": [
               {
@@ -5189,6 +5249,18 @@
               }
             ],
             "title": "Pickup Note"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -5340,6 +5412,30 @@
               }
             ],
             "title": "Max Units"
+          },
+          "pickup_ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Ends At"
+          },
+          "pickup_starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Starts At"
           }
         },
         "title": "GroupBuySettingsUpdate",

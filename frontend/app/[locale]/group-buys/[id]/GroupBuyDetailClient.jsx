@@ -37,6 +37,7 @@ import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 // MEH-3597: the offer-page blocks shared with the rescue bag page.
 import WhereSection from "@/components/offer-detail/WhereSection";
 import HowSteps from "@/components/offer-detail/HowSteps";
+import { pickupWindowText } from "@/lib/group-buy-pickup"; // MEH-3597
 // MEH-3592: the join card's member / waitlist / line-total parts.
 import GroupBuyMemberPanel from "@/components/group-buy/GroupBuyMemberPanel";
 import GroupBuyWaitlistPanel from "@/components/group-buy/GroupBuyWaitlistPanel";
@@ -249,6 +250,9 @@ export default function GroupBuyDetailClient({ id }) {
     : gb.fulfillment_note
       ? [{ key: "note", Icon: MapPin, text: gb.fulfillment_note, testId: "group-buy-fulfillment-note" }]
       : [];
+  // MEH-3597: the structured pickup window leads the rows, as the bag's hours do.
+  const pickupWhen = pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  if (pickupWhen) whereRows.unshift({ key: "when", Icon: Clock, label: t("pickup_time_label"), text: pickupWhen, testId: "group-buy-pickup-window" });
   const deliveryOnly = Boolean(gb.delivery_note) && !gb.pickup_note && !gb.fulfillment_note;
   const whereMap =
     producer && typeof producer.lat === "number" && typeof producer.lng === "number" && !deliveryOnly
@@ -414,6 +418,8 @@ export default function GroupBuyDetailClient({ id }) {
             </Button>
             {/* MEH-2999: the «יש להתחבר כדי להצטרף…» line under the button is
                 gone — the button already says «כניסה להצטרפות». */}
+            {/* MEH-3597: when she pays, before she joins (Sapir 21/11). */}
+            <p className="text-xs text-fg-muted text-center" data-testid="group-buy-pay-line">{t("pay_line")}</p>
           </form>
         )}
 
