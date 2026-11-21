@@ -37,6 +37,10 @@ const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
       "x-vercel-set-bypass-cookie": "true",
     }
   : {};
+if (!process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+  console.error(`REFUSING: ${BASE} is behind Vercel protection and VERCEL_AUTOMATION_BYPASS_SECRET is unset — every page would be the SSO screen.`);
+  process.exit(2);
+}
 const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const log = [];

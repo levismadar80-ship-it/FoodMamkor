@@ -1,36 +1,72 @@
 /**
- * Send the Vercel protection-bypass headers to the target origin only (MEH-3607).
+ * Get past Vercel Deployment Protection without sending the bypass secret to
+ * any other host (MEH-3607).
  *
- * `extraHTTPHeaders` on a browser context goes to EVERY host the page loads
- * (map tiles, Cloudinary, fonts, analytics), so the secret ends up in other
- * companies' logs. This adds the headers through a route on the target origin
- * instead, and ends the run if any request to another origin still carries
- * one of them (a stray `extraHTTPHeaders`, a redirect, a popup).
+ * Why not a header: `extraHTTPHeaders` on a browser context goes to EVERY host
+ * the page loads (map tiles, Cloudinary, fonts, analytics). A header added by
+ * `route.fallback({ headers })` is safer but still follows a redirect to
+ * another origin (review on #5085, reproduced with two local servers).
  *
- * Request contexts (`request.newContext({ baseURL })`) only call the target and
- * do not need this.
+ * What this does instead, as Vercel documents: one API request, with
+ * `redirects: 0`, sends the secret plus `x-vercel-set-bypass-cookie` to the
+ * target's canonical origin. Vercel answers with a host-only `_vercel_jwt`
+ * cookie, which lands in the context's cookie jar (`context.request` shares it).
+ * The browser never sees the secret. It sends the cookie to that host only.
+ * Then a guard ends the run if any browser request still carries a bypass
+ * header, for example from a stray `extraHTTPHeaders`.
+ *
+ * The canonical origin: staging.mehamakor.online answers 307 to
+ * staging.mehamakor.co.il (measured 21/11), and sets no cookie itself. Root
+ * redirects are followed WITHOUT the secret, at most 3 hops, stopping at the
+ * protection wall (a redirect to vercel.com); the secret goes to the origin
+ * where they stop.
+ *
+ * A local target (localhost, 127.0.0.1, ::1) or empty headers = no-op.
  *
  * @param {import("playwright").BrowserContext} context
- * @param {string} targetUrl  any URL on the target origin
- * @param {Record<string, string>} headers  the bypass headers; empty = no-op
+ * @param {string} targetUrl  any URL on the target
+ * @param {Record<string, string>} headers  must hold x-vercel-protection-bypass
+ * @returns {Promise<string>} the origin the cookie was set for ("" if no-op)
  */
 export async function scopeBypassToOrigin(context, targetUrl, headers) {
-  const names = Object.keys(headers || {}).map((h) => h.toLowerCase());
-  if (names.length === 0) return;
-  const origin = new URL(targetUrl).origin;
-  context.on("request", (req) => {
-    let url;
-    try { url = new URL(req.url()); } catch { return; }
-    if (url.origin === origin || !/^https?:$/.test(url.protocol)) return;
-    const sent = req.headers();
-    const leaked = names.filter((n) => n in sent);
-    if (leaked.length) {
-      console.error(`ABORT: ${leaked.join(", ")} was sent to ${url.host}, not only to ${origin} (MEH-3607).`);
-      process.exit(3);
-    }
+  const secret = headers?.["x-vercel-protection-bypass"];
+  if (!secret) return "";
+  let origin = new URL(targetUrl).origin;
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(new URL(origin).hostname)) return "";
+
+  for (let hop = 0; hop < 3; hop++) {
+    const r = await context.request.get(`${origin}/`, { maxRedirects: 0, failOnStatusCode: false });
+    const loc = r.headers().location;
+    if (r.status() < 300 || r.status() >= 400 || !loc) break;
+    const next = new URL(loc, origin);
+    // A protected origin answers 302 to vercel.com/sso-api: that is the wall,
+    // not an alias, so the origin before it is the canonical one.
+    if (next.origin === origin || /(^|\.)vercel\.com$/.test(next.hostname)) break;
+    origin = next.origin;
+  }
+
+  const r = await context.request.get(`${origin}/`, {
+    headers: { "x-vercel-protection-bypass": secret, "x-vercel-set-bypass-cookie": "true" },
+    maxRedirects: 0,
+    failOnStatusCode: false,
   });
-  await context.route(
-    (url) => url.origin === origin,
-    (route) => route.fallback({ headers: { ...route.request().headers(), ...headers } }),
-  );
+  const cookies = await context.cookies(origin);
+  if (!cookies.some((c) => c.name === "_vercel_jwt")) {
+    throw new Error(
+      `[bypass] ${origin} set no _vercel_jwt cookie (HTTP ${r.status()}). ` +
+        "Check that VERCEL_AUTOMATION_BYPASS_SECRET is the current secret.",
+    );
+  }
+
+  const names = [...new Set(["x-vercel-protection-bypass", ...Object.keys(headers).map((h) => h.toLowerCase())])];
+  context.on("request", (req) => {
+    req.allHeaders().then((sent) => {
+      const leaked = names.filter((n) => n in sent && /bypass/.test(n));
+      if (leaked.length) {
+        console.error(`ABORT: ${leaked.join(", ")} was sent by the browser to ${new URL(req.url()).host} (MEH-3607).`);
+        process.exit(3);
+      }
+    }, () => {});
+  });
+  return origin;
 }
