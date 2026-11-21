@@ -245,6 +245,7 @@
     ],
     "ProducerDetailOut.products": [
       "allergens",
+      "available_weekdays",
       "description",
       "gluten_detail",
       "group_id",
