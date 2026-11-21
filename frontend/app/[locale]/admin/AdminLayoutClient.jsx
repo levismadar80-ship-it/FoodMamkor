@@ -278,8 +278,7 @@ function AdminShell({ children }) {
                   data-testid={`admin-nav-${section.key}`}
                   open={containsActive || undefined}
                 >
-                  {/* MEH-3539: min-h-6 = axe target-size (24px); was 20px tall. */}
-                  <summary className="flex min-h-6 items-center gap-1 text-xs text-white/50 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
+                  <summary className="flex items-center gap-1 text-xs text-white/50 px-3 pb-1 cursor-pointer list-none select-none hover:text-white/80">
                     <span>{t(`layout.nav_sections.${section.key}`)}</span>
                     <CaretDown size={12} className="transition group-open:rotate-180" aria-hidden="true" />
                   </summary>

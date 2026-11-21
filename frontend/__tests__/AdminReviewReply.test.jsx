@@ -96,12 +96,9 @@ describe("MEH-3259 owner reply on /admin/reviews", () => {
     const block = replies()[0];
     expect(within(block).getByText("תגובת בית העסק")).toBeTruthy();
     expect(within(block).getByText("תודה רבה!")).toBeTruthy();
-    // MEH-3539: the name is the visible text (axe label-content-name-mismatch);
-    // whose reply it is lives in the description.
     expect(
       within(block).getByRole("button", {
-        name: "הסירי תגובה",
-        description: "הסירי את התגובה של בית העסק לביקורת של משתמשת a",
+        name: "הסירי את התגובה של בית העסק לביקורת של משתמשת a",
       }),
     ).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
