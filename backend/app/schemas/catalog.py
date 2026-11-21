@@ -103,14 +103,6 @@ class CategoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class ProducerCityOut(BaseModel):
-    """MEH-970 — one row of GET /producers/cities: live approved-producer
-    count for a single city, consumed by the /map region control."""
-
-    city: str
-    count: int
-
-
 class ProducerRandomOut(BaseModel):
     """MEH-1288 — GET /producers/random: minimal identity of one random
     approved producer, just enough for the homepage "הפתיעו אותי" button to

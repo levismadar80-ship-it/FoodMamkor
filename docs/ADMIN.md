@@ -391,7 +391,7 @@ npx playwright test             # E2E
 **Kashrut badges** — 8 קודים תקפים: `rabanut, badatz, chalak, mehadrin, organic-kosher, shmitta, kilayim, artisan-dairy`.
 בקשה מבית עסק → `POST /producers/me/kashrut-request`. אדמין מאשרת/דוחה ב-`/admin/kashrut`.
 
-**Ambassador (Tier 5) — הוסר מהממשק ב-MEH-2509.** כפילות של «בחירת העורכות» (`is_recommended`), שהיא התג העריכתי היחיד שאודות מתאר. העמודה `producers.ambassador` וה-endpoint `POST /admin/producers/{id}/set-ambassador` עדיין קיימים, אבל אין להם כפתור והם לא משפיעים על `trust_tier`. מחיקת העמודה — אחרי ההשקה (Expand-Contract).
+**Ambassador (Tier 5) — הוסר מהממשק ב-MEH-2509.** כפילות של «בחירת העורכות» (`is_recommended`), שהיא התג העריכתי היחיד שאודות מתאר. העמודה `producers.ambassador` עדיין קיימת, בלי כפתור ובלי השפעה על `trust_tier`; ה-endpoint `set-ambassador` נמחק ב-MEH-3527. מחיקת העמודה — אחרי ההשקה (Expand-Contract).
 
 **POST /producers/{id}/whatsapp-click** — anonymous, rate-limited 10/min per IP.
 הקליינט (`WhatsAppButton.jsx` + inline `<a>` ב-`ProducerDetail.jsx`) יורה
