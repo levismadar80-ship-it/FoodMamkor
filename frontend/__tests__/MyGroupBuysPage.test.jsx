@@ -1,6 +1,6 @@
 // MEH-3609: «הקבוצות שלי». A member could get back to a group buy only
 // through the link in an email.
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
@@ -32,7 +32,13 @@ const mount = () => render(
 );
 
 describe("MyGroupBuysClient", () => {
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
+    // Only Date is frozen (the fixtures' deadline is 01.12.2026), so findBy's
+    // timers still run.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-21T12:00:00Z"));
     api.get.mockReset();
     push.mockReset();
     authRef.current = { user: { id: "u1" }, loading: false };
@@ -73,6 +79,20 @@ describe("MyGroupBuysClient", () => {
     expect(rows[1]).toHaveTextContent("כמות: 1");
   });
 
+  it("a cancelled group shows no pickup time, even with one saved", async () => {
+    api.get.mockResolvedValueOnce({ data: { group_buys: [
+      row(A, { status: "cancelled", pickup_starts_at: "2026-12-04T07:00:00", pickup_ends_at: "2026-12-04T11:00:00" }),
+    ] } });
+    mount();
+    expect(await screen.findByTestId("my-group-buys-row-state")).toHaveTextContent(new RegExp(`^${copy.status.cancelled}$`));
+  });
+
+  it("an open group past its deadline shows no join date", async () => {
+    api.get.mockResolvedValueOnce({ data: { group_buys: [row(A, { deadline: "2026-11-20T10:00:00" })] } });
+    mount();
+    expect(await screen.findByTestId("my-group-buys-row-state")).toHaveTextContent(new RegExp(`^${copy.status.open}$`));
+  });
+
   it("a status the page has no word for shows no status", async () => {
     api.get.mockResolvedValueOnce({ data: { group_buys: [row(A, { status: "archived" })] } });
     mount();
@@ -96,8 +116,10 @@ describe("MyGroupBuysClient", () => {
 
   it("signed out: sent to log in", async () => {
     authRef.current = { user: null, loading: false };
+    window.history.pushState({}, "", "/my-group-buys");
     mount();
-    expect(push).toHaveBeenCalled();
+    // To the login page, with a way back here — not just "somewhere".
+    expect(push).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent("/my-group-buys")}`);
     expect(api.get).not.toHaveBeenCalled();
   });
 });

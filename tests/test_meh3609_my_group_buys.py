@@ -54,15 +54,78 @@ def test_running_first_by_nearest_deadline_then_the_rest(client, db):
     done = _make_group_buy(
         db, producer, deadline=now + timedelta(days=20), status="fulfilled"
     )
-    for gb in (late, soon, done):
+    gone = _make_group_buy(
+        db, producer, deadline=now + timedelta(days=5), status="cancelled"
+    )
+    # Still "open" but its deadline passed: waits for the expiry job, so it is
+    # not running and does not lead the list (review finding).
+    lapsed = _make_group_buy(db, producer, deadline=now - timedelta(days=1))
+    for gb in (late, soon, done, gone, lapsed):
         _join(db, gb, me)
-    ids = [
+    ids = _ids(client, me)
+    # Running by nearest deadline, then the rest by newest deadline.
+    assert ids == [
+        str(soon.id),
+        str(late.id),
+        str(done.id),
+        str(gone.id),
+        str(lapsed.id),
+    ]
+
+
+def _ids(client, user):
+    return [
         r["id"]
-        for r in client.get("/users/me/group-buys", headers=auth_header(me)).json()[
+        for r in client.get("/users/me/group-buys", headers=auth_header(user)).json()[
             "group_buys"
         ]
     ]
-    assert ids == [str(soon.id), str(late.id), str(done.id)]
+
+
+def test_a_group_she_left_drops_off(client, db):
+    producer, _ = _producer_user(db, email="mineowner4@example.com")
+    me = make_user(db, email="mine5@example.com")
+    gb = _make_group_buy(db, producer)
+    _join(db, gb, me)
+    assert _ids(client, me) == [str(gb.id)]
+    left = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(me))
+    assert left.status_code == 200
+    assert _ids(client, me) == []
+
+
+def test_a_paused_business_is_left_out_too(client, db):
+    producer, _ = _producer_user(db, email="mineowner5@example.com")
+    me = make_user(db, email="mine6@example.com")
+    gb = _make_group_buy(db, producer)
+    _join(db, gb, me)
+    producer.status = "inactive"  # paused (STATE_MACHINES §2)
+    db.commit()
+    assert _ids(client, me) == []
+
+
+def test_a_delivery_only_group_shows_no_pickup_time(client, db):
+    # MEH-3597's rule: the card and the page hide a saved window on a
+    # delivery-only group, so the list does too.
+    producer, _ = _producer_user(db, email="mineowner6@example.com")
+    me = make_user(db, email="mine7@example.com")
+    start = utc_now() + timedelta(days=10)
+    both = _make_group_buy(db, producer)
+    delivery = _make_group_buy(db, producer)
+    for gb, pickup in ((both, "בחנות"), (delivery, None)):
+        gb.pickup_note = pickup
+        gb.delivery_note = "משלוח לכל הארץ"
+        gb.pickup_starts_at = start
+        gb.pickup_ends_at = start + timedelta(hours=3)
+        _join(db, gb, me)
+    rows = {
+        r["id"]: r
+        for r in client.get("/users/me/group-buys", headers=auth_header(me)).json()[
+            "group_buys"
+        ]
+    }
+    assert rows[str(both.id)]["pickup_starts_at"] is not None
+    assert rows[str(delivery.id)]["pickup_starts_at"] is None
+    assert rows[str(delivery.id)]["pickup_ends_at"] is None
 
 
 def test_a_group_of_a_business_no_longer_public_is_left_out(client, db):

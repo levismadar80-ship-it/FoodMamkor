@@ -39,7 +39,12 @@ function Row({ gb }) {
   const t = useTranslations("my_group_buys");
   const tCard = useTranslations("group_buys.card");
   const locale = useLocale();
-  const when = pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  // The server already drops the time on a delivery-only group (MEH-3597
+  // rule); a cancelled group has no pickup to go to.
+  const when = gb.status === "cancelled" ? null : pickupWindowText(gb.pickup_starts_at, gb.pickup_ends_at, locale);
+  // An "open" group past its deadline waits for the expiry job: no date that
+  // reads as still ahead.
+  const stillOpen = gb.status === "open" && parseNaiveUtc(gb.deadline) > new Date();
   const qty = gb.unit
     ? t("quantity_unit", { count: gb.quantity, unit: gb.unit })
     : t("quantity", { count: gb.quantity });
@@ -48,14 +53,17 @@ function Row({ gb }) {
       <Link href={`/group-buys/${gb.id}`} className="block px-4 py-3 min-h-touch hover:bg-background" data-testid="my-group-buys-row">
         <span className="block font-semibold text-text">{gb.title}</span>
         <span className="block text-sm text-fg-muted">
-          {[gb.producer_name, qty].filter(Boolean).join(" · ")}
+          {/* bdi: a Latin business name beside Hebrew keeps its own order. */}
+          {gb.producer_name && <bdi>{gb.producer_name}</bdi>}
+          {gb.producer_name && " · "}
+          {qty}
         </span>
         <span className="block text-sm text-fg-muted" data-testid="my-group-buys-row-state">
           {/* A status this page has no word for shows no status, never a wrong one. */}
           {[
             STATUSES.includes(gb.status) ? t(`status.${gb.status}`) : null,
             when ? tCard("pickup_when", { when }) : null,
-            !when && gb.status === "open"
+            !when && stillOpen
               ? t("deadline", { date: formatDate(parseNaiveUtc(gb.deadline), locale) })
               : null,
           ].filter(Boolean).join(" · ")}

@@ -157,7 +157,8 @@ def _register_flagged_features(app: FastAPI) -> None:
     app.include_router(product_order_business.router)
     # MEH-3592: quantity edit, waitlist, the business's caps / stop switch.
     app.include_router(group_buy_capacity.router)
-    # MEH-3609: «הקבוצות שלי», the caller's own group buys.
+    # MEH-3609: «הקבוצות שלי», the caller's own group buys. Like MEH-3592's
+    # line above, it has no flag: it sits here beside its group-buy siblings.
     app.include_router(group_buy_mine.router)
 
 
