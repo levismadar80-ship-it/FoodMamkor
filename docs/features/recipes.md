@@ -11,6 +11,7 @@
 **קבצים מרכזיים**
 * `backend/app/routers/producer_recipes.py`
 * `backend/app/services/producer_recipe_moderation.py`
+* `frontend/components/admin/AdminFeedbackModal.jsx` — חלון המשוב של האדמין («לבקש שינויים» או «לדחות», עם הערה) בדף המתכונים באדמין. משותף לחוויות ולמתכונים מאז MEH-3623.
 
 **Flags.** אין.
 
