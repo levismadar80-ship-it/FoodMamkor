@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-21 — WebKit חוסם ב-staging, וקוד אימות בוואטסאפ נבדק ב-staging (PR #4982)
+
+**שורה אחת:** ‏#4982 מוזג. ה-job ‏`e2e-webkit-core` (iPhone 13) חוסם עכשיו כל PR עם `run-e2e` וכל דחיפה ל-staging, ו-webhook המסירה של וואטסאפ נבדק מקצה לקצה ב-staging.
+
+**מה צריך לדעת לפני עבודה:**
+- **spec חדש ברשימת WebKit core:** מוסיפים לרשימה רק spec שהיה ירוק בכמה לילות (`frontend/e2e/webkit-core.txt`, ‏`WebkitCoreList.test.js`).
+- **וואטסאפ ב-staging:** אפליקציית Meta נפרדת, «Mehamakor Staging», עם מספר הבדיקה ‎+1 555 145 7029. ה-webhook מוגדר ל-`foodmamkor-staging.up.railway.app/webhook/whatsapp`. אל תגעו במספר הייצור.
+- **הטוקן של staging זמני:** `WHATSAPP_ACCESS_TOKEN` פג אחרי 24 שעות, ואז Meta מחזירה 401 עם שגיאה 190. הוא מתחדש ב-API Setup. כדי שלא יפוג צריך System User.
+- **פורמט טלפון:** ממספר הבדיקה אפשר לשלוח רק לטלפון שנשמר כ-‎+972…. כשהוא נשמר כ-`05…` חוזרת שגיאה 131030. השערה, לא נבדקה: בייצור זה עובד כי השולח ישראלי.
+
 ## 2026-11-20 — כלים לבית העסק: 11 PR-ים ב-staging, מחכים ל-1.5.10
 
 **שורה אחת:** כל הכרטיסים מסדרת 20/11 (משלוח, מוצרים, ביקורות, צ'אט, «ספרו לנו על העסק») מוזגו ל-staging: #4914, #4916, #4917, #4918, #4921, #4922, #4923, #4924, #4925, #4926, #4933. אין PR פתוח מהסדרה.
