@@ -30,7 +30,10 @@ from app.schemas.schemas import (
 )
 from app.services import group_buy_capacity as capacity
 from app.services.group_buy_goal_flap import participant_emails
-from app.services.group_buy_notifications import send_pickup_changed
+from app.services.group_buy_notifications import (
+    send_allergens_changed,
+    send_pickup_changed,
+)
 from app.services.group_buy_pickup_place import own_location  # MEH-3610
 from app.services.group_buy_pickup_text import (
     is_delivery_only,
@@ -240,6 +243,9 @@ def _set_pickup_window(
     first = gb.pickup_starts_at is None
     gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]
     gb.pickup_ends_at = data.pickup_ends_at  # type: ignore[assignment]
+    # MEH-3610: one reminder per pickup time, not per group — a moved pickup
+    # is reminded again before its new date.
+    gb.pickup_reminder_sent_at = None  # type: ignore[assignment]
     # A delivery-only group shows no pickup time, so nobody is told of one.
     if is_delivery_only(gb.pickup_note, gb.delivery_note, gb.fulfillment_note):  # type: ignore[arg-type]
         return
@@ -258,13 +264,27 @@ def _set_pickup_window(
 
 
 def _set_allergens_and_place(
-    db: Session, gb: GroupBuy, data: GroupBuySettingsUpdate
+    db: Session,
+    gb: GroupBuy,
+    data: GroupBuySettingsUpdate,
+    background_tasks: BackgroundTasks,
 ) -> None:
     """MEH-3610: allergens and the pickup branch; an explicit null clears
-    either, a field left out is unchanged."""
+    either, a field left out is unchanged. A real allergen change on a group
+    people already joined emails each of them (safety: she joined on the old
+    list)."""
     sent = data.model_fields_set
-    if "allergens" in sent:
+    if "allergens" in sent and (gb.allergens or None) != (data.allergens or None):
         gb.allergens = data.allergens  # type: ignore[assignment]
+        emails = participant_emails(db, gb)
+        if emails:
+            background_tasks.add_task(
+                send_allergens_changed,
+                emails,
+                str(gb.title),
+                str(gb.id),
+                test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+            )
     if "pickup_location_id" in sent:
         gb.pickup_location_id = own_location(  # type: ignore[assignment]
             db, gb.producer_id, data.pickup_location_id
@@ -315,7 +335,7 @@ def update_group_buy_settings(  # noqa: PLR0913 — FastAPI-injected args
         gb.max_units = data.max_units  # type: ignore[assignment]
     if "pickup_starts_at" in sent:  # MEH-3597: the schema sends both or neither
         _set_pickup_window(db, gb, data, background_tasks)
-    _set_allergens_and_place(db, gb, data)
+    _set_allergens_and_place(db, gb, data, background_tasks)
     if data.joins_open is not None:
         gb.joins_closed_at = (
             None if data.joins_open else (gb.joins_closed_at or utc_now())  # type: ignore[assignment]

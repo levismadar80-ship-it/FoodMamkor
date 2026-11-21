@@ -67,4 +67,6 @@ def place_line(loc: ProducerLocation | None) -> str:
         return ""
     where = ", ".join(p for p in (out["address"], out["city"]) if p)
     text = " — ".join(p for p in (out["label"], where) if p)
+    # Free text from the business: one line in a plain-text body.
+    text = " ".join(text.split())
     return f"מקום איסוף: {text}\n" if text else ""

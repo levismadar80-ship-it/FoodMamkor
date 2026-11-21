@@ -45,6 +45,9 @@ def send_pickup_reminders(db: Session, now: datetime | None = None) -> int:
     Idempotent: the stamp is set in the same commit that selects the row (SKIP
     LOCKED), and the mail goes out after it, so a second run selects nothing
     and a crash after the commit loses a reminder rather than doubling it.
+    The stamp is cleared when the pickup time moves (settings), so a moved
+    pickup is reminded again. Someone who joins after the reminder went out
+    gets none: her join email already carries the pickup time.
     """
     now = now or utc_now()
     due = (

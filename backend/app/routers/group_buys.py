@@ -38,7 +38,10 @@ from app.services.group_buy_notifications import (
 from app.services import indexnow  # MEH-2852
 from app.services import group_buy_capacity as capacity  # MEH-3592
 from app.services.producer_listing import is_business
-from app.services.group_buy_pickup_text import pickup_lines  # MEH-3597
+from app.services.group_buy_pickup_text import (
+    is_delivery_only,
+    pickup_lines,
+)  # MEH-3597
 from app.services.group_buy_pickup_place import (  # MEH-3610
     location_out,
     own_location,
@@ -81,7 +84,10 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict[str, Any]:
         "pickup_starts_at": gb.pickup_starts_at,  # MEH-3597
         "pickup_ends_at": gb.pickup_ends_at,
         "allergens": gb.allergens,  # MEH-3610
-        "pickup_location": location_out(gb.pickup_location),
+        # A delivery-only group has no pickup place, even if one was saved.
+        "pickup_location": None
+        if _delivery_only(gb)
+        else location_out(gb.pickup_location),
         "status": gb.status,
         "commits_count": commits_count,
         # MEH-3592: caps beyond people. units_left is a number, never a roster.
@@ -317,9 +323,15 @@ def _maybe_notify_funded(
     )
 
 
+def _delivery_only(gb: GroupBuy) -> bool:
+    return is_delivery_only(gb.pickup_note, gb.delivery_note, gb.fulfillment_note)  # type: ignore[arg-type]
+
+
 def _pickup_text(gb: GroupBuy) -> str:
-    # MEH-3610: the branch first, then the time and the notes.
-    return place_line(gb.pickup_location) + pickup_lines(
+    # MEH-3610: the branch first, then the time and the notes. A
+    # delivery-only group names no branch (same rule as the page).
+    place = "" if _delivery_only(gb) else place_line(gb.pickup_location)
+    return place + pickup_lines(
         gb.pickup_starts_at,  # type: ignore[arg-type]
         gb.pickup_ends_at,  # type: ignore[arg-type]
         gb.pickup_note,  # type: ignore[arg-type]

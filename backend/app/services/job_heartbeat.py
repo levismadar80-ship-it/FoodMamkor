@@ -137,6 +137,9 @@ UNMONITORED_SLUGS = frozenset(
         "billing-start-signal-monthly",
         # MEH-3296: on-site orders tick; flag-gated, no Sentry monitor (plan limit).
         "product-orders-tick",
+        # MEH-3610: the pickup reminder before a funded group's pickup. No
+        # Sentry monitor (plan limit, MEH-3332).
+        "group-buy-pickup-reminder-daily",
     }
 )
 

@@ -417,6 +417,32 @@ def send_pickup_changed(  # noqa: PLR0913 — BackgroundTasks entry, plain data
             logger.exception("pickup-changed email failed (%s)", group_buy_id)
 
 
+def notify_allergens_changed(
+    email: str, title: str, group_buy_id: str, test_cause: bool = False
+) -> None:
+    """MEH-3610: the business changed the allergens of a group she joined.
+    No list in the mail (the codes' Hebrew names live in the frontend); the
+    page shows the current one."""
+    subject = f'מהמקור — האלרגנים של "{title}" עודכנו'
+    body = (
+        f"שלום,\n\n"
+        f'בית העסק עדכן את רשימת האלרגנים בקבוצת הרכישה "{title}" שהצטרפת אליה.\n'
+        f"כדאי לבדוק אותה בדף הקבוצה לפני האיסוף: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(email, subject, body, test_cause=test_cause)
+
+
+def send_allergens_changed(
+    emails: list[str], title: str, group_buy_id: str, test_cause: bool = False
+) -> None:
+    for email in emails:
+        try:
+            notify_allergens_changed(email, title, group_buy_id, test_cause=test_cause)
+        except Exception:  # best-effort, one failure must not stop the rest
+            logger.exception("allergens-changed email failed (%s)", group_buy_id)
+
+
 def notify_pickup_reminder(  # noqa: PLR0913 — plain data from the daily job
     email: str,
     title: str,

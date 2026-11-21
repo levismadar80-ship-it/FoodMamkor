@@ -134,7 +134,9 @@ def test_a_field_left_out_is_unchanged(client, db):
     producer, user = _producer_user(db, email="p3610i@example.com")
     loc = _branch(db, producer)
     gb = _make_group_buy(db, producer)
-    _settings(client, user, gb, {"allergens": ["eggs"], "pickup_location_id": str(loc.id)})
+    _settings(
+        client, user, gb, {"allergens": ["eggs"], "pickup_location_id": str(loc.id)}
+    )
     _settings(client, user, gb, {"max_units": 50})
     db.refresh(gb)
     assert gb.allergens == ["eggs"] and gb.pickup_location_id == loc.id
@@ -168,7 +170,9 @@ NOW = datetime(2026, 12, 3, 15, 0)
 
 
 def _funded_with_pickup(db, producer, starts, **fields):
-    gb = _make_group_buy(db, producer, status="funded", deadline=NOW - timedelta(days=1))
+    gb = _make_group_buy(
+        db, producer, status="funded", deadline=NOW - timedelta(days=1)
+    )
     gb.pickup_starts_at = starts
     gb.pickup_ends_at = starts + timedelta(hours=3)
     for key, value in fields.items():
@@ -185,9 +189,7 @@ def _join(db, gb, email):
 
 
 def _run(db):
-    with mock.patch(
-        "app.services.group_buy_notifications._send_email"
-    ) as send:
+    with mock.patch("app.services.group_buy_notifications._send_email") as send:
         count = reminder.send_pickup_reminders(db, now=NOW)
     return count, send
 
@@ -270,3 +272,84 @@ def test_a_business_no_longer_public_sends_no_reminder(db):
     db.commit()
     count, send = _run(db)
     assert count == 0 and send.call_count == 0
+
+
+# --- review round 1 ----------------------------------------------------------
+
+
+def test_a_delivery_only_group_shows_and_mails_no_branch(client, db):
+    from app.routers.group_buys import _pickup_text
+
+    producer, _ = _producer_user(db, email="p3610r@example.com")
+    loc = _branch(db, producer)
+    gb = _make_group_buy(db, producer)
+    gb.pickup_location_id = loc.id
+    gb.pickup_note, gb.delivery_note, gb.fulfillment_note = None, "משלוח עד הבית", None
+    db.commit()
+    db.expire_all()
+    assert client.get(f"/group-buys/{gb.id}").json()["pickup_location"] is None
+    gb = db.get(GroupBuy, gb.id)
+    assert "מקום איסוף" not in _pickup_text(gb)
+    # The control: the same group with a pickup note names the branch.
+    gb.pickup_note = "איסוף מהסניף"
+    db.commit()
+    db.expire_all()
+    assert "מקום איסוף: הסניף בכרמל" in _pickup_text(db.get(GroupBuy, gb.id))
+
+
+def test_a_branch_label_with_newlines_stays_one_line(db):
+    from app.services.group_buy_pickup_place import place_line
+
+    producer, _ = _producer_user(db, email="p3610s@example.com")
+    loc = _branch(db, producer, label="הסניף\nשורה מזויפת")
+    assert place_line(loc).count("\n") == 1
+
+
+def test_moving_the_pickup_time_rearms_the_reminder(client, db):
+    producer, user = _producer_user(db, email="p3610t@example.com")
+    gb = _make_group_buy(
+        db, producer, status="funded", deadline=utc_now() - timedelta(hours=1)
+    )
+    gb.pickup_starts_at = utc_now() + timedelta(days=1)
+    gb.pickup_ends_at = gb.pickup_starts_at + timedelta(hours=2)
+    gb.pickup_reminder_sent_at = utc_now()
+    db.commit()
+    later = utc_now() + timedelta(days=8)
+    r = _settings(
+        client,
+        user,
+        gb,
+        {
+            "pickup_starts_at": later.isoformat(),
+            "pickup_ends_at": (later + timedelta(hours=2)).isoformat(),
+        },
+    )
+    assert r.status_code == 200, r.text
+    db.refresh(gb)
+    assert gb.pickup_reminder_sent_at is None
+
+
+def _allergen_mails(send):
+    return [c.args[0] for c in send.call_args_list if "האלרגנים" in c.args[1]]
+
+
+def test_an_allergen_change_tells_everyone_who_joined(client, db):
+    producer, user = _producer_user(db, email="p3610u@example.com")
+    gb = _make_group_buy(db, producer, status="funded")
+    gb.allergens = ["gluten"]
+    db.commit()
+    _join(db, gb, "al1@example.com")
+    _join(db, gb, "al2@example.com")
+    with mock.patch("app.services.group_buy_notifications._send_email") as send:
+        assert (
+            _settings(
+                client, user, gb, {"allergens": ["gluten", "peanuts"]}
+            ).status_code
+            == 200
+        )
+    assert sorted(_allergen_mails(send)) == ["al1@example.com", "al2@example.com"]
+    # The same list again, or a save of other fields, tells nobody.
+    with mock.patch("app.services.group_buy_notifications._send_email") as send:
+        _settings(client, user, gb, {"allergens": ["gluten", "peanuts"]})
+        _settings(client, user, gb, {"max_units": 40})
+    assert _allergen_mails(send) == []
