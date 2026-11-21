@@ -20,6 +20,11 @@ import { buildPageRange, clampPage } from "@/lib/pagination";
  *   role="navigation", aria-label="Pagination" (translated)
  *   aria-current="page" on the active button
  *   Disabled prev/next when at boundaries.
+ *   Prev/next carry NO aria-label: their accessible name is the visible
+ *   text («→ הקודם» / «הבא ←»), so a voice-control user who says «הקודם»
+ *   reaches the button (WCAG 2.5.3 Label in Name, MEH-3549). An
+ *   aria-label of «עמוד קודם» did not contain «הקודם» → axe
+ *   label-content-name-mismatch (serious).
  *
  * @param {{ page: number, totalPages: number, onChange: (page: number) => void, perPage?: number, onPerPageChange?: (perPage: number) => void, perPageOptions?: number[] }} props
  */
@@ -73,7 +78,6 @@ export default function Pagination({
           type="button"
           onClick={() => go(safePage - 1)}
           disabled={safePage <= 1}
-          aria-label={t("prev_aria")}
           className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t("prev")}
@@ -114,7 +118,6 @@ export default function Pagination({
           type="button"
           onClick={() => go(safePage + 1)}
           disabled={safePage >= totalPages}
-          aria-label={t("next_aria")}
           className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t("next")}

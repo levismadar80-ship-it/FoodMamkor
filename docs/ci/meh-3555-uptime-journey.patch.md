@@ -1,6 +1,6 @@
 # MEH-3555 — the uptime probe also walks the user journey
 
-> **State: pending** (register row `meh-3555-uptime-journey`). Target: `.github/workflows/uptime.yml`.
+> **State: applied** (21/11/2026, through Claude in Chrome, sha256 checked) (register row `meh-3555-uptime-journey`). Target: `.github/workflows/uptime.yml`.
 > Prepared 21/11/2026 against `uptime.yml` on staging `origin/staging` of that day.
 
 ## Why

@@ -14,8 +14,9 @@ Does NOT: block signup (this is BackgroundTasks; fail-open at every
 Related:  app/routers/chat.py:158-179 (canonical anthropic.Anthropic +
           httpx.Client() init per .claude/rules/backend.md), app/routers/
           auth.py:474,575 (PR1 BackgroundTasks signup hooks — PR3 adds
-          score_producer adjacent), app/schemas/schemas.py
-          RiskScoreResponse (admin GET wire shape).
+          score_producer adjacent). The admin reads the score on the
+          producer list (ProducerAdminOut.risk_score); the separate
+          GET …/risk-score route had no caller and left in MEH-3527.
 History:  MEH-509 PR3 (creation); MEH-509 (incident 2026-05-23: JSON
           parser hardening — Haiku wrapped JSON in markdown fences /
           leading prose / empty body, all surfaced as

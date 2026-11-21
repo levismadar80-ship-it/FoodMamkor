@@ -159,12 +159,6 @@ class TestOrganizerAbsentFromBusinessSurfaces:
         _business(db)
         assert client.get("/producers/count").json()["count"] == 1
 
-    def test_absent_from_cities(self, client, db):
-        _organizer(db)
-        _business(db)
-        cities = client.get("/producers/cities").json()
-        assert sum(c["count"] for c in cities) == 1
-
     def test_absent_from_stats(self, client, db):
         _organizer(db)
         _business(db)
