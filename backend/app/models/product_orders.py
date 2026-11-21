@@ -448,6 +448,14 @@ class ProductOrderItem(Base):
     contains_alcohol = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-3617: the chosen size or flavour. The name is a snapshot, like
+    # `name`: a later rename or delete of the variant leaves the order as sent.
+    variant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("product_variants.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    variant_name = Column(String(40), nullable=True)
 
     order = relationship("ProductOrder", back_populates="items")
     product = relationship("Product")

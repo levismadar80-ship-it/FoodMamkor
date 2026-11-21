@@ -6,21 +6,27 @@
  *           bidi isolation); the unit label follows in natural direction.
  * Does NOT: render a free-text `price_range` label — callers keep that path.
  * Related:  frontend/lib/product-price.js (productNumericPrice, productUnitLabel).
- * History:  MEH-2936 (creation).
+ * History:  MEH-2936 (creation); MEH-3617 (two or more variants: «מ-20₪»,
+ *           the lowest of them).
  */
 import { useTranslations } from "next-intl";
 import { productNumericPrice, productUnitLabel } from "@/lib/product-price";
+import { lowestVariantShekels } from "@/lib/product-variants";
+import { formatPriceRange } from "@/lib/utils";
 
 /**
  * @param {{ product: { price_min?: number | string | null, price_max?: number | string | null, price_unit?: string | null } }} props
  */
 export default function ProductPrice({ product }) {
   const tUnit = useTranslations("price_unit");
-  const price = productNumericPrice(product);
+  const t = useTranslations("product_variants");
+  const lowest = lowestVariantShekels(/** @type {any} */ (product));
+  const price = typeof lowest === "number" ? formatPriceRange(lowest, lowest) : productNumericPrice(product);
   if (!price) return null;
   const unit = productUnitLabel(product, tUnit);
   return (
     <>
+      {typeof lowest === "number" && <span data-testid="product-price-from">{t("from")}</span>}
       <span dir="ltr">{price}</span>
       {unit && <span data-testid="product-price-unit"> {unit}</span>}
     </>

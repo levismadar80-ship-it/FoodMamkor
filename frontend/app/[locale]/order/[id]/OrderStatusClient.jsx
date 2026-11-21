@@ -27,6 +27,7 @@ import { SkeletonList } from "@/components/Skeleton";
 import { detailToMessage } from "@/lib/errors";
 import { acceptChange, buyerRef, cancelOrder, readStatus, statusView, tokenFromHash } from "@/lib/order-status";
 import { dayLabel, hhmm, rangeEnds, shekelsText, toPayAgorot } from "@/lib/product-orders";
+import { orderLineName } from "@/lib/product-variants";  // MEH-3617
 
 const Skeleton = /** @type {any} */ (SkeletonList);
 
@@ -46,7 +47,7 @@ function Lines({ order }) {
   return (
     <ul className="text-sm text-text space-y-0.5">
       {order.items.map((line, index) => (
-        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: line.name })}</li>
+        <li key={`${line.name}-${index}`}>{t("line", { qty: line.qty, name: orderLineName(line) })}</li>
       ))}
     </ul>
   );

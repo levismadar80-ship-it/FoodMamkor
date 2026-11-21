@@ -37,9 +37,10 @@ import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
-import OrderStepper from "@/components/public/OrderStepper";
+import RowOrderControl from "@/components/public/RowOrderControl";  // MEH-3617
+import { needsChoice, variantNamesLine } from "@/lib/product-variants";  // MEH-3617
 import { shekelsText } from "@/lib/product-orders";
-import { unitPriceAgorot } from "@/lib/order-cart";
+import { rowEstimateAgorot } from "@/lib/order-cart";
 import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
 import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
 import ReportButton from "@/components/ReportButton";
@@ -596,6 +597,10 @@ export default function ProducerSections({
                       {product.description && (
                         <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{product.description}</p>
                       )}
+                      {/* MEH-3617: the sizes or flavours, by name. */}
+                      {needsChoice(product) && (
+                        <p className="text-xs text-fg-muted mt-0.5" data-testid="product-variant-names">{variantNamesLine(product)}</p>
+                      )}
                       {/* Same price cell/position for every card. MEH-1168 P1:
                           the ₪-suffixed numeric amount is bidi-isolated so RTL
                           flow can't render "35₪" as "₪35". */}
@@ -610,9 +615,9 @@ export default function ProducerSections({
                           carry them. Each row now names its own flags — icon +
                           the same label as the sheet (MEH-2584 icon+word). */}
                       <ProductDietPills product={product} t={t} />
-                      {orderable?.price_is_estimate && (
+                      {orderable && typeof rowEstimateAgorot(orderable) === "number" && (
                         <p className="text-xs text-fg-muted mt-1" data-testid="order-estimate">
-                          {t("producer.detail.order_cart.estimate", { price: shekelsText(unitPriceAgorot(orderable)) })}
+                          {t("producer.detail.order_cart.estimate", { price: shekelsText(rowEstimateAgorot(orderable)) })}
                         </p>
                       )}
                       {orderable?.contains_alcohol && (
@@ -634,10 +639,11 @@ export default function ProducerSections({
                   <div key={product.id} className={`${desktopOnly ? "hidden md:block" : "block"} relative`}>
                     {row}
                     <div className="absolute end-0 top-1/2 -translate-y-1/2">
-                      <OrderStepper
-                        product={orderable}
-                        qty={orderCart.picks[orderable.id] ?? 0}
+                      <RowOrderControl
+                        orderable={orderable}
+                        picks={orderCart.picks}
                         onChange={orderCart.change}
+                        onChoose={() => openSheetFor(product)}
                       />
                     </div>
                   </div>
@@ -700,6 +706,11 @@ export default function ProducerSections({
               onPrev={goPrevProduct}
               onNext={goNextProduct}
               onClose={closeSheet}
+              order={orderCart?.menu ? {
+                orderable: orderCart.byId.get(String(openProduct.id)) ?? null,
+                picks: orderCart.picks,
+                onChange: orderCart.change,
+              } : null}
             />
           )}
         </section>

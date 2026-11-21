@@ -156,6 +156,17 @@ class Product(Base):
     producer = relationship(
         "Producer", back_populates="products", foreign_keys="Product.producer_id"
     )
+    # MEH-3617: sizes or flavours, each with its own optional price. Empty =
+    # the product as before. selectin: the business page reads every
+    # product's variants, so one IN query, not one query per product.
+    variants = relationship(
+        "ProductVariant",
+        back_populates="product",
+        order_by="ProductVariant.position",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
+    )
     # MEH-588: M2M back-ref so a Product can list the producer's recipes
     # that promote it. `secondary` points to the link Table defined in models/recipes.py.
     recipes = relationship(
@@ -188,6 +199,44 @@ class Product(Base):
             ),
         ),
     )
+
+
+# MEH-3617: the cap on variants per product is MAX_VARIANTS_PER_PRODUCT in
+# app/limits.py, enforced by routers/product_variants.py.
+VARIANT_NAME_MAX = 40
+
+
+class ProductVariant(Base):
+    """One size or flavour of a product («קטנה», «שוקולד»).
+
+    `price_agorot` NULL = the product's own price. `in_stock` false = shown
+    disabled; when every variant is out, the product is out
+    (services/product_variants.py::orderable_variants).
+    """
+
+    __tablename__ = "product_variants"
+    __table_args__ = (
+        CheckConstraint(
+            "price_agorot IS NULL OR price_agorot >= 0",
+            name="product_variants_price_check",
+        ),
+        Index("ix_product_variants_product_id", "product_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = Column(String(VARIANT_NAME_MAX), nullable=False)
+    price_agorot = Column(Integer, nullable=True)
+    in_stock = Column(
+        Boolean, default=True, nullable=False, server_default=text("true")
+    )
+    position = Column(Integer, nullable=False, default=0, server_default=text("0"))
+
+    product = relationship("Product", back_populates="variants")
 
 
 class DeliveryArea(Base):

@@ -1261,6 +1261,7 @@ from app.models.catalog import (  # noqa: E402
     ProducerLocation as ProducerLocation,
     ProducerOffer as ProducerOffer,
     Product as Product,
+    ProductVariant as ProductVariant,  # MEH-3617
 )
 from app.models.engagement import (  # noqa: E402
     AlertLog as AlertLog,
