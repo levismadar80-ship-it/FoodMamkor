@@ -128,7 +128,7 @@ export default function RescueOfferPage({ offerId }) {
             <b className="font-semibold">{t("offer_page.pickup_title")}</b>
             <span className="numeric">{israelTime(offer.pickup_start)}–{israelTime(offer.pickup_end)}</span>
           </p>
-          <OwnerRow href={businessHref} name={producer.name} testId="rescue-offer-business">
+          <OwnerRow href={businessHref} name={producer.name} logoUrl={producer.logo_url} testId="rescue-offer-business">
             <span className="block font-semibold">{t("offer_page.business_link", { name: producer.name })}</span>
             {/* The business's own one-liner (Wolt's «about the venue» line): who packs the bag. */}
             {producer.short_description && (
