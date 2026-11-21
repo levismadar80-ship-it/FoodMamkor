@@ -6,13 +6,15 @@
 #           second builder is the bug — it drifts from the one form MEH-2189
 #           ruled on. Before MEH-3603 four files built wa.me by hand.
 # Touches:  nothing — reads frontend/ and prints file:line.
-# Does NOT: catch a link assembled from pieces ("wa" + ".me"), or one that
+# Does NOT: catch a literal that starts mid-string ("Open https://wa.me/1",
+#           `${base}wa.me/1`) or one split before "wa.me/", or one that
 #           only DETECTS a wa.me href (a regex like /wa\.me/ is not a builder).
 # History:  MEH-3603 (creation, under MEH-3600).
 #
 # THE RULE
 #   No string literal that starts a WhatsApp URL — `https://wa.me…`,
-#   `"wa.me/…"`, `api.whatsapp.com/send`, `web.whatsapp.com/send` — in
+#   `"wa.me/…"`, `api.whatsapp.com/send`, `web.whatsapp.com/send`,
+#   `whatsapp://send` (any case) — in
 #   frontend/{app,components,lib,hooks} outside frontend/lib/utils.js.
 #   Comment lines are skipped. Tests and lib/generated/ are out of scope.
 #
@@ -30,11 +32,11 @@ OWNER="frontend/lib/utils.js"
 # A literal that starts a URL: `https://wa.me…` / `https://api.whatsapp.com/send…`,
 # or a bare "wa.me/…". Prose like «the CTA is a `wa.me` deep link» (no slash,
 # no scheme) is not a builder — ContactCard.jsx:277 carries exactly that.
-PATTERN="[\`\"'](https?://(wa\\.me|api\\.whatsapp\\.com/send|web\\.whatsapp\\.com/send)|wa\\.me/)"
+PATTERN="[\`\"'](https?://(wa\\.me|api\\.whatsapp\\.com/send|web\\.whatsapp\\.com/send)|wa\\.me/|whatsapp://send)"
 
 # scan DIR... → prints file:line of every builder outside the owner
 scan() {
-  grep -rnE "$PATTERN" "$@" \
+  grep -rniE "$PATTERN" "$@" \
     --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' --include='*.mjs' \
     --exclude-dir=node_modules --exclude-dir=generated --exclude-dir=__tests__ 2>/dev/null \
   | grep -vE '\.(test|spec)\.[a-z]+:' \
@@ -54,11 +56,12 @@ self_test() {
   printf '%s\n' 'const a = `https://wa.me/${p}`;' 'const b = "https://api.whatsapp.com/send?phone=1";' \
     '// a comment about https://wa.me/' 'const c = getWhatsAppHref("", t);' \
     'const d = "https://wa.me/"; // guard-ok: test fixture' \
-    '   the CTA is a `wa.me` deep link, in prose' 'const e = "wa.me/" + p;' > "$tmp/c/x.jsx"
+    '   the CTA is a `wa.me` deep link, in prose' 'const e = "wa.me/" + p;' \
+    'const f = "HTTPS://WA.ME/1";' 'const g = `whatsapp://send?text=${t}`;' > "$tmp/c/x.jsx"
   got=$(scan "$tmp/c" | sed 's|.*/||' | tr '\n' ' ')
-  [ "$got" = "x.jsx:1 x.jsx:2 x.jsx:7 " ] || { echo "self-test FAIL synthetic: got [$got]"; fails=1; }
+  [ "$got" = "x.jsx:1 x.jsx:2 x.jsx:7 x.jsx:8 x.jsx:9 " ] || { echo "self-test FAIL synthetic: got [$got]"; fails=1; }
   # Anchored on the real owner: it must contain a builder, or the pattern is dead.
-  got=$(grep -cE "$PATTERN" "$OWNER")
+  got=$(grep -ciE "$PATTERN" "$OWNER")
   [ "$got" -ge 2 ] || { echo "self-test FAIL anchor: $OWNER holds $got builders, expected >= 2"; fails=1; }
   rm -rf "$tmp"
   [ "$fails" -eq 0 ] && echo "whatsapp-link-owner-guard self-test PASS"
