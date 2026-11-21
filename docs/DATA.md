@@ -568,10 +568,14 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
   businesses excluded) with a counted booking that month, highest value first:
   `{month, threshold_agorot, businesses_over_threshold, businesses_over_two_months,
   start_billing_businesses, start_billing_months, would_pay_total_agorot, phase,
+  year{year, income_agorot, ceiling_agorot, ceiling_year, percent, alert_percent},
   history[{month, businesses, businesses_over_threshold, value_agorot,
   would_pay_total_agorot}],
   rows[{producer_id, name, bookings, value_agorot, over_threshold,
-  months_over_in_a_row, would_pay_agorot}]}`. `months_over_in_a_row` looks back at
+  months_over_in_a_row, would_pay_agorot}]}`. `year` (MEH-3189) sums the same
+  would-pay rule from January to the month, against the exempt-dealer ceiling in
+  `app/pricing.py` (`EXEMPT_DEALER_CEILING_AGOROT`); `alert_percent` is 0, 70 or 90.
+  `months_over_in_a_row` looks back at
   most 6 months. `would_pay_agorot` is the month's stored fees for a business at
   or over the threshold and 0 under it; nothing is charged. `phase` is `launch`
   until billing is switched on. `history` is the month and the five before it,

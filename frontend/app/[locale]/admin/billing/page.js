@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/utils";
 import { formatEventDate } from "@/lib/format-date";
 import { SkeletonTiles } from "@/components/Skeleton";
 import BackLink from "@/components/ui/BackLink";
+import BillingYearCard from "@/components/admin/BillingYearCard";
 
 /**
  * Module:   admin/billing/page
@@ -26,7 +27,7 @@ import BackLink from "@/components/ui/BackLink";
  * Related:  backend/app/services/billing_summary.py · admin/AdminLayoutClient.jsx
  *           (the «חיוב» nav entry).
  * History:  MEH-3182 (creation, 2026-11-14); the six-month history (shadow
- *           billing) the same day.
+ *           billing) the same day; MEH-3189 the year-vs-ceiling card.
  *
  * Wording (Sapir, 14/11): every number is a full sentence a new admin can
  * read cold. No «סף», no bare tiles; the amount is always spelled out.
@@ -280,6 +281,8 @@ export default function AdminBillingPage() {
       </div>
 
       <ReadyCard data={data} />
+      {/* MEH-3189: income this year against the exempt-dealer ceiling. */}
+      <BillingYearCard year={data.year} charging={charging} />
       <MonthCard data={data} />
 
       <section aria-labelledby="admin-billing-rows-title">

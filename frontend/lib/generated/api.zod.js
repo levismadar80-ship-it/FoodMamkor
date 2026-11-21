@@ -59,7 +59,15 @@ export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/
   "start_billing_businesses": /*#__PURE__*/ zod.int(),
   "start_billing_months": /*#__PURE__*/ zod.int(),
   "threshold_agorot": /*#__PURE__*/ zod.int(),
-  "would_pay_total_agorot": /*#__PURE__*/ zod.int()
+  "would_pay_total_agorot": /*#__PURE__*/ zod.int(),
+  "year": /*#__PURE__*/ zod.object({
+  "alert_percent": /*#__PURE__*/ zod.int(),
+  "ceiling_agorot": /*#__PURE__*/ zod.int(),
+  "ceiling_year": /*#__PURE__*/ zod.int(),
+  "income_agorot": /*#__PURE__*/ zod.int(),
+  "percent": /*#__PURE__*/ zod.int(),
+  "year": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('MEH-3189: income from January to the month, against the exempt-dealer ceiling.'))
 })
 
 

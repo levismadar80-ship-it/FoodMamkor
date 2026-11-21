@@ -46,6 +46,15 @@ const overview = (rows, extra = {}) => ({
   start_billing_months: 2,
   would_pay_total_agorot: rows.reduce((sum, r) => sum + r.would_pay_agorot, 0),
   phase: "launch",
+  // MEH-3189: the year-vs-ceiling block (BillingYearCard.test.jsx covers it).
+  year: {
+    year: 2026,
+    income_agorot: 0,
+    ceiling_agorot: 12283300,
+    ceiling_year: 2026,
+    percent: 0,
+    alert_percent: 0,
+  },
   history: [
     {
       month: "2026-11",
