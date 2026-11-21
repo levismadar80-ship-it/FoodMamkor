@@ -9,7 +9,7 @@
 **Routes**
 * `frontend/app/[locale]/producer/dashboard/orders/` — לשונית «הזמנות» של בית העסק (פירוט ב-[לוח הבקרה](./producer-dashboard.md)).
 * `GET /producers/me/product-orders/customers` — «הלקוחות שלכם» (MEH-3561): שורה לכל לקוח לפי טלפון, בלי הזמנות שנדחו, שפג תוקפן או שבוטלו; הכרטיס `frontend/components/dashboard/orders/OrderCustomersCard.jsx` והקובץ `frontend/lib/order-customers.js` (ה-CSV), השירות `backend/app/services/product_order_customers.py`.
-* `frontend/app/[locale]/order/[id]/` — דף ההזמנה של הלקוחה. הקישור שבכל הודעה, הטוקן אחרי `#t=`; לא נסרק, בלי Referer. אחרי שההזמנה נמסרה: «כתבו ביקורת» (MEH-3620) עם קישור הביקורת המאומתת, מ-`backend/app/services/review_invite.py`. יום אחרי המסירה יוצא ללקוחה עם חשבון מייל «איך היה?» עם אותו קישור (MEH-3624, `backend/app/services/product_order_outbox.py`), אלא אם כבר כתבה ביקורת על העסק.
+* `frontend/app/[locale]/order/[id]/` — דף ההזמנה של הלקוחה. הקישור שבכל הודעה, הטוקן אחרי `#t=`; לא נסרק, בלי Referer. אחרי שההזמנה נמסרה: «כתבו ביקורת» (MEH-3620) עם קישור הביקורת המאומתת, מ-`backend/app/services/review_invite.py`. יום אחרי המסירה יוצא ללקוחה עם חשבון מייל «איך היה?» עם אותו קישור (MEH-3624, `backend/app/services/product_order_outbox.py`), פעם אחת לכל לקוחה בכל בית עסק, רק למייל מאומת, ולא אם כבר כתבה ביקורת על בית העסק.
 * `frontend/app/[locale]/my-orders/` — «ההזמנות שלי» (MEH-3525): ההזמנות של הלקוחה המחוברת, מהחדשה לישנה, דרך `GET /users/me/product-orders`; כל שורה פותחת את דף ההזמנה. הקישור בתפריט החשבון (`frontend/lib/use-my-orders-nav-gate.js`) מופיע רק כשההזמנות באתר פעילות.
 
 **קבצים מרכזיים**
