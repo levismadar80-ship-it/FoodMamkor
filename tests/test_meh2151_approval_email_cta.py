@@ -459,8 +459,11 @@ def test_every_interpolation_in_the_html_builder_is_escaped():
     source = inspect.getsource(_producer_approved_html)
     # `logo` is allowed by name below; pin what it may hold, or the allowance
     # would pass any raw value bound to that name (MEH-2834 review).
+    # MEH-3621: the logo now comes from email_layout.frame(), so the builder
+    # binds no `logo` at all; a name bound here again is a raw value to check.
     logo_binds = re.findall(r"^\s*logo\s*=\s*(.+)$", source, re.MULTILINE)
-    assert logo_binds == ["email_logo_html()"], f"`logo` must be bound only to email_logo_html(): {logo_binds}"
+    assert logo_binds == [], f"`logo` is bound in the builder again: {logo_binds}"
+    assert "frame(" in source, "the approved email no longer uses email_layout.frame()"
     raw = _raw_interpolation_sites(source)
     assert raw == [], (
         f"unescaped interpolation(s) in _producer_approved_html: {raw}. Every "
@@ -517,11 +520,11 @@ def test_card_table_tag_probe_discriminates():
     # in this file is about anyway. The REQUIREMENT is unchanged: the assertion
     # must be false of the outer table, or it is not evidence.
     outer = '<table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:24px 12px;">'
-    assert "max-width:560px" not in outer, (
+    assert "max-width:520px" not in outer, (
         "the discriminator must not be true of the outer table, or this proves nothing"
     )
     real = _card_table_tag(_producer_approved_html(NAME, SLUG))
-    assert "max-width:560px" in real, (
+    assert "max-width:520px" in real, (
         f"extractor did not return the card table (the outer one has no max-width): {real}"
     )
 
@@ -534,8 +537,8 @@ def test_card_table_is_fluid_and_capped_not_fixed_width():
     card = _card_table_tag(html)
 
     assert 'width="100%"' in card, f"card table is not fluid: {card}"
-    assert "max-width:560px" in card, f"card table has no width cap: {card}"
-    assert 'width="560"' not in html, (
+    assert "max-width:520px" in card, f"card table has no width cap: {card}"
+    assert 'width="520"' not in html and 'width="560"' not in html, (
         'width="560" is present — the HTML attribute overrides the CSS '
         "max-width beside it, which is the whole defect this guards."
     )
