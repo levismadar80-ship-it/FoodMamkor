@@ -41,7 +41,8 @@ def send_reset_email(
         """\
             <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לאיפוס הסיסמה יש ללחוץ על הכפתור (תוקף: שעה אחת):</p>
         """,
-        button(reset_link, "איפוס סיסמה") + note_row(
+        button(reset_link, "איפוס סיסמה")
+        + note_row(
             f"""\
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
             <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
@@ -86,7 +87,8 @@ def send_verify_email(
         """\
             <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך יש ללחוץ על הכפתור:</p>
         """,
-        button(verify_url, "אימות האימייל") + note_row(
+        button(verify_url, "אימות האימייל")
+        + note_row(
             f"""\
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
@@ -160,7 +162,8 @@ def send_welcome_email(
             • לשמור מועדפים כדי לא לאבד אותם
             </p>
         """,
-        button(settings.frontend_url, "גלו בתי עסק") + note_row(
+        button(settings.frontend_url, "גלו בתי עסק")
+        + note_row(
             """\
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 16px;">יש שאלה? אפשר פשוט להשיב למייל הזה.</p>
             <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 16px;">
@@ -440,7 +443,8 @@ def send_owner_invite_email(
             <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 12px;">כמו שסיכמנו, הכנתי את הדף של {business_html} במהמקור.</p>
             <p style="color:#1C1A17;font-size:15px;line-height:1.7;margin:0 0 24px;">נשאר צעד אחד: לבדוק את הדף, לקבוע סיסמה ולאשר את התקנון ואת הצהרת הרישוי. אחרי האישור הדף באוויר, ואפשר לנהל אותו ישירות.</p>
         """,
-        button(link, "בדיקה ואישור הדף") + note_row(
+        button(link, "בדיקה ואישור הדף")
+        + note_row(
             f"""\
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 12px;">הקישור תקף ל-7 ימים ונועד לשימוש אישי.</p>
             <p style="color:#5C584F;font-size:13px;line-height:1.6;margin:0 0 24px;">המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.</p>
