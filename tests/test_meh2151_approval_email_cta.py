@@ -414,9 +414,11 @@ def _raw_interpolation_sites(source: str) -> list[str]:
     from values this same rule already covers, so requiring a second escape
     would double-encode them. `logo` (MEH-2834) is the shared email header from
     `email_logo_html()`, which escapes its only dynamic value (the URL) itself;
-    tests/test_email_logo.py pins its markup.
+    tests/test_email_logo.py pins its markup. `signoff` (MEH-3594) is the team
+    sign-off from `email_signoff_html()`, which escapes its only dynamic value
+    (the icon URL) itself.
     """
-    allowed_locals = {"button", "community", "safe_name", "logo"}
+    allowed_locals = {"button", "community", "safe_name", "logo", "signoff"}
     return [
         site
         for site in re.findall(r"\{([^{}]+)\}", source)
@@ -461,6 +463,10 @@ def test_every_interpolation_in_the_html_builder_is_escaped():
     # would pass any raw value bound to that name (MEH-2834 review).
     logo_binds = re.findall(r"^\s*logo\s*=\s*(.+)$", source, re.MULTILINE)
     assert logo_binds == ["email_logo_html()"], f"`logo` must be bound only to email_logo_html(): {logo_binds}"
+    signoff_binds = re.findall(r"^\s*signoff\s*=\s*(.+)$", source, re.MULTILINE)
+    assert signoff_binds == ["email_signoff_html()"], (
+        f"`signoff` must be bound only to email_signoff_html(): {signoff_binds}"
+    )
     raw = _raw_interpolation_sites(source)
     assert raw == [], (
         f"unescaped interpolation(s) in _producer_approved_html: {raw}. Every "

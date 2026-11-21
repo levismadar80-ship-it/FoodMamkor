@@ -145,7 +145,7 @@ def _producer_approved_body(name: str, slug: str | None) -> str:
     dashboard = f"\n{_APPROVED_DASHBOARD_LABEL}\n{dashboard_url}\n"
     return (
         f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '
-        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"העמוד שלך כבר מופיע באתר.\n"
         f"{view_page}"
         f"{dashboard}"
         f"{community}"
@@ -245,6 +245,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
 
     # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
     logo = email_logo_html()
+    signoff = email_signoff_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -265,7 +266,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
         'margin:0 0 24px;direction:rtl;">'
         f'העסק שלך "{safe_name}" אושר במהמקור! '
-        "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.</p>\n"
+        "העמוד שלך כבר מופיע באתר.</p>\n"
         f"{button}\n"
         '<p style="margin:0 0 24px;direction:rtl;">'
         f'<a href="{_html_escape(dashboard_url)}" style="color:#2e6853;'
@@ -275,7 +276,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         '<hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">\n'
         '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         'margin:0;direction:rtl;">'
-        f"{email_signoff_html()}</p>\n"
+        f"{signoff}</p>\n"
         "</td></tr></table>\n"
         "</td></tr></table>\n"
         "</body>\n"
