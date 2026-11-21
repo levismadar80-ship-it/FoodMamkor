@@ -6,9 +6,11 @@
 
 מה המפה לא אומרת: איזה ערך מוגדר בכל סביבה, ואיפה (Railway / Vercel / GitHub). זה נמצא ב-[DEPLOYMENT.md](./DEPLOYMENT.md). העמודה «ברירת מחדל» אומרת רק אם יש אחת בקוד, לעולם לא מה היא, כך שהמסמך לא יכול להכיל סוד.
 
+מה הסורק לא רואה: שם משתנה שנבנה בזמן ריצה (`process.env[x]`, `os.getenv(name)`), פירוק (`const { X } = process.env`) ושדה ב-`Settings` עם alias. בשרת קובץ שקורא שם דינמי מופיע בשורה נפרדת; באתר לא. נכון ל-21/11/2026 אין בקוד פירוק או alias, ושלושת הקבצים שקוראים `process.env[...]` דינמי הם קובצי בדיקות.
+
 <!-- BEGIN GENERATED: tests/test_meh3598_env_map.py -->
 
-46 Settings fields · 14 direct backend reads · 19 frontend (site) · 33 frontend (tests and tooling).
+46 Settings fields · 14 direct backend reads · 25 frontend (site) · 27 frontend (tests and tooling).
 
 ### שרת: שדות `Settings` (`backend/app/config.py`)
 
@@ -86,8 +88,9 @@
 
 | משתנה | קבצים (`frontend/`) |
 |---|---|
+| `BACKEND_URL` | `next.config.js` |
 | `EDGE_PROXY_SECRET` | `middleware.js` |
-| `NEXT_PUBLIC_API_URL` | `lib/env.client.js`, `lib/env.server.js`, `middleware.js` |
+| `NEXT_PUBLIC_API_URL` | `lib/env.client.js`, `lib/env.server.js`, `middleware.js` +1 |
 | `NEXT_PUBLIC_APPLE_CLIENT_ID` | `lib/env.client.js`, `lib/env.server.js` |
 | `NEXT_PUBLIC_APPLE_REDIRECT_URI` | `lib/env.client.js`, `lib/env.server.js` |
 | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | `lib/env.client.js`, `lib/env.server.js` |
@@ -97,20 +100,24 @@
 | `NEXT_PUBLIC_POSTHOG_HOST` | `lib/analytics.js` |
 | `NEXT_PUBLIC_POSTHOG_KEY` | `lib/analytics.js` |
 | `NEXT_PUBLIC_RESCUE_BAGS_ENABLED` | `components/HomeWhatsOn.jsx`, `lib/listing-supply.js`, `lib/rescue.js` +1 |
-| `NEXT_PUBLIC_SENTRY_DSN` | `instrumentation-client.js` |
+| `NEXT_PUBLIC_SENTRY_DSN` | `instrumentation-client.js`, `next.config.js`, `sentry.edge.config.js` +1 |
 | `NEXT_PUBLIC_SENTRY_ENV` | `instrumentation-client.js` |
 | `NEXT_PUBLIC_SITE_URL` | `lib/env.client.js`, `lib/env.server.js` |
 | `NEXT_PUBLIC_SUPPORT_PHONE` | `lib/env.client.js`, `lib/env.server.js` |
 | `NEXT_RUNTIME` | `instrumentation.js` |
-| `NODE_ENV` | `app/[locale]/dev/components/page.jsx`, `app/[locale]/error.js`, `app/[locale]/map/state/useMapSync.js` +6 |
+| `NODE_ENV` | `app/[locale]/dev/components/page.jsx`, `app/[locale]/error.js`, `app/[locale]/map/state/useMapSync.js` +8 |
+| `SENTRY_DSN` | `next.config.js`, `sentry.edge.config.js`, `sentry.server.config.js` |
+| `SENTRY_ENV` | `sentry.edge.config.js`, `sentry.server.config.js` |
+| `SENTRY_ORG` | `next.config.js` |
+| `SENTRY_PROJECT` | `next.config.js` |
 | `SKIP_ENV_VALIDATION` | `lib/env.client.js`, `lib/env.server.js` |
-| `VERCEL_ENV` | `lib/env.client.js` |
+| `VERCEL_ENV` | `lib/env.client.js`, `next.config.js`, `sentry.edge.config.js` +1 |
+| `VERCEL_GIT_COMMIT_REF` | `sentry.edge.config.js`, `sentry.server.config.js` |
 
 ### אתר: `process.env` בבדיקות ובכלים (`e2e/`, `__tests__/`, `scripts/`, `qa-*`, קובצי config)
 
 | משתנה | קבצים (`frontend/`) |
 |---|---|
-| `BACKEND_URL` | `next.config.js` |
 | `CI` | `playwright.config.ts`, `qa-meh1754-recipe-error-state.mjs`, `scripts/static-routes-guard.mjs` |
 | `DEMO_ADMIN_PASSWORD` | `e2e/flows/30-admin-panel-tabs.spec.ts`, `e2e/flows/33-admin-producers-tab.spec.ts`, `e2e/flows/37-outreach-prefill.spec.ts` +2 |
 | `DEMO_CONSUMER_PASSWORD` | `e2e/_qa-archive/qa-meh1858-fingerprint-proof.mjs` |
@@ -120,19 +127,15 @@
 | `EDGE_PROXY_SECRET` | `__tests__/MiddlewareApiEdgeIp.test.js` |
 | `GITHUB_REPOSITORY` | `e2e/qa-meh1853-cls.mjs` |
 | `GITHUB_SHA` | `e2e/qa-meh1853-cls.mjs` |
-| `NEXT_PUBLIC_API_URL` | `next.config.js` |
 | `NEXT_PUBLIC_RESCUE_BAGS_ENABLED` | `__tests__/MEH3117RescueAlert.test.jsx` |
-| `NEXT_PUBLIC_SENTRY_DSN` | `__tests__/ClaimTelemetryWiring.test.jsx`, `next.config.js`, `sentry.edge.config.js` +1 |
-| `NODE_ENV` | `__tests__/ClaimTelemetryWiring.test.jsx`, `sentry.edge.config.js`, `sentry.server.config.js` |
+| `NEXT_PUBLIC_SENTRY_DSN` | `__tests__/ClaimTelemetryWiring.test.jsx` |
+| `NODE_ENV` | `__tests__/ClaimTelemetryWiring.test.jsx` |
 | `PLAYWRIGHT_BASE_URL` | `e2e/_qa-archive/qa-meh1814-cta-occlusion.mjs`, `e2e/_qa-archive/qa-meh1831-fonts-lenis.mjs`, `e2e/_qa-archive/qa-meh1831-glyph-probe.mjs` +11 |
 | `PLAYWRIGHT_CHROMIUM_PATH` | `e2e/_qa-archive/qa-meh2249-experience-create-dashboard.mjs`, `e2e/_qa-archive/qa-meh2589-story-card.mjs`, `e2e/_qa-archive/qa-meh2915-draft-identity.mjs` +8 |
 | `PORT` | `qa-meh2785-shots.mjs`, `qa-meh2793-print-probe.mjs` |
 | `PW_WEBKIT` | `e2e/webkit-tls.ts`, `playwright.config.ts` |
 | `QA_BASE_URL` | `e2e/_qa-archive/qa-meh2070-admin-mobile.mjs`, `e2e/_qa-archive/qa-meh2094-top-product.mjs`, `e2e/_qa-archive/qa-meh2100-draft-live.mjs` +25 |
-| `SENTRY_DSN` | `__tests__/ClaimTelemetryWiring.test.jsx`, `next.config.js`, `sentry.edge.config.js` +1 |
-| `SENTRY_ENV` | `sentry.edge.config.js`, `sentry.server.config.js` |
-| `SENTRY_ORG` | `next.config.js` |
-| `SENTRY_PROJECT` | `next.config.js` |
+| `SENTRY_DSN` | `__tests__/ClaimTelemetryWiring.test.jsx` |
 | `SMOKE_ADMIN_EMAIL` | `e2e/flows/19-publish-approve-visible.spec.ts`, `e2e/flows/20-admin-recipes-queue.spec.ts`, `e2e/flows/22-register-personas.spec.ts` +1 |
 | `SMOKE_ADMIN_PASSWORD` | `e2e/flows/19-publish-approve-visible.spec.ts`, `e2e/flows/20-admin-recipes-queue.spec.ts`, `e2e/flows/22-register-personas.spec.ts` +1 |
 | `TEST_URL` | `e2e/_qa-archive/qa-meh1858-fingerprint-proof.mjs`, `e2e/_qa-archive/qa-meh1858-login-probe.mjs`, `e2e/_qa-archive/qa-meh1871-mobile.mjs` +11 |
@@ -140,8 +143,7 @@
 | `UPDATE_HAND_WRITTEN_BASELINE` | `__tests__/HandWrittenRatchet.test.js` |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | `e2e/_qa-archive/qa-meh1390-dead-tab.mjs`, `e2e/_qa-archive/qa-meh1836-delivery-chip.mjs`, `e2e/_qa-archive/qa-meh1836-proof.mjs` +23 |
 | `VERCEL_BYPASS_SECRET` | `e2e/auth-fixture.ts`, `e2e/global-setup.ts`, `e2e/golden/session.ts` +2 |
-| `VERCEL_ENV` | `next.config.js`, `scripts/static-routes-guard.mjs`, `sentry.edge.config.js` +1 |
-| `VERCEL_GIT_COMMIT_REF` | `sentry.edge.config.js`, `sentry.server.config.js` |
+| `VERCEL_ENV` | `scripts/static-routes-guard.mjs` |
 | `WRITE_CHAT_KNOWLEDGE` | `__tests__/ChatKnowledgeSync.test.js` |
 
 <!-- END GENERATED -->

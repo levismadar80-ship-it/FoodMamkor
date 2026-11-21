@@ -36,7 +36,9 @@ _FRONTEND_SUFFIXES = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
 _FRONTEND_SKIP_DIRS = {"node_modules", ".next", "playwright-report", "test-results"}
 # Tooling = code that never ships to a browser or the Next server.
 _TOOLING_DIRS = {"e2e", "__tests__", "scripts", "qa-artifacts"}
-_TOOLING_NAME = re.compile(r"\.(test|spec|config)\.|^playwright\.|^vitest\.|^qa-")
+# `next.config.js` and `sentry.*.config.js` run in the site, so «config» alone
+# is not tooling: only the test runners' configs are.
+_TOOLING_NAME = re.compile(r"\.(test|spec)\.|^playwright\.|^vitest\.|^qa-")
 # A line that is only a comment names a variable without reading it.
 _COMMENT_LINE = re.compile(r"^\s*(//|\*|/\*)")
 _PROCESS_ENV = re.compile(
@@ -113,7 +115,7 @@ def backend_reads(app_dir: Path = APP_DIR) -> tuple[dict[str, list[str]], list[s
     literal: dict[str, set[str]] = defaultdict(set)
     dynamic: set[str] = set()
     for path in sorted(app_dir.rglob("*.py")):
-        rel = str(path.relative_to(app_dir))
+        rel = path.relative_to(app_dir).as_posix()
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             arg = _env_read(node)
             if arg is None:
@@ -153,7 +155,7 @@ def frontend_reads(
             if _COMMENT_LINE.match(line):
                 continue
             for m in _PROCESS_ENV.finditer(line):
-                bucket[m.group(1) or m.group(2)].add(str(rel))
+                bucket[m.group(1) or m.group(2)].add(rel.as_posix())
     return (
         {k: sorted(v) for k, v in sorted(site.items())},
         {k: sorted(v) for k, v in sorted(tooling.items())},
@@ -298,8 +300,11 @@ def test_scanners_are_anchored_on_the_real_tree() -> None:
     assert "RESEND_API_KEY" in names
     literal, _dynamic = backend_reads()
     assert "sentry.py" in literal["BACKEND_SENTRY_DSN"]
-    site, _tooling = frontend_reads()
+    site, tooling = frontend_reads()
     assert "NEXT_PUBLIC_API_URL" in site
+    # next.config.js runs in the site; a «config» in the name is not tooling.
+    assert "next.config.js" in site["BACKEND_URL"]
+    assert "playwright.config.ts" in {f for files in tooling.values() for f in files}
 
 
 def test_the_map_never_prints_a_default_value() -> None:
