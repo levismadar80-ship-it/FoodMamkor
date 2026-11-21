@@ -49,6 +49,7 @@ mehamakor/
 | Read DB schema diagram | `.ai/diagrams/db-schema.md` |
 | Read endpoint map | `.ai/diagrams/api-routes.md` |
 | Check past decisions | `docs/decisions/README.md` (ADR index) |
+| See every scheduled job and when it runs (generated from code) | `docs/JOBS.md` |
 | See every status and who can move it | `docs/STATE_MACHINES.md` |
 | See what talks to what, where data lives, what breaks first under load | `docs/SYSTEM_MAP.md` |
 | Look up a workflow rule | `.claude/rules/workflow.md` |
