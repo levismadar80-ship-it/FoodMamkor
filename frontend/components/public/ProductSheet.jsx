@@ -24,6 +24,7 @@ import {
   formatPriceRange,
   getWhatsAppHref,
   normalizePhone,
+  priceLabelText,
   withReferralParams,
 } from "@/lib/utils";
 import {
@@ -343,7 +344,8 @@ export default function ProductSheet({
   const dietKeys = productDietKeys(product);
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
-  // free-text price_range is DATA (MEH-1140 — never reformatted) and renders
+  // free-text price_range is DATA (MEH-1140 — never reformatted, except a
+  // bare number or range, MEH-3076 priceLabelText) and renders
   // in the natural direction, since forcing dir="ltr" corrupts a
   // Hebrew-bearing label like "מ-30₪" / "30₪ לחבילה".
   const numericPrice =
@@ -353,7 +355,7 @@ export default function ProductSheet({
   // MEH-2924: no price at all = a seasonal price, said in words — never «₪».
   const freeTextPrice = numericPrice
     ? null
-    : product.price_range || t("product_price.varies");
+    : priceLabelText(product.price_range) || t("product_price.varies");
 
   // The WhatsApp channel is the producer's phone, normalised exactly as every
   // other WA surface does it (lib/utils normalizePhone → getWhatsAppHref).
