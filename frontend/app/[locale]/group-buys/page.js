@@ -5,6 +5,7 @@ import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
 import { serverFirstJson } from "@/lib/server-first-json";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-740: static metadata → generateMetadata so og:url can be per-locale self.
 // MEH-475 Wave 6: metadata strings → seo.group_buys.* (was hardcoded HE) +
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/group-buys", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"], // MEH-2590: not inherited from the layout
+      images: [siteOgImageUrl(locale)], // MEH-2590: not inherited from the layout
     },
     alternates: buildAlternates("/group-buys", locale),
   };

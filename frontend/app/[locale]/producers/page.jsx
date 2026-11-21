@@ -9,6 +9,7 @@ import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { RATING_SORT_THRESHOLD, isRatingSortEnabled } from "@/lib/rating-gate";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 /**
  * Public paginated index (MEH-23). Server-rendered so crawlers can
@@ -124,7 +125,7 @@ export async function generateMetadata(props) {
       url: alternates.canonical,
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
     // layout's generic site card).
@@ -132,7 +133,7 @@ export async function generateMetadata(props) {
       card: "summary_large_image",
       title: socialTitle,
       description,
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates,
   };

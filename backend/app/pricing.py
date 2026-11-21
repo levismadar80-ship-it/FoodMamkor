@@ -122,6 +122,18 @@ SWITCH_ON_BLOCKERS: Final[tuple[str, ...]] = (
 )
 
 
+# MEH-3189: the exempt-dealer (עוסק פטור) turnover ceiling, in agorot.
+# 122,833 ₪ in force from 1/1/2026: the Tax Authority's VAT amounts table
+# (gov.il/he/departments/general/vat-rate-amount-new, read 21/11/2026). The
+# amount is updated every January; update the amount AND the year together.
+# The admin screen shows the year next to it, so a stale amount is visible.
+# A constant on purpose, not an env var (same reason as BILLING_PHASE).
+EXEMPT_DEALER_CEILING_AGOROT: Final = 12_283_300
+EXEMPT_DEALER_CEILING_YEAR: Final = 2026
+# The admin is warned at these shares of the ceiling, lowest first.
+EXEMPT_DEALER_ALERT_PERCENTS: Final[tuple[int, ...]] = (70, 90)
+
+
 def billing_is_on() -> bool:
     return BILLING_PHASE == "billing"
 
