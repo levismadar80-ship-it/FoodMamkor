@@ -68,7 +68,7 @@ export default function OrderSheetPhone({ producerId, phone, code, onChange }) {
           className="flex-1"
           data-testid="order-sheet-phone"
         />
-        <Button type="button" variant="outlined" disabled={!valid || busy} onClick={ask} data-testid="order-sheet-send-code">
+        <Button type="button" variant="outlined" disabled={!valid || busy} onClick={ask} className="shrink-0 whitespace-nowrap" data-testid="order-sheet-send-code">
           {t(sentTo ? "send_code_again" : "send_code")}
         </Button>
       </div>
