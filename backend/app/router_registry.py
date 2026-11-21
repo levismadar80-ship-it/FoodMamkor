@@ -50,6 +50,7 @@ from app.routers import (
     menu_import,
     page_fill,
     product_order_business,
+    producer_staff,
     product_order_buyer,
     product_order_offer,
     product_orders,
@@ -153,6 +154,10 @@ def _register_flagged_features(app: FastAPI) -> None:
     # the business acts on it. Same flag, same 404 while off.
     app.include_router(product_order_buyer.router)
     app.include_router(product_order_business.router)
+    # MEH-3526: order staff — invite, accept, remove, leave.
+    app.include_router(producer_staff.owner_router)
+    app.include_router(producer_staff.invite_router)
+    app.include_router(producer_staff.member_router)
 
 
 def register_routers(app: FastAPI) -> None:
