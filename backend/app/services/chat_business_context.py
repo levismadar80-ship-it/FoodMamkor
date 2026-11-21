@@ -11,7 +11,7 @@ Does NOT: call the model or phrase anything (routers/chat.py does), run the
           business page does not: no phone, email, contact name, address,
           WhatsApp group, admin or moderation field ever enters the dict.
           The whitelist is the code below; a field not named here stays out.
-Related:  routers/producers.py get_producer (the same "is a public business"
+Related:  services/producer_detail.py producer_by_id_for_viewer (the same "is a public business"
           rule, services/producer_listing.is_business); frontend/lib/hours.js
           parseHours (the grammar ported in _parse_hours).
 History:  MEH-3481 (creation); MEH-3489 (the business page the chat

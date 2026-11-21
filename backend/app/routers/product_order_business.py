@@ -14,7 +14,7 @@ Does NOT: take a business id from the request: every route works on the
 Related:  app/services/product_order_actions.py (the moves),
           app/services/product_order_views.py (business_view),
           app/routers/product_orders.py (the flag gate)
-History:  MEH-3263 (creation; stage 2b of MEH-3216)
+History:  MEH-3263 (creation; stage 2b of MEH-3216); MEH-3561 (GET /customers)
 """
 
 from typing import Any, Literal
@@ -33,6 +33,7 @@ from app.routers.product_orders import (
     require_product_orders_enabled,
 )
 from app.schemas.product_order_buy import (
+    BusinessCustomersOut,
     BusinessOrderOut,
     BusinessOrdersOut,
     ConfirmIn,
@@ -41,6 +42,7 @@ from app.schemas.product_order_buy import (
     ProposeChangeIn,
 )
 from app.services import product_order_actions as actions
+from app.services.product_order_customers import list_customers
 from app.services.product_order_state import Actor
 from app.services.product_order_views import business_view
 
@@ -120,6 +122,23 @@ def list_business_orders(  # noqa: PLR0913 — FastAPI dependencies, not argumen
     )
     response.headers["Cache-Control"] = "no-store"
     return {"orders": [business_view(order) for order in orders], "total": total}
+
+
+@router.get("/customers", response_model=BusinessCustomersOut)
+@limiter.limit("30/minute")
+def list_business_customers(
+    request: Request,
+    response: Response,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+) -> Any:
+    """MEH-3561: «הלקוחות שלכם» — one row per customer who ordered."""
+    if not user.producer_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=NO_BUSINESS_DETAIL
+        )
+    response.headers["Cache-Control"] = "no-store"
+    return {"customers": list_customers(db, user.producer_id)}  # type: ignore[arg-type]
 
 
 def _actor(user: User) -> Actor:
