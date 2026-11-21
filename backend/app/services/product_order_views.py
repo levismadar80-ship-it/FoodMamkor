@@ -68,6 +68,7 @@ def _common(order: ProductOrder) -> dict[str, Any]:
         "items": [
             {
                 "name": line.name,
+                "variant_name": line.variant_name,  # MEH-3617
                 "qty": line.qty,
                 "unit_price_agorot": line.unit_price_agorot,
                 "price_unit": line.price_unit,

@@ -284,6 +284,17 @@ erDiagram
         string price_unit "unit|kg|100g|bottle|box|pack"
         int qty "1..99"
         boolean contains_alcohol
+        uuid variant_id FK "nullable, SET NULL (MEH-3617)"
+        string variant_name "copied at order time (MEH-3617)"
+    }
+
+    product_variants {
+        uuid id PK "MEH-3617"
+        uuid product_id FK "CASCADE"
+        string name "40, unique per product (case-insensitive, checked in the schema)"
+        int price_agorot "nullable = the product's price"
+        boolean in_stock "default true"
+        int position "order on the page"
     }
 
     product_order_events {
@@ -729,6 +740,8 @@ erDiagram
     product_orders ||--o{ product_order_events : "status log"
     product_orders ||--o{ product_order_notifications : "messages owed, once per kind+channel (MEH-3296)"
     products |o--o{ product_order_items : "SET NULL on delete"
+    products ||--o{ product_variants : "sizes or flavours, max 10 (MEH-3617)"
+    product_variants |o--o{ product_order_items : "SET NULL on delete; name copied"
 
     rescue_offers {
         uuid id PK "MEH-2644"

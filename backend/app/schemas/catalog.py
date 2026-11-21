@@ -29,6 +29,7 @@ from app.limits import (  # MEH-3484
     cap_list,
 )
 from app.schemas.product_order_offer import PriceUnit  # MEH-2936
+from app.schemas.product_variants import ProductVariantOut  # MEH-3617
 from app.data.cities import canonical_city  # MEH-3484
 from app.allergens import detail_if_declared, drop_contained, normalize_allergens
 from app.services.sanitization import sanitize_text
@@ -976,6 +977,8 @@ class ProductOut(BaseModel):
     no_allergens: bool = False  # MEH-3445
     position: int | None = None  # MEH-3055: owner order, NULL = never ordered
     group_id: str | None = None  # MEH-3055: id in producers.product_groups
+    # MEH-3617: sizes or flavours, in the owner's order. Empty = none.
+    variants: list[ProductVariantOut] = []
 
     model_config = {"from_attributes": True}
 
