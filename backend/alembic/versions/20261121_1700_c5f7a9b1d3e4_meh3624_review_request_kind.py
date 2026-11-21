@@ -8,7 +8,13 @@ MEH-3624: an order owes the buyer one more message, the «איך היה?» email
 day after the hand-over. The kind CHECK on product_order_notifications gains
 `review_request`. Expand-only per ADR-007: every existing row keeps a kind the
 wider CHECK still allows, and the old code never writes the new value, so the
-two can run side by side during the deploy. No table added or dropped.
+two can write side by side during the deploy (rows fall due 24 h later, so the
+old dispatcher never meets one during a normal overlap). No table added or
+dropped.
+
+ROLLBACK: the pre-MEH-3624 dispatcher sends any unknown buyer kind as the
+«closed» WhatsApp. Rolling the backend back past this release without the
+schema downgrade must first close the owed rows — docs/release/ROLLBACK.md §2b.
 
 Downgrade deletes the `review_request` rows first: the narrower CHECK would
 reject them otherwise. They are one email each, already sent or skipped.

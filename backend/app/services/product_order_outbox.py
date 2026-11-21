@@ -68,8 +68,7 @@ RETRY_BASE = timedelta(minutes=5)
 # is dropped, not sent: "your order was confirmed" a day later misleads.
 STALE_AFTER = timedelta(hours=6)
 BATCH = 20
-# MEH-3624: a day after the hand-over the buyer has eaten it; sooner reads as
-# pressure, later and she has forgotten. Wolt and Too Good To Go ask the same day.
+# MEH-3624: a day after the hand-over the buyer has had time to eat it.
 REVIEW_REQUEST_AFTER = timedelta(hours=24)
 
 _WA_PARAM_MAX_LEN = 200
@@ -83,8 +82,8 @@ BUYER_CANCELLED_SUBJECT = "הזמנה בוטלה"
 # MEH-3624: a service message about one order — no offer, no other business.
 REVIEW_REQUEST_SUBJECT = "איך היה אצל {business_name}?"
 REVIEW_REQUEST_BODY = (
-    "תודה שהזמנתם מ{business_name} דרך מהמקור. "
-    "ביקורת קצרה עוזרת לאחרים לבחור, ולעסק לדעת מה עבד. "
+    "תודה על ההזמנה אצל {business_name} דרך מהמקור. "
+    "ביקורת קצרה עוזרת לאחרים לבחור, ולבית העסק לדעת מה אהבתם. "
     "לכתיבת ביקורת: {link}"
 )
 
@@ -317,7 +316,30 @@ def _buyer_template(
             ends=_hhmm(order.slot_end),
             link=link,
         )
-    return wt.ProductOrderClosedV1(business_name=name, link=link)
+    if kind == "closed":
+        return wt.ProductOrderClosedV1(business_name=name, link=link)
+    # MEH-3624: an unknown kind must not fall through to «closed». A dispatcher
+    # that did so would tell a buyer her order was closed (see ROLLBACK.md §2b).
+    raise ValueError(f"no buyer WhatsApp for kind {kind!r}")
+
+
+def _asked_before(db: Session, order: ProductOrder, producer: Producer) -> bool:
+    """MEH-3624: one «איך היה?» per buyer per business, ever — a second order
+    from the same place is not a reason to ask again. Counts a row that was
+    sent, or is still owed for another order (two hand-overs on one day)."""
+    earlier = (
+        db.query(ProductOrderNotification.id)
+        .join(ProductOrder, ProductOrder.id == ProductOrderNotification.order_id)
+        .filter(
+            ProductOrderNotification.kind == "review_request",
+            ProductOrderNotification.outcome == "sent",
+            ProductOrder.user_id == order.user_id,
+            ProductOrder.producer_id == producer.id,
+            ProductOrder.id != order.id,
+        )
+        .first()
+    )
+    return earlier is not None
 
 
 def _review_request(
@@ -330,8 +352,12 @@ def _review_request(
     """MEH-3624: the «איך היה?» email, or why there is none."""
     if str(order.status) != "handed" or producer.status != "approved":
         return "not_live"  # the review page opens only for a live business
-    if buyer is None or not buyer.email:
-        return "no_address"
+    if buyer is None or not buyer.email or not buyer.email_verified:
+        return "no_address"  # an unverified address may be someone else's
+    if buyer.is_blocked or buyer.producer_id == producer.id:
+        return "not_eligible"  # blocked, or the owner ordering from herself
+    if _asked_before(db, order, producer):
+        return "asked_before"
     reviewed = (
         db.query(ProducerReview.id)
         .filter(

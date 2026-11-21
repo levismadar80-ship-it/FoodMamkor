@@ -39,10 +39,17 @@ REVISION = (
     Path(__file__).resolve().parents[1]
     / "backend/alembic/versions/20261115_0900_a8d2c6f4e1b7_meh3296_order_notifications.py"
 )
-# MEH-3624 widened the kind CHECK; the model's KINDS must equal the newest one.
-KINDS_REVISION = (
-    Path(__file__).resolve().parents[1]
-    / "backend/alembic/versions/20261121_1700_c5f7a9b1d3e4_meh3624_review_request_kind.py"
+# MEH-3624: a later revision may widen the kind CHECK. The model's KINDS must
+# equal the NEWEST revision that defines KINDS (dated file names sort in order).
+KINDS_REVISION = max(
+    (
+        path
+        for path in (
+            Path(__file__).resolve().parents[1] / "backend/alembic/versions"
+        ).glob("2*.py")
+        if re.search(r"^KINDS = \(", path.read_text(encoding="utf-8"), re.M)
+    ),
+    key=lambda path: path.name,
 )
 
 # --- the calendar ------------------------------------------------------------

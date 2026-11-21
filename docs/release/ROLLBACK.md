@@ -56,7 +56,8 @@ The schema has to go back **before** the old image can boot. That means data los
 2. Dry run: restore that dump into a scratch database (`docs/BACKUPS.md` §3) and run `alembic downgrade <recorded head>` there. If it fails, **stop**.
 3. Downgrade production from inside the **running** container: `railway ssh` into the FoodMamkor production service, then `cd /app && alembic downgrade <recorded head> && alembic current`. (`railway run` / `railway shell` run on your own machine, where the internal `DATABASE_URL` does not resolve.)
 4. **Immediately** roll the backend back (2a). Any restart of the newer container before then re-applies the revision, because its boot runs `upgrade head`.
-5. Verify as in 2a. Also: `version.alembic_head` equals the recorded head. That value is read once at boot (`startup.py`), so only trust it on the rolled-back container. Right after step 3, trust `alembic current`.
+5. Verify as in 2a. Also: `version.alembic_head` equals the recorded head.
+6. **Rolling back past `c5f7a9b1d3e4` (MEH-3624) without step 3:** first run `UPDATE product_order_notifications SET outcome = 'skipped', last_error = 'rollback' WHERE kind = 'review_request' AND outcome = 'pending'`. The older dispatcher has no branch for that kind and would send each buyer the «ההזמנה נסגרה» WhatsApp instead. The downgrade in step 3 deletes those rows itself. That value is read once at boot (`startup.py`), so only trust it on the rolled-back container. Right after step 3, trust `alembic current`.
 
 **This order is fragile.** Sapir decides the lasting fix (it touches the Dockerfile, HIGH-RISK). The options are on MEH-2892:
 
