@@ -80,9 +80,13 @@ def _place(name="המאפייה של רותי", phone="050-123-4567", website=No
 # ── status ──────────────────────────────────────────────────────────────────
 
 
-def test_status_without_a_key_says_unavailable_and_calls_nothing(client, db, monkeypatch):
+def test_status_without_a_key_says_unavailable_and_calls_nothing(
+    client, db, monkeypatch
+):
     monkeypatch.setattr(settings, "google_places_api_key", None)
-    monkeypatch.setattr(gp.httpx, "get", lambda *a, **k: pytest.fail("no call without a key"))
+    monkeypatch.setattr(
+        gp.httpx, "get", lambda *a, **k: pytest.fail("no call without a key")
+    )
     user, _ = _owner(db)
     r = client.get(BASE, headers=auth_header(user))
     assert r.json() == {"available": False, "google_place_id": None}
@@ -93,8 +97,15 @@ def test_status_without_a_key_says_unavailable_and_calls_nothing(client, db, mon
 
 def test_routes_are_for_owners_only(client, db):
     consumer = make_user(db, role="consumer", email="c@example.com")
-    for method, path in (("get", BASE), ("get", f"{BASE}/candidates"), ("get", f"{BASE}/check")):
-        assert getattr(client, method)(path, headers=auth_header(consumer)).status_code == 403
+    for method, path in (
+        ("get", BASE),
+        ("get", f"{BASE}/candidates"),
+        ("get", f"{BASE}/check"),
+    ):
+        assert (
+            getattr(client, method)(path, headers=auth_header(consumer)).status_code
+            == 403
+        )
     r = client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(consumer))
     assert r.status_code == 403
     assert client.get(BASE).status_code == 401
@@ -106,26 +117,36 @@ def test_routes_are_for_owners_only(client, db):
 @pytest.mark.parametrize("count", [0, 1, 3, 5])
 def test_search_returns_at_most_three(client, db, google, count):
     google["search"] = [
-        {"id": f"p{i}", "displayName": {"text": f"מקום {i}"}, "formattedAddress": "רחובות"}
+        {
+            "id": f"p{i}",
+            "displayName": {"text": f"מקום {i}"},
+            "formattedAddress": "רחובות",
+        }
         for i in range(count)
     ]
     user, _ = _owner(db)
     r = client.get(f"{BASE}/candidates", headers=auth_header(user))
     assert r.status_code == 200
-    assert [c["place_id"] for c in r.json()["candidates"]] == [f"p{i}" for i in range(min(count, 3))]
+    assert [c["place_id"] for c in r.json()["candidates"]] == [
+        f"p{i}" for i in range(min(count, 3))
+    ]
 
 
 def test_search_uses_her_name_and_city_or_her_own_words(client, db, google):
     user, _ = _owner(db)
     client.get(f"{BASE}/candidates", headers=auth_header(user))
-    client.get(f"{BASE}/candidates", params={"q": "מאפיית רותי"}, headers=auth_header(user))
+    client.get(
+        f"{BASE}/candidates", params={"q": "מאפיית רותי"}, headers=auth_header(user)
+    )
     assert [c[1] for c in google["calls"]] == ["המאפייה של רותי רחובות", "מאפיית רותי"]
 
 
 def test_search_failure_is_unavailable_not_empty(client, db, google):
     google["down"] = True
     user, _ = _owner(db)
-    assert client.get(f"{BASE}/candidates", headers=auth_header(user)).status_code == 503
+    assert (
+        client.get(f"{BASE}/candidates", headers=auth_header(user)).status_code == 503
+    )
 
 
 # ── link ────────────────────────────────────────────────────────────────────
@@ -141,16 +162,29 @@ def test_link_by_matching_name(client, db, google):
 
 
 def test_link_by_matching_phone_in_international_form(client, db, google):
-    google["places"][PLACE] = {"id": PLACE, "displayName": {"text": "Ruti Bakery"},
-                               "internationalPhoneNumber": "+972 50-123-4567"}
+    google["places"][PLACE] = {
+        "id": PLACE,
+        "displayName": {"text": "Ruti Bakery"},
+        "internationalPhoneNumber": "+972 50-123-4567",
+    }
     user, producer = _owner(db)
-    assert client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user)).status_code == 200
+    assert (
+        client.put(
+            BASE, json={"google_place_id": PLACE}, headers=auth_header(user)
+        ).status_code
+        == 200
+    )
 
 
 def test_a_landline_matches_too(client, db, google):
     google["places"][PLACE] = _place(name="Other", phone="08-946-1234")
     user, _ = _owner(db, phone="089461234")
-    assert client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user)).status_code == 200
+    assert (
+        client.put(
+            BASE, json={"google_place_id": PLACE}, headers=auth_header(user)
+        ).status_code
+        == 200
+    )
 
 
 def test_someone_elses_profile_is_refused_and_nothing_is_stored(client, db, google):
@@ -166,7 +200,12 @@ def test_someone_elses_profile_is_refused_and_nothing_is_stored(client, db, goog
 def test_a_one_letter_name_does_not_match_everything(client, db, google):
     google["places"][PLACE] = _place(name="א בית קפה", phone=None)
     user, _ = _owner(db, name="א")
-    assert client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user)).status_code == 409
+    assert (
+        client.put(
+            BASE, json={"google_place_id": PLACE}, headers=auth_header(user)
+        ).status_code
+        == 409
+    )
 
 
 def test_a_profile_linked_to_another_business_is_refused(client, db, google):
@@ -182,7 +221,9 @@ def test_a_profile_linked_to_another_business_is_refused(client, db, google):
     assert producer.google_place_id is None
 
 
-def test_saving_the_same_link_again_calls_nothing_and_pings_no_one(client, db, google, monkeypatch):
+def test_saving_the_same_link_again_calls_nothing_and_pings_no_one(
+    client, db, google, monkeypatch
+):
     sent = []
     monkeypatch.setattr(
         "app.routers.producer_me.notify_admin_producer_sensitive_edit",
@@ -191,7 +232,12 @@ def test_saving_the_same_link_again_calls_nothing_and_pings_no_one(client, db, g
     user, producer = _owner(db)
     producer.google_place_id = PLACE
     db.commit()
-    assert client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user)).status_code == 200
+    assert (
+        client.put(
+            BASE, json={"google_place_id": PLACE}, headers=auth_header(user)
+        ).status_code
+        == 200
+    )
     assert google["calls"] == [] and sent == []
 
 
@@ -205,7 +251,12 @@ def test_an_organizer_has_no_google_profile_tool(client, db, google):
 def test_link_when_google_is_down_is_unavailable(client, db, google):
     google["down"] = True
     user, producer = _owner(db)
-    assert client.put(BASE, json={"google_place_id": PLACE}, headers=auth_header(user)).status_code == 503
+    assert (
+        client.put(
+            BASE, json={"google_place_id": PLACE}, headers=auth_header(user)
+        ).status_code
+        == 503
+    )
     db.refresh(producer)
     assert producer.google_place_id is None
 
@@ -223,12 +274,18 @@ def test_unlink_needs_no_google_call(client, db, google):
 
 def test_a_url_instead_of_a_place_id_is_refused(client, db, google):
     user, _ = _owner(db)
-    r = client.put(BASE, json={"google_place_id": "https://maps.google.com/x"}, headers=auth_header(user))
+    r = client.put(
+        BASE,
+        json={"google_place_id": "https://maps.google.com/x"},
+        headers=auth_header(user),
+    )
     assert r.status_code == 422
 
 
 @pytest.mark.parametrize(("status", "pinged"), [("approved", True), ("pending", False)])
-def test_admin_hears_about_a_link_change_on_an_approved_business(client, db, google, monkeypatch, status, pinged):
+def test_admin_hears_about_a_link_change_on_an_approved_business(
+    client, db, google, monkeypatch, status, pinged
+):
     sent = []
     monkeypatch.setattr(
         "app.routers.producer_me.notify_admin_producer_sensitive_edit",
@@ -280,7 +337,11 @@ def test_check_reports_what_google_is_missing(client, db, google):
     producer.google_place_id = PLACE
     db.commit()
     rows = client.get(f"{BASE}/check", headers=auth_header(user)).json()["rows"]
-    assert {r["field"]: r["verdict"] for r in rows} == {"name": "same", "phone": "missing", "website": "missing"}
+    assert {r["field"]: r["verdict"] for r in rows} == {
+        "name": "same",
+        "phone": "missing",
+        "website": "missing",
+    }
 
 
 def test_check_failure_is_unavailable(client, db, google):
@@ -292,7 +353,9 @@ def test_check_failure_is_unavailable(client, db, google):
 
 
 def test_check_stores_nothing_from_google(client, db, google):
-    google["places"][PLACE] = _place(name="שם אחר בגוגל", phone="03-555-0000", website="https://x.example")
+    google["places"][PLACE] = _place(
+        name="שם אחר בגוגל", phone="03-555-0000", website="https://x.example"
+    )
     user, producer = _owner(db)
     producer.google_place_id = PLACE
     db.commit()
@@ -329,7 +392,7 @@ def test_each_google_route_is_limited_to_ten_an_hour(client, db, google, route):
     ("ours", "theirs", "expected"),
     [
         ("המאפייה של רותי", "המאפייה של רותי", True),
-        ("המאפייה של רותי", "המאפייה  של \"רותי\"", True),
+        ("המאפייה של רותי", 'המאפייה  של "רותי"', True),
         ("גבינות הגליל", "גבינות הגליל - משק משפחתי", True),
         ("גבינות הגליל", "יין הגולן", False),
         ("", "יין הגולן", False),
@@ -369,11 +432,20 @@ def test_national_digits(raw, expected):
         (None, "https://mehamakor.co.il/ruti", "same"),  # her page here
         (None, "https://mehamakor.co.il/he/ruti/", "same"),
         (None, "https://mehamakor.co.il/producer/abc", "same"),
-        (None, "https://mehamakor.co.il/other-bakery", "different"),  # someone else's page here
+        (
+            None,
+            "https://mehamakor.co.il/other-bakery",
+            "different",
+        ),  # someone else's page here
         ("https://ruti.co.il", "https://other.co.il", "different"),
         ("https://ruti.co.il", None, "missing"),
         (None, "https://mehamakor.co.il.evil.io/ruti", "different"),
     ],
 )
 def test_website_verdict(ours, theirs, expected):
-    assert gp.website_verdict(ours, ["mehamakor.co.il"], ["/ruti", "/producer/abc"], theirs) == expected
+    assert (
+        gp.website_verdict(
+            ours, ["mehamakor.co.il"], ["/ruti", "/producer/abc"], theirs
+        )
+        == expected
+    )
