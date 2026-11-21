@@ -142,7 +142,7 @@ class TestTrigger:
         assert call["alert_type"] == "new_group_buy"
         assert call["producer_id"] == producer.id
         # rows A and B of the approved table, prices as the site writes them
-        assert call["content"].title == "🛒 קבוצת רכישה חדשה: שק קמח כוסמין"
+        assert call["content"].title == "קבוצת רכישה חדשה: שק קמח כוסמין"
         assert call["content"].body == "מאפיית הכפר — 980.5₪ במקום 1,250₪"
         assert call["content"].url == f"/group-buys/{gb_id}"
 
@@ -209,7 +209,7 @@ class TestFanOut:
         )
         assert resp.status_code == 201
         assert len(pushes) == 1
-        assert pushes[0]["title"] == "🛒 קבוצת רכישה חדשה: שמן חדש"
+        assert pushes[0]["title"] == "קבוצת רכישה חדשה: שמן חדש"
         assert pushes[0]["url"] == f"/group-buys/{resp.json()['id']}"
 
     def test_follower_with_the_toggle_off_gets_nothing(self, client, db, monkeypatch):

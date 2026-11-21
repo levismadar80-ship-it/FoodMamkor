@@ -3,11 +3,13 @@
 Module:   ai_text
 Purpose:  One short plain-text answer from Claude, and the claim filter, for
           the owner-side suggestions: a product description (MEH-3479) and a
-          review-reply draft (MEH-3480).
+          review-reply draft (MEH-3480). Also strips emoji from any model
+          text a person will read (MEH-3668), the chat reply included.
 Touches:  The Anthropic API only.
 Does NOT: save, moderate or decide what is asked — each caller builds its own
           prompt (services/description_writer.py, services/reply_writer.py).
-History:  MEH-3479 (creation; shared with the MEH-3480 reply draft)
+History:  MEH-3479 (creation; shared with the MEH-3480 reply draft);
+          MEH-3668 (strip_emoji: the site shows no emoji, Sapir 22/11)
 """
 
 from __future__ import annotations
@@ -28,11 +30,32 @@ _SENTENCE = re.compile(r"(?<=[.!?…])\s+")
 _MARKS = re.compile(r"[\u0591-\u05C7]")
 _JOINERS = re.compile(r"[-\u05BE\u2010-\u2015]+")
 _SPACES = re.compile(r"\s+")
+# MEH-3668: the same ranges as scripts/checks/no-emoji-backend-guard.sh, plus
+# the invisible joiners (U+FE0F, U+200D) that ride on them. ✓ ✗ ✕ ★ ☆ are
+# typography there too (MEH-1681) and stay.
+_EMOJI = re.compile(
+    "[\U0001f000-\U0001faff\u2600-\u2604\u2607-\u2712\u2714\u2716"
+    "\u2718-\u27bf\u2b00-\u2bff\u231a-\u23ff\ufe0f\u200d]"
+)
+_GAP = re.compile(r"[ \t]{2,}")
+_SPACE_BEFORE_MARK = re.compile(r"[ \t]+([.,!?:;])")
 
 
 def _plain(text: str) -> str:
     # Joiners first: the maqaf (U+05BE) sits inside the marks range.
     return _SPACES.sub(" ", _MARKS.sub("", _JOINERS.sub(" ", text))).lower()
+
+
+def strip_emoji(text: str) -> str:
+    """Model text with every emoji removed and the gap it left closed.
+
+    The prompts already ask for no emoji; this is the part a model cannot
+    talk its way past (MEH-3668)."""
+    if not _EMOJI.search(text):
+        return text
+    out = _EMOJI.sub("", text)
+    out = _SPACE_BEFORE_MARK.sub(r"\1", _GAP.sub(" ", out))
+    return "\n".join(line.strip() for line in out.split("\n")).strip()
 
 
 def wrap(tag: str, value: str) -> str:
@@ -60,9 +83,10 @@ def ask(prompt: str, *, tag: str, max_tokens: int = 600) -> str | None:
     if response.stop_reason != "end_turn":
         logger.warning("[%s] suggest stopped: %s", tag, response.stop_reason)
         return None
-    return next(
+    text = next(
         (b.text for b in response.content if getattr(b, "type", "") == "text"), None
     )
+    return strip_emoji(text) if text else text
 
 
 def split_sentences(text: str) -> list[str]:

@@ -139,7 +139,7 @@ def _default_sender(click: HomeProductWhatsAppClick) -> None:
     # links on the same domain as every other outbound-email link per env.
     rate_url = f"{settings.frontend_url}/rate/{click.rating_token}"
     body = (
-        f"היי! קנית מ{seller_name} ({product_title})? איך היה?\nדרגי כאן 👇\n{rate_url}"
+        f"היי! קנית מ{seller_name} ({product_title})? איך היה?\nדרגי כאן:\n{rate_url}"
     )
     # MEH-1049: referral "10% הנחה" append removed — the platform-wide
     # discount promise is retired; the share-loop lives on without it.

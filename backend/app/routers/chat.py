@@ -38,6 +38,7 @@ from app.rate_limit import limiter
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import (
+    ai_text,
     chat_business_context,
     chat_db_tools,
     chat_intent_router,
@@ -124,7 +125,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 1. המפה שלנו, בעמוד /map — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').
 2. דף הבית — חפשו לפי קטגוריה או עיר.
 
-בכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר 😊
+בכל עסק יש כפתור ליצירת קשר ישיר עם בית העסק — לרוב וואטסאפ, ולפעמים טלפון או ערוץ אחר שבית העסק בחר
 
 **עוד נושאים שגולשים שואלים**
 - **כמה זמן לוקח האישור של העסק?** — אחרי שבית עסק ממלא את טופס ההרשמה, הצוות שלנו בודק את הפרטים ובדרך כלל מאשר את העסק שלו עד 3 ימי עסקים. מרגע האישור העסק מופיע באתר וגולשים יכולים למצוא אותו במפה ובחיפוש.
@@ -148,7 +149,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 - אל תתחזי לבית עסק או לצוות האתר — את עוזרת AI.
 
 **פורמט התשובה**
-עני בטקסט פשוט בלבד. אל תשתמשי ב-markdown, כוכביות (`**`), bold, כותרות עם `#`, רשימות עם `-` או `*`, או כל סימן פורמט אחר. כתבי כמו שמדברים בצ'אט — רק המילים עצמן."""
+עני בטקסט פשוט בלבד. אל תשתמשי ב-markdown, כוכביות (`**`), bold, כותרות עם `#`, רשימות עם `-` או `*`, או כל סימן פורמט אחר. כתבי כמו שמדברים בצ'אט — רק המילים עצמן. בלי אימוג׳י בכלל."""
 
 
 # Strip any leftover markdown syntax from Claude's response as
@@ -411,7 +412,7 @@ def _global_chat_allowed() -> bool:
         return True
 
 
-OFFLINE_REPLY = "העוזרת לא זמינה כרגע 🌿 נסו שוב בעוד כמה רגעים, או פנו אלינו דרך טופס יצירת הקשר באודות."
+OFFLINE_REPLY = "העוזרת לא זמינה כרגע. נסו שוב בעוד כמה רגעים, או פנו אלינו דרך טופס יצירת הקשר באודות."
 
 
 # ---------- endpoint ----------
@@ -479,7 +480,7 @@ def chat(
     except Exception as e:  # pragma: no cover — network/quota
         logger.warning("chat completion failed: %s", e)
         return ChatResponse(
-            reply="משהו השתבש בצד שלי 🌱 נסו שוב בעוד רגע. אם זה נמשך — דווחו לנו דרך טופס יצירת הקשר.",
+            reply="משהו השתבש בצד שלי. נסו שוב בעוד רגע. אם זה נמשך — דווחו לנו דרך טופס יצירת הקשר.",
         )
     log_cache_usage("chat", response)
 
@@ -491,6 +492,7 @@ def chat(
 
     # MEH-31/32: strip any leftover markdown so the UI (which doesn't
     # parse it) doesn't render literal asterisks / underscores.
-    reply = _strip_markdown(reply)
+    # MEH-3668: no emoji on the site (Sapir 22/11). The prompt asks; this enforces.
+    reply = ai_text.strip_emoji(_strip_markdown(reply))
 
     return ChatResponse(reply=reply)

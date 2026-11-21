@@ -1,28 +1,10 @@
 # MEH-3668: emoji frozen in backend string literals. Only shrinks.
 # path<TAB>codepoint<TAB>count
-backend/app/routers/admin_recipes.py	U+1F372	1
-backend/app/routers/chat.py	U+1F331	1
-backend/app/routers/chat.py	U+1F33F	1
-backend/app/routers/chat.py	U+1F60A	1
-backend/app/routers/events.py	U+1F389	1
-backend/app/routers/group_buys.py	U+1F6D2	1
 backend/app/routers/marketing.py	U+1F33F	2
 backend/app/routers/marketing.py	U+2728	2
-backend/app/routers/producer_me.py	U+1F195	1
-backend/app/routers/producer_me.py	U+1F69A	1
-backend/app/services/approved_edit_moderation.py	U+1F4DD	1
 backend/app/services/auth_emails.py	U+1F331	6
 backend/app/services/auth_emails.py	U+1F33F	5
-backend/app/services/auth_notifications.py	U+1F501	1
-backend/app/services/auth_notifications.py	U+1F50E	1
-backend/app/services/auth_notifications.py	U+26A0	1
-backend/app/services/auth_notifications.py	U+2705	2
-backend/app/services/content_notifications.py	U+1F33F	1
 backend/app/services/delivery_waitlist.py	U+2728	1
-backend/app/services/experience_moderation.py	U+26A0	4
-backend/app/services/experience_notifications.py	U+1F33F	1
-backend/app/services/experience_notifications.py	U+26A0	1
-backend/app/services/home_product_moderation.py	U+26A0	4
 backend/app/services/onboarding_followup.py	U+1F4D6	3
 backend/app/services/onboarding_followup.py	U+2705	2
 backend/app/services/pending_nudge.py	U+1F4C5	1
@@ -31,9 +13,6 @@ backend/app/services/pending_nudge.py	U+1F4F7	2
 backend/app/services/pending_nudge.py	U+1F6D2	1
 backend/app/services/pending_nudge.py	U+2705	1
 backend/app/services/pending_nudge.py	U+270D	1
-backend/app/services/producer_recipe_moderation.py	U+26A0	3
-backend/app/services/rating_dispatcher.py	U+1F447	1
 backend/app/services/rescue_emails.py	U+1F331	6
 backend/app/services/rescue_emails.py	U+1F4CD	1
 backend/app/services/rescue_emails.py	U+1F557	1
-backend/app/startup.py	U+26A0	1

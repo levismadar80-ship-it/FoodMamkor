@@ -997,7 +997,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     ]
     if _missing:
         log.warning(
-            "⚠️ Optional env vars not set — some features disabled: %s",
+            "Optional env vars not set — some features disabled: %s",
             ", ".join(_missing),
         )
 

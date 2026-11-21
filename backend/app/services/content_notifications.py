@@ -36,7 +36,7 @@ def _link(path: str) -> str:
 def notify_recipe_approved(
     to_email: str, title: str, path: str, test_cause: bool = False
 ) -> None:
-    subject = f'מהמקור — המתכון "{_one_line(title)}" אושר ופורסם 🌿'
+    subject = f'מהמקור — המתכון "{_one_line(title)}" אושר ופורסם'
     body = (
         f"שלום,\n\n"
         f'המתכון "{title}" אושר ומופיע עכשיו בדף בית העסק שלך במהמקור.\n\n'

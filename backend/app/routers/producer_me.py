@@ -686,7 +686,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
             producer.id,  # type: ignore[arg-type]
             "delivery_area",
             AlertContent(
-                title=f"🚚 משלוחים חדשים: {producer.name}",
+                title=f"משלוחים חדשים: {producer.name}",
                 body="עכשיו מגיעים גם ל: {cities}",
                 url=f"/producer/{producer.id}",
             ),
@@ -959,7 +959,7 @@ def create_my_product(
         user.producer_id,  # type: ignore[arg-type]
         "new_product",
         AlertContent(
-            title=f"🆕 מוצר חדש מ{producer_name}",
+            title=f"מוצר חדש מ{producer_name}",
             body=product.name,
             url=f"/producer/{user.producer_id}",
         ),
