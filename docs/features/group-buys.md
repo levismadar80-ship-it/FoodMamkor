@@ -26,6 +26,7 @@
 * `tests/test_meh2943_group_buy_commit_scoping.py` · `tests/test_meh3128_group_buy_counts.py` · `tests/test_group_buys_cancel_on_delist.py`
 * `frontend/e2e/flows/manual/dashboard-offer-groupbuy.spec.ts`
 * `frontend/__tests__/GroupBuysServerFirstList.test.jsx` — ה-HTML מהשרת מכיל את הכרטיסים, הגעה בלי סינון לא שולחת בקשה, ועיר שמוקלדת אחר כך כן (MEH-2233).
+* `frontend/__tests__/GroupBuyAfterGoal.test.jsx` — מה רואים כשהקבוצה מגיעה ליעד: «הקבוצה הגיעה ליעד» ומספר המצטרפות לבד (לא «2 מתוך 2», שנקרא כמו «מלאה»), «נשארו N מקומות» כשיש תקרה, באנר «עוד אפשר להצטרף» למי שלא הצטרפה, ו«איך זה עובד» שנשאר כל עוד אפשר להצטרף (MEH-3588).
 * `frontend/__tests__/GroupBuyNotAParty.test.jsx` — כרטיס ההצטרפות נושא את ההבהרה «לא צד לעסקה» (`frontend/components/DirectoryDisclaimer.jsx`), כי שם מתחייבים להזמנה.
 
 **מזהי רישום שזה מכסה.** `group_buys`.
