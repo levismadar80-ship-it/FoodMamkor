@@ -425,6 +425,9 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // MEH-3216 stage 5b: whether the page offers «הוספה» (the route folds in
   // the site flag and the business's switch). Optional: older payloads lack it.
   takes_site_orders: z.boolean().optional(),
+  // MEH-2952 chunk 3: true only for a seeded test business — the page then
+  // carries robots noindex and no JSON-LD. Declared because z.object strips.
+  noindex: z.boolean().optional(),
   // MEH-3339: the optional second number + label (one text line; no CTA).
   secondary_phone: z.string().nullable().optional(),
   secondary_phone_label: z.string().nullable().optional(),

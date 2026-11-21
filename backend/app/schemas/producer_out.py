@@ -417,6 +417,11 @@ class ProducerDetailOut(ProducerListOut):
     # older payload) keeps the CTA rather than silently losing it -- the failure
     # that matters here is the feature vanishing, not it appearing.
     coverage_cta_enabled: bool = True
+    # MEH-2952 chunk 3 (Sapir 11/11 ruling 2): in EVERY answer — false for a
+    # live business, true for a seeded test row. Read from the model property
+    # `Producer.noindex` (models.py), so every builder fills it; the column
+    # itself never leaves the API (tests/test_meh2952_is_test_guards.py).
+    noindex: bool = False
     products: list[ProductOut] = []
     # MEH-3055: ordered groups; a NULL column reads as no groups.
     product_groups: list[ProductGroupOut] = []

@@ -445,7 +445,9 @@ def get_producer_by_slug(
             # or the property fires one query per producer on every list page.
             selectinload(Producer.offers),
         )
-        .filter(Producer.slug == slug, is_business())  # MEH-2459
+        # MEH-2459 · MEH-2952 chunk 3: a seeded test row is served here — its
+        # direct URL is the golden-path run's — and the answer says noindex.
+        .filter(Producer.slug == slug, is_business(include_test=True))
         .first()
     )
     if not producer:
@@ -525,8 +527,8 @@ def get_producer(
     # MEH-2459 — an organizer is never a public business either: same
     # owner/admin carve-out, same 404 for everyone else (its public face is
     # /organizers/{slug}, chunk 3).
-    # MEH-2952: and a seeded test row (is_test) — same carve-out; its page
-    # reopens with noindex in chunk 3.
+    # MEH-2952: and a seeded test row (is_test) — same carve-out. Its public
+    # face is by-slug (chunk 3, noindex); this UUID route stays closed.
     if not is_business_row(producer):
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == producer.id
