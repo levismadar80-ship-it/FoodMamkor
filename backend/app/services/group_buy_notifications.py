@@ -366,7 +366,6 @@ def send_waitlist_place(
         logger.exception("waitlist place email failed (%s)", group_buy_id)
 
 
-
 def notify_pickup_changed(  # noqa: PLR0913 — plain data for a BackgroundTasks entry
     email: str,
     title: str,
@@ -405,6 +404,14 @@ def send_pickup_changed(  # noqa: PLR0913 — BackgroundTasks entry, plain data
 ) -> None:
     for email in emails:
         try:
-            notify_pickup_changed(email, title, group_buy_id, window, notes, first=first, test_cause=test_cause)
+            notify_pickup_changed(
+                email,
+                title,
+                group_buy_id,
+                window,
+                notes,
+                first=first,
+                test_cause=test_cause,
+            )
         except Exception:  # best-effort, one failure must not stop the rest
             logger.exception("pickup-changed email failed (%s)", group_buy_id)

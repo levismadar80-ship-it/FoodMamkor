@@ -31,7 +31,11 @@ from app.schemas.schemas import (
 from app.services import group_buy_capacity as capacity
 from app.services.group_buy_goal_flap import participant_emails
 from app.services.group_buy_notifications import send_pickup_changed
-from app.services.group_buy_pickup_text import is_delivery_only, note_lines, pickup_window_he
+from app.services.group_buy_pickup_text import (
+    is_delivery_only,
+    note_lines,
+    pickup_window_he,
+)
 from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/group-buys", tags=["group-buys"])
@@ -215,13 +219,19 @@ _PICKUP_FIELDS = {"pickup_starts_at", "pickup_ends_at"}
 
 
 def _set_pickup_window(
-    db: Session, gb: GroupBuy, data: GroupBuySettingsUpdate, background_tasks: BackgroundTasks
+    db: Session,
+    gb: GroupBuy,
+    data: GroupBuySettingsUpdate,
+    background_tasks: BackgroundTasks,
 ) -> None:
     """MEH-3597: the window, never starting before joining closes. A change
     on a group people already joined emails each of them the new time."""
     if data.pickup_starts_at is not None and data.pickup_starts_at < gb.deadline:
         raise HTTPException(status_code=400, detail=PICKUP_BEFORE_DEADLINE)
-    if (gb.pickup_starts_at, gb.pickup_ends_at) == (data.pickup_starts_at, data.pickup_ends_at):  # type: ignore[comparison-overlap]
+    if (gb.pickup_starts_at, gb.pickup_ends_at) == (
+        data.pickup_starts_at,
+        data.pickup_ends_at,
+    ):  # type: ignore[comparison-overlap]
         return
     first = gb.pickup_starts_at is None
     gb.pickup_starts_at = data.pickup_starts_at  # type: ignore[assignment]

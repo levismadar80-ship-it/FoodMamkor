@@ -35,7 +35,11 @@ def pickup_window_he(starts: datetime | None, ends: datetime | None) -> str:
     return f"{_day(s)}, {s:%H:%M} – {_day(e)}, {e:%H:%M}"
 
 
-def is_delivery_only(pickup_note: str | None, delivery_note: str | None, fulfillment_note: str | None = None) -> bool:
+def is_delivery_only(
+    pickup_note: str | None,
+    delivery_note: str | None,
+    fulfillment_note: str | None = None,
+) -> bool:
     """The page's rule: only a delivery answer means nobody comes to pick up,
     so a saved window is not shown (frontend GroupBuyDetailClient)."""
     return bool(delivery_note) and not pickup_note and not fulfillment_note
@@ -58,6 +62,10 @@ def pickup_lines(
 ) -> str:
     """The lines for an email body, each ending in a newline; "" when nothing
     is set. A delivery-only group carries no pickup time."""
-    window = "" if is_delivery_only(pickup_note, delivery_note) else pickup_window_he(starts, ends)
+    window = (
+        ""
+        if is_delivery_only(pickup_note, delivery_note)
+        else pickup_window_he(starts, ends)
+    )
     head = f"מועד איסוף: {window}\n" if window else ""
     return head + note_lines(pickup_note, delivery_note)

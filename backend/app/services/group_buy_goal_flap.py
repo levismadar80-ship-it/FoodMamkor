@@ -127,6 +127,8 @@ def notify_back_at_goal(
             f["group_buy_id"],
             str(gb.producer_id),
             test_cause=f["test_cause"],
-            pickup=pickup_lines(gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note),  # MEH-3597
+            pickup=pickup_lines(
+                gb.pickup_starts_at, gb.pickup_ends_at, gb.pickup_note, gb.delivery_note
+            ),  # MEH-3597
         )
     return len(emails)
