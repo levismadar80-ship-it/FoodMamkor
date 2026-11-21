@@ -11,7 +11,7 @@ import logging
 from html import escape as _html_escape
 
 from app.config import settings
-from app.services.email_branding import email_logo_html
+from app.services.email_branding import email_logo_html, email_signoff_html
 from app.services.onboarding_followup import SITE_DOMAIN
 
 logger = logging.getLogger(__name__)
@@ -92,11 +92,9 @@ def _approval_links(slug: str | None) -> tuple[str, str]:
 def _producer_approved_body(name: str, slug: str | None) -> str:
     """MEH-2134: copy approved by Sapir 20/08/2026, shipped verbatim.
 
-    Signed `ספיר שנפ | מייסדת` in the first person, matching
-    `pending_nudge.py:149` and all four `onboarding_followup.py` steps —
-    one mailbox, one sender. `_producer_rejected_body` deliberately keeps the
-    institutional sign-off: an institutional "no" is kinder than a personal
-    one, and that asymmetry is a decision, not an oversight. (The literal is
+    MEH-3594 (Sapir, 21/11): signed with the team sign-off, like
+    `_producer_rejected_body` and every other email; until then it carried
+    the founder's personal signature. (The literal is
     spelled out nowhere in this docstring so that the sign-off census below
     counts signatures, not prose.)
 
@@ -147,11 +145,11 @@ def _producer_approved_body(name: str, slug: str | None) -> str:
     dashboard = f"\n{_APPROVED_DASHBOARD_LABEL}\n{dashboard_url}\n"
     return (
         f'היי,\n\nהעסק שלך "{name}" אושר במהמקור! '
-        f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n"
+        f"העמוד שלך כבר מופיע באתר.\n"
         f"{view_page}"
         f"{dashboard}"
         f"{community}"
-        f"\nספיר שנפ\nמייסדת | מהמקור\n{SITE_DOMAIN}"
+        f"\nצוות מהמקור"
     )
 
 
@@ -247,6 +245,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
 
     # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
     logo = email_logo_html()
+    signoff = email_signoff_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -267,7 +266,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
         'margin:0 0 24px;direction:rtl;">'
         f'העסק שלך "{safe_name}" אושר במהמקור! '
-        "הפרופיל שלך כעת גלוי לכל המשתמשים באתר.</p>\n"
+        "העמוד שלך כבר מופיע באתר.</p>\n"
         f"{button}\n"
         '<p style="margin:0 0 24px;direction:rtl;">'
         f'<a href="{_html_escape(dashboard_url)}" style="color:#2e6853;'
@@ -277,7 +276,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         '<hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">\n'
         '<p style="color:#1C1A17;font-size:15px;line-height:1.8;'
         'margin:0;direction:rtl;">'
-        f"ספיר שנפ<br>מייסדת | מהמקור<br>{_html_escape(SITE_DOMAIN)}</p>\n"
+        f"{signoff}</p>\n"
         "</td></tr></table>\n"
         "</td></tr></table>\n"
         "</body>\n"

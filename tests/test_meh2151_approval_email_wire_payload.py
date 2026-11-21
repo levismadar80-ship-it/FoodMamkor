@@ -1,8 +1,8 @@
 """
 Module:   test_meh2151_approval_email_wire_payload
 Purpose:  Assert the producer-approval email at the ONE boundary no other test
-          reaches — the outbound Resend payload — so the em-dash and the pipe
-          in the locked copy are proven to survive the wire, and the MEH-331
+          reaches — the outbound Resend payload — so the em-dash
+          in the locked copy is proven to survive the wire, and the MEH-331
           `Content-Transfer-Encoding: base64` header is proven to still ride
           along with the HTML part.
 Touches:  Nothing. `resend.Emails.send` is monkeypatched; no network, no DB.
@@ -32,7 +32,7 @@ dict over HTTPS (`app/services/email.py`, `resend.Emails.send(params)`) and
 Resend's MTA builds the MIME. So a test cannot open a MIME part and read a
 `charset=`, and this file does not claim to.
 
-What it CAN establish — and all it claims — is that the two characters are
+What it CAN establish — and all it claims — is that the locked punctuation is
 PRESENT in both parts at the transport, and that the strings carrying them are
 `str` and are UTF-8-encodable. A mojibake introduced anywhere upstream of
 `resend.Emails.send` fails the first check; a lone surrogate left by a bad
@@ -51,13 +51,14 @@ import pytest
 import app.routers.admin_decisions as admin_module
 import app.services.email as email_module
 
-# The two characters the MEH-2134 locked copy depends on. `—` is the separator
-# in the dashboard line, `|` the one in the founder signature. Both are the
+# The characters the MEH-2134 locked copy depends on. `—` is the separator
+# in the dashboard line. `|` was the one in the founder signature, which
+# MEH-3594 replaced with the team sign-off, so it is no longer a canary. Such
+# characters are the
 # shapes that historically come back as mojibake when a latin-1 assumption
 # creeps into a transport, which is why they are the named canaries rather than
 # a generic "some Hebrew".
 EM_DASH = "—"
-PIPE = "|"
 
 
 @pytest.fixture
@@ -107,7 +108,7 @@ def test_both_parts_reach_the_transport_not_just_the_builder(wire):
 
 
 @pytest.mark.parametrize("part", ["text", "html"])
-@pytest.mark.parametrize("char, label", [(EM_DASH, "em-dash"), (PIPE, "pipe")])
+@pytest.mark.parametrize("char, label", [(EM_DASH, "em-dash")])
 def test_the_locked_punctuation_reaches_the_transport_utf8_encodable(wire, part, char, label):
     """The character is present, and the string it sits in can actually be encoded.
 

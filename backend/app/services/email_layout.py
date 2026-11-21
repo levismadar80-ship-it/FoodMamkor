@@ -23,7 +23,7 @@ from __future__ import annotations
 import re
 from html import escape as html_escape
 
-from app.services.email_branding import email_logo_html
+from app.services.email_branding import email_logo_html, email_signoff_html
 
 # The site palette (frontend/tailwind.tokens.json), same values the
 # hand-built templates use since the 17/11 frame audit.
@@ -80,7 +80,7 @@ def frame(heading: str, rows_html: str, button_html: str = "") -> str:
           {button_html}
         </table>
       </td></tr>
-      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:{MUTED};">צוות מהמקור</td></tr>
+      <tr><td style="text-align:center;padding:16px 4px 0;font-size:14px;color:{MUTED};">{email_signoff_html()}</td></tr>
     </table>
   </td></tr>
 </table>

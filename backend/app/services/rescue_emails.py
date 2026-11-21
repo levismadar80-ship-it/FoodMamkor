@@ -68,7 +68,7 @@ def send_reservation_email(
     page_url = f"{settings.frontend_url}/producer/{m.producer_id}"
 
     cancel_text = (
-        f"אי אפשר להגיע? אפשר לבטל בחינם עד {m.cancel_until}, "
+        f"לא תוכלו להגיע? אפשר לבטל בחינם עד {m.cancel_until}, "
         f"וככה הסל יגיע למישהו אחר.\n\n"
         f"לבטל את השריון: {page_url}\n\n"
         if m.cancel_until
@@ -90,7 +90,7 @@ def send_reservation_email(
     address_html = f"<br>\n                📍&nbsp; {e(m.address)}" if m.address else ""
     cancel_html = (
         f"""\
-          <tr><td style="padding:14px 22px 0;text-align:right;font-size:14px;color:#5c584f;line-height:1.6;">אי אפשר להגיע? אפשר לבטל בחינם עד <b style="color:#1c1a17;">{e(m.cancel_until)}</b>, וככה הסל יגיע למישהו אחר.</td></tr>
+          <tr><td style="padding:14px 22px 0;text-align:right;font-size:14px;color:#5c584f;line-height:1.6;">לא תוכלו להגיע? אפשר לבטל בחינם עד <b style="color:#1c1a17;">{e(m.cancel_until)}</b>, וככה הסל יגיע למישהו אחר.</td></tr>
           <tr><td style="padding:16px 22px 24px;text-align:center;">
             <a href="{e(page_url)}" style="display:inline-block;background:#ffffff;color:#2e6853;border:2px solid #2e6853;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לבטל את השריון</a>
           </td></tr>

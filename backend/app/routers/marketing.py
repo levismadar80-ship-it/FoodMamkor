@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.services.email_branding import email_logo_html
+from app.services.email_branding import email_logo_html, email_signoff_html
 from app.services.email import send_email
 from app.services.newsletter_sync import sync_subscribe, sync_unsubscribe
 from app.services.weekly_owner_summary import (
@@ -303,7 +303,7 @@ def _send_newsletter_welcome(email: str) -> None:
                 נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
               </p>
               <p style="color:#1C1A17;font-size:15px;line-height:1.8;margin:0 0 24px;">
-                <span style="font-weight:bold;">ספיר ✨</span>
+                {email_signoff_html()}
               </p>
               <hr style="border:none;border-top:1px solid #E5DFD3;margin:0 0 20px;">
               <p style="color:#5C584F;font-size:12px;line-height:1.6;margin:0;">
@@ -323,7 +323,7 @@ def _send_newsletter_welcome(email: str) -> None:
         "תודה שהצטרפת.\n\n"
         "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. "
         "בלי ספאם, ואפשר לבטל בכל רגע.\n\n"
-        "ספיר ✨\n\n"
+        "צוות מהמקור\n\n"
         f"לבטל הרשמה: {unsubscribe_url}\n"
         "מהמקור — אוכל מבתי עסק מקומיים קרוב לבית, במקום אחד."
     )
