@@ -191,6 +191,8 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
   );
   await page.route("**/users/me/favorites", (r) => json(r, []));
+  // MEH-3525: the account menu asks whether on-site ordering is on.
+  await page.route("**/users/me/product-orders", (r) => json(r, []));
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
   await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));

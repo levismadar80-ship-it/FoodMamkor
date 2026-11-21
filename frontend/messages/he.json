@@ -7742,5 +7742,24 @@
       "external_order": "בטופס הזמנה"
     },
     "blocked": "יש שינויים שלא נשמרו בכרטיסים בעמוד. שמרו אותם קודם, ואז את הפרטים מכאן."
+  },
+  "my_orders": {
+    "title": "ההזמנות שלי",
+    "row": "{business} · {date} · {status}",
+    "row_no_status": "{business} · {date}",
+    "empty": "עוד לא הזמנתם דרך מהמקור.",
+    "empty_cta": "לבתי העסק",
+    "load_error": "לא הצלחנו לטעון את ההזמנות.",
+    "status": {
+      "pending": "מחכה לאישור",
+      "change_proposed": "בית העסק הציע שינוי",
+      "confirmed": "אושרה",
+      "ready": "מוכנה",
+      "handed": "נמסרה",
+      "declined": "לא אושרה",
+      "cancelled": "בוטלה",
+      "expired": "לא נענתה בזמן",
+      "no_show": "לא נאספה"
+    }
   }
 }

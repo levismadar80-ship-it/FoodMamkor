@@ -240,6 +240,8 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   // (no settings row) hides the panel; unstubbed, the real backend's 401 ends the session.
   await page.route("**/admin/producers/*/order-settings", (r) => r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "not found" }) }));
   await page.route("**/users/me/favorites", (r) => json(r, []));
+  // MEH-3525: the account menu asks whether on-site ordering is on.
+  await page.route("**/users/me/product-orders", (r) => json(r, []));
   await page.route("**/admin/dashboard", (r) =>
     json(r, {
       stats: { total_producers: rows.length, pending_producers: 0, total_users: 3, total_group_buys: 0, pending_moderation_count: 0, pending_kashrut_requests: 0 },
