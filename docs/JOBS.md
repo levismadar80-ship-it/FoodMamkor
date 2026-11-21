@@ -33,7 +33,7 @@ UPDATE_JOBS_MAP=1 pytest tests/test_meh3599_jobs_map.py
 הרישום שלה, בקובץ שבעמודה «נרשמת ב».
 
 <!-- BEGIN GENERATED: jobs-map (tests/test_meh3599_jobs_map.py) -->
-13 server jobs · 9 GitHub Actions schedules.
+14 server jobs · 9 GitHub Actions schedules.
 
 ### משימות בשרת (APScheduler)
 
@@ -50,6 +50,7 @@ UPDATE_JOBS_MAP=1 pytest tests/test_meh3599_jobs_map.py
 | `meh_3312_registration_reminder_daily` | `_run_registration_reminder_job` | cron `0 17 * * *` (Asia/Jerusalem) | תמיד | registration-reminder-daily | backend/app/startup.py · register_scheduler_jobs | MEH-3312: the evening-before reminder to on-site registrants. |
 | `meh_3332_job_staleness_check` | `_run_job_staleness_check` | כל 30 minutes | `_enabled()` (app.services.job_heartbeat._enabled) | — | backend/app/startup.py · _register_job_staleness_check | MEH-3332: every 30 minutes, email the admin about a registered @heartbeat job with no recent success. |
 | `meh_3413_billing_start_signal_monthly` | `_run_billing_start_signal_job` | cron `0 5 1-3 * *` (UTC) | תמיד | billing-start-signal-monthly | backend/app/startup.py · register_scheduler_jobs | MEH-3413: early in the month, email the admin when the month that just ended reached the billing-start signal. |
+| `meh_3535_email_outbox` | `_run_email_outbox_job` | כל 1 minutes | `not (settings.outbox_external_worker)` (app.config.settings) | email-outbox-tick | backend/app/startup.py · _register_outbox_jobs | MEH-3535: send the queued emails that are due (services/email_outbox). |
 | `meh_509_pr2b_after_hours_watchdog` | `_run_watchdog_job` | כל 5 minutes | `settings.watchdog_enabled` (app.config.settings) | auto-reply-watchdog | backend/app/startup.py · register_scheduler_jobs | MEH-509 PR2b: 5-min after-hours watchdog tick. |
 | `meh_539_onboarding_followups_daily` | `_run_followup_job` | cron `0 10 * * *` (UTC) | תמיד | onboarding-followups-daily | backend/app/startup.py · register_scheduler_jobs | MEH-539: daily APScheduler tick. |
 
