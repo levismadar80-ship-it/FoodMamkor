@@ -265,7 +265,6 @@ class TestNotifierMessage:
 
         sent = []
         monkeypatch.setattr(n.settings, "admin_email", "admin@example.com")
-        monkeypatch.setattr(n.settings, "admin_whatsapp_to", "")
         monkeypatch.setattr(
             n, "send_email", lambda to, subject, body, test_cause=False: sent.append((to, subject, body))
         )
@@ -282,6 +281,5 @@ class TestNotifierMessage:
 
         sent = []
         monkeypatch.setattr(n, "send_email", lambda *a, **k: sent.append(a))
-        monkeypatch.setattr(n, "send_text", lambda *a, **k: sent.append(a))
         n.notify_admin_claim_link_requested("x", "y", test_cause=True)
         assert sent == []
