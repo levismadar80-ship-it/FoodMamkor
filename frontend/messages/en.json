@@ -3612,7 +3612,8 @@
       "close": "Close",
       "image_alt": "Photo of the kashrut certificate",
       "verified_by": "Verified by Mehamakor",
-      "original_at_business": "The original is displayed at the business"
+      "original_at_business": "The original is displayed at the business",
+      "image_unavailable": "The certificate photo isn't available right now"
     }
   },
   "opening_hours": {

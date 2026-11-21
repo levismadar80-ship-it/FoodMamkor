@@ -3612,7 +3612,8 @@
       "close": "סגירה",
       "image_alt": "צילום תעודת הכשרות",
       "verified_by": "אומתה על ידי מהמקור",
-      "original_at_business": "התעודה המקורית מוצגת בבית העסק"
+      "original_at_business": "התעודה המקורית מוצגת בבית העסק",
+      "image_unavailable": "צילום התעודה לא זמין כרגע"
     }
   },
   "opening_hours": {
