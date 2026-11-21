@@ -45,6 +45,7 @@ LIT = re.compile(r"""["'`]([A-Za-z0-9_.\-]+)["'`]""")
 TEMPLATE = re.compile(r"`([^`]*\$\{[^`]*)`")
 PLACEHOLDER = re.compile(r"\$\{[^}]*\}")
 KEY_CHARS = re.compile(r"[A-Za-z0-9_.\-]*")
+SUFFIX_LIT = re.compile(r"""\+\s*["'`]([_.][A-Za-z0-9_\-]{3,})["'`]""")
 
 
 def template_pattern(body: str) -> re.Pattern | None:
@@ -59,7 +60,11 @@ def template_pattern(body: str) -> re.Pattern | None:
     if not all(KEY_CHARS.fullmatch(x) for x in statics):
         return None
     joined = "".join(statics)
-    if "." not in joined and not (len(joined) >= 3 and joined[-1] in "_-"):
+    # A key boundary (`.`, `_`, `-`) anywhere in the static text: `status.${s}`,
+    # `tab_${x}`, and `${row}_brand` (AboutClient.jsx:459), which the first
+    # cut dropped and so reported six live comparison rows as dead (rule-5a
+    # reviewer, MEH-3657).
+    if "." not in joined and not (len(joined) >= 3 and any(c in joined for c in "_-")):
         return None
     # `${ns}.${key}` has no letter of its own and would match every key.
     if not re.search(r"[A-Za-z0-9]", joined):
@@ -97,6 +102,12 @@ def collect(repo: Path) -> tuple[set[str], list[re.Pattern]]:
         text = p.read_text(encoding="utf-8", errors="replace")
         lits.update(LIT.findall(text))
         for body in TEMPLATE.findall(text):
+            if body not in pats and (pat := template_pattern(body)):
+                pats[body] = pat
+        # `base + "_with_unit"`: a string that starts on a boundary is a suffix
+        # added at run time.
+        for suf in SUFFIX_LIT.findall(text):
+            body = "${x}" + suf
             if body not in pats and (pat := template_pattern(body)):
                 pats[body] = pat
     return lits, list(pats.values())
@@ -213,7 +224,7 @@ def write_baseline(repo: Path, path: Path) -> None:
 def self_test() -> int:
     import tempfile
     ok = 0
-    total = 11
+    total = 13
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
         (repo / "frontend/messages").mkdir(parents=True)
@@ -227,6 +238,8 @@ def self_test() -> int:
             "sweep_tail": {"event_new": {"hint": "רמז"}},
             "holidays": {"pesach": {"dashboard_hint": "פסח"}},
             "whats_new": {"releases": {"v1_5_8": {"i1": "שורה"}}},
+            "about": {"comparison": {"row1_brand": "אנחנו"}},
+            "gb": {"units_ordered_with_unit": "יחידות"},
         }, ensure_ascii=False), encoding="utf-8")
         # Anchored to the real pattern in frontend/components/ListingHubTabs.jsx
         # (useTranslations + t(labelKey)) and to a run-time key.
@@ -238,7 +251,9 @@ def self_test() -> int:
             'const tn = useTranslations("sweep_tail.event_new"); tn("hint");\n'
             'tHoliday(`${h.key}.dashboard_hint`);\n'
             'tw(`${releaseKey}.i${i}`);\n'
-            'tg(`${ns}.${key}`);\n', encoding="utf-8")
+            'tg(`${ns}.${key}`);\n'
+            'tCompare(`${row}_brand`);\n'
+            'const k = base + "_with_unit";\n', encoding="utf-8")
         (repo / "frontend/components/__tests__/Card.test.jsx").write_text(
             'expect(t("dead.never_read")).toBe("x");\n', encoding="utf-8")
         n, got = scan(repo)
@@ -258,6 +273,10 @@ def self_test() -> int:
              "a placeholder in the middle of a template counts (WhatsNewCard.jsx:27)"),
             ("unused\tdead.never_read" in got and "unused\tzz.only_here" in got,
              "a letter-free template (`${ns}.${key}`) saves nothing"),
+            ("unused\tabout.comparison.row1_brand" not in got,
+             "a template that STARTS with a placeholder counts (AboutClient.jsx:459)"),
+            ("unused\tgb.units_ordered_with_unit" not in got,
+             "a suffix added with + counts (group-buys/page.js:779)"),
         ]
         for i, (cond, name) in enumerate(checks, 1):
             print(f"  {'ok' if cond else 'FAIL'} {i}  {name}")
@@ -268,7 +287,7 @@ def self_test() -> int:
         import io
         with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
             rc = run(empty, Path("/dev/null"), "control")
-        print(f"  {'ok' if rc else 'FAIL'} 11  parsed-0 control fails loudly")
+        print(f"  {'ok' if rc else 'FAIL'} 13  parsed-0 control fails loudly")
         ok += bool(rc)
     print(f"self-test: {ok}/{total}")
     return 0 if ok == total else 1
