@@ -1,6 +1,7 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
 
-from typing import Any
+from datetime import datetime
+from typing import Any, cast
 from decimal import Decimal
 from uuid import UUID
 
@@ -32,6 +33,7 @@ from app.schemas.schemas import (
 from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
 from app.services.group_buy_goal_flap import notify_back_at_goal, notify_below_goal
 from app.services.group_buy_notifications import (
+    notify_participant_joined,
     send_cancelled_notifications,
     send_funded_notifications,
 )
@@ -362,6 +364,39 @@ def _notify_late_joiner(
     )
 
 
+def _confirm_join(
+    gb: GroupBuy,
+    user: User,
+    commit: GroupBuyCommit,
+    joined: int,
+    background_tasks: BackgroundTasks,
+) -> None:
+    """MEH-3591: a join that left the group below its goal gets a confirmation.
+
+    The other two branches above already email her (the funded email), so
+    this one never doubles it. Queued before the commit like the funded mail;
+    a failed commit raises and the task never runs.
+    """
+    # Unverified address: no mail. Otherwise join/leave in a loop on a
+    # registered-but-unverified victim address would mail it from our domain
+    # (fresh reviewer, MEH-3591).
+    if not user.email or not user.email_verified:
+        return
+    background_tasks.add_task(
+        notify_participant_joined,
+        str(user.email),
+        str(gb.title),
+        int(commit.quantity),
+        joined,
+        int(gb.min_participants),
+        cast(datetime, gb.deadline),
+        str(gb.id),
+        # MEH-2952: a test joiner sends nothing. A test business's group is
+        # not public (404 above), so no real join reaches here for one.
+        test_cause=bool(user.is_test),
+    )
+
+
 @router.post("/{group_buy_id}/commit", status_code=201, response_model=None)
 @limiter.limit("20/minute")  # MEH-3022
 def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
@@ -432,6 +467,8 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
         # mail; MEH-3592 keeps that (its late-join mail is for funded only).
         gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
+    else:
+        _confirm_join(gb, current_user, commit, new_count, background_tasks)
 
     db.commit()
     db.refresh(commit)

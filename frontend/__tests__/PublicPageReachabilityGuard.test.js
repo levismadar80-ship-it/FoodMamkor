@@ -101,6 +101,8 @@ const ROUTES = {
   "/account-deleted": { kind: "noindex" },
   "/business-gone": { kind: "noindex" },
   "/claim": { kind: "noindex" },
+  // MEH-3586: a surprise bag lives one day, so its page sets robots index:false.
+  "/rescue/[offerId]": { kind: "noindex" },
   "/claim/[token]": { kind: "noindex" },
   "/contact": { kind: "noindex" },
   "/draft-preview/[token]": { kind: "noindex" },

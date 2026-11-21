@@ -157,6 +157,12 @@ JOBS = [
         "interval",
         job_heartbeat.PRODUCT_ORDERS_INTERVAL_MINUTES,
     ),
+    (
+        "_run_email_outbox_job",
+        "email-outbox-tick",
+        "interval",
+        job_heartbeat.EMAIL_OUTBOX_INTERVAL_MINUTES,
+    ),
 ]
 
 

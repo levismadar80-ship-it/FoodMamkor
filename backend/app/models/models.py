@@ -1317,3 +1317,6 @@ import app.models.product_orders  # noqa: E402,F401
 
 # MEH-3305: an admin's passkeys and recovery codes (own module, same reason).
 import app.models.admin_passkeys  # noqa: E402,F401
+
+# MEH-3535: the durable email queue (own module, same reason).
+import app.models.email_outbox  # noqa: E402,F401

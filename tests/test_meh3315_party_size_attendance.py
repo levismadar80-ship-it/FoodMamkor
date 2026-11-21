@@ -15,6 +15,9 @@ from test_meh2763_registrations import _event, _experience, _owner, _signup
 
 @pytest.fixture(autouse=True)
 def _no_mail(monkeypatch):
+    from _queued_mail import route_queued_mail_to_senders  # MEH-3535
+
+    route_queued_mail_to_senders(monkeypatch)
     for name in (
         "send_visitor_confirmation",
         "send_owner_new_registration",

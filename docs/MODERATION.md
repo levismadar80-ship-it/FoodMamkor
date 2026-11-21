@@ -47,6 +47,8 @@
 
 ## fail-open — LOCK, ועכשיו גם גלוי (PR #3607)
 
+בדיקת החוויות, המתכונים ומוצרי השכנים קוראת למודל דרך `services/moderation_common.py` (MEH-3619): הלקוח, קריאת ה-JSON, סירוב ← FLAGGED והכשל הפתוח נמצאים שם פעם אחת. כל שירות שומר את הפרומפט, השדות, המודל והתג שלו.
+
 הכלל לא השתנה: אין מפתח, שגיאת API או תשובה לא קריאה ← הפריט עובר כאילו אושר (בביקורות הסטטוס נשמר NULL מאז MEH-2390; בסיכון: ציון NULL). מה שנוסף הוא אות שזה קרה. `services/moderation_fail_open.py:report_fail_open(surface, reason)` כותב warning ל-structlog (Railway logs) ואירוע Sentry אחד לכל מקרה.
 
 - tags: `moderation_fail_open=true`, `moderation_surface` (`review` / `review_reply` / `experience` / `recipe` / `producer_content` / `product_content` / `producer_risk`), `fail_open_reason`
