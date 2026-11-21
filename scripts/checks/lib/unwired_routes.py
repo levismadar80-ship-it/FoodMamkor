@@ -107,8 +107,10 @@ def parse_baseline(text: str) -> tuple[dict[tuple[str, str], tuple[str, str, int
             errors.append(f"{where}: unknown reason «{reason}» (one of {sorted(REASONS)})")
         elif reason in NEEDS_CARD and not CARD_RE.match(detail):
             errors.append(f"{where}: reason «{reason}» needs a MEH-<N> card, got «{detail}»")
-        elif reason in ("scanner-miss", "ops-manual") and not detail:
+        elif reason == "scanner-miss" and not detail:
             errors.append(f"{where}: scanner-miss needs the frontend file that calls it")
+        elif reason == "ops-manual" and not detail:
+            errors.append(f"{where}: ops-manual needs the doc that tells the operator to call it")
         if (method, path) in rows:
             errors.append(f"{where}: duplicate of line {rows[(method, path)][2]}")
         rows[(method, path)] = (reason, detail, n)

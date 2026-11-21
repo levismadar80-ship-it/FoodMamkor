@@ -1426,9 +1426,6 @@ GET    /producers/by-slug/{slug}                  public
                                                `slug_not_latin`), checked only when the slug CHANGES so a legacy
                                                Hebrew slug stays editable. A name that transliterates to nothing
                                                (all-Arabic, no handle) → NULL slug, /producer/{id}.
-                                               GROUP BY city over approved producers; NULL/blank city omitted;
-                                               ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
-                                               response_model=list[ProducerCityOut] → [{ "city": str, "count": int }]
 GET    /producer-name-check?name=               public, 30/min — MEH-3086: the sign-up form's "already on the site?" hint. Returns `{matches:[{id,slug,name,city}]}` (max 3): live businesses (`is_business()`) whose name EQUALS `name` after lower-casing, dropping quote marks and collapsing spaces. Never a prefix match, never a draft/pending/rejected page, and nothing is written to `search_queries`. Names under 3 chars → empty list.
 GET    /producers/random                          public — MEH-1288: one random APPROVED producer for the homepage
                                                "הפתיעו אותי" button. ORDER BY random() LIMIT 1; 404 when the catalog is
