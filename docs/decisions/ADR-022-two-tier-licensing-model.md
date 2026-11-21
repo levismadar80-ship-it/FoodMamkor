@@ -84,3 +84,15 @@ License, Airbnb, Thumbtack).
   brief's 06/11 addendum. It flags that /about/process says a badge is absent
   because the category is exempt, which is not true for a business approved through
   the MEH-2299 override.
+
+## Amendment 21/11/2026 — a licence number never blocks a save (MEH-3026)
+
+Sapir, 21/11: businesses join and stay listed without a licence number; the only
+consequence is no «מאומת» badge. Following the approve change (same card), the
+other writes that still refused a business without a number are opened too:
+adding a license-required category (`PUT /producers/me`, admin `PUT
+/admin/producers/{id}`), blanking a held number, admin create, and the owner
+invite (send and accept, `services/invite_gate.py`). `enforce_license_gate_on_update`
+(MEH-999 / MEH-2707) is deleted. Registration keeps its `license_pending`
+opt-in and public `POST /producers` keeps its guard; both are self-serve forms
+whose wording is handled in the copy PR of the same card.

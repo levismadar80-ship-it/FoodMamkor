@@ -1300,11 +1300,11 @@ POST   /admin/producers/{id}/owner-invite          admin — 10/hour. Body {name
                                                      mailed and the admin copies the link into WhatsApp or Instagram herself.
                                                      consent_confirmed != true, or a blank/whitespace note → 422 (schema-level: a statement about the body, so it leaks nothing).
                                                      Status neither "approved" nor "inactive" → 409 · already has an owner → 409 · the email, if given, already belongs to a user → 409 (v1 does NOT link an existing account).
-                                                     MEH-3246: no photo, or a licence-required category with no licence number → 422 Hebrew (services/invite_gate.py), because acceptance publishes the page.
+                                                     MEH-3246: no photo → 422 Hebrew (services/invite_gate.py), because acceptance publishes the page. MEH-3026: a missing licence number no longer blocks the invite (the page goes live without «מאומת»).
                                                      404 if missing. A second call REPLACES the invite, token and all. → {invite_url, email, name, sent_at, expires_at} — the ONE response
                                                      that carries the raw token. There is no GET that re-reads it; the DB holds only the hash.
 POST   /admin/producers/{id}/owner-invite/resend   admin — 10/hour. No body: resending to a DIFFERENT address is a different consent and goes through create.
-                                                     New token, previous one dead. 404 when there is no invite, 409 once accepted, 422 when the page lost its photo/licence (MEH-3246). Same response shape.
+                                                     New token, previous one dead. 404 when there is no invite, 409 once accepted, 422 when the page lost its photo (MEH-3246). Same response shape.
 DELETE /admin/producers/{id}/owner-invite          admin — 30/hour. Withdraws an unaccepted invite and clears the invitee's email + name with the token (PII of a
                                                      non-user, MEH-2208's תיקון 13 class). Keeps owner_invite_created_by + the consent note — the record that an invite WAS sent.
                                                      404 when there is nothing to cancel, 409 once accepted. v3: a resend and a cancel each clear the three code columns too.
@@ -1352,7 +1352,7 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      email_verified=true, password_changed_at, terms_accepted_at + terms_version). The email being taken in between is
                                                      caught by the unique index and rolls the claim back with it → 409, zero writes, link still live.
                                                      v3, in the same UPDATE: the three code columns are cleared, and a hidden page is set to "approved" — the publish.
-                                                     MEH-3268: a hidden page that lost its photo, or the licence number its category needs, after the invite went out
+                                                     MEH-3268: a hidden page that lost its photo after the invite went out (MEH-3026: the licence is no longer a gap)
                                                      (services/invite_gate.py content_gaps) is HELD — the owner is linked, status stays "inactive", no 422 (she cannot
                                                      fix it from this page). An already-approved page gets no status write. IndexNow is pinged only when the page was
                                                      published. After the commit the admin is notified
@@ -1445,7 +1445,7 @@ GET    /categories                                public
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
-PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422. MEH-3220: free plan, `images` growing past 3 → 403 Hebrew (services/gallery_cap.py); same/shorter list saves. MEH-3245: a changed `phone` (compared as a normalised Israeli number) resets phone_verified=false and burns open codes; the owner re-verifies from the dashboard box.
+PUT    /producers/me                              producer — MEH-3026: no licence gate (the MEH-999 gate on newly-added license-required categories and on clearing the number is gone); without a number the business stays listed, without «מאומת». MEH-3220: free plan, `images` growing past 3 → 403 Hebrew (services/gallery_cap.py); same/shorter list saves. MEH-3245: a changed `phone` (compared as a normalised Israeli number) resets phone_verified=false and burns open codes; the owner re-verifies from the dashboard box.
                                                   MEH-2073: notification-only admin ping when an ALREADY-APPROVED producer changes a
                                                   sensitive field — SENSITIVE_FIELDS = {phone, vegan_scope, vegetarian_scope,
                                                   gluten_free_facility, whatsapp_group (MEH-2626)} (producer_me.py; `city` left
@@ -1761,7 +1761,7 @@ badge; experiences still require admin approval, so Haiku is enough.
 ```
 # Producer moderation
 GET    /admin/producers                        admin — filter: status, search
-POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner, license guard skipped (the approve gate still enforces it) — for the owner-claim link
+POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner; MEH-3026: no licence guard on either path — for the owner-claim link
 PUT    /admin/producers/{id}                   admin — MEH-3245: a changed `phone` resets phone_verified=false and burns open codes (services/phone_reverify.py)
                                                MEH-3475: also takes `delivery_areas` rows (city · delivery_day · min_order · delivery_fee,
                                                the owner DeliveryCard's shape, same whitelist → 422) plus order_window / payment_info.
