@@ -3118,6 +3118,7 @@
       "no_screen": "No screen found that uses this group",
       "count": "{count} strings",
       "shown_of": "Showing {shown} of {count}",
+      "more_rows": "{count} more in this group. Narrow the search.",
       "empty": "No copy matches the search"
     }
   },

@@ -13,7 +13,8 @@
  *               / getTranslations({ namespace: "x" }) (its first segment), or
  *             - the first segment of a t("x.y") literal in a file that calls
  *               useTranslations() / getTranslations() with no namespace.
- * Does NOT: follow a dynamic import(), a key built at run time, or a group
+ * Does NOT: follow an import() whose path is built at run time, a key built
+ *           at run time, or a group
  *           read only from a component that no page imports (those groups
  *           show «לא נמצא מסך»). It is an index for finding copy, not a proof
  *           of where a string renders.
@@ -37,8 +38,10 @@ const EXT = [".js", ".jsx", ".ts", ".tsx", ".mjs"];
 const ROOT_FILES =
   /^(page|layout|template|loading|error|not-found)\.(js|jsx|ts|tsx)$/;
 
+// The third form is a dynamic import(), which is how next/dynamic loads a
+// component (MiniMap and ten others), so its groups count for the page.
 const IMPORT_RE =
-  /(?:import\s[^'"`;]*?from\s*|import\s*|export\s[^'"`;]*?from\s*)["']([^"']+)["']/g;
+  /(?:import\s[^'"`;]*?from\s*|import\s*|import\(\s*|export\s[^'"`;]*?from\s*)["']([^"']+)["']/g;
 const NS_CALL_RE =
   /\b(?:useTranslations|getTranslations)\(\s*["'`]([A-Za-z0-9_.]+)["'`]/g;
 const NS_OPT_RE =

@@ -31,6 +31,14 @@ describe("copy-screens.json", () => {
     expect(idx.groups.map).toContain("/map");
     expect(idx.groups.admin).toContain("/admin/copy");
   });
+
+  it("follows a dynamic import(): the chat group reaches /about only through ChatWidgetLazy", () => {
+    // components/ChatWidgetLazy.jsx loads ChatWidget with
+    // dynamic(() => import("@/components/ChatWidget")); no page imports it
+    // statically, so without the import() form chat had no screen.
+    const idx = build();
+    expect(idx.groups.chat).toContain("/about");
+  });
 });
 
 describe("groupsInSource", () => {

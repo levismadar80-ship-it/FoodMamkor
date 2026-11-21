@@ -87,6 +87,55 @@ describe("AdminCopyScreen", () => {
     expect(groups()[0].open).toBe(true);
   });
 
+  it("many groups, a filter: every matching group open, and a block closes again", () => {
+    renderScreen();
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "/map" },
+    });
+    expect(groups()).toHaveLength(2);
+    expect(groups().every((g) => g.open)).toBe(true);
+    expect(screen.getByText("מפת בתי העסק")).toBeTruthy();
+    expect(screen.getByText("דף הבית")).toBeTruthy();
+    expect(screen.getByText("3 טקסטים")).toBeTruthy();
+    groups()[0].open = false;
+    fireEvent(groups()[0], new Event("toggle"));
+    expect(screen.queryByText("מפת בתי העסק")).toBeNull();
+    expect(screen.getByText("דף הבית")).toBeTruthy();
+  });
+
+  it("a capped search says how many rows are hidden, on the page and in the group", () => {
+    const big = {
+      a: Object.fromEntries(
+        Array.from({ length: 290 }, (_, i) => [`k${i}`, `ערך ${i}`]),
+      ),
+      b: Object.fromEntries(
+        Array.from({ length: 20 }, (_, i) => [`k${i}`, `ערך ${i}`]),
+      ),
+    };
+    render(
+      <NextIntlClientProvider
+        locale="he"
+        messages={he}
+        timeZone="Asia/Jerusalem"
+      >
+        <CopyScreenClient
+          messages={big}
+          index={{ screens: ["/"], groups: { a: [], b: [] } }}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "ערך" },
+    });
+    expect(screen.getByText("מוצגים 300 מתוך 310")).toBeTruthy();
+    expect(
+      within(groups()[1]).getByText(
+        "ועוד 10 טקסטים בקבוצה. כדאי לצמצם את החיפוש.",
+      ),
+    ).toBeTruthy();
+    expect(within(groups()[0]).queryByText(/כדאי לצמצם/)).toBeNull();
+  });
+
   it("the screen filter keeps the groups that screen reads", () => {
     renderScreen();
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "/" } });
@@ -107,7 +156,7 @@ describe("filterCopy", () => {
     expect(r.drawn).toBe(300);
     expect(r.groups[0].rows).toHaveLength(300);
   });
-  it("without a search nothing is capped (groups are closed, rows drawn on open)", () => {
+  it("without a filter nothing is capped (groups are closed, rows drawn on open)", () => {
     const big = {
       g: Object.fromEntries(
         Array.from({ length: 305 }, (_, i) => [`k${i}`, `ערך ${i}`]),

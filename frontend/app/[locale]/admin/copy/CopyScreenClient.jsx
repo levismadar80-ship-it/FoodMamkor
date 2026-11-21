@@ -49,12 +49,15 @@ function ScreensLine({ screens, all }) {
 /** @param {{ group: { name: string, screens: string[], count: number, rows: { key: string, value: string }[] }, all: number, open: boolean }} props */
 function GroupBlock({ group, all, open }) {
   const t = useTranslations("admin.copy");
-  // Rows are drawn only while the block is open: closed, the whole file is
-  // 83 summaries instead of ~6,000 list items.
+  // `open` is only the starting state; the parent remounts the block (its
+  // key) when that changes. After that the admin opens and closes it, and
+  // rows are drawn only while it is open: closed, the file is 83 summaries
+  // instead of ~6,000 list items.
   const [isOpen, setIsOpen] = useState(open);
+  const hidden = group.count - group.rows.length;
   return (
     <details
-      open={open}
+      open={isOpen}
       onToggle={(e) =>
         setIsOpen(/** @type {HTMLDetailsElement} */ (e.currentTarget).open)
       }
@@ -74,7 +77,7 @@ function GroupBlock({ group, all, open }) {
           <ScreensLine screens={group.screens} all={all} />
         </span>
       </summary>
-      {(isOpen || open) && (
+      {isOpen && (
         <ul className="divide-y divide-border border-t border-border">
           {group.rows.map((r) => (
             <li key={r.key} className="px-4 py-2 flex flex-col gap-0.5">
@@ -87,6 +90,11 @@ function GroupBlock({ group, all, open }) {
               <span className="whitespace-pre-wrap break-words">{r.value}</span>
             </li>
           ))}
+          {hidden > 0 && (
+            <li className="px-4 py-2 text-sm text-muted">
+              {t("more_rows", { count: hidden })}
+            </li>
+          )}
         </ul>
       )}
     </details>
@@ -98,13 +106,13 @@ export default function CopyScreenClient({ messages, index }) {
   const t = useTranslations("admin.copy");
   const [query, setQuery] = useState("");
   const [screen, setScreen] = useState("");
+  const filtering = query.trim() !== "" || screen !== "";
+  // A filter opens every matching group, so it also caps the rows drawn.
   const result = useMemo(
-    () =>
-      filterCopy(messages, index, { query, screen, cap: query.trim() !== "" }),
-    [messages, index, query, screen],
+    () => filterCopy(messages, index, { query, screen, cap: filtering }),
+    [messages, index, query, screen, filtering],
   );
   const all = index.screens.length;
-  const filtering = query.trim() !== "" || screen !== "";
 
   return (
     <div className="space-y-5">
@@ -145,14 +153,17 @@ export default function CopyScreenClient({ messages, index }) {
         <EmptyState size="sm" title={t("empty")} />
       ) : (
         <div className="space-y-3">
-          {result.groups.map((g) => (
-            <GroupBlock
-              key={g.name}
-              group={g}
-              all={all}
-              open={filtering || result.groups.length === 1}
-            />
-          ))}
+          {result.groups.map((g) => {
+            const open = filtering || result.groups.length === 1;
+            return (
+              <GroupBlock
+                key={`${g.name}:${open}`}
+                group={g}
+                all={all}
+                open={open}
+              />
+            );
+          })}
         </div>
       )}
     </div>
