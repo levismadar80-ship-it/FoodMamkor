@@ -32,6 +32,7 @@ import {
   regionPagePath,
 } from "@/lib/region-pages";
 import BackLink from "@/components/ui/BackLink";
+import { cardImagePriority } from "@/lib/card-image-priority";
 
 const PER_PAGE = 24;
 
@@ -221,8 +222,14 @@ export default async function RegionLandingPage({ params }) {
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-        {items.map((producer) => (
-          <ProducerCard key={producer.id} producer={producer} referrer="region-landing" />
+        {items.map((producer, i) => (
+          <ProducerCard
+            key={producer.id}
+            producer={producer}
+            referrer="region-landing"
+            // MEH-2233: the LCP here is a first-row card photo.
+            imagePriority={cardImagePriority(i)}
+          />
         ))}
       </div>
 
