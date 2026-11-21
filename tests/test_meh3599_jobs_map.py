@@ -134,8 +134,10 @@ def _schedule(trigger: ast.expr | None, res: _Resolver) -> str:
 def _first_sentence(doc: str | None) -> str:
     if not doc:
         return NONE
-    text = " ".join(doc.split())
-    cut = re.search(r"(?<=[.!?])\s", text)
+    # Backticks are dropped (a cut inside a code span would leave one open
+    # and break the table row); `..` is a range, not a sentence end.
+    text = " ".join(doc.replace("`", "").split())
+    cut = re.search(r"(?<=[^.][.!?])\s", text)
     return (text[: cut.start()] if cut else text).replace("|", "/")
 
 
@@ -143,7 +145,26 @@ def _returns_early(node: ast.If) -> bool:
     return any(isinstance(s, ast.Return) for s in node.body)
 
 
-def _condition(call: ast.Call, func: ast.FunctionDef, parents: dict) -> str:
+def _origins(tree: ast.Module) -> dict[str, str]:
+    """local name → `module.original_name` for names imported from the app."""
+    out: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("app"):
+            for alias in node.names:
+                out[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    return out
+
+
+def _with_origin(test: ast.expr, text: str, origins: dict[str, str]) -> str:
+    seen = sorted(
+        {origins[n.id] for n in ast.walk(test) if isinstance(n, ast.Name) and n.id in origins}
+    )
+    return f"`{text}`" + (f" ({', '.join(seen)})" if seen else "")
+
+
+def _condition(
+    call: ast.Call, func: ast.FunctionDef, parents: dict, origins: dict[str, str]
+) -> str:
     """Why this add_job might not run: the `if` it sits inside, and every
     `if …: return` that comes before it in the registering function."""
     found: list[str] = []
@@ -152,18 +173,19 @@ def _condition(call: ast.Call, func: ast.FunctionDef, parents: dict) -> str:
         parent = parents[node]
         if isinstance(parent, ast.If):
             test = ast.unparse(parent.test)
-            found.append(test if node in parent.body else f"not ({test})")
+            text = test if node in parent.body else f"not ({test})"
+            found.append(_with_origin(parent.test, text, origins))
         node = parent
+    guards: list[str] = []
     for stmt in func.body:
         if stmt.lineno >= call.lineno:
             break
         if isinstance(stmt, ast.If) and _returns_early(stmt):
             t = stmt.test
             negated = isinstance(t, ast.UnaryOp) and isinstance(t.op, ast.Not)
-            found.append(
-                ast.unparse(t.operand) if negated else f"not ({ast.unparse(t)})"
-            )
-    return " and ".join(f"`{c}`" for c in reversed(found)) if found else ALWAYS
+            text = ast.unparse(t.operand) if negated else f"not ({ast.unparse(t)})"
+            guards.append(_with_origin(t, text, origins))
+    return " and ".join([*guards, *reversed(found)]) if found or guards else ALWAYS
 
 
 def _heartbeat_slug(fn: ast.FunctionDef | None) -> str:
@@ -200,6 +222,7 @@ def server_jobs(backend_root: Path) -> list[ServerJob]:
             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
         }
         res = _Resolver(backend_root, tree)
+        origins = _origins(tree)
         rel = path.relative_to(backend_root.parent).as_posix()
         for call in ast.walk(tree):
             if not (
@@ -222,7 +245,7 @@ def server_jobs(backend_root: Path) -> list[ServerJob]:
                     func=func_name,
                     schedule=_schedule(trigger, res),
                     condition=(
-                        _condition(call, registrar, parents) if registrar else ALWAYS
+                        _condition(call, registrar, parents, origins) if registrar else ALWAYS
                     ),
                     heartbeat=_heartbeat_slug(job_fn),
                     where=f"{rel} · {registrar.name if registrar else 'module'}",
@@ -234,7 +257,9 @@ def server_jobs(backend_root: Path) -> list[ServerJob]:
 
 # ── GitHub Actions crons ────────────────────────────────────────────────────
 
-_CRON_LINE = re.compile(r"""^\s*-\s*cron:\s*(['"])(?P<cron>[^'"]+)\1\s*(?:#\s*(?P<note>.*))?$""")
+_CRON_LINE = re.compile(
+    r"""^\s*-\s*cron:\s*(?:(['"])(?P<cron>[^'"]+)\1|(?P<bare>[^#'"]+?))\s*(?:#\s*(?P<note>.*))?$"""
+)
 _NAME_LINE = re.compile(r"""^name:\s*['"]?(?P<name>.+?)['"]?\s*$""")
 
 
@@ -248,7 +273,7 @@ def workflow_crons(workflows_dir: Path) -> list[WorkflowCron]:
                 name = m["name"]
             if m := _CRON_LINE.match(line):
                 note = (m["note"] or "").strip().replace("|", "/") or NONE
-                out.append(WorkflowCron(path.name, name, m["cron"], note))
+                out.append(WorkflowCron(path.name, name, m["cron"] or m["bare"], note))
     return out
 
 
@@ -354,9 +379,13 @@ def test_server_scanner_reads_each_shape_of_registration(tmp_path: Path) -> None
     assert nightly.heartbeat == "nightly-slug"
     assert nightly.condition == ALWAYS
     assert nightly.about == "Sends the nightly thing."
+    assert _first_sentence("Rolls `[a + 1 .. b]` up. Next.") == "Rolls [a + 1 .. b] up."
     tick = jobs["local_id_job"]
     assert tick.schedule == "כל 7 minutes"
     assert tick.condition == "`feature_on()`"  # the early return, un-negated
+    assert _with_origin(ast.parse("ok()").body[0].value, "ok()", {"ok": "app.x.real_ok"}) == (
+        "`ok()` (app.x.real_ok)"
+    )
     assert tick.heartbeat == NONE
     assert tick.about == "Gated registrar."  # no docstring on the job: the registrar's
     assert jobs["catchup"].condition == "`feature_on()` and `catchup_due(now)`"
@@ -366,7 +395,7 @@ def test_server_scanner_reads_each_shape_of_registration(tmp_path: Path) -> None
 def test_workflow_scanner_skips_commented_schedules(tmp_path: Path) -> None:
     (tmp_path / "a.yml").write_text(
         'name: "Alpha"\non:\n  schedule:\n    - cron: "0 6 * * 0" # Sunday\n'
-        "    # - cron: '1 1 1 1 1'\n    - cron: '30 2 * * *'\njobs:\n  x:\n    name: not the workflow\n",
+        "    # - cron: '1 1 1 1 1'\n    - cron: '30 2 * * *'\n    - cron: 5 5 * * 5\njobs:\n  x:\n    name: not the workflow\n",
         encoding="utf-8",
     )
     (tmp_path / "b.yml").write_text("on: push\n", encoding="utf-8")
@@ -374,6 +403,7 @@ def test_workflow_scanner_skips_commented_schedules(tmp_path: Path) -> None:
     assert workflow_crons(tmp_path) == [
         WorkflowCron("a.yml", "Alpha", "0 6 * * 0", "Sunday"),
         WorkflowCron("a.yml", "Alpha", "30 2 * * *", NONE),
+        WorkflowCron("a.yml", "Alpha", "5 5 * * 5", NONE),  # unquoted
     ]
 
 
@@ -386,15 +416,18 @@ def test_scanners_are_anchored_on_the_real_tree() -> None:
     assert followups.func == "_run_followup_job"
     assert followups.schedule.startswith("cron `") and followups.schedule.endswith("(UTC)")
     assert followups.heartbeat == "onboarding-followups-daily"
-    assert jobs["meh_3296_product_orders"].condition == "`product_orders_enabled()`"
+    assert jobs["meh_3296_product_orders"].condition == (
+        "`product_orders_enabled()` (app.routers.product_orders.product_orders_enabled)"
+    )
     assert "`" not in jobs["meh_3332_job_staleness_check"].schedule  # imported constant resolved
     crons = workflow_crons(REPO / ".github" / "workflows")
     assert ("uptime.yml", "Uptime probe") in {(c.file, c.workflow) for c in crons}
 
 
 def test_every_real_add_job_call_is_in_the_map() -> None:
-    """Independent count: the text `.add_job(` outside comments, per file,
-    against what the AST walk found."""
+    """Counts `add_job` attribute nodes with no `.add_job(` text pre-filter
+    and no shape requirements, so a call the scanner skips (a file the
+    pre-filter missed, a call it could not read) shows as a difference."""
     counted = 0
     for path in (REPO / "backend" / "app").rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -403,6 +436,19 @@ def test_every_real_add_job_call_is_in_the_map() -> None:
         )
     assert counted > 0
     assert len(server_jobs(REPO / "backend")) == counted
+
+
+def test_every_real_cron_line_is_in_the_map() -> None:
+    """A `cron:` written in a shape the parser does not know would vanish
+    silently; a plain text count of uncommented `cron:` keys catches it."""
+    workflows = REPO / ".github" / "workflows"
+    counted = sum(
+        bool(re.match(r"^\s*-\s*cron:", line))
+        for path in [*workflows.glob("*.yml"), *workflows.glob("*.yaml")]
+        for line in path.read_text(encoding="utf-8").splitlines()
+    )
+    assert counted > 0
+    assert len(workflow_crons(workflows)) == counted
 
 
 def test_an_empty_section_says_so_instead_of_an_empty_table() -> None:
