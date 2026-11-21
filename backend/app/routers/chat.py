@@ -369,6 +369,10 @@ def _business_context(
             producer,
             questions[0],
             takes_site_orders=chat_business_context.takes_site_orders(db, producer),
+            # MEH-3584: opened from this business's own page.
+            # str(): a Column comparison is typed as SQL, not bool (mypy).
+            on_its_page=page_producer_id is not None
+            and str(producer.id) == str(page_producer_id),
         )
     finally:
         # MEH-3481: never hold a pooled connection through a model call

@@ -5,6 +5,7 @@ import { registerProducerMessages } from "@/lib/client-messages";
 import RegisterProducerClient from "./RegisterProducerClient";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-739: server-wrapper pattern (MEH-658 login precedent). The client
 // form moved verbatim to RegisterProducerClient.jsx so this page can export
@@ -31,13 +32,13 @@ export async function generateMetadata({ params }) {
       url: alternates.canonical,
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     twitter: {
       card: "summary_large_image",
       title: buildEntityTitle(t("title"), locale),
       description: t("description"),
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates,
   };

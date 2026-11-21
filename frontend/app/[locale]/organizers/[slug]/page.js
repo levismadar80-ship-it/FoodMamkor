@@ -40,6 +40,7 @@ import GalleryViewAllButton from "@/components/GalleryViewAllButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Avatar, { avatarInitial } from "@/components/ui/Avatar";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 import { buildOrganizerJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-3348
 
 const ROUTE = "/[locale]/organizers/[slug]";
@@ -110,7 +111,7 @@ export async function generateMetadata(props) {
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
       // MEH-2590: site image when none (an omitted key is not inherited).
-      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : ["/og-image.png"],
+      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : [siteOgImageUrl(locale)],
     },
     alternates,
   };

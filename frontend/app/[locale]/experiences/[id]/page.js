@@ -9,6 +9,7 @@ import { ExperienceMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal m
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 import { buildExperienceJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Event JSON-LD
 
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was hardcoded HE
@@ -110,7 +111,7 @@ export async function generateMetadata(props) {
       openGraph: {
         type: "article",
         locale: OG_LOCALE[locale],
-        images: ["/og-image.png"],
+        images: [siteOgImageUrl(locale)],
       },
       alternates,
     };
@@ -123,7 +124,7 @@ export async function generateMetadata(props) {
     openGraph: {
       type: "article",
       locale: OG_LOCALE[locale],
-      images: experience?.image_url ? [experience.image_url] : ["/og-image.png"],
+      images: experience?.image_url ? [experience.image_url] : [siteOgImageUrl(locale)],
     },
     alternates,
   };

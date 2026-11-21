@@ -138,7 +138,7 @@ describe("MEH-3505: the questions differ per business", () => {
     expect(names.sort()).toEqual([he.chat.panel_close_label, he.chat.send_label].sort());
     fireEvent.change(screen.getByLabelText(he.chat.input_label), { target: { value: "יש חניה?" } });
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: he.chat.send_label }));
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: he.chat.send_label }));
     });
     await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
     expect(post.mock.calls[0][1].producer_id).toBe(PRODUCER.id);
@@ -171,7 +171,7 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     for (const q of [B.prompts.diet_vegan, B.prompts.delivery, B.prompts.hours]) {
       expect(within(section).getByRole("button", { name: q })).toBeInTheDocument();
     }
-    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_other);
+    expect(within(section).getByTestId("business-chat-input")).toHaveAttribute("placeholder", B.page_other);
   });
 
   it("tapping a question on the page opens the panel and sends it with producer_id", async () => {
@@ -187,17 +187,17 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     });
   });
 
-  it("a page with one question shows that question and «שאלה אחרת», two buttons", () => {
+  it("a page with one question shows that question and the send button, two buttons", () => {
     render(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
         <BusinessChatPrompt producer={{ ...PRODUCER, products: [], opening_hours: null }} />
       </NextIntlClientProvider>,
     );
     const section = screen.getByTestId("business-chat-prompt");
-    expect(within(section).getAllByRole("button").map((b) => b.textContent)).toEqual([B.prompts.delivery, B.page_other]);
+    expect(within(section).getAllByRole("button").map((b) => b.textContent || b.getAttribute("aria-label"))).toEqual([B.prompts.delivery, B.page_title.replace("{name}", PRODUCER.name)]);
   });
 
-  it("«שאלה אחרת» opens the panel and sends nothing", async () => {
+  it("send on an empty field opens the panel and sends nothing", async () => {
     renderPage();
     await act(async () => { fireEvent.click(screen.getByTestId("business-chat-open")); });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -227,7 +227,42 @@ describe("MEH-3505: the business's questions on the page itself", () => {
     const section = screen.getByTestId("business-chat-prompt");
     expect(within(section).queryByTestId("business-chat-questions")).not.toBeInTheDocument();
     expect(within(section).getAllByRole("button")).toHaveLength(1);
-    expect(within(section).getByTestId("business-chat-open")).toHaveTextContent(B.page_other);
+    expect(within(section).getByTestId("business-chat-input")).toBeInTheDocument();
+  });
+
+  // MEH-3584 (Sapir 21/11): the field on the card looked typeable but a tap
+  // opened the panel. It is a real field now: what is typed is sent.
+  it("typing in the card's field and sending opens the panel with that question sent", async () => {
+    renderPage();
+    const field = within(screen.getByTestId("business-chat-prompt")).getByRole("textbox");
+    fireEvent.change(field, { target: { value: "  יש חניה ליד?  " } });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(); // typing alone opens nothing
+    await act(async () => { fireEvent.submit(screen.getByTestId("business-chat-form")); });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post).toHaveBeenCalledWith("/chat", {
+      messages: [{ role: "user", content: "יש חניה ליד?" }],
+      producer_id: PRODUCER.id,
+    });
+    expect(field).toHaveValue("");
+  });
+
+  it("the card's send button sends what was typed (its name is not the panel's «שלחו שאלה»)", async () => {
+    renderPage();
+    const card = within(screen.getByTestId("business-chat-prompt"));
+    fireEvent.change(card.getByRole("textbox"), { target: { value: "יש אריזת מתנה?" } });
+    await act(async () => { fireEvent.click(card.getByRole("button", { name: B.page_title.replace("{name}", PRODUCER.name) })); });
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].messages).toEqual([{ role: "user", content: "יש אריזת מתנה?" }]);
+    expect(within(screen.getByRole("dialog")).getAllByRole("button", { name: he.chat.send_label })).toHaveLength(1);
+  });
+
+  it("a whitespace-only field opens the panel and sends nothing", async () => {
+    renderPage();
+    fireEvent.change(within(screen.getByTestId("business-chat-prompt")).getByRole("textbox"), { target: { value: "   " } });
+    await act(async () => { fireEvent.click(screen.getByTestId("business-chat-open")); });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
   });
 });
 

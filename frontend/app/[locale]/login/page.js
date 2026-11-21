@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import LoginClient from "./LoginClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-658: server-wrapper pattern (MEH-476 Wave 6 precedent) — client
 // components can't export metadata; the wrapper supplies SEO while
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/login", locale),
     // MEH-641: auth chrome — not indexable, but hreflang preserved for cross-locale signal
