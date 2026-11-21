@@ -134,3 +134,33 @@ def test_the_guard_reports_a_route_without_a_row():
     new = ("POST", "/zz-never-in-the-report", "zz.handler")
     renamed = (real[0], real[1], real[2] + "_renamed")
     assert missing_route_rows({real, new, renamed}, doc) == {new, renamed}
+
+
+# CodeQL py/redos (alert 46, PR #4999): the codeRef list regex in
+# parse_business_features was ambiguous — `(?:\s*"..."\s*,?)*` matches a run of
+# `""\t""` many ways, so an unclosed list took exponential time (measured 20/11:
+# 0.47 s at 20 repeats, x4 per 2 more). The unrolled form is linear.
+def _features(line: str) -> str:
+    return f"export const BUSINESS_FEATURES = [\n{line}\n];\n"
+
+
+def test_coderef_parse_reads_paths_with_brackets():
+    tools = am.parse_business_features(
+        _features(
+            '  { id: "x", codeRef: ["frontend/app/[locale]/a.jsx", "backend/b.py"], },'
+        )
+    )
+    assert [t.code_refs for t in tools] == [
+        ["frontend/app/[locale]/a.jsx", "backend/b.py"]
+    ]
+
+
+def test_coderef_parse_is_linear_on_an_unclosed_list():
+    import time
+
+    line = '  { id: "x", codeRef: [""' + '\t""' * 26 + "x"
+    started = time.perf_counter()
+    am.parse_business_features(_features(line))
+    # The old pattern needs minutes here (x4 per 2 repeats from 0.47 s at 20);
+    # the linear one needs microseconds. 1 s is a ceiling, not a budget.
+    assert time.perf_counter() - started < 1.0

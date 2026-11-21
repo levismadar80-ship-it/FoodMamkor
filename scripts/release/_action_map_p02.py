@@ -858,7 +858,10 @@ def parse_business_features(text: str) -> list[Tool]:
         status = re.search(r"status:\s*\"([a-z]+)\"", ln)
         # Paths contain `[locale]` / `[id]`, so the list ends at the first `]`
         # that is not inside a string — match the strings, not the brackets.
-        refs_m = re.search(r"codeRef:\s*\[((?:\s*\"[^\"]*\"\s*,?)*)\s*\]", ln)
+        # Unrolled loop (non-quote run, then "string" + non-quote run)*: one way
+        # to match each input, so no exponential backtracking (CodeQL
+        # py/redos, alert 46; the old `(?:\s*"..."\s*,?)*` was ambiguous).
+        refs_m = re.search(r"codeRef:\s*\[([^\]\"]*(?:\"[^\"]*\"[^\]\"]*)*)\]", ln)
         dash = re.search(r"dashboard:\s*\{[^}]*href:\s*\"([^\"]+)\"", ln)
         tools.append(
             Tool(
