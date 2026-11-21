@@ -212,7 +212,7 @@ section above when it has transitions worth drawing.
 | `kashrut_badge_requests.status` | pending → approved / rejected, approved → revoked, admin only (`routers/admin_kashrut.py`) |
 | `producer_name_change_requests.status` | pending → approved / rejected, admin only (`routers/producer_name_requests.py`) |
 | `reports.status` | open → resolved / dismissed, admin only (`routers/reports.py`). The reports page resolves a business's open reports after «השהה עסק», only when toggle-status answered `inactive` (MEH-3524) |
-| `outreach_leads.status` | admin's own pipeline label (`routers/admin_outreach.py`) |
+| `outreach_leads.status` | admin's own pipeline label (`routers/admin_outreach.py`); → `registered` automatically when the owner signs up through the lead's prefill link (`services/outreach_lead_registration.py`, MEH-3026) |
 
 ## Combinations that are still open
 
