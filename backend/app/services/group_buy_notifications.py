@@ -202,18 +202,23 @@ def notify_participant_joined(  # noqa: PLR0913 — +test_cause, the MEH-2952 se
     contact details — see the module PRIVACY CONTRACT. `deadline` is naive
     UTC, as stored; it is shown as the Israel date.
     """
-    day = deadline.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
-    subject = f'מהמקור — הצטרפת לקבוצה "{title}"'
-    body = (
-        f"שלום,\n\n"
-        f'ההצטרפות שלך לקבוצה "{title}" נקלטה. הכמות שביקשת: {quantity}.\n'
-        f"עד עכשיו הצטרפו {joined} מתוך {goal} שצריך כדי שהקבוצה תצא לדרך.\n\n"
-        f"נעדכן אותך באימייל כשהקבוצה תגיע ליעד, או אם עד {day:%d.%m.%Y} היא לא תגיע אליו.\n"
-        f"אפשר לבטל את ההצטרפות מדף הקבוצה עד המועד הזה.\n\n"
-        f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
-        f"בברכה,\nצוות מהמקור"
-    )
-    _send_email(participant_email, subject, body, test_cause=test_cause)
+    # MEH-1533: an exception escaping a background task leaves no trace, so
+    # the formatting is inside the guard too, as in send_funded_notifications.
+    try:
+        day = deadline.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
+        subject = f'מהמקור — הצטרפת לקבוצה "{title}"'
+        body = (
+            f"שלום,\n\n"
+            f'ההצטרפות שלך לקבוצה "{title}" נקלטה. הכמות שביקשת: {quantity}.\n'
+            f"עד עכשיו הצטרפו {joined} מתוך {goal} שצריך כדי שהקבוצה תצא לדרך.\n\n"
+            f"נעדכן אותך באימייל כשהקבוצה תגיע ליעד, או אם עד {day:%d.%m.%Y} היא לא תגיע אליו.\n"
+            f"אפשר לבטל את ההצטרפות מדף הקבוצה עד המועד הזה.\n\n"
+            f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
+            f"בברכה,\nצוות מהמקור"
+        )
+        _send_email(participant_email, subject, body, test_cause=test_cause)
+    except Exception:
+        logger.exception("[GROUP_BUY] join confirmation failed group_buy_id=%s", group_buy_id)
 
 
 def notify_participant_cancelled(

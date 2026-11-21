@@ -1,6 +1,7 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
 
-from typing import Any
+from datetime import datetime
+from typing import Any, cast
 from decimal import Decimal
 from uuid import UUID
 
@@ -328,19 +329,23 @@ def _confirm_join(
     this one never doubles it. Queued before the commit like the funded mail;
     a failed commit raises and the task never runs.
     """
-    if not user.email:
+    # Unverified address: no mail. Otherwise join/leave in a loop on a
+    # registered-but-unverified victim address would mail it from our domain
+    # (fresh reviewer, MEH-3591).
+    if not user.email or not user.email_verified:
         return
     background_tasks.add_task(
         notify_participant_joined,
         str(user.email),
         str(gb.title),
-        int(commit.quantity),  # type: ignore[arg-type]
+        int(commit.quantity),
         joined,
-        int(gb.min_participants),  # type: ignore[arg-type]
-        gb.deadline,
+        int(gb.min_participants),
+        cast(datetime, gb.deadline),
         str(gb.id),
-        # MEH-2952: a test joiner, or a test business's group, sends nothing.
-        test_cause=bool(user.is_test or (gb.producer and gb.producer.is_test)),
+        # MEH-2952: a test joiner sends nothing. A test business's group is
+        # not public (404 above), so no real join reaches here for one.
+        test_cause=bool(user.is_test),
     )
 
 

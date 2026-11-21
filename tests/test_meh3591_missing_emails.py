@@ -113,7 +113,10 @@ def test_a_join_below_the_goal_is_confirmed(client, db, sends):
     assert "הכמות שביקשת: 2." in body
     assert "הצטרפו 1 מתוך 3" in body
     assert f"/group-buys/{gb.id}" in body
-    assert _contact_details_in(body) == [], "PRIVACY CONTRACT (MEH-1651)"
+    # The random group id in the link can hold a digit run the phone regex
+    # matches (see _FIXED_GB_ID in the common module); check the words only.
+    words = body.replace(f"/group-buys/{gb.id}", "/group-buys/ID")
+    assert _contact_details_in(words) == [], "PRIVACY CONTRACT (MEH-1651)"
 
 
 def test_a_join_that_funds_the_group_gets_only_the_funded_email(client, db, sends):
@@ -152,3 +155,64 @@ def test_the_deadline_is_the_israel_date():
     finally:
         gbn.send_email = orig
     assert "01.12.2026" in captured[0]
+
+
+# ---------- fresh-review round 1 ----------
+
+
+def test_an_unverified_address_gets_no_join_mail(client, db, sends):
+    """Join/leave in a loop must not mail an address nobody proved."""
+    producer, _ = _producer_user(db, email="gbowner3591d@test.com")
+    gb = _make_group_buy(db, producer, min_participants=3)
+    buyer = make_user(db, email="unverified3591@test.com", email_verified=False)
+    resp = client.post(
+        f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer)
+    )
+    assert resp.status_code == 201
+    assert _joined(sends) == []
+
+
+def test_a_test_joiner_is_marked_test(client, db, sends):
+    producer, _ = _producer_user(db, email="gbowner3591e@test.com")
+    gb = _make_group_buy(db, producer, min_participants=3)
+    buyer = make_user(db, email="qajoin3591@test.com")
+    buyer.is_test = True
+    db.commit()
+    client.post(f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer))
+    assert [m["test_cause"] for m in _joined(sends)] == [True]
+
+
+def test_a_real_join_is_not_marked_test(client, db, sends):
+    producer, _ = _producer_user(db, email="gbowner3591g@test.com")
+    gb = _make_group_buy(db, producer, min_participants=3)
+    buyer = make_user(db, email="real3591@test.com")
+    client.post(f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer))
+    assert [m["test_cause"] for m in _joined(sends)] == [False]
+
+
+def test_a_test_account_reset_is_marked_test(client, db, sends):
+    user = make_user(db, email="qareset3591@example.com", password=OLD)
+    user.is_test = True
+    token = secrets.token_urlsafe(32)
+    user.reset_token = token
+    user.reset_token_expires_at = utc_now() + timedelta(minutes=30)
+    db.commit()
+    client.post("/auth/reset-password", json={"token": token, "new_password": NEW})
+    assert [n["test_cause"] for n in _password_notices(sends)] == [True]
+
+
+def test_a_refused_reset_sends_nothing(client, db, sends):
+    make_user(db, email="badtoken3591@example.com", password=OLD)
+    resp = client.post(
+        "/auth/reset-password", json={"token": secrets.token_urlsafe(32), "new_password": NEW}
+    )
+    assert resp.status_code in (400, 404, 410)
+    assert _password_notices(sends) == []
+
+
+def test_a_join_mail_bug_is_logged_not_raised(caplog):
+    import app.services.group_buy_notifications as gbn
+
+    with caplog.at_level("ERROR"):
+        gbn.notify_participant_joined("a@gmail.com", "x", 1, 1, 2, None, "gid")  # type: ignore[arg-type]
+    assert "join confirmation failed" in caplog.text
