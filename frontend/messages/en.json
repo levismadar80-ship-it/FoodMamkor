@@ -5455,7 +5455,7 @@
       "logo": {
         "label": "Logo",
         "where": "Shown beside the business name on the business page and the bag page",
-        "hint": "A square logo on a light background works best. Without a logo, the first letter of the business name shows.",
+        "hint": "A square logo on a light background works best.",
         "cta": "Upload a logo",
         "replace_cta": "Replace logo",
         "remove_cta": "Remove logo",

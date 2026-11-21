@@ -325,15 +325,17 @@ def _maybe_fire_review_ready(
 
 
 def _free_replaced_logo(
-    db: Session, producer: Producer, payload: dict[str, Any], old: str | None
+    db: Session, producer: Producer, payload: dict[str, Any], old: Any
 ) -> None:
     """MEH-3611: a replaced or removed logo is freed, after the commit (MEH-375
     order). destroy_image skips a URL another column still references."""
-    if "logo_url" not in payload or not old or old == producer.logo_url:
+    if "logo_url" not in payload:
         return
-    from app.cloudinary_utils import destroy_image
+    from app.cloudinary_utils import destroy_replaced
 
-    destroy_image(old, context="producer_me.update_my_producer logo", db=db)
+    destroy_replaced(
+        old, producer.logo_url, context="producer_me.update_my_producer logo", db=db
+    )
 
 
 @router.put("", response_model=ProducerOwnerOut)
@@ -691,7 +693,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
             context="producer_me.update_my_producer images",
             db=db,  # MEH-3247
         )
-    _free_replaced_logo(db, producer, payload, old_logo_url)  # type: ignore[arg-type]  # MEH-3611: Column[str] at type level
+    _free_replaced_logo(db, producer, payload, old_logo_url)  # MEH-3611
 
     # MEH-54: fire delivery area alerts for newly added cities.
     # MEH-1360: targeted — only users whose User.city is among new_cities

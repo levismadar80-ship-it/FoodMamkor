@@ -428,6 +428,8 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // MEH-2952 chunk 3: true only for a seeded test business — the page then
   // carries robots noindex and no JSON-LD. Declared because z.object strips.
   noindex: z.boolean().optional(),
+  // MEH-3611: the business logo beside its name. Declared because z.object strips.
+  logo_url: z.string().nullable().optional(),
   // MEH-3339: the optional second number + label (one text line; no CTA).
   secondary_phone: z.string().nullable().optional(),
   secondary_phone_label: z.string().nullable().optional(),
@@ -538,8 +540,6 @@ export const EventMetadataSchema = z.object({
   // MEH-2546: parity with EventOut — the list rows' owner-photo fallback.
   // (Probe only: the page renders the raw payload, never `parsed.data`.)
   owner_image_url: z.string().nullable().optional(),
-  // MEH-3611: the business logo beside its name. Declared because z.object strips.
-  logo_url: z.string().nullable().optional(),
 });
 
 // MEH-2461: read by app/[locale]/organizers/[slug]/page.js (render + metadata).

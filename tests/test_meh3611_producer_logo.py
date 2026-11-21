@@ -54,8 +54,11 @@ def test_another_business_image_is_refused_in_hebrew(client, db):
 
 
 def test_a_non_image_url_is_refused(client, db):
+    # The owner-photo guard (MEH-1222): a bare filename taken for a host. A
+    # javascript: URL would be refused by the scheme check alone; this case
+    # needs the image-URL rule itself.
     _shop, owner = make_submit_ready_producer(db, status="approved")
-    resp = _put(client, owner, {"logo_url": "javascript:alert(1)"})
+    resp = _put(client, owner, {"logo_url": "https://bread.jpg"})
     assert resp.status_code == 422, resp.text
 
 
@@ -76,3 +79,46 @@ def test_a_replaced_logo_is_freed_and_an_unchanged_one_is_not(client, db):
         assert destroy.call_args.args[0] == second
     db.refresh(shop)
     assert shop.logo_url is None
+
+
+def test_admin_replacing_a_logo_frees_the_old_one(client, db):
+    from conftest import make_user
+
+    shop, _owner = make_submit_ready_producer(db, status="approved")
+    shop.logo_url = f"{_CLOUD}/v1/mehamakor/u/x/old.png"
+    db.commit()
+    admin = make_user(db, role="admin", email="logo-admin@example.com")
+
+    with patch("app.cloudinary_utils.destroy_image") as destroy:
+        r = client.put(
+            f"/admin/producers/{shop.id}",
+            json={"logo_url": f"{_CLOUD}/v1/mehamakor/u/x/new.png"},
+            headers=auth_header(admin),
+        )
+        assert r.status_code == 200, r.text
+        assert [
+            c.args[0]
+            for c in destroy.call_args_list
+            if "logo" in c.kwargs.get("context", "")
+        ] == [f"{_CLOUD}/v1/mehamakor/u/x/old.png"]
+
+
+def test_deleting_the_account_frees_the_logo(client, db):
+    from conftest import make_producer, make_user
+
+    shop = make_producer(db, name="Logo Farm", status="approved")
+    shop.logo_url = f"{_CLOUD}/v1/mehamakor/u/x/logo.png"
+    user = make_user(db, role="producer", email="logo-owner@example.com")
+    user.producer_id = shop.id
+    db.commit()
+
+    with patch("app.cloudinary_utils.destroy_image") as destroy:
+        r = client.post(
+            "/auth/me/delete",
+            json={"password": "Zx7Yp9Mq2Lr4"},
+            headers=auth_header(user),
+        )
+        assert r.status_code == 200, r.text
+        assert f"{_CLOUD}/v1/mehamakor/u/x/logo.png" in [
+            c.args[0] for c in destroy.call_args_list
+        ]

@@ -12346,17 +12346,6 @@
             "title": "Locations",
             "type": "array"
           },
-          "logo_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Logo Url"
-          },
           "name": {
             "title": "Name",
             "type": "string"

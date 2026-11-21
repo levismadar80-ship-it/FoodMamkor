@@ -42,10 +42,16 @@ export function LogoCard({ profile, onSave }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const r = await api.post("/upload/image", fd);
-      await persist(r.data.url);
+      let url;
+      try {
+        url = (await api.post("/upload/image", fd)).data.url;
+      } catch (error_) {
+        setError(detailToMessage(error_?.response?.data?.detail) || t("upload_error"));
+        return;
+      }
+      await persist(url);
     } catch (error_) {
-      setError(detailToMessage(error_?.response?.data?.detail) || t("upload_error"));
+      setError(detailToMessage(error_?.response?.data?.detail) || t("save_error"));
     } finally {
       setBusy(false);
     }
