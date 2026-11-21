@@ -819,6 +819,10 @@ delivery_waitlist      (id uuid PK, producer_id uuid FK→producers CASCADE,
                         wants_to_host bool NOT NULL DEFAULT false,
                         host_confirm_sent_at nullable, host_confirmed_at nullable,  -- MEH-2673
                         UNIQUE(producer_id,city_key,email), INDEX(producer_id,city_key))  -- MEH-2618
+category_requests      (id uuid PK, requested_name varchar(100), examples text nullable,
+                        producer_id uuid FK→producers SET NULL nullable (indexed),
+                        status varchar(20) default 'pending' (indexed), admin_notes text nullable,
+                        created_at, reviewed_at nullable)  -- MEH-141 (a business asks for a missing category at sign-up)
 ```
 
 > **MEH-2618 — `delivery_waitlist` (30/10/2026):** «תודיעו לי כשתגיעו ל{עיר}». A visitor whose city the business does not deliver to leaves an **email + city** under the delivery checker's negative verdict — no account needed (Oddbox-style waitlist). `city` is her own spelling (used in her email); `city_key` is `app.data.cities.city_key`, the ONE comparison form (MEH-2456). `user_id` is set when she was signed in, and her empty profile `users.city` is filled from the form (never overwritten). `notified_at` is the once-only guard: when `PUT /producers/me` adds a city to `delivery_area_cities`, `services/delivery_waitlist.notify_cities` runs as a BackgroundTask (the same hop as the `delivery_area` favorite alert), mails every un-notified entry whose `city_key` matches, and stamps it; a send that raises leaves the row un-notified so the next add retries. Nothing is sent for a non-live business (`is_business()`, MEH-2513). Unsubscribe = a signed stateless token (`sub` = entry id, scope `delivery_waitlist_unsubscribe`, same pattern as the newsletter's) → `/delivery-waitlist/unsubscribe?token=` → `POST /delivery-waitlist/unsubscribe` deletes the row. Migration `d4e7a1b2c3f5`; **`EXPECTED_TABLES` 43 → 44**. **MEH-2673 (05/11/2026):** `wants_to_host` = she ticked «אשמח לארח נקודת מסירה ב{עיר}» **and clicked the confirmation link** mailed to that address (Sapir 05/11: the waitlist has no email verification, so the box alone must not hand a typed-in stranger's email to a business). Ticking sends `services/delivery_waitlist.send_host_confirmation` as a BackgroundTask (signed token, scope `delivery_waitlist_host_confirm`, distinct from the unsubscribe scope so neither link can do the other's job) → `/delivery-waitlist/host-confirm?token=` → `POST /delivery-waitlist/host-confirm` sets the flag and stamps `host_confirmed_at` (the consent record). The confirmation token expires after 7 days (`exp`, checked in `_decode`; unsubscribe tokens still never expire), and `host_confirm_sent_at` caps the mail at one per ENTRY per 24 h plus `HOST_CONFIRM_ADDRESS_CAP` (3) per ADDRESS per 24 h across every business and city — each link confirms one entry only, so a second business the same day still gets its own mail, while a re-submitted form cannot flood an inbox (serialised per address with `pg_advisory_xact_lock`; index `ix_delivery_waitlist_email_host_sent`). The POST answers `host_confirm: sent | already_sent | limit_reached | confirmed | null` so the form never claims a mail that was not sent (`already_sent` = this entry's link is already in the inbox; `limit_reached` = the address cap, nothing sent for this one); an expired link is **410** and, since the token still names the entry, the endpoint mails a fresh link to the same address under the same cooldown/cap and answers `{detail, resent: bool}` (no dead end, no confirmation); a bad or unsubscribed one is 400. Only ever False → True; an unticked repeat signup never clears it. The owner reads the list as `pickup_hosts` on `GET /producers/me/analytics`. Migration `e5a9c3d17b28` (additive column, `EXPECTED_TABLES` unchanged). The sibling for signed-in users stays `favorite_alerts.notify_delivery_area` (+ `whatsapp_opt_in`); the form points a signed-in visitor there for WhatsApp.
@@ -950,6 +954,23 @@ product_order_notifications (id uuid PK, order_id FK→product_orders CASCADE,
 > **MEH-2738 — rescue bags: the business cancels the bag (06/11/2026):** `POST /rescue/offers/{id}/cancel` is now refused once `pickup_end` passed (409 «זמן האיסוף חלף»); a bag already handed stays handed (unchanged: only `reserved` orders are cancelled); after the commit each buyer whose reservation went with it gets **one** email (`send_business_cancel_email`, fail-open, links to `/rescue`). `GET /rescue/orders/mine` also returns the caller's reservations **the business cancelled**, with a new required bool **`cancelled_by_business`** (False on every other row). There is no column saying who cancelled: a buyer's cancel returns its bags to `qty_left` and the business cancel does not, so the business-cancelled bags are `(qty_total − qty_left) − bags on orders never cancelled`, stamped with the offer's latest `cancelled_at`. That also handles the case where the buyer cancelled first and nobody else held a bag. No schema change.
 
 ---
+
+### Admin, messaging, outreach — tables that had no schema line (added MEH-3604, 21/11/2026, from the models)
+
+Generated once from `Base.metadata`; the model file is the authority. Read it for types and indexes.
+
+```sql
+admin_audit_log                (id PK, actor_id, action, target_type nullable, target_id nullable, details nullable, ip nullable, created_at)  -- models/admin_ops.py
+admin_checklist_items          (id PK, position, label, hint nullable, active, updated_at)  -- models/admin_ops.py
+admin_passkeys                 (id PK, user_id FK→users CASCADE, credential_id, public_key, sign_count, aaguid nullable, backup_eligible, backup_state, transports nullable, name nullable, created_at, last_used_at nullable)  -- models/admin_passkeys.py
+admin_recovery_codes           (id PK, user_id FK→users CASCADE, code_hash, used_at nullable, created_at)  -- models/admin_passkeys.py
+group_buy_commits              (id PK, group_buy_id FK→group_buys CASCADE, user_id FK→users CASCADE, quantity, phone nullable, created_at)  -- models/events.py
+inbound_messages               (id PK, from_phone, body, received_at, meta_message_id nullable, bot_replied, bot_replied_at nullable, bot_template_sent nullable, human_replied)  -- models/admin_ops.py
+outbound_messages              (id PK, to_phone, kind, meta_message_id nullable, status, error_code nullable, error_message nullable, created_at, updated_at nullable)  -- models/admin_ops.py
+outreach_leads                 (id PK, name, phone nullable, instagram nullable, website nullable, city nullable, category nullable, notes nullable, source nullable, status nullable, prefill_token nullable, prefill_token_expires_at nullable, suggested_by_name nullable, suggested_by_email nullable, suggester_wants_update, suggestion_reason nullable, suggester_thanked_at nullable, created_at nullable, updated_at nullable)  -- models/admin_ops.py
+producer_name_change_requests  (id PK, producer_id FK→producers CASCADE, current_name, requested_name, reason nullable, status, admin_notes nullable, created_at, reviewed_at nullable)  -- models/admin_ops.py
+producer_review_checks         (id PK, producer_id FK→producers CASCADE, item_id FK→admin_checklist_items RESTRICT, label_snapshot, checked_by FK→users SET NULL nullable, checked_at)  -- models/admin_ops.py
+```
 
 ## API Endpoints
 
@@ -2345,25 +2366,13 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 
 ---
 
-## Notifications (Twilio + Resend)
+## Notifications
 
-| Trigger | Channel | Target | File |
-|---|---|---|---|
-| Producer registers | WhatsApp | Admin | `admin_decisions.py._send_whatsapp` |
-| Producer approved/rejected | Email + WhatsApp | Producer + admin | `admin_decisions.py` (copy: `services/admin_producer_emails.py`) |
-| Experience submitted | Email | Admin (FLAGGED subject if Claude flagged) | `experience_notifications.py` |
-| Experience approved | Email | Host | `experience_notifications.py` |
-| Experience changes-requested | Email | Host (feedback verbatim) | `experience_notifications.py` |
-| Experience rejected | Email | Host (reason verbatim) | `experience_notifications.py` |
-| Recipe approved / changes-requested / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| Kashrut certificate approved (with expiry) / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| New review — not an edit (MEH-2602) | Email | Business owner | `content_notifications.py` |
-| Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
-| Home product removed | Email | Seller | `admin.py` |
-| Newsletter signup (welcome) | Email | Subscriber | `marketing.py` |
-| Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
-| Contact form | Email | Admin | `marketing.py` |
-| 24h after WhatsApp click | WhatsApp | Buyer (rating prompt) | `rating_dispatcher.py` |
+Every email, WhatsApp message and push a user receives — its trigger, channel,
+recipient and the code that sends it — is in
+[NOTIFICATIONS.md](./NOTIFICATIONS.md), generated from the code (MEH-3594).
+This file used to carry a hand-written table here; it had drifted (it still
+named Twilio) and was removed under MEH-3604 so the fact has one home.
 
 All Resend + Twilio sends are **best-effort** — missing env vars or send
 errors are logged but never raise. A broken notification must never
@@ -2402,22 +2411,12 @@ design). No env var, no retry, no Google.
 
 ## Env vars
 
-Critical:
-- `DATABASE_URL` — Railway Postgres reference
-- `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
-- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`services/account_guards.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
-- `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
-- `ENV` — `development|staging|production`
-- `CORS_ORIGINS` — comma-separated, production MUST set explicitly
+Every env var the code reads, backend and frontend, is in
+[ENVIRONMENT.md](./ENVIRONMENT.md), generated from the code (MEH-3598). The
+hand-written list that was here (it still gave a 4.6-era model default) was
+removed under MEH-3604 so the fact has one home. Which value is set in which
+environment: [DEPLOYMENT.md](./DEPLOYMENT.md) §1.
 
-Integrations:
-- `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET`
-- `GOOGLE_CLIENT_ID`, `APPLE_CLIENT_ID`
-- `TWILIO_ACCOUNT_SID` / `_AUTH_TOKEN` / `_WHATSAPP_FROM` / `ADMIN_WHATSAPP_TO`
-- `RESEND_API_KEY` — Resend.com API key; `ADMIN_EMAIL` — notification recipient; `CONTACT_EMAIL` — public contact form recipient (falls back to `ADMIN_EMAIL`)
-- `ANTHROPIC_MODEL` (defaults to `claude-opus-4-6`)
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 
 ---
 
