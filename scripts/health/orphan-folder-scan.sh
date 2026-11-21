@@ -82,7 +82,8 @@ scan() {  # $1 = rev, $2 = min age days → prints ORPHAN lines + summary
   while IFS= read -r d; do
     local p skip=0; for p in ${listed[@]+"${listed[@]}"}; do case "$d/" in "$p"/*) skip=1;; esac; done
     [ "$skip" = 1 ] && continue
-    printf '%s\n' "$allow" | grep -qxF "$d" && continue
+    local a; for a in $allow; do case "$d/" in "$a"/*) skip=1;; esac; done   # an allowed folder covers its children
+    [ "$skip" = 1 ] && continue
     checked=$((checked + 1))
     local last; last=$(git log -1 --format=%ct "$rev" -- "$d")
     [ -n "$last" ] && [ "$last" -gt "$cutoff" ] && continue
