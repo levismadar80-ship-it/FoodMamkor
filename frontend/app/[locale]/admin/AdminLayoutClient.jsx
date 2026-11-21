@@ -337,8 +337,11 @@ function AdminShell({ children }) {
         </nav>
       </div>
 
-      {/* Content — offset by sidebar width on desktop */}
-      <main className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
+      {/* Content — offset by sidebar width on desktop. MEH-3026 (F3): a div,
+          not <main> — the root layout's <main id="main-content"> already wraps
+          every page, and a second main landmark nested in it is an a11y defect
+          (one main per document). */}
+      <div data-testid="admin-content" className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
         {children}
         {/* MEH-2533: below md /admin had no way out. The header avatar menu
             is md+ only (Header.jsx UserMenu `hidden md:block`) and BottomNav,
@@ -361,7 +364,7 @@ function AdminShell({ children }) {
             </button>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
