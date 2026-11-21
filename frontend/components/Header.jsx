@@ -613,7 +613,7 @@ function NavLink({ href, label, active, onClick }) {
   return (
     <Link prefetch={false}
       href={href}
-      {...intent(href)}
+      {...(active ? {} : intent(href))}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[

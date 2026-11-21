@@ -560,8 +560,9 @@ export default function BottomNav() {
               >
                 <Link prefetch={false}
                   href={tab.href}
-                  // MEH-3628: load the page from the first touch (Sapir 21/11).
-                  {...intent(tab.href)}
+                  // MEH-3628: load the page from the first touch (Sapir 21/11);
+                  // not the tab already open.
+                  {...(active ? {} : intent(tab.href))}
                   className={tabCls(active)}
                   aria-current={active ? "page" : undefined}
                 >

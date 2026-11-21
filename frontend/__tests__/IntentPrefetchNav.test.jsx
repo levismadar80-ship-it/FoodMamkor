@@ -53,12 +53,17 @@ describe("bottom nav — prefetch on intent (MEH-3628)", () => {
     expect(prefetch).toHaveBeenCalledWith("/map");
   });
 
-  it("every link tab in the pill carries the intent prefetch", () => {
+  it("every link tab except the open one carries the intent prefetch", () => {
     const { container } = render(<BottomNav />);
     const tabs = [...container.querySelectorAll("nav a[href]")];
-    expect(tabs.length).toBeGreaterThan(1);
+    const open = tabs.filter((a) => a.getAttribute("aria-current") === "page");
+    const others = tabs.filter((a) => a.getAttribute("aria-current") !== "page");
+    // /about is open and is a tab here (the nav gates are closed): both lists
+    // must be non-empty for this case to say anything.
+    expect(open.map((a) => a.getAttribute("href"))).toEqual(["/about"]);
+    expect(others.length).toBeGreaterThan(1);
     for (const a of tabs) fireEvent.pointerEnter(a);
-    expect(prefetch.mock.calls.map(([h]) => h).sort()).toEqual(tabs.map((a) => a.getAttribute("href")).sort());
+    expect(prefetch.mock.calls.map(([h]) => h).sort()).toEqual(others.map((a) => a.getAttribute("href")).sort());
   });
 });
 
@@ -68,18 +73,23 @@ describe("useIntentPrefetch", () => {
     return <a data-testid="l" href={href} {...intent(href)}>x</a>;
   }
 
-  it("touch, hover and focus each prefetch the link's href", () => {
+  it("touch, hover and focus prefetch the link's href once", () => {
     render(<Probe href="/events" />);
     const l = screen.getByTestId("l");
     fireEvent.touchStart(l);
     fireEvent.pointerEnter(l);
     fireEvent.focus(l);
-    expect(prefetch.mock.calls).toEqual([["/events"], ["/events"], ["/events"]]);
+    // Hover, touch and focus on one link ask once.
+    expect(prefetch.mock.calls).toEqual([["/events"]]);
   });
 
-  it("a prefetch that throws never breaks the tap", () => {
+  it("a prefetch that throws never breaks the tap, and the next intent retries", () => {
     prefetch.mockImplementationOnce(() => { throw new Error("offline"); });
     render(<Probe href="/events" />);
-    expect(() => fireEvent.touchStart(screen.getByTestId("l"))).not.toThrow();
+    const l = screen.getByTestId("l");
+    expect(() => fireEvent.touchStart(l)).not.toThrow();
+    expect(prefetch).toHaveBeenCalledTimes(1);
+    fireEvent.pointerEnter(l);
+    expect(prefetch).toHaveBeenCalledTimes(2);
   });
 });

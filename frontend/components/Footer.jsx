@@ -65,8 +65,8 @@ import { currentIsraelYear } from "@/lib/established-year";
  */
 export default function Footer() {
   const t = useTranslations();
-  // MEH-3059: prefetch on intent for a link whose target renders per request.
-  // MEH-3628: the helper is shared with BottomNav and Header.
+  // MEH-3059: prefetch on intent (the footer was first; /producers renders per
+  // request). MEH-3628: the helper is shared with BottomNav and Header.
   const intentPrefetch = useIntentPrefetch();
   // MEH-2554: «כניסה לחשבון» is a guest link — a signed-in reader saw it too.
   const { user } = useAuth();

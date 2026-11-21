@@ -17,24 +17,31 @@
  * History:  MEH-3059 (inline in Footer); MEH-3628 (one helper for the whole
  *           chrome — Sapir's choice 21/11: prefetch on touch, not in full).
  */
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useRouter } from "@/i18n/navigation";
 
 /**
  * @returns {(href: string) => { onPointerEnter: () => void, onTouchStart: () => void, onFocus: () => void }}
  *   spread the result on a Link: `<Link prefetch={false} {...intent(href)} />`.
+ *   Don't spread it on a link to the page already open (BottomNav skips the
+ *   active tab): that would ask the server to render the page you are on.
  */
 export function useIntentPrefetch() {
   const router = useRouter();
+  // One prefetch per href for the life of this component: a hover, then a
+  // touch, then focus on the same link ask once. Kept here rather than relying
+  // on Next's own dedupe, which is an internal detail (MEH-3628 review).
+  const asked = useRef(new Set());
   return useCallback(
     (href) => {
-      // Next dedupes repeat prefetches of one href, so a hover then a touch
-      // costs one request. A failed prefetch only means the tap fetches.
       const go = () => {
+        if (asked.current.has(href)) return;
+        asked.current.add(href);
         try {
           router.prefetch(href);
         } catch {
-          /* the tap still navigates */
+          // A failed prefetch only means the tap fetches; a later intent may retry.
+          asked.current.delete(href);
         }
       };
       return { onPointerEnter: go, onTouchStart: go, onFocus: go };
