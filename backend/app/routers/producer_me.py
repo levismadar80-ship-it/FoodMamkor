@@ -46,6 +46,7 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services import indexnow  # MEH-2852
+from app.schemas import delivery_time  # MEH-3511
 from app.services import delivery_zones  # MEH-3484
 from app.services import approved_edit_moderation as approved_edit  # MEH-3261
 from app.services.owner_attention import owner_attention  # MEH-3108
@@ -118,6 +119,10 @@ def _sync_delivery_areas(
     # A zone can re-add a city this body's rows dropped: only a city that was
     # not there before the save is new (the MEH-54 alert).
     zone_added = delivery_zones.sync(db, producer, zones, zone_before)
+    if producer.delivery_nationwide:
+        # MEH-3511 review: a nationwide business already delivered to its zone
+        # cities — a zone is other terms, not a new city (no MEH-54 alert).
+        return added
     return added + [c for c in zone_added if delivery_zones.city_key(c) not in had]
 
 
@@ -937,6 +942,10 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
         # matching order_window above.
         "delivery_fee",
         "free_delivery_above",
+        # MEH-3511: business-wide delivery time + minimum (ProducerUpdate).
+        "delivery_days_min",
+        "delivery_days_max",
+        "delivery_min_order",
     }
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
@@ -1013,6 +1022,7 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
+    delivery_time.check_stored(producer)  # MEH-3511: the range on the merged row
 
     # Grill B8: a new WhatsApp number is not a verified one (MEH-745).
     reset_verification_if_phone_changed(db, producer, payload, old_phone)

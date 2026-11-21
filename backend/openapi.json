@@ -1998,6 +1998,28 @@
             "title": "Delivery Days",
             "type": "array"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -2035,6 +2057,28 @@
               }
             ],
             "title": "Min Order"
+          },
+          "order_cutoff_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Day"
+          },
+          "order_cutoff_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Time"
           },
           "zone_name": {
             "anyOf": [
@@ -2181,6 +2225,28 @@
             ],
             "title": "Delivery Days"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -2217,6 +2283,28 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "order_cutoff_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Day"
+          },
+          "order_cutoff_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Time"
           }
         },
         "required": [
@@ -2244,6 +2332,28 @@
             "title": "Delivery Days",
             "type": "array"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_fee": {
             "anyOf": [
               {
@@ -2280,6 +2390,28 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "order_cutoff_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Day"
+          },
+          "order_cutoff_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Cutoff Time"
           }
         },
         "required": [
@@ -8731,6 +8863,28 @@
             "title": "Delivery Count",
             "type": "integer"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_excluded_cities": {
             "default": [],
             "items": {
@@ -8749,6 +8903,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "delivery_min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Min Order"
           },
           "delivery_nationwide": {
             "default": false,
@@ -9849,6 +10014,28 @@
             ],
             "title": "Delivery Cities"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_excluded_cities": {
             "anyOf": [
               {
@@ -9874,6 +10061,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "delivery_min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Min Order"
           },
           "delivery_nationwide": {
             "anyOf": [
@@ -10905,6 +11103,28 @@
             "title": "Delivery Count",
             "type": "integer"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_excluded_cities": {
             "default": [],
             "items": {
@@ -10923,6 +11143,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "delivery_min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Min Order"
           },
           "delivery_nationwide": {
             "default": false,
@@ -11753,6 +11984,28 @@
             "title": "Delivery Count",
             "type": "integer"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_excluded_cities": {
             "default": [],
             "items": {
@@ -11771,6 +12024,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "delivery_min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Min Order"
           },
           "delivery_nationwide": {
             "default": false,
@@ -13495,6 +13759,28 @@
             "title": "Delivery Count",
             "type": "integer"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_excluded_cities": {
             "default": [],
             "items": {
@@ -13513,6 +13799,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "delivery_min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Min Order"
           },
           "delivery_nationwide": {
             "default": false,
@@ -15207,6 +15504,28 @@
             ],
             "title": "Delivery Cities"
           },
+          "delivery_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Max"
+          },
+          "delivery_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Days Min"
+          },
           "delivery_excluded_cities": {
             "anyOf": [
               {
@@ -15232,6 +15551,17 @@
               }
             ],
             "title": "Delivery Fee"
+          },
+          "delivery_min_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Min Order"
           },
           "delivery_nationwide": {
             "anyOf": [
@@ -19953,6 +20283,57 @@
           "image_data"
         ],
         "title": "StoryCardUploadRequest",
+        "type": "object"
+      },
+      "TestBusinessFlag": {
+        "additionalProperties": false,
+        "description": "`hidden` and not `is_test`: guard 3 keeps the column name out of every\nschema, so no response can ever carry it by accident.",
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ],
+        "title": "TestBusinessFlag",
+        "type": "object"
+      },
+      "TestBusinessFlagOut": {
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "hidden"
+        ],
+        "title": "TestBusinessFlagOut",
+        "type": "object"
+      },
+      "TestBusinessIdsOut": {
+        "properties": {
+          "producer_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Producer Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "producer_ids"
+        ],
+        "title": "TestBusinessIdsOut",
         "type": "object"
       },
       "Token": {
@@ -25724,6 +26105,91 @@
         "summary": "Get Stats",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/admin/test-businesses": {
+      "get": {
+        "description": "The ids the admin views mark «עסק בדיקה». Ids only, nothing else.",
+        "operationId": "list_test_businesses_admin_test_businesses_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestBusinessIdsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Test Businesses",
+        "tags": [
+          "admin-test-business"
+        ]
+      }
+    },
+    "/admin/test-businesses/{producer_id}": {
+      "put": {
+        "operationId": "set_test_business_admin_test_businesses__producer_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestBusinessFlag"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestBusinessFlagOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Test Business",
+        "tags": [
+          "admin-test-business"
         ]
       }
     },
@@ -35519,7 +35985,7 @@
     },
     "/users/me/product-orders": {
       "get": {
-        "description": "The logged-in buyer's orders, newest first.",
+        "description": "The logged-in buyer's orders, newest first.\n\nMEH-3525: an order closed more than BUYER_VIEW_AFTER_CLOSE ago is left out,\nbecause its page (`_own_order`) answers 404 by then and the row would be a\ndead link.",
         "operationId": "list_own_orders_users_me_product_orders_get",
         "responses": {
           "200": {

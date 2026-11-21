@@ -25,7 +25,12 @@ import { normalizePhone } from "@/lib/utils";
 // read by both, so the pill never has two homes on one page.
 export function isDeliveryCheckerUsable({ offersDelivery, nationwide, excluded = [], areas = [] }) {
   const hasExclusions = nationwide && excluded.length > 0;
-  return Boolean(offersDelivery) && (hasExclusions || (!nationwide && areas.length > 0));
+  // MEH-3511: a nationwide business with zones (areas on other terms) — the
+  // checker is what tells a visitor which terms her city gets.
+  const hasZones = nationwide && areas.some((a) => a?.zone_name);
+  return (
+    Boolean(offersDelivery) && (hasExclusions || hasZones || (!nationwide && areas.length > 0))
+  );
 }
 
 /**

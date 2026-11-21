@@ -44,7 +44,7 @@ import he from "../../../messages/he.json";
  *           the matrix and are reported, not converted. Row 12 (registration
  *           consent checkboxes) is COVERED live by
  *           e2e/flows/18-producer-register-wizard.spec.ts:151-156 and
- *           __tests__/RegisterProducerClient.test.jsx:356-366 — and the
+ *           __tests__/RegisterProducerClient-01.test.jsx:360-370 — and the
  *           checklist's «כפתור disabled» is doc-vs-code drift: the submit
  *           button is `disabled={loading}` only (RegisterProducerClient.jsx
  *           :2072); an unchecked consent is a click → `role="alert"`
@@ -420,7 +420,7 @@ test.describe("manual › cookie banner (LEGAL)", () => {
 // MT:LEGAL:7 — mail transport down → still 200 + row saved: COVERED tests/test_api.py:1349 + :1336.
 // MT:LEGAL:12 — registration without consent checkboxes: COVERED (live behaviour = click → alert, not a
 //   disabled button) e2e/flows/18-producer-register-wizard.spec.ts:151-156 +
-//   __tests__/RegisterProducerClient.test.jsx:356-366. Doc-vs-code drift recorded.
+//   __tests__/RegisterProducerClient-01.test.jsx:360-370. Doc-vs-code drift recorded.
 // MT:LEGAL:13 — DirectoryDisclaimer above the report button on /producer/[id]: residual → chunk 8
 //   (SSR route, needs a live backend; ProducerSections.jsx:758 → :781 order).
 // MT:LEGAL:14 — DirectoryDisclaimer on the «מהמטבח של השכן» grid: STALE — the grid no longer exists

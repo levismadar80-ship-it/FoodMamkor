@@ -164,9 +164,10 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     ),
     "backend/app/routers/organizers.py": (1, "adds not_test_producer()"),
     "backend/app/routers/saved_items.py": (1, "saved events; adds not_test_producer()"),
-    "backend/app/routers/rescue.py": (
-        2,
-        "public list adds not_test_producer(); :361 is the owner's publish gate",
+    "backend/app/routers/rescue.py": (1, "the owner's publish gate"),
+    "backend/app/services/rescue_reads.py": (
+        1,
+        "public list adds not_test_producer() (moved from routers/rescue.py, MEH-3541)",
     ),
     "backend/app/routers/admin.py": (2, "admin screens and state transitions"),
     "backend/app/routers/admin_decisions.py": (1, "admin screens and state transitions"),
@@ -286,9 +287,16 @@ class TestInlineApprovedChecks:
 
 # ── guard 2 · no writer before chunk 4 ─────────────────────────────────────
 
-#: Repo-relative paths allowed to write is_test. Chunk 4 adds the seed script
-#: and the admin toggle — not before chunks 1–3 are on staging.
-WRITERS_ALLOWED: frozenset[str] = frozenset()
+#: Repo-relative paths allowed to write is_test. Chunk 4 (MEH-2952): the
+#: admin toggle «עסק בדיקה — מוסתר מהאתר» and the seed script's opt-in flag
+#: (off by default — the staging demo businesses stay visible, MEH-2794).
+#: Nothing else; a new writer is a decision, not an allowlist line.
+WRITERS_ALLOWED: frozenset[str] = frozenset(
+    {
+        "backend/app/routers/admin_test_business.py",
+        "backend/scripts/seed_demo_business.py",
+    }
+)
 
 #: Where the column is DECLARED, which is not a write.
 _DECLARATIONS = {"backend/app/models/models.py"}

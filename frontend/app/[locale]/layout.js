@@ -12,6 +12,7 @@ import FooterSlot from "@/components/FooterSlot";
 import BottomNav from "@/components/BottomNav";
 import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
+import { PREHYDRATION_FLAGS_SCRIPT } from "@/lib/prehydration-flags-inline";
 import IosViewportPin from "@/components/IosViewportPin";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
@@ -234,8 +235,14 @@ export default async function LocaleLayout({ children, params }) {
   const dir = locale === "he" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir} className={FONT_VARIABLES}>
+    // suppressHydrationWarning: PREHYDRATION_FLAGS_SCRIPT adds data-* flags to
+    // <html> before React hydrates it (MEH-2233). It covers <html>'s own
+    // attributes only, not its children.
+    <html lang={locale} dir={dir} className={FONT_VARIABLES} suppressHydrationWarning>
       <head>
+        {/* MEH-2233: localStorage facts on <html> before the first paint, so
+            the cookie banner and the login form can be in the server HTML. */}
+        <script dangerouslySetInnerHTML={{ __html: PREHYDRATION_FLAGS_SCRIPT }} />
         {/* MEH-3164: records text typed before React hydrates, from the first
             byte. Must run before any chunk, so it is inline and first in
             <head>; PrehydrationInputReplay (end of <body>) replays it. */}

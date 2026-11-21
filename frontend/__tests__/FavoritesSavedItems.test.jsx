@@ -48,6 +48,13 @@ vi.mock("next/image", () => ({ default: (props) => <img alt={props.alt} /> }));
 import api from "@/lib/api";
 import FavoritesClient from "@/app/[locale]/favorites/FavoritesClient";
 import { parseSavedItems, splitByTime } from "@/app/[locale]/favorites/savedItems";
+import { contractRow, fieldObject } from "./helpers/contract-row";
+import {
+  FavoriteWithProducerSchema,
+  SavedEventSchema,
+  SavedExperienceSchema,
+  SavedRecipeSchema,
+} from "@/lib/api-responses";
 
 const day = (n) => {
   const d = new Date(`${israelToday()}T00:00:00Z`);
@@ -55,17 +62,26 @@ const day = (n) => {
   return d.toISOString().slice(0, 10);
 };
 const uid = (n) => `${String(n).padStart(8, "0")}-1111-4111-8111-111111111111`;
-const business = (n) => ({ producer_id: uid(n), producer: { id: uid(n), name: `עסק ${n}` } });
-const recipe = (n) => ({ id: uid(100 + n), title: `מתכון ${n}`, producer_name: "מאפייה", producer_slug: "bakery" });
-const event = (n, offset) => ({ id: uid(200 + n), title: `אירוע ${n}`, event_date: day(offset), producer_name: "מאפייה", category: "שוק" });
-const experience = (n, offset, extra = {}) => ({
-  id: uid(300 + n),
-  title: `חוויה ${n}`,
-  event_date: day(offset),
-  host: { name: "נועה" },
-  is_active: true,
-  ...extra,
+// MEH-1748: every row is parsed with the generated contract, so each factory
+// builds a contract-valid row and sets only what these tests read.
+const HOST = fieldObject(SavedExperienceSchema, "host");
+const business = (n) => ({
+  ...contractRow(FavoriteWithProducerSchema, { producer_id: uid(n) }),
+  producer: contractRow(FavoriteWithProducerSchema._zod.def.shape.producer, { id: uid(n), name: `עסק ${n}` }),
 });
+const recipe = (n) =>
+  contractRow(SavedRecipeSchema, { id: uid(100 + n), title: `מתכון ${n}`, producer_name: "מאפייה", producer_slug: "bakery" });
+const event = (n, offset) =>
+  contractRow(SavedEventSchema, { id: uid(200 + n), title: `אירוע ${n}`, event_date: day(offset), producer_name: "מאפייה", category: "שוק", is_active: true });
+const experience = (n, offset, extra = {}) =>
+  contractRow(SavedExperienceSchema, {
+    id: uid(300 + n),
+    title: `חוויה ${n}`,
+    event_date: day(offset),
+    host: contractRow(HOST, { name: "נועה" }),
+    is_active: true,
+    ...extra,
+  });
 
 function serve({ businesses = [], recipes = [], events = [], experiences = [], savedFails = 0 } = {}) {
   let failures = savedFails;

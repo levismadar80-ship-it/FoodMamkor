@@ -16,7 +16,7 @@
  *     the root outranks the capped context.
  *
  * (B) PIXEL LUMA — the ground truth for paint order, sampled off the captured
- *     PNG exactly as `e2e/qa-meh2093-modal-z.mjs` does. The overlay is a dark
+ *     PNG exactly as `e2e/_qa-archive/qa-meh2093-modal-z.mjs` does. The overlay is a dark
  *     scrim, so anything painting UNDER it darkens measurably and anything
  *     painting OVER it does not change. This is the instrument that decides
  *     trapped / not trapped, because it reads what the guest actually sees.

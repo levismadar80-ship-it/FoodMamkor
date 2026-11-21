@@ -11,6 +11,8 @@
  * Cells: producer fetch ok / fails / returns a malformed body × business that
  * delivers to listed cities / nationwide with exclusions / does not deliver.
  */
+import { contractRow, uuidFor } from "./helpers/contract-row";
+import { GetProducerProducersProducerIdGetResponse } from "@/lib/generated/api.zod";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
@@ -60,15 +62,18 @@ const GB = {
   user_commit: null,
 };
 
-const producer = (over = {}) => ({
-  id: "p-1",
-  name: "מאפיית שקד",
-  offers_delivery: true,
-  delivery_nationwide: false,
-  delivery_excluded_cities: [],
-  delivery_areas: [{ id: "a1", city: "חדרה", min_order: 100, delivery_day: "שישי" }],
-  ...over,
-});
+// MEH-1748: the page parses the whole ProducerDetailOut (generated), so the
+// body is a contract-valid row with only the delivery fields set here.
+const producer = (over = {}) =>
+  contractRow(GetProducerProducersProducerIdGetResponse, {
+    id: uuidFor("p-1"),
+    name: "מאפיית שקד",
+    offers_delivery: true,
+    delivery_nationwide: false,
+    delivery_excluded_cities: [],
+    delivery_areas: [{ id: uuidFor("a1"), city: "חדרה", min_order: 100, delivery_day: "שישי" }],
+    ...over,
+  });
 
 const fixture = { producer: null, producerError: null };
 const defaultGet = (url) => {

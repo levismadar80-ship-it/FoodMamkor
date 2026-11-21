@@ -9,6 +9,7 @@ every name is still importable from app.models.models.
 """
 
 import uuid
+
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -26,6 +27,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import relationship, validates
+from sqlalchemy.types import SmallInteger  # MEH-3511: delivery_areas day counts
+
 from app.data.cities import canonical_city
 from app.database import Base
 from app.utils.clock import utc_now
@@ -219,6 +222,13 @@ class DeliveryArea(Base):
     zone_name = Column(String(40))
     delivery_days: Column[list[str]] = Column(ARRAY(String(10)), nullable=True)
     free_delivery_above = Column(Integer)
+    # MEH-3511 (b4e6a8c0d2f3): the zone's delivery time in business days and
+    # its own order cutoff, copied by services/delivery_zones.py like the
+    # rest. NULL = the business-level days / order_window apply.
+    delivery_days_min = Column(SmallInteger)
+    delivery_days_max = Column(SmallInteger)
+    order_cutoff_day = Column(String(10))
+    order_cutoff_time = Column(String(5))
 
     producer = relationship("Producer", back_populates="delivery_areas")
 

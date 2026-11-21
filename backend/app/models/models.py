@@ -22,6 +22,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -496,6 +497,12 @@ class Producer(Base):
     # delivery_areas.zone_name; services/delivery_zones.py is the one writer
     # and copies each zone's values onto its cities.
     delivery_zones = Column(JSONB, nullable=True)
+    # MEH-3511 (b4e6a8c0d2f3): «מגיע תוך 3–5 ימי עסקים» for the whole business
+    # (zones override it), and a business-wide order minimum — a city row's
+    # own min_order still wins. NULL = not stated, renders nothing.
+    delivery_days_min = Column(SmallInteger, nullable=True)
+    delivery_days_max = Column(SmallInteger, nullable=True)
+    delivery_min_order = Column(Integer, nullable=True)
     # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
     # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
     #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,

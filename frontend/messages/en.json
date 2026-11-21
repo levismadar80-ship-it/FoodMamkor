@@ -1385,6 +1385,7 @@
       "show_all_cities": "{count, plural, one {Show 1 more city} other {Show {count} more cities}}",
       "show_all_pickup": "{count, plural, one {Show 1 more pickup point} other {Show {count} more pickup points}}",
       "show_all_areas": "{count, plural, one {Show 1 more delivery area} other {Show {count} more delivery areas}}",
+      "show_area_list": "{count, plural, one {See the delivery area} other {See all delivery areas (# towns)}}",
       "show_less": "Show less",
       "checker": {
         "label": "Do you deliver to me?",
@@ -1415,7 +1416,11 @@
       "next_delivery": "Next delivery: {date}",
       "next_delivery_city": "Next delivery to {city}: {date}",
       "pickup_days": "{count, plural, one {Pickup on {days}} other {Pickup on {days}}}",
-      "next_pickup": "Next pickup: {date}"
+      "next_pickup": "Next pickup: {date}",
+      "business_days_range": "Arrives within {min}–{max} business days",
+      "business_days_upto": "{max, plural, one {Arrives within 1 business day} other {Arrives within up to # business days}}",
+      "business_days_exact": "{days, plural, one {Arrives within 1 business day} other {Arrives within # business days}}",
+      "zones_other_terms": "Different terms in these areas:"
     },
     "friday_delivery": {
       "today": "Friday",
@@ -1653,7 +1658,15 @@
         "heading": "Other queues",
         "all_clear": "Nothing waiting in the other queues"
       },
-      "analytics_link": "Stats and analytics →"
+      "analytics_link": "Stats and analytics →",
+      "licences": {
+        "heading": "Licences expiring soon",
+        "subtitle": "Approved businesses whose licence expires in the next 30 days",
+        "days_left": "{count, plural, one {1 day left} other {# days left}} · until {date}",
+        "today": "Expires today · {date}",
+        "open": "Open",
+        "error": "Could not load the expiring licences"
+      }
     },
     "producers": {
       "list": {
@@ -2103,6 +2116,9 @@
         "unknown_units": "Units not recognised, saved as per unit — check before approving: {units}",
         "load_failed": "Couldn't load the drafts. Try refreshing.",
         "draft_group": "Group: {name}"
+      },
+      "test_business": {
+        "label": "Test business — hidden from the site"
       },
       "verified": {
         "title": "Verified badge",
@@ -2792,7 +2808,22 @@
       "top_cities": "Top cities",
       "top_producers_favorites": "Businesses with the most favorites",
       "geographic": "Geographic distribution",
-      "map_count": "{count} businesses with map location"
+      "map_count": "{count} businesses with map location",
+      "rescue": {
+        "heading": "Rescue bags — pilot",
+        "subtitle": "Last {days} days",
+        "error": "Could not load the rescue-bag numbers",
+        "tiles": {
+          "offers": "Offers published",
+          "bags_offered": "Bags offered",
+          "bags_reserved": "Bags reserved",
+          "sell_through": "Reserved share",
+          "no_show_rate": "No-show rate",
+          "buyers": "Buyers",
+          "repeat_buyers": "Repeat buyers",
+          "donated": "Given away free"
+        }
+      }
     },
     "help": {
       "intro": "Short answers to “how do I…”, in menu order.",
@@ -5500,8 +5531,8 @@
         "bulk_apply": "Apply to selected cities",
         "area_fee_inherits": "Inherits {fee} ₪",
         "area_fee_inherits_free": "Inherits: free delivery",
-        "default_block_title_nationwide": "Nationwide delivery fee",
-        "default_block_hint_nationwide": "This fee applies to all your deliveries.",
+        "default_block_title_nationwide": "Nationwide delivery terms",
+        "default_block_hint_nationwide": "This fee applies to all your deliveries, except zones on other terms set below.",
         "area_fee_free": "Free delivery",
         "default_block_title": "Default for all areas",
         "default_block_hint": "This fee applies to every delivery area. You can override it per area in the list below.",
@@ -5525,7 +5556,16 @@
         "zone_free_above_label": "Free delivery above (₪)",
         "zone_free_above_hint": "If empty, the business's general amount applies.",
         "zone_remove": "Delete the zone",
-        "city_in_zone": "In zone {zone}"
+        "city_in_zone": "In zone {zone}",
+        "business_min_label": "Minimum order for delivery (₪)",
+        "business_min_hint": "Applies to every delivery order. A city or zone with its own minimum overrides it.",
+        "time_label": "Delivery time (business days)",
+        "time_hint": "How many business days the order takes to arrive. You can fill only “up to”, e.g. up to 5.",
+        "time_from": "From",
+        "time_to": "Up to",
+        "zone_cutoff_hint": "Optional. Without a day and time, the business's order hours apply.",
+        "zones_label_nationwide": "Zones on other terms",
+        "zones_hint_nationwide": "Zones with terms other than “nationwide”, e.g. “Gush Dan, express”. In the zone's cities, its terms win."
       },
       "order_window": {
         "heading": "When you take orders",
@@ -6628,8 +6668,8 @@
       "approval_time": "How long does approval take?"
     },
     "answers": {
-      "register": "You register through a short form — completely free! After registering you complete your profile in the dashboard (a photo, your first product), send it for review — and our team checks and approves your business within 3 business days, and then it appears on the site.",
-      "find_nearby": "There are two easy ways:\n\n1. Our map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
+      "register": "You register through a short form at /register/producer, and it is free. After registering you complete your profile in the dashboard (a photo, your first product), send it for review — and our team checks and approves your business within 3 business days, and then it appears on the site.",
+      "find_nearby": "There are two easy ways:\n\n1. /map — tap 'Near me' to see all the businesses around you, with filtering by category (meat, dairy, vegetables and so on).\n2. The home page — search by category or city.\n\nEvery business has a button for contacting it directly — usually WhatsApp, and sometimes phone or another channel the business chose"
     },
     "fallback_reply": "I couldn't understand the question — could you rephrase it?",
     "error_rate_limit": "You sent a lot of messages in a short time — try again in a minute",
@@ -6659,6 +6699,26 @@
         "diet_lactose_free": "Which products are lactose-free?",
         "diet_no_added_sugar": "Which products have no added sugar?"
       }
+    },
+    "pages": {
+      "map": "The map",
+      "events": "Events",
+      "experiences": "Experiences",
+      "group_buys": "Group buys",
+      "favorites": "My favorites",
+      "register": "Sign up",
+      "login": "Log in",
+      "join": "Join as a business",
+      "register_business": "the business sign-up form",
+      "pricing": "the business price list",
+      "dashboard": "the dashboard",
+      "recommend": "Recommend a business",
+      "about": "About",
+      "contact": "Contact us",
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "accessibility": "Accessibility statement",
+      "rescue": "Surprise bags"
     }
   },
   "diet_pages": {
@@ -7743,5 +7803,24 @@
       "external_order": "Through an order form"
     },
     "blocked": "Some cards on this page have unsaved changes. Save them first, then these details."
+  },
+  "my_orders": {
+    "title": "My orders",
+    "row": "{business} · {date} · {status}",
+    "row_no_status": "{business} · {date}",
+    "empty": "You haven't ordered through Mehamakor yet.",
+    "empty_cta": "Browse businesses",
+    "load_error": "We couldn't load your orders.",
+    "status": {
+      "pending": "Waiting for confirmation",
+      "change_proposed": "The business suggested a change",
+      "confirmed": "Confirmed",
+      "ready": "Ready",
+      "handed": "Handed over",
+      "declined": "Not accepted",
+      "cancelled": "Cancelled",
+      "expired": "No reply in time",
+      "no_show": "Not collected"
+    }
   }
 }

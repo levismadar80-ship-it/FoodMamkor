@@ -80,6 +80,15 @@ API_CALL_RE = re.compile(
         (?P<quote>["'`])(?P<path>[^"'`]+)(?P=quote)""",
     re.VERBOSE | re.DOTALL,
 )
+# MEH-3536: a read through the shared data layer, useApi("/x") /
+# useUserApi("/x") (frontend/lib/use-api.js). Always a GET — the layer only reads.
+# Only a whole literal first argument counts: the closing quote must be followed
+# by `,` or `)`, so `useApi("/x/" + id)` is not read as a call to `/x/`. A path
+# held in a variable or a ternary is not seen (same limit as api.get above).
+USE_API_CALL_RE = re.compile(
+    r"""\buse(?:User)?Api\s*\(\s*(?P<quote>["'`])(?P<path>[^"'`]+)(?P=quote)\s*[,)]""",
+    re.VERBOSE | re.DOTALL,
+)
 # fetch("..."). The method option, if present, is read from the balanced
 # {...} options object that follows the URL and comma — e.g.
 # fetch("/api/x", { method: "POST", ... }). Missing or unparsed option
@@ -184,6 +193,12 @@ def extract_frontend_calls() -> list[tuple[str, str, str, int]]:
                 continue
             line = text.count("\n", 0, m.start()) + 1
             calls.append((m.group("method").upper(), normalise(p), file_rel, line))
+        for m in USE_API_CALL_RE.finditer(text):
+            p = m.group("path")
+            if not p.startswith("/"):
+                continue
+            line = text.count("\n", 0, m.start()) + 1
+            calls.append(("GET", normalise(p), file_rel, line))
         for m in FETCH_CALL_RE.finditer(text):
             p = _strip_host_prefix(m.group("url"))
             if p is None:

@@ -1777,7 +1777,7 @@ is unchanged.
 Create the cron service once after this PR merges to staging.
 
 1. Railway dashboard → existing project → **+ New** → **GitHub Repo** → select `FoodMamkor`.
-2. Service name: `cron-backup`.
+2. Service name: `backup-cron` (the name it carries in Railway today; this step once said `cron-backup`).
 3. **Settings → Build**:
    - Builder: `Dockerfile`
    - Dockerfile Path: `Dockerfile.cron`
@@ -1785,6 +1785,7 @@ Create the cron service once after this PR merges to staging.
    - `DATABASE_URL` → use the **internal** form (`postgresql://…@postgres.railway.internal:5432/…`), NOT the public proxy host. Internal networking is faster and removes the egress cost.
    - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT` — copy from production env (already configured during Phase 1 prep).
    - `ENV=production`
+   - `SENTRY_DSN` → the reference `${{FoodMamkor.BACKEND_SENTRY_DSN}}`. The backend service has no variable named `SENTRY_DSN`; its DSN is `BACKEND_SENTRY_DSN` (`backend/app/sentry.py`). A reference keeps the two equal. Without it the run reports nothing to Sentry (MEH-3533, [BACKUPS.md](./BACKUPS.md)). Set in production on 21/11/2026.
 5. **Settings → Cron Schedule**: `0 23 * * *` (UTC).
    - That is **02:00 IST in summer (DST)** and **01:00 IST in winter**. The 1-hour seasonal shift is acceptable for v1 — backup runs at a quiet hour either way (see Known Limitations).
 6. **Settings → Networking**: leave default. Cron services don't expose ports.
@@ -1882,9 +1883,11 @@ Full DR drill checklist (run end-to-end at least once before MEH-408 closes):
 
 ### E. Known limitations (v1, accepted)
 
-- **No alerting on cron failure.** Detection is manual: weekly check that
-  the R2 bucket lists a file dated within the last 24h. Phase 2.5 follow-up:
-  Slack webhook or Resend email on non-zero exit.
+- **Alerting on cron failure (MEH-3533).** Each run sends a Sentry Crons
+  check-in to `production-db-backup`, and a failed run (any non-zero exit,
+  including an unexpected raise → exit 4) sends an error event to the
+  project's issue alerts. A run that never starts is reported only when the
+  Crons monitor has a seat (it was created disabled, 20/11/2026: no free seat).
 - **Railway log retention is 7 days on the free tier.** If a backup error
   occurs and is not noticed within a week, the post-mortem trail is gone.
   Phase 2.5 follow-up: stream cron logs to Sentry or to R2 itself.

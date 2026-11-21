@@ -8,8 +8,8 @@ Does NOT: receive inbound messages — that belongs to the future PR2c
           webhook receiver. Does NOT send the daily onboarding follow-ups
           — that is app.services.onboarding_followup, scheduled separately
           in app/startup.py.
-Related:  app/services/whatsapp.py:71 (send_template), app/routers/
-          admin_extra.py:402 (_read_vacation_state pattern, MEH-509 PR2a),
+Related:  app/services/whatsapp.py:71 (send_template), app/services/
+          admin_settings.py (read_vacation_mode pattern, MEH-509 PR2a),
           app/startup.py:142 (existing APScheduler instance — PR2b adds
           a second job, NOT a new scheduler).
 History:  MEH-509 PR2b (creation; gated off until PR2c webhook ships).
@@ -146,7 +146,7 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
         return counters
 
     # REUSES: app/services/vacation_state.py:read_vacation_state — shared
-    # with admin_extra._read_vacation_state (MEH-662 dedup).
+    # with admin_settings.read_vacation_mode (MEH-662 dedup; MEH-3538 move).
     vacation_active, vacation_return_date = read_vacation_state(db)
     template = _decide_template(
         vacation_active=vacation_active,

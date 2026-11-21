@@ -43,6 +43,7 @@ from app.routers.producer_me import (
 from app.data.cities import canonical_city  # MEH-3475
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
+from app.schemas import delivery_time  # MEH-3511
 from app.services import delivery_zones  # MEH-3484
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 
@@ -809,6 +810,7 @@ def admin_update_producer(
     reconcile_secondary_phone(producer, payload)  # MEH-3339
     for field, value in payload.items():
         setattr(producer, field, value)
+    delivery_time.check_stored(producer)  # MEH-3511: the range on the merged row
 
     # Grill B8: an admin-typed number is not one the owner verified (MEH-745).
     reset_verification_if_phone_changed(db, producer, payload, old_phone)

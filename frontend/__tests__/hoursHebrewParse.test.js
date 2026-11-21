@@ -7,7 +7,7 @@
  * beside the order window («07:00» next to «7:00», «א'-ה'» next to
  * «ראשון–חמישי»). The output map shape is the English one, unchanged.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, it, expect } from "vitest";
 
@@ -104,12 +104,24 @@ describe("sameWeeklyHours (MEH-2803 AC 4)", () => {
 // (MEH-2794). If its stored hours drift into a format parseHours cannot read,
 // the page falls back to raw text in a second format — red here first.
 describe("demo seed hours stay readable (MEH-2803 guard 12)", () => {
-  const SEED = path.resolve(__dirname, "../../backend/scripts/seed_demo_business.py");
-  const source = readFileSync(SEED, "utf8");
-  const match = source.match(/"opening_hours":\s*"([^"]+)"/);
+  // Reads the seed as text on purpose: the value lives in a Python dict that
+  // nothing in vitest can run. MEH-3542 split the seed into an entry file plus
+  // `_seed_demo_business_pNN.py` parts, so the value is looked up across all
+  // of them rather than in one file whose contents may move again.
+  const DIR = path.resolve(__dirname, "../../backend/scripts");
+  const files = readdirSync(DIR).filter((f) => /^_?seed_demo_business(_p\d\d)?\.py$/.test(f));
+  const hits = files.flatMap((f) => {
+    const m = readFileSync(path.join(DIR, f), "utf8").match(/"opening_hours":\s*"([^"]+)"/);
+    return m ? [[f, m[1]]] : [];
+  });
+  const match = hits.length === 1 ? [null, hits[0][1]] : null;
 
-  it("the seed file still declares an opening_hours string", () => {
-    expect(match, `"opening_hours": "…" in ${SEED}`).not.toBeNull();
+  it("control: the scan sees the seed entry file", () => {
+    expect(files).toContain("seed_demo_business.py");
+  });
+
+  it("the seed files declare exactly one opening_hours string", () => {
+    expect(hits.map(([f]) => f), `"opening_hours": "…" across ${files.join(", ")}`).toHaveLength(1);
   });
 
   it("parseHours reads it", () => {
