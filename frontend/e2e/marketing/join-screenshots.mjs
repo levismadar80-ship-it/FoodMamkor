@@ -94,6 +94,7 @@ import { mkdir, writeFile, readFile, rm, readdir, rename } from "node:fs/promise
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { scopeBypassToOrigin } from "../_bypass-scope.mjs";
 
 const run = promisify(execFile);
 
@@ -108,8 +109,7 @@ const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
 // CC sandbox only: next's image optimizer cannot resolve Cloudinary there, so
 // --direct-images redirects each <Image> to its original Cloudinary URL.
 const DIRECT_IMAGES = process.argv.includes("--direct-images");
-// The bypass secret goes to the target origin ONLY: `extraHTTPHeaders` sent it
-// to every host the page touched (OSM tiles, Cloudinary, analytics; 21/11).
+// Never in `extraHTTPHeaders`: it reached every host (OSM, Cloudinary; 21/11).
 const BYPASS_HEADERS = BYPASS
   ? { "x-vercel-protection-bypass": BYPASS, "x-vercel-set-bypass-cookie": "true" }
   : {};
@@ -441,7 +441,7 @@ const SHOTS = [
     // page that `main` matched (21/11). The recipe id is read from the API at
     // run time, because a re-seed mints new ids.
     route: async (page) => {
-      const res = await page.request.get(`${BASE}/api/producers/${SLUG}/recipes`, { headers: BYPASS_HEADERS });
+      const res = await page.request.get(`${BASE}/api/producers/${SLUG}/recipes`);
       if (!res.ok()) throw new Error(`recipe list for ${SLUG}: HTTP ${res.status()}`);
       const list = await res.json();
       if (!Array.isArray(list) || !list.length) {
@@ -725,22 +725,10 @@ const MARKER_CSS = `
 //
 // `addInitScript` runs on every document in the page, including the ones
 // `clip-return` navigates to mid-recording, and it is not silenced.
-// Also: the two request routes, and a guard that ends the run if the bypass
-// secret is ever seen on a request to another host.
+// Also: the bypass cookie (MEH-3607) and the --direct-images route.
 async function installOverlayStyles(page) {
-  if (BYPASS) {
-    const origin = new URL(BASE).origin;
-    page.on("request", (req) => {
-      if (new URL(req.url()).origin !== origin && req.headers()["x-vercel-protection-bypass"]) {
-        console.error(`ABORT: the bypass secret was sent to ${new URL(req.url()).host}`);
-        process.exit(3);
-      }
-    });
-    await page.route(
-      (url) => url.origin === origin,
-      (route) => route.fallback({ headers: { ...route.request().headers(), ...BYPASS_HEADERS } }),
-    );
-  }
+  // Vercel's bypass cookie, host-only; the browser never holds the secret.
+  if (BYPASS) await scopeBypassToOrigin(page.context(), BASE, BYPASS_HEADERS);
   if (DIRECT_IMAGES) {
     await page.route("**/_next/image?**", (route) => {
       const src = new URL(route.request().url()).searchParams.get("url");
@@ -940,7 +928,7 @@ async function preflight(browser) {
     // reading as clean, one level down.
     let apiText = "";
     try {
-      const detail = await page.request.get(`${BASE}/api/producers/by-slug/${SLUG}`, { headers: BYPASS_HEADERS });
+      const detail = await page.request.get(`${BASE}/api/producers/by-slug/${SLUG}`);
       if (!detail.ok()) {
         problems.push(`GET /api/producers/by-slug/${SLUG} → ${detail.status()}`);
       } else {
@@ -949,7 +937,7 @@ async function preflight(browser) {
           problems.push("the producer payload carried no id — cannot read its reviews");
         } else {
           apiText += JSON.stringify(producer);
-          const reviews = await page.request.get(`${BASE}/api/producers/${producer.id}/reviews`, { headers: BYPASS_HEADERS });
+          const reviews = await page.request.get(`${BASE}/api/producers/${producer.id}/reviews`);
           if (!reviews.ok()) {
             problems.push(`GET /api/producers/<id>/reviews → ${reviews.status()}`);
           } else {
