@@ -441,6 +441,16 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         )}
       </div>
     )}
+    {/* MEH-3611: the logo sits on the cover's bottom-start corner, a white
+        ring around it (Wolt / Uber Eats / Too Good To Go store pages). That
+        corner is free on both layouts: the photo counter is top-start, the
+        circles top-end, «כל התמונות» bottom-end. pointer-events-none so a tap
+        there still opens the photo. */}
+    <BusinessLogo
+      url={logoUrl}
+      size={72}
+      className="absolute bottom-4 start-4 md:bottom-5 md:start-5 z-10 ring-4 ring-white shadow-md pointer-events-none"
+    />
     </div>
     {lightboxOpen && (
       <Lightbox
