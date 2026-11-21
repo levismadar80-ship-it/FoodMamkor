@@ -84,24 +84,39 @@ export default function RescueOfferPage({ offerId }) {
   const producer = offer.producer;
   const businessHref = producerPath(producer);
   const town = producer.location_city || producer.city;
+  const shareTitle = `${t("offer_page.eyebrow")} · ${producer.name}`;
 
   return (
     <div className="pb-32 lg:pb-12" data-testid="rescue-offer-page" data-state={offer.state}>
-      <EntityCover
-        imageUrl={producer.image_url || undefined}
-        alt={producer.name}
-        tone="primary"
-        Icon={Basket}
-        actions={<ShareButton variant="overlay" subject="rescue" title={`${t("offer_page.eyebrow")} · ${producer.name}`} city={town || undefined} />}
-        testIdPrefix="rescue-offer"
-      />
+      {/* Sapir 21/11: a green band with a basket icon looked unprofessional.
+          With the business's photo → the cover; without one → no cover at
+          all, the page opens on the title (the group-buy card dropped its
+          icon tile the same day, #5044). */}
+      {producer.image_url && (
+        <EntityCover
+          imageUrl={producer.image_url}
+          alt={producer.name}
+          tone="primary"
+          Icon={Basket}
+          actions={<ShareButton variant="overlay" subject="rescue" title={shareTitle} city={town || undefined} />}
+          testIdPrefix="rescue-offer"
+        />
+      )}
       <div className="max-w-[1100px] mx-auto px-4 pt-5 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
           <HistoryBackLink />
-          <p className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs font-semibold px-3 py-1 rounded-full mb-3">
-            <Basket size={12} weight="bold" aria-hidden="true" />
-            {t("offer_page.eyebrow")}
-          </p>
+          <div className="flex items-center gap-3 mb-3" data-testid="rescue-offer-eyebrow-row">
+            <p className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs font-semibold px-3 py-1 rounded-full">
+              <Basket size={12} weight="bold" aria-hidden="true" />
+              {t("offer_page.eyebrow")}
+            </p>
+            {/* No cover → share sits on this row instead of the photo's corner. */}
+            {!producer.image_url && (
+              <div className="ms-auto" data-testid="rescue-offer-share-inline">
+                <ShareButton variant="outline" subject="rescue" title={shareTitle} city={town || undefined} />
+              </div>
+            )}
+          </div>
           <h1 className="font-headline-display text-4xl md:text-5xl font-black text-text mb-3" data-testid="rescue-offer-title">
             {producer.name}
           </h1>

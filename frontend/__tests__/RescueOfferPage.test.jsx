@@ -184,6 +184,24 @@ describe("RescueOfferPage — an available bag", () => {
   });
 });
 
+describe("RescueOfferPage — the cover", () => {
+  it("no photo → no cover band at all; share sits beside the «סל הפתעה» chip", async () => {
+    await renderWith(offer());
+    expect(screen.queryByTestId("rescue-offer-cover-band")).toBeNull();
+    expect(screen.queryByTestId("rescue-offer-cover")).toBeNull();
+    expect(screen.getByTestId("rescue-offer-share-inline")).toBeTruthy();
+  });
+
+  it("a photo → the business's photo as the cover, share on its corner", async () => {
+    const withPhoto = offer();
+    withPhoto.producer = { ...withPhoto.producer, image_url: "https://res.cloudinary.com/x/image/upload/a.jpg" };
+    await renderWith(withPhoto);
+    expect(screen.getByTestId("rescue-offer-cover")).toBeTruthy();
+    expect(screen.getByTestId("rescue-offer-cover-actions")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-offer-share-inline")).toBeNull();
+  });
+});
+
 describe("RescueOfferPage — what is inside and allergens", () => {
   it("0 typical items → the surprise line only, no list", async () => {
     await renderWith(offer({ typical_items: [] }));
