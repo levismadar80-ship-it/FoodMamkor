@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
+import { MONTH_SUMMARY_ZERO } from "../_month-summary-stub";
 
 /**
  * Spec:     manual/dashboard-shell — MEH-1249 chunk 11a of 12
@@ -237,6 +238,11 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
   // 404 = off, the server's answer while PRODUCT_ORDERS_ENABLED is false: no «הזמנות» tab.
   await page.route("**/producers/me/order-settings", (r) =>
     r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not Found" }) }),
+  );
+  // MEH-3194: the approved dashboard home reads the month summary (MonthValueLine).
+  // Unstubbed, the fake token draws a 401 that ends the session (the MEH-3446 class).
+  await page.route("**/producers/me/billing/summary", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MONTH_SUMMARY_ZERO) }),
   );
   // MEH-3212: the approved insights tab mounts WeeklySummaryToggle, which reads
   // GET /producers/me/weekly-summary. Unstubbed, the fake token draws a 401 once

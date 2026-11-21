@@ -1154,7 +1154,7 @@ def set_availability_state(
     except AvailabilityValidationError as e:
         # value violation → 400; missing/past return date → 422.
         raise HTTPException(
-            status_code=400 if e.kind == "value" else 422, detail=str(e)
+            status_code=400 if e.kind == "value" else 422, detail=e.detail()
         ) from e
 
     # MEH-2271: one column. The dual-write to is_available_today +
