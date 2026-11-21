@@ -45,6 +45,8 @@ const DURATION_KEYS = [
   // MEH-2640: was unnumbered prose ("טופס קצר"), so it could never disagree
   // and could never be checked either.
   "about_business.faq.time.a",
+  // MEH-3663: the sales call script quotes the signup time to a prospect.
+  "admin.outreach.call_script",
 ];
 
 const read = (messages, path) =>

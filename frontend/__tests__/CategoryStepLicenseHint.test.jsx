@@ -88,8 +88,9 @@ describe("licence hint names the category (MEH-2928)", () => {
     renderStep([2]);
     const body = document.body.textContent ?? "";
     expect(body).not.toContain("אחרי האישור");
-    // MEH-3663: shortened; the promise is still "we check the number, then the badge".
-    expect(body).toContain("ואז נבדוק אותו ונוסיף לעסק תג «מאומת»");
+    // MEH-3663: shortened. "We can check it", never a promise: the badge is
+    // admin-granted after document review (ADR-022, LicenseCard.jsx).
+    expect(body).toContain("ואז נוכל לבדוק אותו ולהוסיף לעסק תג «מאומת»");
   });
 });
 

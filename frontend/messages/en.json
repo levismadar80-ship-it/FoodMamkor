@@ -345,9 +345,9 @@
           "license_required_label": "Producer license number (Ministry of Health)",
           "license_required_hint": "{count, plural, one {The category {names} requires a production licence from the Ministry of Health} other {The categories {names} require a production licence from the Ministry of Health}}",
           "license_names_last": "{rest} and {last}",
-          "license_what_is_it": "The number appears on your production licence. You can also add it later in your dashboard, and then we'll check it and give your business the “verified” badge.",
+          "license_what_is_it": "The number appears on your production licence. You can also add it later in your dashboard, and then we can check it and give your business the “verified” badge.",
           "license_pending_optin_label": "I don't have a license number yet",
-          "license_pending_optin_hint": "You can sign up now and add the number later. Once we check it, your business gets the “verified” badge.",
+          "license_pending_optin_hint": "You can sign up now and add the number later. Once you add it, we can check it and give your business the “verified” badge.",
           "license_optional_label": "Producer license number",
           "referral_source": {
             "label": "Where did you hear about us?",
@@ -376,7 +376,7 @@
         },
         "account_reassurance": "Every business is personally reviewed",
         "photo_disclosure": "To send your page for review you'll need at least one photo — you upload it from your dashboard after signing up.",
-        "submit_next_hint": "After signing up, you'll complete your page in the dashboard and send it for review. We'll get back to you on WhatsApp within 3 business days of sending.",
+        "submit_next_hint": "After signing up, you'll complete your page in the dashboard and send it for review. We'll get back to you within 3 business days of sending.",
         "collection_notice": "You don't have to provide these details, but without them you can't register. We use them for your account, to show your business and to contact you; we store them, never sell them, and share them only with the service providers that run the site (the list is in the <privacy>Privacy Policy</privacy>). To view, correct or delete: <email>our email address</email>.",
         "validation": {
           "all_required": "Please fill all required fields",
@@ -2414,7 +2414,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again."
       },
-      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
+      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir and Topaz, who are building a site for local food businesses. Free to join. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free to join, and the page stays free. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes about 3 minutes, and Sapir and Topaz review and approve every business themselves within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
       "badge_community": "Community pick",
       "thank_suggester": "Send thanks",
       "thank_disabled": {
