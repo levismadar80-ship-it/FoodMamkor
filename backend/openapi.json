@@ -9265,6 +9265,11 @@
             "title": "Name",
             "type": "string"
           },
+          "noindex": {
+            "default": false,
+            "title": "Noindex",
+            "type": "boolean"
+          },
           "offers_delivery": {
             "default": false,
             "title": "Offers Delivery",
@@ -11409,6 +11414,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "noindex": {
+            "default": false,
+            "title": "Noindex",
+            "type": "boolean"
           },
           "offers_delivery": {
             "default": false,
@@ -14096,6 +14106,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "noindex": {
+            "default": false,
+            "title": "Noindex",
+            "type": "boolean"
           },
           "offers_delivery": {
             "default": false,
