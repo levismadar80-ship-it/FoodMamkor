@@ -104,7 +104,7 @@ export const CATEGORY_GROUP_STYLES = Object.freeze({
  * Name-keyed because the chip rows (map-chips, ProducersClient) hold names.
  * Not frozen: the colour-injection guard test adds a hostile row to it.
  *
- * @type {Record<string, {color: string, textColor?: string, icon: import("react").ElementType, group: string}>}
+ * @type {Record<string, {color: string, textColor?: string, icon: import("react").ComponentType<any>, group: string}>}
  */
 export const CATEGORY_STYLES = Object.fromEntries(
   CATEGORY_TAXONOMY.filter((c) => Object.hasOwn(CATEGORY_GLYPHS, c.slug)).map((c) => [
@@ -123,6 +123,7 @@ const GROUP_LEGEND_SLUG = Object.freeze({
   care: "care",
 });
 
+/** @type {{color: string, textColor?: string, icon: import("react").ComponentType<any>}} */
 export const DEFAULT_CATEGORY_STYLE = {
   color: COLOR.primary,
   // MEH-2163: was a second literal `Leaf`. Same component, one owner now —
