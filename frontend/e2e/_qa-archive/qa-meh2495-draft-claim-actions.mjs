@@ -102,7 +102,7 @@ async function run(browser, width, height, tag) {
   await buttons.first().click();
   await page.getByText("ההודעה הועתקה").first().waitFor({ timeout: 5000 });
   const pasted = await page.evaluate(() => navigator.clipboard.readText());
-  check(pasted.startsWith("הכנתי לך את העמוד 🙂 זה הקישור: " + LINK.url), `[${tag}] clipboard holds the message + link`);
+  check(pasted.startsWith("הכנתי לך את העמוד. זה הקישור: " + LINK.url), `[${tag}] clipboard holds the message + link`);
   check(pasted.endsWith("הקישור בתוקף 14 יום."), `[${tag}] clipboard holds the second line`);
   check(calls.some((c) => c.endsWith("/00000000-0000-4000-8000-000000000001/claim-link")), `[${tag}] minted for row 1`);
   await page.screenshot({ path: `${OUT}/${tag}-copied-toast.png`, fullPage: false });
