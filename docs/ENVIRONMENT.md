@@ -10,7 +10,7 @@
 
 <!-- BEGIN GENERATED: tests/test_meh3598_env_map.py -->
 
-46 Settings fields · 14 direct backend reads · 25 frontend (site) · 27 frontend (tests and tooling).
+48 Settings fields · 14 direct backend reads · 25 frontend (site) · 25 frontend (tests and tooling).
 
 ### שרת: שדות `Settings` (`backend/app/config.py`)
 
@@ -39,12 +39,14 @@
 | `GOOGLE_PLACES_API_KEY` | `str` | ריק | MEH-1490: server-side Google Maps Platform key for the quiet Google-rating trust line (Places API New, Enterprise SKU: rating/userRatingCount). |
 | `OTP_TEST_CODE` | `str` | ריק | — |
 | `OTP_TEST_NUMBERS` | `str` | ריק | MEH-2231: a fixed OTP code for a fixed allow-list of TEST phone numbers, so a harness can pass the `phone_verified` submission gate outside production. |
+| `OUTBOX_EXTERNAL_WORKER` | `bool` | יש | MEH-3535: who runs the outbox dispatchers (the email queue and the on-site order tick). |
 | `PAGE_FRESHNESS_ENABLED` | `bool` | יש | MEH-3393: monthly page-freshness email to owners + the Sunday admin digest of pages unconfirmed for 60 days. |
 | `PRODUCT_ORDERS_ENABLED` | `bool` | יש | MEH-3296: on-site product ordering (stages 2a-4). |
 | `RAILWAY_ENVIRONMENT` | `str` | ריק | Railway injects RAILWAY_ENVIRONMENT ("staging" / "production") into every service; declared here so the OTP test-mode gate reads it through Settings like eve... |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | `int` | יש | — |
 | `RESCUE_BAGS_CITIES` | `str` | ריק | — |
 | `RESCUE_BAGS_ENABLED` | `bool` | יש | MEH-2644: rescue-bags pilot. |
+| `RESCUE_DIGEST_ENABLED` | `bool` | יש | MEH-3605: the rescue pickup-code WhatsApp digest (MEH-2756). |
 | `RESEND_API_KEY` | `str` | ריק | Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports) Sign up at resend.com, verify mehamakor.co.il domain, copy the API key. |
 | `SECRET_KEY` | `str` | יש | — |
 | `SUPER_ADMIN_EMAIL` | `str` | ריק | MEH-2890 (Sapir 10/11): the one account no admin can demote or delete. |
@@ -118,10 +120,9 @@
 
 | משתנה | קבצים (`frontend/`) |
 |---|---|
-| `CI` | `playwright.config.ts`, `qa-meh1754-recipe-error-state.mjs`, `scripts/static-routes-guard.mjs` |
-| `DEMO_ADMIN_PASSWORD` | `e2e/flows/30-admin-panel-tabs.spec.ts`, `e2e/flows/33-admin-producers-tab.spec.ts`, `e2e/flows/37-outreach-prefill.spec.ts` +2 |
-| `DEMO_CONSUMER_PASSWORD` | `e2e/_qa-archive/qa-meh1858-fingerprint-proof.mjs` |
-| `DEMO_OWNER_PASSWORD` | `e2e/_qa-archive/qa-meh1858-login-probe.mjs`, `e2e/flows/25-role-reachability.spec.ts`, `e2e/marketing/join-screenshots.mjs` |
+| `CI` | `playwright.config.ts`, `scripts/static-routes-guard.mjs` |
+| `DEMO_ADMIN_PASSWORD` | `e2e/flows/30-admin-panel-tabs.spec.ts`, `e2e/flows/33-admin-producers-tab.spec.ts`, `e2e/flows/37-outreach-prefill.spec.ts` +1 |
+| `DEMO_OWNER_PASSWORD` | `e2e/flows/25-role-reachability.spec.ts`, `e2e/marketing/join-screenshots.mjs` |
 | `E2E_CLOUDINARY_COUNT` | `e2e/flows/_cloudinary-stub.ts` |
 | `E2E_CLOUDINARY_STUB` | `e2e/flows/_cloudinary-stub.ts` |
 | `EDGE_PROXY_SECRET` | `__tests__/MiddlewareApiEdgeIp.test.js` |
@@ -130,18 +131,17 @@
 | `NEXT_PUBLIC_RESCUE_BAGS_ENABLED` | `__tests__/MEH3117RescueAlert.test.jsx` |
 | `NEXT_PUBLIC_SENTRY_DSN` | `__tests__/ClaimTelemetryWiring.test.jsx` |
 | `NODE_ENV` | `__tests__/ClaimTelemetryWiring.test.jsx` |
-| `PLAYWRIGHT_BASE_URL` | `e2e/_qa-archive/qa-meh1814-cta-occlusion.mjs`, `e2e/_qa-archive/qa-meh1831-fonts-lenis.mjs`, `e2e/_qa-archive/qa-meh1831-glyph-probe.mjs` +11 |
-| `PLAYWRIGHT_CHROMIUM_PATH` | `e2e/_qa-archive/qa-meh2249-experience-create-dashboard.mjs`, `e2e/_qa-archive/qa-meh2589-story-card.mjs`, `e2e/_qa-archive/qa-meh2915-draft-identity.mjs` +8 |
-| `PORT` | `qa-meh2785-shots.mjs`, `qa-meh2793-print-probe.mjs` |
+| `PLAYWRIGHT_BASE_URL` | `e2e/flows/21-account-menu-auth.spec.ts`, `e2e/flows/22-register-personas.spec.ts`, `e2e/flows/23-ai-artifact-probe.spec.ts` +5 |
+| `PLAYWRIGHT_CHROMIUM_PATH` | `e2e/marketing/join-screenshots.mjs`, `scripts/qa-ci-screenshots.mjs` |
 | `PW_WEBKIT` | `e2e/webkit-tls.ts`, `playwright.config.ts` |
-| `QA_BASE_URL` | `e2e/_qa-archive/qa-meh2070-admin-mobile.mjs`, `e2e/_qa-archive/qa-meh2094-top-product.mjs`, `e2e/_qa-archive/qa-meh2100-draft-live.mjs` +25 |
+| `QA_BASE_URL` | `e2e/marketing/join-screenshots.mjs`, `scripts/qa-ci-screenshots.mjs` |
 | `SENTRY_DSN` | `__tests__/ClaimTelemetryWiring.test.jsx` |
 | `SMOKE_ADMIN_EMAIL` | `e2e/flows/19-publish-approve-visible.spec.ts`, `e2e/flows/20-admin-recipes-queue.spec.ts`, `e2e/flows/22-register-personas.spec.ts` +1 |
 | `SMOKE_ADMIN_PASSWORD` | `e2e/flows/19-publish-approve-visible.spec.ts`, `e2e/flows/20-admin-recipes-queue.spec.ts`, `e2e/flows/22-register-personas.spec.ts` +1 |
-| `TEST_URL` | `e2e/_qa-archive/qa-meh1858-fingerprint-proof.mjs`, `e2e/_qa-archive/qa-meh1858-login-probe.mjs`, `e2e/_qa-archive/qa-meh1871-mobile.mjs` +11 |
+| `TEST_URL` | `e2e/flows/21-account-menu-auth.spec.ts`, `e2e/flows/22-register-personas.spec.ts`, `e2e/flows/23-ai-artifact-probe.spec.ts` +6 |
 | `TITLE_PATTERN_DUMP` | `__tests__/title-pattern.test.js` |
 | `UPDATE_HAND_WRITTEN_BASELINE` | `__tests__/HandWrittenRatchet.test.js` |
-| `VERCEL_AUTOMATION_BYPASS_SECRET` | `e2e/_qa-archive/qa-meh1390-dead-tab.mjs`, `e2e/_qa-archive/qa-meh1836-delivery-chip.mjs`, `e2e/_qa-archive/qa-meh1836-proof.mjs` +23 |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | `e2e/auth-fixture.ts`, `e2e/global-setup.ts`, `e2e/golden/session.ts` +7 |
 | `VERCEL_BYPASS_SECRET` | `e2e/auth-fixture.ts`, `e2e/global-setup.ts`, `e2e/golden/session.ts` +2 |
 | `VERCEL_ENV` | `scripts/static-routes-guard.mjs` |
 | `WRITE_CHAT_KNOWLEDGE` | `__tests__/ChatKnowledgeSync.test.js` |
