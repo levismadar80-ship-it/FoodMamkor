@@ -1252,7 +1252,7 @@
       "delivery_label": "Delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
-      "how_unlock": "Once {min} people join, the group price unlocks and you contact the business to arrange your order",
+      "how_unlock": "Once {min} participants join, the group price unlocks and you contact the business to arrange your order",
       "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
       "submitting": "Joining...",
@@ -1272,7 +1272,15 @@
       "errors": {
         "cancel_failed": "Cancellation failed"
       },
-      "toast_cancelled": "Your participation was cancelled"
+      "toast_cancelled": "Your participation was cancelled",
+      "goal_reached": "The group reached its goal",
+      "spots_left": "{n, plural, one {One spot left} other {# spots left}}",
+      "funded_subtitle_join": "You can still join at the group price, until the deadline",
+      "funded_subtitle_join_max": "You can still join at the group price, until the spots run out or the deadline",
+      "how_after_goal": "Even after the goal is reached, people can keep joining until the deadline",
+      "how_after_goal_max": "Even after the goal is reached, people can keep joining, up to {max} participants or until the deadline",
+      "how_funded_price": "The group already reached its goal: anyone who joins now gets the group price",
+      "quantity_label_unit": "Quantity ({unit})"
     },
     "dashboard": {
       "status": {
@@ -1313,7 +1321,7 @@
         "price_helper": "The group price must be lower than the regular price.",
         "min_label": "Minimum participants",
         "min_placeholder": "e.g. 5",
-        "min_tooltip": "Number of orders required to close the group. If the minimum isn't met by the deadline — no one pays and you aren't obligated to fulfill.",
+        "min_tooltip": "The number of sign-ups that unlocks the group price. If the minimum is not reached by the deadline, nobody pays and nothing has to be delivered.",
         "max_label": "Maximum participants",
         "max_placeholder": "Optional — leave empty for no limit",
         "deadline_label": "Deadline",
@@ -1331,7 +1339,8 @@
         "toast_created": "Group buy created and open for joining",
         "prefill_label": "Fill from an existing product",
         "prefill_placeholder": "Choose a product",
-        "prefill_helper": "The name and regular price fill in, and you can change them."
+        "prefill_helper": "The name and regular price fill in, and you can change them.",
+        "max_tooltip": "After the minimum is reached, people can keep joining up to this number. Leave it empty if you can supply everyone who joins."
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {

@@ -1206,6 +1206,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3289 — joining continues after the minimum (2026-11-15):** `POST /group-buys/{id}/commit` accepts status `open` **or** `funded` (was `open` only), still refused past the deadline (400) and at `max_participants` (400 «קבוצת הרכישה מלאה»). A join into a `funded` group leaves it `funded` and emails **only the joiner** the funded email (`send_funded_notifications(..., late_joiner=True)`: no business email, no re-send to earlier participants). Before this, `max_participants` could never be reached, because the first commit at the minimum closed joining. `DELETE /group-buys/{id}/commit` already allowed `funded`. No schema change.
 
+> **MEH-3591 — the joiner hears back (2026-11-21):** a `POST /group-buys/{id}/commit` that leaves the group below `min_participants` emails the joiner «מהמקור — הצטרפת לקבוצה "{title}"»: her quantity, «N מתוך min», the deadline as an Israel date and the group link. Counts only, no contact details (MEH-1651). A join that funds the group, or joins a funded one, gets the funded email instead, never both. No schema change.
+
 > **MEH-3311 — a funded group buy that drops below its goal (2026-11-15).** Migration `a7d3e9c1b5f2` adds two nullable naive-UTC columns to `group_buys`: `below_goal_notified_at`, `refunded_notified_at`. When `DELETE /group-buys/{id}/commit` reverts `funded → open` on a group whose funded email went out (`funded_notified_at` set), everyone who stayed gets one email «מהמקור — הקבוצה "{title}" ירדה מתחת ליעד» and `below_goal_notified_at` is stamped. When a later join re-crosses the minimum, every participant gets the funded email again (not the business) and `refunded_notified_at` is stamped. Each stamp is set once, so a flapping group mails a participant at most three times in all; `funded_notified_at` stays one-way (MEH-1651). The account-deletion revert (`group_buy_delist.withdraw_user_commits`) sends nothing. Service: `app/services/group_buy_goal_flap.py`.
 
 ### Auth (`app/routers/auth.py`; `/auth/register/producer` and `/auth/register/producer/oauth` live in `app/routers/auth_register_producer.py` since MEH-3293)
@@ -1235,8 +1237,8 @@ POST   /auth/passkey/recovery-codes     admin   — body StepUp → {recovery_co
 POST   /auth/passkey/login/verify       public  — {ticket, credential} → Token + the same cookies as /auth/login (10/min)
 POST   /auth/passkey/login/recovery     public  — {ticket, code} → Token; a code works once; wrong codes count toward the MEH-3372 per-address failure ceiling (5/min)
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
-POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
-PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
+POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at; MEH-3591: emails «הסיסמה בחשבון שונתה» to the account
+PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204; MEH-3591: emails «הסיסמה בחשבון שונתה» to the account
 PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); MEH-3425: 5 wrong passwords an hour per account → 429, an account with no password → its own 403, and a real change bumps `token_version` (other devices signed out; this one gets fresh cookies); after the commit the OLD address gets a notice that the address changed (no name in the greeting; new address shown as `n***@d***.tld`; link to /contact)
 ```
 
@@ -1358,7 +1360,7 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      (services/invite_gate.py content_gaps) is HELD — the owner is linked, status stays "inactive", no 422 (she cannot
                                                      fix it from this page). An already-approved page gets no status write. IndexNow is pinged only when the page was
                                                      published. After the commit the admin is notified
-                                                     (notify_admin_owner_invite_accepted — WhatsApp + email through the existing family, no new env var), with `published`
+                                                     (notify_admin_owner_invite_accepted — email only since MEH-3589, no new env var), with `published`
                                                      distinguishing the outcomes and `missing` naming what a held page lacks.
                                                      Issues the same access token + refresh/fingerprint cookies as /auth/login. Background: the EXISTING
                                                      business-approved email (the two builders in services/admin_producer_emails.py, by import) — no welcome mail, no WhatsApp template;
