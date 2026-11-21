@@ -288,6 +288,7 @@ files = [
     "app/services/rescue_writes.py",  # MEH-3554
     "app/services/admin_dashboard.py",  # MEH-3538
     "app/services/admin_settings.py",  # MEH-3538
+    "app/services/admin_producer_reads.py",  # MEH-3562
     "app/services/billing_start_signal.py",
     "app/services/admin_producer_emails.py",
     "app/services/outbound_guard.py",
