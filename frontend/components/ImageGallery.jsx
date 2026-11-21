@@ -449,7 +449,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     <BusinessLogo
       url={logoUrl}
       size={72}
-      className="absolute bottom-4 start-4 md:bottom-5 md:start-5 z-10 ring-4 ring-surface shadow-md pointer-events-none"
+      className="absolute bottom-4 start-4 md:bottom-5 md:start-5 z-10 ring-4 ring-surface shadow-sm pointer-events-none"
     />
     </div>
     {lightboxOpen && (
