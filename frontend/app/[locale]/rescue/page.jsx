@@ -7,6 +7,7 @@ import { HUB_CONTENT_CLASS } from "@/lib/hub-layout";
 import RescueList from "@/components/rescue/RescueList";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import { buildAlternates } from "@/lib/i18n-seo";
+import { getHubCount } from "@/lib/listing-supply";
 
 /**
  * Route:    /rescue
@@ -45,6 +46,9 @@ export default async function RescuePage({ params }) {
   // lead (Sapir 11/11) plus the hub strip's existing eyebrow (home.whats_on.eyebrow — «קרוב לבית» /
   // "Close to home"; events.list.eyebrow_events says "EVENTS" in en); no new strings.
   const tHome = await getTranslations({ locale, namespace: "home.whats_on" });
+  // MEH-3076: the group-buys tab's supply, so the tab row is decided on the
+  // server (a lone «סלי הפתעה» tab is not drawn). Cached like the sitemap's.
+  const groupBuysCount = await getHubCount("groupBuys");
 
   return (
     // A div, not <main>: the layout already owns the main landmark.
@@ -54,6 +58,7 @@ export default async function RescuePage({ params }) {
         eyebrow={tHome("eyebrow")}
         title={t("page.title")}
         subtitle={t("page.lead")}
+        serverSupply={{ groupBuys: groupBuysCount }}
       />
       <div className={`${HUB_CONTENT_CLASS} pt-4 pb-16`}>
         <RescueList />
