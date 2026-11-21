@@ -2569,12 +2569,16 @@ def main() -> None:
     if sum((args.sync_users, args.refresh, args.golden)) > 1:
         sys.exit("--sync-users, --refresh and --golden are mutually exclusive.")
     if args.mark_test and (args.sync_users or args.golden):
-        sys.exit("--mark-test seeds the demo businesses; not with --sync-users or --golden.")
+        sys.exit(
+            "--mark-test seeds the demo businesses; not with --sync-users or --golden."
+        )
     # MEH-2952 (rule-5a review): the staging demos must stay public (the /join
     # clips, MEH-2794, and the E2E run), and no CLI path unmarks them. Local
     # databases only; on staging the admin switch is the one way to hide a row.
     if args.mark_test and os.environ.get("RAILWAY_ENVIRONMENT") == "staging":
-        sys.exit("--mark-test is for a local database only — the staging demos must stay visible.")
+        sys.exit(
+            "--mark-test is for a local database only — the staging demos must stay visible."
+        )
     _assert_not_production()
     db = SessionLocal()
     try:

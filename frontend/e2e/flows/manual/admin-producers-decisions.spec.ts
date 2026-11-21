@@ -184,6 +184,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
 
   await page.addInitScript(() => localStorage.setItem("token", "e2e-token"));
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-2952: the admin list and edit screen read the «עסק בדיקה» ids; unstubbed it hits the
+  // real backend, whose 401 sends this fake-auth session to /login mid-click.
+  await page.route("**/admin/test-businesses", (r) => json(r, { producer_ids: [] }));
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/admin/dashboard", (r) =>
     json(r, {

@@ -183,6 +183,9 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
     return json(r, { detail: "unstubbed" }, 404);
   });
   await page.route("**/auth/me", (r) => json(r, ADMIN));
+  // MEH-2952: the admin list and edit screen read the «עסק בדיקה» ids; unstubbed it hits the
+  // real backend, whose 401 sends this fake-auth session to /login mid-click.
+  await page.route("**/admin/test-businesses", (r) => json(r, { producer_ids: [] }));
   // MEH-3305: /admin/settings renders <PasskeySettings>, which reads the admin's own passkeys.
   await page.route((u) => /\/api\/auth\/passkey\/?$/.test(u.pathname), (r) =>
     json(r, { enabled: false, passkeys: [], recovery_codes_left: 0, has_password: true }),
