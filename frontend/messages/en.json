@@ -4033,6 +4033,7 @@
     "modal_title_experience": "Share this experience",
     "modal_title_recipe": "Share this recipe",
     "modal_title_organizer": "Share this organizer page",
+    "modal_title_rescue": "Share this bag",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
@@ -6965,7 +6966,7 @@
     },
     "section": {
       "title": "Rescue bag",
-      "cta": "Reserve · pay at the counter",
+      "cta": "Reserve the bag · pay at the counter",
       "saving": "Save {pct}%",
       "pickup_today": "Pickup today {from}–{until}",
       "typical": "Usually: {items}",
@@ -7110,6 +7111,35 @@
         "mark": "Mark «Confirm handover» in the dashboard. Nobody came by the end of the window — «Didn't show»."
       },
       "footer": "Payment at the counter, at the price on the reservation. Questions — write to us."
+    },
+    "offer_page": {
+      "eyebrow": "Surprise bag",
+      "worth_range": "Estimated value ₪{min}–{max}",
+      "worth_one": "Estimated value ₪{min}",
+      "pickup_title": "Pickup today",
+      "address_title": "Where to pick up",
+      "inside_title": "What's inside",
+      "inside_body": "It's a surprise: the bag holds what's left today, so it changes from day to day.",
+      "inside_typical": "Usually includes:",
+      "how_title": "How it works",
+      "how_1": "Reserve here. Nothing to pay now.",
+      "how_2": "Come during pickup hours and give the code you'll get at the counter.",
+      "how_3": "Pay at the counter and take your bag.",
+      "cancel_title": "Cancelling",
+      "cancel_body": "Free cancellation until {time}. After that the reservation stands.",
+      "cancel_passed": "The free-cancellation time has passed, so a reservation made now stands.",
+      "no_show": "Two missed pickups block new reservations.",
+      "business_link": "Go to {name}",
+      "state_sold_out": "This bag is sold out for today.",
+      "state_cancelled": "The business cancelled today's bag.",
+      "state_ended": "Reservations for this bag have closed for today.",
+      "other_bags": "Other bags nearby",
+      "not_found_title": "We couldn't find this bag",
+      "not_found_body": "It may have been for another day. New bags are posted daily.",
+      "loading": "Loading the bag…",
+      "bar_note": "₪{price} · pickup until {until}",
+      "details_link": "All bag details",
+      "bar_cta": "Reserve the bag"
     }
   },
   "holidays": {
@@ -7812,7 +7842,9 @@
     "too_late": "This order can no longer be cancelled on the site. You can contact the business.",
     "line": "{qty} × {name}",
     "back": "Back",
-    "failed": "That didn't work. Please try again."
+    "failed": "That didn't work. Please try again.",
+    "calendar_pickup": "Order pickup: {business_name}",
+    "calendar_delivery": "Order delivery: {business_name}"
   },
   "price_unit": {
     "unit": "per unit",
