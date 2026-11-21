@@ -597,10 +597,8 @@
       "aria_label": "Pagination",
       "per_page_label": "Per page",
       "per_page_aria": "Items per page",
-      "prev_aria": "Previous page",
       "prev": "← Previous",
       "page_aria": "Page {page}",
-      "next_aria": "Next page",
       "next": "Next →"
     },
     "breadcrumb": {
@@ -6878,8 +6876,22 @@
   },
   "qr_card": {
     "cta": "Scan to see our page on Mehamakor",
-    "print_hint": "The card is A6. When printing, choose 100%, not fit to page.",
-    "back": "Back to dashboard"
+    "back": "Back to dashboard",
+    "formats": {
+      "label": "What to print",
+      "a6": "A6 card",
+      "poster": "A4 poster",
+      "table": "Table sign",
+      "sticker": "Packaging sticker"
+    },
+    "hints": {
+      "a6": "The card is A6. When printing, choose 100%, not fit to page.",
+      "poster": "The poster is A4. When printing, choose 100%, not fit to page.",
+      "table": "Print, fold along the middle line and stand it on the table.",
+      "sticker": "12 round stickers on an A4 sheet. When printing, choose 100%."
+    },
+    "poster_line": "Orders, opening hours and directions",
+    "sticker_label": "{name} on Mehamakor"
   },
   "rescue": {
     "page": {
@@ -7725,6 +7737,7 @@
     "description": "Tap «Send verification code» and we will send a 6-digit code to the business number's WhatsApp. Verification is one of the steps before sending for review.",
     "code_sent": "We sent a code to the business number's WhatsApp.",
     "send_cta": "Send verification code",
+    "resend_cta": "Didn't get a code? Send again",
     "sending": "Sending...",
     "resend_in": "You can resend a code in {seconds}s",
     "code_label": "Verification code",

@@ -11,6 +11,7 @@ import { useRouter } from "@/i18n/navigation";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import { buildBusinessQrUrl, QR_RENDER_OPTIONS } from "@/lib/qr";
 import BackLink from "@/components/ui/BackLink";
+import { LAYOUTS, PRINT_FORMATS } from "@/components/producer/print-kit/PrintKitLayouts";
 
 /**
  * Route:    /producer/dashboard/qr-card
@@ -25,7 +26,8 @@ import BackLink from "@/components/ui/BackLink";
  *           lib/qr.js (the URL + render options);
  *           app/[locale]/producer/dashboard/rescue/counter-card/page.js (the
  *           mm-sizing / print:hidden pattern this follows).
- * History:  MEH-2785 (creation)
+ * History:  MEH-2785 (creation); MEH-3557 (print kit: A4 poster, table sign,
+ *           sticker sheet — layouts in components/producer/print-kit/)
  *
  * NO ANCHOR MAY SIT INSIDE THE PRINTED <article>. globals.css:614 appends
  * ` (href)` after every `a[href]` in print, so a link in the card would print
@@ -46,6 +48,8 @@ export default function QrCardPage() {
   const [producer, setProducer] = useState(null);
   const [svg, setSvg] = useState(null);
   const [denied, setDenied] = useState(false);
+  // MEH-3557: one format at a time; A6 stays the default, as before the kit.
+  const [format, setFormat] = useState(/** @type {typeof PRINT_FORMATS[number]} */ ("a6"));
 
   useEffect(() => {
     if (authLoading) return;
@@ -97,48 +101,49 @@ export default function QrCardPage() {
 
   if (!producer) return null;
 
+  const Layout = LAYOUTS[format];
+  // A4 formats print edge to edge on an A4 sheet; the A6 card keeps the
+  // browser's own page setup, as it did before the kit.
+  const a4 = format !== "a6";
+
   return (
     <main className="min-h-screen bg-surface" data-testid="business-qr-card-print">
-      {/* Screen-only: neither the way back nor the hint belongs on the paper. */}
+      {/* MEH-3557: the body keeps a bottom padding for the phone nav (68px),
+          and it prints too: an A4 layout that fills the page then spills onto a
+          second sheet. Zeroed for print on this page only. */}
+      <style>
+        {`@media print { body { padding-bottom: 0 !important; min-height: 0 !important; }${
+          a4 ? " @page { size: A4; margin: 0; }" : ""
+        } }`}
+      </style>
+      {/* Screen-only: neither the way back, the picker nor the hint belongs on the paper. */}
       <div className="print:hidden px-4 py-3 border-b border-border">
         {/* MEH-2882 PR 1: the QR card lives in «כלים» → «שיתוף» now. */}
         <BackLink href="/producer/dashboard/tools#share" label={t("back")} />
-        <p className="font-body-sm text-sm text-fg-muted mt-1">{t("print_hint")}</p>
+        <div role="group" aria-label={t("formats.label")} className="flex flex-wrap gap-2 mt-3">
+          {PRINT_FORMATS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              data-testid={`print-kit-format-${f}`}
+              aria-pressed={format === f}
+              onClick={() => setFormat(f)}
+              className={`min-h-11 px-4 rounded-full border text-sm font-medium transition-colors ${
+                format === f
+                  ? "bg-primary text-white border-primary"
+                  : "bg-surface text-fg border-border hover:bg-bg-subtle"
+              }`}
+            >
+              {t(`formats.${f}`)}
+            </button>
+          ))}
+        </div>
+        <p data-testid="print-kit-hint" className="font-body-sm text-sm text-fg-muted mt-2">
+          {t(`hints.${format}`)}
+        </p>
       </div>
 
-      {/* A6 is 105×148mm. Sized in mm so what prints is what the business
-          expects to tape up. On screen the width is CAPPED at 105mm rather
-          than fixed to it — a fixed 105mm (~397px) overflows a 375px phone,
-          the MEH-2733 lesson from the A5 counter card. Print keeps exact A6. */}
-      <article
-        className="w-full max-w-[105mm] print:w-[105mm] print:max-w-none mx-auto bg-surface text-black px-5 print:px-6 py-8 flex flex-col items-center justify-center text-center"
-        style={{ minHeight: "148mm" }}
-      >
-        <h1 className="font-headline-md text-2xl font-black mb-6 break-words">
-          {producer.name}
-        </h1>
-
-        {/* 50mm satisfies the 10:1 rule for a ~500mm scan distance. The quiet
-            zone is the SVG's own `margin: 4` modules, so nothing — no border,
-            no caption — is drawn against the code. The wrapper deliberately
-            sets NO background: the SVG's own `light` colour already paints a
-            rect over the entire viewBox, quiet zone included (measured from
-            the generated markup — the first path in it is a full-size fill),
-            so a white wrapper here would be a second owner of the same
-            pixels. The colour itself has one owner, lib/qr.js. */}
-        <div
-          data-testid="business-qr-print-code"
-          aria-hidden="true"
-          className="w-[50mm] h-[50mm] [&>svg]:w-full [&>svg]:h-full"
-          dangerouslySetInnerHTML={svg ? { __html: svg } : undefined}
-        />
-
-        <p className="font-body-sm text-sm mt-4" dir="ltr">
-          mehamakor.co.il
-        </p>
-
-        <p className="font-body-md text-lg leading-snug mt-8">{t("cta")}</p>
-      </article>
+      <Layout name={producer.name} svg={svg} t={t} />
     </main>
   );
 }
