@@ -73,6 +73,33 @@ class TestYearToDate:
         y = billing_summary.year_to_date(db, Month(2026, 2))
         assert (y["percent"], y["alert_percent"]) == (9, 0)
 
+    def test_warning_edges_69_70_89_90(self, db, monkeypatch):
+        """Exactly at a level warns; one agora short does not (floor %).
+        Each case is its own year, so the incomes do not add up."""
+        threshold = current_price_list().threshold_paid_bookings_agorot
+        p = make_producer(db)
+        monkeypatch.setattr(pricing, "EXEMPT_DEALER_CEILING_AGOROT", 10000)
+        cases = {2026: 6999, 2027: 7000, 2028: 8999, 2029: 9000}
+        for year, income in cases.items():
+            _row(db, p, _at(year, 1), threshold, income)
+        got = {
+            year: (y["percent"], y["alert_percent"])
+            for year in cases
+            for y in [billing_summary.year_to_date(db, Month(year, 1))]
+        }
+        assert got == {2026: (69, 0), 2027: (70, 70), 2028: (89, 70), 2029: (90, 90)}
+
+    def test_israel_month_edges(self, db):
+        """1/3 00:30 Israel is March; 28/2 23:30 Israel is February."""
+        threshold = current_price_list().threshold_paid_bookings_agorot
+        p = make_producer(db)
+        # Israel is UTC+2 in winter: 22:30 UTC on 28/2 = 00:30 on 1/3 Israel.
+        _row(db, p, datetime(2026, 2, 28, 22, 30, tzinfo=timezone.utc), threshold, 7)
+        # 21:30 UTC on 28/2 = 23:30 on 28/2 Israel.
+        _row(db, p, datetime(2026, 2, 28, 21, 30, tzinfo=timezone.utc), threshold, 5)
+        assert billing_summary.year_to_date(db, Month(2026, 2))["income_agorot"] == 5
+        assert billing_summary.year_to_date(db, Month(2026, 3))["income_agorot"] == 12
+
     def test_the_overview_carries_the_year(self, client, db):
         threshold = current_price_list().threshold_paid_bookings_agorot
         p = make_producer(db)
@@ -85,3 +112,6 @@ class TestYearToDate:
         assert r.status_code == 200, r.text
         year = r.json()["year"]
         assert (year["year"], year["income_agorot"]) == (2026, 5000)
+        assert year["ceiling_year"] == pricing.EXEMPT_DEALER_CEILING_YEAR
+        assert year["percent"] == 5000 * 100 // pricing.EXEMPT_DEALER_CEILING_AGOROT
+        assert year["alert_percent"] == 0

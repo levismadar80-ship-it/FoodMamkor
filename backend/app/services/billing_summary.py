@@ -253,7 +253,7 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
         "would_pay_total_agorot": sum(r["would_pay_agorot"] for r in rows),
         # "launch" = nothing is charged. The same word summarize() returns.
         "phase": pricing.BILLING_PHASE,
-        "year": year_to_date(db, month),
+        "year": year_to_date(db, month, known=by_month),
         "history": history,
         "rows": rows,
     }
@@ -264,7 +264,11 @@ def _would_pay(counts: dict[UUID, tuple[int, int, int]], threshold: int) -> int:
     return sum(fee for _, value, fee in counts.values() if value >= threshold)
 
 
-def year_to_date(db: Session, month: Month) -> dict[str, Any]:
+def year_to_date(
+    db: Session,
+    month: Month,
+    known: dict[str, dict[UUID, tuple[int, int, int]]] | None = None,
+) -> dict[str, Any]:
     """MEH-3189: what the site brings in from January to `month`, against the
     exempt-dealer ceiling.
 
@@ -275,10 +279,15 @@ def year_to_date(db: Session, month: Month) -> dict[str, Any]:
     Sapir's other income is not here either; the ceiling counts all of it.
     """
     threshold = current_price_list().threshold_paid_bookings_agorot
-    income = sum(
-        _would_pay(_bookings_by_business(db, Month(month.year, m)), threshold)
-        for m in range(1, month.month + 1)
-    )
+    known = known or {}
+    income = 0
+    for number in range(1, month.month + 1):
+        cursor = Month(month.year, number)
+        # Months overview() already read are not read again.
+        counts = known.get(cursor.label())
+        if counts is None:
+            counts = _bookings_by_business(db, cursor)
+        income += _would_pay(counts, threshold)
     ceiling = pricing.EXEMPT_DEALER_CEILING_AGOROT
     percent = income * 100 // ceiling
     passed = [p for p in pricing.EXEMPT_DEALER_ALERT_PERCENTS if percent >= p]

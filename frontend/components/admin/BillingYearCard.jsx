@@ -64,13 +64,14 @@ export default function BillingYearCard({ year, charging }) {
       {year.alert_percent > 0 ? (
         <p
           className="mt-2 text-sm font-semibold text-text"
-          role="alert"
+          role="status"
           data-testid="admin-billing-year-alert"
         >
           {t("year_alert", { percent: year.alert_percent })}
         </p>
       ) : null}
-      {year.ceiling_year !== year.year ? (
+      {/* Only a LATER year: a past month viewed today is not stale. */}
+      {year.year > year.ceiling_year ? (
         <p className="mt-2 text-sm font-medium text-text" data-testid="admin-billing-year-stale">
           {t("year_stale", { ceilingYear: year.ceiling_year, year: year.year })}
         </p>

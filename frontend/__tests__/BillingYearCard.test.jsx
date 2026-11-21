@@ -63,4 +63,9 @@ describe("BillingYearCard (MEH-3189)", () => {
       "צריך לעדכן אותו לשנת 2027",
     );
   });
+
+  it("a past month viewed today is not stale", () => {
+    show(year({ year: 2025, ceiling_year: 2026 }));
+    expect(screen.queryByTestId("admin-billing-year-stale")).toBeNull();
+  });
 });
