@@ -8,6 +8,7 @@ import json
 
 import pytest
 
+from app.config import settings
 from app.services import producer_recipe_moderation as mod
 
 
@@ -44,7 +45,7 @@ def _install_client(monkeypatch, client):
 
 @pytest.fixture
 def _no_key(monkeypatch):
-    monkeypatch.setattr(mod.settings, "anthropic_api_key", None, raising=False)
+    monkeypatch.setattr(settings, "anthropic_api_key", None, raising=False)
     monkeypatch.setattr(mod, "_client", None, raising=False)
 
 
