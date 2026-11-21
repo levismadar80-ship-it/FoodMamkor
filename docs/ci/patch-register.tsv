@@ -69,5 +69,5 @@ staging-health	applied	.github/workflows/staging-health.yml	name: Staging health
 uptime-30min	applied	.github/workflows/uptime.yml	cron: "*/30 * * * *"	-	-
 vrt-label-trigger	applied	.github/workflows/vrt-update.yml	vrt-regen:	-	-
 webkit-project	applied	frontend/playwright.config.ts	webkit-iphone13	-	-
-meh-3555-uptime-journey	pending	.github/workflows/uptime.yml	smoke_production.py --quick	2026-11-21	uptime tick also walks the user journey
+meh-3555-uptime-journey	applied	.github/workflows/uptime.yml	smoke_production.py --quick	2026-11-21	uptime tick also walks the user journey
 load-test	applied	.github/workflows/load-test.yml	grafana/run-k6-action	-	manual k6 load test, cloud or runner (MEH-3564)

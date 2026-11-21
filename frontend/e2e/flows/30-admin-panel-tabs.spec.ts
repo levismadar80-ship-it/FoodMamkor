@@ -122,23 +122,13 @@ test.describe("MEH-217 — admin panel tabs", () => {
 
       // 5. The tab rendered content of its own.
       //
-      // Scoped to the admin layout's own <main>, NOT a bare `main`. Every
-      // /admin/* page has TWO main elements: the root landmark
-      // (`[locale]/layout.js:308`, `<main id="main-content">`) and the admin
-      // layout's content region nested inside it (`admin/AdminLayoutClient.jsx:260`). A
-      // bare `page.locator("main")` therefore matches 2, and Playwright's
-      // strict mode throws before any visibility check runs — which is how
-      // this assertion failed all six tabs on both projects while the other
-      // two tests in this file passed.
-      //
-      // `:not(#main-content)` names the inner one specifically, so the
-      // assertion still fails if the admin layout stops rendering its content
-      // region — it is scoped, not weakened.
-      //
-      // The nested-landmark itself is a real a11y defect (one main landmark
-      // per document), reported on MEH-217 rather than fixed here: the fix is
-      // in frontend/app/**, which this lane does not own.
-      await expect(page.locator("main:not(#main-content)")).toBeVisible();
+      // Scoped to the admin layout's content region (`data-testid=
+      // "admin-content"`, AdminLayoutClient.jsx). Until MEH-3026 that region
+      // was a second <main> nested in the root `<main id="main-content">`;
+      // it is a div now, so there is exactly one main landmark per page.
+      // The assertion still fails if the admin layout stops rendering it.
+      await expect(page.getByTestId("admin-content")).toBeVisible();
+      await expect(page.locator("main")).toHaveCount(1);
     });
   }
 
