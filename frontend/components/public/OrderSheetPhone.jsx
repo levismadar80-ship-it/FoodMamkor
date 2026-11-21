@@ -3,13 +3,16 @@
 /**
  * Module:   OrderSheetPhone
  * Purpose:  The phone and its WhatsApp code inside the order sheet: the
- *           number, «שליחת קוד», then the six-digit code field. A guest and a
- *           logged-in buyer both prove the phone (the order route asks both).
+ *           number, «שליחת קוד», then the six-digit code field. A guest, and a
+ *           logged-in buyer on any other phone, proves it with the code.
+ *           A signed-in buyer ordering to her own verified phone gets the
+ *           number alone: no code step (MEH-3680).
  * Does NOT: send the order or check the code — the order route checks it
  *           with the order (POST /product-orders), so a code is tried once.
  * Related:  components/public/OrderSheet.jsx, lib/order-sheet.js::askPhoneCode,
  *           backend/app/routers/product_order_buyer.py::send_order_phone_code
- * History:  MEH-3216 stage 5c (creation); MEH-3658 a short label + a help line
+ * History:  MEH-3216 stage 5c (creation); MEH-3658 a short label + a help line;
+ *           MEH-3680 no code for the account's verified phone
  */
 
 import { useState } from "react";
@@ -27,10 +30,11 @@ import { validateIsraeliPhone } from "@/lib/validators";
  *   producerId: string,
  *   phone: string,
  *   code: string,
+ *   verified?: boolean,
  *   onChange: (change: { phone?: string, code?: string }) => void,
  * }} props
  */
-export default function OrderSheetPhone({ producerId, phone, code, onChange }) {
+export default function OrderSheetPhone({ producerId, phone, code, verified = false, onChange }) {
   const t = useTranslations("producer.detail.order_sheet");
   const [sentTo, setSentTo] = useState(/** @type {string | null} */ (null));
   const [busy, setBusy] = useState(false);
@@ -49,6 +53,22 @@ export default function OrderSheetPhone({ producerId, phone, code, onChange }) {
       setBusy(false);
     }
   };
+
+  if (verified) {
+    return (
+      <Input
+        label={t("phone")}
+        required
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        dir="ltr"
+        value={phone}
+        onChange={(e) => onChange({ phone: e.target.value, code: "" })}
+        data-testid="order-sheet-phone"
+      />
+    );
+  }
 
   return (
     <div className="space-y-3">

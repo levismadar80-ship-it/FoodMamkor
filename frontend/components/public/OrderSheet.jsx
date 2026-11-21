@@ -3,7 +3,7 @@
 /**
  * Module:   OrderSheet
  * Purpose:  The order request itself, opened from the order bar: how she
- *           gets it, when, her name and phone (proved by a WhatsApp code), a
+ *           gets it, when, her name and phone (proved by a WhatsApp code, unless it is her verified account phone), a
  *           note, the price with the delivery fee, the disclosure lines, and
  *           «שליחת הבקשה». On success the page moves to the order's status
  *           page, its token in the hash.
@@ -28,6 +28,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import OrderSheetPhone from "@/components/public/OrderSheetPhone";
 import { NoteField, SlotChoice, WayChoice } from "@/components/public/OrderSheetChoices";
 import { useRouter } from "@/i18n/navigation";
+import { useOptionalAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import { dayLabel, hhmm, shekelsText } from "@/lib/product-orders";
 import {
@@ -37,6 +38,7 @@ import {
   orderBody,
   quoteBody,
   quoteOrder,
+  sameIlPhone,
   sendOrder,
   slotsFor,
 } from "@/lib/order-sheet";
@@ -62,13 +64,16 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   const byId = useMemo(() => new Map(menu.products.map((p) => [p.id, p])), [menu]);
   const hasAlcohol = Object.keys(picks).some((key) => byId.get(splitKey(key).productId)?.contains_alcohol);
   const ways = fulfilmentsOffered(menu, hasAlcohol);
+  // MEH-3680: a signed-in buyer starts with her name, and her phone when it is
+  // verified; to that phone she orders without a code (the route agrees).
+  const me = /** @type {any} */ (useOptionalAuth())?.user ?? null;
   const [form, setForm] = useState(() => ({
     fulfilment: ways[0] ?? "pickup",
     slot: "",
     city: "",
     address: "",
-    name: "",
-    phone: "",
+    name: me?.name ?? "",
+    phone: me?.phone_verified ? (me.phone ?? "") : "",
     code: "",
     note: "",
     age: false,
@@ -131,7 +136,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
           </>
         )}
         <Input label={t("name")} required value={form.name} onChange={(e) => set({ name: e.target.value })} autoComplete="name" data-testid="order-sheet-name" />
-        <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} onChange={set} />
+        <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={Boolean(me?.phone_verified) && sameIlPhone(form.phone, me?.phone)} onChange={set} />
         <NoteField value={form.note} onChange={(note) => set({ note })} />
         {hasAlcohol && (
           <label className="flex items-start gap-2 text-sm text-text">

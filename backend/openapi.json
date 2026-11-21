@@ -6898,9 +6898,16 @@
             "type": "boolean"
           },
           "code": {
-            "pattern": "^[0-9]{6}$",
-            "title": "Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{6}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
           },
           "customer_name": {
             "maxLength": 120,
@@ -6989,7 +6996,6 @@
           "slot_start",
           "customer_name",
           "phone",
-          "code",
           "idempotency_key"
         ],
         "title": "OrderCreateIn",
@@ -35318,7 +35324,7 @@
     },
     "/product-orders": {
       "post": {
-        "description": "Send an order request. A guest and a logged-in buyer take the same\npath: both prove the phone with a code.",
+        "description": "Send an order request. The phone is proved with a code, except for a\nlogged-in buyer ordering to her own verified account phone (MEH-3680).",
         "operationId": "send_order_product_orders_post",
         "requestBody": {
           "content": {
