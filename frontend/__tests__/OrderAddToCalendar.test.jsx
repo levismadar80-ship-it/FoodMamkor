@@ -4,7 +4,7 @@
  * once the business committed to a slot (confirmed / ready).
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
@@ -56,6 +56,46 @@ describe("order status «הוספה ליומן» (MEH-3616)", () => {
   it("a confirmed order without a slot end shows no button", () => {
     show({ slot_end: null });
     expect(screen.queryByTestId("order-add-to-calendar")).toBeNull();
+  });
+});
+
+describe("the downloaded file (MEH-3616)", () => {
+  /** Click the button and return the .ics text handed to the Blob. */
+  const clickAndRead = async (over) => {
+    window.location.hash = "#t=SECRET-TOKEN";
+    let blobPart = "";
+    const RealBlob = globalThis.Blob;
+    globalThis.Blob = class extends RealBlob {
+      constructor(parts, opts) {
+        super(parts, opts);
+        blobPart = String(parts[0]);
+      }
+    };
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    URL.revokeObjectURL = vi.fn();
+    try {
+      show(over);
+      fireEvent.click(screen.getByTestId("order-add-to-calendar"));
+    } finally {
+      globalThis.Blob = RealBlob;
+      window.location.hash = "";
+    }
+    return blobPart;
+  };
+
+  it("a pickup order: the business title, the address, and never the #t= token", async () => {
+    const ics = await clickAndRead({});
+    expect(ics).toContain("SUMMARY:איסוף הזמנה: המאפייה של רותי");
+    expect(ics).toContain("LOCATION:הנשיא 5\\, זכרון יעקב");
+    expect(ics).toContain("DTSTART:20261120T070000Z");
+    expect(ics).not.toContain("SECRET-TOKEN");
+    expect(ics).not.toMatch(/^URL:/m);
+  });
+
+  it("a delivery order: the delivery title and no LOCATION", async () => {
+    const ics = await clickAndRead({ fulfilment: "delivery" });
+    expect(ics).toContain("SUMMARY:משלוח הזמנה: המאפייה של רותי");
+    expect(ics).not.toMatch(/^LOCATION:/m);
   });
 });
 

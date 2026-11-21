@@ -125,7 +125,8 @@ export function OrderStatusView({ order, onChange, refOf }) {
             end: order.slot_end,
             title: t(view.when === "when_pickup" ? "calendar_pickup" : "calendar_delivery", { business_name: order.producer_name }),
             location: view.when === "when_pickup" ? order.pickup_address : null,
-            url: typeof window === "undefined" ? undefined : window.location.href.split("#")[0],
+            // No URL on purpose: the page opens only with the #t= token, and a
+            // calendar file is not a place to keep that secret.
           }}
         />
       )}
