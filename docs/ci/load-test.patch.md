@@ -1,7 +1,8 @@
 > **✅ Status: APPLIED — as-of 21/11/2026.** `.github/workflows/load-test.yml`
 > was committed through Claude in Chrome on this branch (commits `420fc19e0`, then
-> `2248681fe` for the reviewer's fixes); its sha256 `9d02dcba…0558de` matches the
-> YAML below byte for byte. Register row:
+> `2248681fe` for the reviewer's fixes); its sha256 `9d02dcba…0558de` matched the
+> YAML at that time. The stack-ID change was committed the same way (`31a8e7f9b`);
+> the YAML below is now sha256 `8c548c75…ecec70c`, byte for byte. Register row:
 > `load-test` in `docs/ci/patch-register.tsv`.
 
 # 🔧 Staged patch: a manual k6 load test, run from GitHub (MEH-3564)

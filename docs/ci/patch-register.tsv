@@ -73,4 +73,4 @@ meh-3153-webkit-core	applied	.github/workflows/e2e.yml	e2e-webkit-core:	2026-11-
 meh-3153-webkit-deps	applied	.github/workflows/e2e.yml	MEH-3153 webkit deps: runs on a cache hit too	2026-11-21	applied by Claude in Chrome in bc3d7f455 (sha256 ad68750b…, verified byte for byte)
 meh-3555-uptime-journey	applied	.github/workflows/uptime.yml	smoke_production.py --quick	2026-11-21	uptime tick also walks the user journey
 load-test	applied	.github/workflows/load-test.yml	grafana/run-k6-action	-	manual k6 load test, cloud or runner (MEH-3564)
-load-test-stack-id	pending	.github/workflows/load-test.yml	K6_CLOUD_STACK_ID	2026-11-21	k6 v2 cloud runs need the stack ID (MEH-3564)
+load-test-stack-id	applied	.github/workflows/load-test.yml	K6_CLOUD_STACK_ID	2026-11-21	k6 v2 cloud runs need the stack ID (MEH-3564)
