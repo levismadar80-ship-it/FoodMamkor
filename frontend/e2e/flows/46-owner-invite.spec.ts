@@ -73,6 +73,7 @@ import path from "node:path";
 import type { APIRequestContext, Page, Route } from "@playwright/test";
 
 import { authedContext } from "../auth-fixture";
+import { layoutSettled } from "./_layout-settled";
 import { expect, test } from "./_cloudinary-stub";
 import he from "../../messages/he.json";
 
@@ -134,6 +135,27 @@ async function stubPasswordCheck(page: Page): Promise<void> {
       body: JSON.stringify({ ok: true, failures: [] }),
     }),
   );
+}
+
+/**
+ * MEH-3550: open the invite form, and prove it opened.
+ *
+ * The edit page fetches the business, then renders the panel. A slow runner
+ * can still be laying the page out (or re-render the panel after a reload)
+ * when the click lands, and a click whose mouseup hits another element is
+ * reported as done while the handler never ran (MEH-3449). So: wait for the
+ * button to stop moving, click, and repeat the click until the form is on
+ * screen. A click that DID open the form removes the button (the panel renders
+ * it only while closed), so the next attempt simply sees the form and passes.
+ */
+async function openInvite(page: Page): Promise<void> {
+  const open = page.getByTestId("owner-invite-open");
+  const form = page.getByTestId("owner-invite-form");
+  await layoutSettled(open);
+  await expect(async () => {
+    await open.click({ timeout: 2_000 });
+    await expect(form).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
 }
 
 async function createBusiness(
@@ -242,8 +264,7 @@ test.describe("owner invite — the admin panel", () => {
     await expect(page.getByTestId("owner-invite-result")).toHaveCount(0);
     // 0 invites × OPEN: the form, and the warning that this page is ALREADY
     // live — the state the admin is told to fix before minting a link.
-    await page.getByTestId("owner-invite-open").click();
-    await expect(page.getByTestId("owner-invite-form")).toBeVisible();
+    await openInvite(page); // asserts the form is visible
     await expect(page.getByTestId("owner-invite-status-live")).toBeVisible();
     await expect(page.getByTestId("owner-invite-status-hidden")).toHaveCount(0);
   });
@@ -254,7 +275,7 @@ test.describe("owner invite — the admin panel", () => {
     const business = await createBusiness("panel-hidden", "inactive");
     await page.goto(`/he/admin/producers/${business.id}/edit`);
     await expect(page.getByTestId("owner-invite-panel")).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("owner-invite-open").click();
+    await openInvite(page);
     // The other arm of the same matrix cell, and the one that proves the panel
     // renders at all on a hidden business — it was gated on `approved` until
     // the card's v3 revision, which would have made this flow unreachable.
@@ -268,7 +289,7 @@ test.describe("owner invite — the admin panel", () => {
     const business = await createBusiness("panel-mint", "inactive");
     await page.goto(`/he/admin/producers/${business.id}/edit`);
     await expect(page.getByTestId("owner-invite-panel")).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("owner-invite-open").click();
+    await openInvite(page);
     // The address field is left EMPTY on purpose: the submit must enable
     // without it since v3, which is the assertion this test exists for.
     await page.getByTestId("owner-invite-name").fill("דנה הבדיקה");
