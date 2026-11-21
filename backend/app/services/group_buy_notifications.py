@@ -321,3 +321,77 @@ def notify_participant_expired(
         f"בברכה,\nצוות מהמקור"
     )
     _send_email(participant_email, subject, body, test_cause=test_cause)
+
+
+# --- MEH-3592: a late joiner (to the business) and a freed place (waitlist) ---
+
+
+def notify_producer_late_joiner(  # noqa: PLR0913 — plain data for a BackgroundTasks entry
+    producer_email: str,
+    title: str,
+    participant_count: int,
+    units_total: int,
+    group_buy_id: str,
+    test_cause: bool = False,
+) -> None:
+    """A join after the goal: the business plans stock, so it hears of each
+    one (Etsy / Shopify notify the seller per order). A COUNT and a unit
+    total, never a name — see the module PRIVACY CONTRACT."""
+    subject = f'מהמקור — הצטרפות חדשה לקבוצת הרכישה "{title}"'
+    body = (
+        f"שלום,\n\n"
+        f'יש הצטרפות נוספת לקבוצת הרכישה "{title}", שכבר הגיעה ליעד.\n'
+        f"מספר הצטרפויות עכשיו: {participant_count}\n"
+        f"סך הכמות שהוזמנה: {units_total}\n\n"
+        f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(producer_email, subject, body, test_cause=test_cause)
+
+
+def notify_waitlist_place(
+    email: str, title: str, group_buy_id: str, test_cause: bool = False
+) -> None:
+    """A place freed in a full group buy: the first on its waitlist is told.
+    The place is not held (the events waitlist, MEH-3314, works the same)."""
+    subject = f'מהמקור — התפנה מקום בקבוצת הרכישה "{title}"'
+    body = (
+        f"שלום,\n\n"
+        f'התפנה מקום בקבוצת הרכישה "{title}", שנרשמת לרשימת ההמתנה שלה.\n'
+        f"המקום לא שמור: הוא הולך להצטרפות הראשונה.\n\n"
+        f"להצטרפות: {_group_buy_url(group_buy_id)}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(email, subject, body, test_cause=test_cause)
+
+
+def send_late_joiner_to_producer(  # noqa: PLR0913 — BackgroundTasks entry, plain data
+    producer_email: str | None,
+    title: str,
+    participant_count: int,
+    units_total: int,
+    group_buy_id: str,
+    test_cause: bool = False,
+) -> None:
+    if not producer_email:
+        return
+    try:
+        notify_producer_late_joiner(
+            producer_email,
+            title,
+            participant_count,
+            units_total,
+            group_buy_id,
+            test_cause=test_cause,
+        )
+    except Exception:  # best-effort, like every send in this module
+        logger.exception("late-joiner email to the business failed (%s)", group_buy_id)
+
+
+def send_waitlist_place(
+    email: str, title: str, group_buy_id: str, test_cause: bool = False
+) -> None:
+    try:
+        notify_waitlist_place(email, title, group_buy_id, test_cause=test_cause)
+    except Exception:  # best-effort
+        logger.exception("waitlist place email failed (%s)", group_buy_id)

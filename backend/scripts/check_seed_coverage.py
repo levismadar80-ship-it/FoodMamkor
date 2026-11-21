@@ -278,6 +278,9 @@ EXEMPT_TABLES = {
     "producer_analytics_daily": "MEH-2079 analytics roll-up — seeded only for the demo producer, staging only, never above the watermark; enforced by _seed_insights in seed_demo_business.py and pinned by tests/test_meh2801_seed_watermark.py, not by this gate (MEH-2801); may be empty elsewhere, so the gate must not require it",
     "search_queries": "analytics — runtime telemetry, item 10 (out of scope)",
     "favorites": f"consumer action — item 11; {_SEEDED_MAY_BE_EMPTY}",
+    # MEH-3592: a row exists only once a group buy is full and a signed-in
+    # visitor asks to wait; the demo group is never full.
+    "group_buy_waitlist": f"consumer action on a full group buy (MEH-3592); {_SEEDED_MAY_BE_EMPTY}",
     "favorite_alerts": "consumer action — item 11 (out of scope)",
     "reports": "admin queue — item 12 (out of scope)",
     "category_requests": "admin queue — item 12 (out of scope)",

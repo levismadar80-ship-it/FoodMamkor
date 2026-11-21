@@ -29,6 +29,7 @@ import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-respo
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import GroupBuyProductPicker from "@/components/GroupBuyProductPicker";
+import GroupBuyOwnerSettings from "@/components/group-buy/GroupBuyOwnerSettings"; // MEH-3592
 import InlineMessage from "@/components/ui/InlineMessage";
 import { israelWallClockToIso, parseNaiveUtc } from "@/lib/dates";
 import StruckPrice from "@/components/ui/StruckPrice";
@@ -63,6 +64,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
     price_per_unit_group: "",
     min_participants: "",
     max_participants: "",
+    max_units: "", // MEH-3592
     deadline: "",
     city: producerCity || "",
     pickup_note: "",
@@ -117,6 +119,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
         price_per_unit_group: Number(form.price_per_unit_group),
         min_participants: Number(form.min_participants),
         max_participants: form.max_participants ? Number(form.max_participants) : undefined,
+        max_units: form.max_units ? Number(form.max_units) : undefined, // MEH-3592
         // MEH-3219 B13: the field says «לפי שעון ישראל» — read it in Israel,
         // not in the device's zone.
         deadline: israelWallClockToIso(form.deadline),
@@ -244,6 +247,16 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
           value={form.max_participants}
           onChange={set("max_participants")}
           placeholder={t("max_placeholder")}
+          dir="ltr"
+        />
+        {/* MEH-3592: a units cap — one buyer could otherwise take all 100. */}
+        <Input
+          label={<>{t("max_units_label")} <InfoTooltip content={t("max_units_tooltip")} /></>}
+          type="number"
+          min={1}
+          value={form.max_units}
+          onChange={set("max_units")}
+          placeholder={t("max_units_placeholder")}
           dir="ltr"
         />
 
@@ -726,6 +739,10 @@ export default function ProducerGroupBuysPage() {
 
                 {/* MEH-2435 (chunk 3): only the moves this state allows;
                     cancelled and fulfilled cards get no action row at all. */}
+                {/* MEH-3592: caps + stop/reopen joins while the group runs. */}
+                {(gb.status === "open" || gb.status === "funded") && parseNaiveUtc(gb.deadline) >= new Date() && (
+                  <GroupBuyOwnerSettings gb={gb} onSaved={load} />
+                )}
                 {actions.length > 0 && (
                   <div
                     data-testid="group-buy-actions"

@@ -76,3 +76,4 @@ meh-3555-uptime-journey	applied	.github/workflows/uptime.yml	smoke_production.py
 load-test	applied	.github/workflows/load-test.yml	K6_CLOUD_STACK_ID	-	manual k6 load test, cloud or runner; stack ID added 21/11 (MEH-3564)
 meh-3617-expected-tables-65	dead	-	-	-	superseded by meh-3617-expected-tables-66 once MEH-3535 (email_outbox) took 65 on staging
 meh-3617-expected-tables-66	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=66	2026-11-21	committed 21/11 via the web editor (Claude in Chrome), 2480c26d8, sha256 matched the prepared file
+meh-3592-expected-tables	applied	.github/workflows/pr-checks.yml	EXPECTED_TABLES=65	2026-11-21	group_buy_waitlist (MEH-3592); 66 if MEH-3535 email_outbox lands first

@@ -1265,12 +1265,13 @@
       "cancel_confirm": "Cancel your commitment?",
       "cancel_dismiss": "No, keep it",
       "deadline_passed": "The deadline has passed — joining is no longer possible",
-      "full": "The group is full — joining is no longer possible",
+      "full": "This group is full",
       "share_wa": "Share with friends",
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "Israel",
       "errors": {
-        "cancel_failed": "Cancellation failed"
+        "cancel_failed": "Cancellation failed",
+        "action_failed": "That didn't work, please try again"
       },
       "toast_cancelled": "Your participation was cancelled",
       "goal_reached": "The group reached its goal",
@@ -1280,7 +1281,21 @@
       "how_after_goal": "Even after the goal is reached, people can keep joining until the deadline",
       "how_after_goal_max": "Even after the goal is reached, people can keep joining, up to {max} participants or until the deadline",
       "how_funded_price": "The group already reached its goal: anyone who joins now gets the group price",
-      "quantity_label_unit": "Quantity ({unit})"
+      "quantity_label_unit": "Quantity ({unit})",
+      "units_left": "Left in this group: {count} {unit}",
+      "unit_fallback": "units",
+      "line_total": "Estimated total: {qty} {unit} × {price} = {total}",
+      "full_member": "This group is full. Your place is kept.",
+      "quantity_update": "Update quantity",
+      "quantity_updated_toast": "Quantity updated",
+      "cancel_rule": "The group reached its goal: in the 24 hours before the deadline you can leave only if the group stays at its goal",
+      "waitlisted": "You're on the waitlist. If a place frees up, we'll email you.",
+      "waitlist_leave": "Leave the waitlist",
+      "waitlist_cta": "Join the waitlist",
+      "waitlist_hint": "When a place frees up, people on the list get an email in the order they signed up. The place goes to whoever joins first.",
+      "joins_closed": "The business has stopped new joins for this group",
+      "funded_subtitle_closed": "The group reached its goal. Joining is closed.",
+      "committed_qty_unit": " ({count} {unit})"
     },
     "dashboard": {
       "status": {
@@ -1340,7 +1355,10 @@
         "prefill_label": "Fill from an existing product",
         "prefill_placeholder": "Choose a product",
         "prefill_helper": "The name and regular price fill in, and you can change them.",
-        "max_tooltip": "After the minimum is reached, people can keep joining up to this number. Leave it empty if you can supply everyone who joins."
+        "max_tooltip": "After the minimum is reached, people can keep joining up to this number. Leave it empty if you can supply everyone who joins.",
+        "max_units_label": "Maximum quantity (optional)",
+        "max_units_tooltip": "How many units you can supply in total. Once they run out nobody can join, and people can go on a waitlist. Leave empty for no limit.",
+        "max_units_placeholder": "e.g. 40"
       },
       "status_deadline_passed": "Deadline passed",
       "actions": {
@@ -1358,6 +1376,19 @@
         "deliver_body": "The group will be marked as completed.",
         "toast_cancelled": "Group buy cancelled",
         "toast_fulfilled": "Group buy marked as delivered"
+      },
+      "settings": {
+        "toggle": "Joining settings",
+        "max_people": "Maximum participants",
+        "max_units": "Maximum quantity",
+        "no_cap": "No limit",
+        "caps_hint": "You can raise or lower them, but not below what has already been ordered. Empty = no limit.",
+        "save": "Save limits",
+        "stop": "Stop new joins",
+        "reopen": "Reopen joining",
+        "closed_note": "Joining is stopped. People who already joined stay in the group.",
+        "saved": "Settings saved",
+        "failed": "Couldn't save, please try again"
       }
     },
     "availability": {

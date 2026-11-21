@@ -157,6 +157,7 @@ graph TD
     Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue;<br/>MEH-3224: past event_date → 422 (PUT too)]
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
     Events --> GbCounts[GET /group-buys/counts<br/>public — MEH-3128<br/>same query as GET /group-buys;<br/>hides an empty status tab]
+    Events --> GbCapacity[PATCH /group-buys/{id}/commit · POST + DELETE /group-buys/{id}/waitlist<br/>🔑 signed in — MEH-3592: quantity edit, waitlist of a full group<br/>PATCH /group-buys/{id}/settings<br/>owner or admin — caps + stop/reopen joins]
 ```
 
 ## 5. Admin surface (role=admin)
