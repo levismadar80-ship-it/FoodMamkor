@@ -16,6 +16,7 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata({ params }) {
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"], // MEH-2590: not inherited from the layout
+      images: [siteOgImageUrl(locale)], // MEH-2590: not inherited from the layout
     },
     alternates: buildAlternates("/about/for-businesses/guides", locale),
   };

@@ -5,6 +5,7 @@ import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-475 PR-C4b/chunk-2: accessibility statement i18n. Same pattern as
 // PR #736 (getTranslations in generateMetadata + namespace-scoped t())
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/accessibility", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/accessibility", locale),
   };
