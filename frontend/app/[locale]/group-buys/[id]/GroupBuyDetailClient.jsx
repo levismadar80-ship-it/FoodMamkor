@@ -34,6 +34,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { parseNaiveUtc } from "@/lib/dates";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -358,6 +359,7 @@ export default function GroupBuyDetailClient({ id }) {
             >
               {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
             </Button>
+            <NotAPartyLine name={gb.producer_name} testId="group-buy-not-a-party" />
             {/* MEH-2999: the «יש להתחבר כדי להצטרף…» line under the button is
                 gone — the button already says «כניסה להצטרפות». */}
           </form>

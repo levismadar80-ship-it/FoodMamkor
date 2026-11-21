@@ -46,6 +46,7 @@ import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "
 import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
 import RegistrationSessionSelect, { isFullSession, sessionKey } from "@/components/RegistrationSessionSelect";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-50";
@@ -231,6 +232,7 @@ function SignupForm({ kind, itemId, waitlist: wholeItemFull = false, sessions = 
       <button type="submit" disabled={sending} className={BTN} data-testid="registration-submit">
         {sending ? t("submitting") : waitlist ? t("waitlist_submit") : t("submit")}
       </button>
+      <NotAPartyLine testId="registration-not-a-party" />
     </form>
   );
 }

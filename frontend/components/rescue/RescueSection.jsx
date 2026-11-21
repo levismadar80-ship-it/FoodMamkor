@@ -28,6 +28,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import { isUnverifiedEmailError } from "@/lib/errors";
+import NotAPartyLine from "@/components/public/NotAPartyLine"; // MEH-3570
 
 /**
  * Module:   RescueSection
@@ -381,6 +382,7 @@ export default function RescueSection({ producer }) {
             >
               {t("section.cta")}
             </Button>
+            <NotAPartyLine name={producer?.name} testId="rescue-not-a-party" />
             {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
                 confirmation, where confirm.terms still carries it. */}
             {cancelUntil && (

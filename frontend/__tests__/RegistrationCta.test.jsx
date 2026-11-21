@@ -546,3 +546,13 @@ describe("MEH-3112 — a signed-in visitor finds her details in the sign-up form
     expect(document.getElementById("signup-email").value).toBe("");
   });
 });
+
+// MEH-3570: the on-site sign-up form says who the customer deals with.
+describe("RegistrationCta — not a party", () => {
+  it("the opened form carries the not-a-party line; the closed CTA does not", () => {
+    cta({ method: "site_form" });
+    expect(screen.queryByTestId("registration-not-a-party")).toBeNull();
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(screen.getByTestId("registration-not-a-party").textContent).toBe(he.directory.not_a_party.unnamed);
+  });
+});

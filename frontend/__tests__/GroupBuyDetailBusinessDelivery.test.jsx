@@ -346,3 +346,13 @@ describe("group buy page: location breadcrumb instead of the fixed list link (ME
     expect(screen.queryByTestId("history-back")).toBeNull();
   });
 });
+
+// MEH-3570: the join form names the business as the other side of the deal.
+describe("the join form — not a party", () => {
+  it("names the business under the join button", async () => {
+    await renderPage();
+    expect(screen.getByTestId("group-buy-not-a-party").textContent).toBe(
+      `directory.not_a_party.named:${JSON.stringify({ name: GB.producer_name })}`,
+    );
+  });
+});
