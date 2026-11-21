@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Basket } from "@phosphor-icons/react";
 
+import { Link } from "@/i18n/navigation";
 import EntityCover from "@/components/EntityCover";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import OwnerRow from "@/components/OwnerRow";
@@ -56,13 +57,21 @@ export default function RescueOfferPage({ offerId }) {
 
   const reservation = useRescueReservation({
     producerId: offer?.producer?.id,
+    offerId: offer?.id,
     onCancelled: () => load(true),
   });
 
-  if (failed) return <Shell><p className="text-sm text-fg-muted" role="alert">{t("list.failed")}</p></Shell>;
+  if (failed) {
+    return (
+      <Shell t={t}>
+        <p className="text-sm text-fg-muted" role="alert">{t("list.failed")}</p>
+        <Link href="/rescue" className="mt-2 inline-block text-primary font-semibold underline">{t("offer_page.other_bags")}</Link>
+      </Shell>
+    );
+  }
   if (offer === undefined) {
     return (
-      <Shell>
+      <Shell t={t}>
         <p className="sr-only" role="status">{t("offer_page.loading")}</p>
         <SkeletonBlock as="div" className="h-[210px] w-full rounded-md" />
         <SkeletonBlock as="div" className="h-8 w-2/3 mt-5" />
@@ -118,14 +127,21 @@ export default function RescueOfferPage({ offerId }) {
   );
 }
 
-function Shell({ children }) {
-  return <div className="max-w-[1100px] mx-auto px-4 pt-5 pb-12">{children}</div>;
+/** The frame of the loading / failed / not-found states — with an h1, so no
+ *  state of the page is left without one. */
+function Shell({ t, children }) {
+  return (
+    <div className="max-w-[1100px] mx-auto px-4 pt-5 pb-12">
+      <h1 className="sr-only">{t("section.title")}</h1>
+      {children}
+    </div>
+  );
 }
 
 /** Another day's bag, a mistyped id, or a business no longer listed. */
 function NotFound({ t }) {
   return (
-    <Shell>
+    <Shell t={t}>
       <div data-testid="rescue-offer-not-found">
         <EmptyState
           icon={Basket}

@@ -148,3 +148,26 @@ def test_the_route_is_404_while_the_pilot_is_off(client, db, shop, monkeypatch):
     monkeypatch.setattr(rescue_module, "rescue_bags_enabled", lambda: False)
     offer = _seed_offer(db, shop["location"])
     assert _get(client, offer.id).status_code == 404
+
+
+def test_a_point_switched_to_approximate_sends_no_pin(client, db, rescue_on, shop):
+    offer = _seed_offer(db, shop["location"])
+    shop["location"].location_precision = "approximate"
+    db.commit()
+    body = _get(client, offer.id).json()
+    assert body["lat"] is None
+    assert body["lng"] is None
+
+
+def test_cancelled_wins_over_a_closed_window(client, db, rescue_on, shop):
+    # Precedence: a bag the business cancelled says so, even after its window.
+    now = utc_now()
+    offer = _seed_offer(
+        db,
+        shop["location"],
+        status="cancelled",
+        pickup_start=now - timedelta(hours=3),
+        pickup_end=now - timedelta(hours=1),
+        cancel_until=now - timedelta(hours=4),
+    )
+    assert _get(client, offer.id).json()["state"] == "cancelled"

@@ -66,7 +66,6 @@ export function walkingMinutes(distanceKm) {
   return Math.max(1, Math.round(((distanceKm * 1.3) / 5) * 60));
 }
 
-/** Agorot → whole shekels. Prices in the pilot are whole-shekel by construction. */
 /**
  * The struck-through "worth": the business's own LOW estimate, and only when
  * it is above the price — never a made-up discount. MEH-3586: one copy for
@@ -81,6 +80,7 @@ export function worthAgorot(offer) {
   return v > offer.price_agorot ? v : null;
 }
 
+/** Agorot → whole shekels. Prices in the pilot are whole-shekel by construction. */
 export function shekels(agorot) {
   if (typeof agorot !== "number" || !Number.isFinite(agorot)) return null;
   return Math.round(agorot / 100);

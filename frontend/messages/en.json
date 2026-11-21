@@ -7091,8 +7091,9 @@
       "not_found_title": "We couldn't find this bag",
       "not_found_body": "It may have been for another day. New bags are posted daily.",
       "loading": "Loading the bag…",
-      "bar_note": "₪{price} · pickup {from}–{until}",
-      "details_link": "All bag details"
+      "bar_note": "₪{price} · pickup until {until}",
+      "details_link": "All bag details",
+      "bar_cta": "Reserve"
     }
   },
   "holidays": {

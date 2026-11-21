@@ -1,13 +1,14 @@
 // @ts-check
 "use client";
 
+import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
-import { StickyRegistrationBar } from "@/components/RegistrationOverlays";
+import { StickyRegistrationBar, useInView } from "@/components/RegistrationOverlays";
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueErrorLine from "@/components/rescue/RescueErrorLine";
 import RescueReview from "@/components/rescue/RescueReview";
@@ -35,6 +36,12 @@ const STATE_KEY = {
 export default function RescueOfferAction({ offer, reservation }) {
   const t = useTranslations("rescue");
   const { order, busy, errorKey, loginOpen, setLoginOpen, reviewed, setReviewed, cancelled, businessCancelled, reserve, cancel } = reservation;
+  // REUSES: components/RegistrationOverlays.jsx useInView — the phone bar
+  // comes up only once the card's own button has scrolled away (the event
+  // page rule), so the two buttons are never on screen together.
+  const buttonRef = useRef(null);
+  const available = !order && offer.state === "available";
+  const buttonInView = useInView(buttonRef, available);
 
   if (order) {
     return (
@@ -50,15 +57,13 @@ export default function RescueOfferAction({ offer, reservation }) {
     );
   }
 
-  const available = offer.state === "available";
   const price = shekels(offer.price_agorot);
-  const from = israelTime(offer.pickup_start);
   const until = israelTime(offer.pickup_end);
   const cancelUntil = israelTime(offer.cancel_until);
   const cutoffPassed = new Date(offer.cancel_until) <= new Date();
-  const button = (
-    <Button type="button" onClick={() => reserve(offer.id)} disabled={busy} data-testid="rescue-reserve" variant="primary" size="lg" className="w-full">
-      {t("section.cta")}
+  const button = (label, testId) => (
+    <Button type="button" onClick={() => reserve(offer.id)} disabled={busy} data-testid={testId} variant="primary" size="lg" className="w-full">
+      {label}
     </Button>
   );
 
@@ -79,11 +84,15 @@ export default function RescueOfferAction({ offer, reservation }) {
       {available ? (
         <>
           <RescueErrorLine errorKey={errorKey} />
-          {button}
+          <div ref={buttonRef}>{button(t("section.cta"), "rescue-reserve")}</div>
           <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
             {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
           </p>
-          <StickyRegistrationBar note={t("offer_page.bar_note", { price, from, until })}>{button}</StickyRegistrationBar>
+          {buttonInView === false && (
+            <StickyRegistrationBar note={t("offer_page.bar_note", { price, until })}>
+              {button(t("offer_page.bar_cta"), "rescue-reserve-bar")}
+            </StickyRegistrationBar>
+          )}
         </>
       ) : (
         <InlineMessage tone="info" variant="box" className="rounded-md px-3 py-2 grid gap-1" data-testid="rescue-offer-unavailable">

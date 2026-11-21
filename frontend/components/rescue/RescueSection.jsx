@@ -59,14 +59,20 @@ export default function RescueSection({ producer }) {
   // The public list is per-town; the business's own bag is whichever of
   // today's rows belongs to this producer. A failed read keeps the card as it
   // was when `keepOnError` (the re-read after a cancel).
+  // A response for a business the page no longer shows is dropped (the old
+  // effect's `alive` flag): only the latest request may set the offer.
+  const latest = useRef(0);
   const loadOffer = useCallback(
-    (keepOnError = false) =>
-      fetchOffers({ city: producer?.city || undefined })
-        .then((rows) => rows.find((row) => row.producer?.id === producer?.id) || null)
-        .then(setOffer)
+    (keepOnError = false) => {
+      const ticket = ++latest.current;
+      return fetchOffers({ city: producer?.city || undefined })
+        .then((rows) => {
+          if (ticket === latest.current) setOffer(rows.find((row) => row.producer?.id === producer?.id) || null);
+        })
         .catch(() => {
-          if (!keepOnError) setOffer(null);
-        }),
+          if (!keepOnError && ticket === latest.current) setOffer(null);
+        });
+    },
     [producer?.id, producer?.city],
   );
   useEffect(() => {

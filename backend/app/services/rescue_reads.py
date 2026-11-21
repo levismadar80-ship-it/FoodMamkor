@@ -236,10 +236,12 @@ def offer_detail(
 
     out = _public_row(offer, location, producer, typical, None)
     out["state"] = state
-    # Exact-precision point only (an offer cannot be published on any other),
-    # so the map shows the same place the address names.
-    out["lat"] = location.lat
-    out["lng"] = location.lng
+    # Exact-precision point only. An offer is published only on one, but the
+    # business can switch the point to approximate later; then the pin is not
+    # sent (MEH-829: an approximate point's coordinates never leave the API).
+    exact = location.location_precision == "exact"
+    out["lat"] = location.lat if exact else None
+    out["lng"] = location.lng if exact else None
     out["producer"]["avg_rating"] = producer.avg_rating or None
     out["producer"]["reviews_count"] = producer.reviews_count or 0
     return out

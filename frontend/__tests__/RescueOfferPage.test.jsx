@@ -54,7 +54,9 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("next/dynamic", () => ({ default: () => (props) => <div data-testid="mini-map" data-lat={props.lat} /> }));
 vi.mock("@/components/ShareButton", () => ({ default: () => <button type="button">share</button> }));
 vi.mock("@/components/HistoryBackLink", () => ({ default: () => null }));
+let inlineButtonInView = false;
 vi.mock("@/components/RegistrationOverlays", () => ({
+  useInView: () => inlineButtonInView,
   StickyRegistrationBar: ({ note, children }) => (
     <div data-testid="sticky-bar">
       {note}
@@ -130,6 +132,7 @@ async function renderWith(row) {
 beforeEach(() => {
   vi.clearAllMocks();
   authUser = null;
+  inlineButtonInView = false;
   fetchMyOrders.mockResolvedValue([]);
 });
 
@@ -147,8 +150,15 @@ describe("RescueOfferPage — an available bag", () => {
     expect(screen.getByTestId("rescue-offer-cancel").textContent).toContain("אפשר לבטל בחינם עד");
     expect(screen.getByTestId("rescue-offer-business").getAttribute("href")).toBe("/hatzala");
     expect(screen.getByTestId("rescue-offer-rating")).toBeTruthy();
-    expect(screen.getByTestId("sticky-bar").textContent).toContain("25 ₪ · איסוף");
+    expect(screen.getByTestId("sticky-bar").textContent).toContain("25 ₪ · איסוף עד");
     expect(screen.queryByTestId("rescue-offer-unavailable")).toBeNull();
+  });
+
+  it("the phone bar stays away while the card's own button is on screen", async () => {
+    inlineButtonInView = true;
+    await renderWith(offer());
+    expect(screen.queryByTestId("sticky-bar")).toBeNull();
+    expect(screen.getAllByTestId("rescue-reserve")).toHaveLength(1);
   });
 
   it("a range of worth reads as a line, not a struck figure", async () => {
@@ -262,5 +272,29 @@ describe("RescueOfferPage — reserving", () => {
     ]);
     await renderWith(offer());
     await waitFor(() => expect(screen.getByTestId("rescue-offer-reserved").textContent).toContain("7310"));
+  });
+
+  it("a reservation on ANOTHER bag of the same business is not shown on this one", async () => {
+    // Two pickup points → two bags a day; bag o1's page must not show o2's code.
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      {
+        id: "r2", offer_id: "o2", producer_id: "p1", qty: 1, status: "reserved", pickup_code: "5555",
+        price_agorot: 2500, cancel_until: iso(HOUR / 2), pickup_start: iso(HOUR), pickup_end: iso(3 * HOUR),
+        reviewed: false, cancelled_by_business: false,
+      },
+    ]);
+    await renderWith(offer());
+    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
+    expect(screen.queryByTestId("rescue-offer-reserved")).toBeNull();
+    expect(screen.getByTestId("rescue-reserve")).toBeTruthy();
+  });
+
+  it("a failed load offers the other bags", async () => {
+    fetchOffer.mockRejectedValue(new Error("500"));
+    render(<RescueOfferPage offerId="o1" />);
+    await screen.findByRole("alert");
+    expect(screen.getByText(lookup("rescue.offer_page.other_bags")).getAttribute("href")).toBe("/rescue");
+    expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
   });
 });

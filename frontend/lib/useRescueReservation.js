@@ -24,9 +24,15 @@ export const UNVERIFIED_KEY = "errors.unverified";
  *           MEH-2700 guest prompt, MEH-2737 cancel, MEH-2738 business cancel,
  *           MEH-3225 unverified email, MEH-3130 login modal)
  *
- * @param {{ producerId?: string|null, onCancelled?: () => void }} args
+ * `offerId` (the bag page): read back only orders on THAT bag. A business
+ * with two pickup points can have two bags a day, and the page of bag B must
+ * not show the code of bag A. The business page passes none and keeps
+ * matching on the business, which is what lets the buyer of the last bag find
+ * hers after the list dropped it.
+ *
+ * @param {{ producerId?: string|null, offerId?: string|null, onCancelled?: () => void }} args
  */
-export default function useRescueReservation({ producerId, onCancelled }) {
+export default function useRescueReservation({ producerId, offerId = null, onCancelled }) {
   const [order, setOrder] = useState(/** @type {any} */ (null));
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState(/** @type {string|null} */ (null));
@@ -60,7 +66,9 @@ export default function useRescueReservation({ producerId, onCancelled }) {
         // what she still needs. MEH-2738: a live one always wins over a
         // business-cancelled one; only when none is left does the page say
         // the business cancelled. A buyer's own cancel is never in the list.
-        const here = mine.filter((row) => row.producer_id === producerId);
+        const here = mine.filter(
+          (row) => row.producer_id === producerId && (!offerId || row.offer_id === offerId),
+        );
         const live = here.filter((row) => row.status !== "cancelled");
         const hit = live.find((row) => row.status === "reserved") || live[live.length - 1];
         if (!hit && here.some((row) => row.cancelled_by_business)) {
@@ -85,7 +93,7 @@ export default function useRescueReservation({ producerId, onCancelled }) {
       alive = false;
       window.removeEventListener("focus", restore);
     };
-  }, [userId, producerId]);
+  }, [userId, producerId, offerId]);
 
   /** @param {string} offerId */
   async function reserve(offerId) {
