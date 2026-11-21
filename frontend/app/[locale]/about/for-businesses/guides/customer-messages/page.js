@@ -17,6 +17,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import GuideArticle from "@/components/GuideArticle";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { siteOgImageUrl } from "@/lib/og-site-image";
 
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata({ params }) {
@@ -34,6 +35,8 @@ export async function generateMetadata({ params }) {
       type: "article",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
+      // MEH-3590: a page-level openGraph replaces the layout's, image included.
+      images: [siteOgImageUrl(locale)],
     },
     alternates: buildAlternates("/about/for-businesses/guides/customer-messages", locale),
   };
