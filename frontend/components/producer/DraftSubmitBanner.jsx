@@ -154,6 +154,27 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
 
   const actionsOnly = variant === "actions";
 
+  // MEH-3659: inside the completeness card the checklist is the list and the
+  // WhatsApp row owns the OTP card; the card mounts this footer only once
+  // every row is done. So here: one button, no confirm step, no disabled hint
+  // (Shopify / Airbnb publish on one tap; the server still re-checks).
+  if (actionsOnly) {
+    return (
+      <div className="text-sm" data-testid="draft-submit-actions" data-state-ready={ready}>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting || !ready}
+          data-testid="draft-submit-cta"
+          className="inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <PaperPlaneTilt size={16} weight="bold" aria-hidden="true" />
+          {submitting ? t("confirm_sending") : t("submit_cta")}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={actionsOnly ? "text-sm" : "bg-primary/5 border border-primary/20 rounded-lg p-4 md:p-6 mb-6 text-sm"}

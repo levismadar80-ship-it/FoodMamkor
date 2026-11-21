@@ -520,7 +520,9 @@ export default function ProducerDashboardPage() {
       {/* Wait for /producers/me (created_at) and the analytics (the moment
           counts) so no card replaces another one already on screen. One card
           in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
-      {slotOpen &&
+      {/* MEH-3659: a business in draft sees one card — the checklist below is
+          her welcome; the slot opens once she has submitted. */}
+      {slotOpen && producer.status !== "draft" &&
         (welcome.show ? (
           <OwnerWelcomeCard onClose={welcome.dismiss} showCta={!(completenessFirst && profile && !isOrganizer)} />
         ) : slotMoment ? (
@@ -562,12 +564,15 @@ export default function ProducerDashboardPage() {
           number changed is unverified until she enters the new code. The edit
           page shows the same box under the field; this one is the reminder. */}
       {producer.status !== "draft" && profile?.phone && profile?.phone_verified === false && (
-        <PhoneVerifyCard
-          variant="reverify"
-          onVerified={() =>
-            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
-          }
-        />
+        // MEH-3659: the anchor the «לשפר את העמוד» WhatsApp row links to.
+        <div id="phone-verify">
+          <PhoneVerifyCard
+            variant="reverify"
+            onVerified={() =>
+              setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+            }
+          />
+        </div>
       )}
 
       {producer.status === "pending" && !profile?.requested_changes && (
@@ -671,6 +676,9 @@ export default function ProducerDashboardPage() {
       {completenessFirst && profile && !isOrganizer && (
         <ProfileCompletenessCard
           producer={profile}
+          onPhoneVerified={() =>
+            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+          }
           footer={
             producer.status === "draft" ? (
               <DraftSubmitBanner

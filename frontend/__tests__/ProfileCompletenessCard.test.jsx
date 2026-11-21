@@ -1,437 +1,235 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 
-// MEH-288/MEH-1106: mock next-intl per the established precedent. The card
-// resolves copy from dashboard.producer.completeness.*; the mock returns the
-// Hebrew strings + supports {percent} ICU interpolation. The 4-step model
-// (MEH-1106) no longer branches on locale, so no useLocale mock is needed.
+// MEH-3659: the card has two modes. Draft = the submit-gate checklist (only
+// what blocks «שליחה לבדיקה»). Anything else = «לשפר את העמוד» (the full
+// step list, recommended items included). Both: «N מתוך M», one open row.
+
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars = {}) => {
     const flat = {
-      yellow_low_headline: "העמוד שלך {percent}% מוכן",
-      yellow_high_headline: "כמעט שם — {percent}% מוכן",
       green_headline: "העמוד מלא",
-      next_step_prefix: "השלב הבא:",
-      checklist_sub: "עוד כמה צעדים והעמוד שלכם מוכן לקבל פניות",
-      cta: "להשלמת העמוד",
-      cta_aria: "להשלמת העמוד שלך",
-      ring_aria: "השלמת העמוד: {percent}%",
+      improve_headline: "לשפר את העמוד",
+      draft_ready: "הכול מוכן",
+      draft_headline: "עוד {count} צעדים לשליחה לבדיקה",
+      counter: "{done} מתוך {total}",
+      open_cta: "להשלמה",
+      license_note: "בלי מספר רישיון לא נוכל לאשר את העמוד",
       checklist_aria: "התקדמות השלמת העמוד",
       checklist_done: "הושלם",
       checklist_todo: "עדיין חסר",
-      "steps.image": "תמונה ראשית",
+      "steps.image": "תמונות",
       "steps.location": "קטגוריות ומיקום",
       "steps.products": "מוצר ראשון בקטלוג",
       "steps.contact": "פרטי קשר",
       "steps.phone_verified": "אימות וואטסאפ",
       "steps.hours": "שעות פתיחה",
       "steps.owner_photo": "תמונה שלך",
+      "draft_steps.details": "פרטי העסק",
+      "draft_steps.image": "תמונה של העסק או המוצרים",
+      "draft_steps.product": "מוצר ראשון",
+      "draft_steps.phone_verified": "אימות מספר הוואטסאפ",
     };
     const raw = flat[key] ?? key;
     return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
   },
 }));
 
+vi.mock("@/components/PhoneVerifyCard", () => ({
+  default: ({ onVerified }) => (
+    <button type="button" data-testid="phone-verify-card" onClick={onVerified}>
+      otp
+    </button>
+  ),
+}));
+
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 
-// Minimal producer shapes that drive each state through the REAL heuristic
-// (lib/producer-completeness.js) — no mock of the engine, so the test also
-// guards the step-mapping end-to-end. `products` is card-only (MEH-1106 B1):
-// 3+ items satisfies step ③ without touching the shared heuristic.
 const base = {
   city: "תל אביב",
   lat: 32.07,
   lng: 34.78,
-  // MEH-1938 chunk 5a: the coords step reads producer_locations, not the columns.
   locations: [{ kind: "branch", is_primary: true, lat: 32.07, lng: 34.78, precision: "exact" }],
   phone: "0500000000",
   categories: ["dairy"],
   images: ["img1"],
   has_physical_location: true,
   short_description: "גבינות עיזים מהחווה",
-  // MEH-1895: hours joined the checklist as step 5, so a "complete" fixture
-  // must declare them or every green case below silently drops one step
-  // (83% under the six-step model — see the phone_verified note below).
   opening_hours: "א׳-ה׳ 9:00-17:00",
-  // MEH-2100: verification split off from "contact" into its own step
-  // (Sapir 16/08), so a "complete" fixture must declare it too — the same
-  // reason hours needed declaring when it became step 5. Without it every
-  // green case below silently reads 5/6.
   phone_verified: true,
-  // MEH-3032: the owner's own photo joined as a recommended 7th step, so a
-  // "complete" fixture declares it too — same reason as hours and phone above.
   owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
-  products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
+  products: [{ id: "p1" }],
+  status: "approved",
 };
+const draft = { ...base, status: "draft" };
 
 const EDIT = "/producer/dashboard/edit";
+const list = () => screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
+const counter = () => screen.getByTestId("completeness-counter").textContent;
+const openRows = () => screen.queryAllByTestId(/^completeness-open-(?!cta)/);
 
-function hrefs(container) {
-  return Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href"));
-}
-
-describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () => {
+describe("ProfileCompletenessCard — improve mode (after submission)", () => {
   it("renders nothing when producer is null", () => {
     const { container } = render(<ProfileCompletenessCard producer={null} />);
-    expect(container.innerHTML).toBe("");
+    expect(container.firstChild).toBeNull();
   });
 
-  it("all steps done → collapses to a single confirmation line, no CTA/ring", () => {
+  it("all steps done → collapses to «העמוד מלא», no list, no counter", () => {
     render(<ProfileCompletenessCard producer={base} />);
     expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
-    expect(screen.queryByText("להשלמת העמוד")).not.toBeInTheDocument();
-    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("completeness-list")).toBeNull();
+    expect(screen.queryByTestId("completeness-counter")).toBeNull();
   });
 
-  it("shared heuristic is untouched by the card-only products step: short_description missing does NOT block completion", () => {
-    // short_desc is in the heuristic (admin) but is not a card step —
-    // a producer missing only the description still shows the card complete.
+  it("one missing (photo) → «לשפר את העמוד», 6 מתוך 7, the photo row is the open one", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
+    expect(screen.getByText("לשפר את העמוד")).toBeInTheDocument();
+    expect(counter()).toBe("6 מתוך 7");
+    expect(openRows().map((r) => r.dataset.testid)).toEqual(["completeness-open-image"]);
+    expect(screen.getByTestId("completeness-open-cta-image").getAttribute("href")).toBe(
+      `${EDIT}#profile-images`,
+    );
+  });
+
+  it("many missing → exactly ONE open row (the first), the rest are plain rows", () => {
     render(
       <ProfileCompletenessCard
-        producer={{ ...base, short_description: null, description: null }}
+        producer={{ ...base, images: [], opening_hours: "", owner_photo_url: null }}
       />,
     );
+    expect(counter()).toBe("4 מתוך 7");
+    expect(openRows()).toHaveLength(1);
+    expect(screen.getByTestId("completeness-open-image")).toBeInTheDocument();
+    expect(screen.getByTestId("completeness-row-hours").dataset.done).toBe("false");
+    expect(screen.getByTestId("completeness-row-owner_photo").dataset.done).toBe("false");
+  });
+
+  it("step order is stable: image, location, products, contact, WhatsApp, hours, owner photo", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
+    const keys = within(list())
+      .getAllByRole("listitem")
+      .map((li) => li.dataset.testid.replace(/^completeness-(open|row)-/, ""));
+    expect(keys).toEqual(["image", "location", "products", "contact", "phone_verified", "hours", "owner_photo"]);
+  });
+
+  it("no chips and no «השלב הבא» box any more", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
+    expect(screen.queryByTestId(/^completeness-chip-/)).toBeNull();
+    expect(screen.queryByTestId("completeness-next-step")).toBeNull();
+  });
+
+  it("products signal: array length first, products_count scalar as fallback", () => {
+    const { rerender } = render(<ProfileCompletenessCard producer={{ ...base, products: [] }} />);
+    expect(screen.getByTestId("completeness-open-products")).toBeInTheDocument();
+    const { products: _p, ...noArray } = base;
+    rerender(<ProfileCompletenessCard producer={{ ...noArray, products_count: 2 }} />);
     expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
   });
 
-  it("missing photo → 6/7 = 86% (yellow-high), 7-row checklist, deep-links to #profile-images", () => {
-    const { container } = render(
-      <ProfileCompletenessCard producer={{ ...base, images: [] }} />,
-    );
-    expect(screen.getByText("כמעט שם — 86% מוכן")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-
-    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(7);
-    expect(within(list).getAllByText("הושלם")).toHaveLength(6);
-    expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
-
-    // Photo is the top-remaining step → echoed in the next-step box + CTA target.
-    expect(screen.getByText("השלב הבא:")).toBeInTheDocument();
-    expect(screen.getAllByText("תמונה ראשית").length).toBeGreaterThanOrEqual(2);
-    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
-    expect(cta).toHaveAttribute("href", `${EDIT}#profile-images`);
-  });
-
-  it("missing 3 steps → 57% (yellow-low, calm progress headline)", () => {
-    // images + contact + hours missing → 4 of 7 done → 57%. MEH-3032: with
-    // seven steps, two missing is 71% — already past the >70 "almost there"
-    // line — so the low-headline case needs a third gap.
-    render(
-      <ProfileCompletenessCard
-        producer={{ ...base, images: [], phone: null, instagram: null, opening_hours: null }}
-      />,
-    );
-    expect(screen.getByText("העמוד שלך 57% מוכן")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "57");
-  });
-
-  // MEH-1238: one product now completes the checklist step (badge still needs 3).
-  it("one product → products step done → 100% complete", () => {
-    render(
-      <ProfileCompletenessCard producer={{ ...base, products: [{ id: "p1" }] }} />,
+  it("delivery-only: areas set → location done; no areas → location open", () => {
+    const deliveryOnly = {
+      ...base, has_physical_location: false, offers_delivery: true,
+      lat: null, lng: null, locations: [],
+    };
+    const { rerender } = render(
+      <ProfileCompletenessCard producer={{ ...deliveryOnly, delivery_areas: [{ city: "חיפה" }] }} />,
     );
     expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
-    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    rerender(<ProfileCompletenessCard producer={{ ...deliveryOnly, delivery_areas: [] }} />);
+    expect(screen.getByTestId("completeness-open-location")).toBeInTheDocument();
   });
 
-  it("products step is card-only: zero products → step todo, CTA → #profile-products", () => {
-    const { container } = render(
-      <ProfileCompletenessCard producer={{ ...base, products: [] }} />,
-    );
-    // image/location/contact/phone_verified/hours done, products todo →
-    // 6 of 7 → 86%.
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
-    expect(cta).toHaveAttribute("href", `${EDIT}#profile-products`);
-    // Every checklist row is a deep-link to an editor section.
-    expect(hrefs(container)).toEqual(
-      expect.arrayContaining([
-        `${EDIT}#profile-images`,
-        // MEH-1165 item 4 / MEH-2058: the location row lands on
-        // LocationsEditor (the duplicate LocationCard target was deleted).
-        `${EDIT}#locations`,
-        `${EDIT}#profile-products`,
-        `${EDIT}#profile-contact`,
-      ]),
-    );
-    // MEH-2142: the hours row now points at #locations too — the business-level
-    // hours card was removed and store hours are edited per location. Both the
-    // location row and the hours row land on the same editor, which is the
-    // point: one place to say where and when.
-    //
-    // Asserted as a COUNT, not as a second `${EDIT}#locations` entry inside the
-    // arrayContaining above. `arrayContaining` satisfies two identical expected
-    // values with ONE received match, so the duplicate read like coverage of
-    // both rows while passing on either alone — it would have stayed green with
-    // the hours row still pointing at #hours. The count cannot: it is 2 only
-    // when two rows actually target #locations.
-    expect(hrefs(container).filter((h) => h === `${EDIT}#locations`)).toHaveLength(2);
+  it("whitespace-only hours count as missing (same trim as the heuristic)", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, opening_hours: "   " }} />);
+    expect(screen.getByTestId("completeness-open-hours")).toBeInTheDocument();
   });
 
-  it("products signal falls back to products_count scalar when the array is absent", () => {
-    // No `products` array (e.g. a slimmer payload) but products_count present.
-    const { products, ...noArray } = base;
-    void products;
-    render(<ProfileCompletenessCard producer={{ ...noArray, products_count: 5 }} />);
-    // every step done → complete.
-    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
-  });
+  it.each([["null", null], ["empty", ""], ["whitespace", "   "]])(
+    "owner_photo_url %s → owner-photo row open, links to the owner-story card",
+    (_l, value) => {
+      render(<ProfileCompletenessCard producer={{ ...base, owner_photo_url: value }} />);
+      expect(screen.getByTestId("completeness-open-cta-owner_photo").getAttribute("href")).toBe(
+        `${EDIT}#owner-story`,
+      );
+    },
+  );
 
-  it("no products at all → products step todo (not complete)", () => {
-    const { products, ...noArray } = base;
-    void products;
-    render(<ProfileCompletenessCard producer={noArray} />);
-    expect(screen.queryByText("העמוד מלא")).not.toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-  });
-
-  it("missing contact → contact step todo, CTA → #profile-contact", () => {
-    render(
-      <ProfileCompletenessCard producer={{ ...base, phone: null, instagram: null }} />,
-    );
-    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
-    expect(cta).toHaveAttribute("href", `${EDIT}#profile-contact`);
-  });
-
-  it("location step honours coords XOR delivery: delivery-only + areas set → step done", () => {
-    render(
-      <ProfileCompletenessCard
-        producer={{
-          city: "תל אביב",
-          has_physical_location: false,
-          offers_delivery: true,
-          delivery_areas: [{ city: "חיפה" }],
-          opening_hours: "א׳-ה׳ 9:00-17:00",
-          phone: "0500000000",
-          phone_verified: true,
-          categories: ["dairy"],
-          images: ["img1"],
-          owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
-          products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
-        }}
-      />,
-    );
-    // delivery satisfies location (no coords needed) → every step complete.
-    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
-  });
-
-  it("delivery-only without areas → location step todo", () => {
-    render(
-      <ProfileCompletenessCard
-        producer={{
-          city: "תל אביב",
-          has_physical_location: false,
-          offers_delivery: true,
-          delivery_areas: [],
-          opening_hours: "א׳-ה׳ 9:00-17:00",
-          phone: "0500000000",
-          phone_verified: true,
-          categories: ["dairy"],
-          images: ["img1"],
-          owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
-          products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
-        }}
-      />,
-    );
-    // location todo → 6/7 → 86%, and the location step is the top remaining.
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-    const cta = screen.getByRole("link", { name: "להשלמת העמוד שלך" });
-    // MEH-1165 item 4 / MEH-2058: the location step's CTA lands on LocationsEditor.
-    expect(cta).toHaveAttribute("href", `${EDIT}#locations`);
+  it("contact ✓ and WhatsApp ✗ can hold at the same time (the MEH-2100 split)", () => {
+    render(<ProfileCompletenessCard producer={{ ...base, phone_verified: false }} />);
+    expect(screen.getByTestId("completeness-row-contact").dataset.done).toBe("true");
+    expect(screen.getByTestId("completeness-open-cta-phone_verified").getAttribute("href")).toBe("#phone-verify");
   });
 });
 
-/**
- * MEH-1895 — the gap MEH-1884 left open.
- *
- * MEH-1884 made opening_hours a yellow-tier completeness field, so the card
- * MOUNTS when hours are missing. But the checklist was a fixed four steps, so
- * the owner saw a card with 4/4 green and no indication of why it was there at
- * all. The first test below is the one that could not have passed before: it
- * asserts the card both mounts AND names the reason.
- */
-describe("MEH-1895 — hours is the fifth step", () => {
-  const noHours = { ...base, opening_hours: "" };
-
-  it("missing ONLY hours → card mounts at 86% with the hours row unchecked", () => {
-    // Pre-MEH-1895 this producer rendered "העמוד מלא" — mounted, complete,
-    // and silent about the field that mounted it.
-    render(<ProfileCompletenessCard producer={noHours} />);
-
-    expect(screen.queryByText("העמוד מלא")).not.toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-
-    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(7);
-    expect(within(list).getAllByText("הושלם")).toHaveLength(6);
-    expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
-
-    // Hours is the only remaining step → it drives the next-step box + CTA.
-    expect(screen.getAllByText("שעות פתיחה").length).toBeGreaterThanOrEqual(2);
-    // MEH-2142: → #locations, not #hours. The old target was deleted with the
-    // business-level card, and a CTA pointing at a card that no longer exists
-    // is the MEH-2058 failure repeated.
-    expect(
-      screen.getByRole("link", { name: "להשלמת העמוד שלך" }),
-    ).toHaveAttribute("href", `${EDIT}#locations`);
+describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks submission)", () => {
+  it("nothing missing → «הכול מוכן», 4 מתוך 4, footer (the submit button) shown, no open row", () => {
+    render(<ProfileCompletenessCard producer={draft} footer={<button type="button">send</button>} />);
+    expect(screen.getByText("הכול מוכן")).toBeInTheDocument();
+    expect(counter()).toBe("4 מתוך 4");
+    expect(openRows()).toHaveLength(0);
+    expect(screen.getByTestId("completeness-footer")).toBeInTheDocument();
   });
 
-  it("whitespace-only hours count as missing — the same trim the heuristic uses", () => {
-    render(<ProfileCompletenessCard producer={{ ...base, opening_hours: "   " }} />);
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
-  });
-
-  it("hours filled + another field missing → hours row is checked, not the other", () => {
-    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
-    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
-    const rows = within(list).getAllByRole("listitem");
-    const hoursRow = rows.find((r) => r.textContent.includes("שעות פתיחה"));
-    const imageRow = rows.find((r) => r.textContent.includes("תמונה ראשית"));
-
-    expect(hoursRow.textContent).toContain("הושלם");
-    expect(imageRow.textContent).toContain("עדיין חסר");
-  });
-
-  it("step order is stable — hours is last", () => {
-    render(<ProfileCompletenessCard producer={noHours} />);
-    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
-    const labels = within(list)
-      .getAllByRole("listitem")
-      // MEH-2100: the חובה/מומלץ chip is part of every row now, so it is
-      // stripped alongside the sr-only done/todo text. This test is about
-      // ORDER and LABELS; which rows are required is asserted separately
-      // below, by testid, so stripping here loses no coverage.
-      .map((li) =>
-        li.textContent
-          .replace(/הושלם|עדיין חסר|chip_required|chip_recommended/g, "")
-          .trim(),
-      );
-
-    expect(labels).toEqual([
-      "תמונה ראשית",
-      "קטגוריות ומיקום",
-      "מוצר ראשון בקטלוג",
-      "פרטי קשר",
-      "אימות וואטסאפ",
-      "שעות פתיחה",
-      "תמונה שלך",
+  it("recommended items never appear in draft — hours / owner photo / contact are not rows", () => {
+    render(
+      <ProfileCompletenessCard
+        producer={{ ...draft, opening_hours: "", owner_photo_url: null, phone: null, short_description: "" }}
+      />,
+    );
+    expect(screen.getByText("הכול מוכן")).toBeInTheDocument();
+    const keys = within(list()).getAllByRole("listitem").map((li) => li.dataset.testid);
+    expect(keys).toEqual([
+      "completeness-row-details",
+      "completeness-row-image",
+      "completeness-row-product",
+      "completeness-row-phone_verified",
     ]);
   });
 
-  it("chips mark the five gate items required and hours recommended (MEH-2100)", () => {
-    // The submit gate blocks on image / products / category+location /
-    // contact; opening hours is the one recommended step (Sapir 16/08). A
-    // chip on the wrong row would tell the owner she can skip something the
-    // server will 422 on, so each of the six is asserted by name rather
-    // than counting how many carry each chip.
-    render(<ProfileCompletenessCard producer={noHours} />);
-    for (const key of ["image", "location", "products", "contact", "phone_verified"]) {
-      expect(
-        screen.getByTestId(`completeness-chip-${key}`).textContent,
-      ).toBe("chip_required");
-    }
-    expect(screen.getByTestId("completeness-chip-hours").textContent).toBe(
-      "chip_recommended",
-    );
-  });
-
-  // MEH-2100, Sapir 16/08 — the split. This is the state that motivated it and
-  // the one that must never regress: contact details are PRESENT, so that row
-  // keeps its earned ✓, while the WhatsApp number is unverified, so the gate
-  // row is still open. Before the split these were one row, and it read
-  // «פרטי קשר ✓ חובה» while the draft banner below refused to submit.
-  //
-  // Asserted per row rather than by counting: a count would pass if the two
-  // rows swapped states, which is precisely the confusion being fixed.
-  it("contact ✓ and WhatsApp ✗ can hold at the same time (the split)", () => {
+  it("one missing (product) → headline counts 1, the product row is open, footer hidden", () => {
     render(
-      <ProfileCompletenessCard
-        producer={{ ...base, phone_verified: false }}
-      />,
+      <ProfileCompletenessCard producer={{ ...draft, products: [] }} footer={<button type="button">send</button>} />,
     );
-    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
-    const rowFor = (label) =>
-      within(list)
-        .getAllByRole("listitem")
-        .find((li) => li.textContent.includes(label));
+    expect(screen.getByText("עוד 1 צעדים לשליחה לבדיקה")).toBeInTheDocument();
+    expect(counter()).toBe("3 מתוך 4");
+    expect(screen.getByTestId("completeness-open-cta-product").getAttribute("href")).toBe(`${EDIT}#profile-products`);
+    expect(screen.queryByTestId("completeness-footer")).toBeNull();
+  });
 
-    expect(rowFor("פרטי קשר").textContent).toContain("הושלם");
-    expect(rowFor("אימות וואטסאפ").textContent).toContain("עדיין חסר");
-    // And it gates: חובה, not מומלץ.
-    expect(
-      screen.getByTestId("completeness-chip-phone_verified").textContent,
-    ).toBe("chip_required");
-    // It points at the OTP card in the dashboard banner, not the edit hub —
-    // sending her to the edit page would be a dead end, there is no verify
-    // control there.
-    expect(rowFor("אימות וואטסאפ").querySelector("a")).toHaveAttribute(
-      "href",
-      "#phone-verify",
+  it("many missing (fresh signup: no photo, no product, phone not verified) → one open row, the photo", () => {
+    render(<ProfileCompletenessCard producer={{ ...draft, images: [], products: [], phone_verified: false }} />);
+    expect(counter()).toBe("1 מתוך 4");
+    expect(openRows().map((r) => r.dataset.testid)).toEqual(["completeness-open-image"]);
+    expect(screen.getByTestId("completeness-row-details").dataset.done).toBe("true");
+    // WhatsApp is not open yet, so the OTP card is not mounted
+    expect(screen.queryByTestId("phone-verify-card")).toBeNull();
+  });
+
+  it("WhatsApp is the open row → the OTP card opens inside it, under #phone-verify; verifying calls back", () => {
+    const onPhoneVerified = vi.fn();
+    render(
+      <ProfileCompletenessCard producer={{ ...draft, phone_verified: false }} onPhoneVerified={onPhoneVerified} />,
     );
+    const row = screen.getByTestId("completeness-open-phone_verified");
+    expect(row.id).toBe("phone-verify");
+    fireEvent.click(within(row).getByTestId("phone-verify-card"));
+    expect(onPhoneVerified).toHaveBeenCalledTimes(1);
   });
 
-  it("the ring divisor follows the array, so 6 done reads 100 and never over", () => {
-    // The guard against the defect the old `STEP_COUNT = 4` constant would have
-    // produced on this very change: 6 of 5 = 120%. Asserted on the complete
-    // fixture, where the card collapses — a percent over 100 could not render.
-    render(<ProfileCompletenessCard producer={base} />);
-    expect(screen.getByText("העמוד מלא")).toBeInTheDocument();
-    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-  });
-});
-
-// MEH-3032 — «תמונה שלך»: the owner's face behind the public OwnerCard
-// (Airbnb «meet your host», Etsy «meet the owner»). Card-only, like products
-// (MEH-1106 B1): the shared heuristic is untouched, so the admin list, the
-// QR-card gate and the dashboard's isComplete do not move.
-describe("MEH-3032 — owner photo is a recommended 7th step", () => {
-  const noOwnerPhoto = { ...base, owner_photo_url: null };
-
-  it.each([
-    ["null", null],
-    ["empty string", ""],
-    ["whitespace only", "   "],
-  ])("owner_photo_url %s → card mounts, row unchecked", (_l, value) => {
-    render(<ProfileCompletenessCard producer={{ ...base, owner_photo_url: value }} />);
-    expect(screen.queryByText("העמוד מלא")).toBeNull();
-    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
-    const row = within(list).getByText("תמונה שלך").closest("a");
-    expect(row.textContent).toContain("עדיין חסר");
+  it("category missing → «פרטי העסק» opens on the categories card; location missing → on locations", () => {
+    const { rerender } = render(<ProfileCompletenessCard producer={{ ...draft, categories: [] }} />);
+    expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#profile-categories`);
+    rerender(<ProfileCompletenessCard producer={{ ...draft, locations: [], lat: null, lng: null }} />);
+    expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#locations`);
   });
 
-  it("owner photo present → row checked and the card can collapse to complete", () => {
-    render(<ProfileCompletenessCard producer={base} />);
-    expect(screen.getByText("העמוד מלא")).toBeTruthy();
-  });
-
-  it("is recommended, not required — the submit gate does not block on it", () => {
-    render(<ProfileCompletenessCard producer={noOwnerPhoto} />);
-    expect(screen.getByTestId("completeness-chip-owner_photo").textContent).toBe(
-      "chip_recommended",
+  it("licence-required category without a number → a licence note linking to #license; with a number → none", () => {
+    const cats = [{ id: 7, name: "מאפים", requires_license: true }];
+    const { rerender } = render(<ProfileCompletenessCard producer={{ ...draft, categories: cats }} />);
+    expect(screen.getByTestId("completeness-license-note").getAttribute("href")).toBe(`${EDIT}#license`);
+    rerender(
+      <ProfileCompletenessCard producer={{ ...draft, categories: cats, producer_license_number: "12345" }} />,
     );
-  });
-
-  it("deep-links to the owner-story editor card", () => {
-    render(<ProfileCompletenessCard producer={noOwnerPhoto} />);
-    const list = screen.getByRole("list", { name: "התקדמות השלמת העמוד" });
-    const row = within(list).getByText("תמונה שלך").closest("a");
-    expect(row.getAttribute("href")).toBe(`${EDIT}#owner-story`);
-  });
-});
-
-// MEH-2926: «השלב הבא» is hers to act on, so it goes while the page waits for
-// review — and comes back when the review sends it back with changes.
-describe("ProfileCompletenessCard — next step and review (MEH-2926)", () => {
-  const incomplete = { ...base, images: [] };
-  it.each([
-    ["draft", undefined, true],
-    ["pending", undefined, false],
-    ["pending", "נא להוסיף תמונה", true],
-  ])("status %s, requested_changes %s → next step shown: %s", (status, requested_changes, shown) => {
-    render(<ProfileCompletenessCard producer={{ ...incomplete, status, requested_changes }} />);
-    expect(!!screen.queryByTestId("completeness-next-step")).toBe(shown);
-    // The checklist itself is never hidden.
-    expect(screen.getByRole("list", { name: "התקדמות השלמת העמוד" })).toBeInTheDocument();
+    expect(screen.queryByTestId("completeness-license-note")).toBeNull();
   });
 });

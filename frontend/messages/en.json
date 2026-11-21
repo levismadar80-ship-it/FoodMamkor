@@ -5339,7 +5339,19 @@
           "hours": "Opening hours"
         },
         "chip_required": "Required",
-        "chip_recommended": "Recommended"
+        "chip_recommended": "Recommended",
+        "draft_headline": "{count, plural, one {One more step before review} other {# more steps before review}}",
+        "draft_ready": "All set",
+        "counter": "{done} of {total}",
+        "improve_headline": "Improve your page",
+        "open_cta": "Complete",
+        "license_note": "We can't approve the page without a licence number",
+        "draft_steps": {
+          "details": "Business details",
+          "image": "A photo of the business or products",
+          "product": "First product",
+          "phone_verified": "Verify your WhatsApp number"
+        }
       },
       "strength": {
         "heading": "Profile strength",

@@ -5335,7 +5335,19 @@
           "hours": "שעות פתיחה"
         },
         "chip_required": "חובה",
-        "chip_recommended": "מומלץ"
+        "chip_recommended": "מומלץ",
+        "draft_headline": "{count, plural, one {עוד צעד אחד לשליחה לבדיקה} two {עוד 2 צעדים לשליחה לבדיקה} other {עוד # צעדים לשליחה לבדיקה}}",
+        "draft_ready": "הכול מוכן",
+        "counter": "{done} מתוך {total}",
+        "improve_headline": "לשפר את העמוד",
+        "open_cta": "להשלמה",
+        "license_note": "בלי מספר רישיון לא נוכל לאשר את העמוד",
+        "draft_steps": {
+          "details": "פרטי העסק",
+          "image": "תמונה של העסק או המוצרים",
+          "product": "מוצר ראשון",
+          "phone_verified": "אימות מספר הוואטסאפ"
+        }
       },
       "strength": {
         "heading": "חוזק פרופיל",

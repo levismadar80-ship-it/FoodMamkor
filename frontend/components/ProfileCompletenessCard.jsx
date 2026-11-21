@@ -5,7 +5,17 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
-import { COLOR } from "@/lib/color-tokens";
+import PhoneVerifyCard from "@/components/PhoneVerifyCard";
+import {
+  MISSING_CATEGORY,
+  MISSING_IMAGE,
+  MISSING_LOCATION,
+  MISSING_PHONE_VERIFIED,
+  MISSING_PRODUCT,
+  isDeliveryOnly as gateDeliveryOnly,
+  submissionMissingItems,
+} from "@/lib/submission-gate";
+import { licenseMissingForProfile } from "@/lib/license-required-categories";
 
 /**
  * ProfileCompletenessCard — MEH-288.
@@ -72,65 +82,6 @@ const EDIT_HUB = "/producer/dashboard/edit";
 // MEH-1092 (F3): incomplete never uses red — a partial profile is progress, not
 // a failure. Incomplete uses the gold token (#896714); complete uses the
 // primary token (#2e6853). No threat colour.
-const RING_STROKE = {
-  incomplete: COLOR.accent,
-  complete: COLOR.primary,
-};
-
-function ProgressRing({ percent, tone, label }) {
-  const size = 56;
-  const stroke = 5;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const dash = (percent / 100) * circ;
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      role="progressbar"
-      aria-valuenow={percent}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-label={label}
-      className="shrink-0"
-    >
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={COLOR.border}
-        strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={RING_STROKE[tone] || RING_STROKE.complete}
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={`${dash} ${circ}`}
-        // Start the arc at 12 o'clock and sweep clockwise (visual default reads
-        // best regardless of text direction — the ring is direction-neutral).
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-      <text
-        x="50%"
-        y="50%"
-        dominantBaseline="central"
-        textAnchor="middle"
-        fontSize="14"
-        fontWeight="700"
-        fill={COLOR.text}
-      >
-        {percent}%
-      </text>
-    </svg>
-  );
-}
-
 // Build the checklist steps from the shared heuristic + the card-only
 // products signal. Each step: { key, done, href }.
 function buildSteps(producer, missingLabels) {
@@ -265,30 +216,180 @@ function buildSteps(producer, missingLabels) {
   ];
 }
 
+// MEH-3659: the draft checklist. Rows come from the SUBMIT GATE
+// (lib/submission-gate.js, the client mirror of submission_gate.py), so a
+// business in draft sees exactly what blocks «שליחה לבדיקה» and nothing else —
+// the recommended items wait for «לשפר את העמוד» after she submits
+// (Shopify setup guide / Airbnb: only what blocks publishing, before publishing).
+// Category + location arrive from signup, so they share one «פרטי העסק» row
+// that is already ✓ for almost everyone; it opens only if one is missing.
+function buildDraftRows(producer) {
+  const missing = new Set(submissionMissingItems(producer));
+  const categoryMissing = missing.has(MISSING_CATEGORY);
+  const locationMissing = missing.has(MISSING_LOCATION);
+  const locationHref = gateDeliveryOnly(producer)
+    ? `${EDIT_HUB}#delivery`
+    : `${EDIT_HUB}#locations`;
+  return [
+    {
+      key: "details",
+      done: !categoryMissing && !locationMissing,
+      href: categoryMissing ? `${EDIT_HUB}#profile-categories` : locationHref,
+    },
+    { key: "image", done: !missing.has(MISSING_IMAGE), href: `${EDIT_HUB}#profile-images` },
+    { key: "product", done: !missing.has(MISSING_PRODUCT), href: `${EDIT_HUB}#profile-products` },
+    // The OTP card opens inside this row — no navigation.
+    { key: "phone_verified", done: !missing.has(MISSING_PHONE_VERIFIED), inline: true },
+  ];
+}
+
+const ROW_LINK =
+  "flex items-center gap-2 text-sm rounded-sm -mx-2 px-2 py-1.5 hover:bg-primary/5 transition-colors focus-ring";
+const PRIMARY_BTN =
+  "inline-flex items-center justify-center gap-2 min-h-touch px-5 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring";
+
+function RowMark({ done }) {
+  return (
+    <span className="inline-flex w-4 justify-center text-primary shrink-0" aria-hidden="true">
+      {done ? <Check size={14} weight="bold" /> : null}
+    </span>
+  );
+}
+
+/**
+ * One list for both modes. Done rows: ✓ + label (still a link, so she can
+ * edit). The FIRST row not done is the open one — tinted, with one button
+ * (or, for the WhatsApp row, the OTP card itself). Every other row not done is
+ * a plain label link. One open row at a time is the Shopify setup-guide shape.
+ */
+function Checklist({ rows, label, labelKey, t, openContent = undefined }) {
+  const openKey = rows.find((r) => !r.done)?.key;
+  return (
+    <ul className="mt-4 space-y-1" aria-label={label} data-testid="completeness-list">
+      {rows.map((r) => {
+        const text = t(`${labelKey}.${r.key}`);
+        const status = <span className="sr-only">{r.done ? t("checklist_done") : t("checklist_todo")}</span>;
+        if (r.key === openKey) {
+          return (
+            <li
+              key={r.key}
+              id={r.key === "phone_verified" ? "phone-verify" : undefined}
+              data-testid={`completeness-open-${r.key}`}
+              className="bg-primary/5 border border-primary/20 rounded-md p-4 my-2"
+            >
+              <p className="flex items-center gap-2 text-sm font-semibold text-text">
+                <RowMark done={false} />
+                {text}
+                {status}
+              </p>
+              <div className="mt-3">
+                {openContent?.(r) ?? (
+                  <Link href={r.href} className={PRIMARY_BTN} data-testid={`completeness-open-cta-${r.key}`}>
+                    {t("open_cta")}
+                    <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
+                  </Link>
+                )}
+              </div>
+            </li>
+          );
+        }
+        return (
+          <li key={r.key} data-testid={`completeness-row-${r.key}`} data-done={r.done}>
+            {r.inline ? (
+              <span className={ROW_LINK}>
+                <RowMark done={r.done} />
+                <span className={r.done ? "text-text" : "text-fg-muted"}>{text}</span>
+                {status}
+              </span>
+            ) : (
+              <Link href={r.href} className={ROW_LINK}>
+                <RowMark done={r.done} />
+                <span className={r.done ? "text-text" : "text-fg-muted"}>{text}</span>
+                {status}
+              </Link>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Title + «N מתוך M» — the one heading both modes share. */
+function CardHead({ title, done, total, t }) {
+  return (
+    <>
+      <h2 className="font-headline-lg text-xl md:text-2xl font-bold text-primary" aria-live="polite">
+        {title}
+      </h2>
+      <p className="text-sm text-fg-muted mt-1" data-testid="completeness-counter">
+        {t("counter", { done, total })}
+      </p>
+    </>
+  );
+}
+
 // MEH-2883: `footer` — for a business in `draft`, the dashboard passes the
-// submit-for-review actions (DraftSubmitBanner variant="actions") so the owner
-// sees ONE setup checklist (this card's meter + items) with the one action at
-// its foot, instead of two stacked checklists of the same items.
-export default function ProfileCompletenessCard({ producer, footer = null }) {
+// submit action (DraftSubmitBanner variant="actions"). MEH-3659: it renders
+// only once every row is done, under «הכול מוכן».
+export default function ProfileCompletenessCard({ producer, footer = null, onPhoneVerified }) {
   const t = useTranslations("dashboard.producer.completeness");
   if (!producer) return null;
 
+  if (producer.status === "draft") {
+    const rows = buildDraftRows(producer);
+    const doneCount = rows.filter((r) => r.done).length;
+    const remaining = rows.length - doneCount;
+    const ready = remaining === 0;
+    return (
+      <div
+        data-testid="profile-completeness-card"
+        data-mode="draft"
+        className="bg-background border border-border rounded-lg p-6 md:p-8 mb-8"
+      >
+        <CardHead
+          title={ready ? t("draft_ready") : t("draft_headline", { count: remaining })}
+          done={doneCount}
+          total={rows.length}
+          t={t}
+        />
+        <Checklist
+          rows={rows}
+          label={t("checklist_aria")}
+          labelKey="draft_steps"
+          t={t}
+          openContent={(r) =>
+            r.key === "phone_verified" ? (
+              <div data-testid="draft-phone-verify">
+                <PhoneVerifyCard variant="inline" onVerified={() => onPhoneVerified?.()} />
+              </div>
+            ) : null
+          }
+        />
+        {/* Not a gate item: a licence-required category without a number can
+            be submitted, but cannot be approved (MEH-3026). One line, a link
+            to the licence card. */}
+        {licenseMissingForProfile(producer) && (
+          <Link
+            href={`${EDIT_HUB}#license`}
+            className="mt-3 inline-flex min-h-touch items-center text-sm text-primary underline underline-offset-2 focus-ring rounded"
+            data-testid="completeness-license-note"
+          >
+            {t("license_note")}
+          </Link>
+        )}
+        {ready && footer && <div className="mt-5" data-testid="completeness-footer">{footer}</div>}
+      </div>
+    );
+  }
+
   const { missing } = producerCompleteness(producer);
-  const missingLabels = new Set(missing);
-  const steps = buildSteps(producer, missingLabels);
+  const steps = buildSteps(producer, new Set(missing));
   const doneCount = steps.filter((s) => s.done).length;
-  const percent = Math.round((doneCount / steps.length) * 100);
-  const isComplete = doneCount === steps.length;
-  const firstTodo = steps.find((s) => !s.done);
-  // MEH-2926: once the page is sent for review, «השלב הבא: …» is no longer
-  // true — the next step is ours. The pending banner above says so; the
-  // checklist stays so she can still improve the page while she waits.
-  // A pending page with requested changes is back in her hands: keep it.
-  const awaitingReview = producer.status === "pending" && !producer.requested_changes;
 
   // Complete → collapse to a single confirmation line (the card never fully
   // disappears, per the locked design decision).
-  if (isComplete) {
+  if (doneCount === steps.length) {
     return (
       <div
         data-testid="profile-completeness-card"
@@ -306,100 +407,16 @@ export default function ProfileCompletenessCard({ producer, footer = null }) {
     );
   }
 
-  // Seven steps since MEH-3032: percent lands on 0/14/29/43/57/71/86. >70 is
-  // reached at 5 of 7 (71%) and 6 of 7 (86%), which read as "almost there";
-  // below that is the neutral progress headline (at six steps 4 of 6 = 67%
-  // was neutral — two missing now reads "almost there", deliberately). Calm
-  // idiom (MEH-1092): gold ring, never red, for every incomplete state.
-  const headline =
-    percent > 70
-      ? t("yellow_high_headline", { percent })
-      : t("yellow_low_headline", { percent });
-
+  // MEH-3659: after submission — «לשפר את העמוד», N מתוך M, one open row.
+  // The WhatsApp row stays a link to the reverify card on the dashboard.
   return (
     <div
       data-testid="profile-completeness-card"
+      data-mode="improve"
       className="bg-background border border-border rounded-lg p-6 md:p-8 mb-8"
     >
-      <div className="flex items-start gap-4">
-        <ProgressRing
-          percent={percent}
-          tone="incomplete"
-          label={t("ring_aria", { percent })}
-        />
-        <div className="flex-1 min-w-0">
-          <h2
-            className="font-headline-lg text-xl md:text-2xl font-bold text-primary"
-            aria-live="polite"
-          >
-            {headline}
-          </h2>
-          <p className="text-sm md:text-base text-fg-muted mt-1">{t("checklist_sub")}</p>
-
-          {/* The checklist. Done → text-primary ✓ + label; remaining →
-              text-fg-muted label, no marker (per the MEH-897 locked design). Each
-              row deep-links to its editor section. */}
-          <ul className="mt-4 space-y-1" aria-label={t("checklist_aria")}>
-            {steps.map((s) => (
-              <li key={s.key}>
-                <Link
-                  href={s.href}
-                  className="flex items-center gap-2 text-sm rounded-sm -mx-2 px-2 py-1.5 hover:bg-primary/5 transition-colors focus-ring"
-                >
-                  <span
-                    className="inline-flex w-4 justify-center text-primary"
-                    aria-hidden="true"
-                  >
-                    {s.done ? <Check size={14} weight="bold" /> : null}
-                  </span>
-                  <span className={s.done ? "text-text" : "text-fg-muted"}>
-                    {t(`steps.${s.key}`)}
-                  </span>
-                  {/* MEH-2100: חובה / מומלץ. Rendered for EVERY row, done or
-                      not — the owner needs to know which items gate the
-                      submit button before she finishes them, and a chip that
-                      appears only while incomplete tells her that too late. */}
-                  <span
-                    data-testid={`completeness-chip-${s.key}`}
-                    className={`shrink-0 rounded-full px-2 text-xs ${
-                      s.required
-                        ? "bg-primary/10 text-primary"
-                        : "bg-border/60 text-fg-muted"
-                    }`}
-                  >
-                    {s.required ? t("chip_required") : t("chip_recommended")}
-                  </span>
-                  <span className="sr-only">
-                    {s.done ? t("checklist_done") : t("checklist_todo")}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          {/* Top remaining step emphasized as the primary next-step. Box = faint
-              primary tint via opacity (REUSES: KashrutBadgeStrip.jsx:53). */}
-          {firstTodo && !awaitingReview && (
-            <div data-testid="completeness-next-step" className="mt-4 bg-primary/5 border border-primary/20 rounded-md p-4">
-              <p className="text-sm text-text">
-                <span className="font-semibold">{t("next_step_prefix")}</span>{" "}
-                {t(`steps.${firstTodo.key}`)}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="mt-5">
-        <Link
-          href={firstTodo ? firstTodo.href : EDIT_HUB}
-          aria-label={t("cta_aria")}
-          className="inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
-        >
-          {t("cta")}
-          {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
-          <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-        </Link>
-      </div>
+      <CardHead title={t("improve_headline")} done={doneCount} total={steps.length} t={t} />
+      <Checklist rows={steps} label={t("checklist_aria")} labelKey="steps" t={t} />
       {footer && <div className="mt-6 border-t border-border pt-5">{footer}</div>}
     </div>
   );
