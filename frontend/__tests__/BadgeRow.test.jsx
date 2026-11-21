@@ -304,13 +304,13 @@ describe("BadgeRow", () => {
 
     // MEH-1492: the recommended badge popover links to the /about criteria +
     // ADR-030 promise (mirrors the verified seal → /about#verification).
-    it("recommended badge popover links to /about#editors-pick", async () => {
+    it("recommended badge popover links to /about/badges#editors-pick (MEH-3667)", async () => {
       const { container } = render(
         <BadgeRow producer={{ verification_tier: null, is_recommended: true }} />,
       );
       // open the popover by clicking the chip trigger
       fireEvent.click(screen.getByText("בחירת העורכות"));
-      const link = container.querySelector('a[href="/about#editors-pick"]');
+      const link = container.querySelector('a[href="/about/badges#editors-pick"]');
       expect(link).not.toBeNull();
     });
 
