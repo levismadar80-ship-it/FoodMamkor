@@ -188,6 +188,11 @@ async function pixel(page: Page, x: number, y: number): Promise<number[]> {
 
 const rgb = (css: string) => (css.match(/\d+/g) || []).slice(0, 3).map(Number);
 
+// MEH-3051: the trace is `on-first-retry`, so a first-attempt red has none.
+// Keep the trace of a FAILED attempt here (as 30-login-journey-c does), so the
+// next one can be read. File level: Playwright refuses `trace` in a describe.
+test.use({ trace: "retain-on-failure" });
+
 test.describe("MEH-2824 · footer reaches the screen edge under the floating nav (phone)", () => {
   test.use({ viewport: PHONE, isMobile: true, hasTouch: true });
 
@@ -224,13 +229,38 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
       // …so the footer ends at the screen edge…
       expect.soft(Math.abs(m.footerBottom - m.innerHeight), "footer bottom = screen bottom").toBeLessThanOrEqual(1);
       // …and the bottom-edge pixel beside the nav pill is footer green, not cream.
-      const edge = await pixel(page, 2, PHONE.height - 2);
       // Distance, not equality: the nav's shadow tints the cream by ~1 unit
       // (measured 244,239,231 vs 245,240,232), so `not.toEqual` would pass on
       // the very strip this test exists to catch. Footer green is >150 away.
+      //
+      // MEH-3051, again on a staging push 19/11 (:195, /he, passed on retry):
+      // the pixel read pure cream (245,240,232) while the footer-bottom check
+      // above, read moments earlier from `m`, passed. Measured 17/11 (MEH-3051):
+      // cream there needs the footer's bottom ABOVE the screen's bottom, which
+      // `m` had just ruled out, so the page moved between `m` and the
+      // screenshot (what moved is not established; the first attempt has no
+      // trace). The pixel is therefore read in the same poll as a fresh
+      // footer-bottom reading, with the page held at its foot, and only a pixel
+      // taken while the footer IS at the screen edge counts. The MEH-2824 strip
+      // (body padding under the footer) is a static layout: the footer never
+      // reaches the edge and the pixel stays cream, so this still reds on it.
       const bg = rgb(m.bodyBg);
-      const distance = Math.max(...edge.map((c, i) => Math.abs(c - bg[i])));
-      expect.soft(distance, `bottom-edge pixel ${edge} vs background ${bg}`).toBeGreaterThan(40);
+      let edge: number[] = [];
+      let footerGap: number | null = null;
+      const edgeDistance = async () => {
+        footerGap = await page.evaluate(() => {
+          window.scrollTo(0, document.documentElement.scrollHeight);
+          const f = document.querySelector("footer[data-site-footer]");
+          return f ? Math.round(f.getBoundingClientRect().bottom - innerHeight) : null;
+        });
+        edge = await pixel(page, 2, PHONE.height - 2);
+        return footerGap !== null && Math.abs(footerGap) <= 1
+          ? Math.max(...edge.map((c, i) => Math.abs(c - bg[i])))
+          : -1;
+      };
+      await expect(async () => {
+        expect(await edgeDistance(), `bottom-edge pixel ${edge} vs background ${bg}, footer gap ${footerGap}`).toBeGreaterThan(40);
+      }).toPass({ timeout: 5_000 });
       // The last line of footer text is still readable above the nav.
       expect.soft(m.lastTextBottom, "last footer line clears the nav").toBeLessThanOrEqual(m.navTop!);
     });

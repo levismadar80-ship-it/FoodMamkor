@@ -9312,6 +9312,10 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
 
 /**
  * The logged-in buyer's orders, newest first.
+ *
+ * MEH-3525: an order closed more than BUYER_VIEW_AFTER_CLOSE ago is left out,
+ * because its page (`_own_order`) answers 404 by then and the row would be a
+ * dead link.
  * @summary List Own Orders
  */
 export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({

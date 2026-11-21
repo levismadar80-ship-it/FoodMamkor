@@ -9,7 +9,7 @@ Touches:  Postgres test DB via TestClient (GET /admin/dashboard).
 Does NOT: test the moderation transitions themselves — that's
           tests/test_meh997_e2e_journeys.py (journey 1) and
           tests/test_producer_recipes.py (TestAdminModeration).
-Related:  backend/app/routers/admin_extra.py get_dashboard;
+Related:  backend/app/services/admin_dashboard.py build_dashboard;
           frontend/app/[locale]/admin/AdminLayoutClient.jsx (badge consumer).
 History:  MEH-997 (creation — seed: מתכון לא מופיע באדמין).
 """

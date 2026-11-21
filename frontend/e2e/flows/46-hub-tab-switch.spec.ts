@@ -68,9 +68,15 @@ for (const locale of ["he", "en"] as const) {
   const prefix = locale === "en" ? "/en" : "";
 
   test(`${locale}: events ↔ experiences switches in place — no loader, no remount, one fetch`, async ({ page }) => {
+    // MEH-2233: the server paints the first rows, and the client then refreshes
+    // them QUIETLY (no skeleton, so no aria-busy). That mount request must have
+    // answered before counting starts, or it lands in listCalls and reads as a
+    // second fetch for the switch (first attempt of run 44840371067, both locales).
+    const mountList = page.waitForResponse((res) => /\/api\/experiences\/?$/.test(new URL(res.url()).pathname));
     const hub = await openHub(page, `${prefix}/experiences`);
     await expect(hub.locator('[data-tab-value="experiences"]')).toHaveAttribute("aria-selected", "true");
     // Let the first list load settle before counting.
+    await mountList;
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
 
     // Marker on the live node: survives only if the hub is NOT remounted.
