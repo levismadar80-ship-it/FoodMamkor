@@ -96,6 +96,43 @@ describe("OrderSheet for a signed-in buyer", () => {
     expect(screen.getByTestId("order-sheet-send-code")).toBeTruthy();
   });
 
+  it("keeps the same phone field when the code step comes and goes, so focus stays", () => {
+    auth.value = user();
+    renderSheet();
+    const field = screen.getByTestId("order-sheet-phone");
+    fireEvent.change(field, { target: { value: "050123456" } });
+    expect(screen.getByTestId("order-sheet-send-code")).toBeTruthy();
+    fireEvent.change(field, { target: { value: "0501234567" } });
+    expect(screen.queryByTestId("order-sheet-send-code")).toBeNull();
+    expect(screen.getByTestId("order-sheet-phone")).toBe(field);
+  });
+
+  it("asks for a code after the server refuses the codeless send", async () => {
+    auth.value = user();
+    vi.mocked(api.post).mockImplementation(async (url) => {
+      if (url === "/product-orders/quote") return { data: QUOTE };
+      throw { response: { status: 422, data: { detail: "הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש" } } };
+    });
+    renderSheet();
+    await waitFor(() => expect(screen.getByTestId("order-sheet-send").disabled).toBe(false));
+    fireEvent.submit(screen.getByTestId("order-sheet"));
+    expect(await screen.findByTestId("order-sheet-send-code")).toBeTruthy();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("fills the form when her account arrives after the sheet opened", () => {
+    const view = renderSheet();
+    expect(screen.getByTestId("order-sheet-name").value).toBe("");
+    auth.value = user();
+    view.rerender(
+      <NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">
+        <OrderSheet producer={{ id: PRODUCER }} menu={MENU} picks={{ [BREAD]: 1 }} onClose={() => {}} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("order-sheet-name").value).toBe("דנה לוי");
+    expect(screen.queryByTestId("order-sheet-send-code")).toBeNull();
+  });
+
   it("fills only the name, and keeps the code step, when her phone is not verified", () => {
     auth.value = user({ phone_verified: false });
     renderSheet();

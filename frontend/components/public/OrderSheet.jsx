@@ -47,6 +47,7 @@ import { splitKey } from "@/lib/product-variants";
 
 const QUOTE_DELAY_MS = 400;
 const CONFLICT = 409;
+const UNPROCESSABLE = 422;
 
 /**
  * @param {{
@@ -79,6 +80,19 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     age: false,
   }));
   const [key] = useState(newOrderKey);
+  // MEH-3680 review: the server refused the codeless send (her phone changed
+  // elsewhere, or the hourly bound) — from here on she proves it with a code.
+  const [codeAsked, setCodeAsked] = useState(false);
+  const verified = !codeAsked && Boolean(me?.phone_verified) && sameIlPhone(form.phone, me?.phone);
+  // Auth can resolve after the sheet opened: fill what is still empty.
+  useEffect(() => {
+    if (!me) return;
+    setForm((old) => ({
+      ...old,
+      name: old.name || (me.name ?? ""),
+      phone: old.phone || (me.phone_verified ? (me.phone ?? "") : ""),
+    }));
+  }, [me]);
   // The quote together with the request it answers: a total is shown, and
   // «שליחת הבקשה» enabled, only when it answers what is on the form now — a
   // pickup total must never stand in for a delivery (fresh review of #4837).
@@ -106,13 +120,14 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     setError(null);
     try {
       const href = await sendOrder(
-        orderBody({ producerId: producer.id, picks, ...form, slotStart: slot, ageDeclared: form.age, key }),
+        orderBody({ producerId: producer.id, picks, ...form, code: verified ? "" : form.code, slotStart: slot, ageDeclared: form.age, key }),
       );
       router.push(href);
     } catch (err) {
       const res = /** @type {any} */ (err)?.response;
       setError(detailToMessage(res?.data?.detail) || t("failed"));
       if (res?.status === CONFLICT) onStale();
+      if (verified && res?.status === UNPROCESSABLE) setCodeAsked(true);
       setBusy(false);
     }
   };
@@ -136,7 +151,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
           </>
         )}
         <Input label={t("name")} required value={form.name} onChange={(e) => set({ name: e.target.value })} autoComplete="name" data-testid="order-sheet-name" />
-        <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={Boolean(me?.phone_verified) && sameIlPhone(form.phone, me?.phone)} onChange={set} />
+        <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} verified={verified} onChange={set} />
         <NoteField value={form.note} onChange={(note) => set({ note })} />
         {hasAlcohol && (
           <label className="flex items-start gap-2 text-sm text-text">

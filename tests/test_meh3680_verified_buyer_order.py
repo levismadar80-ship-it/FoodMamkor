@@ -69,3 +69,43 @@ def test_a_guest_without_a_code_is_refused_and_no_try_is_counted(
     assert db.query(ProductOrder).count() == 0
     row = db.query(ProductOrderPhoneCode).one()
     assert (row.used_at, row.attempts) == (None, 0)
+
+
+def test_a_verified_buyer_who_sends_a_code_anyway_is_not_held_to_it(
+    client, db, flag_on
+):
+    shop = Shop(db)
+    user = _buyer(db)
+    body = valid_order_payload(shop, slot_of(client, shop), "000000", phone=PHONE)
+    res = client.post("/product-orders", json=body, headers=auth_header(user))
+    assert res.status_code == 201, res.text
+    assert db.query(ProductOrderPhoneCode).count() == 0
+
+
+def test_after_a_phone_change_the_old_verification_covers_nothing(client, db, flag_on):
+    shop = Shop(db)
+    user = _buyer(db)
+    headers = auth_header(user)
+    changed = client.patch("/users/me", json={"phone": OTHER_PHONE}, headers=headers)
+    assert changed.status_code == 200, changed.text
+    for phone in (OTHER_PHONE, PHONE):
+        res = _post(client, shop, headers, phone=phone)
+        assert res.status_code == 422, res.text
+    assert db.query(ProductOrder).count() == 0
+
+
+def test_from_the_fourth_order_in_an_hour_a_code_is_asked_again(client, db, flag_on):
+    """The codeless path keeps the old bound of 3 codes an hour per phone,
+    also for an order-then-cancel loop."""
+    shop = Shop(db)
+    user = _buyer(db)
+    headers = auth_header(user)
+    for _ in range(3):
+        assert _post(client, shop, headers, phone=PHONE).status_code == 201
+        # Cancelled at once: the open-orders cap alone would not stop a loop.
+        db.query(ProductOrder).update({"status": "cancelled"})
+        db.commit()
+    res = _post(client, shop, headers, phone=PHONE)
+    assert res.status_code == 422, res.text
+    assert res.json()["detail"] == "הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש"
+    assert db.query(ProductOrder).count() == 3

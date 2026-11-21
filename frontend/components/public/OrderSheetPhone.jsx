@@ -54,22 +54,6 @@ export default function OrderSheetPhone({ producerId, phone, code, verified = fa
     }
   };
 
-  if (verified) {
-    return (
-      <Input
-        label={t("phone")}
-        required
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        dir="ltr"
-        value={phone}
-        onChange={(e) => onChange({ phone: e.target.value, code: "" })}
-        data-testid="order-sheet-phone"
-      />
-    );
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex items-end gap-2">
@@ -86,17 +70,19 @@ export default function OrderSheetPhone({ producerId, phone, code, verified = fa
             setSentTo(null);
           }}
           className="flex-1"
-          aria-describedby={sentTo ? undefined : "order-sheet-phone-help"}
+          aria-describedby={sentTo || verified ? undefined : "order-sheet-phone-help"}
           data-testid="order-sheet-phone"
         />
-        <Button type="button" variant="outlined" disabled={!valid || busy} onClick={ask} className="shrink-0 whitespace-nowrap" data-testid="order-sheet-send-code">
+        {/* MEH-3680: one tree either way, so the field keeps focus when
+            `verified` flips while she types. */}
+        {!verified && <Button type="button" variant="outlined" disabled={!valid || busy} onClick={ask} className="shrink-0 whitespace-nowrap" data-testid="order-sheet-send-code">
           {t(sentTo ? "send_code_again" : "send_code")}
-        </Button>
+        </Button>}
       </div>
       {/* MEH-3658: the label says what the field is; this says what it is for. */}
-      {!sentTo && <p id="order-sheet-phone-help" className="text-xs text-fg-muted" data-testid="order-sheet-phone-help">{t("phone_help")}</p>}
+      {!sentTo && !verified && <p id="order-sheet-phone-help" className="text-xs text-fg-muted" data-testid="order-sheet-phone-help">{t("phone_help")}</p>}
       {error && <InlineMessage tone="error">{error}</InlineMessage>}
-      {sentTo && (
+      {sentTo && !verified && (
         <Input
           label={t("code")}
           helperText={t("code_sent")}

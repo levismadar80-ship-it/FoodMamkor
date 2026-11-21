@@ -340,12 +340,25 @@ def account_phone_verified(user: User | None, phone: str) -> bool:
     return canonical_il_msisdn(str(user.phone)) == phone
 
 
+def _codeless_orders_left(db: Session, phone: str) -> bool:
+    """MEH-3680 review: without a code, orders to one phone were bounded by
+    the 3 codes an hour. The codeless path keeps that bound: from the 4th
+    order to `phone` within an hour a code is asked again (no new refusal)."""
+    since = utc_now() - timedelta(hours=1)
+    count = (
+        db.query(func.count(ProductOrder.id))
+        .filter(ProductOrder.customer_phone == phone, ProductOrder.created_at >= since)
+        .scalar()
+    )
+    return int(count or 0) < phone_codes.CODES_PER_PHONE_PER_HOUR
+
+
 def _phone_proof(
     db: Session, body: OrderCreateIn, user: User | None, phone: str
 ) -> ProductOrderPhoneCode | None:
     """The code row that proves `phone`, or None when her account already
     does (MEH-3680). A missing code is refused without counting a wrong try."""
-    if account_phone_verified(user, phone):
+    if account_phone_verified(user, phone) and _codeless_orders_left(db, phone):
         return None
     if body.code is None:
         raise HTTPException(
