@@ -764,7 +764,7 @@ def _accept_plan(db: Session, producer: Producer) -> tuple[bool, list[str]]:
     what is missing. Returns `(publishes, held_gaps)`.
 
     The invite was only SENT for a complete page (MEH-3246), but an admin edit
-    can remove the photo or the licence number before the owner clicks. She
+    can remove the photo before the owner clicks. She
     cannot fix that from the accept page, so a 422 would strand her: she is
     linked as the owner and the page stays hidden, and the admin is told what
     is missing. `held_gaps` is empty unless a HIDDEN page is being held — an

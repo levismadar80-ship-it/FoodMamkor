@@ -68,10 +68,6 @@ from app.schemas.schemas import (
     WRITABLE_AVAILABILITY_STATES,
     StoryCardUploadRequest,
 )
-from app.services.license_validation import (
-    enforce_license_gate_on_update,
-    ensure_license_for_categories,
-)
 from app.services.producer_queries import (
     attach_badge_fields,
     create_primary_branch_location,
@@ -404,21 +400,9 @@ def admin_create_producer(
     # must never be stored — NULL keeps the /producer/{id} fallback (MEH-1817).
     stored_slug: str | None = _ensure_unique_slug(db, slug, city=data.city) or None
 
-    # MEH-530: same conditional-required guard as the public endpoints —
-    # admin form can still persist non-regex license values verbatim
-    # (manual-approval flow), but missing-license-for-required-category
-    # is still a 422.
-    # MEH-2322: skipped for an owner-claim DRAFT only. The license is the
-    # owner's to supply after she claims it. A draft cannot be approved at all
-    # until she submits it (approve_producer 409s on draft), and approval runs
-    # `_assert_approvable` — the MEH-971 license gate, which an admin can
-    # override with ?allow_without_license=true after checking the license
-    # out-of-band. Same exposure, and same override, as the public register
-    # path's `license_pending`; this branch adds no new route to "live".
-    if not data.as_draft:
-        ensure_license_for_categories(
-            db, data.category_ids, data.producer_license_number
-        )
+    # MEH-3026 (Sapir 21/11): no licence 422 here any more — a business with
+    # no licence number goes live without the «מאומת» badge, the same rule as
+    # approval (services/producer_approval.py). Replaces the MEH-530 guard.
 
     producer = Producer(
         name=data.name,
@@ -765,13 +749,8 @@ def admin_update_producer(
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
 
-    # MEH-2707: the owner path's MEH-999 grandfather rule, shared — only a
-    # NEWLY-ADDED licensed category, or blanking a held license, is refused.
-    # This used to re-check the FULL effective category set (MEH-530), so any
-    # edit to an unlicensed business in a licensed category 422'd — the admin
-    # could not even fix its description. Going live is still gated by
-    # approve_producer → _assert_approvable (MEH-971), unchanged.
-    enforce_license_gate_on_update(db, producer, payload, category_ids)
+    # MEH-3026: the MEH-2707 / MEH-999 licence gate on update is gone — adding
+    # a licensed category without a licence number no longer 422s.
 
     # Keep slug unique if changed; reject reserved slugs.
     # MEH-3336: only a CHANGED slug is validated. The admin form resends the

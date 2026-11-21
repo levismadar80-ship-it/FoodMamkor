@@ -150,9 +150,9 @@ async function createBusiness(
       description: "נוצר ע״י ספק הבדיקות של MEH-2974 ונמחק בסוף הריצה.",
       category_ids: [],
       // MEH-3246: an invite needs a business that is complete enough to
-      // publish — at least one photo, and a licence number when a category
-      // requires one (services/invite_gate.py, 422 otherwise). No category
-      // here, so no licence is owed; the photo is the one the other flows use.
+      // publish — at least one photo (services/invite_gate.py, 422
+      // otherwise; a licence number is not required since MEH-3026). The
+      // photo is the one the other flows use.
       images: [TEST_IMAGE],
     },
   });

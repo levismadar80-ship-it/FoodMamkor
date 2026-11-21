@@ -62,10 +62,7 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.farmer_declaration import apply_farmer_declaration_on_update
-from app.services.license_validation import (
-    categories_require_license,
-    enforce_license_gate_on_update,
-)
+from app.services.license_validation import categories_require_license
 
 log = logging.getLogger(__name__)
 
@@ -964,7 +961,8 @@ def update_my_producer(  # noqa: PLR0915 — MEH-3261 (AI check) and MEH-3339 (s
     offer_sent = "active_offer" in payload
     offer_payload = payload.pop("active_offer", None)
 
-    enforce_license_gate_on_update(db, producer, payload, category_ids)
+    # MEH-3026 (Sapir 21/11): no licence gate on update — adding a category
+    # that requires a licence saves without one; the business has no «מאומת».
     # MEH-3137: moving into ירקות/פירות needs the grower declaration once.
     # Written onto the row here; a later 422 rolls it back with everything else.
     apply_farmer_declaration_on_update(
