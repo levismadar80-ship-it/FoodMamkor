@@ -61,6 +61,14 @@ describe("MEH-3329 /og/business/[file]", () => {
     expect(res.headers.get("cache-control")).toContain("max-age=300");
   });
 
+  it("a test business (noindex) → the site image, no named card (MEH-2952)", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...PRODUCER, noindex: true }) });
+    const before = renders.length;
+    const res = await GET(...req("meh2952-test-row.png"));
+    expect(res.status).toBe(302);
+    expect(renders.length).toBe(before);
+  });
+
   it("backend down (503) → the same redirect", async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 503, json: async () => ({}) });
     const res = await GET(...req("havat-hashikma.png"));

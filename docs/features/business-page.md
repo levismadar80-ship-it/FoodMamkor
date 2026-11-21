@@ -44,6 +44,7 @@
 * `frontend/__tests__/ProductSheetDetailsRow.test.jsx` — השורה «פרטים על המוצר»: סגורה כברירת מחדל, האלרגנים בכותרת שלה, ובלי שורה כשאין מה לקפל (MEH-3450).
 * `tests/test_meh2936_product_unit.py` · `frontend/__tests__/ProductPriceUnit.test.jsx` — **השומר** של יחידת המחיר: רשימה אחת בשרת, בסכמות ובצד הלקוח, התווית מגיעה לדף ציבורי, ובקבוק/ארגז לא הופכים מחיר להערכה (MEH-2936).
 * `frontend/__tests__/QuestionChipsSection.test.jsx` · `frontend/__tests__/quickAnswers.test.js` — «שאלות נפוצות» כסעיף בגוף הדף, בלי שאלת משלוח כשיש סעיף משלוח, ובלי «איך מזמינים?» (MEH-3460).
+* `frontend/__tests__/SlugPageTestBusinessNoindex.test.jsx` · `tests/test_meh2952_is_test_exclusion.py` — עסק בדיקה (`is_test`) נפתח בכתובת הישירה עם `noindex` ובלי JSON-LD, ועסק רגיל נשאר בר-אינדוקס (MEH-2952 חלק 3).
 * `frontend/__tests__/MiddlewareProducerId404.test.js` — ‏`/producer/<id>` של עסק שלא קיים מחזיר 404 אמיתי מה-middleware (MEH-3024).
 
 **מזהי רישום שזה מכסה.** `gallery_story`, `product_details`, `top_product`, `hours`, `vacation_mode`, `primary_cta`, `wa_prefill`, `product_wa`, `faq_answers`, `wa_group`, `nav_buttons`, `similar_businesses`.

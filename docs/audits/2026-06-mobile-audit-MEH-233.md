@@ -41,15 +41,15 @@ Checks (Phase C): 1 horizontal-overflow · 2 unintentional-truncation · 3 tap-t
 
 | # | Route | Viewport | Check | Detail | Screenshot |
 |---|---|---|---|---|---|
-| 1 | `/` | iphone-se | Clipped by overflow:hidden | 4 element(s) clip horizontal content: p.text-sm.font-medium "איפה את? נמצא עסקים קרובים אלי" (content 213px > box 151px) \| div.bg-primary.overflow-hidden "🌿 ל | [img](screenshots/MEH-233/home__iphone-se.png) |
-| 2 | `/` | galaxy | Clipped by overflow:hidden | 4 element(s) clip horizontal content: p.text-sm.font-medium "איפה את? נמצא עסקים קרובים אלי" (content 213px > box 136px) \| div.bg-primary.overflow-hidden "🌿 ל | [img](screenshots/MEH-233/home__galaxy.png) |
-| 3 | `/` | iphone-14 | Clipped by overflow:hidden | 4 element(s) clip horizontal content: p.text-sm.font-medium "איפה את? נמצא עסקים קרובים אלי" (content 213px > box 166px) \| div.bg-primary.overflow-hidden "🌿 ל | [img](screenshots/MEH-233/home__iphone-14.png) |
-| 4 | `/about` | iphone-se | Clipped by overflow:hidden | 2 element(s) clip horizontal content: section.relative.text-white "פעם היית צריכה לדעת את מי לשאו" (content 395px > box 375px) \| section.relative.w-full "“אוכל | [img](screenshots/MEH-233/about__iphone-se.png) |
-| 5 | `/about` | galaxy | Clipped by overflow:hidden | 2 element(s) clip horizontal content: section.relative.text-white "פעם היית צריכה לדעת את מי לשאו" (content 380px > box 360px) \| section.relative.w-full "“אוכל | [img](screenshots/MEH-233/about__galaxy.png) |
-| 6 | `/about` | iphone-14 | Clipped by overflow:hidden | 2 element(s) clip horizontal content: section.relative.text-white "פעם היית צריכה לדעת את מי לשאו" (content 411px > box 390px) \| section.relative.w-full "“אוכל | [img](screenshots/MEH-233/about__iphone-14.png) |
-| 7 | `/events` | iphone-se | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 395px > box 375px) | [img](screenshots/MEH-233/events__iphone-se.png) |
-| 8 | `/events` | galaxy | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 379px > box 360px) | [img](screenshots/MEH-233/events__galaxy.png) |
-| 9 | `/events` | iphone-14 | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 411px > box 390px) | [img](screenshots/MEH-233/events__iphone-14.png) |
+| 1 | `/` | iphone-se | Clipped by overflow:hidden | 4 element(s) clip horizontal content: p.text-sm.font-medium "איפה את? נמצא עסקים קרובים אלי" (content 213px > box 151px) \| div.bg-primary.overflow-hidden "🌿 ל | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/home__iphone-se.png?raw=true) |
+| 2 | `/` | galaxy | Clipped by overflow:hidden | 4 element(s) clip horizontal content: p.text-sm.font-medium "איפה את? נמצא עסקים קרובים אלי" (content 213px > box 136px) \| div.bg-primary.overflow-hidden "🌿 ל | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/home__galaxy.png?raw=true) |
+| 3 | `/` | iphone-14 | Clipped by overflow:hidden | 4 element(s) clip horizontal content: p.text-sm.font-medium "איפה את? נמצא עסקים קרובים אלי" (content 213px > box 166px) \| div.bg-primary.overflow-hidden "🌿 ל | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/home__iphone-14.png?raw=true) |
+| 4 | `/about` | iphone-se | Clipped by overflow:hidden | 2 element(s) clip horizontal content: section.relative.text-white "פעם היית צריכה לדעת את מי לשאו" (content 395px > box 375px) \| section.relative.w-full "“אוכל | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/about__iphone-se.png?raw=true) |
+| 5 | `/about` | galaxy | Clipped by overflow:hidden | 2 element(s) clip horizontal content: section.relative.text-white "פעם היית צריכה לדעת את מי לשאו" (content 380px > box 360px) \| section.relative.w-full "“אוכל | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/about__galaxy.png?raw=true) |
+| 6 | `/about` | iphone-14 | Clipped by overflow:hidden | 2 element(s) clip horizontal content: section.relative.text-white "פעם היית צריכה לדעת את מי לשאו" (content 411px > box 390px) \| section.relative.w-full "“אוכל | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/about__iphone-14.png?raw=true) |
+| 7 | `/events` | iphone-se | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 395px > box 375px) | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/events__iphone-se.png?raw=true) |
+| 8 | `/events` | galaxy | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 379px > box 360px) | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/events__galaxy.png?raw=true) |
+| 9 | `/events` | iphone-14 | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 411px > box 390px) | [img](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/events__iphone-14.png?raw=true) |
 
 > **TRIAGE (MEH-233, 2026-06-10):** of the 9 CRITICAL above, only the `/` **LocationBanner** `<p>` ("איפה את?…", `components/LocationBanner.jsx`) is a real clip — fixed by dropping `truncate` so the Hebrew wraps. **FALSE POSITIVES — intentional bleed, do NOT re-flag:** the home **HomeMarquee** (`HomeStaticBlocks.jsx` — `whitespace-nowrap` scrolling ticker), the **2× home ParallaxQuote** and the **/events kenburns hero** (`ParallaxQuote.jsx` / `EventsClient.jsx` — `kenburns-* absolute inset:-5%` decorative image deliberately oversized 5%/side and clipped by `overflow-hidden`). The **/about** rows (#4–6) are **STALE** — that hero was redesigned by MEH-135 (merged after this snapshot); current /about shows 0 CRITICAL.
 
@@ -57,7 +57,7 @@ Checks (Phase C): 1 horizontal-overflow · 2 unintentional-truncation · 3 tap-t
 
 ### `/` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/home__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/home__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/home__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/home__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/home__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/home__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -70,7 +70,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/home__iphone-se.png) · 
 
 ### `/map` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/map__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/map__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/map__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/map__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/map__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/map__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -80,7 +80,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/map__iphone-se.png) · [
 
 ### `/login` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/login__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/login__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/login__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/login__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/login__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/login__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -90,7 +90,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/login__iphone-se.png) ·
 
 ### `/register` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/register__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/register__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/register__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/register__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/register__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/register__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -100,7 +100,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/register__iphone-se.png)
 
 ### `/register/producer` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/register-producer__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/register-producer__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/register-producer__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/register-producer__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/register-producer__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/register-producer__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -110,7 +110,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/register-producer__iphon
 
 ### `/producer/1` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/producer-detail__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/producer-detail__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/producer-detail__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/producer-detail__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/producer-detail__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/producer-detail__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -120,7 +120,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/producer-detail__iphone-
 
 ### `/favorites` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/favorites__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/favorites__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/favorites__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/favorites__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/favorites__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/favorites__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -130,7 +130,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/favorites__iphone-se.png
 
 ### `/settings` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/settings__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/settings__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/settings__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/settings__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/settings__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/settings__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -140,7 +140,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/settings__iphone-se.png)
 
 ### `/admin` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/admin__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/admin__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/admin__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/admin__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/admin__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/admin__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -150,7 +150,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/admin__iphone-se.png) ·
 
 ### `/events` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/events__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/events__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/events__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/events__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/events__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/events__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|
@@ -163,7 +163,7 @@ Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/events__iphone-se.png) �
 
 ### `/about` — HTTP 200
 
-Screenshots: [iPhone SE (375×667)](screenshots/MEH-233/about__iphone-se.png) · [Galaxy (360×640)](screenshots/MEH-233/about__galaxy.png) · [iPhone 14 (390×844)](screenshots/MEH-233/about__iphone-14.png)
+Screenshots: [iPhone SE (375×667)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/about__iphone-se.png?raw=true) · [Galaxy (360×640)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/about__galaxy.png?raw=true) · [iPhone 14 (390×844)](https://github.com/levismadar80-ship-it/FoodMamkor/blob/629eb3c6827171564fb9c6a2c9c83cd0cb043067/docs/audits/screenshots/MEH-233/about__iphone-14.png?raw=true)
 
 | Severity | Viewport | Check | Detail |
 |---|---|---|---|

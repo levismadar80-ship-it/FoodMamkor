@@ -38,6 +38,12 @@ import { israelToday } from "@/lib/israel-date";
 
 /** Newest first. @type {WhatsNewRelease[]} */
 export const WHATS_NEW_RELEASES = [
+  // 1.5.11 (21/11): delivery time, own minimum and per-zone order cutoff,
+  // nationwide zones (MEH-3511); pickup days and cutoff per pickup point
+  // (MEH-3512); business-page assistant suggestions and zone/group/workshop
+  // facts (MEH-3505, MEH-3510); orders-through-the-site line on the dashboard
+  // home (MEH-3194). Copy under Sapir's standing approval (20/11 13:54Z).
+  { version: "1.5.11", key: "v1_5_11", date: "2026-11-21", items: 5 },
   // 1.5.10 (20/11): delivery zones (MEH-3484), next delivery date (MEH-3485),
   // business-page chat (MEH-3489), free-text page draft (MEH-3483), product
   // groups and description suggestion, AI review reply (MEH-3480), «מארז»

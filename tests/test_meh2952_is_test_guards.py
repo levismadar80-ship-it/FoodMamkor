@@ -3,7 +3,7 @@
 1. **include_test allowlist.** `is_business(include_test=True)` /
    `is_business_row(..., include_test=True)` keep test rows. Only the files in
    `INCLUDE_TEST_ALLOWED` may pass anything but a literal `False`; chunk 1
-   allows none. Chunk 3 adds by-slug (routers/producers.py), chunk 4 the
+   allows none. Chunk 3 adds by-slug (services/producer_detail.py since MEH-3559), chunk 4 the
    business's own dashboard and the admin screens.
 2. **No writer before chunk 4.** Nothing outside `tests/` writes `is_test`:
    no attribute assignment, no `is_test=` keyword, no `"is_test"` dict key,
@@ -37,9 +37,11 @@ REVISION = "b8cb5480552f"
 # ── guard 1 · include_test allowlist ───────────────────────────────────────
 
 #: Repo-relative paths allowed to pass include_test=<anything but False>.
-#: Chunk 1: none. Chunk 3: backend/app/routers/producers.py (by-slug only).
-#: Chunk 4: the owner dashboard and admin screens.
-INCLUDE_TEST_ALLOWED: frozenset[str] = frozenset()
+#: Chunk 1: none. Chunk 3: by-slug only (the business page's direct URL,
+#: served with noindex) — since MEH-3559 its lookup lives in
+#: backend/app/services/producer_detail.py.
+#: Chunk 4 needed none (the admin screens read the ids, not the predicate).
+INCLUDE_TEST_ALLOWED: frozenset[str] = frozenset({"backend/app/services/producer_detail.py"})
 
 _PREDICATES = {"is_business", "is_business_row"}
 
@@ -134,6 +136,22 @@ class TestIncludeTestAllowlist:
         ]
         assert "backend/app/routers/producers.py" in callers
         assert len(callers) >= 15, callers
+
+    def test_producers_router_keeps_test_rows_in_by_slug_only(self):
+        """The allowlist is per file; inside producer_detail.py the one call
+        must stay in producer_by_slug_or_raise (the by-slug lookup), so the
+        by-id lookup beside it cannot pick it up unseen (MEH-2952 chunk 3
+        review; the lookup moved out of routers/producers.py in MEH-3559)."""
+        path = BACKEND / "app/services/producer_detail.py"
+        source = path.read_text("utf-8")
+        lines = include_test_calls(source)
+        fn = next(
+            n
+            for n in ast.walk(ast.parse(source))
+            if isinstance(n, ast.FunctionDef) and n.name == "producer_by_slug_or_raise"
+        )
+        assert len(lines) == 1, lines
+        assert fn.lineno <= lines[0] <= fn.end_lineno, (lines, fn.lineno)
 
     def test_only_allowlisted_files_keep_test_rows(self):
         offenders = {}

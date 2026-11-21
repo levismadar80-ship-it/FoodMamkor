@@ -4,7 +4,7 @@
 
 > **דוח מחקר בלבד** — לא שונה קוד. ההחלטות של ספיר ([decisions.md](../../.claude/rules/decisions.md)).
 > נכתב 17/11/2026 מול `origin/staging` ‏(`e43e137`). אין כאן ייעוץ משפטי: מה שלא נקרא במקור רשמי מסומן «לא אומת».
-> הדמיות מיקום (סכמטיות): [`qa-artifacts/research-2026-11-17/t1-freshness/`](../../qa-artifacts/research-2026-11-17/t1-freshness/)
+> הדמיות מיקום (סכמטיות): [`qa-artifacts/research-2026-11-17/t1-freshness/`](https://github.com/levismadar80-ship-it/FoodMamkor/tree/629eb3c6827171564fb9c6a2c9c83cd0cb043067/qa-artifacts/research-2026-11-17/t1-freshness/)
 
 > **בדיקת כפילויות (17/11):** Linear: «זמינות», «עודכן לאחרונה», «סריקה» → אין מחקר קודם. קרובים: MEH-2697 (תזכורת שנתית «עדיין נכון?» לתגים מוצהרים — אותו דפוס, לתגים), MEH-3299 (פרטי קשר ממקורות ציבוריים), MEH-3211 (סיכום שבועי). GitHub: אין PR או דוח על הנושא.
 

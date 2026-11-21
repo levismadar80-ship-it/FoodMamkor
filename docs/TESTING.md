@@ -442,6 +442,7 @@ pages של Screaming Frog ו-Ahrefs) רשום ב-MEH-3111.
 ```
 python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש, ומאמת את ה-backend
 python scripts/checks/smoke_production.py                                  # main בלבד
+python scripts/checks/smoke_production.py --quick                          # גם בכל ריצה של uptime.yml, כל 30 דק' (MEH-3555)
 node   scripts/link-check.mjs <URL> --smoke                                # עד 10 כתובות (MEH-2864)
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
 npx @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs      # תקציב ביצועים (פרודקשן בלבד)
