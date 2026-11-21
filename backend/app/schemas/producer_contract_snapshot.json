@@ -145,6 +145,7 @@
     "lng",
     "locations",
     "name",
+    "noindex",
     "offers_delivery",
     "offers_pickup",
     "opening_hours",

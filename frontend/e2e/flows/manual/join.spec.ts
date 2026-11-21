@@ -330,7 +330,22 @@ test.describe("manual › /join (MEH-995)", () => {
       test.setTimeout(test.info().timeout + steps * 2 * 2_000);
       let sawBar = false;
       for (let y = 0; y <= scrollHeight; y += step) {
-        await page.evaluate((top) => window.scrollTo(0, top), y);
+        // MEH-3546: the bar's state comes from IntersectionObserver, whose
+        // callback is queued after the next rendering update. The reads below
+        // could all run before it, so a step could read data-visible before
+        // the observer ran for it, and the walk missed the bar (21/11 nightly, WebKit
+        // 1280px: failed in 3.8 s, passed on retry; locally 2 of 20 on WebKit,
+        // at 390 and 1280). Wait two frames and a task after the scroll, so the
+        // observer has delivered for THIS position. Frames, not a timer
+        // (testing.md, MEH-2972).
+        await page.evaluate(
+          (top) =>
+            new Promise<void>((resolve) => {
+              window.scrollTo(0, top);
+              requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 0)));
+            }),
+          y,
+        );
         // Gate on settled state, not a timer: the count must come down to <= 1.
         await expect.poll(() => visibleJoinCtas(page), { timeout: 2_000 }).toBeLessThanOrEqual(1);
         // The chat launcher floats in the bottom-END corner over this bar

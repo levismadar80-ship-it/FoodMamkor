@@ -185,9 +185,10 @@ class Producer(Base):
         String(20), nullable=False, default="producer", server_default="producer"
     )
     # MEH-2952 (MEH-2892 §C.3): a seeded test business that may run on
-    # production for the post-release smoke. Hidden from every public surface
-    # by `producer_listing.is_business()` (the one rule; `include_test=True`
-    # only where a guard test allows it). Expand-only, NOT NULL + server
+    # production for the post-release smoke. Hidden from every public list,
+    # search and count by `producer_listing.is_business()` (the one rule;
+    # `include_test=True` only where a guard test allows it: by-slug, whose
+    # answer then says `noindex`, chunk 3). Expand-only, NOT NULL + server
     # default false (revision b8cb5480552f). Writers: the seed script and an
     # admin toggle only (chunk 4) — never a self-service form, never a public
     # response (tests/test_meh2952_is_test_guards.py).
@@ -813,6 +814,13 @@ class Producer(Base):
             return value
         # A blank entry canonicalises to None and has no meaning in the list.
         return [cc for c in value if (cc := canonical_city(c))]
+
+    @property
+    def noindex(self) -> bool:
+        """MEH-2952 chunk 3: what `ProducerDetailOut.noindex` reads through
+        `from_attributes`, so every builder of a detail answer gets it right
+        without setting it by hand. True only for a seeded test row."""
+        return bool(self.is_test)
 
     @property
     def active_offer(self) -> "ProducerOffer | None":

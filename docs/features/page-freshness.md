@@ -5,7 +5,7 @@
 **Routes**
 * `frontend/app/[locale]/freshness/confirm/` — העמוד שנפתח מהקישור במייל. הוא לא שולח כלום כשהעמוד נטען, רק כשבעלת העסק לוחצת.
 * `POST /page-freshness/confirm` — `backend/app/routers/page_freshness.py`
-* `GET /admin/producers?freshness_stale=true` — `backend/app/routers/admin.py`
+* `GET /admin/producers?freshness_stale=true` — `backend/app/routers/admin.py` (הסינון עצמו ב-`backend/app/services/admin_producer_reads.py`)
 
 **קבצים מרכזיים**
 * `backend/app/services/page_freshness.py` — מי מקבלת מייל, הטוקן, השליחה והאישור.
