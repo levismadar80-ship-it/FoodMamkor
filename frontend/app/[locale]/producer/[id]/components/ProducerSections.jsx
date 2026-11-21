@@ -429,7 +429,7 @@ export default function ProducerSections({
           product exists (no product entries) so the moved-out header
           signature never vanishes. */}
       {hasCatalogue && (
-        <section data-testid="section-products-catalogue" className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
+        <section data-testid="section-products-catalogue" className="mt-12" ref={(el) => { sectionRefs.current.products = el; }}>
           {/* MEH-1306: owner pencil beside the heading → #products card. */}
           <div className="flex items-center gap-2 mb-4">
             <SectionHeading size="content">{t("producer.detail.sections.products.heading")}</SectionHeading>
