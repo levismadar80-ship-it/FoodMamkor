@@ -494,7 +494,7 @@ describe("ProducerCard — Phase B anatomy", () => {
     // MEH-2440: distance belongs to the place, so it rides in the city line.
     expect(screen.getByTestId("card-place")).toContainElement(distance);
     // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
     expect(distance.textContent).not.toContain("ממך");
     expect(distance.textContent).not.toContain("km");
     // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
@@ -521,7 +521,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).toMatch(/ק״מ$/);
   });
 
   it("prefers short_description over top_product_name", () => {
