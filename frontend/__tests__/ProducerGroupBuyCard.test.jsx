@@ -205,7 +205,8 @@ describe("group-buy page — the join card", () => {
     await renderPage({ ...GB, commits_count: 3 });
     const box = screen.getByTestId("group-buy-progress");
     expect(box.textContent).not.toContain("עוד 0");
-    expect(box.textContent).toContain("3 מתוך 3 הצטרפו");
+    expect(box.textContent).toContain("3 הצטרפו"); // MEH-3588: the count alone at the goal
+    expect(box.textContent).not.toContain("3 מתוך 3");
   });
 
   describe("«שתפו» fallbacks", () => {
