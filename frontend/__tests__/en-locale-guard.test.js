@@ -20,6 +20,18 @@ const BRAND = "מהמקור";
 // en.json (the brand name aside) fails the guard outright.
 const BASELINE = new Set([]);
 
+// MEH-3076 (Sapir 21/11, approved copy): search only understands Hebrew, so the
+// /en hero search shows Hebrew EXAMPLES behind an English lead-in. These keys
+// carry Hebrew on purpose. Not a baseline: each value must keep the English
+// lead-in (checked below), so the set cannot hide an untranslated string.
+const HEBREW_EXAMPLE_KEYS = new Set([
+  "home.search.placeholders.q1",
+  "home.search.placeholders.q2",
+  "home.search.placeholders.q3",
+  "home.search.placeholders.q4",
+]);
+const EXAMPLE_LEAD_IN = /^Try in Hebrew: [֐-׿]/;
+
 function hebrewKeys(obj, prefix = "") {
   const out = [];
   for (const [k, v] of Object.entries(obj)) {
@@ -34,8 +46,16 @@ describe("en-locale guard (MEH-840)", () => {
   const offenders = hebrewKeys(en);
 
   it("has no NEW untranslated Hebrew in en.json (outside the known baseline)", () => {
-    const newLeaks = offenders.filter((k) => !BASELINE.has(k));
+    const newLeaks = offenders.filter((k) => !BASELINE.has(k) && !HEBREW_EXAMPLE_KEYS.has(k));
     expect(newLeaks).toEqual([]);
+  });
+
+  it("a Hebrew-example key keeps its English lead-in, and is still Hebrew (MEH-3076)", () => {
+    for (const key of HEBREW_EXAMPLE_KEYS) {
+      const value = key.split(".").reduce((o, k) => o?.[k], en);
+      expect(value, key).toMatch(EXAMPLE_LEAD_IN);
+      expect(offenders, key).toContain(key);
+    }
   });
 
   it("baseline stays honest — every baselined key is still Hebrew (else remove it)", () => {

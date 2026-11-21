@@ -300,6 +300,13 @@ def test_html_part_escapes_the_business_name():
 # --- the sender wrapper -----------------------------------------------------
 
 
+class _NoDb:
+    """MEH-3535: the wrapper commits after queueing; nothing to commit here."""
+
+    def commit(self):
+        pass
+
+
 def test_send_notification_email_defaults_html_to_none(monkeypatch):
     """The three pre-existing callers must stay byte-identical on the wire.
 
@@ -309,11 +316,13 @@ def test_send_notification_email_defaults_html_to_none(monkeypatch):
     """
     captured = {}
 
-    def _capture(to, subject, body, html=None, reply_to=None, test_cause=False):
+    # MEH-3535: the wrapper queues (enqueue_email) instead of sending; the
+    # same None-not-"" contract holds at the queue, which sends it unchanged.
+    def _capture(db, kind, to, subject, body, html=None, reply_to=None, test_cause=False):
         captured.update(to=to, subject=subject, body=body, html=html)
 
-    monkeypatch.setattr(admin_module, "send_email", _capture)
-    admin_module._send_notification_email("her@example.com", "נושא", "גוף")
+    monkeypatch.setattr(admin_module, "enqueue_email", _capture)
+    admin_module._send_notification_email(_NoDb(), "k", "her@example.com", "נושא", "גוף")
 
     assert captured["html"] is None
     assert captured["body"] == "גוף"
@@ -327,12 +336,12 @@ def test_send_notification_email_forwards_an_html_part_when_given_one(monkeypatc
     """
     captured = {}
 
-    def _capture(to, subject, body, html=None, reply_to=None, test_cause=False):
+    def _capture(db, kind, to, subject, body, html=None, reply_to=None, test_cause=False):
         captured.update(html=html)
 
-    monkeypatch.setattr(admin_module, "send_email", _capture)
+    monkeypatch.setattr(admin_module, "enqueue_email", _capture)
     admin_module._send_notification_email(
-        "her@example.com", "נושא", "גוף", html="<html dir=\"rtl\"></html>"
+        _NoDb(), "k", "her@example.com", "נושא", "גוף", html="<html dir=\"rtl\"></html>"
     )
 
     assert captured["html"] == '<html dir="rtl"></html>'
@@ -353,7 +362,7 @@ def test_the_approval_endpoint_sends_both_parts_with_the_real_slug(
     """
     sent = {}
 
-    def _capture(to_email, subject, body, html=None, test_cause=False):
+    def _capture(db, kind, to_email, subject, body, html=None, test_cause=False):
         sent.update(to=to_email, subject=subject, body=body, html=html)
 
     monkeypatch.setattr(admin_module, "_send_notification_email", _capture)

@@ -334,7 +334,7 @@ class TestRejectionEmailPointsAtTheLoop:
 
         sent = {}
 
-        def _capture(to_email, subject, body, html=None, test_cause=False):
+        def _capture(db, kind, to_email, subject, body, html=None, test_cause=False):
             sent.update(to=to_email, subject=subject, body=body, html=html)
 
         monkeypatch.setattr(admin_module, "_send_notification_email", _capture)
@@ -371,7 +371,7 @@ class TestRejectionEmailPointsAtTheLoop:
         monkeypatch.setattr(
             admin_module,
             "_send_notification_email",
-            lambda to, subject, body, html=None, test_cause=False: sent.update(
+            lambda db, kind, to, subject, body, html=None, test_cause=False: sent.update(
                 body=body, html=html
             ),
         )
