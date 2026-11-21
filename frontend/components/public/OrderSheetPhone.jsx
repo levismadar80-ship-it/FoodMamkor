@@ -9,7 +9,7 @@
  *           with the order (POST /product-orders), so a code is tried once.
  * Related:  components/public/OrderSheet.jsx, lib/order-sheet.js::askPhoneCode,
  *           backend/app/routers/product_order_buyer.py::send_order_phone_code
- * History:  MEH-3216 stage 5c (creation)
+ * History:  MEH-3216 stage 5c (creation); MEH-3658 a short label + a help line
  */
 
 import { useState } from "react";
@@ -72,6 +72,8 @@ export default function OrderSheetPhone({ producerId, phone, code, onChange }) {
           {t(sentTo ? "send_code_again" : "send_code")}
         </Button>
       </div>
+      {/* MEH-3658: the label says what the field is; this says what it is for. */}
+      {!sentTo && <p className="text-xs text-fg-muted" data-testid="order-sheet-phone-help">{t("phone_help")}</p>}
       {error && <InlineMessage tone="error">{error}</InlineMessage>}
       {sentTo && (
         <Input

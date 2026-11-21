@@ -12,7 +12,9 @@
  *           live in OrderSheetPhone.jsx.
  * Related:  lib/order-sheet.js (bodies + calls), components/public/OrderBar.jsx
  *           (opens it), app/[locale]/order/[id]/ (where it lands)
- * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»)
+ * History:  MEH-3216 stage 5c (creation); MEH-3216 the seller line («מספר עוסק»);
+ *           MEH-3658 ways and slots as buttons, the note behind a link, the
+ *           total on the send button, four disclosure lines down to two
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -22,13 +24,12 @@ import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
-import Select from "@/components/ui/Select";
-import Textarea from "@/components/ui/Textarea";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import OrderSheetPhone from "@/components/public/OrderSheetPhone";
+import { NoteField, SlotChoice, WayChoice } from "@/components/public/OrderSheetChoices";
 import { useRouter } from "@/i18n/navigation";
 import { detailToMessage } from "@/lib/errors";
-import { dayLabel, hhmm, rangeEnds, shekelsText } from "@/lib/product-orders";
+import { dayLabel, hhmm, shekelsText } from "@/lib/product-orders";
 import {
   cancelDeadline,
   fulfilmentsOffered,
@@ -86,6 +87,8 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
   const set = (change) => setForm((old) => ({ ...old, ...change }));
 
   const slots = slotsFor(menu, form.fulfilment, hasAlcohol);
+  // MEH-3658: a single slot is picked for her; with more she taps one.
+  const slot = form.slot || (slots.length === 1 ? slots[0].start : "");
   const delivery = form.fulfilment === "delivery";
   const body = JSON.stringify(quoteBody({ producerId: producer.id, picks, fulfilment: form.fulfilment, city: form.city }));
   const needsCity = delivery && !form.city.trim();
@@ -98,7 +101,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     setError(null);
     try {
       const href = await sendOrder(
-        orderBody({ producerId: producer.id, picks, ...form, slotStart: form.slot, ageDeclared: form.age, key }),
+        orderBody({ producerId: producer.id, picks, ...form, slotStart: slot, ageDeclared: form.age, key }),
       );
       router.push(href);
     } catch (err) {
@@ -109,28 +112,17 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
     }
   };
 
-  const deadline = form.slot ? cancelDeadline(form.slot, menu.cancel_cutoff_hours) : null;
+  const deadline = slot ? cancelDeadline(slot, menu.cancel_cutoff_hours) : null;
   return (
     <Dialog onClose={onClose} labelledBy="order-sheet-title" size="lg" as="form" onSubmit={submit} closeOnBackdrop={false} testId="order-sheet">
       <h2 id="order-sheet-title" className="text-xl font-bold text-text mb-4">{t("title")}</h2>
       <Lines picks={picks} byId={byId} />
       <div className="space-y-4 mt-4">
-        {ways.length > 1 && (
-          <Select label={t("how")} value={form.fulfilment} onChange={(e) => set({ fulfilment: e.target.value, slot: "" })} data-testid="order-sheet-fulfilment">
-            {ways.map((w) => <option key={w} value={w}>{t(w)}</option>)}
-          </Select>
-        )}
+        <WayChoice ways={ways} value={form.fulfilment} onChange={(way) => set({ fulfilment: /** @type {typeof form.fulfilment} */ (way), slot: "" })} />
         {slots.length === 0 ? (
           <InlineMessage tone="info">{t("no_slots")}</InlineMessage>
         ) : (
-          <Select label={t("when")} required value={form.slot} onChange={(e) => set({ slot: e.target.value })} data-testid="order-sheet-slot">
-            <option value="" disabled>{t("when_pick")}</option>
-            {slots.map((s) => (
-              <option key={s.start} value={s.start}>
-                {t("slot", { day: dayLabel(s.start, locale), ...rangeEnds(s.start, s.end) })}
-              </option>
-            ))}
-          </Select>
+          <SlotChoice slots={slots} value={slot} onChange={(start) => set({ slot: start })} />
         )}
         {delivery && (
           <>
@@ -140,7 +132,7 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
         )}
         <Input label={t("name")} required value={form.name} onChange={(e) => set({ name: e.target.value })} autoComplete="name" data-testid="order-sheet-name" />
         <OrderSheetPhone producerId={producer.id} phone={form.phone} code={form.code} onChange={set} />
-        <Textarea label={t("note")} value={form.note} onChange={(e) => set({ note: e.target.value })} maxLength={500} rows={2} data-testid="order-sheet-note" />
+        <NoteField value={form.note} onChange={(note) => set({ note })} />
         {hasAlcohol && (
           <label className="flex items-start gap-2 text-sm text-text">
             <input type="checkbox" required checked={form.age} onChange={(e) => set({ age: e.target.checked })} data-testid="order-sheet-age" />
@@ -153,9 +145,9 @@ export default function OrderSheet({ producer, menu, picks, onStale = () => {}, 
       {quoteError && <InlineMessage tone="error" className="mt-3">{quoteError}</InlineMessage>}
       {error && <InlineMessage tone="error" className="mt-3">{error}</InlineMessage>}
       <div className="mt-5 flex gap-3">
-        <Button type="submit" disabled={busy || slots.length === 0 || !quote} data-testid="order-sheet-send" className="flex-1">
+        <Button type="submit" disabled={busy || !slot || !quote} data-testid="order-sheet-send" className="flex-1">
           {busy && <ButtonSpinner />}
-          {t("send")}
+          {sendLabel(quote, t)}
         </Button>
         <Button type="button" variant="outlined" onClick={onClose} data-autofocus="">{t("close")}</Button>
       </div>
@@ -206,35 +198,42 @@ function Lines({ picks, byId }) {
   );
 }
 
+/** «שליחת הבקשה · 56 ₪» once the server priced what is on the form (MEH-3658). */
+function sendLabel(quote, t) {
+  if (!quote) return t("send");
+  return t(quote.has_estimate ? "send_total_estimate" : "send_total", { total: shekelsText(quote.total_agorot) });
+}
+
 function Totals({ quote, delivery, t }) {
-  if (!quote) return null;
+  if (!quote || !delivery) return null;
   return (
-    <div className="mt-4 space-y-1 text-sm" role="status" data-testid="order-sheet-totals">
-      {delivery && <p className="text-fg-muted">{t("delivery_fee", { fee: shekelsText(quote.delivery_fee_agorot) })}</p>}
-      <p className="font-bold text-text">
-        {t(quote.has_estimate ? "total_estimate" : "total", { total: shekelsText(quote.total_agorot) })}
-      </p>
-    </div>
+    <p className="mt-4 text-sm text-fg-muted" role="status" data-testid="order-sheet-totals">
+      {t("delivery_fee", { fee: shekelsText(quote.delivery_fee_agorot) })}
+    </p>
   );
 }
 
 function Disclosures({ producer, menu, deadline, locale, t }) {
   const methods = producer?.payment_info?.methods ?? [];
+  const payment = usePaymentText(methods, t);
+  const cancel = deadline ? t("cancel_line", { cutoff: `${dayLabel(deadline, locale)} ${hhmm(deadline)}` }) : "";
+  // MEH-3658: payment and cancel share one line; the seller and «not a party»
+  // share the other. Both are what distance selling asks for (MEH-3216) —
+  // shorter wording, nothing hidden behind a tap.
+  const terms = [payment, cancel].filter(Boolean).join(" ");
   return (
     <div className="mt-4 space-y-1 text-xs text-fg-muted" data-testid="order-sheet-disclosures">
+      {terms && <p data-testid="order-sheet-terms">{terms}</p>}
       {/* MEH-3216: the seller's identity before the order, as distance selling requires.
           The city only: the street address stays private (MEH-829). */}
       <p data-testid="order-sheet-seller">
         {t("seller_line", { name: producer?.name ?? "", number: menu.business_id_number, city: producer?.city?.trim() || "none" })}
       </p>
-      {methods.length > 0 && <PaymentLine methods={methods} t={t} />}
-      {deadline && <p>{t("cancel_line", { cutoff: `${dayLabel(deadline, locale)} ${hhmm(deadline)}` })}</p>}
-      <p>{t("platform_line")}</p>
     </div>
   );
 }
 
-function PaymentLine({ methods, t }) {
+function usePaymentText(methods, t) {
   const tm = useTranslations("whatsapp.question_chips.payment_methods");
-  return <p>{t("payment_line", { methods: methods.map((m) => tm(m)).join(", ") })}</p>;
+  return methods.length > 0 ? t("payment_line", { methods: methods.map((m) => tm(m)).join(", ") }) : "";
 }
