@@ -87,6 +87,10 @@
           "label": "קוד QR להדפסה"
         },
         {
+          "id": "google_profile",
+          "label": "חיבור הפרופיל בגוגל ובדיקה שהפרטים זהים"
+        },
+        {
           "id": "structured_data",
           "label": "גוגל ועוזרי AI כמו ChatGPT מבינים מה יש בעמוד שלכם"
         }

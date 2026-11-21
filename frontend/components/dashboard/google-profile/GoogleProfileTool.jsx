@@ -61,8 +61,8 @@ export default function GoogleProfileTool() {
   if (failed) {
     return (
       <div className="space-y-6">
-        <div role="alert" data-testid="google-profile-load-error" className="bg-surface border border-border rounded-lg p-5 text-center">
-          <p className="text-fg-muted mb-3">{t("load_error")}</p>
+        <div data-testid="google-profile-load-error" className="space-y-3">
+          <InlineMessage tone="error" variant="box">{t("load_error")}</InlineMessage>
           <Button size="sm" onClick={() => setAttempt((n) => n + 1)}>{t("retry")}</Button>
         </div>
         {guide}
