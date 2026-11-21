@@ -250,6 +250,7 @@ def offer_detail(
     out["producer"]["avg_rating"] = producer.avg_rating or None
     out["producer"]["reviews_count"] = producer.reviews_count or 0
     out["pickup_note"] = row.pickup_note if row else None  # MEH-3593
+    out["producer"]["short_description"] = (producer.short_description or "").strip() or None
     return out
 
 

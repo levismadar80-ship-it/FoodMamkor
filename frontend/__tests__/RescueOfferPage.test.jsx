@@ -182,6 +182,16 @@ describe("RescueOfferPage — an available bag", () => {
     await renderWith(offer({ producer: { ...offer().producer, avg_rating: null, reviews_count: 0 } }));
     expect(screen.queryByTestId("rescue-offer-rating")).toBeNull();
   });
+
+  it("the business's own short description sits in its row", async () => {
+    await renderWith(offer({ producer: { ...offer().producer, short_description: "מאפייה שכונתית מ-1985" } }));
+    expect(screen.getByTestId("rescue-offer-business-about").textContent).toBe("מאפייה שכונתית מ-1985");
+  });
+
+  it("no description → no empty line", async () => {
+    await renderWith(offer({ producer: { ...offer().producer, short_description: null } }));
+    expect(screen.queryByTestId("rescue-offer-business-about")).toBeNull();
+  });
 });
 
 describe("RescueOfferPage — pickup note (MEH-3593)", () => {

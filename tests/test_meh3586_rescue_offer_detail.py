@@ -30,6 +30,7 @@ def _get(client, offer_id):
 def test_an_available_bag_answers_with_the_page_fields(client, db, rescue_on, shop):
     shop["producer"].avg_rating = 4.6
     shop["producer"].reviews_count = 12
+    shop["producer"].short_description = "מאפייה שכונתית מ-1985"
     db.add(
         RescueTypicalItems(
             producer_id=shop["producer"].id,
@@ -52,6 +53,7 @@ def test_an_available_bag_answers_with_the_page_fields(client, db, rescue_on, sh
     assert body["lng"] == shop["location"].lng
     assert body["producer"]["avg_rating"] == 4.6
     assert body["producer"]["reviews_count"] == 12
+    assert body["producer"]["short_description"] == "מאפייה שכונתית מ-1985"
     assert body["producer"]["location_address"] == "הנביאים 10"
 
 
@@ -63,6 +65,7 @@ def test_nothing_declared_stays_null_not_an_empty_list(client, db, rescue_on, sh
     assert body["typical_items"] == []
     assert body["producer"]["avg_rating"] is None
     assert body["producer"]["reviews_count"] == 0
+    assert body["producer"]["short_description"] is None
 
 
 def test_a_sold_out_bag_still_answers_and_says_so(client, db, rescue_on, shop):
