@@ -52,7 +52,7 @@ anthropic.Anthropic(
 ```
 
 **Files:** `backend/app/routers/chat.py`,
-`backend/app/services/home_product_moderation.py`.
+`backend/app/services/moderation_common.py` (`make_anthropic_client`, MEH-3619).
 
 **The trap:** the `TypeError` is caught by the AI fail-open mechanism —
 no user-facing 5xx, just a silent Hebrew "offline" message. Removing the
