@@ -688,7 +688,7 @@ front matter for the normative token bindings.
   Never reorder sections with CSS (`order-*`, `*-reverse`, `row-start-*`): it
   moves only the paint, so VoiceOver and the keyboard read a different page
   (WCAG 1.3.2 / 2.4.3). Guards: `__tests__/VisualOrderGuard.test.js` (static)
-  and the 375 ↔ 1440 parity row in `e2e/flows/manual/home.spec.ts`.
+  and the 375 ↔ 1440 parity row in `e2e/flows/manual/home-01.spec.ts`.
 - **Featured business ("היכרות")** = the page's one strong colour moment: a
   full-bleed `bg-primary` band, `text-background`. h2 "היכרות" with a short
   `gold-on-dark` rule above it; photo 7/12 columns at 4:3 (`IMAGE_RATIOS.featured`);
