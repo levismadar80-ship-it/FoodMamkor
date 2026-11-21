@@ -6089,6 +6089,7 @@ export const getMyProducerProducersMeGetResponseNoindexDefault = false;
 export const getMyProducerProducersMeGetResponseOffersDeliveryDefault = false;
 export const getMyProducerProducersMeGetResponseOffersPickupDefault = false;
 export const getMyProducerProducersMeGetResponseOrganicCertifiedDefault = false;
+export const getMyProducerProducersMeGetResponseOwnerEmailVerifiedDefault = false;
 export const getMyProducerProducersMeGetResponsePhoneVerifiedDefault = false;
 export const getMyProducerProducersMeGetResponsePickupPointsDefault = false;
 export const getMyProducerProducersMeGetResponsePlanDefault = `free`;
@@ -6240,6 +6241,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseOrganicCertifiedDefault),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_email_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseOwnerEmailVerifiedDefault),
   "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "payment_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6356,6 +6358,7 @@ export const updateMyProducerProducersMePutResponseNoindexDefault = false;
 export const updateMyProducerProducersMePutResponseOffersDeliveryDefault = false;
 export const updateMyProducerProducersMePutResponseOffersPickupDefault = false;
 export const updateMyProducerProducersMePutResponseOrganicCertifiedDefault = false;
+export const updateMyProducerProducersMePutResponseOwnerEmailVerifiedDefault = false;
 export const updateMyProducerProducersMePutResponsePhoneVerifiedDefault = false;
 export const updateMyProducerProducersMePutResponsePickupPointsDefault = false;
 export const updateMyProducerProducersMePutResponsePlanDefault = `free`;
@@ -6507,6 +6510,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseOrganicCertifiedDefault),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_email_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseOwnerEmailVerifiedDefault),
   "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "payment_info": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

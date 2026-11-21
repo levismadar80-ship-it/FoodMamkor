@@ -29,11 +29,16 @@ vi.mock("next-intl", () => ({
       "draft_steps.image": "תמונה של העסק או המוצרים",
       "draft_steps.product": "מוצר ראשון",
       "draft_steps.phone_verified": "אימות מספר הוואטסאפ",
+      "draft_steps.email_verified": "אישור כתובת האימייל",
+      email_resend: "שלחו לי שוב",
     };
     const raw = flat[key] ?? key;
     return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
   },
 }));
+
+const post = vi.fn();
+vi.mock("@/lib/api", () => ({ default: { post: (...a) => post(...a) } }));
 
 vi.mock("@/components/PhoneVerifyCard", () => ({
   default: ({ onVerified }) => (
@@ -59,6 +64,7 @@ const base = {
   phone_verified: true,
   owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
   products: [{ id: "p1" }],
+  owner_email_verified: true,
   status: "approved",
 };
 const draft = { ...base, status: "draft" };
@@ -223,6 +229,29 @@ describe("ProfileCompletenessCard — draft mode (MEH-3659: only what blocks sub
     expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#profile-categories`);
     rerender(<ProfileCompletenessCard producer={{ ...draft, locations: [], lat: null, lng: null }} />);
     expect(screen.getByTestId("completeness-open-cta-details").getAttribute("href")).toBe(`${EDIT}#locations`);
+  });
+
+  it("email not confirmed (MEH-3660) → a 5th row, last; open once the rest is done, with a resend button", async () => {
+    post.mockResolvedValue({});
+    render(<ProfileCompletenessCard producer={{ ...draft, owner_email_verified: false }} />);
+    expect(counter()).toBe("4 מתוך 5");
+    const keys = within(list()).getAllByRole("listitem").map((li) => li.dataset.testid);
+    expect(keys.at(-1)).toBe("completeness-open-email_verified");
+    fireEvent.click(screen.getByTestId("completeness-email-resend"));
+    expect(post).toHaveBeenCalledWith("/auth/resend-verify");
+    expect(await screen.findByTestId("completeness-email-sent")).toBeInTheDocument();
+  });
+
+  it("email row with other rows missing → listed but closed; the first missing row is the open one", () => {
+    render(<ProfileCompletenessCard producer={{ ...draft, images: [], owner_email_verified: false }} />);
+    expect(counter()).toBe("3 מתוך 5");
+    expect(openRows().map((r) => r.dataset.testid)).toEqual(["completeness-open-image"]);
+    expect(screen.getByTestId("completeness-row-email_verified").dataset.done).toBe("false");
+  });
+
+  it("email confirmed (or Google signup) → no email row at all", () => {
+    render(<ProfileCompletenessCard producer={draft} />);
+    expect(screen.queryByTestId(/email_verified/)).toBeNull();
   });
 
   it("licence-required category without a number → a licence note linking to #license; with a number → none", () => {

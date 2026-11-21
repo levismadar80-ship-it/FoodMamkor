@@ -37,6 +37,9 @@ const MISSING_TARGETS = {
   [MISSING_LOCATION]: `${EDIT_HUB}#locations`,
   // Same page: the OTP card is mounted inside this banner, below the list.
   [MISSING_PHONE_VERIFIED]: "#phone-verify",
+  // MEH-3660: MISSING_EMAIL_VERIFIED has no target on purpose — it is filled
+  // in from the mailbox, and its resend button is a row of the dashboard
+  // checklist; this list (organizers only) never carries it. Renders as text.
   // MEH-2460 (organizer): the description lives in the profile group of the
   // edit hub; events have their own dashboard page.
   [ORGANIZER_MISSING_DESCRIPTION]: `${EDIT_HUB}#bio`,

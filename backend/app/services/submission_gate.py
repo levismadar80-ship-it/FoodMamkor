@@ -42,7 +42,7 @@ import math
 
 from sqlalchemy.orm import object_session
 
-from app.models.models import Event, Producer
+from app.models.models import Event, Producer, User
 from app.utils.clock import israel_today
 
 # Machine-readable requirement codes. These cross the API boundary — the
@@ -53,6 +53,10 @@ MISSING_PRODUCT = "product"
 MISSING_CATEGORY = "category"
 MISSING_LOCATION = "location"
 MISSING_PHONE_VERIFIED = "phone_verified"
+# MEH-3660: the owner's email address is confirmed. Businesses only — the
+# «אושרת» email and password reset both go to it, and once approved the
+# email-gated tools (events, group buys, recipes) open without a second wall.
+MISSING_EMAIL_VERIFIED = "email_verified"
 
 # Canonical order. Callers render in list order, so this is the order the
 # owner reads her missing items in — image first (the thing customers see
@@ -63,6 +67,7 @@ SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
     MISSING_CATEGORY,
     MISSING_LOCATION,
     MISSING_PHONE_VERIFIED,
+    MISSING_EMAIL_VERIFIED,
 )
 
 # MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing, so the
@@ -205,7 +210,27 @@ def submission_missing_items(
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)
 
+    if not owner_email_verified(producer):
+        missing.append(MISSING_EMAIL_VERIFIED)
+
     return missing
+
+
+def owner_email_verified(producer: Producer) -> bool:
+    """True when a user owning this business has confirmed her email
+    (`User.email_verified`; Google sign-in sets it at signup). Read through
+    the row's own session, like `upcoming_events_count`. No session, or no
+    owner row → False, i.e. MISSING: fail-closed, the same direction as every
+    other check here."""
+    session = object_session(producer)
+    if session is None or producer.id is None:
+        return False
+    return (
+        session.query(User.id)
+        .filter(User.producer_id == producer.id, User.email_verified.is_(True))
+        .first()
+        is not None
+    )
 
 
 def upcoming_events_count(producer: Producer) -> int:
@@ -233,6 +258,13 @@ def attach_upcoming_events_count(producer: Producer) -> None:
     reads it, so it keeps the schema default 0 without an extra query."""
     if getattr(producer, "kind", "producer") == "organizer":
         producer.upcoming_events_count = upcoming_events_count(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
+
+
+def attach_owner_email_verified(producer: Producer) -> None:
+    """Set the transient `owner_email_verified` that ProducerOwnerOut
+    serializes, so the client gate mirror (lib/submission-gate.js) reads the
+    same fact the server gate reads (MEH-3660)."""
+    producer.owner_email_verified = owner_email_verified(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
 
 
 def _organizer_missing_items(

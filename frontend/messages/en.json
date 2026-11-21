@@ -5350,8 +5350,11 @@
           "details": "Business details",
           "image": "A photo of the business or products",
           "product": "First product",
-          "phone_verified": "Verify your WhatsApp number"
-        }
+          "phone_verified": "Verify your WhatsApp number",
+          "email_verified": "Confirm your email address"
+        },
+        "email_resend": "Send it again",
+        "email_sent": "✓ Sent!"
       },
       "strength": {
         "heading": "Profile strength",
@@ -5878,7 +5881,8 @@
           "location": "A location or delivery areas",
           "phone_verified": "WhatsApp number verification",
           "description": "A few words about the market or events",
-          "upcoming_event": "At least one upcoming event"
+          "upcoming_event": "At least one upcoming event",
+          "email_verified": "Confirm your email address"
         }
       },
       "request_review": {

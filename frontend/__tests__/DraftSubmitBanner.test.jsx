@@ -80,6 +80,7 @@ const READY = {
   // Producer.lat/lng — the gate's producerPoints() no longer reads the columns.
   locations: [{ id: "loc-1", kind: "branch", is_primary: true, lat: 32.0853, lng: 34.7818, precision: "exact" }],
   phone_verified: true,
+  owner_email_verified: true,
   has_physical_location: true,
 };
 
@@ -375,9 +376,12 @@ describe("DraftSubmitBanner — each missing item links to where it is filled in
     one.unmount();
 
     render(<DraftSubmitBanner producer={{}} />);
-    expect(
-      within(screen.getByTestId("draft-missing-list")).getAllByRole("link"),
-    ).toHaveLength(SUBMISSION_REQUIREMENTS.length);
+    const list = screen.getByTestId("draft-missing-list");
+    // MEH-3660: every requirement except the email one, which is confirmed in
+    // the mailbox and has no page to send her to — it is listed as text.
+    expect(within(list).getAllByRole("link")).toHaveLength(SUBMISSION_REQUIREMENTS.length - 1);
+    expect(within(list).getAllByRole("listitem")).toHaveLength(SUBMISSION_REQUIREMENTS.length);
+    expect(screen.queryByTestId("draft-missing-link-email_verified")).toBeNull();
   });
 });
 

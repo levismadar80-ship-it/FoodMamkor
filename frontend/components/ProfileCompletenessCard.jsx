@@ -6,8 +6,10 @@ import { useTranslations } from "next-intl";
 import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
+import { useResendVerification } from "@/lib/use-resend-verification";
 import {
   MISSING_CATEGORY,
+  MISSING_EMAIL_VERIFIED,
   MISSING_IMAGE,
   MISSING_LOCATION,
   MISSING_PHONE_VERIFIED,
@@ -240,7 +242,34 @@ function buildDraftRows(producer) {
     { key: "product", done: !missing.has(MISSING_PRODUCT), href: `${EDIT_HUB}#profile-products` },
     // The OTP card opens inside this row — no navigation.
     { key: "phone_verified", done: !missing.has(MISSING_PHONE_VERIFIED), inline: true },
+    // MEH-3660: only while the owner's email is unconfirmed (a Google signup
+    // never sees it). Last, so the resend comes after the page work.
+    ...(missing.has(MISSING_EMAIL_VERIFIED) ? [{ key: "email_verified", done: false, inline: true }] : []),
   ];
+}
+
+/** The open email row: one resend button, then «✓ נשלח!» (MEH-3660). */
+function EmailResend({ t }) {
+  const { resendSent, resendSending, resendError, handleResend } = useResendVerification();
+  if (resendError) return <p className="text-sm text-error">{resendError}</p>;
+  if (resendSent) {
+    return (
+      <p className="text-sm text-primary font-medium" data-testid="completeness-email-sent" role="status">
+        {t("email_sent")}
+      </p>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={handleResend}
+      disabled={resendSending}
+      data-testid="completeness-email-resend"
+      className={`${PRIMARY_BTN} disabled:opacity-50`}
+    >
+      {t("email_resend")}
+    </button>
+  );
 }
 
 const ROW_LINK =
@@ -365,6 +394,8 @@ export default function ProfileCompletenessCard({ producer, footer = null, onPho
               <div data-testid="draft-phone-verify">
                 <PhoneVerifyCard variant="inline" onVerified={() => onPhoneVerified?.()} />
               </div>
+            ) : r.key === "email_verified" ? (
+              <EmailResend t={t} />
             ) : null
           }
         />

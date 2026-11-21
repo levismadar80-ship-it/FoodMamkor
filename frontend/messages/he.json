@@ -5346,8 +5346,11 @@
           "details": "פרטי העסק",
           "image": "תמונה של העסק או המוצרים",
           "product": "מוצר ראשון",
-          "phone_verified": "אימות מספר הוואטסאפ"
-        }
+          "phone_verified": "אימות מספר הוואטסאפ",
+          "email_verified": "אישור כתובת האימייל"
+        },
+        "email_resend": "שלחו לי שוב",
+        "email_sent": "✓ נשלח!"
       },
       "strength": {
         "heading": "חוזק פרופיל",
@@ -5874,7 +5877,8 @@
           "location": "מיקום או אזורי משלוח",
           "phone_verified": "אימות מספר הוואטסאפ",
           "description": "כמה מילים על השוק או האירועים",
-          "upcoming_event": "אירוע קרוב אחד לפחות"
+          "upcoming_event": "אירוע קרוב אחד לפחות",
+          "email_verified": "אישור כתובת האימייל"
         }
       },
       "request_review": {

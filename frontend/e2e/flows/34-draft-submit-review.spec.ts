@@ -112,6 +112,8 @@ const INCOMPLETE = {
   offers_delivery: false,
   delivery_areas: [],
   phone_verified: false,
+  // MEH-3660: email confirmed, so the draft list stays the four gate rows.
+  owner_email_verified: true,
 };
 
 /**

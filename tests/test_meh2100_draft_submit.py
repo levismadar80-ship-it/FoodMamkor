@@ -36,6 +36,7 @@ from app.models.models import (
 )
 from app.services.submission_gate import (
     MISSING_CATEGORY,
+    MISSING_EMAIL_VERIFIED,
     MISSING_IMAGE,
     MISSING_LOCATION,
     MISSING_PHONE_VERIFIED,
@@ -107,6 +108,10 @@ def test_every_requirement_code_is_reachable(db):
         # the Contract phase and green after, so it measures the removal.
         MISSING_LOCATION: lambda p: [db.delete(loc) for loc in p.locations],
         MISSING_PHONE_VERIFIED: lambda p: setattr(p, "phone_verified", False),
+        # MEH-3660: the owner row, not the producer row, carries this one.
+        MISSING_EMAIL_VERIFIED: lambda p: db.query(User)
+        .filter(User.producer_id == p.id)
+        .update({User.email_verified: False}),
     }
     assert set(degrade) == set(SUBMISSION_REQUIREMENTS), (
         "a requirement code has no degrade case — it would never be exercised"
