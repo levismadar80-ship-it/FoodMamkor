@@ -30,6 +30,17 @@
  *
  * Add --stills-only to skip the clips (much faster while iterating).
  *
+ * Or, preferred since 21/11 (MEH-3495): a clean LOCAL stack, so leftover
+ * test businesses on staging never land in a frame. Postgres →
+ * `alembic upgrade head` → seed_data.py, `scripts.seed_demo_producers
+ * --confirm`, `scripts/seed_demo_business.py` → mark the `demo-%` producers
+ * is_test → uvicorn on :8080 (RESCUE_BAGS_ENABLED=true) → `next build` +
+ * `next start` with NEXT_PUBLIC_API_URL=http://localhost:8080. Then
+ * QA_BASE_URL=http://localhost:3000 and, in the CC sandbox only,
+ * QA_DIRECT_IMAGES=1 (see below) and a PLAYWRIGHT_BROWSERS_PATH whose
+ * ffmpeg-1013 points at /usr/bin/ffmpeg: the bundled 1011 build exits with
+ * "Option not found" and Playwright then writes no video, silently.
+ *
  * ───────────────────────────────────────────────────────────────────────────
  * THE SELECTORS IN THIS FILE HAVE NEVER RUN. Read this before trusting it.
  * ───────────────────────────────────────────────────────────────────────────
@@ -96,6 +107,18 @@ const run = promisify(execFile);
 // follows the code rather than the card.
 const BASE = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
+// Local stack in the CC sandbox only: `next start` cannot resolve Cloudinary
+// (its image optimizer does its own DNS lookup, which the sandbox proxy does
+// not serve), so every <Image> 500s. With QA_DIRECT_IMAGES=1 the browser
+// is redirected to the original Cloudinary URL. Same picture, no Next resize.
+const DIRECT_IMAGES = process.env.QA_DIRECT_IMAGES === "1";
+// The bypass secret goes to the target origin ONLY. It used to ride on
+// `extraHTTPHeaders`, which Playwright sends to every host the page touches
+// (tile.openstreetmap.org, res.cloudinary.com, analytics), handing the
+// staging secret to third parties on each run (found 21/11).
+const BYPASS_HEADERS = BYPASS
+  ? { "x-vercel-protection-bypass": BYPASS, "x-vercel-set-bypass-cookie": "true" }
+  : {};
 const OWNER_EMAIL = "demo-owner@example.com";
 const OWNER_PASSWORD = process.env.DEMO_OWNER_PASSWORD || "";
 const STILLS_ONLY = process.argv.includes("--stills-only");
@@ -424,7 +447,7 @@ const SHOTS = [
     // page that `main` matched (21/11). The recipe id is read from the API at
     // run time, because a re-seed mints new ids.
     route: async (page) => {
-      const res = await page.request.get(`${BASE}/api/producers/${SLUG}/recipes`);
+      const res = await page.request.get(`${BASE}/api/producers/${SLUG}/recipes`, { headers: BYPASS_HEADERS });
       if (!res.ok()) throw new Error(`recipe list for ${SLUG}: HTTP ${res.status()}`);
       const list = await res.json();
       if (!Array.isArray(list) || !list.length) {
@@ -439,18 +462,21 @@ const SHOTS = [
     file: "map.webp",
     route: "/map",
     // The container mounts long before anything renders into it, and 20s was
-    // not enough on staging; the longer wait is deliberate.
-    selector: '[data-testid="map-card"]',
+    // not enough on staging; the longer wait is deliberate. Not `map-card`:
+    // at 390px the cards sit in the collapsed bottom sheet, so the first one
+    // is never visible (measured 21/11). The mobile shell is map + markers +
+    // the sheet's «N בתי עסק» handle, which is the picture this tile needs.
+    selector: '[data-testid="map-mobile-shell"]',
     timeout: 45_000,
     feature_ids: ["map_precision", "multi_locations"],
     // Leaflet paints tiles asynchronously; without this the shot is grey.
     prepare: async (page) => {
       // A tile-less map is worse than no screenshot, so this stays a hard
-      // wait. Measured from the CC sandbox: tile.openstreetmap.org answers
-      // 000 (egress-blocked), so this shot CANNOT be taken here however long
-      // it waits — it needs a machine that can reach the tile server. The
-      // failure is environmental, not a selector to chase.
-      await page.waitForSelector(".leaflet-tile-loaded", { timeout: 45_000 });
+      // wait. The CC sandbox reaches tile.openstreetmap.org only once the
+      // host is on the environment's allowlist (done 21/11).
+      // Two Leaflet containers mount (one 0×0, measured 21/11 on the local
+      // stack); the first match is the hidden one, so wait on a VISIBLE tile.
+      await page.locator(".leaflet-tile-loaded:visible").first().waitFor({ timeout: 45_000 });
       await page.waitForTimeout(1200);
     },
   },
@@ -613,7 +639,10 @@ const CLIPS = [
         await demo.first().waitFor({ state: "visible", timeout: 10_000 });
       }
       await page.waitForTimeout(1500);
-      await slowScroll(page, 700);
+      // Scroll to the card, not a fixed 700px: with one funded group buy the
+      // list is short and 700px ran into the site footer (21/11).
+      const box = await demo.first().boundingBox();
+      await slowScroll(page, Math.max(0, Math.min(700, Math.round((box?.y ?? 0) - 140))));
       await page.goto(`${BASE}/he/experiences`, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2000);
     },
@@ -672,14 +701,6 @@ function contextOptions(extra = {}) {
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
     reducedMotion: "reduce",
-    ...(BYPASS
-      ? {
-          extraHTTPHeaders: {
-            "x-vercel-protection-bypass": BYPASS,
-            "x-vercel-set-bypass-cookie": "true",
-          },
-        }
-      : {}),
     ...extra,
   };
 }
@@ -715,6 +736,19 @@ const MARKER_CSS = `
 // `addInitScript` runs on every document in the page, including the ones
 // `clip-return` navigates to mid-recording, and it is not silenced.
 async function installOverlayStyles(page) {
+  if (BYPASS) {
+    const origin = new URL(BASE).origin;
+    await page.route(
+      (url) => url.origin === origin,
+      (route) => route.fallback({ headers: { ...route.request().headers(), ...BYPASS_HEADERS } }),
+    );
+  }
+  if (DIRECT_IMAGES) {
+    await page.route("**/_next/image?**", (route) => {
+      const src = new URL(route.request().url()).searchParams.get("url");
+      return src && /^https:\/\//.test(src) ? route.fulfill({ status: 302, headers: { location: src } }) : route.fallback();
+    });
+  }
   await page.addInitScript((css) => {
     const add = () => {
       const el = document.createElement("style");
@@ -908,7 +942,7 @@ async function preflight(browser) {
     // reading as clean, one level down.
     let apiText = "";
     try {
-      const detail = await page.request.get(`${BASE}/api/producers/by-slug/${SLUG}`);
+      const detail = await page.request.get(`${BASE}/api/producers/by-slug/${SLUG}`, { headers: BYPASS_HEADERS });
       if (!detail.ok()) {
         problems.push(`GET /api/producers/by-slug/${SLUG} → ${detail.status()}`);
       } else {
@@ -917,7 +951,7 @@ async function preflight(browser) {
           problems.push("the producer payload carried no id — cannot read its reviews");
         } else {
           apiText += JSON.stringify(producer);
-          const reviews = await page.request.get(`${BASE}/api/producers/${producer.id}/reviews`);
+          const reviews = await page.request.get(`${BASE}/api/producers/${producer.id}/reviews`, { headers: BYPASS_HEADERS });
           if (!reviews.ok()) {
             problems.push(`GET /api/producers/<id>/reviews → ${reviews.status()}`);
           } else {
