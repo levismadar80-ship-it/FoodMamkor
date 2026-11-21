@@ -2169,6 +2169,11 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
                                  MEH-586: hybrid — an intent router (Haiku, structured output)
                                  may run ONE of four bounded read-only tools and append the JSON
                                  to the system prompt; otherwise the fixed-knowledge flow.
+                                 MEH-3528: the fixed knowledge = SYSTEM_PROMPT + the business
+                                 tools (built from business-features.js → app/data/
+                                 chat_business_features.json, services/chat_site_knowledge.py)
+                                 + the page list (app/site_pages.py). The reply names a page by
+                                 its path; the widget links only listed paths (lib/site-pages.js).
                                  MEH-3481: a question that names exactly ONE public business
                                  (whole-word name ≥ 3 letters in the last 3 user turns; a name
                                  inside a longer matching one gives way) also gets that
