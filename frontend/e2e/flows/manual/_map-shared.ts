@@ -143,7 +143,7 @@ export const MAP_MOUNT = { timeout: 45_000 };
 // on the mobile project in both a red-control run and a green run. Scoping every
 // locator to the `#main-content` landmark (layout.js) names the live tree only.
 // Same fix as e2e/flows/27-delivery-day-discoverability.spec.ts:73.
-export const scope = (page: Page) => page.locator("#main-content");
+const scope = (page: Page) => page.locator("#main-content");
 
 // /map renders BOTH shells into the DOM at once (MapClient.jsx: `hidden lg:grid`
 // desktop + `lg:hidden` mobile — the card list, the chip bar and a Leaflet map
@@ -172,8 +172,8 @@ export const LOC = he.modals.location;
 // MEH-2308: the launcher's name is its visible pill text on a first desktop
 // visit and the aria-label once it is icon-only, so match either. A string for
 // one state would make the absence checks below pass against the other one.
-export const reEsc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-export const eitherName = (a: string, b: string) => new RegExp(`^(${reEsc(a)}|${reEsc(b)})$`);
+const reEsc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const eitherName = (a: string, b: string) => new RegExp(`^(${reEsc(a)}|${reEsc(b)})$`);
 export const CHAT_OPEN_HE = eitherName(he.chat.launcher_open_label, he.chat.launcher_pill);
 export const CHAT_OPEN_EN = eitherName(en.chat.launcher_open_label, en.chat.launcher_pill);
 export const MC_EN = en.map.client;
@@ -187,7 +187,7 @@ export type Axis = { key: string; label: string };
  * the label is joined in from he.json here, and a missing one throws at load
  * instead of silently widening a locator.
  */
-export const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
+const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
 export const AXES = Object.fromEntries(
   Object.entries(FILTER_AXES as Record<string, object>).map(([k, a]) => {
     const copy = HE_AXES[k];
@@ -231,9 +231,9 @@ export function icu(msg: string, count: number): string {
 // «ירקות ופירות» / «לחמים ואפייה» chips by matching these DB names. «דבש» is a
 // legend row NO fixture business carries — the MEH-722 empty-category case.
 export const CAT_MEAT = { id: 1, name: "בשר", requires_license: false };
-export const CAT_DAIRY = { id: 2, name: "חלב וגבינות", requires_license: false };
-export const CAT_PRODUCE = { id: 3, name: "ירקות ופירות", requires_license: false };
-export const CAT_BREAD = { id: 4, name: "לחם ומאפה", requires_license: false };
+const CAT_DAIRY = { id: 2, name: "חלב וגבינות", requires_license: false };
+const CAT_PRODUCE = { id: 3, name: "ירקות ופירות", requires_license: false };
+const CAT_BREAD = { id: 4, name: "לחם ומאפה", requires_license: false };
 export const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_PRODUCE, CAT_BREAD];
 export const EMPTY_LEGEND_NAME = "דבש";
 
@@ -247,7 +247,7 @@ export const EMPTY_LEGEND_NAME = "דבש";
 // are offered under the MEH-2170 snapshot gate.
 export type Loc = { kind: string; lat: number; lng: number; is_primary: boolean; label?: string; city?: string };
 export type Producer = Record<string, unknown> & { id: string; name: string; locations: Loc[]; avg_rating: number; reviews_count: number };
-export const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 export function producer(n: number, name: string, cat: { id: number; name: string } | null, locations: Loc[], extra: Record<string, unknown> = {}): Producer {
   return {
     id: uuid(n),
@@ -274,9 +274,9 @@ export const P_HAIFA = producer(1, "מחלבת הגבעה", CAT_DAIRY, [
   { kind: "pickup", lat: 32.79, lng: 35.53, is_primary: false, label: "הדוכן בטבריה", city: "טבריה" },
 ], { verification_tier: "verified", avg_rating: 4.8, reviews_count: 12, delivers: true, offers_pickup: true });
 export const P_TLV = producer(2, "קצביית השכונה", CAT_MEAT, [branch(32.08, 34.78, "תל אביב-יפו")], { avg_rating: 4.5, reviews_count: 20 });
-export const P_JLM = producer(3, "בשר מההר", CAT_MEAT, [branch(31.77, 35.21, "ירושלים")], { avg_rating: 4.5, reviews_count: 3 });
-export const P_BSV = producer(4, "גבינות הנגב", CAT_DAIRY, [branch(31.25, 34.79, "באר שבע")], { avg_rating: 3.9, reviews_count: 1 });
-export const P_KSH = producer(5, "עוף מהגליל", CAT_MEAT, [branch(33.21, 35.57, "קריית שמונה")], { avg_rating: 4.9, reviews_count: 1 });
+const P_JLM = producer(3, "בשר מההר", CAT_MEAT, [branch(31.77, 35.21, "ירושלים")], { avg_rating: 4.5, reviews_count: 3 });
+const P_BSV = producer(4, "גבינות הנגב", CAT_DAIRY, [branch(31.25, 34.79, "באר שבע")], { avg_rating: 3.9, reviews_count: 1 });
+const P_KSH = producer(5, "עוף מהגליל", CAT_MEAT, [branch(33.21, 35.57, "קריית שמונה")], { avg_rating: 4.9, reviews_count: 1 });
 // The sparse card: no category, no rating, no fulfillment — PR1 row 1's
 // "עסק דל נתונים" beside the "full" P_HAIFA card.
 export const P_ASH = producer(6, "עסק לדוגמה", null, [branch(31.67, 34.57, "אשקלון")]);
@@ -467,7 +467,7 @@ export async function panMap(page: Page, shell: Locator): Promise<void> {
  * a person does: drag the map up until the pin clears the sheet. Then hit-test
  * it and fail BY NAME if it is still covered, instead of a 20 s click timeout.
  */
-export async function revealMarkerAboveSheet(page: Page, shell: Locator, marker: Locator): Promise<void> {
+async function revealMarkerAboveSheet(page: Page, shell: Locator, marker: Locator): Promise<void> {
   await expect(marker, "the marker must be on the map").toHaveCount(1);
   for (let i = 0; i < 3 && !(await hitTestIsSelf(marker)); i++) {
     if (!(await bottomSheet(shell).isVisible())) break; // desktop: nothing to drag clear of
@@ -602,7 +602,7 @@ export async function sheetSettledAt(page: Page, shell: Locator, fraction: numbe
  * constants change, this goes red and someone decides whether the spec moved.
  * Only the nav clearance is read live.
  */
-export async function expectedPeekPx(page: Page): Promise<number> {
+async function expectedPeekPx(page: Page): Promise<number> {
   return page.evaluate(() => {
     const probe = document.createElement("div");
     probe.style.cssText =
@@ -750,10 +750,10 @@ export const SHELL_ONLY: Record<string, { shell: "desktop" | "phone"; why: strin
 };
 // Shown by state, not by shell: «חפשו באזור זה» (MapPane.jsx, both shells)
 // appears once the map has moved, and the resize below moves it.
-export const TRANSIENT = new Set(["map-search-this-area"]);
+const TRANSIENT = new Set(["map-search-this-area"]);
 // Layout wrappers that hold a whole region in one shell and have no twin: a
 // control directly inside one of them counts as directly in the shell.
-export const SHELL_WRAPPERS = new Set(["map-mobile-bar", "map-bottom-sheet", "map-sheet-content"]);
+const SHELL_WRAPPERS = new Set(["map-mobile-bar", "map-bottom-sheet", "map-sheet-content"]);
 
 export async function shellInventory(page: Page, shellId: string): Promise<Map<string, string>> {
   // id → sorted, de-duplicated set of containers, so a control that sits in two
