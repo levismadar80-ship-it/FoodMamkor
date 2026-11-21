@@ -301,7 +301,6 @@ def _approvable(db, *, is_test=False):
 @pytest.fixture
 def quiet_whatsapp(monkeypatch):
     monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
-    monkeypatch.setattr(admin_module, "_send_whatsapp", lambda *a, **k: None)
 
 
 def test_approval_queues_the_welcome_email_and_resend_down_does_not_lose_it(

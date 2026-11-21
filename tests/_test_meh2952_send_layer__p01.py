@@ -161,8 +161,9 @@ def test_production_profile_admin_approve_of_an_ordinary_business_sends(
 
     dispatch_due(db)
     assert _to(production.emails) == [owner.email]
-    # The owner's approval template and the admin's ping.
-    assert _wa_to(production.whatsapp) == sorted(["972521234567", ADMIN_WA.lstrip("+")])
+    # The owner's approval template only — MEH-3589 dropped the admin's echo of
+    # her own decision.
+    assert _wa_to(production.whatsapp) == ["972521234567"]
 
 
 def test_production_profile_otp_for_a_test_business_on_the_test_list_sends_nothing(
@@ -536,22 +537,22 @@ def queues_send_by_value_ok(bt, producer):
 
 def test_inventory_classifier_anchored_to_a_real_repo_file():
     """Run against routers/admin_decisions.py as it is on disk: the approval site and the
-    admin-ping wrapper must be found, flagged with a non-constant value."""
+    owner-mail wrapper must be found, flagged with a non-constant value."""
     rel = "routers/admin_decisions.py"
     src = (APP_DIR / rel).read_text(encoding="utf-8")
     sites = collect_sites(src, rel)
     # MEH-3535: the approval email is queued from _queue_approved_email.
+    # MEH-3589: the admin's own-decision WhatsApp echo is gone; only the owner mail.
     approve = [
         s for s in sites if s.func in ("approve_producer", "_queue_approved_email")
     ]
     assert {(s.func, s.callee) for s in approve} == {
         ("_queue_approved_email", "_send_notification_email"),
-        ("approve_producer", "_send_whatsapp"),
     }
     for s in approve:
         assert s.flag is not None and not isinstance(s.flag, ast.Constant), s
-    inner = [s for s in sites if s.func == "_send_whatsapp"]
-    assert len(inner) == 1 and inner[0].callee == "send_text"
+    inner = [s for s in sites if s.func == "_send_notification_email"]
+    assert len(inner) == 1 and inner[0].callee == "enqueue_email"  # MEH-3535
     assert isinstance(inner[0].flag, ast.Name) and inner[0].flag.id == FLAG
     # And the wrapper check sees approve's forwarded notify call as held.
     assert wrapper_violations({rel: src}) == []
