@@ -2343,6 +2343,114 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
                                  worse than one that says it does not know.
 ```
 
+### Smaller routes: session, verification, category requests, alerts, admin utilities (MEH-3602)
+
+These 22 routes were served but not named in this reference; they sat in
+`scripts/checks/api-docs-baseline.txt` from the day the guard was created
+(14/11/2026). Each line below was written from the handler and its schema on
+21/11/2026. The complete route list, with who may call each route, is generated
+from the code in [release/action-map.md](./release/action-map.md).
+
+```
+POST   /auth/refresh             public (the HttpOnly `refresh_token` cookie is the credential), 30/min.
+                                 No body. 200 → Token (new access token) and a rotated refresh cookie,
+                                 sliding 14 days. 401 cookie absent / undecodable / user not found /
+                                 token_version changed; 403 blocked user. (MEH-326)
+
+POST   /auth/logout              public, 30/min. No body. 204, clears the refresh cookie. No auth on
+                                 purpose: a holder of an expired access token must still be able to
+                                 log out. (MEH-326)
+
+POST   /auth/logout-all-devices  any logged-in user, 5/hour. No body. Increments token_version, so every
+                                 other session gets 401 on its next request. 200 → Token for this session.
+
+GET    /auth/verify-email?token= public, 10/min. Consumes the one-time token. 404 «קישור האימות לא תקין»
+                                 unknown token; 410 «קישור האימות פג תוקף» expired (MEH-320). On success
+                                 the response of `verify_email_session`, which may also sign the user in
+                                 (MEH-3087).
+
+POST   /auth/resend-verify       any logged-in user. 3/hour per IP, plus 3/hour and 10/day per account
+                                 (MEH-2906, `services/resend_verify_cap.py`). No body.
+                                 200 {"detail":"אימייל אימות נשלח"}, or {"detail":"האימייל כבר מאומת"}
+                                 when there is nothing to send.
+
+POST   /upload/avatar            any logged-in user, 10/hour. multipart `file`. Same size cap and
+                                 magic-byte check as /upload/image; 400 px square, `avatars/` folder.
+                                 Saves `users.avatar_url` itself, so no PATCH /users/me is needed.
+
+POST   /producers/me/bio/generate   business, 5/hour per IP and 20/day per business.
+                                 Body {sells (1-200), area?, special?, instagram?}. 200 {"bio": "<Hebrew,
+                                 up to 150 chars>"}; {"bio": ""} when the AI is unavailable (fail-open).
+                                 (MEH-1173)
+
+GET    /producers/me/kashrut-requests   business, 30/min. 200 → KashrutRequestOut[], the caller's own
+                                 kashrut badge requests, newest first. (MEH-1167)
+
+GET    /users/me/favorites/{producer_id}/alerts   any logged-in user. 200 → AlertPrefsOut {enabled,
+                                 notify_new_product, notify_new_event, notify_delivery_area,
+                                 notify_new_recipe, notify_new_group_buy, notify_new_rescue,
+                                 whatsapp_opt_in, has_push}. No alert row → 200 with everything false.
+
+PUT    /users/me/favorites/{producer_id}/alerts   any logged-in user, 60/min. Body AlertPrefsIn: the
+                                 six notify_* flags (default true), whatsapp_opt_in (default false),
+                                 push_subscription? (object). 200 → AlertPrefsOut.
+
+POST   /category-requests        public (a token is optional), 5/hour. Body {requested_name (1-100,
+                                 3+ letters), examples? (≤300)}. A `producer_id` in the body is ignored:
+                                 the business is taken from the caller's token, or left empty (MEH-386).
+                                 201 → CategoryRequestOut. Pings the admin.
+
+GET    /admin/category-requests  admin, 120/min. 200 → requests grouped by name (case-insensitive),
+                                 most-requested first: [{requested_name, count, examples[], requests[
+                                 {id, producer_id, status, admin_notes, created_at, reviewed_at}]}].
+
+PATCH  /admin/category-requests/{request_id}   admin, 60/min. Body {status: pending|approved|rejected|
+                                 merged, admin_notes?}. 200 → CategoryRequestOut; 404 «בקשה לא נמצאה».
+
+GET    /admin/group-buys?status= admin. 200 → GroupBuyDetail[], every group buy of every business;
+                                 `status` filters. Not paginated.
+
+PATCH  /admin/outreach/{lead_id} admin. Body OutreachLeadUpdate (any of name, phone, instagram, website,
+                                 city, category, notes, status). 200 → OutreachLeadOut; 404 «ליד לא נמצא»;
+                                 400 «סטטוס לא תקין».
+
+DELETE /admin/outreach/{lead_id} admin. 204; 404 «ליד לא נמצא».
+
+POST   /admin/outreach/{lead_id}/prefill-token   admin. Creates or rotates the lead's prefill token.
+                                 200 → OutreachLeadOut including `prefill_token`.
+
+GET    /register/producer/prefill/{token}   public (the token is the credential), 30/hour. 200 →
+                                 {name, phone?, instagram?, website?, city?, category?}; the lead's
+                                 notes and status are never returned. 404 for an unknown or expired
+                                 token. (MEH-1724)
+
+GET    /admin/producers/{producer_id}/google-place-candidates?q=   admin, 30/min. Up to 3 Google Place
+                                 candidates, searched by the business's name + city, or by `q` (≤120)
+                                 when the admin typed one (MEH-2602). 204 when there is no server key,
+                                 no result, or Google errors; 404 unknown business. Display only: the
+                                 admin picks one in the business form, nothing is saved here.
+
+POST   /admin/producers/{producer_id}/story-card   admin. Body {image_data: base64 JPEG data URI}.
+                                 Uploads to Cloudinary and saves the URL on the business.
+                                 400 «נתוני תמונה לא תקינים»; 404 «בית עסק לא נמצא».
+
+POST   /admin/seed-cities        admin. No body. Fetches Israeli localities from data.gov.il and
+                                 upserts them into `cities`. Safe to run again.
+
+POST   /admin/kashrut/expiry-reminders?dry_run=   admin, 10/hour. `dry_run` defaults to true: the rows
+                                 are returned and nothing is sent. With dry_run=false sends the WhatsApp
+                                 reminder to approved businesses with an active badge, a phone, and a
+                                 certificate that expires within 30 days. 200 → {dry_run, window_days,
+                                 total, sent_count, failed_count, rows[]}. (MEH-1673)
+
+GET    /push-vapid-key           public. 200 {"public_key": "<VAPID key, or empty>"} for the browser's
+                                 push subscription.
+
+GET    /holiday-mode             public, 60/min. 200 {enabled, key}, read from the admin settings
+                                 `holiday_override_enabled` / `holiday_override_key`; feeds the holiday
+                                 banner. (MEH-247)
+```
+
 ---
 
 ## Notifications (Twilio + Resend)
