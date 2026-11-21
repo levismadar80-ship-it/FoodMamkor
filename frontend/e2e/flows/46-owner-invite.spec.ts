@@ -145,8 +145,11 @@ async function stubPasswordCheck(page: Page): Promise<void> {
  * when the click lands, and a click whose mouseup hits another element is
  * reported as done while the handler never ran (MEH-3449). So: wait for the
  * button to stop moving, click, and repeat the click until the form is on
- * screen. A click that DID open the form removes the button (the panel renders
- * it only while closed), so the next attempt simply sees the form and passes.
+ * screen. Only a lost click is retried: a click that DID open the form shows it
+ * synchronously, so the form check passes on that same attempt. (The panel
+ * renders the button only while closed, so a retry after a successful click
+ * would fail on the click — that is why the form check sits in the same
+ * attempt and not in a later one.)
  */
 async function openInvite(page: Page): Promise<void> {
   const open = page.getByTestId("owner-invite-open");
