@@ -26,36 +26,19 @@ nearest row per business (`producer_queries.py::haversine_min_km`, MEH-1402),
 with **no fallback** to the legacy `producers.lat/lng` mirror since MEH-1938
 chunk 5a (the mirror carries `LEGACY(2026-10-15)` ahead of its drop). PostGIS is not
 installed on Railway's stock PostgreSQL — adding it would break the
-deploy. **Never add PostGIS.**
-_(Platform claim — **as of 2026-08-03, unverified**. Railway is unreachable from
-a CC session: `*.up.railway.app` egress returns `CONNECT tunnel failed, 403`
-(re-confirmed 2026-08-03), so no session can re-derive what the stock image
-ships. Re-check from Sapir's terminal, not from here.)_
+deploy. **Never add PostGIS.** _(Platform claim, as of 2026-08-03 and
+unverifiable from the sandbox, which cannot reach Railway.)_
 
 ---
 
 ## Anthropic client init
 
-**Always pass `http_client=httpx.Client()`.** *(The instruction is unchanged and
-still binding — see the dated note below before quoting its rationale. Enforced by `tests/test_anthropic_http_client.py`, 18/11.)*
-Historically: the anthropic **0.39** SDK called `httpx.Client(proxies=...)`
-internally, which raises `TypeError` against httpx **0.28+** (kwarg renamed from
-`proxies=` to `proxy=`).
-
-> **Rationale re-checked 2026-08-03 (MEH-1861) — both version numbers above are
-> stale.** Measured from `backend/pyproject.toml`: **`anthropic==0.107.1`** (not
-> 0.39) and **`httpx==0.27.2`** — which is *below* 0.28, so the version pairing
-> the paragraph describes is **not the pairing this repo currently runs**. The
-> failure it names cannot fire against today's pins.
->
-> **This is not a reason to drop the kwarg.** It means the guard has shifted from
-> reactive to pre-emptive, and that **the `httpx==0.27.2` pin is now the thing
-> holding the line** — a Dependabot bump to 0.28+ is exactly the change that
-> would re-arm the original bug, and the explicit `http_client` is what makes
-> that bump survivable. Treat both the pin and the kwarg as load-bearing, and do
-> not "clean up" either. Whether anthropic 0.107.1 still constructs its default
-> client the same way was **not** verified (no network from the CC sandbox to
-> re-derive SDK internals) — **unverified as of 2026-08-03**.
+**Always pass `http_client=httpx.Client()`.** Enforced by
+`tests/test_anthropic_http_client.py`, which holds the full set of call sites.
+Old SDKs built their own client with `proxies=`, which httpx 0.28+ rejects.
+Today's pins (`anthropic==0.107.1`, `httpx==0.27.2`) can't hit that, so the
+kwarg is pre-emptive: it is what makes a future httpx bump survivable. Keep
+both the pin and the kwarg.
 
 ```python
 anthropic.Anthropic(
@@ -64,12 +47,7 @@ anthropic.Anthropic(
 )
 ```
 
-Call sites (enumerated 2026-08-03, MEH-1861; three moderation copies became one helper 21/11, MEH-3619; `tests/test_anthropic_http_client.py` holds the full set):
-`routers/chat.py:173`, `routers/reviews.py:60`,
-`services/moderation_common.py` (`make_anthropic_client`, shared by the
-home-product, experience and recipe moderation services since MEH-3619),
-`services/bio_generator.py:39`.
-All comply. Don't "clean up" the
+Don't "clean up" the
 kwarg — AI features silently break (the error is caught by the fail-open
 path, so there's no 5xx warning you). Full trap:
 [docs/LOCKED_DECISIONS.md](../../docs/LOCKED_DECISIONS.md).
@@ -91,9 +69,8 @@ either surface.
 
 ## Email via Resend (not SMTP)
 
-Railway blocks outbound SMTP (`25`/`465`/`587`) — **as of 2026-08-03,
-unverified**, same reason as the PostGIS note above: no CC session can reach
-Railway to test a port. All email goes through
+Railway blocks outbound SMTP (`25`/`465`/`587`; as of 2026-08-03, unverifiable
+from the sandbox). All email goes through
 `backend/app/services/email.py` → `send_email()` → Resend HTTP API.
 Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.**
 
@@ -101,13 +78,5 @@ Fail-open if `RESEND_API_KEY` is unset. **Never revert to `smtplib`.**
 
 ## Docs update rule (workflow rule 12)
 
-After any PR touching `backend/app/routers/**`, `backend/app/models/**`,
-or `backend/app/auth.py` — update:
-
-- [docs/DATA.md](../../docs/DATA.md) — schema + endpoint reference
-- [.ai/diagrams/](../../.ai/diagrams/) — `auth-flow.md`, `db-schema.md`,
-  `api-routes.md`
-
-DATA.md is the endpoint inventory: `scripts/checks/api-docs-route-guard.sh`
-fails when a path in `backend/openapi.json` is not named there (MEH-3192).
-The diagrams are maps, not inventories — not checked; keep them current by hand.
+Which doc a backend PR updates is the one table in workflow.md rule 11
+(DATA.md, `.ai/diagrams/`, STATE_MACHINES, SYSTEM_MAP).

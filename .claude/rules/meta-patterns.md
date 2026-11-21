@@ -22,7 +22,8 @@ Proven 4x in 2026-05 (PR #808, #812, #815, MEH-689).
 
 Every non-trivial task splits into:
 - Stage 1 — Phase 0 READ ONLY (grep/jq/cat/ls only, zero edits)
-- Stage 2 — Execute after orchestrator synthesizes findings + Sapir locks
+- Stage 2 — Execute. Whether Stage 2 waits for Sapir's lock is workflow
+  rule 4: a queue card's description is already the approved spec (ADR-032).
 
 Apply: every CC task >1 file or >20 LOC. Trivial single-file typo can skip.
 
