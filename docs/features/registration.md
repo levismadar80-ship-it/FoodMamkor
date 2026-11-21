@@ -18,6 +18,7 @@
 * `backend/app/services/auth_notifications.py` — `notify_admin_draft_claimed`: מייל לאדמין כשבעלת עסק קולטת טיוטה (MEH-3410; בלי וואטסאפ מאז MEH-3589).
 * `backend/app/services/admin_draft_missing.py` · `frontend/app/[locale]/admin/producers/AdminDraftMissing.jsx` — מה חסר בטיוטה שנקלטה, ברשימת האדמין (MEH-3409).
 * `backend/app/routers/producer_draft_preview.py` · `backend/app/services/draft_preview.py` · `frontend/components/admin/DraftPreviewLinkPanel.jsx` (also renders `frontend/components/admin/AdminLinkPanel.jsx`) · `frontend/components/admin/PublishWithConsentPanel.jsx` · `frontend/scripts/capture-page-video.mjs`
+* `frontend/app/[locale]/owner-invite/OwnerInviteConsents.jsx` — תיבת ההסכמה האחת (תנאים + הצהרת רישוי, ההצהרה המלאה נפתחת בלחיצה) והצהרת החקלאית, משותפת להזמנת בעלים ול-claim. בהזמנת בעלים הטופס נפתח שלב אחרי שלב (מייל, קוד, סיסמה ותיבה), ויש «המשך עם Google» שמעביר לטופס של חשבון קיים (MEH-3662).
 * `backend/app/services/pending_nudge.py` — מיילי ההמשך לעסק שלא סיים.
 * `frontend/lib/business-features.js` — ממנו `/join` מרנדר את רשימת הכלים.
 
@@ -29,6 +30,7 @@
 * `frontend/e2e/flows/46-owner-invite.spec.ts` · `tests/test_producer_owner_invite.py` · `tests/test_producer_claim.py` · `tests/test_meh3246_invite_gates.py` · `tests/test_meh3268_accept_keeps_incomplete_page_hidden.py`
 * `tests/test_producer_draft_preview.py` · `frontend/__tests__/DraftPreviewConsentPublish.test.jsx`
 * `frontend/__tests__/ClaimLinkPreviewMetadata.test.js`
+* `frontend/__tests__/OwnerInviteAcceptSignsIn.test.jsx` · `frontend/__tests__/OwnerInviteExistingAccount.test.jsx` · `frontend/__tests__/ClaimPage.test.jsx`
 * `tests/test_meh3409_admin_draft_missing.py` · `frontend/__tests__/AdminDraftMissing.test.jsx`
 * `tests/test_expansion_registration.py` · `tests/test_organizer_registration.py`
 * פיילוט MEH-2913 (קטגוריות 5, רישיון לפי קטגוריה, «איך קונים» בשתי תיבות, קישור לחנות): `frontend/e2e/flows/38-register-delivery-axis.spec.ts` · `frontend/__tests__/RegisterDeliveryAxis.test.jsx` · `frontend/__tests__/CategoryStepLicenseHint.test.jsx` · `frontend/__tests__/StoreLinkForPayload.test.js` · `tests/test_meh2938_register_store_link.py` · `tests/test_producer_categories.py`

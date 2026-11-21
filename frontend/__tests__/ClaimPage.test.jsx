@@ -226,15 +226,14 @@ describe("submitting", () => {
     );
   const claimCall = () => api.post.mock.calls.find(([url]) => url === "/producer-claim");
 
-  it("asks for each box in order before anything is sent", async () => {
+  // MEH-3662: one box carries both the terms and the declaration.
+  it("asks for the consent box before anything is sent", async () => {
     claimOk();
     wrap(<ClaimClient />);
     await screen.findByTestId("claim-form");
+    expect(screen.queryByTestId("claim-declaration")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("claim-submit"));
     expect(screen.getByTestId("claim-error")).toHaveTextContent(R.validation.terms_required);
-    fireEvent.click(screen.getByTestId("claim-terms"));
-    fireEvent.click(screen.getByTestId("claim-submit"));
-    expect(screen.getByTestId("claim-error")).toHaveTextContent(R.validation.declaration_required);
     expect(claimCall()).toBeUndefined();
   });
 
@@ -242,8 +241,7 @@ describe("submitting", () => {
     claimOk();
     wrap(<ClaimClient />);
     await screen.findByTestId("claim-form");
-    fireEvent.click(screen.getByTestId("claim-terms"));
-    fireEvent.click(screen.getByTestId("claim-declaration"));
+    fireEvent.click(screen.getByTestId("claim-consent"));
     fireEvent.click(screen.getByTestId("claim-submit"));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
     expect(claimCall()[1]).toEqual({ token: TOKEN, declaration_accepted: true, terms_accepted: true });
@@ -260,8 +258,7 @@ describe("submitting", () => {
     });
     wrap(<ClaimClient />);
     await screen.findByTestId("claim-form");
-    fireEvent.click(screen.getByTestId("claim-terms"));
-    fireEvent.click(screen.getByTestId("claim-declaration"));
+    fireEvent.click(screen.getByTestId("claim-consent"));
     fireEvent.click(screen.getByTestId("claim-submit"));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -308,8 +305,7 @@ describe("submitting", () => {
     );
     wrap(<ClaimClient />);
     await screen.findByTestId("claim-form");
-    fireEvent.click(screen.getByTestId("claim-terms"));
-    fireEvent.click(screen.getByTestId("claim-declaration"));
+    fireEvent.click(screen.getByTestId("claim-consent"));
     fireEvent.click(screen.getByTestId("claim-submit"));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
     expect(refreshUser).toHaveBeenCalledTimes(1);
@@ -322,8 +318,7 @@ describe("submitting", () => {
     wrap(<ClaimClient />);
     await screen.findByTestId("claim-form");
     expect(screen.getByText(R.terms.farmer_declaration)).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("claim-terms"));
-    fireEvent.click(screen.getByTestId("claim-declaration"));
+    fireEvent.click(screen.getByTestId("claim-consent"));
     fireEvent.click(screen.getByTestId("claim-submit"));
     expect(screen.getByTestId("claim-error")).toHaveTextContent(R.validation.farmer_required);
     expect(claimCall()).toBeUndefined();
@@ -349,8 +344,7 @@ describe("submitting", () => {
     );
     wrap(<ClaimClient />);
     await screen.findByTestId("claim-form");
-    fireEvent.click(screen.getByTestId("claim-terms"));
-    fireEvent.click(screen.getByTestId("claim-declaration"));
+    fireEvent.click(screen.getByTestId("claim-consent"));
     fireEvent.click(screen.getByTestId("claim-submit"));
     expect(await screen.findByTestId("claim-error")).toHaveTextContent(shown);
     expect(push).not.toHaveBeenCalled();

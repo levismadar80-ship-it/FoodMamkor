@@ -19,6 +19,8 @@ import {
   stashOwnerInviteCodeSent,
   stashOwnerInviteToken,
 } from "@/lib/claim-token";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
+import { env } from "@/lib/env";
 import PasswordInput from "@/components/PasswordInput";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
@@ -42,8 +44,7 @@ import OwnerInviteExistingAccount from "./OwnerInviteExistingAccount";
  *           (backend/app/routers/producer_owner_invite.py). sessionStorage via
  *           lib/claim-token.js.
  * Does NOT: ask her to sign in first (there is no account until she accepts —
- *           that is the whole difference from /claim), offer Google sign-in
- *           (v1; the account is created with the password she sets), or let
+ *           that is the whole difference from /claim), or let
  *           her EDIT the page from here — the preview is read-only and the
  *           note under it points at the dashboard.
  * Related:  app/[locale]/claim/ClaimClient.jsx (the DRAFT sibling) ·
@@ -51,7 +52,11 @@ import OwnerInviteExistingAccount from "./OwnerInviteExistingAccount";
  *           declaration copy, reused by KEY so there is no second wording) ·
  *           components/admin/OwnerInvitePanel.jsx (where the link is minted).
  * History:  MEH-2974 (v2: a read-only address, no preview, no code —
- *           superseded by the card's v3 revision of 12/11).
+ *           superseded by the card's v3 revision of 12/11). MEH-3662: one
+ *           step at a time (address → code → password and consent), and
+ *           «המשך עם Google» above the form. Google only signs her in: the
+ *           page then renders OwnerInviteExistingAccount, whose code step is
+ *           unchanged, so no server check is skipped.
  *
  * Why the address is editable and then PROVED, rather than simply trusted:
  * most businesses reach us on Instagram or WhatsApp and we hold no address
@@ -80,6 +85,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
   const t = useTranslations("owner_invite");
   const tReg = useTranslations("auth.register.producer");
   const tErr = useTranslations("error");
+  const tOauth = useTranslations("auth.oauth");
   // MEH-628's scoped translator for password-policy failure copy — the same
   // one ResetPasswordClient hands to `firstFailureMessage`. Separate from
   // `tReg` because the strings live in a different namespace, and reusing the
@@ -189,6 +195,9 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
   // are approved copy (<hebrew_copy> v3).
   const submitLabel = t(invite?.will_publish ? "submit_publish" : "submit");
   const codeIsLive = Boolean(codeSentTo) && codeSentTo === trimmedEmail.toLowerCase();
+  // MEH-3662: the rest of the form waits for a full code. Not a check that
+  // the code is RIGHT — only the server knows that — just that she has one.
+  const codeComplete = codeIsLive && /^\d{6}$/.test(code.trim());
 
   const sendCode = async () => {
     setSubmitError(null);
@@ -360,6 +369,20 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           </a>
         </p>
       )}
+      {/* MEH-3662: Google signs her in, and the signed-in branch above takes
+          over. A new Google account is a consumer account until she accepts. */}
+      {/* Without a client id GoogleAuthButton renders nothing, and «או»
+          would sit under an empty space. */}
+      {env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+      <div className="mb-4" data-testid="owner-invite-google">
+        <GoogleAuthButton onError={(msg) => setSubmitError(msg)} />
+        <div className="flex items-center gap-3 my-4 text-sm text-fg-muted">
+          <span className="flex-1 border-t border-border" />
+          <span>{tOauth("or")}</span>
+          <span className="flex-1 border-t border-border" />
+        </div>
+      </div>
+      )}
       <form onSubmit={submit} noValidate data-testid="owner-invite-form" className="space-y-4">
         <div>
           <Input
@@ -406,6 +429,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           )}
         </div>
 
+        {codeIsLive && (
         <div>
           <Input
             label={t("code_label")}
@@ -423,7 +447,10 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
             className="tracking-[0.3em]"
           />
         </div>
+        )}
 
+        {codeComplete && (
+        <>
         <PasswordInput
           name="password"
           value={password}
@@ -442,6 +469,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           farmer={farmerConfirmed}
           onFarmer={setFarmerConfirmed}
         />
+        </>
+        )}
 
         {(validation || submitError) && (
           <InlineMessage data-testid="owner-invite-error">
@@ -449,6 +478,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           </InlineMessage>
         )}
 
+        {codeComplete && (
         <Button
           type="submit"
           data-testid="owner-invite-submit"
@@ -459,6 +489,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         >
           {submitting ? t("submitting") : submitLabel}
         </Button>
+        )}
       </form>
       </>
       )}
