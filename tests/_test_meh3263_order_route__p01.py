@@ -77,6 +77,8 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
         client.post("/product-orders/status/accept-change", json=ref),
         client.get("/users/me/product-orders", headers=shop.headers),
         client.get("/producers/me/product-orders", headers=shop.headers),
+        # MEH-3561
+        client.get("/producers/me/product-orders/customers", headers=shop.headers),
         client.post(f"{act}/confirm", json={}, headers=shop.headers),
         client.post(f"{act}/decline", json={}, headers=shop.headers),
         client.post(f"{act}/ready", json={}, headers=shop.headers),

@@ -22,7 +22,6 @@ export const HELP_TOPICS = [
   { id: "approve", group: "approvals", href: "/admin/producers?status=pending", list: "ol" },
   { id: "request_changes", group: "approvals", href: "/admin/producers?status=pending", list: "ol" },
   { id: "reject", group: "approvals", href: "/admin/producers?status=pending", list: "ol" },
-  { id: "approve_without_license", group: "approvals", href: "/admin/producers?status=pending", list: "ol" },
   { id: "row_tags", group: "approvals", href: "/admin/producers", list: "ul" },
   { id: "draft_invite", group: "approvals", href: "/admin/producers/new", list: "ol" },
   { id: "approved_actions", group: "approvals", href: "/admin/producers", list: "ul" },

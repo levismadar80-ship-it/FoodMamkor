@@ -81,12 +81,12 @@ approved, `kind='producer'`, not a test row. Events use `is_live_owner_row`
 | → draft | owner registers | `routers/auth.py` | — |
 | → approved | admin creates | `routers/admin.py` | pre-approved unless `as_draft` |
 | draft → pending | owner | `routers/producer_me_review.py` `submit_for_review` | draft only; `submission_missing_items` |
-| draft → approved | admin, for an ownerless draft whose owner agreed in writing | `routers/producer_draft_preview.py` `publish_draft_with_consent` | ownerless draft only; consent note required; `_assert_approvable` (phone gate overridden, licence only with `allow_without_license`) |
+| draft → approved | admin, for an ownerless draft whose owner agreed in writing | `routers/producer_draft_preview.py` `publish_draft_with_consent` | ownerless draft only; consent note required; `_assert_approvable` (phone gate overridden; a missing licence does not block, MEH-3026) |
 | rejected → pending | owner | `routers/producer_me_review.py` `request_producer_review` | row lock; resubmission cap |
 | non-draft → approved | admin | `routers/admin_decisions.py` → `services/producer_approval.py` | `_assert_approvable` |
 | non-draft → rejected | admin | `routers/admin_decisions.py` `reject_producer` | if it was approved: `delist_business` |
 | approved ⇄ inactive | admin | `routers/admin.py` `toggle_status` | un-pause re-runs the approval gates; pause calls `hide_business` → `delist_business` |
-| inactive → approved | the owner, accepting an owner invite | `routers/producer_owner_invite.py` `accept_owner_invite`, `routers/producer_owner_invite_existing.py` `accept_owner_invite_existing` (both via `_accept_plan`) | the invite-time gates (`services/invite_gate.py`) re-checked: a missing photo or required licence keeps it `inactive`, owner still linked (MEH-3268) |
+| inactive → approved | the owner, accepting an owner invite | `routers/producer_owner_invite.py` `accept_owner_invite`, `routers/producer_owner_invite_existing.py` `accept_owner_invite_existing` (both via `_accept_plan`) | the invite-time gates (`services/invite_gate.py`) re-checked: a missing photo keeps it `inactive` (MEH-3026: the licence is not checked), owner still linked (MEH-3268) |
 | approved → inactive | admin blocks the only owner | `routers/admin_extra.py` `block_user` → `hide_business` | a co-owner who can sign in keeps it up |
 | any → (status via plain edit) | — | refused in `routers/admin.py` | — |
 | deleted | admin / owner's account deletion | `routers/admin.py`, `services/user_deletion.py` | `delist_business` first |
@@ -213,7 +213,7 @@ section above when it has transitions worth drawing.
 | `kashrut_badge_requests.status` | pending → approved / rejected, approved → revoked, admin only (`routers/admin_kashrut.py`) |
 | `producer_name_change_requests.status` | pending → approved / rejected, admin only (`routers/producer_name_requests.py`) |
 | `reports.status` | open → resolved / dismissed, admin only (`routers/reports.py`). The reports page resolves a business's open reports after «השהה עסק», only when toggle-status answered `inactive` (MEH-3524) |
-| `outreach_leads.status` | admin's own pipeline label (`routers/admin_outreach.py`) |
+| `outreach_leads.status` | admin's own pipeline label (`routers/admin_outreach.py`); → `registered` automatically when the owner signs up through the lead's prefill link (`services/outreach_lead_registration.py`, MEH-3026) |
 
 ## Combinations that are still open
 
