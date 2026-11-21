@@ -7135,6 +7135,20 @@ export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__
 
 
 /**
+ * MEH-3561: «הלקוחות שלכם» — one row per customer who ordered.
+ * @summary List Business Customers
+ */
+export const ListBusinessCustomersProducersMeProductOrdersCustomersGetResponse = /*#__PURE__*/ zod.object({
+  "customers": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "last_order_at": /*#__PURE__*/ zod.iso.datetime({"offset":true,"local":true}),
+  "name": /*#__PURE__*/ zod.string(),
+  "order_count": /*#__PURE__*/ zod.int(),
+  "phone": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('MEH-3561: one customer of the business, grouped by phone.')))
+})
+
+
+/**
  * @summary Cancel Order
  */
 export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zod.object({

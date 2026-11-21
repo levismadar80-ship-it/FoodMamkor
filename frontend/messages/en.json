@@ -5994,6 +5994,22 @@
           "product": "At least one product open for ordering",
           "enabled": "Turn on \"Take orders on the site\"",
           "done": "All set. Customers can order from your page."
+        },
+        "customers": {
+          "title": "Your customers",
+          "row": "{name} · {count, plural, one {1 order} other {# orders}} · last on {date}",
+          "repeat": "Returning customer",
+          "empty": "When orders come in, you'll see here who ordered and who came back.",
+          "download": "Download (CSV)",
+          "note": "Only customers who ordered from you through the site appear here. Use their details only to handle their orders.",
+          "show_more": "{count, plural, one {1 more customer} other {# more customers}}",
+          "show_less": "Less",
+          "csv": {
+            "name": "Name",
+            "phone": "Phone",
+            "orders": "Orders",
+            "last": "Last order"
+          }
         }
       },
       "weekly_summary": {
